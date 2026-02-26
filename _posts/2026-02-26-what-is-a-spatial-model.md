@@ -4,7 +4,6 @@ title: "What Is a Spatial Model?"
 subtitle: "Variables, units, and the discipline of thinking in fields"
 date: 2025-01-01
 last_modified_at: 2025-01-01
-author: Paul-Hobson
 categories: modeling
 series: computational-geography-laboratory
 series_order: 1
