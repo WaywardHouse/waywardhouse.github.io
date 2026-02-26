@@ -1,43 +1,41 @@
 ---
-layout: essay
-title: "What Is a Spatial Model?"
-subtitle: "Variables, units, and the discipline of thinking in fields"
-date: 2025-01-01
-last_modified_at: 2025-01-01
-categories: modeling
-series: computational-geography-laboratory
-series_order: 1
-cluster: "A — Modeling Change"
-tags: [variables, units, scalar-fields, proportional-reasoning, modeling]
-math: true
-viz: false
+  layout: essay
+  title: "What Is a Spatial Model?"
+  subtitle: "Variables, units, and the discipline of thinking in fields"
+  date: 2026-02-26
+  categories: [modeling]
 
-math_core: ["variables", "units", "proportional reasoning", "scalar fields"]
-spatial_reasoning: 1
-dynamics: 0
-computation: 1
-domain: ["physical geography", "human geography"]
-difficulty: 1
+  series: computational-geography-lab
+  series_order: 1
+  cluster: A
+  cluster_title: "Modeling Change"
 
-tags:
-  - computational-geography
-  - modeling
-  - mathematics
-  - spatial-thinking
+  tags:
+    - computational-geography
+    - modeling
+    - mathematics
+    - spatial-thinking
 
-excerpt: >
-  Before we can model anything — a forest, a city, a watershed — we need to
-  understand what a model actually is. This essay builds that foundation:
-  variables, units, proportional reasoning, and the idea of a scalar field.
-  No calculus required. Just careful thinking about what we choose to measure
-  and why.
+  math: true
+  viz: true
 
-math_prerequisites: >
-  Basic arithmetic. Familiarity with the idea of a variable (a letter that
-  stands for a number). That is all. Everything else is introduced here.
+  difficulty: 1
+  math_core: [variables, units, proportional-reasoning, scalar-fields]
+  spatial_reasoning: 1
+  dynamics: 0
+  computation: 1
+  domain: [physical-geography, human-geography]
 
-math: true
-viz: true
+  excerpt: >
+    Before we can model anything — a forest, a city, a watershed — we need to
+    understand what a model actually is. This essay builds that foundation:
+    variables, units, proportional reasoning, and the idea of a scalar field.
+    No calculus required. Just careful thinking about what we choose to measure
+    and why.
+
+  math_prerequisites: >
+    Basic arithmetic. Familiarity with the idea of a variable (a letter that
+    stands for a number). That is all. Everything else is introduced here.
 ---
 
 Geography has a measurement problem.
