@@ -4,7 +4,7 @@ title: "What Is a Spatial Model?"
 subtitle: "Variables, units, and the discipline of thinking in fields"
 date: 2025-01-01
 last_modified_at: 2025-01-01
-author: default
+author: Paul Hobson
 
 series: computational-geography-laboratory
 series_order: 1
@@ -36,6 +36,9 @@ excerpt: >
 math_prerequisites: >
   Basic arithmetic. Familiarity with the idea of a variable (a letter that
   stands for a number). That is all. Everything else is introduced here.
+
+math: true
+viz: true
 ---
 
 Geography has a measurement problem.
