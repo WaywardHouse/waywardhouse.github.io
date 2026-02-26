@@ -174,81 +174,63 @@ Below is a simple interactive model. Adjust the parameters and watch the line re
   <div id="linear-chart" style="width: 100%; height: 400px;"></div>
 </div>
 
-<script>
-// Linear model visualization
-(function() {
-  const chart = echarts.init(document.getElementById('linear-chart'));
-  
-  let m = 0.5;
-  let b = 2;
-  
-  function updateChart() {
-    const xData = [];
-    const yData = [];
-    
-    for (let x = -10; x <= 10; x += 0.5) {
-      xData.push(x);
-      yData.push(m * x + b);
-    }
-    
-    const option = {
-      title: {
-        text: `y = ${m.toFixed(2)}x + ${b.toFixed(2)}`,
-        left: 'center'
-      },
-      grid: {
-        left: 60,
-        right: 40,
-        top: 60,
-        bottom: 60
-      },
-      xAxis: {
-        type: 'value',
-        name: 'x',
-        nameLocation: 'middle',
-        nameGap: 30,
-        min: -10,
-        max: 10
-      },
-      yAxis: {
-        type: 'value',
-        name: 'y',
-        nameLocation: 'middle',
-        nameGap: 40,
-        min: -20,
-        max: 20
-      },
-      series: [{
-        data: xData.map((x, i) => [x, yData[i]]),
-        type: 'line',
-        smooth: false,
-        lineStyle: {
-          color: '#F0177A',
-          width: 3
-        },
-        showSymbol: false
-      }]
-    };
-    
-    chart.setOption(option);
+<script type="module">
+// Wait for core.js to load ECharts (triggered by viz: true in front matter)
+while (!window.echarts) await new Promise(r => setTimeout(r, 50));
+
+const chart = window.echarts.init(document.getElementById('linear-chart'));
+
+let m = 0.5;
+let b = 2;
+
+function updateChart() {
+  const xData = [];
+  const yData = [];
+
+  for (let x = -10; x <= 10; x += 0.5) {
+    xData.push(x);
+    yData.push(m * x + b);
   }
-  
-  document.getElementById('slope-slider').addEventListener('input', (e) => {
-    m = parseFloat(e.target.value);
-    document.getElementById('slope-value').textContent = m.toFixed(2);
-    updateChart();
+
+  chart.setOption({
+    title: {
+      text: `y = ${m.toFixed(2)}x + ${b.toFixed(2)}`,
+      left: 'center'
+    },
+    grid: { left: 60, right: 40, top: 60, bottom: 60 },
+    xAxis: {
+      type: 'value', name: 'x', nameLocation: 'middle', nameGap: 30,
+      min: -10, max: 10
+    },
+    yAxis: {
+      type: 'value', name: 'y', nameLocation: 'middle', nameGap: 40,
+      min: -20, max: 20
+    },
+    series: [{
+      data: xData.map((x, i) => [x, yData[i]]),
+      type: 'line',
+      smooth: false,
+      lineStyle: { color: '#F0177A', width: 3 },
+      showSymbol: false
+    }]
   });
-  
-  document.getElementById('intercept-slider').addEventListener('input', (e) => {
-    b = parseFloat(e.target.value);
-    document.getElementById('intercept-value').textContent = b.toFixed(2);
-    updateChart();
-  });
-  
+}
+
+document.getElementById('slope-slider').addEventListener('input', (e) => {
+  m = parseFloat(e.target.value);
+  document.getElementById('slope-value').textContent = m.toFixed(2);
   updateChart();
-  
-  window.addEventListener('resize', () => chart.resize());
-})();
+});
+
+document.getElementById('intercept-slider').addEventListener('input', (e) => {
+  b = parseFloat(e.target.value);
+  document.getElementById('intercept-value').textContent = b.toFixed(2);
+  updateChart();
+});
+
+updateChart();
+
+window.addEventListener('resize', () => chart.resize());
 </script>
 
 **Try this:**
