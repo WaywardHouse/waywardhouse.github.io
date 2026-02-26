@@ -6,7 +6,7 @@ series: "Alberta in Context"
 series_order: 2
 date: 2026-02-17
 last_modified_at: 2026-02-26
-author: paul
+author: Paul Hobson
 categories:
   - economic-geography
   - trade
@@ -34,14 +34,7 @@ math_core: proportional-reasoning
 spatial_reasoning: trade-flows
 toc: true
 comments: true
----
-
-## Contents
-{:.no_toc}
-
-* TOC
-{:toc}
-
+viz: true
 ---
 
 ## 1. Alberta's Economic Scale
@@ -140,7 +133,7 @@ Beyond energy and agriculture, Alberta produces meaningful output in chemicals a
 
 ### 3.1 The Export Numbers
 
-In 2024, Alberta exported $183.2 billion in goods internationally — a 98% increase from 2020's $92.5 billion, driven by rising oil prices and increased production volumes. This figure represents 32.2% of all Canadian international exports.[^wte]
+In 2024, Alberta exported \$183.2 billion in goods internationally — a 98% increase from 2020's \$92.5 billion, driven by rising oil prices and increased production volumes. This figure represents 32.2% of all Canadian international exports.[^wte]
 
 [^wte]: World's Top Exports analysis of Statistics Canada data; Export Alberta 2024.
 
@@ -189,7 +182,7 @@ TMX represents a genuine diversification opportunity, but it is currently margin
 
 ### 3.3 The Import Side
 
-Alberta's international trade balance is massively positive — $183.2B in exports versus approximately $40B in imports, yielding a $143 billion surplus in 2024. The composition of imports is revealing:
+Alberta's international trade balance is massively positive — \$183.2B in exports versus approximately $40B in imports, yielding a \$143 billion surplus in 2024. The composition of imports is revealing:
 
 | Import Category | Value (2024) | Why Alberta Buys This |
 |:---|---:|:---|
@@ -255,7 +248,7 @@ This is the part of the trade picture most often absent from political discussio
 | Professional & financial services | Significant | Ontario, B.C. |
 | Construction materials & inputs | Substantial | B.C., Ontario |
 
-> **In 2016, Alberta's interprovincial imports ($67B) actually exceeded its interprovincial exports ($63B).** Alberta runs a trade surplus with the world but was, in that period, a net importer from the rest of Canada. This reflects a wealthy consumer province buying manufactured goods, services, and processed products it does not produce domestically.
+> **In 2016, Alberta's interprovincial imports (\$67B) actually exceeded its interprovincial exports (\$63B).** Alberta runs a trade surplus with the world but was, in that period, a net importer from the rest of Canada. This reflects a wealthy consumer province buying manufactured goods, services, and processed products it does not produce domestically.
 {:.callout}
 
 ### 4.3 The Interprovincial Dependency Map
@@ -349,7 +342,7 @@ Alberta does not receive equalization payments — it has not since 1964–65. B
 
 These numbers explain the political frustration. Albertans pay federal taxes at the same rates as all Canadians — but because their incomes are higher, they contribute vastly more per person and receive less back. The province has not received equalization in six decades yet has contributed billions annually to a system that redistributes wealth to other provinces.
 
-> **Projections estimate Alberta will contribute $252.5 billion more to Ottawa than it receives back from 2025 to 2039 — approximately $17 billion per year on average.** The imbalance is structural, not accidental.
+> **Projections estimate Alberta will contribute \$252.5 billion more to Ottawa than it receives back from 2025 to 2039 — approximately \$17 billion per year on average.** The imbalance is structural, not accidental.
 {:.callout}
 
 *Source: The Clarion, Alberta fiscal projections 2025–2039.*

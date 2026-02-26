@@ -6,7 +6,7 @@ series: "Alberta in Context"
 series_order: 3
 date: 2026-02-19
 last_modified_at: 2026-02-26
-author: paul
+author: Paul Hobson
 categories:
   - economic-geography
   - comparative-political-economy
@@ -36,14 +36,6 @@ math_core: proportional-reasoning
 spatial_reasoning: comparative-systems
 toc: true
 comments: true
----
-
-## Contents
-{:.no_toc}
-
-* TOC
-{:toc}
-
 ---
 
 ## Part A: Why the Comparison Is Made at All
@@ -91,7 +83,7 @@ At the level of economic structure, it holds up reasonably well — and understa
 
 [^rockefeller]: Rockefeller Institute of Government, federal balance of payments data, 2022.
 
-> **The first surprise:** Alberta is a net contributor to Canadian federal finances ($17B+ per year). Texas is a net receiver of federal funds, taking in $71.1 billion more from Washington than it pays in federal taxes. Alberta's political identity includes the conviction that it funds everyone else. In the U.S. federal system, Texas is the one being funded.
+> **The first surprise:** Alberta is a net contributor to Canadian federal finances (\$17B+ per year). Texas is a net receiver of federal funds, taking in \$71.1 billion more from Washington than it pays in federal taxes. Alberta's political identity includes the conviction that it funds everyone else. In the U.S. federal system, Texas is the one being funded.
 {:.callout}
 
 ### 1.2 What Makes the Parallel Work
@@ -152,7 +144,7 @@ The single most important fact in the Alberta-Texas comparison is the one least 
 
 [^rockefeller2]: Rockefeller Institute of Government, Annual Fiscal Flows report, 2022.
 
-Alberta, by contrast, contributed a net $17 billion or more annually to Ottawa above what it received back in services and transfers — a position it has maintained for decades. From 2007 to 2023, the cumulative net transfer from Alberta to the federal government was $267.4 billion.[^fairness]
+Alberta, by contrast, contributed a net \$17 billion or more annually to Ottawa above what it received back in services and transfers — a position it has maintained for decades. From 2007 to 2023, the cumulative net transfer from Alberta to the federal government was \$267.4 billion.[^fairness]
 
 [^fairness]: Fairness Alberta fiscal contribution data; Statistics Canada Fiscal Reference Tables.
 
@@ -218,7 +210,7 @@ Texas's energy economy has been through multiple catastrophic price collapses, a
 
 [^fdic]: FDIC Historical Records, "Banking Problems in the Southwest," Texas/Oklahoma bank failure data 1980–1990.
 
-Between 1982 and 1987, Houston lost 211,000 jobs as oil prices collapsed from their 1981 highs. At peak, one in eight Houstonians was unemployed. The banking system effectively failed: Texas saw more bank failures between 1980 and 1990 than any other state. Real estate prices in Houston fell 25–30% and remained depressed for years. The Savings and Loan crisis of the late 1980s, which required a massive federal bailout, was in significant part a Texas oil patch story — institutions that had lent against $35 oil prices in 1982 found themselves holding worthless collateral when prices hit $9 in 1986.[^tx-tribune]
+Between 1982 and 1987, Houston lost 211,000 jobs as oil prices collapsed from their 1981 highs. At peak, one in eight Houstonians was unemployed. The banking system effectively failed: Texas saw more bank failures between 1980 and 1990 than any other state. Real estate prices in Houston fell 25–30% and remained depressed for years. The Savings and Loan crisis of the late 1980s, which required a massive federal bailout, was in significant part a Texas oil patch story — institutions that had lent against \$35 oil prices in 1982 found themselves holding worthless collateral when prices hit \$9 in 1986.[^tx-tribune]
 
 [^tx-tribune]: Texas Tribune; Texas Monthly; Houstonia Magazine — Houston oil bust retrospectives.
 
@@ -285,7 +277,7 @@ The conventional wisdom — that Permian shale is cheap and oil sands are expens
 > **Different business models:** The Permian's advantage is speed and flexibility — drill a well in days, produce immediately, stop when prices fall. The oil sands' advantage is durability — once the billions are spent, production is stable for decades at declining operating cost. These are genuinely different business models, not just versions of the same thing.
 {:.callout}
 
-One projection worth noting: U.S. shale breakeven costs for new wells are forecast to rise from approximately $70/bbl today to $95/bbl by 2035 as the best core acreage in the Permian is exhausted. Oil sands operating costs, meanwhile, have been declining — Suncor reduced its breakeven cost by US$7/barrel in 2024 alone. The long-run economics of the two deposits may be converging, but not in the direction most critics of the oil sands assume.
+One projection worth noting: U.S. shale breakeven costs for new wells are forecast to rise from approximately \$70/bbl today to \$95/bbl by 2035 as the best core acreage in the Permian is exhausted. Oil sands operating costs, meanwhile, have been declining — Suncor reduced its breakeven cost by US$7/barrel in 2024 alone. The long-run economics of the two deposits may be converging, but not in the direction most critics of the oil sands assume.
 
 ### 3.3 The Geopolitical Positioning
 
@@ -317,7 +309,7 @@ This structural reality constrains Alberta's negotiating position in ways that h
 
 ### Conclusion 1: The fiscal comparison runs opposite to what most Albertans assume.
 
-Alberta, in Canada, is the fiscal engine contributing $17 billion or more per year above what it receives. Texas, in the U.S., is a net recipient of $71 billion per year. Moving to an American-style federal system would not obviously change this dynamic — it would redirect the flow through different mechanisms.
+Alberta, in Canada, is the fiscal engine contributing \$17 billion or more per year above what it receives. Texas, in the U.S., is a net recipient of \$71 billion per year. Moving to an American-style federal system would not obviously change this dynamic — it would redirect the flow through different mechanisms.
 
 ### Conclusion 2: Federal pipeline control does not disappear under American federalism.
 

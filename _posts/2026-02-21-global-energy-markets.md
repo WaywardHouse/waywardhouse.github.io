@@ -6,7 +6,7 @@ series: "Alberta in Context"
 series_order: 4
 date: 2026-02-21
 last_modified_at: 2026-02-26
-author: paul
+author: Paul Hobson
 categories:
   - economic-geography
   - energy
@@ -44,14 +44,6 @@ toc: true
 comments: true
 ---
 
-## Contents
-{:.no_toc}
-
-* TOC
-{:toc}
-
----
-
 ## Preface: The World Alberta Sells Into
 
 Any serious assessment of Alberta's energy future must begin not with Alberta, but with the world. It is a persistent failure of both pro-industry boosterism and environmental critique that they conduct their arguments on an imaginary global stage — one in which either demand is infinite and secure, or in which transition is clean and orderly. The reality is murkier, more volatile, and more geopolitically entangled than either position admits.
@@ -68,13 +60,13 @@ Where Alberta sits in that story is the central question.
 
 ### The Ukraine Invasion and the Great Reshuffling
 
-When Russia launched its full-scale invasion of Ukraine in February 2022, the Western response included what were described as unprecedented economic sanctions on the Russian oil sector. Before the invasion, Russia had been the largest single source of European oil and gas imports, supplying approximately 40% of the EU's natural gas and over a quarter of its crude oil. The G7 price cap — fixing the maximum price at which Western-flagged tankers, Western insurers, and Western financial institutions could service Russian oil exports at $60 per barrel — was designed to preserve supply to the global market while stripping Russia of marginal profit.[^brookings]
+When Russia launched its full-scale invasion of Ukraine in February 2022, the Western response included what were described as unprecedented economic sanctions on the Russian oil sector. Before the invasion, Russia had been the largest single source of European oil and gas imports, supplying approximately 40% of the EU's natural gas and over a quarter of its crude oil. The G7 price cap — fixing the maximum price at which Western-flagged tankers, Western insurers, and Western financial institutions could service Russian oil exports at \$60 per barrel — was designed to preserve supply to the global market while stripping Russia of marginal profit.[^brookings]
 
 [^brookings]: Brookings Institution, *Stiffening European Sanctions Against the Russian Oil Trade*, January 2026.
 
 It did not work as designed. What it did was restructure global oil trade more fundamentally than any single event since the 1973 Arab oil embargo — but without removing supply.
 
-Russia found willing buyers in China and India. EU imports of Russian crude fell from 3.5 million barrels per day in 2021 to 0.4 million barrels per day by 2024 — a reduction of nearly 90%. But the oil did not stop flowing. It changed direction. China's average daily imports of Russian crude reached approximately $171 million per day in 2024. India's transformation was more dramatic: from virtually no Russian crude imports before 2022 to $144 million per day on average in 2024.[^crea]
+Russia found willing buyers in China and India. EU imports of Russian crude fell from 3.5 million barrels per day in 2021 to 0.4 million barrels per day by 2024 — a reduction of nearly 90%. But the oil did not stop flowing. It changed direction. China's average daily imports of Russian crude reached approximately \$171 million per day in 2024. India's transformation was more dramatic: from virtually no Russian crude imports before 2022 to \$144 million per day on average in 2024.[^crea]
 
 [^crea]: Centre for Research on Energy and Clean Air (CREA), Monthly Fossil Fuel Tracker, 2024–2025.
 
@@ -111,15 +103,15 @@ By the end of 2025, the U.S. and EU had sanctioned approximately two-thirds of t
 
 [^mitrova]: Tatyana Mitrova, *Into the Shadows*, The Insider / Columbia University CGEP, December 2025.
 
-The real effect of sanctions has not been to halt Russian oil exports but to impose a discount on them. By late 2025, Urals crude was trading at approximately $33–34 per barrel at Baltic and Black Sea ports, compared to Brent at $65–70. Russian oil export revenues for 2025 ended approximately 24% below 2024 levels — damaging, but not crippling.
+The real effect of sanctions has not been to halt Russian oil exports but to impose a discount on them. By late 2025, Urals crude was trading at approximately \$33–34 per barrel at Baltic and Black Sea ports, compared to Brent at \$65–70. Russian oil export revenues for 2025 ended approximately 24% below 2024 levels — damaging, but not crippling.
 
 ### What the Sanctions Architecture Means for Price
 
 For global oil prices, the post-2022 sanctions environment has produced an outcome that carries complex long-term consequences: supply was preserved, but at a discount that benefited buyers rather than the seller.
 
-The persistent availability of discounted Russian crude — at Urals prices of $33–40 per barrel through the shadow fleet — puts a ceiling on how high global oil prices can rise before buyers find the discount attractive enough to accept the logistical complications of shadow-fleet sourcing. This has contributed to structural price pressure keeping Brent crude in the $60–75 range through much of 2024 and 2025, despite geopolitical events that would historically have driven prices above $90.
+The persistent availability of discounted Russian crude — at Urals prices of \$33–40 per barrel through the shadow fleet — puts a ceiling on how high global oil prices can rise before buyers find the discount attractive enough to accept the logistical complications of shadow-fleet sourcing. This has contributed to structural price pressure keeping Brent crude in the \$60–75 range through much of 2024 and 2025, despite geopolitical events that would historically have driven prices above \$90.
 
-> **For Alberta's oil sands:** Greenfield SAGD projects require approximately $80 per barrel WTI equivalent to justify new capital investment. The current price environment, in which a persistent shadow-fleet discount compresses price upside, makes new oil sands development economically marginal — even as existing operations remain profitable.
+> **For Alberta's oil sands:** Greenfield SAGD projects require approximately \$80 per barrel WTI equivalent to justify new capital investment. The current price environment, in which a persistent shadow-fleet discount compresses price upside, makes new oil sands development economically marginal — even as existing operations remain profitable.
 {:.callout}
 
 ### Iran, Venezuela, and the Parallel Supply Economy
@@ -160,7 +152,7 @@ This is the paradox of sanctions as a price tool: they were designed partly to r
 
 While the shadow fleet has proven remarkably adaptive, the physical geography of oil trade contains constraints no shadow tanker can route around. The Strait of Hormuz — through which approximately 21 million barrels per day flow, roughly 20% of all oil traded globally — remains the single most consequential physical chokepoint in the global energy system.
 
-The Bab-el-Mandeb Strait at the southern end of the Red Sea — through which Houthi attacks from Yemen disrupted shipping throughout 2024 and into 2025 — demonstrated that even lesser chokepoints carry material consequences. The diversion of traffic around the Cape of Good Hope added approximately 10–14 days and $1–2 million to voyage costs per vessel.
+The Bab-el-Mandeb Strait at the southern end of the Red Sea — through which Houthi attacks from Yemen disrupted shipping throughout 2024 and into 2025 — demonstrated that even lesser chokepoints carry material consequences. The diversion of traffic around the Cape of Good Hope added approximately 10–14 days and \$1–2 million to voyage costs per vessel.
 
 For Alberta specifically, these chokepoints are somewhat less material than for Middle Eastern or Russian producers, because Canadian crude's primary route to Asian markets runs westward from Vancouver through the Pacific — avoiding both the Red Sea and the Persian Gulf entirely. TMX explicitly creates this routing advantage. But the chokepoints matter to the extent that they affect the global price at which all crude is sold.
 
@@ -354,13 +346,13 @@ Whether that potential materializes as oil demand, as electricity from solar and
 
 Gathering these threads, the global oil market that Alberta's producers sell into in 2026 has the following structural characteristics:
 
-**Global supply is persistently abundant.** U.S. shale at record levels, OPEC+ unwinding production cuts, new production from Brazil, Guyana, and Canada, plus continued shadow fleet flows have created a structural surplus keeping Brent in the $60–75 range. The EIA forecasts Brent averaging $58 per barrel in 2026 and $53 in 2027 — prices at which new oil sands projects are uneconomic.
+**Global supply is persistently abundant.** U.S. shale at record levels, OPEC+ unwinding production cuts, new production from Brazil, Guyana, and Canada, plus continued shadow fleet flows have created a structural surplus keeping Brent in the \$60–75 range. The EIA forecasts Brent averaging \$58 per barrel in 2026 and \$53 in 2027 — prices at which new oil sands projects are uneconomic.
 
-**The discount problem persists.** WCS trades at a structural discount to WTI of $10–20 per barrel due to bitumen-blend chemistry and limited refinery access. The discount on sanctioned crude provides unexpected competition: Chinese teapot refiners buying Urals at steep discounts have less incentive to pay premium prices for Canadian dilbit.
+**The discount problem persists.** WCS trades at a structural discount to WTI of \$10–20 per barrel due to bitumen-blend chemistry and limited refinery access. The discount on sanctioned crude provides unexpected competition: Chinese teapot refiners buying Urals at steep discounts have less incentive to pay premium prices for Canadian dilbit.
 
 **The demand engine is shifting.** China is plateauing. India is ascending but at per capita levels that take time to generate China-scale volumes. Petrochemical feedstocks will account for more than 60% of all new demand growth by 2026.
 
-**The price window for new development is narrowing.** Greenfield SAGD requires ~$80 WTI. The structural supply surplus, the shadow fleet discount ceiling, and decelerating demand growth collectively make sustained $80+ prices less likely than they were five years ago.
+**The price window for new development is narrowing.** Greenfield SAGD requires ~\$80 WTI. The structural supply surplus, the shadow fleet discount ceiling, and decelerating demand growth collectively make sustained \$80+ prices less likely than they were five years ago.
 
 ### Alberta's Structural Advantages
 
@@ -378,7 +370,7 @@ The analysis is not simply grim. Alberta holds genuine structural advantages tha
 
 Any serious policy discussion about Alberta's energy future must grapple with the market reality documented above. Alberta is not insulated from global energy markets by any political arrangement. Whether Alberta is a Canadian province, an American state, or an independent nation, its oil sands compete in a global market in which price is set by supply and demand forces that Canadian policy cannot meaningfully influence.
 
-What Canadian federal-provincial policy can influence is the infrastructure, the regulatory environment, and the fiscal terms under which Alberta's oil sands compete within this market. The pipeline debate — Trans Mountain, Northern Gateway, Energy East, Keystone XL — has been about the incremental billions of dollars in value that market access improvements could yield. An improvement of $5 per barrel on 3.7 million barrels per day is $6.75 billion per year. These are real. But they are improvements at the margin of a market structure set by forces far larger than any Canadian political decision.
+What Canadian federal-provincial policy can influence is the infrastructure, the regulatory environment, and the fiscal terms under which Alberta's oil sands compete within this market. The pipeline debate — Trans Mountain, Northern Gateway, Energy East, Keystone XL — has been about the incremental billions of dollars in value that market access improvements could yield. An improvement of \$5 per barrel on 3.7 million barrels per day is \$6.75 billion per year. These are real. But they are improvements at the margin of a market structure set by forces far larger than any Canadian political decision.
 
 > The renewable tide is real. The geopolitical disruption of oil markets is real. The demand shift toward petrochemicals is real. The window of high-return development is real and narrowing. Alberta's interest — whether viewed through a provincial, federal, or independence lens — is in maximizing the value extracted from the resource while that window exists, and in investing in the downstream chemistry and infrastructure that would preserve Alberta's relevance in a market shifting toward feedstocks rather than fuels.
 {:.callout}
