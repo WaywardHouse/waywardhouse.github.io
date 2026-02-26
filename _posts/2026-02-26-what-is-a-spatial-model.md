@@ -5,11 +5,11 @@ subtitle: "Variables, units, and the discipline of thinking in fields"
 date: 2025-01-01
 last_modified_at: 2025-01-01
 author: Paul Hobson
-
+categories: modeling
 series: computational-geography-laboratory
 series_order: 1
 cluster: "A — Modeling Change"
-
+tags: [variables, units, scalar-fields, proportional-reasoning, modeling]
 math: true
 viz: false
 
@@ -373,5 +373,3 @@ The next essay — **Linear Change and Rate** — takes the scalar field idea on
 *Cluster A — Modeling Change · Essay 1 of 4 · Difficulty: 1*
 
 *Math prerequisites: arithmetic, the concept of a variable.*
-
-*Tags: `variables` `units` `scalar-fields` `proportional-reasoning` `modeling`*
