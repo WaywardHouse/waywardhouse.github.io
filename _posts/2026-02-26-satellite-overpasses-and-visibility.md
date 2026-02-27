@@ -638,7 +638,452 @@ await new Promise(resolve => {
 
 ---
 
-## 6. Interpretation
+## 6. Polar Overpass Diagram
+
+Below is a polar plot showing satellite passes from the observer's perspective — a **local sky map** with zenith at center and horizon at the perimeter.
+
+<div class="viz-container" id="polar-viz">
+  <div class="controls">
+    <label>
+      Observer Latitude:
+      <input type="range" id="polar-obs-lat" min="-90" max="90" step="5" value="40">
+      <span id="polar-obs-lat-val">40</span>°N
+    </label>
+    <label>
+      Satellite Altitude (km):
+      <input type="range" id="polar-sat-alt" min="400" max="800" step="100" value="600">
+      <span id="polar-sat-alt-val">600</span> km
+    </label>
+    <label>
+      Sensor Swath Width (km):
+      <input type="range" id="swath-slider" min="0" max="500" step="50" value="185">
+      <span id="swath-value">185</span> km
+    </label>
+    <label>
+      Time Window (hours):
+      <input type="range" id="window-slider" min="6" max="48" step="6" value="24">
+      <span id="window-value">24</span> hours
+    </label>
+    <div class="button-group">
+      <button id="toggle-swath">Toggle Swath</button>
+    </div>
+  </div>
+  <div id="polar-chart" style="width: 100%; height: 700px;"></div>
+  <div class="info-panel">
+    <p id="polar-info"></p>
+    <p><strong>Reading the plot:</strong> Center = zenith (directly overhead), outer ring = horizon. Each colored arc is one satellite pass. Wider bands show sensor swath coverage.</p>
+  </div>
+</div>
+
+<script type="module">
+await new Promise(resolve => {
+  const checkECharts = () => {
+    if (typeof echarts !== 'undefined') resolve();
+    else setTimeout(checkECharts, 50);
+  };
+  checkECharts();
+});
+
+(function() {
+  const chart = echarts.init(document.getElementById('polar-chart'));
+  
+  const R_earth = 6371;
+  const mu = 398600;
+  const omega_earth = 2 * Math.PI / 86164;
+  
+  let obsLat = 40;
+  let satAlt = 600;
+  let swathWidth = 185;
+  let timeWindow = 24;
+  let showSwath = true;
+  
+  const inclination = 98; // SSO-like
+  
+  function deg2rad(deg) { return deg * Math.PI / 180; }
+  function rad2deg(rad) { return rad * 180 / Math.PI; }
+  
+  function satellitePosition(t_hours, alt, inc) {
+    const r = R_earth + alt;
+    const T = 2 * Math.PI * Math.sqrt(r**3 / mu);
+    const t = t_hours * 3600;
+    
+    const nu = (2 * Math.PI / T) * t;
+    const inc_rad = deg2rad(inc);
+    
+    const x_orb = r * Math.cos(nu);
+    const y_orb = r * Math.sin(nu);
+    
+    const x_eq = x_orb;
+    const y_eq = y_orb * Math.cos(inc_rad);
+    const z_eq = y_orb * Math.sin(inc_rad);
+    
+    const theta = -omega_earth * t;
+    const x = x_eq * Math.cos(theta) - y_eq * Math.sin(theta);
+    const y = x_eq * Math.sin(theta) + y_eq * Math.cos(theta);
+    const z = z_eq;
+    
+    return {x, y, z, r};
+  }
+  
+  function observerPosition(lat) {
+    const lat_rad = deg2rad(lat);
+    const lon_rad = 0; // Fixed at 0 for simplicity
+    
+    return {
+      x: R_earth * Math.cos(lat_rad) * Math.cos(lon_rad),
+      y: R_earth * Math.cos(lat_rad) * Math.sin(lon_rad),
+      z: R_earth * Math.sin(lat_rad),
+      lat_rad,
+      lon_rad
+    };
+  }
+  
+  function calculateLookAngles(obs, sat) {
+    const rho_x = sat.x - obs.x;
+    const rho_y = sat.y - obs.y;
+    const rho_z = sat.z - obs.z;
+    
+    const lat_rad = obs.lat_rad;
+    const lon_rad = obs.lon_rad;
+    
+    const u_x = Math.cos(lat_rad) * Math.cos(lon_rad);
+    const u_y = Math.cos(lat_rad) * Math.sin(lon_rad);
+    const u_z = Math.sin(lat_rad);
+    
+    const e_x = -Math.sin(lon_rad);
+    const e_y = Math.cos(lon_rad);
+    const e_z = 0;
+    
+    const n_x = -Math.sin(lat_rad) * Math.cos(lon_rad);
+    const n_y = -Math.sin(lat_rad) * Math.sin(lon_rad);
+    const n_z = Math.cos(lat_rad);
+    
+    const rho_e = rho_x * e_x + rho_y * e_y + rho_z * e_z;
+    const rho_n = rho_x * n_x + rho_y * n_y + rho_z * n_z;
+    const rho_u = rho_x * u_x + rho_y * u_y + rho_z * u_z;
+    
+    const slantRange = Math.sqrt(rho_x**2 + rho_y**2 + rho_z**2);
+    const elevation = rad2deg(Math.asin(rho_u / slantRange));
+    let azimuth = rad2deg(Math.atan2(rho_e, rho_n));
+    if (azimuth < 0) azimuth += 360;
+    
+    return {elevation, azimuth, slantRange};
+  }
+  
+  function swathHalfAngle(swathKm, altitude) {
+    // Ground swath to look angle (simplified)
+    // For nadir-pointing sensor: swath width on ground relates to look angle
+    const Re = R_earth;
+    const h = altitude;
+    // Approximation: half-swath angle from nadir
+    const halfSwathGround = swathKm / 2;
+    const angularHalfSwath = Math.atan(halfSwathGround / (Re + h));
+    return rad2deg(angularHalfSwath);
+  }
+  
+  function generatePasses(obsLat, satAlt, hours) {
+    const passes = [];
+    const obs = observerPosition(obsLat);
+    const dt = 0.05; // 3 minutes
+    
+    let currentPass = null;
+    let passId = 0;
+    
+    for (let t = 0; t <= hours; t += dt) {
+      const sat = satellitePosition(t, satAlt, inclination);
+      const look = calculateLookAngles(obs, sat);
+      
+      if (look.elevation > 0) {
+        // Satellite is visible
+        if (!currentPass) {
+          // Start of new pass
+          currentPass = {
+            id: passId++,
+            points: [],
+            maxElev: look.elevation,
+            maxElevTime: t
+          };
+        }
+        
+        currentPass.points.push({
+          azimuth: look.azimuth,
+          zenithAngle: 90 - look.elevation, // Convert to zenith angle for polar plot
+          elevation: look.elevation,
+          time: t
+        });
+        
+        if (look.elevation > currentPass.maxElev) {
+          currentPass.maxElev = look.elevation;
+          currentPass.maxElevTime = t;
+        }
+        
+      } else if (currentPass) {
+        // End of pass
+        if (currentPass.points.length > 1) {
+          passes.push(currentPass);
+        }
+        currentPass = null;
+      }
+    }
+    
+    // Add last pass if still active
+    if (currentPass && currentPass.points.length > 1) {
+      passes.push(currentPass);
+    }
+    
+    return passes;
+  }
+  
+  function updateChart() {
+    const passes = generatePasses(obsLat, satAlt, timeWindow);
+    const swathAngle = swathHalfAngle(swathWidth, satAlt);
+    
+    document.getElementById('polar-info').innerHTML = 
+      `<strong>Passes found:</strong> ${passes.length} | ` +
+      `<strong>Swath half-angle:</strong> ${swathAngle.toFixed(2)}° from nadir`;
+    
+    const series = [];
+    
+    // Add each pass as a line
+    passes.forEach((pass, idx) => {
+      const color = `hsl(${(idx * 360 / passes.length)}, 70%, 50%)`;
+      
+      // Main pass line
+      series.push({
+        type: 'line',
+        coordinateSystem: 'polar',
+        data: pass.points.map(p => [p.azimuth, p.zenithAngle]),
+        lineStyle: {
+          color: color,
+          width: 3
+        },
+        showSymbol: false,
+        name: `Pass ${idx + 1}`,
+        animation: false
+      });
+      
+      // Swath coverage (if enabled)
+      if (showSwath && swathWidth > 0) {
+        // Upper swath edge
+        series.push({
+          type: 'line',
+          coordinateSystem: 'polar',
+          data: pass.points.map(p => [p.azimuth, Math.max(0, p.zenithAngle - swathAngle)]),
+          lineStyle: {
+            color: color,
+            width: 1,
+            type: 'dashed',
+            opacity: 0.5
+          },
+          showSymbol: false,
+          silent: true,
+          animation: false
+        });
+        
+        // Lower swath edge
+        series.push({
+          type: 'line',
+          coordinateSystem: 'polar',
+          data: pass.points.map(p => [p.azimuth, Math.min(90, p.zenithAngle + swathAngle)]),
+          lineStyle: {
+            color: color,
+            width: 1,
+            type: 'dashed',
+            opacity: 0.5
+          },
+          showSymbol: false,
+          silent: true,
+          animation: false
+        });
+        
+        // Fill swath area (simplified - just shade the band)
+        const swathFill = [];
+        pass.points.forEach(p => {
+          swathFill.push([p.azimuth, p.zenithAngle - swathAngle]);
+        });
+        for (let i = pass.points.length - 1; i >= 0; i--) {
+          swathFill.push([pass.points[i].azimuth, pass.points[i].zenithAngle + swathAngle]);
+        }
+        
+        // Note: ECharts polar doesn't have great polygon support, using line approximation
+      }
+      
+      // Mark maximum elevation point
+      const maxPoint = pass.points.find(p => Math.abs(p.elevation - pass.maxElev) < 0.1);
+      if (maxPoint) {
+        series.push({
+          type: 'scatter',
+          coordinateSystem: 'polar',
+          data: [[maxPoint.azimuth, maxPoint.zenithAngle]],
+          symbolSize: 8,
+          itemStyle: {
+            color: color,
+            borderColor: '#fff',
+            borderWidth: 2
+          },
+          silent: true,
+          animation: false
+        });
+      }
+    });
+    
+    const option = {
+      title: {
+        text: `Satellite Passes: ${obsLat}°N, ${timeWindow}h window`,
+        left: 'center'
+      },
+      tooltip: {
+        trigger: 'item'
+      },
+      polar: {
+        radius: '75%',
+        center: ['50%', '52%']
+      },
+      angleAxis: {
+        type: 'value',
+        startAngle: 90,
+        min: 0,
+        max: 360,
+        interval: 45,
+        axisLabel: {
+          formatter: function(value) {
+            const dirs = {0: 'N', 45: 'NE', 90: 'E', 135: 'SE', 
+                         180: 'S', 225: 'SW', 270: 'W', 315: 'NW'};
+            return dirs[value] || '';
+          }
+        }
+      },
+      radiusAxis: {
+        type: 'value',
+        min: 0,
+        max: 90,
+        inverse: true, // Zenith at center
+        axisLabel: {
+          formatter: function(value) {
+            return (90 - value) + '°'; // Show as elevation
+          }
+        },
+        axisLine: {
+          lineStyle: {
+            color: '#999'
+          }
+        },
+        splitLine: {
+          lineStyle: {
+            color: '#ddd'
+          }
+        }
+      },
+      series: series
+    };
+    
+    chart.setOption(option);
+  }
+  
+  document.getElementById('polar-obs-lat').addEventListener('input', (e) => {
+    obsLat = parseFloat(e.target.value);
+    document.getElementById('polar-obs-lat-val').textContent = obsLat;
+    updateChart();
+  });
+  
+  document.getElementById('polar-sat-alt').addEventListener('input', (e) => {
+    satAlt = parseFloat(e.target.value);
+    document.getElementById('polar-sat-alt-val').textContent = satAlt;
+    updateChart();
+  });
+  
+  document.getElementById('swath-slider').addEventListener('input', (e) => {
+    swathWidth = parseFloat(e.target.value);
+    document.getElementById('swath-value').textContent = swathWidth;
+    updateChart();
+  });
+  
+  document.getElementById('window-slider').addEventListener('input', (e) => {
+    timeWindow = parseFloat(e.target.value);
+    document.getElementById('window-value').textContent = timeWindow;
+    updateChart();
+  });
+  
+  document.getElementById('toggle-swath').addEventListener('click', () => {
+    showSwath = !showSwath;
+    updateChart();
+  });
+  
+  updateChart();
+  
+  window.addEventListener('resize', () => chart.resize());
+})();
+</script>
+
+**Try this:**
+- **Change latitude:** Higher latitudes see more polar orbit passes (inclination 98°)
+- **Adjust swath width:** Set to 185 km (Landsat), 290 km (Sentinel-2), or 500 km (MODIS)
+- **Time window:** 24 hours shows daily coverage pattern; 48 hours reveals repeat geometry
+- **Toggle swath:** Turn off swath display to see just the satellite ground tracks
+- Notice how passes at different azimuths provide multi-directional coverage
+
+**Key insight:** The polar plot reveals the **viewing geometry** from the observer's perspective. Multiple passes from different directions provide stereoscopic potential and reduce shadow/illumination bias in imagery.
+
+---
+
+## 7. Interpretation
+
+### Reading the Polar Plot
+
+The polar overpass diagram is a **local sky map** from the observer's viewpoint:
+- **Center:** Zenith (directly overhead, 90° elevation)
+- **Outer ring:** Horizon (0° elevation)
+- **Radial distance:** Zenith angle (90° - elevation)
+- **Angular position:** Azimuth (compass bearing)
+
+**Each colored arc** represents one satellite pass. The arc shows the satellite's path across the sky as seen from the ground station.
+
+**Swath coverage:** The dashed lines flanking each pass show the sensor's **ground coverage footprint**. Points on the ground within this swath are imaged during the pass.
+
+**Applications:**
+- **Mission planning:** Which passes provide coverage of a target area?
+- **Stereo imaging:** Passes from different azimuths enable 3D reconstruction
+- **Illumination analysis:** Morning passes (eastern azimuths) vs. evening passes (western azimuths) have different sun angles
+- **Antenna scheduling:** Determine optimal times for data downlink based on elevation angle
+
+### Swath Width and Coverage
+
+The **sensor swath** is the width of the strip of Earth's surface imaged in a single pass.
+
+**Wide swath** (e.g., MODIS 2330 km):
+- Fewer passes needed for global coverage
+- Lower spatial resolution (250 m–1 km)
+- Daily global coverage possible
+
+**Narrow swath** (e.g., Landsat 185 km):
+- Many passes needed for global coverage
+- Higher spatial resolution (15–30 m)
+- 16-day revisit cycle for exact repeat
+
+**Swath geometry depends on:**
+1. **Sensor field of view** (FOV): Angular width of detector array
+2. **Pointing capability:** Can the sensor look sideways (off-nadir)?
+3. **Altitude:** Higher satellites see wider swaths but with coarser resolution
+
+**Look angle from swath width:**
+
+For a nadir-pointing sensor at altitude $h$ with ground swath width $W$:
+
+$$\text{Half-swath angle} \approx \arctan\left(\frac{W/2}{R_{\oplus} + h}\right)$$
+
+This is the angular extent from the satellite's perspective.
+
+### Coverage Gaps and Overlaps
+
+From the polar plot, you can identify:
+- **Gaps:** Regions of sky with no passes (equatorial zones for polar orbits from high latitudes)
+- **Overlap:** Multiple passes covering the same area from different angles
+- **Coverage uniformity:** Are passes evenly distributed in azimuth?
+
+**Example:** At 40°N with a sun-synchronous orbit (98° inclination):
+- Passes cluster in north-south directions
+- East-west coverage comes from orbital precession over days
+- No truly equatorial passes (inclination limits)
 
 ### Maximum Elevation Angle
 
