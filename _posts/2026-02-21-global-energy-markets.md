@@ -126,24 +126,24 @@ Together, the sanctioned suppliers account for roughly 10–11 million barrels p
 {
   "title": { "text": "Sanctioned Oil Exporters (2024-2025)", "left": "center", "textStyle": { "fontSize": 15 } },
   "tooltip": { "trigger": "axis", "axisPointer": { "type": "shadow" } },
-  "legend": { "bottom": 0, "data": ["Export Volume (mb/d)", "Discount vs. Brent ($/bbl)"] },
+  "legend": { "bottom": 0, "data": ["Export Volume (mb/d)", "Discount vs. Brent (\$/bbl)"] },
   "xAxis": { "type": "category", "data": ["Russia", "Iran", "Venezuela", "Combined"] },
   "yAxis": [
     { "type": "value", "name": "mb/d", "position": "left" },
-    { "type": "value", "name": "$/bbl discount", "position": "right" }
+    { "type": "value", "name": "\$/bbl discount", "position": "right" }
   ],
   "series": [
     { "name": "Export Volume (mb/d)", "type": "bar", "data": [7.1, 1.8, 0.9, 9.8], "label": { "show": true, "position": "top" } },
-    { "name": "Discount vs. Brent ($/bbl)", "type": "bar", "yAxisIndex": 1, "data": [13.5, 9.5, 6, null] }
+    { "name": "Discount vs. Brent (\$/bbl)", "type": "bar", "yAxisIndex": 1, "data": [13.5, 9.5, 6, null] }
   ]
 }
 ```
 
 | Country | Export Volume (mb/d) | Primary Buyers | Discount vs. Brent |
 |:---|---:|:---|:---|
-| Russia | ~6.9–7.3 | China, India, Turkey | $12–15/bbl (late 2025) |
-| Iran | ~1.7–1.9 | China (teapot refiners) | $7–12/bbl |
-| Venezuela | ~0.8–1.0 | China, Cuba, others | $4–8/bbl |
+| Russia | ~6.9–7.3 | China, India, Turkey | \$12–15/bbl (late 2025) |
+| Iran | ~1.7–1.9 | China (teapot refiners) | \$7–12/bbl |
+| Venezuela | ~0.8–1.0 | China, Cuba, others | \$4–8/bbl |
 | **Combined** | **~9.4–10.2 mb/d** | **~10% of global supply** | **Structural floor on prices** |
 
 This is the paradox of sanctions as a price tool: they were designed partly to reduce Russian revenues, but their effect on supply availability prevents the price spikes that would benefit non-sanctioned producers like Canada, Saudi Arabia, and the UAE.
@@ -336,7 +336,7 @@ Vietnam stands out as a demand growth outlier, with oil consumption surging 27% 
 
 Sub-Saharan Africa is home to approximately 1.2 billion people — and average oil consumption of less than one barrel per person per year. If the region's population were to increase per capita consumption to merely the Southeast Asian average (~3.5 barrels per year), that would add approximately 2.5 million barrels per day to global demand.
 
-Whether that potential materializes as oil demand, as electricity from solar and batteries, or as something in between is one of the genuinely open questions in energy forecasting. The grounds for leapfrogging are real: almost no legacy oil infrastructure to protect, distributed solar microgrids already providing electricity to remote communities, and electric motorcycles gaining market share at competitive price points. The constraints are also real: GDP per capita averages approximately $1,700 per year, and several major economies face deep structural challenges.
+Whether that potential materializes as oil demand, as electricity from solar and batteries, or as something in between is one of the genuinely open questions in energy forecasting. The grounds for leapfrogging are real: almost no legacy oil infrastructure to protect, distributed solar microgrids already providing electricity to remote communities, and electric motorcycles gaining market share at competitive price points. The constraints are also real: GDP per capita averages approximately \$1,700 per year, and several major economies face deep structural challenges.
 
 ---
 

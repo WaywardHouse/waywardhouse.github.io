@@ -24,8 +24,8 @@ description: >
   attention to interprovincial trade flows and fiscal transfers.
 excerpt: >
   Alberta has 12% of the population but generates 32% of Canadian exports. It
-  contributed $267.4 billion more to Ottawa than it received back between 2007
-  and 2023. But it also imported $67 billion from other provinces in a single
+  contributed \$267.4 billion more to Ottawa than it received back between 2007
+  and 2023. But it also imported \$67 billion from other provinces in a single
   year — and its entire Asian export strategy runs through British Columbia's
   ports. The interdependence is real and runs in both directions.
 difficulty: 2
@@ -72,9 +72,9 @@ Before examining trade flows, it helps to understand Alberta's sheer economic we
 
 | Indicator | Alberta | Canada | AB Share |
 |:---|---:|---:|:---|
-| GDP (2024) | $344.7B | ~$2,830B | 12.2% |
-| International exports (2024) | $183.2B | $568.8B | 32.2% |
-| Exports per capita | $37,500 | $14,300 | 2.6× average |
+| GDP (2024) | \$344.7B | ~\$2,830B | 12.2% |
+| International exports (2024) | \$183.2B | \$568.8B | 32.2% |
+| Exports per capita | \$37,500 | \$14,300 | 2.6× average |
 | Provincial fiscal burden (tax/GDP) | 9.9% | ~16% | Lowest in Canada |
 | Net debt/GDP | 2.1% | — | Lowest in Canada |
 | Population share | 12.4% | 100% | Pays 16–17% of federal taxes |
@@ -98,10 +98,10 @@ Alberta sits atop one of the world's largest proven oil reserves — the oil san
 
 | Product | Export Value (2024) | % of AB Exports | Notes |
 |:---|---:|---:|:---|
-| Crude petroleum oils | $124.2B | 67.8% | Primarily oil sands bitumen/SCO |
-| Hydrocarbon gases (nat. gas, LPG) | $8.7B | 4.7% | Gaseous + liquefied propane |
-| **Total energy products** | **$132.5B** | **72.5%** | **Down from ~80% a decade ago** |
-| Light petroleum products (imports) | ($8.2B) | — | Alberta imports refined products |
+| Crude petroleum oils | \$124.2B | 67.8% | Primarily oil sands bitumen/SCO |
+| Hydrocarbon gases (nat. gas, LPG) | \$8.7B | 4.7% | Gaseous + liquefied propane |
+| **Total energy products** | **\$132.5B** | **72.5%** | **Down from ~80% a decade ago** |
+| Light petroleum products (imports) | (\$8.2B) | — | Alberta imports refined products |
 
 Alberta is a major producer of heavy crude but lacks full refining capacity domestically, creating a structural import need for refined products — primarily from U.S. refineries.
 
@@ -113,13 +113,13 @@ Alberta's agricultural sector is the second major production story — one that 
 
 | Commodity | Value / Scale | National Significance |
 |:---|---:|:---|
-| Total agri-food exports (2024) | $17.5B | ~20% of all Canadian agri-food exports |
-| Primary products | $7.8B | Grains, oilseeds, livestock |
-| Value-added products | $9.7B | Processed meats, canola oil, whiskey |
-| Beef exports | $3.6B | 43% of Canada's cattle on AB farms |
+| Total agri-food exports (2024) | \$17.5B | ~20% of all Canadian agri-food exports |
+| Primary products | \$7.8B | Grains, oilseeds, livestock |
+| Value-added products | \$9.7B | Processed meats, canola oil, whiskey |
+| Beef exports | \$3.6B | 43% of Canada's cattle on AB farms |
 | Potatoes | Leading province | 23.7% of Canadian potato production |
 | Honey & hemp | Largest producer | #1 in Canada for both |
-| Rye whiskey | $48.2M | Premium export, growing market |
+| Rye whiskey | \$48.2M | Premium export, growing market |
 
 Alberta's beef processing capacity is nationally dominant. Over three-quarters of all Canadian beef processing occurs in Western Canada, with the majority concentrated in Alberta. This creates supply chain interdependencies that flow both ways — Alberta needs external markets, and the rest of Canada relies on Alberta's processing infrastructure.
 
@@ -141,7 +141,7 @@ In 2024, Alberta exported \$183.2 billion in goods internationally — a 98% inc
 {
   "title": { "text": "Alberta Export Destinations (2024)", "left": "center", "textStyle": { "fontSize": 16 } },
   "tooltip": { "trigger": "axis", "axisPointer": { "type": "shadow" } },
-  "xAxis": { "type": "value", "axisLabel": { "formatter": "${value}B" } },
+  "xAxis": { "type": "value", "axisLabel": { "formatter": "\${value}B" } },
   "yAxis": {
     "type": "category",
     "data": ["Rest of World", "South Korea", "Japan", "China", "United States"],
@@ -151,19 +151,19 @@ In 2024, Alberta exported \$183.2 billion in goods internationally — a 98% inc
     "type": "bar",
     "data": [12, 1.5, 2.5, 5.5, 162.1],
     "itemStyle": { "borderRadius": [0, 4, 4, 0] },
-    "label": { "show": true, "position": "right", "formatter": "${c}B" }
+    "label": { "show": true, "position": "right", "formatter": "\${c}B" }
   }]
 }
 ```
 
 | Destination | Value (2024) | % of AB Exports | Trend |
 |:---|---:|---:|:---|
-| United States | $162.1B | 88.5% | +3.7% year-over-year |
-| China | ~$5–6B | ~3% | Rising post-TMX pipeline |
-| Japan | ~$2–3B | ~1.5% | Stable, LNG focus |
-| South Korea | ~$1.5B | ~0.8% | Growing |
-| Rest of World | ~$12B | ~6.5% | Fragmented |
-| **Total** | **$183.2B** | **100%** | |
+| United States | \$162.1B | 88.5% | +3.7% year-over-year |
+| China | ~\$5–6B | ~3% | Rising post-TMX pipeline |
+| Japan | ~\$2–3B | ~1.5% | Stable, LNG focus |
+| South Korea | ~\$1.5B | ~0.8% | Growing |
+| Rest of World | ~\$12B | ~6.5% | Fragmented |
+| **Total** | **\$183.2B** | **100%** | |
 
 > **88.5% of Alberta's exports go to one country.** This is not a detail — it is the defining structural fact of Alberta's trade position, and the central vulnerability in any scenario involving a break with Canada or serious trade disruption with the U.S.
 {:.callout}
@@ -182,11 +182,11 @@ TMX represents a genuine diversification opportunity, but it is currently margin
 
 ### 3.3 The Import Side
 
-Alberta's international trade balance is massively positive — \$183.2B in exports versus approximately $40B in imports, yielding a \$143 billion surplus in 2024. The composition of imports is revealing:
+Alberta's international trade balance is massively positive — \$183.2B in exports versus approximately \$40B in imports, yielding a \$143 billion surplus in 2024. The composition of imports is revealing:
 
 | Import Category | Value (2024) | Why Alberta Buys This |
 |:---|---:|:---|
-| Light petroleum products | $8.2B (20% of imports) | Refinery gap — AB produces heavy crude, needs refined |
+| Light petroleum products | \$8.2B (20% of imports) | Refinery gap — AB produces heavy crude, needs refined |
 | Machinery & equipment | Significant | Oil patch capital equipment |
 | Chemical inputs | Moderate | Industrial feedstocks |
 | Manufactured goods | Varied | Consumer and industrial goods |
@@ -199,7 +199,7 @@ International trade numbers — dramatic as they are — tell only part of the s
 
 ### 4.1 Alberta's Interprovincial Exports
 
-In 2019 (the most recent detailed pre-COVID data), Alberta exported approximately $68 billion in goods and services to other Canadian provinces — roughly equivalent to what Alberta exported internationally in 2015 during the oil price downturn.[^atb]
+In 2019 (the most recent detailed pre-COVID data), Alberta exported approximately \$68 billion in goods and services to other Canadian provinces — roughly equivalent to what Alberta exported internationally in 2015 during the oil price downturn.[^atb]
 
 [^atb]: ATB Financial, "Alberta's Exports to Other Provinces," 2019 data.
 
@@ -241,10 +241,10 @@ This is the part of the trade picture most often absent from political discussio
 
 | What Alberta Buys | Approximate Value (2016 data) | Primary Suppliers |
 |:---|---:|:---|
-| Total interprovincial imports | ~$67B (2016) | Ontario, B.C., Quebec (top 3) |
+| Total interprovincial imports | ~\$67B (2016) | Ontario, B.C., Quebec (top 3) |
 | Manufacturing & machinery | Large share | Ontario, Quebec |
-| Transportation services | ~$15–20B range | National carriers, B.C. ports |
-| Processed foods & beverages | ~$6.2B | Ontario, B.C., Quebec, Prairies |
+| Transportation services | ~\$15–20B range | National carriers, B.C. ports |
+| Processed foods & beverages | ~\$6.2B | Ontario, B.C., Quebec, Prairies |
 | Professional & financial services | Significant | Ontario, B.C. |
 | Construction materials & inputs | Substantial | B.C., Ontario |
 
@@ -315,7 +315,7 @@ Alberta does not receive equalization payments — it has not since 1964–65. B
   "title": { "text": "Alberta's Net Fiscal Position with Ottawa", "left": "center", "textStyle": { "fontSize": 16 } },
   "tooltip": { "trigger": "axis" },
   "xAxis": { "type": "category", "data": ["Fed. taxes paid\n(AB share)", "Fed. spending\nreceived", "Net transfer\nto Ottawa", "CPP net\n(1981-2022)", "EI net\n(1981-2023)"] },
-  "yAxis": { "type": "value", "axisLabel": { "formatter": "${value}B" } },
+  "yAxis": { "type": "value", "axisLabel": { "formatter": "\${value}B" } },
   "series": [{
     "type": "bar",
     "data": [
@@ -325,20 +325,20 @@ Alberta does not receive equalization payments — it has not since 1964–65. B
       { "value": 53.6, "itemStyle": { "color": "#e74c3c" } },
       { "value": 23.9, "itemStyle": { "color": "#e74c3c" } }
     ],
-    "label": { "show": true, "position": "top", "formatter": "${c}B" }
+    "label": { "show": true, "position": "top", "formatter": "\${c}B" }
   }]
 }
 ```
 
 | Fiscal Measure | Alberta Data | Context |
 |:---|---:|:---|
-| Net transfer to Ottawa (2007–2023) | $267.4B total | ~$16–17B/year average |
-| Annual net transfer (recent years) | $15–27B/year | Varies with commodity prices |
+| Net transfer to Ottawa (2007–2023) | \$267.4B total | ~\$16–17B/year average |
+| Annual net transfer (recent years) | \$15–27B/year | Varies with commodity prices |
 | AB share of federal taxes paid | ~16–17% | AB has only 12.4% of population |
-| Federal spending received per capita (2024) | $2,547/person | 2nd lowest nationally; PEI gets $6,845 |
-| Equalization contribution (2023) | ~$3.3B | AB contributes but receives $0 |
-| CPP net contribution (1981–2022) | $53.6B net paid in | 6× greater than B.C.'s net contribution |
-| EI net contribution (1981–2023) | $23.9B net paid in | Only Ontario paid in more |
+| Federal spending received per capita (2024) | \$2,547/person | 2nd lowest nationally; PEI gets \$6,845 |
+| Equalization contribution (2023) | ~\$3.3B | AB contributes but receives \$0 |
+| CPP net contribution (1981–2022) | \$53.6B net paid in | 6× greater than B.C.'s net contribution |
+| EI net contribution (1981–2023) | \$23.9B net paid in | Only Ontario paid in more |
 
 These numbers explain the political frustration. Albertans pay federal taxes at the same rates as all Canadians — but because their incomes are higher, they contribute vastly more per person and receive less back. The province has not received equalization in six decades yet has contributed billions annually to a system that redistributes wealth to other provinces.
 
@@ -365,7 +365,7 @@ Synthesizing all the data above, here is an accounting of who depends on whom �
 
 | Dependency | Mechanism | Severity if Lost |
 |:---|:---|:---|
-| Internal trade market | ~$67B+ in annual interprovincial imports | Major — disrupts supply chains |
+| Internal trade market | ~\$67B+ in annual interprovincial imports | Major — disrupts supply chains |
 | Port access (TMX/Pacific) | All Asian export routes go through B.C. | Critical for diversification |
 | Pipeline right-of-way | Trans Mountain crosses B.C.; federal approval required | Existential for current exports |
 | Currency union | Canadian dollar pricing for global commodity sales | Complex to replicate |
@@ -379,9 +379,9 @@ Synthesizing all the data above, here is an accounting of who depends on whom �
 | Dependency | Mechanism | Scale |
 |:---|:---|:---|
 | Export revenues | 32.2% of all Canadian international exports | Existential for national trade balance |
-| Federal tax base | $68.8B federal revenue from AB (2025 est.) | ~16–17% of federal revenues |
-| CPP sustainability | $53.6B net contribution (1981–2022) | Program would need restructuring |
-| EI sustainability | $23.9B net contribution (1981–2023) | Program would need restructuring |
+| Federal tax base | \$68.8B federal revenue from AB (2025 est.) | ~16–17% of federal revenues |
+| CPP sustainability | \$53.6B net contribution (1981–2022) | Program would need restructuring |
+| EI sustainability | \$23.9B net contribution (1981–2023) | Program would need restructuring |
 | National GDP | ~12.2% of GDP with 3% growth rate in 2024 | Significant contributor |
 | Energy supply | Most Canadian provinces buy AB energy | Some would face supply disruption |
 | Agricultural exports | ~20% of all Canadian agri-food exports | National food export capacity |
@@ -397,9 +397,9 @@ The data above is complex. These five facts distill it into the foundation for a
 
 **First: Alberta's exports are 88.5% U.S.-bound.** The primary dependency risk is the U.S. relationship, not the Ottawa relationship. A tariff war or pipeline dispute with Washington is a far greater near-term economic threat than any federal-provincial tension. TMX has opened Asian markets, but they represent roughly 4% of crude exports today.
 
-**Second: Alberta runs a trade surplus with the world but is a major net buyer from other Canadian provinces.** The "we don't need them" narrative collides with a ~$67B annual flow of manufactured goods, services, and processed products moving into Alberta from Ontario, B.C., and Quebec. Market access works both ways.
+**Second: Alberta runs a trade surplus with the world but is a major net buyer from other Canadian provinces.** The "we don't need them" narrative collides with a ~\$67B annual flow of manufactured goods, services, and processed products moving into Alberta from Ontario, B.C., and Quebec. Market access works both ways.
 
-**Third: Alberta's fiscal contribution to Confederation is historically large and structurally significant.** $267.4 billion transferred to Ottawa above what Alberta received back (2007–2023) is not grievance politics — it is documented Statistics Canada data. The frustration has a legitimate empirical foundation, even where proposed remedies are contested.
+**Third: Alberta's fiscal contribution to Confederation is historically large and structurally significant.** \$267.4 billion transferred to Ottawa above what Alberta received back (2007–2023) is not grievance politics — it is documented Statistics Canada data. The frustration has a legitimate empirical foundation, even where proposed remedies are contested.
 
 **Fourth: Alberta's market diversification goals depend on infrastructure that crosses other provinces.** TMX terminates in Burnaby. Alberta's Pacific export strategy requires B.C.'s ports, B.C.'s regulatory environment, and continued national support for pipeline infrastructure. Independence from Canada would not create independence for Alberta's energy exports — it would create new barriers to them.
 
