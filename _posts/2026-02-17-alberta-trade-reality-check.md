@@ -6,7 +6,6 @@ series: "Alberta in Context"
 series_order: 2
 date: 2026-02-17
 last_modified_at: 2026-02-26
-author: paul
 categories:
   - economic-geography
   - trade

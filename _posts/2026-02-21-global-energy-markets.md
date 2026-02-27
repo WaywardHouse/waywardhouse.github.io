@@ -6,7 +6,6 @@ series: "Alberta in Context"
 series_order: 4
 date: 2026-02-21
 last_modified_at: 2026-02-26
-author: paul
 categories:
   - economic-geography
   - energy

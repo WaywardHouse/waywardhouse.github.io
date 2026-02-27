@@ -6,7 +6,6 @@ series: "Alberta in Context"
 series_order: 3
 date: 2026-02-19
 last_modified_at: 2026-02-26
-author: paul
 categories:
   - economic-geography
   - comparative-political-economy
