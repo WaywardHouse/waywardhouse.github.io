@@ -19,6 +19,7 @@ tags:
   - positioning
 math: true
 viz: true
+gl: true
 difficulty: 4
 math_core: [distance-formula, systems-of-equations, least-squares, linearization]
 spatial_reasoning: 4
@@ -362,16 +363,10 @@ Below is an interactive GPS solver.
 </div>
 
 <script type="module">
-await new Promise(resolve => {
-  const checkECharts = () => {
-    if (typeof echarts !== 'undefined') resolve();
-    else setTimeout(checkECharts, 50);
-  };
-  checkECharts();
-});
+while (!window.echarts) await new Promise(r => setTimeout(r, 50));
 
 (function() {
-  const chart = echarts.init(document.getElementById('gps-chart'));
+  const chart = window.echarts.init(document.getElementById('gps-chart'));
   
   const c = 299792458; // m/s
   const R_earth = 6371000; // m

@@ -271,16 +271,10 @@ Below is an interactive orbit calculator.
 </div>
 
 <script type="module">
-await new Promise(resolve => {
-  const checkECharts = () => {
-    if (typeof echarts !== 'undefined') resolve();
-    else setTimeout(checkECharts, 50);
-  };
-  checkECharts();
-});
+while (!window.echarts) await new Promise(r => setTimeout(r, 50));
 
 (function() {
-  const chart = echarts.init(document.getElementById('orbit-chart'));
+  const chart = window.echarts.init(document.getElementById('orbit-chart'));
   
   const R_earth = 6371; // km
   const mu = 398600; // km^3/s^2

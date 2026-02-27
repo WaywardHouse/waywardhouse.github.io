@@ -331,16 +331,10 @@ Below is an interactive satellite visibility calculator.
 </div>
 
 <script type="module">
-await new Promise(resolve => {
-  const checkECharts = () => {
-    if (typeof echarts !== 'undefined') resolve();
-    else setTimeout(checkECharts, 50);
-  };
-  checkECharts();
-});
+while (!window.echarts) await new Promise(r => setTimeout(r, 50));
 
 (function() {
-  const chart = echarts.init(document.getElementById('visibility-chart'));
+  const chart = window.echarts.init(document.getElementById('visibility-chart'));
   
   const R_earth = 6371; // km
   const mu = 398600; // km^3/s^2
@@ -676,16 +670,10 @@ Below is a polar plot showing satellite passes from the observer's perspective â
 </div>
 
 <script type="module">
-await new Promise(resolve => {
-  const checkECharts = () => {
-    if (typeof echarts !== 'undefined') resolve();
-    else setTimeout(checkECharts, 50);
-  };
-  checkECharts();
-});
+while (!window.echarts) await new Promise(r => setTimeout(r, 50));
 
 (function() {
-  const chart = echarts.init(document.getElementById('polar-chart'));
+  const chart = window.echarts.init(document.getElementById('polar-chart'));
   
   const R_earth = 6371;
   const mu = 398600;

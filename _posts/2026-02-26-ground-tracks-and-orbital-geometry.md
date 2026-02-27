@@ -236,16 +236,10 @@ Below is an interactive ground track simulator.
 </div>
 
 <script type="module">
-await new Promise(resolve => {
-  const checkECharts = () => {
-    if (typeof echarts !== 'undefined') resolve();
-    else setTimeout(checkECharts, 50);
-  };
-  checkECharts();
-});
+while (!window.echarts) await new Promise(r => setTimeout(r, 50));
 
 (function() {
-  const chart = echarts.init(document.getElementById('groundtrack-chart'));
+  const chart = window.echarts.init(document.getElementById('groundtrack-chart'));
   
   const R_earth = 6371; // km
   const mu = 398600; // km^3/s^2
@@ -315,7 +309,6 @@ await new Promise(resolve => {
     
     const series = result.tracks.map((track, i) => ({
       type: 'line',
-      coordinateSystem: 'geo',
       data: track,
       lineStyle: {
         color: `hsl(${320 + i * 20}, 100%, ${60 - i * 5}%)`,
@@ -324,28 +317,45 @@ await new Promise(resolve => {
       showSymbol: false,
       silent: true
     }));
-    
+
+    // Reference lines: equator and ±inclination latitude bounds
+    const markLines = {
+      silent: true,
+      symbol: 'none',
+      lineStyle: { type: 'dashed', color: '#aaa', width: 1 },
+      data: [
+        { yAxis: 0, name: 'Equator' },
+        { yAxis:  inclination, name: `+${inclination}° (coverage limit)` },
+        { yAxis: -inclination, name: `-${inclination}°` }
+      ]
+    };
+    if (series.length > 0) series[0].markLine = markLines;
+
     const option = {
       title: {
         text: `Ground Track: ${altitude} km, ${inclination}° inclination`,
         left: 'center'
       },
-      geo: {
-        map: 'world',
-        roam: true,
-        itemStyle: {
-          areaColor: '#e0e0e0',
-          borderColor: '#999'
-        },
-        emphasis: {
-          itemStyle: {
-            areaColor: '#d0d0d0'
-          }
-        },
-        projection: {
-          project: (point) => [point[0] / 180 * Math.PI, -Math.log(Math.tan((Math.PI / 4) + (point[1] / 360 * Math.PI)))],
-          unproject: (point) => [point[0] * 180 / Math.PI, (2 * Math.atan(Math.exp(point[1])) - Math.PI / 2) * 180 / Math.PI]
-        }
+      grid: { top: 50, bottom: 60, left: 65, right: 20 },
+      xAxis: {
+        type: 'value',
+        name: 'Longitude (°)',
+        nameLocation: 'middle',
+        nameGap: 28,
+        min: -180,
+        max: 180,
+        interval: 60,
+        axisLabel: { formatter: (v) => `${v}°` }
+      },
+      yAxis: {
+        type: 'value',
+        name: 'Latitude (°)',
+        nameLocation: 'middle',
+        nameGap: 45,
+        min: -90,
+        max: 90,
+        interval: 30,
+        axisLabel: { formatter: (v) => `${v}°` }
       },
       series: series
     };
@@ -408,12 +418,6 @@ await new Promise(resolve => {
     document.getElementById('orbits-slider').value = 8;
     document.getElementById('orbits-value').textContent = 8;
     updateChart();
-  });
-  
-  // Register world map (simplified - in production would load actual GeoJSON)
-  echarts.registerMap('world', {
-    type: 'FeatureCollection',
-    features: []
   });
   
   updateChart();
