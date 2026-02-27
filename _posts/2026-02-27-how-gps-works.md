@@ -847,7 +847,7 @@ The diagonal elements are the variances of $x$, $y$, $z$, and $b$.
 - Real GPS corrects for atmospheric delay, relativistic effects, and multipath
 - **RTK** uses carrier phase for centimeter-level accuracy
 
-**Next steps:** Future essays could cover:
+**Next steps:** Further exploration of this subject could include:
 - Differential GPS and SBAS (Satellite-Based Augmentation Systems)
 - Kalman filtering for continuous position tracking
 - Integration with INS (Inertial Navigation Systems)
