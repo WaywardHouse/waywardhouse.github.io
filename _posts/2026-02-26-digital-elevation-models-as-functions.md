@@ -236,142 +236,120 @@ Below is an interactive 3D visualization of a synthetic DEM.
       <span id="resolution-value">30</span> cells
     </label>
   </div>
-  <div id="dem-3d-chart" style="width: 100%; height: 600px;"></div>
+  <div id="dem-chart" style="width: 100%; height: 500px;"></div>
   <div class="info-panel">
-    <p>Rotate: drag | Zoom: scroll | The grid represents a discretized continuous surface.</p>
+    <p>Each cell represents one grid point in the raster. Colour encodes elevation (blue = low, red = high). This top-down view is exactly how a DEM is stored: a 2D array of elevation values.</p>
   </div>
 </div>
 
 <script type="module">
-await new Promise(resolve => {
-  const checkECharts = () => {
-    if (typeof echarts !== 'undefined') resolve();
-    else setTimeout(checkECharts, 50);
+while (!window.echarts) await new Promise(r => setTimeout(r, 50));
+
+const chart = window.echarts.init(document.getElementById('dem-chart'));
+
+let terrainType = 'cone';
+let resolution = 30;
+
+function generateDEM(type, res) {
+  const data = [];
+  const extent = 100;
+  const step = extent / res;
+
+  for (let i = 0; i < res; i++) {
+    for (let j = 0; j < res; j++) {
+      const x = (j - res / 2) * step;
+      const y = (i - res / 2) * step;
+      let z;
+
+      switch (type) {
+        case 'cone':   z = 50 - Math.sqrt(x * x + y * y) * 0.5; break;
+        case 'saddle': z = (x * x - y * y) * 0.01; break;
+        case 'plane':  z = 10 + x * 0.3 + y * 0.2; break;
+        case 'ridge':  z = 30 - Math.abs(x) * 0.3 + y * 0.1; break;
+        case 'valley': z = Math.abs(y) * 0.3 - 20 + x * 0.1; break;
+      }
+
+      data.push([j, i, +z.toFixed(2)]);
+    }
+  }
+  return data;
+}
+
+function updateChart() {
+  const data = generateDEM(terrainType, resolution);
+  const zValues = data.map(d => d[2]);
+  const zMin = Math.min(...zValues);
+  const zMax = Math.max(...zValues);
+  const cols = Array.from({ length: resolution }, (_, i) => i);
+  const rows = Array.from({ length: resolution }, (_, i) => i);
+
+  const option = {
+    title: {
+      text: `DEM Grid: ${terrainType} (${resolution}×${resolution} cells)`,
+      left: 'center'
+    },
+    tooltip: {
+      trigger: 'item',
+      formatter: params => {
+        const [col, row, z] = params.value;
+        return `Col ${col} (East), Row ${row} (North)<br/>Elevation: ${z} m`;
+      }
+    },
+    visualMap: {
+      show: true,
+      min: zMin,
+      max: zMax,
+      calculable: true,
+      orient: 'horizontal',
+      left: 'center',
+      bottom: '2%',
+      inRange: {
+        color: ['#313695', '#4575b4', '#74add1', '#abd9e9', '#e0f3f8',
+                '#ffffbf', '#fee090', '#fdae61', '#f46d43', '#d73027', '#a50026']
+      }
+    },
+    grid: { top: 60, bottom: 90, left: 50, right: 20 },
+    xAxis: {
+      type: 'category',
+      data: cols,
+      name: 'Column (East →)',
+      nameLocation: 'middle',
+      nameGap: 25,
+      axisLabel: { show: resolution <= 20 }
+    },
+    yAxis: {
+      type: 'category',
+      data: rows,
+      name: 'Row (North ↑)',
+      nameLocation: 'middle',
+      nameGap: 35,
+      axisLabel: { show: resolution <= 20 }
+    },
+    series: [{
+      type: 'heatmap',
+      data: data,
+      emphasis: {
+        itemStyle: { shadowBlur: 5, shadowColor: 'rgba(0,0,0,0.4)' }
+      }
+    }]
   };
-  checkECharts();
+
+  chart.setOption(option);
+}
+
+document.getElementById('terrain-select').addEventListener('change', e => {
+  terrainType = e.target.value;
+  updateChart();
 });
 
-(function() {
-  const chart = echarts.init(document.getElementById('dem-3d-chart'));
-  
-  let terrainType = 'cone';
-  let resolution = 30;
-  
-  function generateDEM(type, res) {
-    const data = [];
-    const extent = 100; // meters
-    const step = extent / res;
-    
-    for (let i = 0; i < res; i++) {
-      for (let j = 0; j < res; j++) {
-        const x = (j - res/2) * step;
-        const y = (i - res/2) * step;
-        let z;
-        
-        switch(type) {
-          case 'cone':
-            z = 50 - Math.sqrt(x*x + y*y) * 0.5;
-            break;
-          case 'saddle':
-            z = (x*x - y*y) * 0.01;
-            break;
-          case 'plane':
-            z = 10 + x * 0.3 + y * 0.2;
-            break;
-          case 'ridge':
-            z = 30 - Math.abs(x) * 0.3 + y * 0.1;
-            break;
-          case 'valley':
-            z = Math.abs(y) * 0.3 - 20 + x * 0.1;
-            break;
-        }
-        
-        data.push([j, i, z]);
-      }
-    }
-    
-    return data;
-  }
-  
-  function updateChart() {
-    const data = generateDEM(terrainType, resolution);
-    
-    const option = {
-      title: {
-        text: `Digital Elevation Model: ${terrainType} (${resolution}×${resolution})`,
-        left: 'center'
-      },
-      tooltip: {
-        formatter: function(params) {
-          return `x: ${params.value[0]}<br/>y: ${params.value[1]}<br/>z: ${params.value[2].toFixed(1)} m`;
-        }
-      },
-      visualMap: {
-        show: true,
-        dimension: 2,
-        min: Math.min(...data.map(d => d[2])),
-        max: Math.max(...data.map(d => d[2])),
-        inRange: {
-          color: ['#313695', '#4575b4', '#74add1', '#abd9e9', '#e0f3f8', 
-                  '#ffffbf', '#fee090', '#fdae61', '#f46d43', '#d73027', '#a50026']
-        }
-      },
-      xAxis3D: {
-        type: 'value',
-        name: 'X (East)'
-      },
-      yAxis3D: {
-        type: 'value',
-        name: 'Y (North)'
-      },
-      zAxis3D: {
-        type: 'value',
-        name: 'Elevation (m)'
-      },
-      grid3D: {
-        viewControl: {
-          projection: 'perspective',
-          autoRotate: false,
-          distance: 200
-        },
-        light: {
-          main: {
-            intensity: 1.2,
-            shadow: true
-          },
-          ambient: {
-            intensity: 0.3
-          }
-        }
-      },
-      series: [{
-        type: 'surface',
-        data: data,
-        shading: 'color',
-        itemStyle: {
-          opacity: 0.9
-        }
-      }]
-    };
-    
-    chart.setOption(option);
-  }
-  
-  document.getElementById('terrain-select').addEventListener('change', (e) => {
-    terrainType = e.target.value;
-    updateChart();
-  });
-  
-  document.getElementById('resolution-slider').addEventListener('input', (e) => {
-    resolution = parseInt(e.target.value);
-    document.getElementById('resolution-value').textContent = resolution;
-    updateChart();
-  });
-  
+document.getElementById('resolution-slider').addEventListener('input', e => {
+  resolution = parseInt(e.target.value);
+  document.getElementById('resolution-value').textContent = resolution;
   updateChart();
-  
-  window.addEventListener('resize', () => chart.resize());
-})();
+});
+
+updateChart();
+window.addEventListener('resize', () => chart.resize());
 </script>
 
 **Try this:**

@@ -212,122 +212,101 @@ Below is an interactive model showing vertical light profiles.
 </div>
 
 <script type="module">
-await new Promise(resolve => {
-  const checkECharts = () => {
-    if (typeof echarts !== 'undefined') resolve();
-    else setTimeout(checkECharts, 50);
+while (!window.echarts) await new Promise(r => setTimeout(r, 50));
+
+const chart = window.echarts.init(document.getElementById('light-profile-chart'));
+
+let LAI = 6;
+let k = 0.5;
+let I0 = 1000;
+
+function updateChart() {
+  const profileData = [];
+  const nSteps = 100;
+
+  for (let i = 0; i <= nSteps; i++) {
+    const L = (LAI / nSteps) * i;
+    const I = I0 * Math.exp(-k * L);
+    const relativeHeight = 1 - (i / nSteps);
+    profileData.push([I, relativeHeight]);
+  }
+
+  const floorLight = I0 * Math.exp(-k * LAI);
+  const floorPercent = (floorLight / I0 * 100).toFixed(1);
+
+  document.getElementById('floor-light').innerHTML =
+    `<strong>Forest floor light:</strong> ${floorLight.toFixed(1)} μmol/m²/s (${floorPercent}% of incoming)`;
+
+  const option = {
+    title: {
+      text: `Vertical Light Profile: LAI = ${LAI}, k = ${k.toFixed(2)}`,
+      left: 'center'
+    },
+    tooltip: {
+      trigger: 'axis',
+      formatter: params => {
+        const relHeight = params[0].value[1];
+        const light = params[0].value[0];
+        const percent = (light / I0 * 100).toFixed(1);
+        return `Relative height: ${(relHeight * 100).toFixed(0)}%<br/>Light: ${light.toFixed(1)} μmol/m²/s (${percent}%)`;
+      }
+    },
+    grid: { left: 80, right: 40, top: 60, bottom: 60 },
+    xAxis: {
+      type: 'value',
+      name: 'Light Intensity (μmol/m²/s)',
+      nameLocation: 'middle',
+      nameGap: 30,
+      min: 0,
+      max: Math.max(I0 * 1.1, 100)
+    },
+    yAxis: {
+      type: 'value',
+      name: 'Relative Height (1 = top, 0 = floor)',
+      nameLocation: 'middle',
+      nameGap: 60,
+      min: 0,
+      max: 1,
+      axisLabel: { formatter: '{value}' }
+    },
+    series: [{
+      data: profileData,
+      type: 'line',
+      smooth: true,
+      lineStyle: { color: '#F0177A', width: 3 },
+      areaStyle: {
+        color: new window.echarts.graphic.LinearGradient(0, 0, 1, 0, [
+          { offset: 0, color: 'rgba(240, 23, 122, 0.3)' },
+          { offset: 1, color: 'rgba(240, 23, 122, 0.05)' }
+        ])
+      },
+      showSymbol: false
+    }]
   };
-  checkECharts();
+
+  chart.setOption(option);
+}
+
+document.getElementById('lai-slider').addEventListener('input', e => {
+  LAI = parseFloat(e.target.value);
+  document.getElementById('lai-value').textContent = LAI.toFixed(1);
+  updateChart();
 });
 
-(function() {
-  const chart = echarts.init(document.getElementById('light-profile-chart'));
-  
-  let LAI = 6;
-  let k = 0.5;
-  let I0 = 1000;
-  
-  function updateChart() {
-    const profileData = [];
-    const nSteps = 100;
-    
-    for (let i = 0; i <= nSteps; i++) {
-      const L = (LAI / nSteps) * i; // Cumulative LAI from top
-      const I = I0 * Math.exp(-k * L);
-      const relativeHeight = 1 - (i / nSteps); // 1 = top, 0 = bottom
-      profileData.push([I, relativeHeight]);
-    }
-    
-    const floorLight = I0 * Math.exp(-k * LAI);
-    const floorPercent = (floorLight / I0 * 100).toFixed(1);
-    
-    document.getElementById('floor-light').innerHTML = 
-      `<strong>Forest floor light:</strong> ${floorLight.toFixed(1)} μmol/m²/s (${floorPercent}% of incoming)`;
-    
-    const option = {
-      title: {
-        text: `Vertical Light Profile: LAI = ${LAI}, k = ${k.toFixed(2)}`,
-        left: 'center'
-      },
-      tooltip: {
-        trigger: 'axis',
-        formatter: params => {
-          const relHeight = params[0].value[1];
-          const light = params[0].value[0];
-          const percent = (light / I0 * 100).toFixed(1);
-          return `Relative height: ${(relHeight * 100).toFixed(0)}%<br/>Light: ${light.toFixed(1)} μmol/m²/s (${percent}%)`;
-        }
-      },
-      grid: {
-        left: 80,
-        right: 40,
-        top: 60,
-        bottom: 60
-      },
-      xAxis: {
-        type: 'value',
-        name: 'Light Intensity (μmol/m²/s)',
-        nameLocation: 'middle',
-        nameGap: 30,
-        min: 0,
-        max: Math.max(I0 * 1.1, 100)
-      },
-      yAxis: {
-        type: 'value',
-        name: 'Relative Height (1 = top, 0 = floor)',
-        nameLocation: 'middle',
-        nameGap: 60,
-        min: 0,
-        max: 1,
-        axisLabel: {
-          formatter: '{value}'
-        }
-      },
-      series: [
-        {
-          data: profileData,
-          type: 'line',
-          smooth: true,
-          lineStyle: {
-            color: '#F0177A',
-            width: 3
-          },
-          areaStyle: {
-            color: new echarts.graphic.LinearGradient(0, 0, 1, 0, [
-              { offset: 0, color: 'rgba(240, 23, 122, 0.3)' },
-              { offset: 1, color: 'rgba(240, 23, 122, 0.05)' }
-            ])
-          },
-          showSymbol: false
-        }
-      ]
-    };
-    
-    chart.setOption(option);
-  }
-  
-  document.getElementById('lai-slider').addEventListener('input', (e) => {
-    LAI = parseFloat(e.target.value);
-    document.getElementById('lai-value').textContent = LAI.toFixed(1);
-    updateChart();
-  });
-  
-  document.getElementById('k-slider').addEventListener('input', (e) => {
-    k = parseFloat(e.target.value);
-    document.getElementById('k-value').textContent = k.toFixed(2);
-    updateChart();
-  });
-  
-  document.getElementById('i0-slider').addEventListener('input', (e) => {
-    I0 = parseFloat(e.target.value);
-    document.getElementById('i0-value').textContent = I0;
-    updateChart();
-  });
-  
+document.getElementById('k-slider').addEventListener('input', e => {
+  k = parseFloat(e.target.value);
+  document.getElementById('k-value').textContent = k.toFixed(2);
   updateChart();
-  
-  window.addEventListener('resize', () => chart.resize());
-})();
+});
+
+document.getElementById('i0-slider').addEventListener('input', e => {
+  I0 = parseFloat(e.target.value);
+  document.getElementById('i0-value').textContent = I0;
+  updateChart();
+});
+
+updateChart();
+window.addEventListener('resize', () => chart.resize());
 </script>
 
 **Try this:**

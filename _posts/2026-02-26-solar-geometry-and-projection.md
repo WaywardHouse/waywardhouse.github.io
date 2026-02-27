@@ -230,195 +230,159 @@ Below is an interactive model showing solar flux on a tilted surface.
 </div>
 
 <script type="module">
-await new Promise(resolve => {
-  const checkECharts = () => {
-    if (typeof echarts !== 'undefined') resolve();
-    else setTimeout(checkECharts, 50);
+while (!window.echarts) await new Promise(r => setTimeout(r, 50));
+
+const chart = window.echarts.init(document.getElementById('solar-diagram'));
+
+let slope = 30;
+let aspect = 180;
+let solarElev = 45;
+let solarAz = 180;
+let S0 = 1000;
+
+function deg2rad(deg) { return deg * Math.PI / 180; }
+function rad2deg(rad) { return rad * 180 / Math.PI; }
+
+function sphericalToCartesian(elevation, azimuth) {
+  const elev_rad = deg2rad(elevation);
+  const az_rad = deg2rad(azimuth);
+  return {
+    x: Math.cos(elev_rad) * Math.sin(az_rad),
+    y: Math.cos(elev_rad) * Math.cos(az_rad),
+    z: Math.sin(elev_rad)
   };
-  checkECharts();
+}
+
+function surfaceNormal(slope_deg, aspect_deg) {
+  const slope_rad = deg2rad(slope_deg);
+  const aspect_rad = deg2rad(aspect_deg);
+  return {
+    x: Math.sin(slope_rad) * Math.sin(aspect_rad),
+    y: Math.sin(slope_rad) * Math.cos(aspect_rad),
+    z: Math.cos(slope_rad)
+  };
+}
+
+function dotProduct(a, b) {
+  return a.x * b.x + a.y * b.y + a.z * b.z;
+}
+
+function updateCalculation() {
+  const sunVec = sphericalToCartesian(solarElev, solarAz);
+  const normalVec = surfaceNormal(slope, aspect);
+
+  const cosTheta = dotProduct(sunVec, normalVec);
+  const theta = rad2deg(Math.acos(Math.max(0, Math.min(1, cosTheta))));
+  const effectiveFlux = Math.max(0, S0 * cosTheta);
+
+  const horizontalCos = Math.sin(deg2rad(solarElev));
+  const horizontalFlux = S0 * horizontalCos;
+  const percentDiff = ((effectiveFlux - horizontalFlux) / horizontalFlux * 100).toFixed(1);
+
+  document.getElementById('incidence-angle').innerHTML =
+    `<strong>Angle of incidence:</strong> ${theta.toFixed(1)}°`;
+  document.getElementById('effective-flux').innerHTML =
+    `<strong>Effective flux on surface:</strong> ${effectiveFlux.toFixed(1)} W/m²`;
+  document.getElementById('comparison').innerHTML =
+    `<strong>Compared to horizontal:</strong> ${percentDiff > 0 ? '+' : ''}${percentDiff}% (${horizontalFlux.toFixed(1)} W/m² on horizontal surface)`;
+
+  updateChart();
+}
+
+function updateChart() {
+  const polarData = [];
+  const aspectValues = [];
+
+  for (let asp = 0; asp <= 360; asp += 10) {
+    const normalVec = surfaceNormal(slope, asp);
+    const sunVec = sphericalToCartesian(solarElev, solarAz);
+    const cosTheta = dotProduct(sunVec, normalVec);
+    aspectValues.push(asp);
+    polarData.push(Math.max(0, S0 * cosTheta));
+  }
+
+  const option = {
+    title: {
+      text: `Solar Flux vs. Aspect (slope = ${slope}°, sun elev = ${solarElev}°)`,
+      left: 'center'
+    },
+    polar: { radius: '70%' },
+    angleAxis: {
+      type: 'value',
+      startAngle: 90,
+      min: 0,
+      max: 360,
+      interval: 45,
+      axisLabel: {
+        formatter: value => {
+          const dirs = {0: 'N', 45: 'NE', 90: 'E', 135: 'SE', 180: 'S', 225: 'SW', 270: 'W', 315: 'NW'};
+          return dirs[value] || value + '°';
+        }
+      }
+    },
+    radiusAxis: {
+      min: 0,
+      max: S0,
+      axisLabel: { formatter: '{value} W/m²' }
+    },
+    series: [{
+      type: 'line',
+      data: polarData.map((flux, i) => [aspectValues[i], flux]),
+      coordinateSystem: 'polar',
+      lineStyle: { color: '#F0177A', width: 3 },
+      areaStyle: { color: 'rgba(240, 23, 122, 0.2)' },
+      markPoint: {
+        data: [{
+          coord: [aspect, Math.max(0, S0 * dotProduct(
+            sphericalToCartesian(solarElev, solarAz),
+            surfaceNormal(slope, aspect)
+          ))],
+          symbol: 'circle',
+          symbolSize: 12,
+          itemStyle: { color: '#00A8E8' },
+          label: { show: true, formatter: 'Current', position: 'top' }
+        }]
+      }
+    }]
+  };
+
+  chart.setOption(option);
+}
+
+document.getElementById('slope-slider').addEventListener('input', e => {
+  slope = parseFloat(e.target.value);
+  document.getElementById('slope-value').textContent = slope;
+  updateCalculation();
 });
 
-(function() {
-  const chart = echarts.init(document.getElementById('solar-diagram'));
-  
-  let slope = 30;
-  let aspect = 180;
-  let solarElev = 45;
-  let solarAz = 180;
-  let S0 = 1000;
-  
-  function deg2rad(deg) { return deg * Math.PI / 180; }
-  function rad2deg(rad) { return rad * 180 / Math.PI; }
-  
-  function sphericalToCartesian(elevation, azimuth) {
-    // Elevation: angle above horizon (0-90°)
-    // Azimuth: 0°=N, 90°=E, 180°=S, 270°=W
-    const elev_rad = deg2rad(elevation);
-    const az_rad = deg2rad(azimuth);
-    
-    // Convert to Cartesian (x=East, y=North, z=Up)
-    const x = Math.cos(elev_rad) * Math.sin(az_rad);
-    const y = Math.cos(elev_rad) * Math.cos(az_rad);
-    const z = Math.sin(elev_rad);
-    
-    return {x, y, z};
-  }
-  
-  function surfaceNormal(slope_deg, aspect_deg) {
-    // Normal to a slope surface
-    // Slope: 0° = horizontal, 90° = vertical
-    // Aspect: direction the slope faces
-    const slope_rad = deg2rad(slope_deg);
-    const aspect_rad = deg2rad(aspect_deg);
-    
-    const x = Math.sin(slope_rad) * Math.sin(aspect_rad);
-    const y = Math.sin(slope_rad) * Math.cos(aspect_rad);
-    const z = Math.cos(slope_rad);
-    
-    return {x, y, z};
-  }
-  
-  function dotProduct(a, b) {
-    return a.x * b.x + a.y * b.y + a.z * b.z;
-  }
-  
-  function updateCalculation() {
-    const sunVec = sphericalToCartesian(solarElev, solarAz);
-    const normalVec = surfaceNormal(slope, aspect);
-    
-    const cosTheta = dotProduct(sunVec, normalVec);
-    const theta = rad2deg(Math.acos(Math.max(0, Math.min(1, cosTheta))));
-    const effectiveFlux = Math.max(0, S0 * cosTheta);
-    
-    // Horizontal surface comparison
-    const horizontalCos = Math.sin(deg2rad(solarElev));
-    const horizontalFlux = S0 * horizontalCos;
-    const percentDiff = ((effectiveFlux - horizontalFlux) / horizontalFlux * 100).toFixed(1);
-    
-    document.getElementById('incidence-angle').innerHTML = 
-      `<strong>Angle of incidence:</strong> ${theta.toFixed(1)}°`;
-    document.getElementById('effective-flux').innerHTML = 
-      `<strong>Effective flux on surface:</strong> ${effectiveFlux.toFixed(1)} W/m²`;
-    document.getElementById('comparison').innerHTML = 
-      `<strong>Compared to horizontal:</strong> ${percentDiff > 0 ? '+' : ''}${percentDiff}% (${horizontalFlux.toFixed(1)} W/m² on horizontal surface)`;
-    
-    // Visualize as polar plot showing flux vs aspect for fixed slope
-    updateChart();
-  }
-  
-  function updateChart() {
-    const polarData = [];
-    const aspectValues = [];
-    
-    for (let asp = 0; asp <= 360; asp += 10) {
-      const normalVec = surfaceNormal(slope, asp);
-      const sunVec = sphericalToCartesian(solarElev, solarAz);
-      const cosTheta = dotProduct(sunVec, normalVec);
-      const flux = Math.max(0, S0 * cosTheta);
-      
-      aspectValues.push(asp);
-      polarData.push(flux);
-    }
-    
-    const option = {
-      title: {
-        text: `Solar Flux vs. Aspect (slope = ${slope}°, sun elev = ${solarElev}°)`,
-        left: 'center'
-      },
-      polar: {
-        radius: '70%'
-      },
-      angleAxis: {
-        type: 'value',
-        startAngle: 90,
-        min: 0,
-        max: 360,
-        interval: 45,
-        axisLabel: {
-          formatter: function(value) {
-            const dirs = {0: 'N', 45: 'NE', 90: 'E', 135: 'SE', 180: 'S', 225: 'SW', 270: 'W', 315: 'NW'};
-            return dirs[value] || value + '°';
-          }
-        }
-      },
-      radiusAxis: {
-        min: 0,
-        max: S0,
-        axisLabel: {
-          formatter: '{value} W/m²'
-        }
-      },
-      series: [{
-        type: 'line',
-        data: polarData.map((flux, i) => [aspectValues[i], flux]),
-        coordinateSystem: 'polar',
-        lineStyle: {
-          color: '#F0177A',
-          width: 3
-        },
-        areaStyle: {
-          color: 'rgba(240, 23, 122, 0.2)'
-        },
-        markPoint: {
-          data: [{
-            coord: [aspect, Math.max(0, S0 * dotProduct(
-              sphericalToCartesian(solarElev, solarAz),
-              surfaceNormal(slope, aspect)
-            ))],
-            symbol: 'circle',
-            symbolSize: 12,
-            itemStyle: {
-              color: '#00A8E8'
-            },
-            label: {
-              show: true,
-              formatter: 'Current',
-              position: 'top'
-            }
-          }]
-        }
-      }]
-    };
-    
-    chart.setOption(option);
-  }
-  
-  document.getElementById('slope-slider').addEventListener('input', (e) => {
-    slope = parseFloat(e.target.value);
-    document.getElementById('slope-value').textContent = slope;
-    updateCalculation();
-  });
-  
-  document.getElementById('aspect-slider').addEventListener('input', (e) => {
-    aspect = parseFloat(e.target.value);
-    const dir = {0: 'N', 90: 'E', 180: 'S', 270: 'W'}[aspect] || '';
-    document.getElementById('aspect-value').textContent = `${aspect}° ${dir ? '(' + dir + ')' : ''}`;
-    updateCalculation();
-  });
-  
-  document.getElementById('elevation-slider').addEventListener('input', (e) => {
-    solarElev = parseFloat(e.target.value);
-    document.getElementById('elevation-value').textContent = solarElev;
-    updateCalculation();
-  });
-  
-  document.getElementById('azimuth-slider').addEventListener('input', (e) => {
-    solarAz = parseFloat(e.target.value);
-    const dir = {0: 'N', 90: 'E', 180: 'S', 270: 'W'}[solarAz] || '';
-    document.getElementById('azimuth-value').textContent = `${solarAz}° ${dir ? '(' + dir + ')' : ''}`;
-    updateCalculation();
-  });
-  
-  document.getElementById('flux-slider').addEventListener('input', (e) => {
-    S0 = parseFloat(e.target.value);
-    document.getElementById('flux-value').textContent = S0;
-    updateCalculation();
-  });
-  
+document.getElementById('aspect-slider').addEventListener('input', e => {
+  aspect = parseFloat(e.target.value);
+  const dir = {0: 'N', 90: 'E', 180: 'S', 270: 'W'}[aspect] || '';
+  document.getElementById('aspect-value').textContent = `${aspect}° ${dir ? '(' + dir + ')' : ''}`;
   updateCalculation();
-  
-  window.addEventListener('resize', () => chart.resize());
-})();
+});
+
+document.getElementById('elevation-slider').addEventListener('input', e => {
+  solarElev = parseFloat(e.target.value);
+  document.getElementById('elevation-value').textContent = solarElev;
+  updateCalculation();
+});
+
+document.getElementById('azimuth-slider').addEventListener('input', e => {
+  solarAz = parseFloat(e.target.value);
+  const dir = {0: 'N', 90: 'E', 180: 'S', 270: 'W'}[solarAz] || '';
+  document.getElementById('azimuth-value').textContent = `${solarAz}° ${dir ? '(' + dir + ')' : ''}`;
+  updateCalculation();
+});
+
+document.getElementById('flux-slider').addEventListener('input', e => {
+  S0 = parseFloat(e.target.value);
+  document.getElementById('flux-value').textContent = S0;
+  updateCalculation();
+});
+
+updateCalculation();
+window.addEventListener('resize', () => chart.resize());
 </script>
 
 **Try this:**
