@@ -4,15 +4,88 @@ title: About
 permalink: /about/
 ---
 
-Waywardhouse is an independent publishing project focused on economic geography, environmental systems, and political economy. The work here sits at the intersection of place, ecology, and the political structures that shape both.
+Wayward House is an independent publishing project dedicated to restoring geography as a systems discipline.
 
-## What gets published here
+We explore the dynamic relationships between people, place, ecology, and economic structures — and we make those relationships understandable.
 
-Long-form analysis and essays on:
+Our work builds practical on-ramps to the mathematics, models, and computational tools that underpin environmental and spatial thinking. Wherever possible, we favor open-source software, accessible hardware, and reproducible methods.
 
-- **Economic geography** — how economic activity is spatially organised, and why location still matters
-- **Environmental systems** — the physical and ecological systems that underpin economies and communities
-- **Political economy** — who benefits, who bears costs, and how those distributions get decided
+Wayward House exists to equip a new generation of systems thinkers with the intellectual tools to understand — and responsibly shape — the world we share.
+
+## What Gets Published Here
+
+Wayward House publishes structured work at the intersection of geography, environmental systems, and political economy.
+
+The material is organised into two complementary streams.
+
+⸻
+
+1. Long-Form Systems Analysis
+
+Extended essays that examine how place, ecology, infrastructure, and power interact.
+
+These pieces are narrative and analytical. They draw on data, but their purpose is structural clarity:
+	•	How economic activity is spatially organised
+	•	How environmental constraints shape regional outcomes
+	•	How energy and trade systems influence political decisions
+	•	Who benefits from particular arrangements — and who bears the cost
+
+This is geography as explanatory infrastructure.
+
+⸻
+
+2. Computational Geography & Environmental Modeling
+
+A structured series of modeling essays that rebuild environmental and spatial reasoning from first principles.
+
+Each piece develops:
+
+	•	A clearly defined question
+	•	A conceptual model
+	•	Governing equations
+	•	Worked mathematical examples
+	•	Interactive visualisation
+	•	Explicit prerequisites and difficulty level
+
+These essays bridge three domains:
+
+	•	Mathematical foundations
+	•	Spatial and computational methods
+	•	Earth system processes
+
+They are designed to lower the barrier to quantitative geography — not by simplifying it, but by building on-ramps to it.
+
+Over time, these modeling essays evolve into:
+
+	•	Reproducible computational notebooks
+	•	Open datasets
+	•	Transparent modeling workflows
+	•	Modular learning sequences
+
+The goal is literacy in systems — not surface familiarity.
+
+⸻
+
+## How the Pieces Fit Together
+
+The long-form essays explore structure.
+
+The modeling essays build the tools required to analyse that structure.
+
+Together, they form an integrated body of work:
+
+	•	Theory connected to computation
+	•	Computation grounded in environmental reality
+	•	Environmental reality situated within political economy
+
+⸻
+
+Design Principles
+	•	Mathematical clarity without intimidation
+	•	Open-source software and affordable tools wherever possible
+	•	Reproducibility over rhetoric
+	•	Modularity that allows cumulative learning
+	•	Geography treated as a technical discipline with human consequences
 
 ## Editorial approach
 
