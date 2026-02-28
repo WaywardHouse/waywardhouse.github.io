@@ -704,9 +704,3 @@ $$2[\text{Ca}^{2+}] + 2[\text{Mg}^{2+}] + [\text{Na}^+] + [\text{K}^+] = [\text{
 - Critical for understanding glacier hydrology, water resources, and biogeochemical cycles
 
 ---
-
-🎉 **ESSAY 47 COMPLETE! That's 13 essays tonight!** 🎉
-
-**Total corpus: 47 ESSAYS!**
-
----
