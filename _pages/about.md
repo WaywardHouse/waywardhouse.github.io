@@ -25,10 +25,10 @@ The material is organised into two complementary streams.
 Extended essays that examine how place, ecology, infrastructure, and power interact.
 
 These pieces are narrative and analytical. They draw on data, but their purpose is structural clarity:
-	•	How economic activity is spatially organised
-	•	How environmental constraints shape regional outcomes
-	•	How energy and trade systems influence political decisions
-	•	Who benefits from particular arrangements — and who bears the cost
+ - How economic activity is spatially organised
+ - How environmental constraints shape regional outcomes
+ - How energy and trade systems influence political decisions
+ - Who benefits from particular arrangements — and who bears the cost
 
 This is geography as explanatory infrastructure.
 
@@ -40,27 +40,27 @@ A structured series of modeling essays that rebuild environmental and spatial re
 
 Each piece develops:
 
-	•	A clearly defined question
-	•	A conceptual model
-	•	Governing equations
-	•	Worked mathematical examples
-	•	Interactive visualisation
-	•	Explicit prerequisites and difficulty level
+ - A clearly defined question
+ - A conceptual model
+ - Governing equations
+ - Worked mathematical examples
+ - Interactive visualisation
+ - Explicit prerequisites and difficulty level
 
 These essays bridge three domains:
 
-	•	Mathematical foundations
-	•	Spatial and computational methods
-	•	Earth system processes
+ - Mathematical foundations
+ - Spatial and computational methods
+ - Earth system processes
 
 They are designed to lower the barrier to quantitative geography — not by simplifying it, but by building on-ramps to it.
 
 Over time, these modeling essays evolve into:
 
-	•	Reproducible computational notebooks
-	•	Open datasets
-	•	Transparent modeling workflows
-	•	Modular learning sequences
+ - Reproducible computational notebooks
+ - Open datasets
+ - Transparent modeling workflows
+ - Modular learning sequences
 
 The goal is literacy in systems — not surface familiarity.
 
@@ -74,18 +74,18 @@ The modeling essays build the tools required to analyse that structure.
 
 Together, they form an integrated body of work:
 
-	•	Theory connected to computation
-	•	Computation grounded in environmental reality
-	•	Environmental reality situated within political economy
+ - Theory connected to computation
+ - Computation grounded in environmental reality
+ - Environmental reality situated within political economy
 
 ⸻
 
 Design Principles
-	•	Mathematical clarity without intimidation
-	•	Open-source software and affordable tools wherever possible
-	•	Reproducibility over rhetoric
-	•	Modularity that allows cumulative learning
-	•	Geography treated as a technical discipline with human consequences
+- Mathematical clarity without intimidation
+- Open-source software and affordable tools wherever possible
+- Reproducibility over rhetoric
+- Modularity that allows cumulative learning
+- Geography treated as a technical discipline with human consequences
 
 ## Editorial approach
 
