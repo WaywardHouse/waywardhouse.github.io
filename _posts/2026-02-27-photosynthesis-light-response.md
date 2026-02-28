@@ -4,8 +4,8 @@ title: "Photosynthesis and Light Response"
 subtitle: "Converting solar energy to chemical energy — the light response curve"
 date: 2026-02-26
 categories: [modeling]
-series: computational-geography-lab
-series_order: 20
+series: computational-geography-environmental
+series_order: 8
 cluster: H
 cluster_title: "Ecosystem Processes"
 tags:

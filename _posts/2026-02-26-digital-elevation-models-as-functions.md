@@ -4,7 +4,7 @@ title: "Digital Elevation Models as Functions"
 subtitle: "Representing terrain as a function of two variables — from continuous surfaces to discrete grids"
 date: 2026-02-26
 categories: [modeling]
-series: computational-geography-lab
+series: computational-geography-foundations
 series_order: 7
 cluster: C
 cluster_title: "Terrain and Spatial Derivatives"

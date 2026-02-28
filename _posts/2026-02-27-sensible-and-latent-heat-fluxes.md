@@ -4,8 +4,8 @@ title: "Sensible and Latent Heat Fluxes"
 subtitle: "How net radiation is partitioned between heating air and evaporating water"
 date: 2026-02-26
 categories: [modeling]
-series: computational-geography-lab
-series_order: 18
+series: computational-geography-environmental
+series_order: 6
 cluster: G
 cluster_title: "Surface Energy Balance"
 tags:

@@ -4,7 +4,7 @@ title: "Earth as a Rotating Sphere"
 subtitle: "Spherical coordinates, angular velocity, and the geometry of our rotating planet"
 date: 2026-02-26
 categories: [modeling]
-series: computational-geography-lab
+series: computational-geography-foundations
 series_order: 12
 cluster: E
 cluster_title: "Observing the Earth"

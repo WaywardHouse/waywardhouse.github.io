@@ -4,8 +4,8 @@ title: "Wind Profiles and Atmospheric Turbulence"
 subtitle: "The logarithmic law and how roughness controls momentum transfer"
 date: 2026-02-26
 categories: [modeling]
-series: computational-geography-lab
-series_order: 23
+series: computational-geography-environmental
+series_order: 11
 cluster: I
 cluster_title: "Atmospheric Interactions"
 tags:

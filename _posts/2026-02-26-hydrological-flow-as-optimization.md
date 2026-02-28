@@ -4,7 +4,7 @@ title: "Hydrological Flow as Optimization"
 subtitle: "From local slopes to global watersheds — routing water across a DEM"
 date: 2026-02-26
 categories: [modeling]
-series: computational-geography-lab
+series: computational-geography-foundations
 series_order: 9
 cluster: C
 cluster_title: "Terrain and Spatial Derivatives"

@@ -4,8 +4,8 @@ title: "Soil Moisture Dynamics"
 subtitle: "Water balance, infiltration, and plant-available water in the root zone"
 date: 2026-02-26
 categories: [modeling]
-series: computational-geography-lab
-series_order: 21
+series: computational-geography-environmental
+series_order: 9
 cluster: H
 cluster_title: "Ecosystem Processes"
 tags:

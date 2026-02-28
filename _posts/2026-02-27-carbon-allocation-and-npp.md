@@ -4,8 +4,8 @@ title: "Carbon Allocation and Net Primary Productivity"
 subtitle: "From photosynthesis to biomass — how ecosystems build and burn carbon"
 date: 2026-02-26
 categories: [modeling]
-series: computational-geography-lab
-series_order: 22
+series: computational-geography-environmental
+series_order: 10
 cluster: H
 cluster_title: "Ecosystem Processes"
 tags:

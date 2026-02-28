@@ -4,7 +4,7 @@ title: "Solar Geometry and Projection"
 subtitle: "Trigonometry and the dot product — how surface orientation affects energy receipt"
 date: 2026-02-26
 categories: [modeling]
-series: computational-geography-lab
+series: computational-geography-foundations
 series_order: 6
 cluster: B
 cluster_title: "Energy and Attenuation"

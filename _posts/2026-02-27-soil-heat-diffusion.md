@@ -4,8 +4,8 @@ title: "Soil Heat Diffusion"
 subtitle: "Temperature waves propagating into the ground — diurnal and seasonal cycles"
 date: 2026-02-26
 categories: [modeling]
-series: computational-geography-lab
-series_order: 19
+series: computational-geography-environmental
+series_order: 7
 cluster: G
 cluster_title: "Surface Energy Balance"
 tags:

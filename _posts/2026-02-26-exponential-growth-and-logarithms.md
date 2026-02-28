@@ -4,7 +4,7 @@ title: "Exponential Growth and Logarithms"
 subtitle: "When the rate of change depends on how much you already have"
 date: 2026-02-26
 categories: [modeling]
-series: computational-geography-lab
+series: computational-geography-foundations
 series_order: 3
 cluster: A
 cluster_title: "Modeling Change"

@@ -4,8 +4,8 @@ title: "Temperature and Moisture Gradients"
 subtitle: "Atmospheric stability, inversions, and the vertical structure of humidity"
 date: 2026-02-26
 categories: [modeling]
-series: computational-geography-lab
-series_order: 24
+series: computational-geography-environmental
+series_order: 12
 cluster: I
 cluster_title: "Atmospheric Interactions"
 tags:

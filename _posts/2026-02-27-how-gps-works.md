@@ -4,8 +4,8 @@ title: "How GPS Works"
 subtitle: "Trilateration, clock bias, and the geometry of space-based positioning"
 date: 2026-02-26
 categories: [modeling]
-series: computational-geography-lab
-series_order: 16
+series: computational-geography-environmental
+series_order: 4
 cluster: F
 cluster_title: "Orbital Mechanics"
 tags:

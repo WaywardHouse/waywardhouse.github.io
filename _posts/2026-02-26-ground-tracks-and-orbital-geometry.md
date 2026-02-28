@@ -4,8 +4,8 @@ title: "Ground Tracks and Orbital Geometry"
 subtitle: "Mapping satellite paths on Earth's surface as the planet rotates beneath"
 date: 2026-02-26
 categories: [modeling]
-series: computational-geography-lab
-series_order: 14
+series: computational-geography-environmental
+series_order: 2
 cluster: F
 cluster_title: "Orbital Mechanics"
 tags:

@@ -4,8 +4,8 @@ title: "Circular Orbits and Kepler's Third Law"
 subtitle: "Deriving orbital mechanics from Newton's laws — why satellites stay up"
 date: 2026-02-26
 categories: [modeling]
-series: computational-geography-lab
-series_order: 13
+series: computational-geography-environmental
+series_order: 1
 cluster: F
 cluster_title: "Orbital Mechanics"
 tags:

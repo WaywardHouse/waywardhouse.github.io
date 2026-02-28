@@ -4,7 +4,7 @@ title: "Spatial Diffusion of Innovation"
 subtitle: "How ideas, diseases, and technologies spread across networks over time"
 date: 2026-02-26
 categories: [modeling]
-series: computational-geography-lab
+series: computational-geography-foundations
 series_order: 11
 cluster: D
 cluster_title: "Human Systems as Mathematical Systems"

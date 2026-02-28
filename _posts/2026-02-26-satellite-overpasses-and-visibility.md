@@ -4,8 +4,8 @@ title: "Satellite Overpasses and Visibility"
 subtitle: "Predicting when and where satellites are visible from the ground"
 date: 2026-02-26
 categories: [modeling]
-series: computational-geography-lab
-series_order: 15
+series: computational-geography-environmental
+series_order: 3
 cluster: F
 cluster_title: "Orbital Mechanics"
 tags:

@@ -4,7 +4,7 @@ title: "Gravity Models of Trade and Migration"
 subtitle: "Distance decay and inverse power laws in human geography"
 date: 2026-02-26
 categories: [modeling]
-series: computational-geography-lab
+series: computational-geography-foundations
 series_order: 10
 cluster: D
 cluster_title: "Human Systems as Mathematical Systems"
