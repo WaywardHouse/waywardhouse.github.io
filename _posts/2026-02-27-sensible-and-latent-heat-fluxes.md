@@ -662,7 +662,3 @@ This is why hot air can hold much more moisture than cold air (and why your glas
 - **Surface resistance** ($r_s$) controls water availability
 - Desert: high $r_s$, high $\beta$ → hot and dry
 - Rainforest: low $r_s$, low $\beta$ → cool and humid
-
-**Next:** In Essay 19, we explore **ground heat flux** and how heat diffuses into the soil—temperature waves, thermal diffusivity, and the diurnal cycle.
-
----

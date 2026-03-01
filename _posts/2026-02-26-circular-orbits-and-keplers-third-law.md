@@ -588,7 +588,3 @@ $$v = \frac{2\pi r}{T} = \omega r$$
 - Satellite mass does not affect orbital parameters
 - Orbit is continuous free fall — gravity provides centripetal force
 - Lower orbits are faster but have shorter periods
-
-**Next:** In Essay 14, we calculate **ground tracks** — the path a satellite traces on Earth's surface as the planet rotates beneath it. This combines orbital motion with Earth's rotation.
-
----

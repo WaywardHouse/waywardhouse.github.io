@@ -801,10 +801,4 @@ $$f_d = \frac{2 \times 7000}{0.06} = 233 \text{ kHz}$$
 - SAR interferometry enables millimeter-scale deformation measurement
 - Critical technology for operational Earth observation and emergency response
 
-**Series 5 Progress: 5 of 8 essays complete**
-
-Remaining: InSAR (57), Gravity (58), Passive Microwave (59)
-
-**Total corpus: 56 essays**
-
 ---

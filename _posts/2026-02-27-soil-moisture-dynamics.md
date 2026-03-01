@@ -691,7 +691,3 @@ All incoming water eventually leaves as ET, drainage, or runoff.
 - Sandy soils: Low PAW, fast drainage
 - Clay soils: High PAW, slow drainage
 - Irrigation timing: Apply water when $S$ reaches $S_{\text{crit}}$
-
-**Next:** In Essay 22, we integrate photosynthesis and respiration to model **carbon allocation and NPP**—how plants partition carbon among leaves, stems, roots, and how ecosystems accumulate or lose carbon.
-
----

@@ -819,7 +819,3 @@ Generalizes Euclidean distance, accounting for variance and correlation.
 - **Challenges:** Class confusion, shadows, mixed pixels, insufficient training
 - **Random forest:** Ensemble method with high accuracy for complex classifications
 - Foundation of operational remote sensing land cover products
-
-**Next:** Essay 40 continues remote sensing with **change detection**—comparing images from different dates to find what changed!
-
----

@@ -745,9 +745,3 @@ Where $a$ = Earth radius (6371 km)
 - Challenges include spatial leakage, GIA correction, geocenter motion estimation
 - GRACE Follow-On continues measurements with improved laser ranging capability
 - Critical tool for water resources assessment and climate change monitoring
-
-**Cluster U: Geophysical Remote Sensing (1 of 2 complete)**
-
-One essay remaining: Passive Microwave Radiometry...
-
----

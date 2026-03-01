@@ -925,8 +925,5 @@ while S not empty:
 - **D-infinity** extends to continuous flow direction (more realistic, more complex)
 - Critical for hydrological modeling and environmental management
 
-**CLUSTER M (TERRAIN ANALYSIS) COMPLETE!** 🎉
-
-**Next:** Essay 39 launches **Cluster N (Remote Sensing Applications)** with supervised image classification!
 
 ---

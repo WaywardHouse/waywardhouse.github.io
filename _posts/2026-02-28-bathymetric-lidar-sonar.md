@@ -798,7 +798,3 @@ Trade-off: Resolution vs range.
 - Challenges include suspended sediment, surface waves, and refraction correction
 - Complementary technologies cover full range from shallow clear to deep turbid water
 - Critical for navigation safety, habitat assessment, and hazard modeling
-
-Series 5 progress: 4 of 8 essays complete (Cluster S complete, Cluster T in progress). Remaining essays: SAR, InSAR, GRACE, Passive Microwave. Token budget: ~30k remaining.
-
----

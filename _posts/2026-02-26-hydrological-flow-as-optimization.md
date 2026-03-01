@@ -591,6 +591,4 @@ A **watershed** is a connected component of the flow graph rooted at an outlet.
 - Sinks and flat areas require special handling
 - Flow routing underlies flood modeling, erosion prediction, and watershed delineation
 
-**Next:** In Essay 10, we shift from physical to human geography. We'll model **gravity models of trade and migration** — another example of inverse power laws, but in the social rather than physical domain.
-
 ---

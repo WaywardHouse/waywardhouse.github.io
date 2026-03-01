@@ -576,6 +576,5 @@ Phase plots are powerful tools for understanding dynamical systems without solvi
 - Phase plots visualize dynamics without solving equations
 - Real systems may have time lags, Allee effects, or variable carrying capacity
 
-**Next:** In Essay 5, we shift from population dynamics to physical processes. We'll model **light attenuation in a forest canopy** — another exponential decay process, but this time varying with **vertical position** rather than time. This introduces spatial gradients.
 
 ---

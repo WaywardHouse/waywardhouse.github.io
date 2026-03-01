@@ -787,9 +787,3 @@ $$s_1 s_2^* = r_1 r_2 e^{i(\theta_1 - \theta_2)}$$
 - Atmospheric water vapor represents primary error source requiring correction
 - Time series methods (SBAS, PSI) achieve millimeter/year precision
 - Critical tool for geophysical monitoring and infrastructure safety assessment
-
-**Cluster T: Active Ranging Systems - Complete**
-
-Continuing with Cluster U...
-
----

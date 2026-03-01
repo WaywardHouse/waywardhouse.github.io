@@ -568,7 +568,3 @@ $$\ln x = \ln 10 \cdot \log_{10} x \approx 2.303 \cdot \log_{10} x$$
 - Logarithms invert exponentials: $\ln(e^x) = x$
 - Analytical solutions are exact; numerical solutions approximate by stepping forward in time
 - Exponential growth cannot continue forever — real systems hit limits
-
-**Next:** In Essay 4, we introduce **logistic growth** — what happens when exponential growth slows as it approaches a carrying capacity. This is our first model with feedback and equilibrium.
-
----

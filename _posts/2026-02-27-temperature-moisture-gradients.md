@@ -623,6 +623,4 @@ For adiabatic motion, $\theta$ is conserved, so $d\theta/dz = 0$ defines neutral
 - Daytime: Convective mixing → near-adiabatic lapse rate
 - Nighttime: Radiative cooling → ground-based inversion
 
-**Next:** In Essay 25, we explore **remote sensing vegetation indices** (NDVI, EVI) and how satellites use spectral reflectance to monitor photosynthesis and ecosystem productivity from space.
-
 ---

@@ -755,9 +755,3 @@ Concentration follows Gaussian in crosswind (y) and vertical (z).
 - Challenges include injection height uncertainty, complex terrain, atmospheric chemistry
 - Satellite observations provide real-time emissions estimates via fire radiative power
 - Critical tool for public health protection during wildfire events
-
-**Cluster V: Fire Science - Complete (3 essays)**
-
-Moving to Cluster W: Severe Weather...
-
----

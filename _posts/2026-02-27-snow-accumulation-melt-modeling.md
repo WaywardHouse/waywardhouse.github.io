@@ -804,7 +804,3 @@ $$M_{\text{total}} = 0 + 0 + 5 + 10 + 15 + 20 = 50 \text{ mm}$$
 - **Advanced models:** Energy balance (UEB, SNOBAL) for detailed physics
 - **Spatial variation:** Elevation, aspect, canopy coverage affect accumulation and melt
 - Foundation for understanding mountain water resources and seasonal streamflow
-
-**Next:** In Essay 44, we explore **Snow Water Equivalent Estimation** from remote sensing and ground observations—how do we actually measure what we just modeled?
-
----

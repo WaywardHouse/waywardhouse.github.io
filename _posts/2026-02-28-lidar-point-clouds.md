@@ -864,7 +864,3 @@ Where $\mathbf{t}$ = translation (GPS position).
 - Challenges include water absorption, dense vegetation, and classification errors
 - Full-waveform systems capture complete return signal for enhanced information extraction
 - Critical tool for high-resolution 3D mapping and vegetation structure analysis
-
-Cluster S complete (2 essays). Continuing with Cluster T. Proceeding with Essay 55.
-
----

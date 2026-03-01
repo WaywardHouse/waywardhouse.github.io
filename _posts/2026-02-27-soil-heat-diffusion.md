@@ -618,7 +618,3 @@ Where $\phi$ is the diffusing quantity and $D$ is the diffusion coefficient.
 - **Phase lag:** Temperature peak delayed by time $\Delta t = (z/d) \times (P/2\pi)$
 - Temperature amplitude decays exponentially: $A(z) = A_0 e^{-z/d}$
 - Moist soil has higher diffusivity than dry soil
-
-**Next:** In Essay 20, we shift to **photosynthesis and light response curves**—how plants convert absorbed solar radiation (from Essay 17) into chemical energy.
-
----

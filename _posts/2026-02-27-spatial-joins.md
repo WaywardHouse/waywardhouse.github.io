@@ -840,9 +840,3 @@ $$V(s_i) = \{p : d(p, s_i) \leq d(p, s_j) \text{ for all } j \neq i\}$$
 - **Challenges:** Boundary effects, coordinate system mismatch, topology errors
 - **Spatial databases** (PostGIS) handle millions of features efficiently
 - Bounding box tests much faster than full geometry operations
-
-**This completes Cluster L (Vector Operations)!** We now have point-in-polygon (Essay 29), buffers (Essay 30), overlay (Essay 31), and spatial joins (Essay 32).
-
-**Next:** In Essay 33, we shift to **Cluster K: Raster Operations** with raster resampling and interpolation—how to change grid resolution and fill missing values.
-
----

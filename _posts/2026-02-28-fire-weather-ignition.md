@@ -789,7 +789,3 @@ Fuel approaches EMC exponentially.
 - Applications span prescribed burn planning, firefighting readiness, public warnings
 - Challenges include atmospheric instability effects, topographic modifications, spotting
 - Critical tool for wildfire risk assessment and fire management operations
-
-Continuing with Essay 61...
-
----

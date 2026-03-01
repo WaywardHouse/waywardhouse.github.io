@@ -330,7 +330,6 @@ But you don't need calculus to understand that **slope is rate**, and **rate is 
 - Linear models are local approximations — valid over the range you measured
 - The derivative of a linear function is its slope
 
-**Next:** In Essay 3, we'll relax the assumption of constant rate and introduce **exponential growth** — the foundation of population models, radioactive decay, and compounding change.
 
 ---
 

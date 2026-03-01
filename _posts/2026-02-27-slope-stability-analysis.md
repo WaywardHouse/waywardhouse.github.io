@@ -748,7 +748,3 @@ $$W_\perp = W \cos\theta$$
 - **Challenges:** Heterogeneous soils, 3D geometry, time-dependent strength
 - **Susceptibility mapping:** Combine DEM + soils + vegetation for spatial risk
 - Foundation for understanding when and where landslides occur
-
-**Next:** Essay 50 - Debris Flow Modeling! 🌊🪨
-
----

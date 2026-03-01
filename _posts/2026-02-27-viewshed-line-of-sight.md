@@ -738,6 +738,4 @@ $$\alpha = \arctan\left(\frac{z_1 - z_0}{d}\right)$$
 - Small height differences (tower height) dramatically affect visibility
 - Critical for telecommunications, emergency response, and spatial planning
 
-**Next:** In Essay 37, we build on terrain analysis with **cost-distance and least-cost paths**—finding optimal routes across variable terrain using accumulated cost surfaces!
-
 ---

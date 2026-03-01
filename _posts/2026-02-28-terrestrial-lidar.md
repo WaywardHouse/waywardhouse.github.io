@@ -772,6 +772,4 @@ $$d = c \times 1 \times 10^{-9} = 3 \times 10^8 \times 10^{-9} = 0.3 \text{ m} =
 - Full-waveform LiDAR captures complete return signal for enhanced information extraction
 - Critical tool for topographic mapping, vegetation analysis, and change detection
 
-Continuing with Essay 55...
-
 ---

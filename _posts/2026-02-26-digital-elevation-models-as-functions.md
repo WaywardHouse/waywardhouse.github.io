@@ -485,7 +485,3 @@ In terrain, level curves are **contour lines** — lines of constant elevation.
 - **Resolution** (cell size) determines how finely the terrain is sampled
 - Functions of two variables define surfaces; partial derivatives measure slope
 - Real DEMs require careful attention to coordinate systems and interpolation methods
-
-**Next:** In Essay 8, we compute **gradient and aspect** from a DEM using finite differences. This introduces partial derivatives in practice and shows how to calculate the direction of steepest descent — the foundation of flow routing.
-
----

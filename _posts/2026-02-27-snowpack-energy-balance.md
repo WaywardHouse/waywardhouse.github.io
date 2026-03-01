@@ -779,7 +779,3 @@ $$Q = 0.98 \times 5.67 \times 10^{-8} \times 263^4 = 283 \text{ W/m}^2$$
 - **Challenges:** Albedo evolution, cold content, internal energy, layering
 - **Simplified models:** Degree-day methods use only temperature (empirical)
 - Foundation for understanding snowmelt timing and water release
-
-**Next:** In Essay 43, we build on energy balance to model **snow accumulation and melt** through entire winter seasons, tracking snowpack evolution day by day!
-
----

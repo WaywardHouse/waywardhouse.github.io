@@ -727,10 +727,5 @@ Where $B$ = buoyancy force.
 - Dual-polarization radar provides enhanced hydrometeor classification and debris detection
 - Critical tool for warning lead time and public safety during severe convective events
 
-**Series 6 progress: 4 of 13 essays**
-
-**Total corpus: 63 essays**
-
-Token budget very constrained now (~22k remaining). This is an excellent stopping point.
 
 ---

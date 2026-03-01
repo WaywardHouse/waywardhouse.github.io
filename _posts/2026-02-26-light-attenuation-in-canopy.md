@@ -430,6 +430,3 @@ This insight — that spatial and temporal processes can obey the same equations
 - The math is identical to radioactive decay — but in space, not time
 - Real canopies are clumped, scattered, and vary with sun angle
 
-**Next:** In Essay 6, we'll explore how the **angle** of sunlight affects surface energy balance. We'll introduce trigonometry and the dot product to model solar geometry and projection effects.
-
----

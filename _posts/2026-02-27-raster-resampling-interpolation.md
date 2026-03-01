@@ -738,7 +738,3 @@ Where $t = \frac{x - x_0}{x_1 - x_0}$ is normalized position.
 - **Challenges:** Edge effects, overshoot, excessive smoothing
 - **Advanced methods:** IDW, kriging, splines for irregular data
 - Interpolation is weighted averaging where weights depend on distance/position
-
-**Next:** In Essay 34, we build on raster operations with **map algebra and focal operations**—cell-by-cell calculations and neighborhood analysis on grids.
-
----

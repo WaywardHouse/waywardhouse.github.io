@@ -570,7 +570,3 @@ $$\begin{pmatrix} x' \\ y' \\ z' \end{pmatrix} = \begin{pmatrix}
 - **Sun-synchronous orbits** ($i \approx 98°$) maintain constant local solar time
 - Ground track calculation combines orbital geometry with Earth's rotation
 - Repeat ground tracks require specific altitude/period relationships
-
-**Next:** In Essay 15, we calculate **satellite overpasses** — when and where a satellite is visible from a specific ground location. This requires 3D line-of-sight geometry.
-
----

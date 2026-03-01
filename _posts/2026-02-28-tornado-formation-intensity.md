@@ -742,9 +742,4 @@ $$v_2 = \frac{r_1 v_1}{r_2} = \frac{1000 \times 10}{100} = 100 \text{ m/s}$$
 - Challenges include satellite tornadoes, QLCS events, rapid intensification, nocturnal occurrence
 - Mobile radar observations measure record 301 mph winds validating EF5+ potential
 
-**Series 6 progress: 5 of 13 essays**
-**Total corpus: 64 essays**
-
-Continuing...
-
 ---

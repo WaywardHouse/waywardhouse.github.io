@@ -752,6 +752,4 @@ $$B_\nu(T) \approx \frac{2\nu^2 kT}{c^2}$$
 - **Uncertainty:** Typically ±15-25% for basin averages
 - Critical for water resources management and flood forecasting
 
-**Next:** In Essay 45, we shift from water resources to hazards with **Avalanche Terrain Analysis**—identifying where and when avalanches are likely!
-
 ---

@@ -656,6 +656,4 @@ The $1/z$ term on the right forces a logarithm on the left.
 - Wind increases as $\ln(z)$ — very rapid increase near surface, slower aloft
 - Same principles apply to heat and moisture transport
 
-**Next:** In Essay 24, we explore **temperature and moisture gradients** in the boundary layer and how they create inversions, fog, and convective instability.
-
 ---

@@ -494,6 +494,3 @@ $$y = ae^{-\lambda x}$$
 - Real flows require calibration and may need corrections for borders, intervening opportunities
 - Power laws (gravity) vs. exponentials (attenuation) — different tail behaviors
 
-**Next:** In Essay 11, we extend spatial interaction to **diffusion processes** — how innovations, diseases, or ideas spread across a network over time. This introduces discrete-time dynamics and network adjacency.
-
----
