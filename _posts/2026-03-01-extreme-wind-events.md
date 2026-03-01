@@ -355,18 +355,306 @@ await new Promise(r => {
 
 ## 6. Interpretation
 
-**June 2012 derecho:** 700 miles, 75+ mph winds, 22 deaths, $3 billion damage
+### June 2012 Derecho
 
-**Aviation:** Microbursts caused 620 deaths 1964-1985, now better detected
+**Spatial extent:** 700 miles from Indiana to Mid-Atlantic
 
-**Power grids:** Derechos major cause of cascading failures
+**Wind observations:**
+- 91 mph at Fort Wayne, IN
+- 81 mph at Parkersburg, WV
+- 74 mph Washington Dulles
+
+**Damage:**
+- 22 deaths
+- 4 million without power
+- $2.9 billion total damage
+- 3 million trees down
+
+**Sequence:**
+- Initiated 2 PM eastern Iowa
+- Reached Mid-Atlantic 11 PM
+- 9 hours, sustained bow echo
+- RIJ persistent throughout
+
+**Lessons:**
+- MCS evolution critical to monitor
+- PDS severe warnings appropriate
+- Power grid vulnerability extreme
+- Emergency management challenged by spatial scale
+
+### Aviation Hazards
+
+**Microburst threat:**
+
+**Windshear alert:** Change >15 kt in <1 nm
+
+**Typical microburst:**
+- Diameter: 1-2 km
+- Lifespan: 2-15 minutes
+- Divergence: 50-100 kt possible
+
+**LLWAS (Low Level Wind Shear Alert System):**
+
+Detects divergence via anemometer network.
+
+**Terminal Doppler Weather Radar (TDWR):**
+
+Dedicated radar at major airports.
+
+**Detection algorithm:**
+
+$$\Delta V = V_{out} - V_{in}$$
+
+If $\Delta V > 30$ kt over 2 km → Alert
+
+**Historical incidents:**
+
+**1985 Delta 191 (Dallas):**
+- Microburst encounter on final approach
+- 137 deaths
+- Led to LLWAS/TDWR implementation
+
+**Since 1995:** Zero US fatalities from microbursts (detection success)
+
+**Pilot procedures:**
+- Avoid visible precipitation cores
+- Go-around if windshear alert
+- Maximum thrust, pitch for target speed
+
+### Infrastructure Resilience
+
+**Power grid vulnerability:**
+
+**Tree-caused outages:** 80% of derecho damage
+
+**Cascade failures:**
+- Transmission lines damaged
+- Grid becomes unstable
+- Widespread blackouts
+
+**2012 derecho:** 4 million customers, some 1+ week
+
+**Mitigation strategies:**
+- Vegetation management (ROW clearing)
+- Underground lines (expensive, $1M/mile)
+- Grid hardening (stronger poles)
+- Microgrids (local resilience)
+
+**Building codes:**
+
+**Wind load standards:**
+
+Based on 3-second gust with return period.
+
+**ASCE 7:** Structural design standard
+
+$$p = 0.00256 K_z K_{zt} K_d V^2 I$$
+
+Where:
+- $K_z$ = height factor
+- $K_{zt}$ = topographic factor
+- $K_d$ = directionality
+- $V$ = wind speed (mph)
+- $I$ = importance factor
+
+**Example:** $V = 115$ mph, residential ($I = 1.0$)
+
+$$p = 0.00256 \times 1.0 \times 1.0 \times 1.0 \times 115^2 = 34 \text{ psf}$$
+
+**Design must withstand 34 lb/ft² pressure**
+
+**Tornado vs straight-line:**
+
+Building codes typically EF0-EF1 winds (85-110 mph).
+
+Safe rooms designed for EF5 (200+ mph).
+
+Derechos can exceed code minimums in extreme events.
 
 ---
 
-## 7. Summary
+## 7. What Could Go Wrong?
 
-Downbursts produce extreme surface winds through evaporative cooling and momentum transfer with velocities scaling as square root of DCAPE. Rear-inflow jets in bow echoes contribute 20-40 m/s additional wind. Derechos defined as ≥400 km wind swaths ≥58 mph lasting hours causing billions in damage. Surface winds can exceed 100 mph comparable to EF1-EF2 tornadoes. Critical aviation hazard and infrastructure threat requiring specialized detection and warning.
+### Pulse Severe Storms Misidentified
 
-**Cluster X: Wind & Turbulence - Complete**
+**Single-cell downbursts** can produce extreme winds briefly.
 
+**Not organized MCS:** No derecho, but localized damage severe.
+
+**Example - microburst clusters:**
+
+Multiple cells in line → appears organized but isn't sustained.
+
+**Forecaster challenge:**
+
+Distinguish:
+- Short-lived pulse (30 min warning)
+- Progressive derecho (hours of warnings)
+
+**Solution:** Track system evolution, RIJ strength, upstream environment
+
+### Low CAPE Derechos
+
+**Winter/cool-season events:**
+
+CAPE < 500 J/kg but strong dynamics.
+
+**Momentum-driven:**
+
+Strong mid-level winds, less buoyancy.
+
+**Still damaging:** 60-80 mph winds possible
+
+**Forecasting difficulty:**
+
+Low CAPE environments often underestimated.
+
+**Solution:** Emphasize wind fields, shear, not just instability
+
+### Urban Wind Channeling
+
+**Downtown cores:** Buildings create wind tunnels
+
+**Amplification:** 20-50% wind speed increase in canyons
+
+**Damage concentration:** Localized extreme damage
+
+**Not captured** in warning polygons (too small scale)
+
+### Warning Fatigue
+
+**Long-duration events:**
+
+Severe warnings for hours → public desensitization
+
+**Cry wolf:** Multiple warnings, some areas unaffected
+
+**Communication challenge:**
+
+Maintain urgency over 4-6+ hour event.
+
+**Solution:**
+- Graduated messaging (PDS for worst areas)
+- Specific threats (wind vs hail vs tornado)
+- Frequent updates as system moves
+
+---
+
+## 8. Extension: Downburst Climatology
+
+**Spatial distribution (USA):**
+
+**Maximum:** Great Plains, Midwest (DCAPE frequent)
+
+**Seasonal:** Peak June-July (warm season moisture + dry aloft)
+
+**Diurnal:** Afternoon-evening (daytime heating)
+
+**DCAPE climatology:**
+
+**High DCAPE regions:**
+- Central Plains: 1000-1500 J/kg typical summer
+- Southwest: Monsoon pulse events, 1500+ J/kg
+- Southeast: Lower (high humidity limits evaporation)
+
+**Global hotspots:**
+
+**Australia:** Severe downbursts common (dry air mass intrusions)
+
+**Argentina:** Pampas region (similar Plains environment)
+
+**Trends:**
+
+Some evidence of increasing DCAPE (climate change):
+- Warmer surface → higher moisture
+- Warming faster aloft → steeper lapse rates
+- Net: More evaporative cooling potential
+
+**But:** Detection improving, so trend uncertain
+
+### Derecho Classification
+
+**Progressive:** Moves with mid-latitude system, widespread
+
+**Serial:** Multiple bow echoes in sequence
+
+**Hybrid:** Characteristics of both
+
+**Climatology (USA):**
+- ~1-2 major derechos per year
+- ~70% warm season (May-August)
+- Corridor: Upper Midwest to Mid-Atlantic
+
+**Record events:**
+- 1995 May: Oklahoma to New York, 750 miles
+- 2009 May: Kansas "Super Derecho", 100+ mph
+- 2012 June: 700 miles, already discussed
+
+---
+
+## 9. Math Refresher: Buoyancy and DCAPE
+
+### Negative Buoyancy
+
+**Buoyancy force:**
+
+$$B = g \frac{T_{parcel} - T_{env}}{T_{env}}$$
+
+**Negative when parcel colder** (downdraft)
+
+**Evaporative cooling:**
+
+$$\Delta T = -\frac{L_v \times r}{c_p}$$
+
+Where:
+- $L_v = 2.5 \times 10^6$ J/kg
+- $r$ = liquid water evaporated (kg/kg)
+- $c_p = 1005$ J/kg/K
+
+**Example:**
+
+Evaporate 5 g/kg (0.005 kg/kg):
+
+$$\Delta T = -\frac{2.5 \times 10^6 \times 0.005}{1005} = -12.4°C$$
+
+**Substantial cooling!**
+
+### DCAPE Integration
+
+**Downdraft CAPE:**
+
+$$DCAPE = -g \int_{z_1}^{z_0} \frac{T_{parcel} - T_{env}}{T_{env}} dz$$
+
+Where:
+- $z_0$ = surface
+- $z_1$ = downdraft source level (typically 500-700 mb)
+
+**Negative sign** makes DCAPE positive (magnitude of negative buoyancy)
+
+**Typical:**
+- Dry environment: DCAPE = 1000-1500 J/kg
+- Moist environment: DCAPE = 300-700 J/kg
+
+**Maximum downdraft:**
+
+$$w_{max} = \sqrt{2 \times DCAPE}$$
+
+**But entrainment reduces:**
+
+$$w_{actual} \approx \sqrt{2 \times DCAPE \times 0.5}$$
+
+---
+
+## Summary
+
+- Downbursts produce extreme surface winds through evaporative cooling creating negative buoyancy
+- Downdraft velocity scales as square root of DCAPE typically reaching 30-50 m/s
+- Evaporative cooling of 5 g/kg moisture produces 12°C temperature depression
+- Rear-inflow jets in bow echoes descend to surface adding 20-40 m/s to outflow
+- Derechos defined as ≥400 km wind swaths with ≥26 m/s winds lasting several hours
+- Surface winds can exceed 60 m/s (134 mph) comparable to EF2 tornado damage
+- June 2012 derecho traveled 700 miles causing 22 deaths and $3 billion damage
+- Microbursts critical aviation hazard with detection systems eliminating fatalities since 1995
+- Power grid cascading failures major impact requiring vegetation management and hardening
+- DCAPE climatology shows 1000-1500 J/kg common in summer Great Plains
 ---
