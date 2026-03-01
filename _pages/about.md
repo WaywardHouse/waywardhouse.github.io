@@ -8,7 +8,7 @@ Wayward House is an independent publishing project dedicated to restoring geogra
 
 We explore the dynamic relationships between people, place, ecology, and economic structures — and we make those relationships understandable.
 
-Our work builds practical on-ramps to the mathematics, models, and computational tools that underpin environmental and spatial thinking. Wherever possible, we favor open-source software, accessible hardware, and reproducible methods.
+Our work builds practical on-ramps to the mathematics, models, and computational tools that underpin environmental and spatial thinking. Wherever possible, we favour open-source software, accessible hardware, and reproducible methods.
 
 Wayward House exists to equip a new generation of systems thinkers with the intellectual tools to understand — and responsibly shape — the world we share.
 
@@ -18,9 +18,7 @@ Wayward House publishes structured work at the intersection of geography, enviro
 
 The material is organised into two complementary streams.
 
-⸻
-
-1. Long-Form Systems Analysis
+### 1. Long-Form Systems Analysis
 
 Extended essays that examine how place, ecology, infrastructure, and power interact.
 
@@ -33,9 +31,7 @@ These pieces are narrative and analytical. They draw on data, but their purpose 
 
 This is geography as explanatory infrastructure.
 
-⸻
-
-2. Computational Geography & Environmental Modeling
+### 2. Computational Geography & Environmental Modeling
 
 A structured series of modeling essays that rebuild environmental and spatial reasoning from first principles.
 
@@ -65,8 +61,6 @@ Over time, these modeling essays will evolve into:
 
 The goal is literacy in systems — not just a passing surface familiarity.
 
-⸻
-
 ## How the Pieces Fit Together
 
 The long-form essays explore structure.
@@ -79,8 +73,6 @@ Together, they form an integrated body of work:
  - Computation grounded in environmental reality
  - Environmental reality situated within political economy
 
-
-⸻
 
 Design Principles
 
