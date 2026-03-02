@@ -142,10 +142,84 @@ permalink: /start-here/
   color: var(--text-2);
   margin-right: 4px;
 }
+
+.start-advanced {
+  max-width: var(--max-width, 1200px);
+  margin: 0 auto;
+  padding: 0 24px 48px;
+  border-top: 1px solid var(--border);
+}
+.start-advanced-heading {
+  padding: 32px 0 20px;
+}
+.start-advanced-label {
+  display: inline-block;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: var(--accent);
+  margin-bottom: 6px;
+}
+.start-advanced-desc {
+  font-size: 0.9375rem;
+  color: var(--text-2);
+  margin: 0;
+}
+.start-advanced-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+@media (max-width: 720px) {
+  .start-advanced-grid { grid-template-columns: 1fr; }
+}
+.start-series-card {
+  display: block;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg, 12px);
+  padding: 20px 24px;
+  text-decoration: none;
+  transition: border-color 0.15s, background 0.15s;
+}
+.start-series-card:hover {
+  background: var(--bg2);
+  border-color: var(--accent);
+}
+.start-series-card-num {
+  font-size: 0.6875rem;
+  font-weight: 600;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: var(--text-3);
+  margin-bottom: 6px;
+}
+.start-series-card-title {
+  font-family: var(--font-heading);
+  font-size: 1.0625rem;
+  font-weight: 400;
+  color: var(--text);
+  line-height: 1.3;
+  letter-spacing: -0.01em;
+  margin-bottom: 4px;
+}
+.start-series-card:hover .start-series-card-title { color: var(--accent); }
+.start-series-card-sub {
+  font-size: 0.8125rem;
+  color: var(--text-2);
+  line-height: 1.45;
+  margin-bottom: 12px;
+}
+.start-series-card-meta {
+  font-size: 0.75rem;
+  color: var(--text-3);
+}
 </style>
 
 {% assign foundations = site.posts | where: "series", "computational-geography-foundations" | sort: "series_order" %}
 {% assign alberta = site.posts | where: "series", "Alberta in Context" | sort: "series_order" %}
+{% assign series_ghg = site.posts | where: "series_number", 13 | first %}
+{% assign series_climate = site.posts | where: "series_number", 14 | first %}
 
 <div class="start-intro">
   <h1>Where do you want to start?</h1>
@@ -203,6 +277,33 @@ permalink: /start-here/
   </div>
 
 </div>
+
+{% if series_ghg or series_climate %}
+<div class="start-advanced">
+  <div class="start-advanced-heading">
+    <span class="start-advanced-label">Advanced series</span>
+    <p class="start-advanced-desc">Build on the foundations — quantitative greenhouse gas accounting and climate system modelling.</p>
+  </div>
+  <div class="start-advanced-grid">
+    {% if series_ghg %}
+    <a href="{{ series_ghg.url | relative_url }}" class="start-series-card">
+      <div class="start-series-card-num">Series {{ series_ghg.series_number }}</div>
+      <div class="start-series-card-title">{{ series_ghg.title | split: ": " | last }}</div>
+      <div class="start-series-card-sub">{{ series_ghg.subtitle }}</div>
+      <div class="start-series-card-meta">{{ series_ghg.total_essays }} essays &middot; Difficulty {{ series_ghg.difficulty_range }}</div>
+    </a>
+    {% endif %}
+    {% if series_climate %}
+    <a href="{{ series_climate.url | relative_url }}" class="start-series-card">
+      <div class="start-series-card-num">Series {{ series_climate.series_number }}</div>
+      <div class="start-series-card-title">{{ series_climate.title | split: ": " | last }}</div>
+      <div class="start-series-card-sub">{{ series_climate.subtitle }}</div>
+      <div class="start-series-card-meta">{{ series_climate.total_essays }} essays &middot; Difficulty {{ series_climate.difficulty_range }}</div>
+    </a>
+    {% endif %}
+  </div>
+</div>
+{% endif %}
 
 <div class="start-footer">
   <span class="start-footer-label">Not sure?</span>
