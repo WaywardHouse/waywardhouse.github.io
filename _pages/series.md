@@ -68,13 +68,13 @@ permalink: /series/
               <li class="cluster-essay-item"
                   x-data="essayProgress('{{ post.url }}')"
                   :class="{ 'cluster-essay-item--done': completed }"
-                  data-difficulty="{{ post.difficulty | default: 0 }}">
+                  data-difficulty="{% if post.categories contains 'modeling' %}{{ post.difficulty | default: 0 }}{% else %}0{% endif %}">
                 <span class="cluster-essay-num" x-text="completed ? '✓' : '{{ post.series_order }}'">{{ post.series_order }}</span>
                 <div class="cluster-essay-body">
                   <a href="{{ post.url | relative_url }}" class="cluster-essay-title">{{ post.title }}</a>
                   {% if post.subtitle %}<span class="cluster-essay-sub">{{ post.subtitle }}</span>{% endif %}
                 </div>
-                {% if post.difficulty %}
+                {% if post.difficulty and post.categories contains 'modeling' %}
                 <span class="difficulty-badge difficulty-badge--{{ post.difficulty }}">{{ post.difficulty }}</span>
                 {% endif %}
               </li>
