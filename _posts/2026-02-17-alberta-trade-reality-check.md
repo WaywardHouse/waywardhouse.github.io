@@ -4,6 +4,7 @@ title: "A Trade Reality Check"
 subtitle: "What the Province Produces, What It Exports, and What It Needs From Everyone Else"
 series: "Alberta in Context"
 series_order: 2
+featured: true
 date: 2026-02-17
 last_modified_at: 2026-02-26
 categories:

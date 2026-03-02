@@ -4,6 +4,7 @@
   subtitle: "Variables, units, and the discipline of thinking in fields"
   date: 2026-02-26
   categories: [modeling]
+  featured: true
 
   series: computational-geography-foundations
   series_order: 1

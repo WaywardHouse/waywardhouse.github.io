@@ -4,6 +4,7 @@ title: "The Texas of the North"
 subtitle: "What the Comparison Actually Reveals — and What It Obscures"
 series: "Alberta in Context"
 series_order: 3
+featured: true
 date: 2026-02-19
 last_modified_at: 2026-02-26
 categories:
