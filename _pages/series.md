@@ -16,11 +16,21 @@ permalink: /series/
 {% assign series_groups = series_posts | group_by: "series" %}
 
 <section class="listing-section">
-  <div class="listing-inner listing-inner--narrow">
+  <div class="listing-inner listing-inner--narrow" x-data="difficultyFilter" :data-filter="filter || ''">
 
     {% if series_groups.size == 0 %}
     <p class="listing-empty">No series published yet. Browse the <a href="/archive/">archive</a>.</p>
     {% else %}
+
+    <div class="difficulty-filter-bar">
+      <span class="difficulty-filter-label">Filter</span>
+      <button class="filter-btn" :class="{ active: filter === 0 }" @click="filter = 0" type="button">All</button>
+      <button class="filter-btn filter-btn--1" :class="{ active: filter === 1 }" @click="filter = 1" type="button">Level 1</button>
+      <button class="filter-btn filter-btn--2" :class="{ active: filter === 2 }" @click="filter = 2" type="button">Level 2</button>
+      <button class="filter-btn filter-btn--3" :class="{ active: filter === 3 }" @click="filter = 3" type="button">Level 3</button>
+      <button class="filter-btn filter-btn--4" :class="{ active: filter === 4 }" @click="filter = 4" type="button">Level 4</button>
+      <button class="filter-btn filter-btn--5" :class="{ active: filter === 5 }" @click="filter = 5" type="button">Level 5</button>
+    </div>
 
     {% for group in series_groups %}
     {% assign posts_sorted = group.items | sort: "series_order" %}
@@ -55,8 +65,11 @@ permalink: /series/
             {% assign current_cluster = post.cluster %}
           {% endif %}
 
-              <li class="cluster-essay-item">
-                <span class="cluster-essay-num">{{ post.series_order }}</span>
+              <li class="cluster-essay-item"
+                  x-data="essayProgress('{{ post.url }}')"
+                  :class="{ 'cluster-essay-item--done': completed }"
+                  data-difficulty="{{ post.difficulty | default: 0 }}">
+                <span class="cluster-essay-num" x-text="completed ? '✓' : '{{ post.series_order }}'">{{ post.series_order }}</span>
                 <div class="cluster-essay-body">
                   <a href="{{ post.url | relative_url }}" class="cluster-essay-title">{{ post.title }}</a>
                   {% if post.subtitle %}<span class="cluster-essay-sub">{{ post.subtitle }}</span>{% endif %}
@@ -74,8 +87,11 @@ permalink: /series/
         {% comment %}Flat list — no clusters{% endcomment %}
         <ol class="series-flat-list">
           {% for post in posts_sorted %}
-          <li class="series-flat-item">
-            <span class="cluster-essay-num">{{ forloop.index }}</span>
+          <li class="series-flat-item"
+              x-data="essayProgress('{{ post.url }}')"
+              :class="{ 'cluster-essay-item--done': completed }"
+              data-difficulty="{{ post.difficulty | default: 0 }}">
+            <span class="cluster-essay-num" x-text="completed ? '✓' : '{{ forloop.index }}'">{{ forloop.index }}</span>
             <div class="cluster-essay-body">
               <a href="{{ post.url | relative_url }}" class="cluster-essay-title">{{ post.title }}</a>
               {% if post.subtitle %}<span class="cluster-essay-sub">{{ post.subtitle }}</span>{% endif %}
