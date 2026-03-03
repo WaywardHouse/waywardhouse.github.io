@@ -32,6 +32,8 @@ excerpt: >
 math_prerequisites: >
   Fire weather (Model 60). Vector operations. Differential equations. We'll introduce
   fire physics and landscape-scale spread algorithms.
+image:/assets/images/fire-modeling.png
+
 ---
 
 ## 1. The Question

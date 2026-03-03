@@ -33,6 +33,7 @@ excerpt: >
 math_prerequisites: >
   Electromagnetic radiation basics. Stefan-Boltzmann law (Model 42). Energy balance
   concepts. We'll introduce thermal remote sensing and temperature retrieval algorithms.
+image:/assets/images/remote-sensing.png
 ---
 
 ## 1. The Question

@@ -34,6 +34,8 @@ excerpt: >
 math_prerequisites: >
   Snowpack energy balance (Model 42). Basic hydrology. Integration (accumulation
   over time). We'll introduce operational snow modeling methods from scratch.
+image:/assets/images/cryosphere-and-hydrology.png
+  
 ---
 
 ## 1. The Question

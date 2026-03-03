@@ -33,6 +33,8 @@ excerpt: >
 math_prerequisites: >
   Fire spread (Model 61). Atmospheric stability. Gaussian functions. We'll introduce
   combustion chemistry and atmospheric dispersion from first principles.
+image:/assets/images/fire-modeling.png
+ 
 ---
 
 ## 1. The Question

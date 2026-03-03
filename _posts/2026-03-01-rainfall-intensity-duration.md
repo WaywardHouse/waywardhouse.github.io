@@ -32,6 +32,7 @@ excerpt: >
 math_prerequisites: >
   Probability distributions. Statistics. Logarithms. We'll introduce extreme value
   theory and frequency analysis from first principles.
+image:/assets/images/cryosphere-and-hydrology.png
 ---
 
 ## 1. The Question

@@ -33,6 +33,8 @@ math_prerequisites: >
   Linear algebra (eigenvectors, matrix multiplication). Basic statistics (variance,
   covariance). We'll derive PCA from first principles and introduce manifold
   concepts intuitively.
+image:/assets/images/dimentionality-reduction.png
+  
 ---
 
 ## 1. The Question

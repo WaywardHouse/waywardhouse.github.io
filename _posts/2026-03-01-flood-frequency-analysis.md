@@ -32,6 +32,8 @@ excerpt: >
 math_prerequisites: >
   Probability distributions. Logarithms. Return periods (Model 68). We'll introduce
   flood statistics and frequency methods from first principles.
+image:/assets/images/cryosphere-and-hydrology.png
+  
 ---
 
 ## 1. The Question

@@ -32,6 +32,7 @@ excerpt: >
 math_prerequisites: >
   Thunderstorm dynamics (Model 63). Drag forces. Heat transfer basics. We'll
   introduce cloud microphysics and hail growth processes.
+image:/assets/images/atmosphere-and-hazards.png
 ---
 
 ## 1. The Question

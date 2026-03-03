@@ -32,6 +32,8 @@ excerpt: >
 math_prerequisites: >
   Logarithms (Model 3). Basic calculus. We'll introduce the logarithmic function
   from first principles and show how it emerges from turbulent momentum transfer.
+image:/assets/images/atmosphere-and-hazards.png
+
 ---
 
 ## 1. The Question

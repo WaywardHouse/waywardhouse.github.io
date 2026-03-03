@@ -33,6 +33,8 @@ excerpt: >
 math_prerequisites: >
   Thunderstorm dynamics (Model 63). Vector calculus (curl, divergence). Fluid
   dynamics basics. We'll introduce vortex theory and tornado physics.
+image:/assets/images/atmospheric-and-hazards.png
+
 ---
 
 ## 1. The Question

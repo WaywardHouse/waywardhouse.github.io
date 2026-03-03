@@ -32,6 +32,8 @@ excerpt: >
 math_prerequisites: >
   Atmospheric thermodynamics basics. Buoyancy concepts. Vector fields. We'll
   introduce convective processes and storm structure from first principles.
+image:/assets/images/atmospheric-and-hazards.png
+  
 ---
 
 ## 1. The Question

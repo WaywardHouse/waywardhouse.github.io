@@ -33,6 +33,8 @@ excerpt: >
 math_prerequisites: >
   Fluid dynamics basics. Reynolds decomposition. Shear stress concepts. We'll
   introduce boundary layer meteorology and turbulence theory from first principles.
+image:/assets/images/atmosphere-and-hazards.png
+  
 ---
 
 ## 1. The Question

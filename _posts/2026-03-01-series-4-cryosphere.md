@@ -8,6 +8,7 @@ difficulty_range: 3-5
 estimated_hours: 38
 prerequisites: [series-1, series-2-partial]
 tags: [cryosphere, glaciology, avalanches, mountain-hazards]
+image:/assets/images/cryosphere-and-hydrology.png
 ---
 
 ## Series Overview

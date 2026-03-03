@@ -34,6 +34,7 @@ excerpt: >
 math_prerequisites: >
   Newton's law of gravitation. Spherical coordinates. Fourier analysis concepts.
   We'll introduce gravity field theory and mass inversion from first principles.
+image:/assets/images/gravity-sensing.png
 ---
 
 ## 1. The Question

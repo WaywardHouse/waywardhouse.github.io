@@ -7,6 +7,7 @@ total_essays: 12
 difficulty_range: 1-4
 estimated_hours: 40
 tags: [foundations, modeling, mathematics, differential-equations]
+image:/assets/images/foundations-and-math.png
 ---
 
 ## Series Overview

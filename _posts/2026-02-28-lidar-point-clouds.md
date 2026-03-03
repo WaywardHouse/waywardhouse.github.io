@@ -33,6 +33,8 @@ excerpt: >
 math_prerequisites: >
   3D geometry basics. Digital elevation models (Models 7-9). Statistics (distributions,
   filtering). We'll introduce LiDAR principles and point cloud processing from scratch.
+image:/assets/images/atmospheric-and-hazards.png
+
 ---
 
 ## 1. The Question
