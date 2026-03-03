@@ -32,6 +32,7 @@ math_prerequisites: >
   Gradient and aspect from Model 8. Comfortable with the idea of following a
   direction iteratively (like tracing a path). We'll introduce graph concepts
   (nodes, edges, connectivity) as needed.
+image:/assets/images/cryosphere-and-hydrology.png
 ---
 
 ## 1. The Question

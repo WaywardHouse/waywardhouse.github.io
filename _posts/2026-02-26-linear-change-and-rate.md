@@ -30,6 +30,7 @@ excerpt: >
 math_prerequisites: >
   Plotting points on a graph. Basic algebra (solving for x). The concept of a
   function from Model 1. We'll build the idea of slope from first principles.
+image:/assets/images/foundations-and-math.png)
 ---
 
 ## 1. The Question

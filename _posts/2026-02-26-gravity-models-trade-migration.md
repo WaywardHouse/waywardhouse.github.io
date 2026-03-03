@@ -32,6 +32,7 @@ math_prerequisites: >
   Exponential and power functions (Models 3-4). Comfortable with the idea of
   proportionality. We'll introduce inverse power laws and show how the exponent
   controls the strength of distance decay.
+image:/assets/images/gravity-sensing.png
 ---
 
 ## 1. The Question

@@ -32,6 +32,7 @@ math_prerequisites: >
   Exponents (what $2^3$ means). The concept of rate from Model 2. Comfort with
   algebraic manipulation. We'll introduce logarithms from scratch and show why
   they're the inverse of exponentials.
+  image:/assets/images/foundations-and-math.png
 ---
 
 ## 1. The Question

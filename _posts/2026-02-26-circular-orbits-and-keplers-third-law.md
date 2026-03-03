@@ -31,6 +31,7 @@ excerpt: >
 math_prerequisites: >
   Circular motion conceptually. Newton's laws (F=ma, gravity). Algebra and equation
   solving. We'll introduce centripetal acceleration from first principles.
+image: /assets/images/orbital-mechanics.png
 ---
 
 ## 1. The Question

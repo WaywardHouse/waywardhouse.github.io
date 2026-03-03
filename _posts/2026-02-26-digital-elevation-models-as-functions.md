@@ -32,6 +32,7 @@ math_prerequisites: >
   Functions of one variable (from Models 1-3). Comfortable with the idea that
   a function takes inputs and produces outputs. We'll extend this to functions
   that take TWO inputs (x and y coordinates) and return elevation z.
+image: /assets/images/spatial-analysis.png
 ---
 
 ## 1. The Question
