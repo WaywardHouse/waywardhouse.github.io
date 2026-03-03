@@ -44,14 +44,6 @@ comments: true
 image: /assets/images/political-economy.png
 ---
 
-## Contents
-{:.no_toc}
-
-* TOC
-{:toc}
-
----
-
 ## Preface: The World Alberta Sells Into
 
 Any serious assessment of Alberta's energy future must begin not with Alberta, but with the world. It is a persistent failure of both pro-industry boosterism and environmental critique that they conduct their arguments on an imaginary global stage — one in which either demand is infinite and secure, or in which transition is clean and orderly. The reality is murkier, more volatile, and more geopolitically entangled than either position admits.

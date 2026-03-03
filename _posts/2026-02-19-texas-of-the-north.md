@@ -7,6 +7,7 @@ series_order: 3
 featured: true
 date: 2026-02-19
 last_modified_at: 2026-02-26
+image: /assets/images/texas-north.png
 categories:
   - economic-geography
   - comparative-political-economy
@@ -36,15 +37,6 @@ math_core: proportional-reasoning
 spatial_reasoning: comparative-systems
 toc: true
 comments: true
-image:/assets/images/texas-north.png
----
-
-## Contents
-{:.no_toc}
-
-* TOC
-{:toc}
-
 ---
 
 ## Part A: Why the Comparison Is Made at All

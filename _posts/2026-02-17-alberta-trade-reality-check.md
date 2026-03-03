@@ -7,6 +7,7 @@ series_order: 2
 featured: true
 date: 2026-02-17
 last_modified_at: 2026-02-26
+image: /assets/images/alberta.png
 categories:
   - economic-geography
   - trade
@@ -34,17 +35,7 @@ math_core: proportional-reasoning
 spatial_reasoning: trade-flows
 toc: true
 comments: true
-image:/assets/images/alberta.png
 ---
-
-## Contents
-{:.no_toc}
-
-* TOC
-{:toc}
-
----
-
 ## 1. Alberta's Economic Scale
 
 Before examining trade flows, it helps to understand Alberta's sheer economic weight. With just 4.9 million people — about 12% of Canada's population — Alberta punches far above its demographic weight in virtually every economic measure that matters.
