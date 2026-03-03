@@ -34,6 +34,7 @@ math_core: proportional-reasoning
 spatial_reasoning: trade-flows
 toc: true
 comments: true
+image:/assets/images/alberta.png
 ---
 
 ## Contents

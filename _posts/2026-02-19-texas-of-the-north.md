@@ -36,6 +36,7 @@ math_core: proportional-reasoning
 spatial_reasoning: comparative-systems
 toc: true
 comments: true
+image:/assets/images/texas-north.png
 ---
 
 ## Contents

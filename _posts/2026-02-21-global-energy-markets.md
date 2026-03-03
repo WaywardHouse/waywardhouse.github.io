@@ -41,7 +41,7 @@ spatial_reasoning: global-flows
 dynamics: supply-demand-equilibrium
 toc: true
 comments: true
-image: /assets/images/og-default.png
+image: /assets/images/political-economy.png
 ---
 
 ## Contents
