@@ -1,5 +1,5 @@
 ---
-layout: model
+layout: essay
 title: "A Trade Reality Check"
 subtitle: "What the Province Produces, What It Exports, and What It Needs From Everyone Else"
 series: "Alberta in Context"

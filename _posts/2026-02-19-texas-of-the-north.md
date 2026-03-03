@@ -1,5 +1,5 @@
 ---
-layout: model
+layout: essay
 title: "The Texas of the North"
 subtitle: "What the Comparison Actually Reveals — and What It Obscures"
 series: "Alberta in Context"
@@ -52,7 +52,7 @@ comments: true
 
 Alberta is routinely called the Texas of the North, and the comparison is not without merit. Both are landlocked energy provinces whose political culture was shaped by the oil industry, both chafe against what they see as an unsympathetic federal government dominated by more populous coastal regions, and both generate more economic output than their population share would suggest. At the level of attitude and identity, the comparison resonates.
 
-At the level of economic structure, it holds up reasonably well — and understanding exactly where it holds and where it breaks down is the point of this model.
+At the level of economic structure, it holds up reasonably well — and understanding exactly where it holds and where it breaks down is the point of this essay.
 
 ### 1.1 The Numbers Side by Side
 

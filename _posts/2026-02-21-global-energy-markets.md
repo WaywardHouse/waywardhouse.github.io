@@ -1,5 +1,5 @@
 ---
-layout: model
+layout: essay
 title: "Contested Ground"
 subtitle: "Global Energy Markets, War, Sanctions, and the Renewable Tide"
 series: "Alberta in Context"
@@ -55,7 +55,7 @@ comments: true
 
 Any serious assessment of Alberta's energy future must begin not with Alberta, but with the world. It is a persistent failure of both pro-industry boosterism and environmental critique that they conduct their arguments on an imaginary global stage — one in which either demand is infinite and secure, or in which transition is clean and orderly. The reality is murkier, more volatile, and more geopolitically entangled than either position admits.
 
-This model examines the global energy market as Alberta's oil sands producers actually encounter it: a market shaped by active wars, cascading sanctions regimes, a shadow shipping economy, the extraordinary solar and wind buildout concentrated in China, and the profoundly uneven demand profiles of the major population centres of the world.
+This essay examines the global energy market as Alberta's oil sands producers actually encounter it: a market shaped by active wars, cascading sanctions regimes, a shadow shipping economy, the extraordinary solar and wind buildout concentrated in China, and the profoundly uneven demand profiles of the major population centres of the world.
 
 Three forces press simultaneously on global oil markets. From the supply side, wars and sanctions have reshuffled trade flows without removing supply, creating a parallel economy of discounted oil. From the demand side, China's renewable buildout is beginning to compress the growth curve that sustained two decades of oil demand expansion. And from below, rising population centres in India, Southeast Asia, and Africa are pulling demand upward — at a pace and on a timeline that depends entirely on their economic trajectory, their infrastructure investment, and whether they leapfrog fossil fuel systems the way they leapfrogged telephone landlines.
 
