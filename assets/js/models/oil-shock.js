@@ -537,10 +537,10 @@ const WIDGET_HTML = `
 
   <div class="osh-panels-top">
     <div class="osh-panel">
-      <div class="osh-chart js-price-chart"></div>
+      <div class="osh-chart js-price-chart" style="height:252px;"></div>
     </div>
     <div class="osh-panel">
-      <div class="osh-chart js-compare-chart"></div>
+      <div class="osh-chart js-compare-chart" style="height:252px;"></div>
       <div class="osh-month-row">
         <span class="osh-month-label">Month</span>
         <input class="osh-month-slider js-month" type="range" min="0" max="23" step="1" value="6">
@@ -550,11 +550,11 @@ const WIDGET_HTML = `
   </div>
 
   <div class="osh-panel osh-panel--heatmap">
-    <div class="osh-chart osh-chart--heatmap js-heatmap-chart"></div>
+    <div class="osh-chart osh-chart--heatmap js-heatmap-chart" style="height:320px;"></div>
   </div>
 
   <div class="osh-panel osh-panel--channels">
-    <div class="osh-chart js-channels-chart"></div>
+    <div class="osh-chart js-channels-chart" style="height:252px;"></div>
   </div>
 
   <details class="osh-notes">
