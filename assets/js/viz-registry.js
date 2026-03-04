@@ -66,7 +66,7 @@ export const REGISTRY = [
     detect: (content) =>
       document.body.classList.contains('tag-hash-math') ||
       !!document.querySelector('.math, .math-inline, .math-display') ||
-      !!(content?.textContent.includes('$')),
+      !!(content?.textContent.includes('$$')),
     cdn: {
       styles:  ['https://cdn.jsdelivr.net/npm/katex@0.16/dist/katex.min.css'],
       scripts: [
