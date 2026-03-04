@@ -15,7 +15,7 @@ series: "Alberta in Context"
 series_order: 5
 
 viz: true
-geo: true
+leaflet: true
 diagram: true
 story: true
 ---
@@ -37,40 +37,39 @@ To understand the current crisis is to understand the Persian Gulf not as a regi
 <section class="story-section">
   <div class="story-sticky">
     <div class="story-graphic">
-      <div data-map="custom" id="gulf-map"
-           data-center="52.0,26.5"
-           data-zoom="5.2"
-           data-pitch="30"
-           data-style="mapbox://styles/mapbox/outdoors-v12"></div>
+      <div data-leaflet id="gulf-map"
+           data-lat="26.5" data-lng="52.0"
+           data-zoom="5"
+           data-tiles="carto"></div>
     </div>
   </div>
   <div class="story-steps">
 
     <div class="story-step" data-step="0"
-         data-update='{"gulf-map": {"center": [52.0, 26.5], "zoom": 5.2, "pitch": 30, "animate": false}}'>
+         data-update='{"gulf-map": {"lat": 26.5, "lng": 52.0, "zoom": 5, "animate": false}}'>
       <p><strong>The Persian Gulf as a System.</strong> No other region on Earth concentrates this much energy infrastructure in this little space, and no other chokepoint channels this large a fraction of global supply through a passage barely 34 kilometres wide at its narrowest point. Understanding the current crisis requires understanding this geography as a <em>system</em>, not a collection of independent facilities.</p>
     </div>
 
     <div class="story-step" data-step="1"
-         data-update='{"gulf-map": {"center": [50.5, 25.5], "zoom": 6.0, "pitch": 20}}'>
+         data-update='{"gulf-map": {"lat": 25.5, "lng": 50.5, "zoom": 6}}'>
       <p><strong>Upstream: Where the Oil Comes From.</strong> Five countries — Saudi Arabia, Iraq, the UAE, Kuwait, and Iran — account for approximately 93.6% of all crude and condensate volumes transiting Hormuz. Their fields sit within a few hundred kilometres of the Gulf coast: Ghawar 100 km inland, Basra fields feeding directly to the Basra Oil Terminal, Kuwait's entire export infrastructure facing the Gulf, UAE fields offshore, Iran's Kharg Island terminal in the northern Gulf.</p>
       <p>The geographic fact is plain: there is no inland alternative for the bulk of this production. The oil must cross water. And the water narrows to Hormuz.</p>
     </div>
 
     <div class="story-step" data-step="2"
-         data-update='{"gulf-map": {"center": [56.2, 26.3], "zoom": 8.0, "pitch": 15}}'>
+         data-update='{"gulf-map": {"lat": 26.3, "lng": 56.2, "zoom": 8}}'>
       <p><strong>Midstream: The Chokepoint.</strong> In 2024, approximately 20 million barrels per day of oil flowed through the Strait of Hormuz — roughly 20% of global petroleum liquids consumption and over 31% of all seaborne crude flows. Additionally, about 20% of global LNG exports — primarily from Qatar — transit the same waterway.</p>
       <p>Alternative bypass routes cover perhaps a third of normal Hormuz flows. There is no engineering substitute for an open strait.</p>
     </div>
 
     <div class="story-step" data-step="3"
-         data-update='{"gulf-map": {"center": [50.8, 26.2], "zoom": 6.5, "pitch": 25}}'>
+         data-update='{"gulf-map": {"lat": 26.2, "lng": 50.8, "zoom": 6}}'>
       <p><strong>Downstream: The Blast Radius.</strong> The Gulf's downstream infrastructure sits directly on or near the coast: Ras Tanura (550,000 b/d refinery and export terminal), Ras Laffan (~20% of global LNG), ADNOC facilities offshore Abu Dhabi, Kuwait's Mina Al-Ahmadi complex. All are within drone range of Iran.</p>
       <p>The 2019 Abqaiq attack proved the vulnerability: a limited drone strike temporarily knocked out more than half of Saudi Arabia's crude production.</p>
     </div>
 
     <div class="story-step" data-step="4"
-         data-update='{"gulf-map": {"center": [65.0, 20.0], "zoom": 3.5, "pitch": 0}}'>
+         data-update='{"gulf-map": {"lat": 20.0, "lng": 65.0, "zoom": 4}}'>
       <p><strong>The Destination Geography.</strong> 84% of crude oil and condensate transiting Hormuz in 2024 was destined for Asian markets: China 37.7%, India 14.7%, South Korea 12.0%, Japan 10.9%. The United States receives just 2.5%.</p>
       <p>When the strait closes, it is Asia — not Europe, not North America — that absorbs the immediate physical shortage.</p>
     </div>
