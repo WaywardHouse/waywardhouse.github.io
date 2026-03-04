@@ -37,6 +37,7 @@ import { renderMap, updateMap }              from './viz/mapbox.js';
 import { renderLeaflet, updateLeaflet }      from './viz/leaflet.js';
 import { renderD3, updateD3 }                from './viz/d3.js';
 import { renderRicker, renderRickerScrolly } from './models/ricker.js';
+import { renderOilShock }                   from './models/oil-shock.js';
 
 // ── ECharts element router ────────────────────────────────────────────────────
 // [data-viz] elements: route to a named renderer or fall back to generic ECharts.
@@ -44,6 +45,7 @@ import { renderRicker, renderRickerScrolly } from './models/ricker.js';
 const ECHARTS_RENDERERS = {
   ricker:           renderRicker,
   'ricker-scrolly': renderRickerScrolly,
+  'oil-shock':      renderOilShock,
 };
 
 function renderEChartsEl(el, options) {
