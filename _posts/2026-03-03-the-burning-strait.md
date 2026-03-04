@@ -28,8 +28,6 @@ On February 28, 2026, the theoretical became operational.
 
 This essay examines what changes when the chokepoint activates. It is not a commentary on the conflict itself — the humanitarian and environmental consequences within the region are self-evidently severe and deserve separate treatment. What follows is the systems view: how physical geography, financial geography, and economic geography interact when the world's most consequential energy corridor goes dark.
 
-<div data-viz="oil-shock" style="min-height: 860px;"></div>
-
 ---
 
 ## Part A: The Geography of Concentration
