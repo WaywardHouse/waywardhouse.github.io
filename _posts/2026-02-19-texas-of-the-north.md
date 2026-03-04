@@ -307,4 +307,4 @@ All U.S. dollar figures in USD; Canadian figures in CAD unless noted. Exchange r
 
 ---
 
-*Previous: [A Trade Reality Check](/alberta-in-context/trade-reality-check/) · Next: [Contested Ground](/alberta-in-context/global-energy-markets/)*
+*Previous: [A Trade Reality Check](/alberta-trade-reality-check/) · Next: [Contested Ground](/global-energy-markets/)*

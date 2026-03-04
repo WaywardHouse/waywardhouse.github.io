@@ -365,4 +365,4 @@ Argus Media. Urals Crude Price Data, 2024–2025.
 
 ---
 
-*Previous: [The Texas of the North](/alberta-in-context/texas-of-the-north/)*
+*Previous: [The Texas of the North](/texas-of-the-north/) · Next: [The Burning Strait](/the-burning-strait)*

@@ -332,4 +332,4 @@ All figures in Canadian dollars unless otherwise noted. International trade data
 
 ---
 
-*Previous in this series: [The Trade Reality](/alberta-in-context/trade-reality/) · Next: [The Texas of the North](/alberta-in-context/texas-of-the-north/)*
+*· Next in the Series: [The Texas of the North](/texas-of-the-north/)*
