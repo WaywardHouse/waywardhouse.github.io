@@ -1,5 +1,5 @@
 ---
-layout: series
+layout:  series
 title: "Series 12: Data Assimilation and Statistical Modeling"
 subtitle: "Bayesian inference, machine learning for spatial data, ensemble methods, and model-observation fusion"
 series_number: 12
