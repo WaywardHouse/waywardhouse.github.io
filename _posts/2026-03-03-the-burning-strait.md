@@ -4,10 +4,10 @@ title: "The Burning Strait"
 subtitle: "A systems view of chokepoint activation, supply chain propagation, and the asymmetric geography of oil dependence"
 date: 2026-03-03
 excerpt: "How the 2026 Iran conflict rewrites the global energy map sketched in Contested Ground — a systems view of chokepoint activation, supply chain propagation, and the asymmetric geography of oil dependence."
-categories: [economic-geography]
+categories: [Economic Geography]
 tags: [energy, geopolitics, oil, iran, strait-of-hormuz, middle-east, supply-chains, food-security, alberta]
 author: Paul Hobson
-image: /assets/images/choke-point.jpg
+image: /assets/images/choke-point.png
 featured: true
 comments: true
 
@@ -262,6 +262,14 @@ Oxford Economics assesses that Iran cannot win a conventional military contest b
 The duration variable is everything. What is already clear, regardless of duration, is that the pre-crisis oversupply buffer of approximately 1.5 million barrels per day is entirely insufficient to offset 15–20 million barrels per day of Hormuz flows. OPEC+ can increase production, but much of that additional production must itself transit Hormuz to reach Asian buyers. Saudi Arabia's East-West pipeline can redirect some volume to Red Sea ports, but at a fraction of the scale needed. The arithmetic is unforgiving.
 
 If a sustained oil price increase to $100 per barrel materialises — a scenario analysts now describe as plausible if infrastructure damage proves extensive — Capital Economics estimates it could add 0.6–0.7 percentage points to global inflation.[^31] In developing economies where food-price inflation already runs at double the advanced-economy norm, the effect is amplified further.
+
+---
+
+### Explore the Propagation Model
+
+The analysis above rests on region-level elasticities that vary substantially — Japan's 72% Hormuz dependence versus Canada's zero, Sub-Saharan Africa's 70% food-channel transmission versus the United States' 30%. The simulator below lets you vary the shock parameters and watch how those structural differences translate into different impact profiles across 12 world regions over 24 months.
+
+<div data-viz="oil-shock" style="min-height: 860px;"></div>
 
 ---
 

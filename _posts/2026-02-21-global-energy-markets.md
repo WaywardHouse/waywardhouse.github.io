@@ -7,7 +7,7 @@ series_order: 4
 date: 2026-02-21
 last_modified_at: 2026-02-26
 categories:
-  - economic-geography
+  - [Economic Geography]
   - energy
 tags:
   - alberta

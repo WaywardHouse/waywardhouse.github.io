@@ -9,8 +9,8 @@ date: 2026-02-17
 last_modified_at: 2026-02-26
 image: /assets/images/alberta.png
 categories:
-  - economic-geography
-  - trade
+  - Economic Geography
+  - Trade
 tags:
   - alberta
   - interprovincial-trade
