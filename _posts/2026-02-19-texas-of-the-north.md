@@ -3,12 +3,12 @@ layout: essay
 title: "The Texas of the North"
 subtitle: "What the Comparison Actually Reveals — and What It Obscures"
 series: "Alberta in Context"
-series_order: 3
+series_order: 2
 featured: true
 date: 2026-02-19
 last_modified_at: 2026-02-26
 image: /assets/images/texas-north.png
-categories: [economic-geography]
+categories: [Economic Geography]
 tags:
   - alberta
   - texas

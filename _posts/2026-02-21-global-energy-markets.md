@@ -3,10 +3,10 @@ layout: essay
 title: "Contested Ground"
 subtitle: "Global Energy Markets, War, Sanctions, and the Renewable Tide"
 series: "Alberta in Context"
-series_order: 4
+series_order: 3
 date: 2026-02-21
 last_modified_at: 2026-02-26
-categories: [economic-geography]
+categories: [Economic Geography]
 tags:
   - alberta
   - global-energy

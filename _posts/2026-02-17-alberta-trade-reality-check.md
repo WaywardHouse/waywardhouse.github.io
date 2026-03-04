@@ -3,12 +3,12 @@ layout: essay
 title: "A Trade Reality Check"
 subtitle: "What the Province Produces, What It Exports, and What It Needs From Everyone Else"
 series: "Alberta in Context"
-series_order: 2
+series_order: 1
 featured: true
 date: 2026-02-17
 last_modified_at: 2026-02-26
 image: /assets/images/alberta.png
-categories: [economic-geography]
+categories: [Economic Geography]
 tags:
   - alberta
   - interprovincial-trade
@@ -259,7 +259,7 @@ Alberta does not receive equalization payments — it has not since 1964–65. B
 
 Equalization is the most politically charged transfer program. The program exists to ensure provinces can provide "reasonably comparable levels of public services at reasonably comparable levels of taxation" — a constitutional commitment under s. 36(2) of the *Constitution Act, 1982*.
 
-Alberta's grievances with the formula are substantive. The formula includes a hypothetical Alberta PST in calculating fiscal capacity — penalizing Alberta for not having a sales tax — while simultaneously excluding Quebec's below-market hydro electricity rates. Critics argue this asymmetry penalizes resource-based revenue systems while protecting politically sensitive hydro policies.
+Alberta's grievances with the formula are substantive. The formula includes a hypothetical Alberta PST in calculating fiscal capacity — penalizing Alberta for not having a sales tax — while simultaneously excluding Quebec's below-market hydroelectricity rates. Critics argue this asymmetry penalizes resource-based revenue systems while protecting politically sensitive hydro policies.
 
 The non-binding 2021 referendum, in which 61.7% of Albertans voted to remove equalization from the Constitution, reflects deep frustration with these asymmetries — even as constitutional scholars note Alberta alone cannot change the formula.
 
