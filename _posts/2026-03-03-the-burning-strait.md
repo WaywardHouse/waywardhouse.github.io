@@ -6,8 +6,8 @@ date: 2026-03-03
 excerpt: "How the 2026 Iran conflict rewrites the global energy map sketched in Contested Ground — a systems view of chokepoint activation, supply chain propagation, and the asymmetric geography of oil dependence."
 categories: [economic-geography]
 tags: [energy, geopolitics, oil, iran, strait-of-hormuz, middle-east, supply-chains, food-security, alberta]
-author: paul
-image: /assets/images/burning-strait-hero.jpg
+author: Paul Hobson
+image: /assets/images/choke-point.jpg
 featured: true
 comments: true
 
@@ -41,7 +41,7 @@ To understand the current crisis is to understand the Persian Gulf not as a regi
            data-center="52.0,26.5"
            data-zoom="5.2"
            data-pitch="30"
-           data-style="mapbox://styles/mapbox/dark-v11"></div>
+           data-style="mapbox://styles/mapbox/outdoors-v12"></div>
     </div>
   </div>
   <div class="story-steps">
