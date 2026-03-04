@@ -47,49 +47,32 @@ To understand the current crisis is to understand the Persian Gulf not as a regi
   <div class="story-steps">
 
     <div class="story-step" data-step="0"
-         data-update='{"gulf-map": {"center": [52.0, 26.5], "zoom": 5.2, "pitch": 30, "animate": false}}'
-         markdown="1">
-
-**The Persian Gulf as a System.** No other region on Earth concentrates this much energy infrastructure in this little space, and no other chokepoint channels this large a fraction of global supply through a passage barely 34 kilometres wide at its narrowest point.[^2] Understanding the current crisis requires understanding this geography as a *system*, not a collection of independent facilities.
-
+         data-update='{"gulf-map": {"center": [52.0, 26.5], "zoom": 5.2, "pitch": 30, "animate": false}}'>
+      <p><strong>The Persian Gulf as a System.</strong> No other region on Earth concentrates this much energy infrastructure in this little space, and no other chokepoint channels this large a fraction of global supply through a passage barely 34 kilometres wide at its narrowest point. Understanding the current crisis requires understanding this geography as a <em>system</em>, not a collection of independent facilities.</p>
     </div>
 
     <div class="story-step" data-step="1"
-         data-update='{"gulf-map": {"center": [50.5, 25.5], "zoom": 6.0, "pitch": 20}}'
-         markdown="1">
-
-**Upstream: Where the Oil Comes From.** Five countries — Saudi Arabia, Iraq, the UAE, Kuwait, and Iran — account for approximately 93.6% of all crude and condensate volumes transiting the Strait of Hormuz.[^3] Their fields sit within a few hundred kilometres of the Persian Gulf coast, and their crude predominantly exits via marine terminals on that coast. Saudi Arabia's Ghawar field lies roughly 100 kilometres inland. Iraq's southern Basra fields feed directly to the Basra Oil Terminal. Kuwait's entire export infrastructure faces the Gulf. The UAE's Abu Dhabi fields are offshore in the Gulf itself. Iran's Kharg Island terminal sits in the northern Gulf.
-
-The geographic fact is plain: there is no inland alternative for the bulk of this production. The oil must cross water. And the water narrows to Hormuz.
-
+         data-update='{"gulf-map": {"center": [50.5, 25.5], "zoom": 6.0, "pitch": 20}}'>
+      <p><strong>Upstream: Where the Oil Comes From.</strong> Five countries — Saudi Arabia, Iraq, the UAE, Kuwait, and Iran — account for approximately 93.6% of all crude and condensate volumes transiting Hormuz. Their fields sit within a few hundred kilometres of the Gulf coast: Ghawar 100 km inland, Basra fields feeding directly to the Basra Oil Terminal, Kuwait's entire export infrastructure facing the Gulf, UAE fields offshore, Iran's Kharg Island terminal in the northern Gulf.</p>
+      <p>The geographic fact is plain: there is no inland alternative for the bulk of this production. The oil must cross water. And the water narrows to Hormuz.</p>
     </div>
 
     <div class="story-step" data-step="2"
-         data-update='{"gulf-map": {"center": [56.2, 26.3], "zoom": 8.0, "pitch": 15}}'
-         markdown="1">
-
-**Midstream: The Chokepoint.** In 2024, approximately 20 million barrels per day of oil flowed through the Strait of Hormuz — roughly 20% of global petroleum liquids consumption and over 31% of all seaborne crude flows.[^4] Additionally, about 20% of global liquefied natural gas exports — primarily from Qatar — transit the same waterway.
-
-Alternative routes exist — most notably Saudi Arabia's East-West pipeline to Red Sea terminals, capable of moving up to 5 million barrels per day — but the scale mismatch is severe. Together with the UAE's Habshan-Fujairah pipeline, these alternatives cover perhaps a third of normal Hormuz flows. There is no engineering substitute for an open strait.
-
+         data-update='{"gulf-map": {"center": [56.2, 26.3], "zoom": 8.0, "pitch": 15}}'>
+      <p><strong>Midstream: The Chokepoint.</strong> In 2024, approximately 20 million barrels per day of oil flowed through the Strait of Hormuz — roughly 20% of global petroleum liquids consumption and over 31% of all seaborne crude flows. Additionally, about 20% of global LNG exports — primarily from Qatar — transit the same waterway.</p>
+      <p>Alternative bypass routes cover perhaps a third of normal Hormuz flows. There is no engineering substitute for an open strait.</p>
     </div>
 
     <div class="story-step" data-step="3"
-         data-update='{"gulf-map": {"center": [50.8, 26.2], "zoom": 6.5, "pitch": 25}}'
-         markdown="1">
-
-**Downstream: The Blast Radius.** The Gulf's downstream infrastructure — refineries, LNG liquefaction plants, petrochemical complexes, loading terminals — is not dispersed across continents. It sits directly on or near the Gulf coast. Saudi Aramco's Ras Tanura refinery processes 550,000 barrels per day and is co-located with the kingdom's largest offshore crude loading terminal. QatarEnergy's Ras Laffan complex accounts for roughly 20% of global LNG supply.[^5] Abu Dhabi's ADNOC facilities sit close to Iran. Kuwait's Mina Al-Ahmadi complex handles the vast majority of Kuwaiti crude exports.
-
-All of these facilities are within drone range of Iran. The 2019 attack on Saudi Arabia's Abqaiq processing facility demonstrated the vulnerability: a limited drone strike temporarily knocked out more than half of the kingdom's crude production.
-
+         data-update='{"gulf-map": {"center": [50.8, 26.2], "zoom": 6.5, "pitch": 25}}'>
+      <p><strong>Downstream: The Blast Radius.</strong> The Gulf's downstream infrastructure sits directly on or near the coast: Ras Tanura (550,000 b/d refinery and export terminal), Ras Laffan (~20% of global LNG), ADNOC facilities offshore Abu Dhabi, Kuwait's Mina Al-Ahmadi complex. All are within drone range of Iran.</p>
+      <p>The 2019 Abqaiq attack proved the vulnerability: a limited drone strike temporarily knocked out more than half of Saudi Arabia's crude production.</p>
     </div>
 
     <div class="story-step" data-step="4"
-         data-update='{"gulf-map": {"center": [65.0, 20.0], "zoom": 3.5, "pitch": 0}}'
-         markdown="1">
-
-**The Destination Geography.** 84% of crude oil and condensate transiting Hormuz in 2024 was destined for Asian markets.[^6] The supply corridor and the demand corridor are aligned on a single axis: Gulf production flows east through Hormuz to Asia. When the strait closes, it is Asia — not Europe, not North America — that absorbs the immediate physical shortage. China receives 37.7% of all Hormuz crude, India 14.7%, South Korea 12.0%, Japan 10.9%. The United States receives just 2.5%.
-
+         data-update='{"gulf-map": {"center": [65.0, 20.0], "zoom": 3.5, "pitch": 0}}'>
+      <p><strong>The Destination Geography.</strong> 84% of crude oil and condensate transiting Hormuz in 2024 was destined for Asian markets: China 37.7%, India 14.7%, South Korea 12.0%, Japan 10.9%. The United States receives just 2.5%.</p>
+      <p>When the strait closes, it is Asia — not Europe, not North America — that absorbs the immediate physical shortage.</p>
     </div>
 
   </div>
@@ -181,36 +164,24 @@ The disruption is not evenly distributed. It falls disproportionately on Asia, w
   </div>
   <div class="story-steps">
 
-    <div class="story-step" data-step="0" markdown="1">
-
-**Japan and South Korea: Maximum Structural Exposure.** Japan imports all of its oil; approximately 72% of those imports transit the Strait of Hormuz. South Korea's dependence is roughly 65%. Both nations have advanced economies, strong institutions, and substantial strategic petroleum reserves — but reserves are designed to bridge short disruptions, not sustained blockades.
-
-South Korea's net oil imports represent 2.7% of GDP. Nomura flags it among the most vulnerable economies on a current-account basis. Japan's Nikkei stock index fell 1.3% on the first trading day after the strikes.[^16]
-
+    <div class="story-step" data-step="0">
+      <p><strong>Japan and South Korea: Maximum Structural Exposure.</strong> Japan imports all of its oil; approximately 72% of those imports transit the Strait of Hormuz. South Korea's dependence is roughly 65%. Both nations have substantial strategic petroleum reserves — but reserves are designed to bridge short disruptions, not sustained blockades.</p>
+      <p>South Korea's net oil imports represent 2.7% of GDP. Japan's Nikkei fell 1.3% on the first trading day after the strikes.</p>
     </div>
 
-    <div class="story-step" data-step="1" markdown="1">
-
-**India: The Dual Shock.** India faces the largest combined exposure in Asia. More than 60% of its oil imports originate in the Middle East. Crucially, over half of its LNG imports are Gulf-linked, and a significant share is Brent-indexed — meaning a Hormuz-driven crude spike simultaneously increases both oil import costs and LNG contract prices. Analysts at Union Bancaire Privée describe this as a "dual physical and financial shock."[^17]
-
-India also subsidises domestic fuel and fertiliser heavily. A sustained price spike compresses fiscal space, forcing trade-offs between subsidy maintenance and other public spending.
-
+    <div class="story-step" data-step="1">
+      <p><strong>India: The Dual Shock.</strong> India faces the largest combined exposure in Asia. More than 60% of its oil imports originate in the Middle East. Over half of its LNG imports are Gulf-linked and Brent-indexed — meaning a Hormuz-driven crude spike simultaneously raises both oil import costs and LNG contract prices: a "dual physical and financial shock."</p>
+      <p>India also subsidises domestic fuel and fertiliser heavily. A sustained price spike compresses fiscal space, forcing trade-offs between subsidies and other public spending.</p>
     </div>
 
-    <div class="story-step" data-step="2" markdown="1">
-
-**China: Exposed but Buffered.** China enters this crisis better positioned than any other major importer, for a reason directly connected to the sanctions architecture analysed in *Contested Ground*. Through aggressive purchasing of discounted Russian and Iranian crude throughout 2024 and 2025, China built substantial strategic petroleum reserves. Only about 40% of its oil imports transit Hormuz, and it has pipeline-delivered crude from Russia and Central Asia.[^18]
-
-China purchases more than 80% of Iranian oil exports. The loss of Iranian production (~3.3 million b/d crude plus ~1.3 million b/d condensate) to conflict damage therefore affects China's supply chain specifically, even though China may have buffer to absorb short-term disruption. Roughly 30% of China's LNG imports come from Qatar and the UAE — a parallel gas supply tightening alongside the crude disruption.
-
+    <div class="story-step" data-step="2">
+      <p><strong>China: Exposed but Buffered.</strong> China enters this crisis better positioned than any other major importer. Through aggressive purchasing of discounted Russian and Iranian crude throughout 2024&#8202;–&#8202;25, China built substantial strategic petroleum reserves. Only about 40% of its oil imports transit Hormuz, and it has pipeline-delivered crude from Russia and Central Asia.</p>
+      <p>China purchases more than 80% of Iranian oil exports, so the loss of Iranian production (~3.3 million b/d) affects China's supply chain specifically. Roughly 30% of China's LNG imports also come from Qatar and the UAE.</p>
     </div>
 
-    <div class="story-step" data-step="3" markdown="1">
-
-**Thailand and Southeast Asia: Cost Amplifiers.** Thailand is a notable outlier. With net oil imports at 4.7% of GDP — the highest in Asia — each 10% rise in oil prices worsens its current account by approximately 0.5 percentage points of GDP.[^19] Across much of Southeast Asia — the Philippines, Indonesia, Thailand — the first-order hit is cost inflation rather than an immediate physical shortage. Spot-reliant LNG buyers face sharply higher replacement costs as Asia competes with Europe for Atlantic cargoes.
-
-Malaysia, as a net energy exporter, is a relative beneficiary — an asymmetry that underlines the redistributive rather than purely destructive character of a supply disruption.
-
+    <div class="story-step" data-step="3">
+      <p><strong>Thailand and Southeast Asia: Cost Amplifiers.</strong> Thailand's net oil imports represent 4.7% of GDP — the highest in Asia. Each 10% rise in oil prices worsens its current account by approximately 0.5 percentage points. Across the Philippines, Indonesia, and Thailand, the first-order hit is cost inflation rather than an immediate physical shortage.</p>
+      <p>Malaysia, as a net energy exporter, is a relative beneficiary — an asymmetry that underlines the redistributive rather than purely destructive character of a supply disruption.</p>
     </div>
 
   </div>
