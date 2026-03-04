@@ -8,7 +8,7 @@ difficulty_range: 3-5
 estimated_hours: 45
 prerequisites: [series-1, series-2-partial]
 tags: [fire, severe-weather, meteorology, floods, hazards]
-image:/assets/images/atmospheric-and-hazards.png
+image: /assets/images/atmospheric-and-hazards.png
 ---
 
 ## Series Overview

@@ -8,9 +8,7 @@ featured: true
 date: 2026-02-17
 last_modified_at: 2026-02-26
 image: /assets/images/alberta.png
-categories:
-  - Economic Geography
-  - Trade
+categories: [economic-geography]
 tags:
   - alberta
   - interprovincial-trade

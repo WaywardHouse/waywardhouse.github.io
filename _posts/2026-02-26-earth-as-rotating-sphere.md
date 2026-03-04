@@ -32,7 +32,7 @@ math_prerequisites: >
   Trigonometry (sin, cos, tan) from Model 6. The concept of angular measurement
   (degrees and radians). We'll introduce spherical coordinates geometrically and
   show how to convert to Cartesian coordinates.
-image:/assets/images/orbital-mechanics.png
+image: /assets/images/orbital-mechanics.png
 ---
 
 ## 1. The Question

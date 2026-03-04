@@ -33,7 +33,7 @@ excerpt: >
 math_prerequisites: >
   Snow physics (Models 42-44). Energy balance (Model 42). Basic calculus (rates
   of change). We'll introduce glacier-specific processes and ice dynamics.
-image:/assets/images/cryosphere-and-hydrology.png
+image: /assets/images/cryosphere-and-hydrology.png
   
 ---
 

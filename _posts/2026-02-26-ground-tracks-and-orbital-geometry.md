@@ -31,7 +31,7 @@ excerpt: >
 math_prerequisites: >
   Circular orbits (Model 13). Spherical coordinates (Model 12). Coordinate
   transformations. We'll combine orbital mechanics with Earth's rotation geometry.
-image:/assets/images/orbital-mechanics.png
+image: /assets/images/orbital-mechanics.png
 ---
 
 ## 1. The Question

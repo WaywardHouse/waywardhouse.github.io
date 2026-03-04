@@ -33,7 +33,7 @@ excerpt: >
 math_prerequisites: >
   Electromagnetic waves. Doppler effect. Signal processing basics. We'll introduce
   radar principles and synthetic aperture processing from first principles.
-image:/assets/images/SAR-inSAR.png
+image: /assets/images/SAR-inSAR.png
 ---
 
 ## 1. The Question

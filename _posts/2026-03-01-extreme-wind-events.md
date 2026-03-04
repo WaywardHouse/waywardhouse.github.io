@@ -31,7 +31,7 @@ excerpt: >
 math_prerequisites: >
   Thunderstorm dynamics (Model 63). Boundary layer (Model 66). Thermodynamics.
   We'll introduce downdraft physics and mesoscale convective systems.
-image:/assets/images/atmospheric-and-hazards.png
+image: /assets/images/atmospheric-and-hazards.png
 
 ---
 

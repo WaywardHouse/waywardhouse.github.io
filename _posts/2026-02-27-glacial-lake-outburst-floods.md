@@ -34,7 +34,7 @@ excerpt: >
 math_prerequisites: >
   Hydrology basics (discharge, Manning equation). Glacier systems (Models 46-47).
   Energy conservation. We'll introduce dam breach mechanics and flood hydraulics.
-image:/assets/images/cryosphere-and-hydrology.png
+image: /assets/images/cryosphere-and-hydrology.png
   
 ---
 

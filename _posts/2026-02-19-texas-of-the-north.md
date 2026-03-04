@@ -8,9 +8,7 @@ featured: true
 date: 2026-02-19
 last_modified_at: 2026-02-26
 image: /assets/images/texas-north.png
-categories:
-  - [Economic Geography]
-  - comparative-political-economy
+categories: [economic-geography]
 tags:
   - alberta
   - texas

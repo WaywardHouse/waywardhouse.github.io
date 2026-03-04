@@ -34,7 +34,7 @@ excerpt: >
 math_prerequisites: >
   Heat transfer basics (conduction). Phase change (latent heat). Slope stability
   (Model 49). We'll introduce permafrost thermodynamics and geotechnical impacts.
-image:/assets/images/permafrost-hazards.png
+image: /assets/images/permafrost-hazards.png
 ---
 
 ## 1. The Question

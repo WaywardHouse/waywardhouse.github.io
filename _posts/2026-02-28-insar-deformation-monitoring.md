@@ -34,7 +34,7 @@ excerpt: >
 math_prerequisites: >
   SAR principles (Model 56). Complex numbers. Phase concepts. We'll introduce
   interferometry and differential processing from first principles.
-image:/assets/images/atmospheric-and-hazards.png
+image: /assets/images/atmospheric-and-hazards.png
 
 ---
 

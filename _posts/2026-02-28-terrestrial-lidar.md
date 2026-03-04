@@ -33,7 +33,7 @@ excerpt: >
 math_prerequisites: >
   Basic trigonometry. Speed of light. DEM concepts (Model 7). We'll introduce laser
   ranging principles and point cloud processing algorithms.
-image:/assets/images/lidar-point-clouds.png
+image: /assets/images/lidar-point-clouds.png
 ---
 
 ## 1. The Question

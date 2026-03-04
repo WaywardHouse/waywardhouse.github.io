@@ -8,7 +8,7 @@ difficulty_range: 2-4
 estimated_hours: 55
 prerequisites: [series-1]
 tags: [energy-balance, hydrology, ecosystems, process-models]
-image:/assets/images/energy-fluxes.png
+image: /assets/images/energy-fluxes.png
 ---
 
 ## Series Overview

@@ -34,7 +34,7 @@ math_prerequisites: >
   Electromagnetic radiation basics. Remote sensing fundamentals (Models 25, 39-41).
   Linear algebra (matrix operations). We'll introduce spectroscopy and imaging
   spectrometry from first principles.
-image:/assets/images/remote-sensing.png
+image: /assets/images/remote-sensing.png
 
 ---
 

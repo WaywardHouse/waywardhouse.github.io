@@ -34,7 +34,7 @@ excerpt: >
 math_prerequisites: >
   Planck's law (Model 53). Electromagnetic radiation. Dielectric properties basics.
   We'll introduce microwave radiometry and retrieval algorithms from first principles.
-image:/assets/images/SAR-inSAR.png
+image: /assets/images/SAR-inSAR.png
 ---
 
 ## 1. The Question

@@ -32,7 +32,7 @@ excerpt: >
 math_prerequisites: >
   Linear algebra basics (vectors, matrices). Derivatives. We'll introduce gradient
   descent, regularization, and cross-validation from first principles.
-image:/assets/images/foundations-and-math.png
+image: /assets/images/foundations-and-math.png
 ---
 
 ## 1. The Question

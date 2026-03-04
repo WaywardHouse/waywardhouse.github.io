@@ -34,7 +34,7 @@ excerpt: >
 math_prerequisites: >
   Basic chemistry (ions, pH, concentration). Glacier mass balance (Model 46). Water
   chemistry concepts. We'll introduce chemical weathering and solute transport.
-image:/assets/images/cryosphere-and-hydrology.png
+image: /assets/images/cryosphere-and-hydrology.png
   
 ---
 

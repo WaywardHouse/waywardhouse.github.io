@@ -32,7 +32,7 @@ math_prerequisites: >
   Functions of two variables (Model 7). Basic derivatives conceptually. We'll
   introduce partial derivatives from scratch and show how finite differences
   approximate them numerically.
-image:/assets/images/spatial-analysis.png
+image: /assets/images/spatial-analysis.png
 ---
 
 ## 1. The Question

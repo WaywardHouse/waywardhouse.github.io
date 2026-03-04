@@ -33,7 +33,7 @@ excerpt: >
 math_prerequisites: >
   Atmospheric moisture basics. Exponential decay. Heat transfer concepts. We'll
   introduce fire meteorology and fuel dynamics from first principles.
-image:/assets/images/fire-modeling.png
+image: /assets/images/fire-modeling.png
   
 ---
 

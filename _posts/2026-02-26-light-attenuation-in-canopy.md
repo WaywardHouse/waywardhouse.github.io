@@ -31,7 +31,7 @@ math_prerequisites: >
   Exponential functions and their derivatives (Model 3). Differential equations
   conceptually. We'll work in the vertical dimension (height z) rather than time,
   but the mathematics is identical in structure.
-image:/assets/images/remote-sensing.png)
+image: /assets/images/remote-sensing.png)
 ---
 
 ## 1. The Question

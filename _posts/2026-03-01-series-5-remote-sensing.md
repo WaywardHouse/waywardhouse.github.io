@@ -8,7 +8,7 @@ difficulty_range: 4-5
 estimated_hours: 35
 prerequisites: [series-1, series-2-partial]
 tags: [remote-sensing, radar, lidar, hyperspectral, geophysics]
-image:/assets/images/remote-sensing.png
+image: /assets/images/remote-sensing.png
 ---
 
 ## Series Overview

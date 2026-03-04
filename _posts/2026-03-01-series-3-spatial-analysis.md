@@ -8,7 +8,7 @@ difficulty_range: 3-5
 estimated_hours: 50
 prerequisites: [series-1]
 tags: [gis, spatial-analysis, interpolation, map-algebra, statistics]
-image:/assets/images/spatial-analysis.png
+image: /assets/images/spatial-analysis.png
 ---
 
 ## Series Overview
