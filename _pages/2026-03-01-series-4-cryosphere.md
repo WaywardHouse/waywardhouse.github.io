@@ -4,6 +4,7 @@ permalink: /series/4/
 title: "Series 4: Cryosphere and Mountain Systems"
 subtitle: "Snow physics, glaciers, permafrost, and high-elevation hazards"
 series_number: 4
+series_key: computational-geography-cryosphere
 total_essays: 10
 difficulty_range: 3-5
 estimated_hours: 38

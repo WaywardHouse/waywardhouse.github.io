@@ -12,93 +12,92 @@ permalink: /series/
   </div>
 </header>
 
-{% assign series_posts = site.posts | where_exp: "post", "post.series != nil" %}
-{% assign series_groups = series_posts | group_by: "series" %}
+{% assign series_syllabus = site.pages | where_exp: "p", "p.series_number" | sort: "series_number" %}
 
 <section class="listing-section">
-  <div class="listing-inner listing-inner--narrow" x-data="difficultyFilter" :data-filter="filter || ''">
+  <div class="listing-inner listing-inner--narrow">
 
-    {% if series_groups.size == 0 %}
+    {% if series_syllabus.size == 0 %}
     <p class="listing-empty">No series published yet. Browse the <a href="/archive/">archive</a>.</p>
     {% else %}
 
-    <div class="difficulty-filter-bar">
-      <span class="difficulty-filter-label">Filter</span>
-      <button class="filter-btn" :class="{ active: filter === 0 }" @click="filter = 0" type="button">All</button>
-      <button class="filter-btn filter-btn--1" :class="{ active: filter === 1 }" @click="filter = 1" type="button">Level 1</button>
-      <button class="filter-btn filter-btn--2" :class="{ active: filter === 2 }" @click="filter = 2" type="button">Level 2</button>
-      <button class="filter-btn filter-btn--3" :class="{ active: filter === 3 }" @click="filter = 3" type="button">Level 3</button>
-      <button class="filter-btn filter-btn--4" :class="{ active: filter === 4 }" @click="filter = 4" type="button">Level 4</button>
-      <button class="filter-btn filter-btn--5" :class="{ active: filter === 5 }" @click="filter = 5" type="button">Level 5</button>
-    </div>
+    {% for syllabus in series_syllabus %}
 
-    {% for group in series_groups %}
-    {% assign posts_sorted = group.items | sort: "series_order" %}
-    {% assign first_post = posts_sorted | first %}
-    {% assign has_clusters = posts_sorted | where_exp: "p", "p.cluster" | size %}
+    {% assign series_posts = "" | split: "" %}
+    {% if syllabus.series_key %}
+      {% assign series_posts = site.posts | where: "series", syllabus.series_key | sort: "series_order" %}
+    {% endif %}
 
     <article class="series-group">
 
       <header class="series-group-header">
-        <div class="series-group-eyebrow">{{ group.items.size }} {% if first_post.categories contains 'modeling' %}{% if group.items.size == 1 %}model{% else %}models{% endif %}{% else %}{% if group.items.size == 1 %}essay{% else %}essays{% endif %}{% endif %}</div>
-        <h2 class="series-group-title">{{ group.name | replace: "-", " " | replace: "computational geography ", "" | capitalize }}</h2>
-        {% if first_post.excerpt %}
-        <p class="series-group-desc">{{ first_post.excerpt | strip_html | truncatewords: 30 }}</p>
+        <div class="series-group-eyebrow">Series {{ syllabus.series_number }}{% if syllabus.total_essays %} &middot; {{ syllabus.total_essays }} models planned{% endif %}{% if syllabus.estimated_hours %} &middot; ~{{ syllabus.estimated_hours }}h{% endif %}</div>
+        <h2 class="series-group-title">{{ syllabus.title | split: ": " | last }}</h2>
+        {% if syllabus.subtitle %}
+        <p class="series-group-desc">{{ syllabus.subtitle }}</p>
         {% endif %}
-        <a href="{{ first_post.url | relative_url }}" class="btn btn-primary">Start reading &rarr;</a>
+        <a href="{{ syllabus.url | relative_url }}" class="btn btn-primary">View syllabus &rarr;</a>
+        {% if series_posts.size > 0 %}
+        {% assign first_post = series_posts | first %}
+        <a href="{{ first_post.url | relative_url }}" class="btn btn-secondary">Start reading &rarr;</a>
+        {% endif %}
       </header>
 
-      {% if has_clusters > 0 %}
+      {% if series_posts.size > 0 %}
 
-        {% comment %}Group essays by cluster{% endcomment %}
-        {% assign current_cluster = "" %}
-        {% for post in posts_sorted %}
+        {% assign has_clusters = series_posts | where_exp: "p", "p.cluster" | size %}
 
-          {% if post.cluster != current_cluster %}
-            {% unless current_cluster == "" %}</ol></div>{% endunless %}
-            <div class="cluster-section">
-              <div class="cluster-header">
-                <span class="cluster-label">{{ post.cluster }}</span>
-                {% if post.cluster_title %}<span class="cluster-title">{{ post.cluster_title }}</span>{% endif %}
-              </div>
-              <ol class="cluster-essay-list">
-            {% assign current_cluster = post.cluster %}
-          {% endif %}
+        {% if has_clusters > 0 %}
+
+          {% assign current_cluster = "" %}
+          {% for post in series_posts %}
+
+            {% if post.cluster != current_cluster %}
+              {% unless current_cluster == "" %}</ol></div>{% endunless %}
+              <div class="cluster-section">
+                <div class="cluster-header">
+                  <span class="cluster-label">{{ post.cluster }}</span>
+                  {% if post.cluster_title %}<span class="cluster-title">{{ post.cluster_title }}</span>{% endif %}
+                </div>
+                <ol class="cluster-essay-list">
+              {% assign current_cluster = post.cluster %}
+            {% endif %}
 
               <li class="cluster-essay-item"
                   x-data="essayProgress('{{ post.url }}')"
                   :class="{ 'cluster-essay-item--done': completed }"
-                  data-difficulty="{% if post.categories contains 'modeling' %}{{ post.difficulty | default: 0 }}{% else %}0{% endif %}">
+                  data-difficulty="{{ post.difficulty | default: 0 }}">
                 <span class="cluster-essay-num" x-text="completed ? '✓' : '{{ post.series_order }}'">{{ post.series_order }}</span>
                 <div class="cluster-essay-body">
                   <a href="{{ post.url | relative_url }}" class="cluster-essay-title">{{ post.title }}</a>
                   {% if post.subtitle %}<span class="cluster-essay-sub">{{ post.subtitle }}</span>{% endif %}
                 </div>
-                {% if post.difficulty and post.categories contains 'modeling' %}
+                {% if post.difficulty %}
                 <span class="difficulty-badge difficulty-badge--{{ post.difficulty }}">{{ post.difficulty }}</span>
                 {% endif %}
               </li>
 
-        {% endfor %}
-        {% if posts_sorted.size > 0 %}</ol></div>{% endif %}
-
-      {% else %}
-
-        {% comment %}Flat list — no clusters{% endcomment %}
-        <ol class="series-flat-list">
-          {% for post in posts_sorted %}
-          <li class="series-flat-item"
-              x-data="essayProgress('{{ post.url }}')"
-              :class="{ 'cluster-essay-item--done': completed }"
-              data-difficulty="{{ post.difficulty | default: 0 }}">
-            <span class="cluster-essay-num" x-text="completed ? '✓' : '{{ forloop.index }}'">{{ forloop.index }}</span>
-            <div class="cluster-essay-body">
-              <a href="{{ post.url | relative_url }}" class="cluster-essay-title">{{ post.title }}</a>
-              {% if post.subtitle %}<span class="cluster-essay-sub">{{ post.subtitle }}</span>{% endif %}
-            </div>
-          </li>
           {% endfor %}
-        </ol>
+          {% if series_posts.size > 0 %}</ol></div>{% endif %}
+
+        {% else %}
+
+          <ol class="series-flat-list">
+            {% for post in series_posts %}
+            <li class="series-flat-item"
+                x-data="essayProgress('{{ post.url }}')"
+                :class="{ 'cluster-essay-item--done': completed }"
+                data-difficulty="{{ post.difficulty | default: 0 }}">
+              <span class="cluster-essay-num" x-text="completed ? '✓' : '{{ forloop.index }}'">{{ forloop.index }}</span>
+              <div class="cluster-essay-body">
+                <a href="{{ post.url | relative_url }}" class="cluster-essay-title">{{ post.title }}</a>
+                {% if post.subtitle %}<span class="cluster-essay-sub">{{ post.subtitle }}</span>{% endif %}
+              </div>
+            </li>
+            {% endfor %}
+          </ol>
+
+        {% endif %}
 
       {% endif %}
 

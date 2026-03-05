@@ -4,6 +4,7 @@ permalink: /series/1/
 title: "Series 1: Foundations of Computational Geography"
 subtitle: "Building mathematical and computational literacy through spatial systems"
 series_number: 1
+series_key: computational-geography-foundations
 total_essays: 12
 difficulty_range: 1-4
 estimated_hours: 40

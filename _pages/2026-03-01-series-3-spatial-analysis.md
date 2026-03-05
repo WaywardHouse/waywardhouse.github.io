@@ -4,6 +4,7 @@ permalink: /series/3/
 title: "Series 3: Computational Spatial Analysis"
 subtitle: "Quantitative methods for raster and vector geographic data"
 series_number: 3
+series_key: computational-geography-spatial
 total_essays: 14
 difficulty_range: 3-5
 estimated_hours: 50

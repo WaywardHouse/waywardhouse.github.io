@@ -4,6 +4,7 @@ permalink: /series/5/
 title: "Series 5: Advanced Remote Sensing"
 subtitle: "Across the electromagnetic spectrum and beyond"
 series_number: 5
+series_key: computational-geography-advanced-remote-sensing
 total_essays: 8
 difficulty_range: 4-5
 estimated_hours: 35

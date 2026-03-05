@@ -4,6 +4,7 @@ permalink: /series/6/
 title: "Series 6: Atmospheric Hazards and Dynamics"
 subtitle: "Fire, severe weather, wind, and flood modeling"
 series_number: 6
+series_key: computational-geography-atmospheric-hazards
 total_essays: 11
 difficulty_range: 3-5
 estimated_hours: 45
