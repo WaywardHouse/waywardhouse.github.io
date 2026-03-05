@@ -1,5 +1,5 @@
 ---
-layout: essay
+layout: model
 title: "Urban Scaling Laws and City Structure"
 subtitle: "Zipf's law, power laws for infrastructure, superlinear creativity, and the von Thünen rent gradient"
 date: 2026-03-05

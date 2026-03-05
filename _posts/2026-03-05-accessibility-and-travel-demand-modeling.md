@@ -1,5 +1,5 @@
 ---
-layout: essay
+layout: model
 title: "Accessibility and Travel Demand modelling"
 subtitle: "Gravity models, floating catchment areas, and the paradox of induced demand"
 date: 2026-03-05

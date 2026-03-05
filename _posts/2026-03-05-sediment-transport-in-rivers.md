@@ -1,5 +1,5 @@
 ---
-layout: essay
+layout: model
 title: "Sediment Transport in Rivers"
 subtitle: "Shields, Meyer-Peter, and the hydraulic threshold between a sleeping and a moving riverbed"
 date: 2026-03-05

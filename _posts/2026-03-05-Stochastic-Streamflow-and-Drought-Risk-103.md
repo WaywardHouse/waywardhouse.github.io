@@ -1,5 +1,5 @@
 ---
-layout: essay
+layout: model
 title: "Stochastic Streamflow and Drought Risk"
 subtitle: "Flow duration curves, return periods, synthetic hydrology, and reliability metrics"
 date: 2026-03-05

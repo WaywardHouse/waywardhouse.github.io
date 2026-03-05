@@ -1,5 +1,5 @@
 ---
-layout: essay
+layout: model
 title: "Bayesian Inference for Environmental Models"
 subtitle: "Prior beliefs, likelihood, posterior updating, and MCMC sampling"
 date: 2026-03-05

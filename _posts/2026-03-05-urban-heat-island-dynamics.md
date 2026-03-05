@@ -1,5 +1,5 @@
 ---
-layout: essay
+layout: model
 title: "Urban Heat Island Dynamics"
 subtitle: "Surface energy balance, anthropogenic heat, and the thermal penalty of the built environment"
 date: 2026-03-05

@@ -1,5 +1,5 @@
 ---
-layout: essay
+layout: model
 title: "Passive Microwave Radiometry"
 subtitle: "Brightness temperature, emissivity, and the all-weather eye on soil moisture and sea ice"
 date: 2026-03-05

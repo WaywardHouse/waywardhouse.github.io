@@ -1,5 +1,5 @@
 ---
-layout: essay
+layout: model
 title: "Ensemble Forecasting and Uncertainty Quantification"
 subtitle: "Monte Carlo ensembles, spread-skill relationships, and probabilistic forecast verification"
 date: 2026-03-05

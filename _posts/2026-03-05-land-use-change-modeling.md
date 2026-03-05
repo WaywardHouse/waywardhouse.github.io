@@ -1,5 +1,5 @@
 ---
-layout: essay
+layout: model
 title: "Land Use Change modelling"
 subtitle: "Cellular automata, logistic regression, and the simulation of urban growth"
 date: 2026-03-05

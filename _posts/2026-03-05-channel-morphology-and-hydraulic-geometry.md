@@ -1,5 +1,5 @@
 ---
-layout: essay
+layout: model
 title: "Channel Morphology and Hydraulic Geometry"
 subtitle: "Power laws, regime theory, and the self-organised geometry of rivers"
 date: 2026-03-05

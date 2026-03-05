@@ -1,5 +1,5 @@
 ---
-layout: essay
+layout: model
 title: "Dimensionality Reduction for High-Dimensional Geographic Data"
 subtitle: "PCA, t-SNE, UMAP, and hyperspectral data compression"
 date: 2026-03-05

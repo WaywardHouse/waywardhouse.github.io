@@ -1,5 +1,5 @@
 ---
-layout: essay
+layout: model
 title: "Satellite Data Assimilation in Environmental Models"
 subtitle: "Observation operators, variational assimilation, and land surface data assimilation"
 date: 2026-03-05

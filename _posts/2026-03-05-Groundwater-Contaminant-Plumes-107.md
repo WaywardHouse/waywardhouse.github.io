@@ -1,5 +1,5 @@
 ---
-layout: essay
+layout: model
 title: "Groundwater Contaminant Plumes"
 subtitle: "Advection-dispersion in porous media, retardation, NAPL source zones, and plume geometry"
 date: 2026-03-05

@@ -1,5 +1,5 @@
 ---
-layout: essay
+layout: model
 title: "SAR Fundamentals and Applications"
 subtitle: "Synthetic aperture, backscatter physics, and the radar eye that sees through clouds"
 date: 2026-03-05

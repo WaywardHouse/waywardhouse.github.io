@@ -1,5 +1,5 @@
 ---
-layout: essay
+layout: model
 title: "Demographic Spatial Dynamics"
 subtitle: "Cohort-component projection, migration flows, and the geography of ageing"
 date: 2026-03-05

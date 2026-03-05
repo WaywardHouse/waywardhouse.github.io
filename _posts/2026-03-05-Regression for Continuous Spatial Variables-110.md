@@ -1,5 +1,5 @@
 ---
-layout: essay
+layout: model
 title: "Regression for Continuous Spatial Variables"
 subtitle: "Regularisation, bias-variance tradeoff, spatial cross-validation, and random forest regression"
 date: 2026-03-05

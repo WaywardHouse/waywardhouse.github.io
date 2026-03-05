@@ -1,5 +1,5 @@
 ---
-layout: essay
+layout: model
 title: "Wave Dynamics and Nearshore Transformation"
 subtitle: "From deep water to the surf zone: dispersion, shoaling, and the physics of breaking waves"
 date: 2026-03-05

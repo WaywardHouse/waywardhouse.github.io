@@ -1,5 +1,5 @@
 ---
-layout: essay
+layout: model
 title: "Rock Weathering and Soil Formation"
 subtitle: "Chemical kinetics, temperature dependence, and the slow arithmetic of landscape lowering"
 date: 2026-03-05

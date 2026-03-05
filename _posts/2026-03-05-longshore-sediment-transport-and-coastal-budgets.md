@@ -1,5 +1,5 @@
 ---
-layout: essay
+layout: model
 title: "Longshore Sediment Transport and Coastal Budgets"
 subtitle: "The CERC formula, littoral drift, and the arithmetic of beaches gained and lost"
 date: 2026-03-05

@@ -1,5 +1,5 @@
 ---
-layout: essay
+layout: model
 title: "Reservoir Operations and Mass Balance"
 subtitle: "Storage-yield analysis, sequent peak algorithm, and multi-purpose operating rules"
 date: 2026-03-05
