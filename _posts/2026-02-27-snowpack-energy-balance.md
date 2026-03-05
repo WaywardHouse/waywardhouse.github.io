@@ -32,7 +32,7 @@ excerpt: >
 math_prerequisites: >
   Surface energy balance (Model 17). Solar geometry (Model 6). Stefan-Boltzmann law.
   We'll introduce snow-specific physics: high albedo, metamorphism, and melt processes.
-image: /assets/images/cryosphere-and-hydrology.png
+image: /assets/images/snow-energy-balance.png
   
 ---
 

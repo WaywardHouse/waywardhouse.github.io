@@ -3,6 +3,7 @@ layout: model
 title: "Snow Accumulation and Melt Modeling"
 subtitle: "Tracking snowpack evolution through the winter season"
 date: 2026-02-27
+image: /assets/images/snow-accumulation-melt.png
 categories: [modeling]
 series: computational-geography-cryosphere
 series_order: 2

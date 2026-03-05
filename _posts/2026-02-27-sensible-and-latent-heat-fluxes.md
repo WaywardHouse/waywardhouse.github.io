@@ -3,6 +3,7 @@ layout: model
 title: "Sensible and Latent Heat Fluxes"
 subtitle: "How net radiation is partitioned between heating air and evaporating water"
 date: 2026-02-26
+image: /assets/images/sensible-latent.png
 categories: [modeling]
 series: computational-geography-environmental
 series_order: 6

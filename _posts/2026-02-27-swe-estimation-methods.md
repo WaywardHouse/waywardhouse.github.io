@@ -3,6 +3,7 @@ layout: model
 title: "Snow Water Equivalent Estimation"
 subtitle: "Measuring snowpack from the ground and from space"
 date: 2026-02-27
+image: /assets/images/swe.png
 categories: [modeling]
 series: computational-geography-cryosphere
 series_order: 3

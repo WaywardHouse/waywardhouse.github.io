@@ -3,6 +3,7 @@ layout: model
 title: "Slope Stability Analysis"
 subtitle: "When will this hillslope fail? Forces, failure planes, and landslide prediction"
 date: 2026-02-27
+image: /assets/images/slope-stability.png
 categories: [modeling]
 series: computational-geography-cryosphere
 series_order: 8

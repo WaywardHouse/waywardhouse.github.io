@@ -3,6 +3,7 @@ layout: model
 title: "Viewshed and Line-of-Sight Analysis"
 subtitle: "What can you see from this location? Visibility analysis on terrain"
 date: 2026-02-27
+image: /assets/images/viewshed.png
 categories: [modeling]
 series: computational-geography-spatial
 series_order: 8

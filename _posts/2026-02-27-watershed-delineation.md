@@ -3,6 +3,7 @@ layout: model
 title: "Watershed Delineation and Flow Networks"
 subtitle: "Extracting drainage basins from digital elevation models"
 date: 2026-02-27
+image: /assets/images/watershed-delineation.png
 categories: [modeling]
 series: computational-geography-spatial
 series_order: 10

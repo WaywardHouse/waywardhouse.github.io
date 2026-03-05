@@ -3,6 +3,7 @@ layout: model
 title: "Vegetation Indices and Remote Sensing"
 subtitle: "NDVI, EVI, and monitoring photosynthesis from space"
 date: 2026-02-26
+image: /assets/images/vegetation-indices.png
 categories: [modeling]
 series: computational-geography-environmental
 series_order: 13

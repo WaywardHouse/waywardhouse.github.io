@@ -3,6 +3,7 @@ layout: model
 title: "Soil Moisture Dynamics"
 subtitle: "Water balance, infiltration, and plant-available water in the root zone"
 date: 2026-02-26
+image: /assets/images/soil-moisture-dynamics.png
 categories: [modeling]
 series: computational-geography-environmental
 series_order: 9

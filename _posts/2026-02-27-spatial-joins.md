@@ -3,6 +3,7 @@ layout: model
 title: "Spatial Joins and Proximity Queries"
 subtitle: "Linking datasets by location — the foundation of spatial analysis"
 date: 2026-02-27
+image: /assets/images/spatial-join.png
 categories: [modeling]
 series: computational-geography-spatial
 series_order: 4

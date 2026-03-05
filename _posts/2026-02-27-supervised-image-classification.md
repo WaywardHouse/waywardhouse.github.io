@@ -3,6 +3,7 @@ layout: model
 title: "Supervised Image Classification"
 subtitle: "From satellite pixels to land cover maps using training data"
 date: 2026-02-27
+image: /assets/images/supervised-classification.png
 categories: [modeling]
 series: computational-geography-spatial
 series_order: 11

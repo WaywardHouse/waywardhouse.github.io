@@ -3,6 +3,7 @@ layout: model
 title: "Soil Heat Diffusion"
 subtitle: "Temperature waves propagating into the ground — diurnal and seasonal cycles"
 date: 2026-02-26
+image: /assets/images/soil-heat-diffusion.png
 categories: [modeling]
 series: computational-geography-environmental
 series_order: 7

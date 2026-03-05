@@ -3,6 +3,7 @@ layout: model
 title: "Time Series Analysis of Satellite Data"
 subtitle: "Extracting trends, seasonality, and phenology from multi-temporal imagery"
 date: 2026-02-27
+image: /assets/images/time-series-satellite.png
 categories: [modeling]
 series: computational-geography-spatial
 series_order: 13
