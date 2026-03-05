@@ -3,6 +3,7 @@ layout: model
 title: "Earth as a Rotating Sphere"
 subtitle: "Spherical coordinates, angular velocity, and the geometry of our rotating planet"
 date: 2026-02-26
+image: /assets/images/orbital-mechanics.png
 categories: [modeling]
 series: computational-geography-foundations
 series_order: 12
@@ -24,15 +25,14 @@ dynamics: 1
 computation: 3
 domain: [physical-geography, geodesy, remote-sensing, orbital-mechanics]
 excerpt: >
-  The Earth is a sphere rotating on an axis. Every point on the surface traces
+  "The Earth is a sphere rotating on an axis. Every point on the surface traces
   a circle once per day. To model Earth observation from space, we need to work
   in spherical coordinates and transform between latitude/longitude and Cartesian
-  xyz. This model builds that foundation.
+  xyz. This model builds that foundation."
 math_prerequisites: >
-  Trigonometry (sin, cos, tan) from Model 6. The concept of angular measurement
+  "Trigonometry (sin, cos, tan) from Model 6. The concept of angular measurement
   (degrees and radians). We'll introduce spherical coordinates geometrically and
-  show how to convert to Cartesian coordinates.
-image: /assets/images/orbital-mechanics.png
+  show how to convert to Cartesian coordinates."
 ---
 
 ## 1. The Question
