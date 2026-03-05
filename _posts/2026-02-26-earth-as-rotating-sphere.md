@@ -18,6 +18,7 @@ tags:
   - coordinate-transforms
 math: true
 viz: true
+gl: true
 difficulty: 3
 math_core: [spherical-coordinates, angular-velocity, coordinate-transforms, trigonometry]
 spatial_reasoning: 4
