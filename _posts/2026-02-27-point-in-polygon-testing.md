@@ -4,14 +4,14 @@ title: "Point-in-Polygon Testing"
 subtitle: "The ray casting algorithm and spatial membership queries"
 date: 2026-02-27
 image: /assets/images/point-in-polygon.png
-categories: [modeling]
+categories: [modelling]
 series: computational-geography-spatial
 series_order: 1
 cluster: K
 cluster_title: "Raster Foundations"
 tags:
   - computational-geography
-  - modeling
+  - modelling
   - gis
   - vector-operations
   - algorithms

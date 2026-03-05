@@ -3,14 +3,14 @@ layout: model
 title: "Bathymetric LiDAR and Sonar Mapping"
 subtitle: "Measuring underwater topography with light and sound"
 date: 2026-02-27
-categories: [modeling]
+categories: [modelling]
 series: computational-geography-advanced-remote-sensing
 series_order: 4
 cluster: T
 cluster_title: "Active Ranging Systems"
 tags:
   - computational-geography
-  - modeling
+  - modelling
   - remote-sensing
   - bathymetry
   - lidar
@@ -571,7 +571,7 @@ await new Promise(resolve => {
 
 Systematic coastal mapping for:
 - Nautical chart updates
-- Tsunami inundation modeling
+- Tsunami inundation modelling
 - Habitat assessment
 - Emergency response
 
@@ -620,7 +620,7 @@ Maps entire river including:
 
 **Applications:**
 - Salmon habitat (pool-riffle structure)
-- Flood modeling (channel capacity)
+- Flood modelling (channel capacity)
 - Sediment transport (bedform mapping)
 
 ### Archaeological Applications
@@ -797,4 +797,4 @@ Trade-off: Resolution vs range.
 - Applications span coastal mapping, coral reef monitoring, river surveys, archaeology
 - Challenges include suspended sediment, surface waves, and refraction correction
 - Complementary technologies cover full range from shallow clear to deep turbid water
-- Critical for navigation safety, habitat assessment, and hazard modeling
+- Critical for navigation safety, habitat assessment, and hazard modelling

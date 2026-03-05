@@ -3,7 +3,7 @@ layout: essay
 title: "Reservoir Operations and Mass Balance"
 subtitle: "Storage-yield analysis, sequent peak algorithm, and multi-purpose operating rules"
 date: 2026-03-05
-categories: modeling
+categories: modelling
 series: computational-geography-laboratory
 series_order: 102
 cluster: "AR — Reservoir Operations and Water Supply"

@@ -4,14 +4,14 @@ title: "Phenology and Growing Season Dynamics"
 subtitle: "Temperature, photoperiod, and the timing of leaf emergence and senescence"
 date: 2026-02-26
 image: /assets/images/growing-season.png
-categories: [modeling]
+categories: [modelling]
 series: computational-geography-environmental
 series_order: 16
 cluster: J
 cluster_title: "Biogeochemical Cycles"
 tags:
   - computational-geography
-  - modeling
+  - modelling
   - phenology
   - growing-degree-days
   - photoperiod

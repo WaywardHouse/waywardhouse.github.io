@@ -3,7 +3,7 @@ layout: model
 title: "Regression for Continuous Variables"
 subtitle: "Predicting spatial fields from spectral and environmental features"
 date: 2026-03-01
-categories: [modeling, machine-learning]
+categories: [modelling, machine-learning]
 series: computational-geography-ml
 series_order: 2
 cluster: Z

@@ -3,7 +3,7 @@ layout: essay
 title: "Stochastic Streamflow and Drought Risk"
 subtitle: "Flow duration curves, return periods, synthetic hydrology, and reliability metrics"
 date: 2026-03-05
-categories: modeling
+categories: modelling
 series: computational-geography-laboratory
 series_order: 103
 cluster: "AR — Reservoir Operations and Water Supply"

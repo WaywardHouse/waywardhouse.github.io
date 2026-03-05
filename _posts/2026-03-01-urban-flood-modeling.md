@@ -1,17 +1,17 @@
 ---
 layout: model
-title: "Urban Flood Modeling and Green Infrastructure"
+title: "Urban Flood modelling and Green Infrastructure"
 subtitle: "Runoff generation and mitigation in developed watersheds"
 image: /assets/images/urban-flood.png
 date: 2026-02-27
-categories: [modeling]
+categories: [modelling]
 series: computational-geography-atmospheric-hazards
 series_order: 11
 cluster: Y
 cluster_title: "Flood Hydrology"
 tags:
   - computational-geography
-  - modeling
+  - modelling
   - hydrology
   - urban-flooding
   - green-infrastructure

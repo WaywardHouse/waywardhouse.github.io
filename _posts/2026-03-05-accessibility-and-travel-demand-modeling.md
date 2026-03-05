@@ -1,9 +1,9 @@
 ---
 layout: essay
-title: "Accessibility and Travel Demand Modeling"
+title: "Accessibility and Travel Demand modelling"
 subtitle: "Gravity models, floating catchment areas, and the paradox of induced demand"
 date: 2026-03-05
-categories: modeling
+categories: modelling
 series: computational-geography-laboratory
 series_order: 98
 cluster: "AK — Transportation and Accessibility"

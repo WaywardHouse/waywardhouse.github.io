@@ -3,14 +3,14 @@ layout: model
 title: "Fire Weather and Ignition Potential"
 subtitle: "Meteorological conditions that drive wildfire ignition and spread"
 date: 2026-02-27
-categories: [modeling]
+categories: [modelling]
 series: computational-geography-atmospheric-hazards
 series_order: 1
 cluster: V
 cluster_title: "Fire Science"
 tags:
   - computational-geography
-  - modeling
+  - modelling
   - fire
   - meteorology
   - hazards
@@ -33,7 +33,7 @@ excerpt: >
 math_prerequisites: >
   Atmospheric moisture basics. Exponential decay. Heat transfer concepts. We'll
   introduce fire meteorology and fuel dynamics from first principles.
-image: /assets/images/fire-modeling.png
+image: /assets/images/fire-modelling.png
   
 ---
 

@@ -3,7 +3,7 @@ layout: essay
 title: "Demographic Spatial Dynamics"
 subtitle: "Cohort-component projection, migration flows, and the geography of ageing"
 date: 2026-03-05
-categories: modeling
+categories: modelling
 series: computational-geography-laboratory
 series_order: 101
 cluster: "AL — Land Use and Demographic Dynamics"

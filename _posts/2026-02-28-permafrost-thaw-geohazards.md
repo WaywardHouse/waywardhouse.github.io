@@ -3,14 +3,14 @@ layout: model
 title: "Permafrost Thaw and Geohazards"
 subtitle: "Ground ice melt and its consequences for infrastructure and slope stability"
 date: 2026-02-27
-categories: [modeling]
+categories: [modelling]
 series: computational-geography-cryosphere
 series_order: 10
 cluster: R
 cluster_title: "Mountain Hazards"
 tags:
   - computational-geography
-  - modeling
+  - modelling
   - cryosphere
   - permafrost
   - climate-change
@@ -20,7 +20,7 @@ tags:
 math: true
 viz: true
 difficulty: 4
-math_core: [heat-transfer, phase-change, thaw-settlement, thermal-modeling]
+math_core: [heat-transfer, phase-change, thaw-settlement, thermal-modelling]
 spatial_reasoning: 3
 dynamics: 3
 computation: 3

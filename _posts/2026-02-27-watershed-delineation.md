@@ -4,14 +4,14 @@ title: "Watershed Delineation and Flow Networks"
 subtitle: "Extracting drainage basins from digital elevation models"
 date: 2026-02-27
 image: /assets/images/watershed-delineation.png
-categories: [modeling]
+categories: [modelling]
 series: computational-geography-spatial
 series_order: 10
 cluster: M
 cluster_title: "Terrain Analysis"
 tags:
   - computational-geography
-  - modeling
+  - modelling
   - gis
   - terrain-analysis
   - watershed
@@ -46,7 +46,7 @@ If it rains on this mountain, where does the water eventually flow?
 - **Flood prediction:** How much area contributes flow to this point?
 - **Water quality:** Which land uses drain into this stream?
 - **Reservoir planning:** What's the contributing area to a dam site?
-- **Erosion modeling:** Where does sediment originate and accumulate?
+- **Erosion modelling:** Where does sediment originate and accumulate?
 - **Ecological assessment:** Upstream impacts on downstream habitats
 
 The mathematical question: Given a DEM, how do we automatically extract:
@@ -921,10 +921,10 @@ while S not empty:
 - **Stream network** extracted by thresholding flow accumulation (>100-1000 cells)
 - **Watershed delineation** traces upslope from pour point to find all contributors
 - **Depression filling** removes artificial sinks before flow routing
-- **Applications:** Flood risk, water quality, reservoir planning, erosion modeling
+- **Applications:** Flood risk, water quality, reservoir planning, erosion modelling
 - **Challenges:** Flat areas, depressions, DEM resolution, edge effects
 - **D-infinity** extends to continuous flow direction (more realistic, more complex)
-- Critical for hydrological modeling and environmental management
+- Critical for hydrological modelling and environmental management
 
 
 ---

@@ -14,7 +14,7 @@ image: /assets/images/geomorphology.png
 
 ## Series Overview
 
-Landscapes are not static — they are the cumulative record of energy dissipation across time. Weathering disaggregates rock, water and gravity move the debris, and the coast redistributes it through wave action. This series develops quantitative models of surface processes from thermodynamic and mechanical first principles, building the mathematical foundation for landscape evolution modeling, natural hazard assessment, and long-term environmental change.
+Landscapes are not static — they are the cumulative record of energy dissipation across time. Weathering disaggregates rock, water and gravity move the debris, and the coast redistributes it through wave action. This series develops quantitative models of surface processes from thermodynamic and mechanical first principles, building the mathematical foundation for landscape evolution modelling, natural hazard assessment, and long-term environmental change.
 
 ## Pedagogical Approach
 

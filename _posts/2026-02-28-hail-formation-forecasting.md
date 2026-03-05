@@ -3,14 +3,14 @@ layout: model
 title: "Hail Formation and Forecasting"
 subtitle: "Growth processes and prediction of damaging ice precipitation"
 date: 2026-02-27
-categories: [modeling]
+categories: [modelling]
 series: computational-geography-atmospheric-hazards
 series_order: 6
 cluster: W
 cluster_title: "Severe Weather"
 tags:
   - computational-geography
-  - modeling
+  - modelling
   - meteorology
   - hail
   - severe-weather

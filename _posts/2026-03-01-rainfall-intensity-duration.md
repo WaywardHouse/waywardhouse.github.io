@@ -3,14 +3,14 @@ layout: model
 title: "Rainfall Intensity-Duration-Frequency"
 subtitle: "Statistical analysis of extreme precipitation for hydrologic design"
 date: 2026-02-27
-categories: [modeling]
+categories: [modelling]
 series: computational-geography-atmospheric-hazards
 series_order: 9
 cluster: Y
 cluster_title: "Flood Hydrology"
 tags:
   - computational-geography
-  - modeling
+  - modelling
   - hydrology
   - precipitation
   - idf-curves

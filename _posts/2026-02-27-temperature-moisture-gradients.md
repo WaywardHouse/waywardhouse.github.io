@@ -4,14 +4,14 @@ title: "Temperature and Moisture Gradients"
 subtitle: "Atmospheric stability, inversions, and the vertical structure of humidity"
 date: 2026-02-26
 image: /assets/images/temperature-moisture.png
-categories: [modeling]
+categories: [modelling]
 series: computational-geography-environmental
 series_order: 12
 cluster: I
 cluster_title: "Atmospheric Interactions"
 tags:
   - computational-geography
-  - modeling
+  - modelling
   - meteorology
   - lapse-rate
   - stability

@@ -1,7 +1,7 @@
 ---
 layout: page
 permalink: /series/12/
-title: "Series 12: Data Assimilation and Statistical Modeling"
+title: "Series 12: Data Assimilation and Statistical modelling"
 subtitle: "Bayesian inference, machine learning for spatial data, ensemble methods, and model-observation fusion"
 series_number: 12
 total_essays: 6
@@ -21,7 +21,7 @@ Every model in this curriculum simplifies reality. Real environmental systems ge
 
 **Machine learning as model-free regression.** Neural networks, random forests, and Gaussian processes can be understood as flexible regression models with particular inductive biases. We derive their properties rather than treating them as algorithmic incantations.
 
-**Uncertainty must be propagated, not ignored.** Ensemble methods and Monte Carlo techniques make uncertainty visible throughout the modeling chain. A forecast without uncertainty bounds is not a forecast — it is a guess dressed as a prediction.
+**Uncertainty must be propagated, not ignored.** Ensemble methods and Monte Carlo techniques make uncertainty visible throughout the modelling chain. A forecast without uncertainty bounds is not a forecast — it is a guess dressed as a prediction.
 
 ## Learning Objectives
 
@@ -91,7 +91,7 @@ Observation operators for radiances, reflectances, and retrievals. Observation e
 
 **Data scientists:** Start Model 110 (regression) or Model 111 (dimensionality reduction). Geographic applications of familiar methods.
 
-**Process modelers:** Start Model 112 (ensembles) or Model 113 (Kalman filter). These directly extend deterministic models toward operational forecast systems.
+**Process modellers:** Start Model 112 (ensembles) or Model 113 (Kalman filter). These directly extend deterministic models toward operational forecast systems.
 
 **Remote sensing specialists:** Model 114 (satellite data assimilation) connects observation systems to model state estimation.
 
@@ -125,7 +125,7 @@ Observation operators for radiances, reflectances, and retrievals. Observation e
 
 ## Extensions
 
-**For climate modeling:** Series 14 (climate system integration) applies data assimilation concepts to the full Earth system.
+**For climate modelling:** Series 14 (climate system integration) applies data assimilation concepts to the full Earth system.
 
 **For remote sensing:** Series 5 provides the observation systems whose data is assimilated in Model 114.
 

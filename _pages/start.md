@@ -56,4 +56,4 @@ This site is itself open — built with Jekyll and published on GitHub Pages. If
 
 ## Not sure where to start?
 
-[Search the site](/search/) if you have a specific topic in mind, or [browse all essays](/topic/economic-geography/) and [all modeling pieces](/series/) to get a feel for the range.
+[Search the site](/search/) if you have a specific topic in mind, or [browse all essays](/topic/economic-geography/) and [all modelling pieces](/series/) to get a feel for the range.

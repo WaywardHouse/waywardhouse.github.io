@@ -4,14 +4,14 @@ title: "Slope Stability Analysis"
 subtitle: "When will this hillslope fail? Forces, failure planes, and landslide prediction"
 date: 2026-02-27
 image: /assets/images/slope-stability.png
-categories: [modeling]
+categories: [modelling]
 series: computational-geography-cryosphere
 series_order: 8
 cluster: R
 cluster_title: "Mountain Hazards"
 tags:
   - computational-geography
-  - modeling
+  - modelling
   - hazards
   - slope-stability
   - landslides

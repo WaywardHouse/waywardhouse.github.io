@@ -4,14 +4,14 @@ title: "Earth as a Rotating Sphere"
 subtitle: "Spherical coordinates, angular velocity, and the geometry of our rotating planet"
 date: 2026-02-26
 image: /assets/images/orbital-mechanics.png
-categories: [modeling]
+categories: [modelling]
 series: computational-geography-foundations
 series_order: 12
 cluster: E
 cluster_title: "Observing the Earth"
 tags:
   - computational-geography
-  - modeling
+  - modelling
   - spherical-coordinates
   - rotation
   - geodesy
@@ -549,7 +549,7 @@ Earth is an **oblate spheroid**. For precision geodesy (GPS, surveying), use the
 - Polar radius: 6356.752 km
 - Flattening: $f = 1/298.257$
 
-For satellite orbits and large-scale modeling, the difference matters.
+For satellite orbits and large-scale modelling, the difference matters.
 
 ### Longitude Wraparound
 
@@ -621,7 +621,7 @@ Both describe the same geometry — just different angle conventions.
 
 ## Summary
 
-- Earth is modeled as a sphere with radius $R = 6371$ km
+- Earth is modelled as a sphere with radius $R = 6371$ km
 - **Latitude** φ and **longitude** λ define positions on the surface
 - **Spherical to Cartesian:** $x = R \cos(lat) \cos(lon)$, etc.
 - Earth rotates at $\omega = 7.292 \times 10^{-5}$ rad/s

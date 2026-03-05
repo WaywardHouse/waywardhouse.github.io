@@ -3,14 +3,14 @@ layout: model
 title: "Avalanche Terrain Analysis"
 subtitle: "Identifying where and when avalanches are likely"
 date: 2026-02-27
-categories: [modeling]
+categories: [modelling]
 series: computational-geography-cryosphere
 series_order: 4
 cluster: P
-cluster_title: "Snow Physics & Modeling"
+cluster_title: "Snow Physics & modelling"
 tags:
   - computational-geography
-  - modeling
+  - modelling
   - cryosphere
   - avalanche
   - slope-analysis
@@ -20,7 +20,7 @@ tags:
 math: true
 viz: true
 difficulty: 4
-math_core: [slope-analysis, terrain-classification, hazard-modeling, probability]
+math_core: [slope-analysis, terrain-classification, hazard-modelling, probability]
 spatial_reasoning: 5
 dynamics: 2
 computation: 3
@@ -626,7 +626,7 @@ Victim or group member triggered avalanche (90%+).
 - Runout zone extends to bench
 - **Extremely dangerous** despite being "safe" slope angle
 
-**Solution:** Alpha angle runout modeling.
+**Solution:** Alpha angle runout modelling.
 
 ---
 
@@ -719,11 +719,11 @@ $$FS = \frac{\tan\phi}{\tan\theta}$$
 
 ---
 
-🎉 **CLUSTER P: SNOW PHYSICS & MODELING - COMPLETE!** 🎉
+🎉 **CLUSTER P: SNOW PHYSICS & modelling - COMPLETE!** 🎉
 
 **Models 42-45:**
 - Snowpack Energy Balance
-- Snow Accumulation & Melt Modeling  
+- Snow Accumulation & Melt modelling  
 - SWE Estimation Methods
 - Avalanche Terrain Analysis
 

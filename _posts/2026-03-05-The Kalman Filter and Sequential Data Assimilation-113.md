@@ -3,7 +3,7 @@ layout: essay
 title: "The Kalman Filter and Sequential Data Assimilation"
 subtitle: "State-space models, optimal Kalman gain, and the ensemble Kalman filter"
 date: 2026-03-05
-categories: modeling
+categories: modelling
 series: computational-geography-laboratory
 series_order: 113
 cluster: "AU — Ensemble Methods and Data Assimilation"

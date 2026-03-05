@@ -9,9 +9,9 @@
 **Status:** Starting Essay 42
 **Total planned:** 10 essays
 
-### Cluster P: Snow Physics & Modeling (4 essays)
+### Cluster P: Snow Physics & modelling (4 essays)
 - Essay 42: Snowpack Energy Balance ⬅️ NEXT
-- Essay 43: Snow Accumulation and Melt Modeling
+- Essay 43: Snow Accumulation and Melt modelling
 - Essay 44: Snow Water Equivalent Estimation
 - Essay 45: Avalanche Terrain Analysis
 
@@ -22,7 +22,7 @@
 
 ### Cluster R: Mountain Hazards (3 essays)
 - Essay 49: Slope Stability Analysis
-- Essay 50: Debris Flow Modeling
+- Essay 50: Debris Flow modelling
 - Essay 51: Permafrost Thaw and Geohazards
 
 ---
@@ -43,7 +43,7 @@
 
 ### Cluster Q: Fire Science
 - Fire Weather Indices (FWI, drought codes, Canadian FWI system)
-- Smoke Dispersion Modeling (plume dynamics, atmospheric transport)
+- Smoke Dispersion modelling (plume dynamics, atmospheric transport)
 - Fire Spread Algorithms (Rothermel equation, FARSITE, ember transport)
 
 ### Cluster R: Severe Weather

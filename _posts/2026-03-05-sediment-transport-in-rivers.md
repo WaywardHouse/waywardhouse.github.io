@@ -3,7 +3,7 @@ layout: essay
 title: "Sediment Transport in Rivers"
 subtitle: "Shields, Meyer-Peter, and the hydraulic threshold between a sleeping and a moving riverbed"
 date: 2026-03-05
-categories: modeling
+categories: modelling
 series: computational-geography-laboratory
 series_order: 74
 cluster: "AB — Fluvial Geomorphology"

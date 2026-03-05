@@ -3,14 +3,14 @@ layout: model
 title: "Fire Emissions and Smoke Dispersion"
 subtitle: "Quantifying pollutant release and atmospheric transport from wildfires"
 date: 2026-02-27
-categories: [modeling]
+categories: [modelling]
 series: computational-geography-atmospheric-hazards
 series_order: 3
 cluster: V
 cluster_title: "Fire Science"
 tags:
   - computational-geography
-  - modeling
+  - modelling
   - fire
   - emissions
   - air-quality
@@ -33,7 +33,7 @@ excerpt: >
 math_prerequisites: >
   Fire spread (Model 61). Atmospheric stability. Gaussian functions. We'll introduce
   combustion chemistry and atmospheric dispersion from first principles.
-image: /assets/images/fire-modeling.png
+image: /assets/images/fire-modelling.png
  
 ---
 
@@ -626,7 +626,7 @@ $$E_{CO_2} = 1.35 \times 10^{10} \times 1650 \times 10^{-12} = 22.3 \text{ Gt CO
 
 **Under-prediction:**
 
-Plume rises higher than modeled → lower ground concentrations (false alarm).
+Plume rises higher than modelled → lower ground concentrations (false alarm).
 
 **Over-prediction:**
 

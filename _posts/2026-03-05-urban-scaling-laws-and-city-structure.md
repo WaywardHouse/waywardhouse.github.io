@@ -3,7 +3,7 @@ layout: essay
 title: "Urban Scaling Laws and City Structure"
 subtitle: "Zipf's law, power laws for infrastructure, superlinear creativity, and the von Thünen rent gradient"
 date: 2026-03-05
-categories: modeling
+categories: modelling
 series: computational-geography-laboratory
 series_order: 100
 cluster: "AL — Land Use and Demographic Dynamics"

@@ -2,7 +2,7 @@
 layout: page
 permalink: /series/9/
 title: "Series 9: Biogeography and Ecosystem Dynamics"
-subtitle: "Species distributions, population ecology, biome modeling, and disturbance regimes"
+subtitle: "Species distributions, population ecology, biome modelling, and disturbance regimes"
 series_number: 9
 total_essays: 8
 difficulty_range: 2-4
@@ -58,7 +58,7 @@ Resource ratio theory. Competitive exclusion principle. Coexistence mechanisms (
 
 ### Cluster AI: Biome Dynamics and Disturbance (Models 92–94)
 
-**Model 92: Fire Ecology and Succession Modeling**
+**Model 92: Fire Ecology and Succession modelling**
 Fire return interval and fire rotation period. State-transition succession models. Post-fire recovery trajectories. Fire-vegetation feedbacks. Resilience and alternative stable states.
 
 **Model 93: Biome Boundaries and Climate Envelopes**
@@ -77,7 +77,7 @@ Surface albedo change from vegetation cover. Evapotranspiration feedback on regi
 
 **Community ecology:** Coupled ODEs, phase plane analysis, bifurcation theory
 
-**Biome modeling:** Threshold functions, piecewise linear models, feedback loops
+**Biome modelling:** Threshold functions, piecewise linear models, feedback loops
 
 ## Computational Skills Developed
 
@@ -103,7 +103,7 @@ Surface albedo change from vegetation cover. Evapotranspiration feedback on regi
 
 **Ecologists with math gap:** Start Model 90 (predator-prey). Familiar phenomena; new mathematical language.
 
-**Climate scientists:** Models 93-94 (biome boundaries, vegetation feedbacks) connect directly to Earth system modeling.
+**Climate scientists:** Models 93-94 (biome boundaries, vegetation feedbacks) connect directly to Earth system modelling.
 
 **GIS analysts:** Model 87 builds on Series 3 spatial methods to produce ecologically interpretable outputs.
 

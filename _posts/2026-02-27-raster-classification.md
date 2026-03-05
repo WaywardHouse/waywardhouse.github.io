@@ -4,14 +4,14 @@ title: "Raster Classification and Reclassification"
 subtitle: "Converting continuous values to discrete categories"
 date: 2026-02-27
 image: /assets/images/raster-classification.png
-categories: [modeling]
+categories: [modelling]
 series: computational-geography-spatial
 series_order: 7
 cluster: K
 cluster_title: "Raster Foundations"
 tags:
   - computational-geography
-  - modeling
+  - modelling
   - gis
   - raster-operations
   - classification

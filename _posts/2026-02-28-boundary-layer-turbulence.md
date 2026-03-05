@@ -3,14 +3,14 @@ layout: model
 title: "Boundary Layer Turbulence and Wind Profiles"
 subtitle: "Near-surface atmospheric dynamics and turbulent transport"
 date: 2026-02-27
-categories: [modeling]
+categories: [modelling]
 series: computational-geography-atmospheric-hazards
 series_order: 7
 cluster: X
 cluster_title: "Wind & Turbulence"
 tags:
   - computational-geography
-  - modeling
+  - modelling
   - meteorology
   - boundary-layer
   - turbulence
@@ -711,7 +711,7 @@ Where $w'$ = vertical velocity fluctuation.
 - Atmospheric stability controls turbulent mixing and dispersion rates
 - Wind resource Class 4+ (>6.5 m/s @ 80m) required for economic viability
 - Applications span wind energy, pollution dispersion, aviation safety
-- Complex terrain and low-level jets violate flat-surface assumptions requiring advanced modeling
+- Complex terrain and low-level jets violate flat-surface assumptions requiring advanced modelling
 
 **Series 6 progress: 6 of 13 models**
 **Total corpus: 66 models**

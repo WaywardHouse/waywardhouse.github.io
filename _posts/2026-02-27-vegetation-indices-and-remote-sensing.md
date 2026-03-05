@@ -4,14 +4,14 @@ title: "Vegetation Indices and Remote Sensing"
 subtitle: "NDVI, EVI, and monitoring photosynthesis from space"
 date: 2026-02-26
 image: /assets/images/vegetation-indices.png
-categories: [modeling]
+categories: [modelling]
 series: computational-geography-environmental
 series_order: 13
 cluster: I
 cluster_title: "Atmospheric Interactions"
 tags:
   - computational-geography
-  - modeling
+  - modelling
   - remote-sensing
   - ndvi
   - evi

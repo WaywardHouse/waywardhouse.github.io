@@ -1,17 +1,17 @@
 ---
 layout: model
-title: "Snow Accumulation and Melt Modeling"
+title: "Snow Accumulation and Melt modelling"
 subtitle: "Tracking snowpack evolution through the winter season"
 date: 2026-02-27
 image: /assets/images/snow-accumulation-melt.png
-categories: [modeling]
+categories: [modelling]
 series: computational-geography-cryosphere
 series_order: 2
 cluster: P
-cluster_title: "Snow Physics & Modeling"
+cluster_title: "Snow Physics & modelling"
 tags:
   - computational-geography
-  - modeling
+  - modelling
   - cryosphere
   - snow
   - hydrology
@@ -21,7 +21,7 @@ tags:
 math: true
 viz: true
 difficulty: 3
-math_core: [mass-balance, degree-day-integration, temporal-modeling, water-equivalent]
+math_core: [mass-balance, degree-day-integration, temporal-modelling, water-equivalent]
 spatial_reasoning: 2
 dynamics: 4
 computation: 3
@@ -34,7 +34,7 @@ excerpt: >
   Snow Water Equivalent (SWE) as the key hydrological variable.
 math_prerequisites: >
   Snowpack energy balance (Model 42). Basic hydrology. Integration (accumulation
-  over time). We'll introduce operational snow modeling methods from scratch.
+  over time). We'll introduce operational snow modelling methods from scratch.
 image: /assets/images/cryosphere-and-hydrology.png
   
 ---

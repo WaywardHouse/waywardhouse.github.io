@@ -4,14 +4,14 @@ title: "Map Algebra and Focal Operations"
 subtitle: "Cell-by-cell calculations and neighborhood analysis on rasters"
 date: 2026-02-27
 image: /assets/images/map-algebra.png
-categories: [modeling]
+categories: [modelling]
 series: computational-geography-spatial
 series_order: 6
 cluster: K
 cluster_title: "Raster Foundations"
 tags:
   - computational-geography
-  - modeling
+  - modelling
   - gis
   - raster-operations
   - map-algebra
@@ -42,7 +42,7 @@ How do you find suitable land that is both flat AND near water?
 **Map algebra** treats rasters as mathematical objects that can be added, multiplied, and combined with logical operations:
 
 **Examples:**
-- **Suitability modeling:** Combine slope, distance, and land cover grids
+- **Suitability modelling:** Combine slope, distance, and land cover grids
 - **Change detection:** Subtract two dates: `change = image2 - image1`
 - **NDVI calculation:** `(NIR - Red) / (NIR + Red)` (from Model 25)
 - **Terrain smoothing:** Average each cell with its neighbors
@@ -576,7 +576,7 @@ Below is an interactive map algebra demonstration.
 
 ## 6. Interpretation
 
-### Suitability Modeling
+### Suitability modelling
 
 **Problem:** Find land suitable for solar farm.
 
@@ -810,7 +810,7 @@ $$= K[-1,-1]I[i+1,j+1] + K[0,-1]I[i,j+1] + \cdots + K[1,1]I[i-1,j-1]$$
 - **Focal operations:** Convolution with kernels—neighborhood analysis
 - **Common kernels:** Mean (smooth), Gaussian (better smooth), Sobel (edges), Laplacian (change)
 - **Convolution** = weighted sum of neighbors using kernel weights
-- **Applications:** Suitability modeling, terrain analysis, change detection, image enhancement
+- **Applications:** Suitability modelling, terrain analysis, change detection, image enhancement
 - **Challenges:** Division by zero, type overflow, edge artifacts, inappropriate kernels
 - **Optimization:** Separable filters reduce computation 2-3×
 - Map algebra enables complex spatial analysis from simple operations

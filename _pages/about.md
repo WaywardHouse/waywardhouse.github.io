@@ -31,7 +31,7 @@ These pieces are narrative and analytical. They draw on data, but their purpose 
 
 This is geography as explanatory infrastructure.
 
-### 2. Computational Geography & Environmental Modeling
+### 2. Computational Geography & Environmental modelling
 
 A structured series of models that rebuild environmental and spatial reasoning from first principles.
 
@@ -56,7 +56,7 @@ Over time, these models will evolve into:
 
  - Reproducible computational notebooks
  - Open datasets
- - Transparent modeling workflows
+ - Transparent modelling workflows
  - Modular learning sequences
 
 The goal is literacy in systems — not just a passing surface familiarity.

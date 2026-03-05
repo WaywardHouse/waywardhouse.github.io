@@ -3,7 +3,7 @@ layout: essay
 title: "SAR Fundamentals and Applications"
 subtitle: "Synthetic aperture, backscatter physics, and the radar eye that sees through clouds"
 date: 2026-03-05
-categories: modeling
+categories: modelling
 series: computational-geography-laboratory
 series_order: 56
 cluster: "T — Radar Remote Sensing"

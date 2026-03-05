@@ -3,7 +3,7 @@ layout: essay
 title: "Regression for Continuous Spatial Variables"
 subtitle: "Regularisation, bias-variance tradeoff, spatial cross-validation, and random forest regression"
 date: 2026-03-05
-categories: modeling
+categories: modelling
 series: computational-geography-laboratory
 series_order: 110
 cluster: "Z — Foundations of Geographic Machine Learning"

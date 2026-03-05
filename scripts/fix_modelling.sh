@@ -8,9 +8,9 @@ git ls-files | while read file; do
   # Only process files that look like text
   if file "$file" | grep -q text; then
     sed -i '' \
-      -e 's/\bmodeling\b/modelling/g' \
-      -e 's/\bmodeled\b/modelled/g' \
-      -e 's/\bmodeler\b/modeller/g' \
+      -e 's/\bmodelling\b/modelling/g' \
+      -e 's/\bmodelled\b/modelled/g' \
+      -e 's/\bmodeller\b/modeller/g' \
       "$file"
   fi
 done

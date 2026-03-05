@@ -3,14 +3,14 @@ layout: model
 title: "Glacial Meltwater Chemistry"
 subtitle: "Chemical signatures of ice, rock, and time in glacier-fed streams"
 date: 2026-02-27
-categories: [modeling]
+categories: [modelling]
 series: computational-geography-cryosphere
 series_order: 6
 cluster: Q
 cluster_title: "Glacial Systems"
 tags:
   - computational-geography
-  - modeling
+  - modelling
   - cryosphere
   - glaciers
   - hydrology

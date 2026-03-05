@@ -1,7 +1,7 @@
 ---
 layout: page
 permalink: /series/2/
-title: "Series 2: Environmental Systems Modeling"
+title: "Series 2: Environmental Systems modelling"
 subtitle: "Energy balance, hydrology, and ecosystem processes"
 series_number: 2
 series_key: computational-geography-environmental
@@ -144,7 +144,7 @@ Carbon gain per water lost. Intrinsic vs integrated WUE. Climate change implicat
 - Irrigation scheduling (ET estimation)
 - Flood forecasting (runoff generation + routing)
 - Carbon accounting (NEE calculation)
-- Drought prediction (soil moisture modeling)
+- Drought prediction (soil moisture modelling)
 - Snowmelt runoff timing
 - Agricultural emissions (N₂O from fertilizer)
 - Lake/reservoir thermal structure

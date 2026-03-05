@@ -3,14 +3,14 @@ layout: model
 title: "Gradient, Aspect, and Direction of Steepest Descent"
 subtitle: "Partial derivatives in action — calculating slope magnitude and direction from a DEM"
 date: 2026-02-26
-categories: [modeling]
+categories: [modelling]
 series: computational-geography-foundations
 series_order: 8
 cluster: C
 cluster_title: "Terrain and Spatial Derivatives"
 tags:
   - computational-geography
-  - modeling
+  - modelling
   - calculus
   - terrain-analysis
   - partial-derivatives

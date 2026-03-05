@@ -4,14 +4,14 @@ title: "Sensible and Latent Heat Fluxes"
 subtitle: "How net radiation is partitioned between heating air and evaporating water"
 date: 2026-02-26
 image: /assets/images/sensible-latent.png
-categories: [modeling]
+categories: [modelling]
 series: computational-geography-environmental
 series_order: 6
 cluster: G
 cluster_title: "Surface Energy Balance"
 tags:
   - computational-geography
-  - modeling
+  - modelling
   - energy-balance
   - evapotranspiration
   - bowen-ratio
@@ -23,7 +23,7 @@ math_core: [energy-partitioning, phase-change, vapor-pressure, aerodynamic-resis
 spatial_reasoning: 2
 dynamics: 2
 computation: 3
-domain: [hydrology, climatology, environmental-modeling, agriculture]
+domain: [hydrology, climatology, environmental-modelling, agriculture]
 excerpt: >
   Net radiation doesn't all warm the surface. Some heats the air (sensible heat),
   some evaporates water (latent heat), some penetrates the soil (ground heat flux).

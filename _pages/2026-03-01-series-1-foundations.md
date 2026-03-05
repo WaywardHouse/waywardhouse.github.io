@@ -8,13 +8,13 @@ series_key: computational-geography-foundations
 total_essays: 12
 difficulty_range: 1-4
 estimated_hours: 40
-tags: [foundations, modeling, mathematics, differential-equations]
+tags: [foundations, modelling, mathematics, differential-equations]
 image: /assets/images/foundations-and-math.png
 ---
 
 ## Series Overview
 
-This foundational series reconstructs geography as a quantitative modeling discipline, introducing mathematical concepts through observable spatial phenomena. Rather than treating mathematics as prerequisite knowledge, we develop calculus, differential equations, and computational thinking through geographic problems that provide intuition and motivation.
+This foundational series reconstructs geography as a quantitative modelling discipline, introducing mathematical concepts through observable spatial phenomena. Rather than treating mathematics as prerequisite knowledge, we develop calculus, differential equations, and computational thinking through geographic problems that provide intuition and motivation.
 
 ## Pedagogical Philosophy
 
@@ -85,7 +85,7 @@ The series builds mathematical sophistication systematically:
 
 **High school students (advanced):** Start at Model 1, work sequentially. Expect 3-4 hours per model.
 
-**Undergraduates (STEM):** Skim Models 1-3 if calculus background. Focus on modeling perspective.
+**Undergraduates (STEM):** Skim Models 1-3 if calculus background. Focus on modelling perspective.
 
 **Geography students (quantitative gap):** Start Model 1. Series designed to build mathematical confidence.
 
@@ -93,7 +93,7 @@ The series builds mathematical sophistication systematically:
 
 ## Model Sequence
 
-### Cluster A: Modeling Change (Models 1-4)
+### Cluster A: modelling Change (Models 1-4)
 
 **Model 1: What Is a Spatial Model?**
 Introduction to variables, units, dimensional analysis. Scalar fields. First computational implementations.
@@ -197,4 +197,4 @@ All models are self-contained with complete derivations. Additional resources:
 
 ---
 
-**Next:** Proceed to Series 2 (Environmental Systems) for energy balance, hydrological processes, and ecosystem modeling. Or skip to Series 3 (Spatial Analysis) for GIS-oriented techniques.
+**Next:** Proceed to Series 2 (Environmental Systems) for energy balance, hydrological processes, and ecosystem modelling. Or skip to Series 3 (Spatial Analysis) for GIS-oriented techniques.

@@ -3,14 +3,14 @@ layout: model
 title: "Hyperspectral Imaging"
 subtitle: "Hundreds of spectral bands reveal material composition and biochemical properties"
 date: 2026-02-27
-categories: [modeling]
+categories: [modelling]
 series: computational-geography-advanced-remote-sensing
 series_order: 1
 cluster: S
 cluster_title: "Advanced Optical & Thermal"
 tags:
   - computational-geography
-  - modeling
+  - modelling
   - remote-sensing
   - hyperspectral
   - spectroscopy
@@ -760,7 +760,7 @@ Photons interact with one material before sensor.
 
 **Solution:**
 - Non-linear unmixing models
-- Radiative transfer modeling
+- Radiative transfer modelling
 - Acknowledge limitation in interpretation
 
 ---

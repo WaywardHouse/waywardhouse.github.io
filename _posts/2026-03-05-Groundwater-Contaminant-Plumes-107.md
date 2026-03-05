@@ -3,7 +3,7 @@ layout: essay
 title: "Groundwater Contaminant Plumes"
 subtitle: "Advection-dispersion in porous media, retardation, NAPL source zones, and plume geometry"
 date: 2026-03-05
-categories: modeling
+categories: modelling
 series: computational-geography-laboratory
 series_order: 107
 cluster: "AT — Groundwater Contamination and Remediation"

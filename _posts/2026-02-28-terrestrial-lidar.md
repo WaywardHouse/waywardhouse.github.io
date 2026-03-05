@@ -3,7 +3,7 @@ layout: model
 title: "Terrestrial LiDAR Point Clouds"
 subtitle: "Laser ranging for precise 3D topography and vegetation structure"
 date: 2026-02-27
-categories: [modeling]
+categories: [modelling]
 series: computational-geography-advanced-sensing
 series_order: 3
 cluster: T
@@ -13,7 +13,7 @@ tags:
   - remote-sensing
   - lidar
   - point-clouds
-  - 3d-modeling
+  - 3d-modelling
   - topography
   - vegetation-structure
 math: true
@@ -73,7 +73,7 @@ Million to billions of 3D points, each with (x, y, z) coordinates.
 **Applications:**
 - High-resolution DEMs (0.5-1 m vertical accuracy)
 - Forest structure (canopy height, biomass)
-- Urban 3D modeling (building extraction)
+- Urban 3D modelling (building extraction)
 - Power line monitoring (vegetation encroachment)
 - Archaeological surveys (detect subtle features)
 - Coastal change (erosion, dune migration)
@@ -545,7 +545,7 @@ Below is an interactive LiDAR point cloud simulator.
 - Quality level 2 (8 points/m²)
 
 **Applications:**
-- Flood modeling (precise elevations critical)
+- Flood modelling (precise elevations critical)
 - Infrastructure planning
 - Archaeological features (subtle earthworks)
 
@@ -767,7 +767,7 @@ $$d = c \times 1 \times 10^{-9} = 3 \times 10^8 \times 10^{-9} = 0.3 \text{ m} =
 - Point clouds contain millions to billions of x,y,z coordinates with intensity and classification
 - Ground point classification via progressive TIN densification filters non-ground returns
 - Canopy Height Model derived as DSM minus DTM reveals vegetation structure
-- Applications span high-resolution DEMs, forest biomass, urban 3D modeling, archaeology
+- Applications span high-resolution DEMs, forest biomass, urban 3D modelling, archaeology
 - Accuracy typically ±5-15 cm vertical, ±5-10 cm horizontal with differential GPS
 - Challenges include ground classification errors, vegetation penetration limits, co-registration
 - Full-waveform LiDAR captures complete return signal for enhanced information extraction

@@ -3,7 +3,7 @@ layout: essay
 title: "Dissolved Oxygen Dynamics and the Streeter-Phelps Model"
 subtitle: "BOD exertion, reaeration, and the DO sag curve downstream of a wastewater discharge"
 date: 2026-03-05
-categories: modeling
+categories: modelling
 series: computational-geography-laboratory
 series_order: 104
 cluster: "AS — Water Quality and Eutrophication"

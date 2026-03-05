@@ -3,7 +3,7 @@ layout: essay
 title: "Pump-and-Treat and In-Situ Remediation"
 subtitle: "Capture zone analysis, Theis equation, and cost-benefit comparison of remediation approaches"
 date: 2026-03-05
-categories: modeling
+categories: modelling
 series: computational-geography-laboratory
 series_order: 108
 cluster: "AT — Groundwater Contamination and Remediation"

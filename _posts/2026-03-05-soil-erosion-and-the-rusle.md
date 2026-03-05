@@ -3,7 +3,7 @@ layout: essay
 title: "Soil Erosion and the RUSLE"
 subtitle: "Decomposing a landscape's vulnerability into factors you can measure, map, and modify"
 date: 2026-03-05
-categories: modeling
+categories: modelling
 series: computational-geography-laboratory
 series_order: 72
 cluster: "AA — Weathering and Hillslope Processes"

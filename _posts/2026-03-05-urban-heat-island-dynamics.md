@@ -3,7 +3,7 @@ layout: essay
 title: "Urban Heat Island Dynamics"
 subtitle: "Surface energy balance, anthropogenic heat, and the thermal penalty of the built environment"
 date: 2026-03-05
-categories: modeling
+categories: modelling
 series: computational-geography-laboratory
 series_order: 95
 cluster: "AJ — Urban Climate and Air Quality"

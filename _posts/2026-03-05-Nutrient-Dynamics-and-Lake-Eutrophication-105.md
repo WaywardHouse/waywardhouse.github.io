@@ -3,7 +3,7 @@ layout: essay
 title: "Nutrient Dynamics and Lake Eutrophication"
 subtitle: "Phosphorus loading, Vollenweider model, stratification, and TMDL frameworks"
 date: 2026-03-05
-categories: modeling
+categories: modelling
 series: computational-geography-laboratory
 series_order: 105
 cluster: "AS — Water Quality and Eutrophication"

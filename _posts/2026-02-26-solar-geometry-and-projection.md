@@ -4,14 +4,14 @@ title: "Solar Geometry and Projection"
 subtitle: "Trigonometry and the dot product — how surface orientation affects energy receipt"
 date: 2026-02-26
 image: /assets/images/solar-geometry.png
-categories: [modeling]
+categories: [modelling]
 series: computational-geography-foundations
 series_order: 6
 cluster: B
 cluster_title: "Energy and Attenuation"
 tags:
   - computational-geography
-  - modeling
+  - modelling
   - trigonometry
   - vectors
   - solar-radiation
@@ -503,6 +503,6 @@ If $\mathbf{a} \cdot \mathbf{b} = 0$, the vectors are **perpendicular**.
 - Optimal solar panel tilt ≈ latitude for annual energy maximization
 - Real surfaces also receive diffuse radiation and may be shaded by terrain
 
-**Next:** In Model 7, we transition to **terrain modeling**. We'll represent elevation as a function of two variables, introduce raster grids as discretized functions, and begin working with **digital elevation models** (DEMs).
+**Next:** In Model 7, we transition to **terrain modelling**. We'll represent elevation as a function of two variables, introduce raster grids as discretized functions, and begin working with **digital elevation models** (DEMs).
 
 ---

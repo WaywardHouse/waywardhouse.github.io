@@ -58,7 +58,7 @@ Entire-raster analysis. Distance transforms. Least-cost paths. Connectivity.
 Weighted nearest neighbors. Distance decay functions. Parameter sensitivity.
 
 **Model 34: Kriging and Geostatistics**
-Semivariogram modeling. Ordinary kriging. Prediction uncertainty quantification.
+Semivariogram modelling. Ordinary kriging. Prediction uncertainty quantification.
 
 **Model 35: Spline Interpolation**
 Thin-plate splines. Regularization vs exact interpolation. Smoothness constraints.
@@ -175,7 +175,7 @@ While models derive methods from scratch, practical GIS implementation discussed
 
 **For remote sensing:** Continue to Series 5 (image classification, spectral analysis)
 
-**For environmental modeling:** Series 2 + Series 4 (process-based models)
+**For environmental modelling:** Series 2 + Series 4 (process-based models)
 
 **For advanced statistics:** Bayesian spatial models, geographically weighted regression (future series)
 

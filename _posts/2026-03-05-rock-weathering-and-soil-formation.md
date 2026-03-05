@@ -3,7 +3,7 @@ layout: essay
 title: "Rock Weathering and Soil Formation"
 subtitle: "Chemical kinetics, temperature dependence, and the slow arithmetic of landscape lowering"
 date: 2026-03-05
-categories: modeling
+categories: modelling
 series: computational-geography-laboratory
 series_order: 71
 cluster: "AA — Weathering and Hillslope Processes"

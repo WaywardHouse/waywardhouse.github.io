@@ -4,14 +4,14 @@ title: "Carbon Allocation and Net Primary Productivity"
 subtitle: "From photosynthesis to biomass — how ecosystems build and burn carbon"
 date: 2026-02-26
 iamage: /assets/images/C-allocation.png
-categories: [modeling]
+categories: [modelling]
 series: computational-geography-environmental
 series_order: 10
 cluster: H
 cluster_title: "Ecosystem Processes"
 tags:
   - computational-geography
-  - modeling
+  - modelling
   - carbon-cycle
   - npp
   - respiration
@@ -502,7 +502,7 @@ $$\text{CUE} = \frac{\text{NPP}}{\text{GPP}}$$
 - Regrowth from sprouts/seeds
 - Carbon rebounds over 20–50 years
 
-**Modeling:**  
+**modelling:**  
 Reset $C_L = 0.1$, $C_S = 0.1$, keep $C_R$ reduced, simulate regrowth.
 
 ---

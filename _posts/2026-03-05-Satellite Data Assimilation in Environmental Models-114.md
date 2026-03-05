@@ -3,7 +3,7 @@ layout: essay
 title: "Satellite Data Assimilation in Environmental Models"
 subtitle: "Observation operators, variational assimilation, and land surface data assimilation"
 date: 2026-03-05
-categories: modeling
+categories: modelling
 series: computational-geography-laboratory
 series_order: 114
 cluster: "AU — Ensemble Methods and Data Assimilation"

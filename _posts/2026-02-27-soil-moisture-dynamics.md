@@ -4,14 +4,14 @@ title: "Soil Moisture Dynamics"
 subtitle: "Water balance, infiltration, and plant-available water in the root zone"
 date: 2026-02-26
 image: /assets/images/soil-moisture-dynamics.png
-categories: [modeling]
+categories: [modelling]
 series: computational-geography-environmental
 series_order: 9
 cluster: H
 cluster_title: "Ecosystem Processes"
 tags:
   - computational-geography
-  - modeling
+  - modelling
   - hydrology
   - soil-moisture
   - water-balance
@@ -77,7 +77,7 @@ All pore space filled with water. Typical: 40–60% of soil volume.
 
 **Field capacity** ($S_{\text{FC}}$):  
 Water held against gravity after ~2 days of drainage. Typical: 25–45% volume.  
-This is the **practical maximum** for agricultural modeling.
+This is the **practical maximum** for agricultural modelling.
 
 **Wilting point** ($S_{\text{WP}}$):  
 Plants cannot extract more water (high tension required). Typical: 10–25% volume.  

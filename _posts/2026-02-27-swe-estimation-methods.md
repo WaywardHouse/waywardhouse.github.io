@@ -4,14 +4,14 @@ title: "Snow Water Equivalent Estimation"
 subtitle: "Measuring snowpack from the ground and from space"
 date: 2026-02-27
 image: /assets/images/swe.png
-categories: [modeling]
+categories: [modelling]
 series: computational-geography-cryosphere
 series_order: 3
 cluster: P
-cluster_title: "Snow Physics & Modeling"
+cluster_title: "Snow Physics & modelling"
 tags:
   - computational-geography
-  - modeling
+  - modelling
   - cryosphere
   - snow
   - remote-sensing
@@ -226,7 +226,7 @@ $$\text{SWE} = \rho(x,y) \times d(x,y)$$
 **Density from:**
 - Regional relationships
 - Interpolated from SNOTEL
-- Modeled
+- modelled
 
 **Resolution:** 1-3 meters (excellent for terrain effects)
 
@@ -659,7 +659,7 @@ Microwave signal saturates → underestimate.
 - Elevation bias (stations at accessible locations)
 - Aspect not captured
 
-**Solution:** Distributed modeling with data assimilation.
+**Solution:** Distributed modelling with data assimilation.
 
 ---
 

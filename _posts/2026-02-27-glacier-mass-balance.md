@@ -3,14 +3,14 @@ layout: model
 title: "Glacier Mass Balance"
 subtitle: "How glaciers gain and lose mass—the foundation of glacier dynamics"
 date: 2026-02-27
-categories: [modeling]
+categories: [modelling]
 series: computational-geography-cryosphere
 series_order: 5
 cluster: Q
 cluster_title: "Glacial Systems"
 tags:
   - computational-geography
-  - modeling
+  - modelling
   - cryosphere
   - glaciers
   - mass-balance
@@ -604,7 +604,7 @@ Miss short-term events:
 - Mid-winter melt
 - Dust deposition (albedo change)
 
-**Solution:** Automated weather stations, remote sensing, modeling.
+**Solution:** Automated weather stations, remote sensing, modelling.
 
 ---
 

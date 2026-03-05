@@ -3,7 +3,7 @@ layout: essay
 title: "Sediment and Contaminant Transport in Rivers"
 subtitle: "Advection-dispersion equation, longitudinal dispersion, and reactive transport"
 date: 2026-03-05
-categories: modeling
+categories: modelling
 series: computational-geography-laboratory
 series_order: 106
 cluster: "AS — Water Quality and Eutrophication"

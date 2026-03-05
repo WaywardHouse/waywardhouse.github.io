@@ -1,16 +1,16 @@
 ---
 layout: model
 title: "Light Attenuation in a Canopy"
-subtitle: "Exponential decay through space — modeling vertical gradients in forest light"
+subtitle: "Exponential decay through space — modelling vertical gradients in forest light"
 date: 2026-02-26
-categories: [modeling]
+categories: [modelling]
 series: computational-geography-foundations
 series_order: 5
 cluster: B
 cluster_title: "Energy and Attenuation"
 tags:
   - computational-geography
-  - modeling
+  - modelling
   - differential-equations
   - physical-geography
   - ecology

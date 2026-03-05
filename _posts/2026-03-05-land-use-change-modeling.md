@@ -1,9 +1,9 @@
 ---
 layout: essay
-title: "Land Use Change Modeling"
+title: "Land Use Change modelling"
 subtitle: "Cellular automata, logistic regression, and the simulation of urban growth"
 date: 2026-03-05
-categories: modeling
+categories: modelling
 series: computational-geography-laboratory
 series_order: 99
 cluster: "AL — Land Use and Demographic Dynamics"

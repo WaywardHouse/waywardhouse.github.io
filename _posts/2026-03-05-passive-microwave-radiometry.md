@@ -3,7 +3,7 @@ layout: essay
 title: "Passive Microwave Radiometry"
 subtitle: "Brightness temperature, emissivity, and the all-weather eye on soil moisture and sea ice"
 date: 2026-03-05
-categories: modeling
+categories: modelling
 series: computational-geography-laboratory
 series_order: 59
 cluster: "U — Geophysical Remote Sensing"

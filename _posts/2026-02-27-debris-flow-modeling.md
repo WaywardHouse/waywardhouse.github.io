@@ -1,17 +1,17 @@
 ---
 layout: model
-title: "Debris Flow Modeling"
+title: "Debris Flow modelling"
 subtitle: "Fast-moving mixtures of water, sediment, and rock—predicting runout and impact"
 date: 2026-02-27
 image: /assets/images/debris-flow.png
-categories: [modeling]
+categories: [modelling]
 series: computational-geography-cryosphere
 series_order: 9
 cluster: R
 cluster_title: "Mountain Hazards"
 tags:
   - computational-geography
-  - modeling
+  - modelling
   - hazards
   - debris-flows
   - mass-movement
@@ -20,7 +20,7 @@ tags:
 math: true
 viz: true
 difficulty: 4
-math_core: [non-newtonian-flow, momentum-conservation, runout-modeling, empirical-relationships]
+math_core: [non-newtonian-flow, momentum-conservation, runout-modelling, empirical-relationships]
 spatial_reasoning: 4
 dynamics: 4
 computation: 4
@@ -723,7 +723,7 @@ Where $n$ = flow behavior index
 - **Triggers:** Intense rain, volcanic eruptions, GLOFs, dam breaks
 - **Mitigation:** Check dams, debris basins, channel works, hazard zoning
 - **Warning:** Rainfall thresholds + real-time sensors (minutes-hours warning)
-- **Modeling:** 1D (Voellmy) or 2D (FLO-2D) for runout prediction
+- **modelling:** 1D (Voellmy) or 2D (FLO-2D) for runout prediction
 - Critical for mountain community safety and infrastructure design
 
 ---

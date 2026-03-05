@@ -4,14 +4,14 @@ title: "Logistic Growth and Equilibrium"
 subtitle: "When growth slows as it approaches a limit — feedback, carrying capacity, and stability"
 date: 2026-02-26
 image: /assets/image/foundations-and-math.png
-categories: [modeling]
+categories: [modelling]
 series: computational-geography-foundations
 series_order: 4
 cluster: A
-cluster_title: "Modeling Change"
+cluster_title: "modelling Change"
 tags:
   - computational-geography
-  - modeling
+  - modelling
   - mathematics
   - differential-equations
   - population-dynamics

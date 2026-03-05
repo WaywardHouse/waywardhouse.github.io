@@ -3,7 +3,7 @@ layout: essay
 title: "Gravity Remote Sensing (GRACE)"
 subtitle: "Weighing the water cycle from orbit: groundwater, ice sheets, and the changing geoid"
 date: 2026-03-05
-categories: modeling
+categories: modelling
 series: computational-geography-laboratory
 series_order: 58
 cluster: "U — Geophysical Remote Sensing"

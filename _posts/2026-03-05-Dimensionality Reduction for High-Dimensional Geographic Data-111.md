@@ -3,7 +3,7 @@ layout: essay
 title: "Dimensionality Reduction for High-Dimensional Geographic Data"
 subtitle: "PCA, t-SNE, UMAP, and hyperspectral data compression"
 date: 2026-03-05
-categories: modeling
+categories: modelling
 series: computational-geography-laboratory
 series_order: 111
 cluster: "Z — Foundations of Geographic Machine Learning"

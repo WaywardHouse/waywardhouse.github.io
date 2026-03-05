@@ -3,7 +3,7 @@ layout: model
 title: "SAR Fundamentals and Applications"
 subtitle: "Synthetic aperture radar for all-weather Earth observation"
 date: 2026-02-27
-categories: [modeling]
+categories: [modelling]
 series: computational-geography-advanced-sensing
 series_order: 5
 cluster: T
@@ -19,7 +19,7 @@ tags:
 math: true
 viz: true
 difficulty: 5
-math_core: [doppler-processing, range-resolution, azimuth-resolution, backscatter-modeling]
+math_core: [doppler-processing, range-resolution, azimuth-resolution, backscatter-modelling]
 spatial_reasoning: 4
 dynamics: 3
 computation: 4

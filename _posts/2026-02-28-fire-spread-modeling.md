@@ -1,16 +1,16 @@
 ---
 layout: model
-title: "Fire Spread Modeling"
+title: "Fire Spread modelling"
 subtitle: "Predicting wildfire propagation across landscapes"
 date: 2026-02-27
-categories: [modeling]
+categories: [modelling]
 series: computational-geography-atmospheric-hazards
 series_order: 2
 cluster: V
 cluster_title: "Fire Science"
 tags:
   - computational-geography
-  - modeling
+  - modelling
   - fire
   - fire-spread
   - rothermel
@@ -32,7 +32,7 @@ excerpt: >
 math_prerequisites: >
   Fire weather (Model 60). Vector operations. Differential equations. We'll introduce
   fire physics and landscape-scale spread algorithms.
-image: /assets/images/fire-modeling.png
+image: /assets/images/fire-modelling.png
 
 ---
 
@@ -40,7 +40,7 @@ image: /assets/images/fire-modeling.png
 
 Where will this fire be in 6 hours, and what communities are at risk?
 
-**Fire spread modeling:**
+**Fire spread modelling:**
 
 Predicts fire perimeter expansion over time.
 
@@ -661,7 +661,7 @@ $$d_{\text{spot}} = f(\text{flame length, wind, terrain})$$
 
 **Typically:** 0.5-2 km, extreme cases 10-30 km.
 
-**Creates secondary ignitions** ahead of modeled perimeter.
+**Creates secondary ignitions** ahead of modelled perimeter.
 
 **Catastrophic** when embers land in receptive fuel.
 

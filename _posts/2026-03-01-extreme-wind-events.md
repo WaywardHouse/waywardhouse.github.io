@@ -3,14 +3,14 @@ layout: model
 title: "Extreme Wind Events and Downbursts"
 subtitle: "Damaging straight-line winds from thunderstorm outflows"
 date: 2026-02-27
-categories: [modeling]
+categories: [modelling]
 series: computational-geography-atmospheric-hazards
 series_order: 8
 cluster: X
 cluster_title: "Wind & Turbulence"
 tags:
   - computational-geography
-  - modeling
+  - modelling
   - meteorology
   - downburst
   - derechos

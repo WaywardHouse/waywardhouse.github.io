@@ -3,14 +3,14 @@ layout: model
 title: "Linear Change and Rate"
 subtitle: "Slope as the fundamental measure of how things change through space and time"
 date: 2026-02-26
-categories: [modeling]
+categories: [modelling]
 series: computational-geography-foundations
 series_order: 2
 cluster: A
-cluster_title: "Modeling Change"
+cluster_title: "modelling Change"
 tags:
   - computational-geography
-  - modeling
+  - modelling
   - mathematics
   - linear-functions
   - derivatives

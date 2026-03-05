@@ -3,14 +3,14 @@ layout: model
 title: "Terrestrial LiDAR Point Clouds"
 subtitle: "3D structure from laser ranging—measuring topography and vegetation"
 date: 2026-02-27
-categories: [modeling]
+categories: [modelling]
 series: computational-geography-advanced-remote-sensing
 series_order: 3
 cluster: T
 cluster_title: "Active Ranging Systems"
 tags:
   - computational-geography
-  - modeling
+  - modelling
   - remote-sensing
   - lidar
   - point-clouds
@@ -691,9 +691,9 @@ Traditional surveys miss features under dense vegetation.
 
 **Non-invasive:** No excavation required for mapping.
 
-### Flood Modeling
+### Flood modelling
 
-**High-resolution DTMs** improve hydraulic modeling:
+**High-resolution DTMs** improve hydraulic modelling:
 
 **Bare earth elevation** essential for:
 - Flow direction
@@ -861,7 +861,7 @@ Where $\mathbf{t}$ = translation (GPS position).
 - Ground point classification separates terrain from vegetation and buildings
 - Canopy Height Model derived as difference between surface and terrain models
 - Point cloud densities of 1-100 pts/m² enable centimeter-scale elevation mapping
-- Applications span forestry biomass, geomorphology, archaeology, and flood modeling
+- Applications span forestry biomass, geomorphology, archaeology, and flood modelling
 - Forestry metrics include tree height, canopy cover, and structure from automated analysis
 - Challenges include water absorption, dense vegetation, and classification errors
 - Full-waveform systems capture complete return signal for enhanced information extraction

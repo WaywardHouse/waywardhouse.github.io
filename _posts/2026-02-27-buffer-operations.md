@@ -4,14 +4,14 @@ title: "Buffer Operations and Distance Fields"
 subtitle: "Creating proximity zones around geographic features"
 date: 2026-02-27
 image: /assets/images/buffer.png
-categories: [modeling]
+categories: [modelling]
 series: computational-geography-spatial
 series_order: 2
 cluster: L
 cluster_title: "Vector Operations"
 tags:
   - computational-geography
-  - modeling
+  - modelling
   - gis
   - vector-operations
   - distance-fields

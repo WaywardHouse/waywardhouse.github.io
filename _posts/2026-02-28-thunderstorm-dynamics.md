@@ -3,14 +3,14 @@ layout: model
 title: "Thunderstorm Dynamics and Severe Weather"
 subtitle: "Convective processes driving lightning, hail, and tornadoes"
 date: 2026-02-27
-categories: [modeling]
+categories: [modelling]
 series: computational-geography-atmospheric-hazards
 series_order: 4
 cluster: W
 cluster_title: "Severe Weather"
 tags:
   - computational-geography
-  - modeling
+  - modelling
   - meteorology
   - severe-weather
   - thunderstorms

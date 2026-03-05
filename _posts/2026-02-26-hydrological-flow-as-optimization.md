@@ -3,14 +3,14 @@ layout: model
 title: "Hydrological Flow as Optimization"
 subtitle: "From local slopes to global watersheds — routing water across a DEM"
 date: 2026-02-26
-categories: [modeling]
+categories: [modelling]
 series: computational-geography-foundations
 series_order: 9
 cluster: C
 cluster_title: "Terrain and Spatial Derivatives"
 tags:
   - computational-geography
-  - modeling
+  - modelling
   - hydrology
   - graph-algorithms
   - optimization
@@ -590,6 +590,6 @@ A **watershed** is a connected component of the flow graph rooted at an outlet.
 - High accumulation → streams; low accumulation → ridges
 - **Watersheds:** Areas draining to the same outlet
 - Sinks and flat areas require special handling
-- Flow routing underlies flood modeling, erosion prediction, and watershed delineation
+- Flow routing underlies flood modelling, erosion prediction, and watershed delineation
 
 ---

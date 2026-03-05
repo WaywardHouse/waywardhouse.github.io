@@ -3,7 +3,7 @@ layout: model
 title: "Gravity Remote Sensing (GRACE)"
 subtitle: "Measuring mass redistribution from satellite gravity measurements"
 date: 2026-02-27
-categories: [modeling]
+categories: [modelling]
 series: computational-geography-advanced-sensing
 series_order: 7
 cluster: U
@@ -594,7 +594,7 @@ Greenland ice loss "leaks" to ocean, land nearby.
 
 **Correction:**
 
-Forward modeling:
+Forward modelling:
 - Assume spatial pattern (coast concentration)
 - Apply GRACE processing
 - Compute gain factors

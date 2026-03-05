@@ -3,14 +3,14 @@ layout: model
 title: "Tornado Formation and Intensity"
 subtitle: "Vortex dynamics and damage assessment from rotating thunderstorms"
 date: 2026-02-27
-categories: [modeling]
+categories: [modelling]
 series: computational-geography-atmospheric-hazards
 series_order: 5
 cluster: W
 cluster_title: "Severe Weather"
 tags:
   - computational-geography
-  - modeling
+  - modelling
   - meteorology
   - tornadoes
   - vorticity

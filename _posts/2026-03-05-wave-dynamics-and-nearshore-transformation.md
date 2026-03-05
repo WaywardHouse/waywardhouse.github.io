@@ -3,7 +3,7 @@ layout: essay
 title: "Wave Dynamics and Nearshore Transformation"
 subtitle: "From deep water to the surf zone: dispersion, shoaling, and the physics of breaking waves"
 date: 2026-03-05
-categories: modeling
+categories: modelling
 series: computational-geography-laboratory
 series_order: 76
 cluster: "AC — Coastal Processes"

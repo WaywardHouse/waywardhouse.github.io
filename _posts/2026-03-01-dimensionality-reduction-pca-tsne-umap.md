@@ -4,7 +4,7 @@ title: "Dimensionality Reduction: PCA, t-SNE, and UMAP"
 subtitle: "Visualizing and compressing high-dimensional geographic data"
 date: 2026-03-01
 image: /assets/images/dimentionality-reduction.png
-categories: [modeling, machine-learning]
+categories: [modelling, machine-learning]
 series: computational-geography-ml
 series_order: 3
 cluster: Z

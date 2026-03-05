@@ -3,14 +3,14 @@ layout: model
 title: "Thermal Infrared Remote Sensing"
 subtitle: "Measuring temperature and heat flux from emitted radiation"
 date: 2026-02-27
-categories: [modeling]
+categories: [modelling]
 series: computational-geography-advanced-remote-sensing
 series_order: 2
 cluster: S
 cluster_title: "Advanced Optical & Thermal"
 tags:
   - computational-geography
-  - modeling
+  - modelling
   - remote-sensing
   - thermal-infrared
   - temperature

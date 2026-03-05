@@ -3,17 +3,17 @@
   title: "What Is a Spatial Model?"
   subtitle: "Variables, units, and the discipline of thinking in fields"
   date: 2026-02-26
-  categories: [modeling]
+  categories: [modelling]
   featured: true
   image: /assets/images/spatial-analysis.png
   series: computational-geography-foundations
   series_order: 1
   cluster: A
-  cluster_title: "Modeling Change"
+  cluster_title: "modelling Change"
 
   tags:
     - computational-geography
-    - modeling
+    - modelling
     - mathematics
     - spatial-thinking
 
@@ -77,7 +77,7 @@ When a geographer builds a model, she is making a series of explicit choices:
 
 This sounds obvious until you try it. Most students, asked to model something, want to include everything. But a model that includes everything is just reality again, and just as hard to understand.
 
-The discipline of modeling is the discipline of *justified omission*.
+The discipline of modelling is the discipline of *justified omission*.
 
 Consider a simple example. We want to model how population density varies across a city. We might decide:
 
@@ -100,7 +100,7 @@ In geography we commonly work with:
 - **Spatial variables:** location, usually written as $(x, y)$ in a flat projection, or $(\lambda, \phi)$ for longitude and latitude on a sphere
 - **Attribute variables:** the thing being measured at each location — temperature $T$, elevation $z$, population density $\rho$, rainfall $P$
 
-The distinction between "where" and "what" is fundamental. Most geographic modeling is about expressing the *what* as a function of the *where*.
+The distinction between "where" and "what" is fundamental. Most geographic modelling is about expressing the *what* as a function of the *where*.
 
 ### Units
 
@@ -353,7 +353,7 @@ Proportional reasoning means asking: what is the relationship between $x$ and $y
 
 ## Where Next?
 
-This model introduced the vocabulary of spatial modeling: variables, units, proportional reasoning, and scalar fields. These ideas will appear in every model that follows.
+This model introduced the vocabulary of spatial modelling: variables, units, proportional reasoning, and scalar fields. These ideas will appear in every model that follows.
 
 The next model — **Linear Change and Rate** — takes the scalar field idea one step further. If a quantity changes linearly across space, the *rate of change* (the slope) is itself a meaningful geographic quantity. We will build linear functions, interpret their parameters, and use them to make predictions.
 
@@ -368,6 +368,6 @@ The next model — **Linear Change and Rate** — takes the scalar field idea on
 
 ---
 
-*Cluster A — Modeling Change · Model 1 of 4 · Difficulty: 1*
+*Cluster A — modelling Change · Model 1 of 4 · Difficulty: 1*
 
 *Math prerequisites: arithmetic, the concept of a variable.*

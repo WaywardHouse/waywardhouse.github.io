@@ -3,14 +3,14 @@ layout: model
 title: "Digital Elevation Models as Functions"
 subtitle: "Representing terrain as a function of two variables — from continuous surfaces to discrete grids"
 date: 2026-02-26
-categories: [modeling]
+categories: [modelling]
 series: computational-geography-foundations
 series_order: 7
 cluster: C
 cluster_title: "Terrain and Spatial Derivatives"
 tags:
   - computational-geography
-  - modeling
+  - modelling
   - GIS
   - terrain-analysis
   - functions-of-two-variables
@@ -43,7 +43,7 @@ A landscape is not flat. Mountains rise, valleys sink, hillslopes tilt. Every po
 
 If we know the coordinates $(x, y)$ of a point on the ground, can we write down a function that gives us the elevation $z$?
 
-**Yes** — and this is the foundation of **terrain analysis**, **hydrology**, **viewshed modeling**, and **landslide prediction**.
+**Yes** — and this is the foundation of **terrain analysis**, **hydrology**, **viewshed modelling**, and **landslide prediction**.
 
 The mathematical question: How do we go from a continuous surface to a computable representation?
 
@@ -377,7 +377,7 @@ window.addEventListener('resize', () => chart.resize());
 
 **Fine DEM** (1 m cells):
 - Captures detailed topography
-- Required for local hydrology, erosion modeling
+- Required for local hydrology, erosion modelling
 - Large file sizes, slower computation
 
 **Rule of thumb:** Cell size should be smaller than the features you care about.

@@ -4,14 +4,14 @@ title: "Net Radiation and Albedo"
 subtitle: "Surface energy balance — how much solar energy stays at the ground?"
 date: 2026-02-26
 image: /assets/images/net-radiation.png
-categories: [modeling]
+categories: [modelling]
 series: computational-geography-environmental
 series_order: 5
 cluster: G
 cluster_title: "Surface Energy Balance"
 tags:
   - computational-geography
-  - modeling
+  - modelling
   - energy-balance
   - radiation
   - albedo
@@ -23,7 +23,7 @@ math_core: [energy-balance, radiative-transfer, conservation-of-energy]
 spatial_reasoning: 2
 dynamics: 1
 computation: 2
-domain: [climatology, physical-geography, environmental-modeling]
+domain: [climatology, physical-geography, environmental-modelling]
 excerpt: >
   Not all incoming solar radiation stays at Earth's surface. Some reflects back
   to space (determined by albedo), some is absorbed and warms the ground. This
@@ -589,7 +589,7 @@ Where:
 - $G$ = **Ground heat flux** (heating the soil)
 - $S$ = **Storage** (heating biomass, water bodies)
 
-**Next model** will explore how $R_n$ is partitioned between sensible and latent heat — the foundation of evapotranspiration modeling.
+**Next model** will explore how $R_n$ is partitioned between sensible and latent heat — the foundation of evapotranspiration modelling.
 
 ---
 

@@ -3,14 +3,14 @@ layout: model
 title: "Flood Frequency Analysis"
 subtitle: "Estimating flood magnitudes for design and risk assessment"
 date: 2026-02-27
-categories: [modeling]
+categories: [modelling]
 series: computational-geography-atmospheric-hazards
 series_order: 10
 cluster: Y
 cluster_title: "Flood Hydrology"
 tags:
   - computational-geography
-  - modeling
+  - modelling
   - hydrology
   - floods
   - frequency-analysis

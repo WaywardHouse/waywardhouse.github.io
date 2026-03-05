@@ -4,14 +4,14 @@ title: "Soil Heat Diffusion"
 subtitle: "Temperature waves propagating into the ground — diurnal and seasonal cycles"
 date: 2026-02-26
 image: /assets/images/soil-heat-diffusion.png
-categories: [modeling]
+categories: [modelling]
 series: computational-geography-environmental
 series_order: 7
 cluster: G
 cluster_title: "Surface Energy Balance"
 tags:
   - computational-geography
-  - modeling
+  - modelling
   - heat-diffusion
   - soil-temperature
   - thermal-diffusivity
@@ -23,7 +23,7 @@ math_core: [heat-equation, diffusion, damping-depth, phase-lag, fourier-analysis
 spatial_reasoning: 3
 dynamics: 3
 computation: 3
-domain: [soil-science, climatology, environmental-modeling]
+domain: [soil-science, climatology, environmental-modelling]
 excerpt: >
   Surface temperature oscillates daily (day/night) and seasonally (summer/winter).
   These temperature waves propagate downward into the soil, getting weaker and

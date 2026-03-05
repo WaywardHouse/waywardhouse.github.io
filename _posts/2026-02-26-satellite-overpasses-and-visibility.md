@@ -4,14 +4,14 @@ title: "Satellite Overpasses and Visibility"
 subtitle: "Predicting when and where satellites are visible from the ground"
 date: 2026-02-26
 image: /assets/images/orbital-mechanics.png
-categories: [modeling]
+categories: [modelling]
 series: computational-geography-environmental
 series_order: 3
 cluster: F
 cluster_title: "Orbital Mechanics"
 tags:
   - computational-geography
-  - modeling
+  - modelling
   - orbital-mechanics
   - satellite-tracking
   - line-of-sight

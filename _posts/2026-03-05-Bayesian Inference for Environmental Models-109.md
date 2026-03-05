@@ -3,7 +3,7 @@ layout: essay
 title: "Bayesian Inference for Environmental Models"
 subtitle: "Prior beliefs, likelihood, posterior updating, and MCMC sampling"
 date: 2026-03-05
-categories: modeling
+categories: modelling
 series: computational-geography-laboratory
 series_order: 109
 cluster: "Z — Foundations of Geographic Machine Learning"

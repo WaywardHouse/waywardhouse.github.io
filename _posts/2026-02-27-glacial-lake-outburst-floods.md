@@ -3,14 +3,14 @@ layout: model
 title: "Glacial Lake Outburst Floods (GLOFs)"
 subtitle: "When ice dams fail—catastrophic flooding from glacial lakes"
 date: 2026-02-27
-categories: [modeling]
+categories: [modelling]
 series: computational-geography-cryosphere
 series_order: 7
 cluster: Q
 cluster_title: "Glacial Systems"
 tags:
   - computational-geography
-  - modeling
+  - modelling
   - cryosphere
   - glaciers
   - hazards
@@ -673,7 +673,7 @@ In steep channels (>10% slope), GLOF becomes debris flow:
 4. Triggered secondary failures
 5. Compound flood wave
 
-**Modeling challenge:** Must simulate entire cascade.
+**modelling challenge:** Must simulate entire cascade.
 
 ### False Alarms
 
@@ -716,7 +716,7 @@ Where:
 - Infrastructure value
 - Evacuation capacity
 
-**4. Flood modeling:**
+**4. Flood modelling:**
 
 HEC-RAS or similar:
 - Dam breach → hydrograph
@@ -777,7 +777,7 @@ Where $f$ = Darcy-Weisbach friction factor.
 - **Moraine dams:** Often fail more suddenly than ice dams (full breach)
 - **Climate change:** GLOF risk increasing (more lakes, less stable dams)
 - **Mitigation:** Lake lowering, dam reinforcement, early warning systems
-- **Monitoring:** Satellite remote sensing + ground sensors + flood modeling
+- **Monitoring:** Satellite remote sensing + ground sensors + flood modelling
 - Critical for mountain communities in Peru, Nepal, Bhutan, Pakistan, China
 
 ---

@@ -4,14 +4,14 @@ title: "Nitrogen Cycling and Limitation"
 subtitle: "How nitrogen availability controls productivity and ecosystem function"
 date: 2026-02-26
 image: /assets/images/nitrogen-cycle.png
-categories: [modeling]
+categories: [modelling]
 series: computational-geography-environmental
 series_order: 15
 cluster: J
 cluster_title: "Biogeochemical Cycles"
 tags:
   - computational-geography
-  - modeling
+  - modelling
   - nitrogen-cycle
   - nutrient-limitation
   - mineralization

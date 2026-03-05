@@ -4,14 +4,14 @@ title: "Supervised Image Classification"
 subtitle: "From satellite pixels to land cover maps using training data"
 date: 2026-02-27
 image: /assets/images/supervised-classification.png
-categories: [modeling]
+categories: [modelling]
 series: computational-geography-spatial
 series_order: 11
 cluster: N
 cluster_title: "Remote Sensing Applications"
 tags:
   - computational-geography
-  - modeling
+  - modelling
   - gis
   - remote-sensing
   - image-classification
@@ -662,7 +662,7 @@ Below is an interactive image classification demo.
 - **FROM-GLC** (30m, Landsat-based)
 
 **Uses:**
-- Climate modeling (surface albedo, roughness)
+- Climate modelling (surface albedo, roughness)
 - Carbon cycle (vegetation biomass)
 - Agriculture monitoring
 - Urban growth tracking

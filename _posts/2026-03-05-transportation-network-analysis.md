@@ -3,7 +3,7 @@ layout: essay
 title: "Transportation Network Analysis"
 subtitle: "Graph theory, shortest paths, and the mathematics of how cities move"
 date: 2026-03-05
-categories: modeling
+categories: modelling
 series: computational-geography-laboratory
 series_order: 97
 cluster: "AK — Transportation and Accessibility"

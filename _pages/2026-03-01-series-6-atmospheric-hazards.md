@@ -2,7 +2,7 @@
 layout: page
 permalink: /series/6/
 title: "Series 6: Atmospheric Hazards and Dynamics"
-subtitle: "Fire, severe weather, wind, and flood modeling"
+subtitle: "Fire, severe weather, wind, and flood modelling"
 series_number: 6
 series_key: computational-geography-atmospheric-hazards
 total_essays: 11
@@ -45,7 +45,7 @@ Atmospheric hazards—wildfires, tornadoes, floods—kill thousands annually and
 **Model 60: Fire Weather and Ignition Potential**
 Fuel moisture. Vapor pressure deficit. Fire Weather Index. Red flag criteria. Ignition probability.
 
-**Model 61: Fire Spread Modeling**
+**Model 61: Fire Spread modelling**
 Rothermel equation. Elliptical growth. Slope/wind effects. Rate of spread. Fireline intensity.
 
 **Model 62: Fire Emissions and Smoke Dispersion**
@@ -78,7 +78,7 @@ IDF curves. Extreme value statistics. GEV distribution. Design storm selection.
 **Model 69: Flood Frequency Analysis**
 Log-Pearson Type III. Return periods. Confidence intervals. Regional regression.
 
-**Model 70: Urban Flood Modeling and Green Infrastructure**
+**Model 70: Urban Flood modelling and Green Infrastructure**
 Rational method. SCS Curve Number. Detention design. Bioretention. LID principles.
 
 ## Mathematical Progression
@@ -95,7 +95,7 @@ Rational method. SCS Curve Number. Detention design. Bioretention. LID principle
 - Atmospheric sounding analysis
 - Radar data processing (reflectivity, velocity)
 - Statistical distribution fitting
-- Hydrologic modeling (HEC-HMS concepts)
+- Hydrologic modelling (HEC-HMS concepts)
 - Monte Carlo for probabilistic forecasts
 
 ## Prerequisites

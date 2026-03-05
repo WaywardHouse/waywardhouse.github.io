@@ -22,7 +22,7 @@ More than half of humanity lives in cities, and urbanization is the dominant lan
 
 **Space is not neutral.** Location determines outcomes in human systems just as it does in physical ones. Accessibility, density, and connectivity are spatial properties that drive urban dynamics. We quantify them explicitly.
 
-**Models expose assumptions.** Land use change models embed theories about how people make location decisions. Demographic models embed theories about fertility, mortality, and migration. Making these assumptions explicit through mathematical modeling reveals what we know and what we are guessing.
+**Models expose assumptions.** Land use change models embed theories about how people make location decisions. Demographic models embed theories about fertility, mortality, and migration. Making these assumptions explicit through mathematical modelling reveals what we know and what we are guessing.
 
 ## Learning Objectives
 
@@ -49,12 +49,12 @@ Street canyon flow regimes. Aspect ratio and recirculation. Urban boundary layer
 **Model 97: Transportation Network Analysis**
 Graph-theoretic representation of road and transit networks. Shortest path algorithms (Dijkstra). Network centrality (betweenness, closeness). Vulnerability analysis (edge/node removal). Four-step transport model overview.
 
-**Model 98: Accessibility and Travel Demand Modeling**
+**Model 98: Accessibility and Travel Demand modelling**
 Gravity model calibration. Two-step floating catchment area for service access. Transit accessibility metrics. Spatial mismatch between jobs and housing. Induced demand and Braess's paradox.
 
 ### Cluster AL: Land Use and Demographic Dynamics (Models 99–101)
 
-**Model 99: Land Use Change Modeling**
+**Model 99: Land Use Change modelling**
 Cellular automata (CA) for urban growth. Logistic regression transition probabilities. Neighbourhood effect functions. FLUS/SLEUTH model concepts. Validation with historical data. Future scenario construction.
 
 **Model 100: Urban Scaling Laws and City Structure**
@@ -131,7 +131,7 @@ Cohort-component model. Age-sex-specific fertility and mortality rates. Migratio
 
 ## Extensions
 
-**For environmental modeling:** Series 2 and Series 6 provide the atmospheric physics that explains urban climate anomalies.
+**For environmental modelling:** Series 2 and Series 6 provide the atmospheric physics that explains urban climate anomalies.
 
 **For data assimilation:** Series 12 machine learning and ensemble methods apply directly to land use classification and urban change detection.
 

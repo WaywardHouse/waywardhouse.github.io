@@ -1,16 +1,16 @@
 ---
 layout: model
 title: "Snowpack Energy Balance"
-subtitle: "How snow gains and loses energy—the foundation of melt modeling"
+subtitle: "How snow gains and loses energy—the foundation of melt modelling"
 date: 2026-02-27
-categories: [modeling]
+categories: [modelling]
 series: computational-geography-cryosphere
 series_order: 1
 cluster: P
-cluster_title: "Snow Physics & Modeling"
+cluster_title: "Snow Physics & modelling"
 tags:
   - computational-geography
-  - modeling
+  - modelling
   - cryosphere
   - snow
   - energy-balance
