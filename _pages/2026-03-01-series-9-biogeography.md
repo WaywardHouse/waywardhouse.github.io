@@ -1,5 +1,6 @@
 ---
-layout: series
+layout: page
+permalink: /series/9/
 title: "Series 9: Biogeography and Ecosystem Dynamics"
 subtitle: "Species distributions, population ecology, biome modeling, and disturbance regimes"
 series_number: 9

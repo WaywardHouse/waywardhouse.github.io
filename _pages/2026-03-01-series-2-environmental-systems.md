@@ -1,5 +1,6 @@
 ---
-layout: series
+layout: page
+permalink: /series/2/
 title: "Series 2: Environmental Systems Modeling"
 subtitle: "Energy balance, hydrology, and ecosystem processes"
 series_number: 2

@@ -1,5 +1,6 @@
 ---
-layout: series
+layout: page
+permalink: /series/3/
 title: "Series 3: Computational Spatial Analysis"
 subtitle: "Quantitative methods for raster and vector geographic data"
 series_number: 3

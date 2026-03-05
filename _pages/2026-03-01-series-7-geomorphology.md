@@ -1,5 +1,6 @@
 ---
-layout: series
+layout: page
+permalink: /series/7/
 title: "Series 7: Geomorphology and Surface Processes"
 subtitle: "Weathering, erosion, sediment transport, and coastal dynamics"
 series_number: 7

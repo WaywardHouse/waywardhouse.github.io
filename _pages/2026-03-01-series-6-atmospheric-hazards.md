@@ -1,5 +1,6 @@
 ---
-layout: series
+layout: page
+permalink: /series/6/
 title: "Series 6: Atmospheric Hazards and Dynamics"
 subtitle: "Fire, severe weather, wind, and flood modeling"
 series_number: 6

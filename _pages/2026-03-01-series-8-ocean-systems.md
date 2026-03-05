@@ -1,5 +1,6 @@
 ---
-layout: series
+layout: page
+permalink: /series/8/
 title: "Series 8: Ocean Systems"
 subtitle: "Thermohaline circulation, wave dynamics, tides, and sea level"
 series_number: 8

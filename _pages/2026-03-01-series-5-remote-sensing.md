@@ -1,5 +1,6 @@
 ---
-layout: series
+layout: page
+permalink: /series/5/
 title: "Series 5: Advanced Remote Sensing"
 subtitle: "Across the electromagnetic spectrum and beyond"
 series_number: 5

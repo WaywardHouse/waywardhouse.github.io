@@ -1,5 +1,6 @@
 ---
-layout: series
+layout: page
+permalink: /series/10/
 title: "Series 10: Urban and Human Systems"
 subtitle: "Urban climate, transportation networks, land use change, and demographic dynamics"
 series_number: 10

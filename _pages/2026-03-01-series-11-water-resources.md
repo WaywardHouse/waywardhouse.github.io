@@ -1,5 +1,6 @@
 ---
-layout: series
+layout: page
+permalink: /series/11/
 title: "Series 11: Water Resources and Environmental Engineering"
 subtitle: "Reservoir operations, water quality, contaminant transport, and groundwater"
 series_number: 11

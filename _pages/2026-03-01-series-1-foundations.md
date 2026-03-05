@@ -1,5 +1,6 @@
 ---
-layout:  series
+layout: page
+permalink: /series/1/
 title: "Series 1: Foundations of Computational Geography"
 subtitle: "Building mathematical and computational literacy through spatial systems"
 series_number: 1

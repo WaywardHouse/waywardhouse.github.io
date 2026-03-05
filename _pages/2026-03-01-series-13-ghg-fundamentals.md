@@ -1,5 +1,6 @@
 ---
-layout: series
+layout: page
+permalink: /series/13/
 title: "Series 13: Greenhouse Gas Cycles and Budgets"
 subtitle: "From individual processes to global carbon and methane accounting"
 series_number: 13

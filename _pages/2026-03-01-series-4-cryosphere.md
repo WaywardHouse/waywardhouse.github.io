@@ -1,5 +1,6 @@
 ---
-layout: series
+layout: page
+permalink: /series/4/
 title: "Series 4: Cryosphere and Mountain Systems"
 subtitle: "Snow physics, glaciers, permafrost, and high-elevation hazards"
 series_number: 4

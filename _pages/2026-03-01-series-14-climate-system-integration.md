@@ -1,6 +1,6 @@
-
 ---
-layout: series
+layout: page
+permalink: /series/14/
 title: "Series 14: Climate System Integration and Feedbacks"
 subtitle: "Coupling greenhouse gas cycles with climate dynamics"
 series_number: 14
