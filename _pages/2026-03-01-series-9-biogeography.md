@@ -4,6 +4,7 @@ permalink: /series/9/
 title: "Series 9: Biogeography and Ecosystem Dynamics"
 subtitle: "Species distributions, population ecology, biome modelling, and disturbance regimes"
 series_number: 9
+series_key: computational-geography-biogeography-ecosystem-dynamics
 total_essays: 8
 difficulty_range: 2-4
 estimated_hours: 30

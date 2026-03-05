@@ -4,6 +4,7 @@ permalink: /series/12/
 title: "Series 12: Data Assimilation and Statistical modelling"
 subtitle: "Bayesian inference, machine learning for spatial data, ensemble methods, and model-observation fusion"
 series_number: 12
+series_key: computational-geography-data-assimilation
 total_essays: 6
 difficulty_range: 3-5
 estimated_hours: 28

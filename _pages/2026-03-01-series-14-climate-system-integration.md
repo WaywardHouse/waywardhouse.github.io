@@ -4,6 +4,7 @@ permalink: /series/14/
 title: "Series 14: Climate System Integration and Feedbacks"
 subtitle: "Coupling greenhouse gas cycles with climate dynamics"
 series_number: 14
+series_key: computational-geography-climate-system-integration
 total_essays: 11
 difficulty_range: 4-5
 estimated_hours: 55

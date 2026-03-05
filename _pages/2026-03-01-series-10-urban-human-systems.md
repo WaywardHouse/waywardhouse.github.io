@@ -4,6 +4,7 @@ permalink: /series/10/
 title: "Series 10: Urban and Human Systems"
 subtitle: "Urban climate, transportation networks, land use change, and demographic dynamics"
 series_number: 10
+series_key: computational-geography-urban-human-systems
 total_essays: 7
 difficulty_range: 2-4
 estimated_hours: 28

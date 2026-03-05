@@ -4,6 +4,7 @@ permalink: /series/7/
 title: "Series 7: Geomorphology and Surface Processes"
 subtitle: "Weathering, erosion, sediment transport, and coastal dynamics"
 series_number: 7
+series_key: computational-geography-geomorphology
 total_essays: 8
 difficulty_range: 3-5
 estimated_hours: 32

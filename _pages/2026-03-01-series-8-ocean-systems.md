@@ -4,6 +4,7 @@ permalink: /series/8/
 title: "Series 8: Ocean Systems"
 subtitle: "Thermohaline circulation, wave dynamics, tides, and sea level"
 series_number: 8
+eries_key: computational-geography-ocean-systems
 total_essays: 8
 difficulty_range: 3-5
 estimated_hours: 35

@@ -4,6 +4,7 @@ permalink: /series/11/
 title: "Series 11: Water Resources and Environmental Engineering"
 subtitle: "Reservoir operations, water quality, contaminant transport, and groundwater"
 series_number: 11
+series_key: computational-geography-water-resources
 total_essays: 7
 difficulty_range: 3-5
 estimated_hours: 30

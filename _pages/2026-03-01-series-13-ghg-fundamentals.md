@@ -4,6 +4,7 @@ permalink: /series/13/
 title: "Series 13: Greenhouse Gas Cycles and Budgets"
 subtitle: "From individual processes to global carbon and methane accounting"
 series_number: 13
+series_key: computational-geography-ghg-fundamentals
 total_essays: 12
 difficulty_range: 2-4
 estimated_hours: 50
