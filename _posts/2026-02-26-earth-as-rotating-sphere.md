@@ -261,11 +261,13 @@ Below is an interactive 3D visualization of Earth with controllable rotation.
 
 <script type="module">
 await new Promise(resolve => {
-  const checkECharts = () => {
-    if (typeof echarts !== 'undefined') resolve();
-    else setTimeout(checkECharts, 50);
+  const check = () => {
+    const echartsReady = typeof echarts !== 'undefined';
+    const glNeeded = document.body.classList.contains('tag-hash-gl');
+    if (echartsReady && (!glNeeded || window.__echartsGL)) resolve();
+    else setTimeout(check, 50);
   };
-  checkECharts();
+  check();
 });
 
 (function() {
