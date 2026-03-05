@@ -3,6 +3,7 @@ layout: model
 title: "Solar Geometry and Projection"
 subtitle: "Trigonometry and the dot product — how surface orientation affects energy receipt"
 date: 2026-02-26
+image: /assets/images/solar-geometry.png
 categories: [modeling]
 series: computational-geography-foundations
 series_order: 6

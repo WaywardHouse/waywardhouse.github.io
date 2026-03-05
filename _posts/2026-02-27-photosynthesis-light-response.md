@@ -3,6 +3,7 @@ layout: model
 title: "Photosynthesis and Light Response"
 subtitle: "Converting solar energy to chemical energy — the light response curve"
 date: 2026-02-26
+image: /assets/images/photosynthesis.png
 categories: [modeling]
 series: computational-geography-environmental
 series_order: 8

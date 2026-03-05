@@ -3,6 +3,7 @@ layout: model
 title: "Dimensionality Reduction: PCA, t-SNE, and UMAP"
 subtitle: "Visualizing and compressing high-dimensional geographic data"
 date: 2026-03-01
+image: /assets/images/dimentionality-reduction.png
 categories: [modeling, machine-learning]
 series: computational-geography-ml
 series_order: 3
@@ -33,7 +34,6 @@ math_prerequisites: >
   Linear algebra (eigenvectors, matrix multiplication). Basic statistics (variance,
   covariance). We'll derive PCA from first principles and introduce manifold
   concepts intuitively.
-image:  /assets/images/dimentionality-reduction.png
   
 ---
 

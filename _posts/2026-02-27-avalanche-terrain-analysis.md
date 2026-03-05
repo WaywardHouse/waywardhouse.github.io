@@ -33,7 +33,7 @@ excerpt: >
 math_prerequisites: >
   Terrain analysis (Models 7-9, 36-38). Slope and aspect calculation. We'll introduce
   avalanche mechanics and terrain classification from safety perspectives.
-image: /assets/images/cryosphere-and-hydrology.png
+image: /assets/images/avalanche.png
   
 ---
 

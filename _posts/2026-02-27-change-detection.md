@@ -3,6 +3,7 @@ layout: model
 title: "Change Detection in Satellite Imagery"
 subtitle: "Finding what changed between two dates using multi-temporal analysis"
 date: 2026-02-27
+image: /assets/images/change-detection.png
 categories: [modeling]
 series: computational-geography-spatial
 series_order: 12

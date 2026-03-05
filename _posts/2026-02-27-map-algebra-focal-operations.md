@@ -3,6 +3,7 @@ layout: model
 title: "Map Algebra and Focal Operations"
 subtitle: "Cell-by-cell calculations and neighborhood analysis on rasters"
 date: 2026-02-27
+image: /assets/images/map-algebra.png
 categories: [modeling]
 series: computational-geography-spatial
 series_order: 6

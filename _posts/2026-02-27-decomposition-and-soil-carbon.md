@@ -3,6 +3,7 @@ layout: model
 title: "Decomposition and Soil Carbon Turnover"
 subtitle: "From litterfall to soil organic matter — the slow carbon cycle"
 date: 2026-02-26
+image: /assets/images/soil-carbon.png
 categories: [modeling]
 series: computational-geography-environmental
 series_order: 14

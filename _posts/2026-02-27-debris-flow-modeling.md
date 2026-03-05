@@ -3,6 +3,7 @@ layout: model
 title: "Debris Flow Modeling"
 subtitle: "Fast-moving mixtures of water, sediment, and rock—predicting runout and impact"
 date: 2026-02-27
+image: /assets/images/debris-flow.png
 categories: [modeling]
 series: computational-geography-cryosphere
 series_order: 9

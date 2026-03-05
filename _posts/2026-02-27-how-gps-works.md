@@ -3,6 +3,7 @@ layout: model
 title: "How GPS Works"
 subtitle: "Trilateration, clock bias, and the geometry of space-based positioning"
 date: 2026-02-26
+image: /assets/images/gps.png
 categories: [modeling]
 series: computational-geography-environmental
 series_order: 4

@@ -3,6 +3,7 @@ layout: model
 title: "Spatial Diffusion of Innovation"
 subtitle: "How ideas, diseases, and technologies spread across networks over time"
 date: 2026-02-26
+iamge: /assets/images/spatial-diffusion.png
 categories: [modeling]
 series: computational-geography-foundations
 series_order: 11

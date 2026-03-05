@@ -3,6 +3,7 @@ layout: model
 title: "Satellite Overpasses and Visibility"
 subtitle: "Predicting when and where satellites are visible from the ground"
 date: 2026-02-26
+image: /assets/images/orbital-mechanics.png
 categories: [modeling]
 series: computational-geography-environmental
 series_order: 3

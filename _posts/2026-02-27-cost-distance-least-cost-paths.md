@@ -3,6 +3,7 @@ layout: model
 title: "Cost-Distance and Least-Cost Paths"
 subtitle: "Finding optimal routes across variable terrain"
 date: 2026-02-27
+iamge: /asssets/images/cost-distance.png
 categories: [modeling]
 series: computational-geography-spatial
 series_order: 9

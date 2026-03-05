@@ -2,6 +2,7 @@
 layout: model
 title: "Urban Flood Modeling and Green Infrastructure"
 subtitle: "Runoff generation and mitigation in developed watersheds"
+image: /assets/images/urban-flood.png
 date: 2026-02-27
 categories: [modeling]
 series: computational-geography-atmospheric-hazards

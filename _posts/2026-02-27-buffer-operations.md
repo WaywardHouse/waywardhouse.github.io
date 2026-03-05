@@ -3,6 +3,7 @@ layout: model
 title: "Buffer Operations and Distance Fields"
 subtitle: "Creating proximity zones around geographic features"
 date: 2026-02-27
+image: /assets/images/buffer.png
 categories: [modeling]
 series: computational-geography-spatial
 series_order: 2

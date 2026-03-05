@@ -3,6 +3,7 @@ layout: model
 title: "Point-in-Polygon Testing"
 subtitle: "The ray casting algorithm and spatial membership queries"
 date: 2026-02-27
+image: /assets/images/point-in-polygon.png
 categories: [modeling]
 series: computational-geography-spatial
 series_order: 1

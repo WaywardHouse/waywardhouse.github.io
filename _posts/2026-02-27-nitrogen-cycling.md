@@ -3,6 +3,7 @@ layout: model
 title: "Nitrogen Cycling and Limitation"
 subtitle: "How nitrogen availability controls productivity and ecosystem function"
 date: 2026-02-26
+image: /assets/images/nitrogen-cycle.png
 categories: [modeling]
 series: computational-geography-environmental
 series_order: 15

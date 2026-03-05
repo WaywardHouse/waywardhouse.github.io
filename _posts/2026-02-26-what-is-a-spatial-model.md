@@ -5,7 +5,7 @@
   date: 2026-02-26
   categories: [modeling]
   featured: true
-
+  image: /assets/image/spatial-analysis.png
   series: computational-geography-foundations
   series_order: 1
   cluster: A

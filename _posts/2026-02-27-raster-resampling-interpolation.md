@@ -3,6 +3,7 @@ layout: model
 title: "Raster Resampling and Interpolation"
 subtitle: "Changing grid resolution and filling missing values"
 date: 2026-02-27
+image: /assets/images/raster-resampling.png
 categories: [modeling]
 series: computational-geography-spatial
 series_order: 5

@@ -3,6 +3,7 @@ layout: model
 title: "Polygon Overlay and Clipping"
 subtitle: "Intersection, union, and difference—the foundation of spatial analysis"
 date: 2026-02-27
+image: /assets/images/polygon-overlay.png
 categories: [modeling]
 series: computational-geography-spatial
 series_order: 3

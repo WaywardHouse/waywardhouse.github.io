@@ -3,6 +3,7 @@ layout: model
 title: "Raster Classification and Reclassification"
 subtitle: "Converting continuous values to discrete categories"
 date: 2026-02-27
+image: /assets/images/raster-classification.png
 categories: [modeling]
 series: computational-geography-spatial
 series_order: 7

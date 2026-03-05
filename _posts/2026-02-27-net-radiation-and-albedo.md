@@ -3,6 +3,7 @@ layout: model
 title: "Net Radiation and Albedo"
 subtitle: "Surface energy balance — how much solar energy stays at the ground?"
 date: 2026-02-26
+image: /assets/images/net-radiation.png
 categories: [modeling]
 series: computational-geography-environmental
 series_order: 5
