@@ -8,7 +8,6 @@ difficulty_range: 3-5
 estimated_hours: 28
 prerequisites: [series-1, series-3]
 tags: [data-assimilation, bayesian, machine-learning, ensemble, spatial-statistics, model-observation-fusion]
-series: computational-geography-ml
 ---
 
 ## Series Overview
