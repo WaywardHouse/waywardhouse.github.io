@@ -39,7 +39,7 @@ image: /assets/images/spatial-analysis.png
 
 How do we represent the shape of the land mathematically?
 
-A landscape is not flat. Mountains rise, valleys sink, hillslopes tilt. Every point on the surface has an **elevation** above some reference (usually sea level).
+A landscape is not at all just flat. Mountains rise, valleys sink, hillslopes tilt. Every point on the surface has an **elevation** above some reference (usually sea level).
 
 If we know the coordinates $(x, y)$ of a point on the ground, can we write down a function that gives us the elevation $z$?
 
