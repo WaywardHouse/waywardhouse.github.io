@@ -4,7 +4,7 @@ title: "Terrestrial LiDAR Point Clouds"
 subtitle: "Laser ranging for precise 3D topography and vegetation structure"
 date: 2026-02-27
 categories: [modelling]
-series: computational-geography-advanced-sensing
+series: computational-geography-advanced-remote-sensing
 series_order: 3
 cluster: T
 cluster_title: "Active Ranging Systems"

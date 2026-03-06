@@ -4,7 +4,7 @@ title: "Gravity Remote Sensing (GRACE)"
 subtitle: "Measuring mass redistribution from satellite gravity measurements"
 date: 2026-02-27
 categories: [modelling]
-series: computational-geography-advanced-sensing
+series: computational-geography-advanced-remote-sensing
 series_order: 7
 cluster: U
 cluster_title: "Geophysical Remote Sensing"
