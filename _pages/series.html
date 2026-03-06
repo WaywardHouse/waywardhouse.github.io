@@ -28,6 +28,21 @@ permalink: /series/
       {% assign series_posts = site.posts | where: "series", syllabus.series_key | sort: "series_order" %}
     {% endif %}
 
+    {% if series_posts.size == 0 %}
+
+    <article class="series-group">
+      <header class="series-group-header">
+        <div class="series-group-eyebrow">Series {{ syllabus.series_number }}{% if syllabus.total_essays %} &middot; {{ syllabus.total_essays }} models planned{% endif %}{% if syllabus.estimated_hours %} &middot; ~{{ syllabus.estimated_hours }}h{% endif %} &middot; Coming soon</div>
+        <h2 class="series-group-title">{{ syllabus.title | split: ": " | last }}</h2>
+        {% if syllabus.subtitle %}
+        <p class="series-group-desc">{{ syllabus.subtitle }}</p>
+        {% endif %}
+        <a href="{{ syllabus.url | relative_url }}" class="btn btn-secondary">View syllabus &rarr;</a>
+      </header>
+    </article>
+
+    {% else %}
+
     <article class="series-group">
 
       <header class="series-group-header">
@@ -37,71 +52,68 @@ permalink: /series/
         <p class="series-group-desc">{{ syllabus.subtitle }}</p>
         {% endif %}
         <a href="{{ syllabus.url | relative_url }}" class="btn btn-primary">View syllabus &rarr;</a>
-        {% if series_posts.size > 0 %}
         {% assign first_post = series_posts | first %}
         <a href="{{ first_post.url | relative_url }}" class="btn btn-secondary">Start reading &rarr;</a>
-        {% endif %}
       </header>
 
-      {% if series_posts.size > 0 %}
+      {% assign has_clusters = series_posts | where_exp: "p", "p.cluster" | size %}
 
-        {% assign has_clusters = series_posts | where_exp: "p", "p.cluster" | size %}
+      {% if has_clusters > 0 %}
 
-        {% if has_clusters > 0 %}
+        {% assign current_cluster = "" %}
+        {% for post in series_posts %}
 
-          {% assign current_cluster = "" %}
-          {% for post in series_posts %}
+          {% if post.cluster != current_cluster %}
+            {% unless current_cluster == "" %}</ol></div>{% endunless %}
+            <div class="cluster-section">
+              <div class="cluster-header">
+                <span class="cluster-label">{{ post.cluster }}</span>
+                {% if post.cluster_title %}<span class="cluster-title">{{ post.cluster_title }}</span>{% endif %}
+              </div>
+              <ol class="cluster-essay-list">
+            {% assign current_cluster = post.cluster %}
+          {% endif %}
 
-            {% if post.cluster != current_cluster %}
-              {% unless current_cluster == "" %}</ol></div>{% endunless %}
-              <div class="cluster-section">
-                <div class="cluster-header">
-                  <span class="cluster-label">{{ post.cluster }}</span>
-                  {% if post.cluster_title %}<span class="cluster-title">{{ post.cluster_title }}</span>{% endif %}
-                </div>
-                <ol class="cluster-essay-list">
-              {% assign current_cluster = post.cluster %}
-            {% endif %}
-
-              <li class="cluster-essay-item"
-                  x-data="essayProgress('{{ post.url }}')"
-                  :class="{ 'cluster-essay-item--done': completed }"
-                  data-difficulty="{{ post.difficulty | default: 0 }}">
-                <span class="cluster-essay-num" x-text="completed ? '✓' : '{{ post.series_order }}'">{{ post.series_order }}</span>
-                <div class="cluster-essay-body">
-                  <a href="{{ post.url | relative_url }}" class="cluster-essay-title">{{ post.title }}</a>
-                  {% if post.subtitle %}<span class="cluster-essay-sub">{{ post.subtitle }}</span>{% endif %}
-                </div>
-                {% if post.difficulty %}
-                <span class="difficulty-badge difficulty-badge--{{ post.difficulty }}">{{ post.difficulty }}</span>
-                {% endif %}
-              </li>
-
-          {% endfor %}
-          {% if series_posts.size > 0 %}</ol></div>{% endif %}
-
-        {% else %}
-
-          <ol class="series-flat-list">
-            {% for post in series_posts %}
-            <li class="series-flat-item"
+            <li class="cluster-essay-item"
                 x-data="essayProgress('{{ post.url }}')"
                 :class="{ 'cluster-essay-item--done': completed }"
                 data-difficulty="{{ post.difficulty | default: 0 }}">
-              <span class="cluster-essay-num" x-text="completed ? '✓' : '{{ forloop.index }}'">{{ forloop.index }}</span>
+              <span class="cluster-essay-num" x-text="completed ? '✓' : '{{ post.series_order }}'">{{ post.series_order }}</span>
               <div class="cluster-essay-body">
                 <a href="{{ post.url | relative_url }}" class="cluster-essay-title">{{ post.title }}</a>
                 {% if post.subtitle %}<span class="cluster-essay-sub">{{ post.subtitle }}</span>{% endif %}
               </div>
+              {% if post.difficulty %}
+              <span class="difficulty-badge difficulty-badge--{{ post.difficulty }}">{{ post.difficulty }}</span>
+              {% endif %}
             </li>
-            {% endfor %}
-          </ol>
 
-        {% endif %}
+        {% endfor %}
+        {% if series_posts.size > 0 %}</ol></div>{% endif %}
+
+      {% else %}
+
+        <ol class="series-flat-list">
+          {% for post in series_posts %}
+          <li class="series-flat-item"
+              x-data="essayProgress('{{ post.url }}')"
+              :class="{ 'cluster-essay-item--done': completed }"
+              data-difficulty="{{ post.difficulty | default: 0 }}">
+            <span class="cluster-essay-num" x-text="completed ? '✓' : '{{ forloop.index }}'">{{ forloop.index }}</span>
+            <div class="cluster-essay-body">
+              <a href="{{ post.url | relative_url }}" class="cluster-essay-title">{{ post.title }}</a>
+              {% if post.subtitle %}<span class="cluster-essay-sub">{{ post.subtitle }}</span>{% endif %}
+            </div>
+          </li>
+          {% endfor %}
+        </ol>
 
       {% endif %}
 
     </article>
+
+    {% endif %}
+
     {% endfor %}
 
     {% endif %}
