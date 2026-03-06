@@ -29,14 +29,14 @@ Series numbers use a separate M-prefix to keep them visually distinct from the g
 **Series key:** `math-primer-algebra`  
 **Permalink:** `/math/1/`
 
-|Cluster|Title|Models|
-|---|---|---|
-|AA|Numbers in the Physical World|Scientific notation and orders of magnitude; unit conversion and dimensional analysis; significant figures and measurement precision|
-|AA|Variables and Equations|What a variable is and isn't; solving linear equations; rearranging formulas (isolating the term you want)|
-|AB|Systems of Equations|Two equations, two unknowns: elimination and substitution; geometric interpretation as intersecting lines; three-equation systems for mixing problems|
-|AB|Quadratics|Factoring and the quadratic formula; parabola shape and vertex; projectile trajectory as a geographic introduction|
-|AC|Proportional and Inverse Relationships|Direct proportion, constant of proportionality; inverse proportion (gravity, light, sound); log-log linearity as a preview|
-|AC|Inequalities and Intervals|Solving and graphing inequalities; interval notation; feasibility regions for resource constraints|
+| Cluster | Title                                      | Models                                                                                                                                                |
+| ------- | ------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------- |
+| AA      | [[Numbers in the Physical World]]          | Scientific notation and orders of magnitude; unit conversion and dimensional analysis; significant figures and measurement precision                  |
+| AA      | [[Variables and Equations]]                | What a variable is and isn't; solving linear equations; rearranging formulas (isolating the term you want)                                            |
+| AB      | [[Systems of Equations]]                   | Two equations, two unknowns: elimination and substitution; geometric interpretation as intersecting lines; three-equation systems for mixing problems |
+| AB      | [[Quadratics]]                             | Factoring and the quadratic formula; parabola shape and vertex; projectile trajectory as a geographic introduction                                    |
+| AC      | [[Proportional and Inverse Relationships]] | Direct proportion, constant of proportionality; inverse proportion (gravity, light, sound); log-log linearity as a preview                            |
+| AC      | [[Inequalities and Intervals]]             | Solving and graphing inequalities; interval notation; feasibility regions for resource constraints                                                    |
 
 **Geographic anchors:** Elevation unit conversions (feet → metres → km); mixing proportions for soil amendments; river discharge as a product of area and velocity; daylight hours as a function of latitude.
 
@@ -49,15 +49,15 @@ Series numbers use a separate M-prefix to keep them visually distinct from the g
 **Series key:** `math-primer-geometry`  
 **Permalink:** `/math/2/`
 
-|Cluster|Title|Models|
-|---|---|---|
-|BA|Euclidean Geometry|Angles, triangles, congruence, similarity; area and perimeter of standard shapes; the Pythagorean theorem as a distance formula|
-|BA|Coordinate Geometry|Cartesian plane; distance and midpoint formulas; slope as rise over run; equation of a line (point-slope and slope-intercept)|
-|BB|Right-Triangle Trigonometry|Sine, cosine, tangent defined from ratios; SOHCAHTOA; solving triangles; angles of elevation and depression|
-|BB|The Unit Circle|Extending trig beyond right triangles; radian measure; exact values at 0, 30, 45, 60, 90; the Pythagorean identity|
-|BC|Periodic Functions|Sine and cosine as waves; amplitude, period, phase shift; modelling seasonal temperature and daylight|
-|BC|Polar Coordinates|From Cartesian to polar and back; distance in polar form; why polar coordinates simplify circular problems|
-|BD|Spherical Geometry|Great circles; spherical excess; the haversine formula for distance on the globe; why longitude lines converge at the poles|
+| Cluster | Title                           | Models                                                                                                                          |
+| ------- | ------------------------------- | ------------------------------------------------------------------------------------------------------------------------------- |
+| BA      | [[Euclidean Geometry]]          | Angles, triangles, congruence, similarity; area and perimeter of standard shapes; the Pythagorean theorem as a distance formula |
+| BA      | [[Coordinate Geometry]]         | Cartesian plane; distance and midpoint formulas; slope as rise over run; equation of a line (point-slope and slope-intercept)   |
+| BB      | [[Right-Triangle Trigonometry]] | Sine, cosine, tangent defined from ratios; SOHCAHTOA; solving triangles; angles of elevation and depression                     |
+| BB      | [[The Unit Circle]]             | Extending trig beyond right triangles; radian measure; exact values at 0, 30, 45, 60, 90; the Pythagorean identity              |
+| BC      | [[Periodic Functions]]          | Sine and cosine as waves; amplitude, period, phase shift; modelling seasonal temperature and daylight                           |
+| BC      | [[Polar Coordinates]]           | From Cartesian to polar and back; distance in polar form; why polar coordinates simplify circular problems                      |
+| BD      | [[Spherical Geometry]]          | Great circles; spherical excess; the haversine formula for distance on the globe; why longitude lines converge at the poles     |
 
 **Geographic anchors:** Slope and aspect from a DEM; viewshed angles; sun elevation at solstice; great-circle flight path Calgary to Tokyo; why 1° of latitude ≠ 1° of longitude in km.
 
@@ -70,15 +70,15 @@ Series numbers use a separate M-prefix to keep them visually distinct from the g
 **Series key:** `math-primer-functions`  
 **Permalink:** `/math/3/`
 
-|Cluster|Title|Models|
-|---|---|---|
-|CA|The Function Concept|Domain, codomain, range; function notation; vertical line test; piecewise functions|
-|CA|Transformation of Functions|Horizontal and vertical shifts; stretching and reflecting; why f(x − a) shifts right, not left|
-|CB|Composition and Inverse|Composing functions: f(g(x)); invertibility; finding inverses algebraically and graphically; why log is the inverse of exp|
-|CB|Exponential Functions|The family 2x, ex, bx; growth and decay; doubling time; half-life|
-|CC|The Natural Logarithm|ln as the inverse of ex; log rules (product, quotient, power); change of base|
-|CC|Log Scales and Power Laws|Log-linear and log-log plots; linearizing exponential and power-law data; Richter scale, decibels, pH as geographic/physical examples|
-|CD|Sequences and Series|Arithmetic and geometric sequences; partial sums; the geometric series formula; applications to compound interest and epidemic growth|
+| Cluster | Title                           | Models                                                                                                                                |
+| ------- | ------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------- |
+| CA      | [[The Function Concept]]        | Domain, codomain, range; function notation; vertical line test; piecewise functions                                                   |
+| CA      | [[Transformation of Functions]] | Horizontal and vertical shifts; stretching and reflecting; why f(x − a) shifts right, not left                                        |
+| CB      | [[Composition and Inverse]]     | Composing functions: f(g(x)); invertibility; finding inverses algebraically and graphically; why log is the inverse of exp            |
+| CB      | [[Exponential Functions]]       | The family 2x, ex, bx; growth and decay; doubling time; half-life                                                                     |
+| CC      | [[The Natural Logarithm]]       | ln as the inverse of ex; log rules (product, quotient, power); change of base                                                         |
+| CC      | [[Log Scales and Power Laws]]   | Log-linear and log-log plots; linearizing exponential and power-law data; Richter scale, decibels, pH as geographic/physical examples |
+| CD      | [[Sequences and Series]]        | Arithmetic and geometric sequences; partial sums; the geometric series formula; applications to compound interest and epidemic growth |
 
 **Geographic anchors:** Radiocarbon dating (half-life); population doubling time; earthquake magnitude (log scale); Zipf's law for city sizes as a log-log relationship; acoustic attenuation in the atmosphere.
 
@@ -91,14 +91,14 @@ Series numbers use a separate M-prefix to keep them visually distinct from the g
 **Series key:** `math-primer-precalculus`  
 **Permalink:** `/math/4/`
 
-|Cluster|Title|Models|
-|---|---|---|
-|DA|Average Rate of Change|Slope of a secant line; Δy/Δx over an interval; units matter; glacier retreat rate from historical surveys|
-|DA|From Average to Instantaneous|Shrinking the interval; what the slope approaches; the tangent line problem stated informally|
-|DB|Limits Informally|What "approaching" means; one-sided limits; limits at infinity; the ε-δ definition named but not required|
-|DB|Continuity|What it means for a function to have no gaps or jumps; intermediate value theorem; relevance to physical systems|
-|DC|The Difference Quotient|[f(x+h) − f(x)] / h; computing it for polynomials and square roots; why this expression is the engine of calculus|
-|DC|Asymptotes and End Behaviour|Horizontal and vertical asymptotes; rational function behaviour; relevance to saturation models|
+| Cluster | Title                             | Models                                                                                                            |
+| ------- | --------------------------------- | ----------------------------------------------------------------------------------------------------------------- |
+| DA      | [[Average Rate of Change]]        | Slope of a secant line; Δy/Δx over an interval; units matter; glacier retreat rate from historical surveys        |
+| DA      | [[From Average to Instantaneous]] | Shrinking the interval; what the slope approaches; the tangent line problem stated informally                     |
+| DB      | [[Limits Informally]]             | What "approaching" means; one-sided limits; limits at infinity; the ε-δ definition named but not required         |
+| DB      | [[Continuity]]                    | What it means for a function to have no gaps or jumps; intermediate value theorem; relevance to physical systems  |
+| DC      | [[The Difference Quotient]]       | [f(x+h) − f(x)] / h; computing it for polynomials and square roots; why this expression is the engine of calculus |
+| DC      | [[Asymptotes and End Behaviour]]  | Horizontal and vertical asymptotes; rational function behaviour; relevance to saturation models                   |
 
 **Geographic anchors:** Rate of sea level rise (tide gauge data); average vs instantaneous river discharge; temperature gradient across a front; approach speed of a satellite.
 
@@ -111,16 +111,16 @@ Series numbers use a separate M-prefix to keep them visually distinct from the g
 **Series key:** `math-primer-differential-calculus`  
 **Permalink:** `/math/5/`
 
-|Cluster|Title|Models|
-|---|---|---|
-|EA|The Derivative Defined|Formal limit definition; derivative as a function; Leibniz vs Newton notation; differentiability|
-|EA|Power Rule and Polynomial Derivatives|d/dx[xⁿ] = nxⁿ⁻¹; derivatives of sums; velocity and acceleration from a position function|
-|EB|Product and Quotient Rules|Differentiating products and ratios; why the product rule is not (fg)' = f'g'; worked examples from concentration and flow|
-|EB|Chain Rule|Differentiating composite functions; the most-used rule in applied calculus; temperature as a function of altitude as a function of latitude|
-|EC|Derivatives of Transcendental Functions|d/dx[sin x], d/dx[cos x], d/dx[eˣ], d/dx[ln x]; chain rule with these; periodic and exponential models|
-|EC|Higher-Order Derivatives|Second derivative and concavity; acceleration; inflection points; the second derivative test|
-|ED|Optimization|Critical points; first and second derivative tests; finding maxima and minima; constrained optimization preview|
-|ED|Related Rates|Two quantities changing together; implicit differentiation; applications to spreading fire, rising water, receding glacier|
+| Cluster | Title                                       | Models                                                                                                                                       |
+| ------- | ------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------- |
+| EA      | [[The Derivative Defined]]                  | Formal limit definition; derivative as a function; Leibniz vs Newton notation; differentiability                                             |
+| EA      | [[Power Rule and Polynomial Derivatives]]   | d/dx[xⁿ] = nxⁿ⁻¹; derivatives of sums; velocity and acceleration from a position function                                                    |
+| EB      | [[Product and Quotient Rules]]              | Differentiating products and ratios; why the product rule is not (fg)' = f'g'; worked examples from concentration and flow                   |
+| EB      | [[Chain Rule]]                              | Differentiating composite functions; the most-used rule in applied calculus; temperature as a function of altitude as a function of latitude |
+| EC      | [[Derivatives of Transcendental Functions]] | d/dx[sin x], d/dx[cos x], d/dx[eˣ], d/dx[ln x]; chain rule with these; periodic and exponential models                                       |
+| EC      | [[Higher-Order Derivatives]]                | Second derivative and concavity; acceleration; inflection points; the second derivative test                                                 |
+| ED      | [[Optimization]]                            | Critical points; first and second derivative tests; finding maxima and minima; constrained optimization preview                              |
+| ED      | [[Related Rates]]                           | Two quantities changing together; implicit differentiation; applications to spreading fire, rising water, receding glacier                   |
 
 **Geographic anchors:** Slope of a hillside as a derivative; optimal pipeline route (unconstrained); rate of change of temperature along an elevation gradient; melting rate of a retreating glacier.
 
@@ -133,16 +133,16 @@ Series numbers use a separate M-prefix to keep them visually distinct from the g
 **Series key:** `math-primer-integral-calculus`  
 **Permalink:** `/math/6/`
 
-|Cluster|Title|Models|
-|---|---|---|
-|FA|Antiderivatives|Reversing differentiation; indefinite integrals; the constant of integration; power rule in reverse|
-|FA|The Definite Integral|Signed area under a curve; Riemann sums; the definite integral as a limit|
-|FB|Fundamental Theorem of Calculus|The two parts: differentiation and integration as inverses; evaluating definite integrals without Riemann sums|
-|FB|Integration Techniques|Substitution (u-substitution); integration by parts; when to use which|
-|FC|Applications of Integration|Area between curves; cumulative precipitation from a rate; volume of a reservoir from a depth-area curve|
-|FC|Average Value and Accumulated Change|Average value of a continuous function; total runoff from a hydrograph; net displacement vs total distance|
-|FD|Introduction to Differential Equations|What a DE is; order and linearity; verifying solutions; the DE y' = ky and its exponential solution|
-|FD|Separable Differential Equations|Separation of variables; population growth, radioactive decay, Newton's law of cooling; logistic equation derived|
+| Cluster | Title                                      | Models                                                                                                            |
+| ------- | ------------------------------------------ | ----------------------------------------------------------------------------------------------------------------- |
+| FA      | [[Antiderivatives]]                        | Reversing differentiation; indefinite integrals; the constant of integration; power rule in reverse               |
+| FA      | [[The Definite Integral]]                  | Signed area under a curve; Riemann sums; the definite integral as a limit                                         |
+| FB      | [[Fundamental Theorem of Calculus]]        | The two parts: differentiation and integration as inverses; evaluating definite integrals without Riemann sums    |
+| FB      | [[Integration Techniques]]                 | Substitution (u-substitution); integration by parts; when to use which                                            |
+| FC      | [[Applications of Integration]]            | Area between curves; cumulative precipitation from a rate; volume of a reservoir from a depth-area curve          |
+| FC      | [[Average Value and Accumulated Change]]   | Average value of a continuous function; total runoff from a hydrograph; net displacement vs total distance        |
+| FD      | [[Introduction to Differential Equations]] | What a DE is; order and linearity; verifying solutions; the DE y' = ky and its exponential solution               |
+| FD      | [[Separable Differential Equations]]       | Separation of variables; population growth, radioactive decay, Newton's law of cooling; logistic equation derived |
 
 **Geographic anchors:** Volume of water behind a dam from depth-area curves; cumulative snowmelt from a melt-rate function; exponential decay of radiocarbon; logistic growth of a beaver population colonizing a watershed.
 
@@ -155,16 +155,16 @@ Series numbers use a separate M-prefix to keep them visually distinct from the g
 **Series key:** `math-primer-multivariable`  
 **Permalink:** `/math/7/`
 
-|Cluster|Title|Models|
-|---|---|---|
-|GA|Functions of Two Variables|Surfaces, contour plots, level curves; elevation as f(x, y); reading a topographic map as a mathematical object|
-|GA|Partial Derivatives|Holding one variable fixed; ∂f/∂x and ∂f/∂y; geometric interpretation as slope in x and y directions|
-|GB|The Gradient Vector|∇f = (∂f/∂x, ∂f/∂y); gradient points uphill, magnitude is steepness; gradient descent as the inverse|
-|GB|Directional Derivatives|Rate of change in an arbitrary direction; dot product with a unit vector; steepest ascent/descent as a maximization|
-|GC|Optimization in Two Variables|Critical points: setting both partials to zero; second derivative test (Hessian determinant); saddle points|
-|GC|Lagrange Multipliers|Constrained optimization: maximize f subject to g = 0; gradient condition; examples from resource allocation|
-|GD|Double Integrals|Integrating over a 2D region; Fubini's theorem; change of order; area and volume as special cases|
-|GD|Applications of Double Integrals|Mass of a variable-density region; centre of mass; expected value over a spatial domain; raster cell aggregation|
+| Cluster | Title                                | Models                                                                                                              |
+| ------- | ------------------------------------ | ------------------------------------------------------------------------------------------------------------------- |
+| GA      | [[Functions of Two Variables]]       | Surfaces, contour plots, level curves; elevation as f(x, y); reading a topographic map as a mathematical object     |
+| GA      | [[Partial Derivatives]]              | Holding one variable fixed; ∂f/∂x and ∂f/∂y; geometric interpretation as slope in x and y directions                |
+| GB      | [[The Gradient Vector]]              | ∇f = (∂f/∂x, ∂f/∂y); gradient points uphill, magnitude is steepness; gradient descent as the inverse                |
+| GB      | [[Directional Derivatives]]          | Rate of change in an arbitrary direction; dot product with a unit vector; steepest ascent/descent as a maximization |
+| GC      | [[Optimization in Two Variables]]    | Critical points: setting both partials to zero; second derivative test (Hessian determinant); saddle points         |
+| GC      | [[Lagrange Multipliers]]             | Constrained optimization: maximize f subject to g = 0; gradient condition; examples from resource allocation        |
+| GD      | [[Double Integrals]]                 | Integrating over a 2D region; Fubini's theorem; change of order; area and volume as special cases                   |
+| GD      | [[Applications of Double Integrals]] | Mass of a variable-density region; centre of mass; expected value over a spatial domain; raster cell aggregation    |
 
 **Geographic anchors:** Gradient of a DEM as a flow direction vector; aspect angle from ∂z/∂x and ∂z/∂y; total sediment load over a watershed as a double integral; optimal weather station placement (constrained optimization).
 
@@ -177,16 +177,16 @@ Series numbers use a separate M-prefix to keep them visually distinct from the g
 **Series key:** `math-primer-linear-algebra`  
 **Permalink:** `/math/8/`
 
-|Cluster|Title|Models|
-|---|---|---|
-|HA|Vectors|Geometric vectors; addition and scalar multiplication; magnitude and direction; position vectors; displacement|
-|HA|Dot Product and Angle|a·b =|a|   |b|cos θ; orthogonality; projection; how similarity between satellite spectral signatures is a dot product|
-|HB|Cross Product and Normal Vectors|a × b; area of a parallelogram; normal to a plane; application to slope-aspect from three terrain points|
-|HB|Matrices and Matrix Operations|Matrix addition, scalar multiplication, matrix multiplication; why AB ≠ BA; the identity matrix|
-|HC|Systems of Linear Equations|Augmented matrix; row reduction (Gaussian elimination); consistent vs inconsistent systems; overdetermined systems|
-|HC|Inverse and Determinant|Matrix inverse; 2×2 and 3×3 determinants; when a matrix is invertible; solving Ax = b|
-|HD|Eigenvalues and Eigenvectors|What they are geometrically; characteristic polynomial; dominant eigenvalue; why PCA is an eigenproblem|
-|HD|Linear Transformations|Rotation, scaling, reflection as matrices; composing transforms; coordinate system changes; map projections as linear approximations|
+| Cluster | Title                                | Models                                                                                                                               |     |     |     |                                                                                                         |
+| ------- | ------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------ | --- | --- | --- | ------------------------------------------------------------------------------------------------------- |
+| HA      | [[Vectors]]                          | Geometric vectors; addition and scalar multiplication; magnitude and direction; position vectors; displacement                       |     |     |     |                                                                                                         |
+| HA      | [[Dot Product and Angle]]            | a·b =                                                                                                                                | a   |     | b   | cos θ; orthogonality; projection; how similarity between satellite spectral signatures is a dot product |
+| HB      | [[Cross Product and Normal Vectors]] | a × b; area of a parallelogram; normal to a plane; application to slope-aspect from three terrain points                             |     |     |     |                                                                                                         |
+| HB      | [[Matrices and Matrix Operations]]   | Matrix addition, scalar multiplication, matrix multiplication; why AB ≠ BA; the identity matrix                                      |     |     |     |                                                                                                         |
+| HC      | [[Systems of Linear Equations]]      | Augmented matrix; row reduction (Gaussian elimination); consistent vs inconsistent systems; overdetermined systems                   |     |     |     |                                                                                                         |
+| HC      | [[Inverse and Determinant]]          | Matrix inverse; 2×2 and 3×3 determinants; when a matrix is invertible; solving Ax = b                                                |     |     |     |                                                                                                         |
+| HD      | [[Eigenvalues and Eigenvectors]]     | What they are geometrically; characteristic polynomial; dominant eigenvalue; why PCA is an eigenproblem                              |     |     |     |                                                                                                         |
+| HD      | [[Linear Transformations]]           | Rotation, scaling, reflection as matrices; composing transforms; coordinate system changes; map projections as linear approximations |     |     |     |                                                                                                         |
 
 **Geographic anchors:** Rotation matrix for converting between geographic coordinate systems; PCA of a multispectral image as an eigenproblem; least-squares fitting as a matrix solve; adjacency matrix for a watershed network.
 
@@ -199,18 +199,18 @@ Series numbers use a separate M-prefix to keep them visually distinct from the g
 **Series key:** `math-primer-probability`  
 **Permalink:** `/math/9/`
 
-|Cluster|Title|Models|
-|---|---|---|
-|IA|Probability Foundations|Sample spaces and events; probability axioms; conditional probability; independence; Bayes' theorem introduced|
-|IA|Counting and Combinatorics|Permutations and combinations; the binomial coefficient; relevance to ecological sampling design|
-|IB|Discrete Distributions|Bernoulli, binomial, Poisson; mean and variance; fitting to wildfire ignition counts and flood occurrence|
-|IB|Continuous Distributions|Probability density functions; the uniform and exponential distributions; the normal distribution and its parameters|
-|IC|The Normal Distribution|Standard normal; z-scores; 68-95-99.7 rule; central limit theorem stated and illustrated|
-|IC|Confidence Intervals|What a confidence interval means; CI for a mean; margin of error; how sample size affects precision|
-|ID|Hypothesis Testing|Null and alternative hypotheses; p-values without mysticism; Type I and Type II error; practical vs statistical significance|
-|ID|Regression and Correlation|Pearson correlation; least-squares line; R²; residuals; what regression can and cannot show|
-|IE|Introduction to Bayesian Reasoning|Prior, likelihood, posterior; Bayes' theorem for continuous parameters; how evidence updates belief; contrast with frequentist inference|
-|IE|Uncertainty Propagation|How uncertainty in inputs becomes uncertainty in outputs; Monte Carlo error propagation; sensitivity analysis|
+| Cluster | Title                                  | Models                                                                                                                                   |
+| ------- | -------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------- |
+| IA      | [[Probability Foundations]]            | Sample spaces and events; probability axioms; conditional probability; independence; Bayes' theorem introduced                           |
+| IA      | [[Counting and Combinatorics]]         | Permutations and combinations; the binomial coefficient; relevance to ecological sampling design                                         |
+| IB      | [[Discrete Distributions]]             | Bernoulli, binomial, Poisson; mean and variance; fitting to wildfire ignition counts and flood occurrence                                |
+| IB      | [[Continuous Distributions]]           | Probability density functions; the uniform and exponential distributions; the normal distribution and its parameters                     |
+| IC      | [[The Normal Distribution]]            | Standard normal; z-scores; 68-95-99.7 rule; central limit theorem stated and illustrated                                                 |
+| IC      | [[Confidence Intervals]]               | What a confidence interval means; CI for a mean; margin of error; how sample size affects precision                                      |
+| ID      | [[Hypothesis Testing]]                 | Null and alternative hypotheses; p-values without mysticism; Type I and Type II error; practical vs statistical significance             |
+| ID      | [[Regression and Correlation]]         | Pearson correlation; least-squares line; R²; residuals; what regression can and cannot show                                              |
+| IE      | [[Introduction to Bayesian Reasoning]] | Prior, likelihood, posterior; Bayes' theorem for continuous parameters; how evidence updates belief; contrast with frequentist inference |
+| IE      | [[Uncertainty Propagation]]            | How uncertainty in inputs becomes uncertainty in outputs; Monte Carlo error propagation; sensitivity analysis                            |
 
 **Geographic anchors:** Flood return period (recurrence interval) as a probability; normal approximation for annual precipitation; Poisson model for wildfire ignitions; Bayesian updating of glacier mass balance estimates; Monte Carlo uncertainty in a crop yield model.
 
