@@ -1,0 +1,993 @@
+<!DOCTYPE html>
+
+<html lang="en" data-brand="wayward" data-theme="light">
+<head>
+  <meta charset="utf-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Regression for Continuous Spatial Variables — WaywardHouse</title>
+<meta name="description" content="Predicting continuous spatial variables — soil organic carbon, land surface temperature, species richness — from raster covariates is one of the most common tasks in computational geography. This essay reviews...">
+
+<!-- Dark mode flash prevention — runs synchronously before first paint -->
+<script>
+  (function () {
+    var defaultDark = 'light' === 'dark';
+    var s = localStorage.getItem('theme');
+    var dark = s !== null ? s === 'dark' : defaultDark;
+    document.documentElement.dataset.theme = dark ? 'dark' : 'light';
+  })();
+</script>
+
+<!-- Preconnect to CDN domains used by the viz runtime -->
+<link rel="preconnect" href="https://cdn.jsdelivr.net">
+<link rel="preconnect" href="https://unpkg.com">
+<link rel="preconnect" href="https://esm.sh">
+<link rel="preconnect" href="https://api.mapbox.com">
+<link rel="preconnect" href="https://events.mapbox.com">
+
+
+<script>window.MAPBOX_TOKEN = 'pk.eyJ1IjoiYnJlYWRlZGNvZCIsImEiOiJjbW0xa25qc2EwMmtwMnJwejJlNndqdnoxIn0._7I9PwXuFLrOQINVZ84y1w';</script>
+
+
+<!-- Fonts -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:ital,wght@0,300;0,400;0,600;0,700;0,800;0,900;1,700;1,800&family=Barlow:wght@300;400&family=IBM+Plex+Mono:ital,wght@0,300;0,400;0,500;1,300&family=Literata:ital,opsz,wght@0,7..72,300;0,7..72,400;0,7..72,500;1,7..72,300;1,7..72,400&display=swap" rel="stylesheet">
+
+<!-- Theme stylesheet (Vite build output) -->
+<link rel="stylesheet" href="/assets/dist/main.css">
+
+<!-- Brand token overrides — loaded after main.css so variables cascade correctly -->
+
+<link rel="stylesheet" href="/assets/css/brand-wayward.css">
+
+
+
+<!-- Syntax highlighting (Rouge — light + dark) -->
+<link rel="stylesheet" href="/assets/css/syntax.css">
+
+<!-- Begin Jekyll SEO tag v2.8.0 -->
+<title>Regression for Continuous Spatial Variables | WaywardHouse</title>
+<meta name="generator" content="Jekyll v4.4.1" />
+<meta property="og:title" content="Regression for Continuous Spatial Variables" />
+<meta property="og:locale" content="en" />
+<meta name="description" content="Predicting continuous spatial variables — soil organic carbon, land surface temperature, species richness — from raster covariates is one of the most common tasks in computational geography. This essay reviews ordinary least squares, derives the ridge and lasso regularisation penalties, explains the bias-variance tradeoff that motivates them, shows why standard k-fold cross- validation fails for spatial data and how spatial cross-validation corrects it, introduces random forest regression for nonlinear relationships, and distinguishes prediction intervals from confidence intervals." />
+<meta property="og:description" content="Predicting continuous spatial variables — soil organic carbon, land surface temperature, species richness — from raster covariates is one of the most common tasks in computational geography. This essay reviews ordinary least squares, derives the ridge and lasso regularisation penalties, explains the bias-variance tradeoff that motivates them, shows why standard k-fold cross- validation fails for spatial data and how spatial cross-validation corrects it, introduces random forest regression for nonlinear relationships, and distinguishes prediction intervals from confidence intervals." />
+<link rel="canonical" href="https://wayward.house/model/regression-for-continuous-spatial-variables-110/" />
+<meta property="og:url" content="https://wayward.house/model/regression-for-continuous-spatial-variables-110/" />
+<meta property="og:site_name" content="WaywardHouse" />
+<meta property="og:image" content="https://wayward.house/assets/images/time-series.webp" />
+<meta property="og:type" content="article" />
+<meta property="article:published_time" content="2026-03-05T00:00:00+00:00" />
+<meta name="twitter:card" content="summary_large_image" />
+<meta property="twitter:image" content="https://wayward.house/assets/images/time-series.webp" />
+<meta property="twitter:title" content="Regression for Continuous Spatial Variables" />
+<meta name="twitter:site" content="@" />
+<script type="application/ld+json">
+{"@context":"https://schema.org","@type":"BlogPosting","dateModified":"2026-03-12T16:57:04+00:00","datePublished":"2026-03-05T00:00:00+00:00","description":"Predicting continuous spatial variables — soil organic carbon, land surface temperature, species richness — from raster covariates is one of the most common tasks in computational geography. This essay reviews ordinary least squares, derives the ridge and lasso regularisation penalties, explains the bias-variance tradeoff that motivates them, shows why standard k-fold cross- validation fails for spatial data and how spatial cross-validation corrects it, introduces random forest regression for nonlinear relationships, and distinguishes prediction intervals from confidence intervals.","headline":"Regression for Continuous Spatial Variables","image":"https://wayward.house/assets/images/time-series.webp","mainEntityOfPage":{"@type":"WebPage","@id":"https://wayward.house/model/regression-for-continuous-spatial-variables-110/"},"publisher":{"@type":"Organization","logo":{"@type":"ImageObject","url":"https://wayward.house/assets/images/logo.webp"}},"url":"https://wayward.house/model/regression-for-continuous-spatial-variables-110/"}</script>
+<!-- End Jekyll SEO tag -->
+
+
+
+<!-- Cloudflare Web Analytics -->
+<script defer src="https://static.cloudflareinsights.com/beacon.min.js"
+  data-cf-beacon='{"token": "62c47d78bf9d4c80972d4e6242d79ff8"}'></script>
+
+
+</head>
+<body class="
+  model-template
+   tag-modelling
+   tag-hash-math
+  
+   tag-hash-viz
+  
+  
+  
+  
+  
+  
+">
+
+<a href="#main-content" class="skip-link">Skip to content</a>
+
+<header class="nav" x-data="{ open: false }">
+  <div class="nav-inner">
+
+    <!-- Logo -->
+    <a href="/" class="nav-logo">
+      
+      <img loading="lazy" src="/assets/images/logo.webp" alt="WaywardHouse" width="32" height="32">
+      
+      WaywardHouse<span>.</span>
+    </a>
+
+    <!-- Desktop nav links -->
+    <ul class="nav-links" role="list">
+      
+      <li>
+        <a href="/topics/">Essays</a>
+      </li>
+      
+      <li>
+        <a href="/series/">Modelling</a>
+      </li>
+      
+      <li>
+        <a href="/about/">About</a>
+      </li>
+      
+    </ul>
+
+    <!-- Actions -->
+    <div class="nav-actions">
+
+      <!-- Search button -->
+      <button
+        class="search-toggle"
+        type="button"
+        aria-label="Search (⌘K)"
+        title="Search (⌘K)"
+        @click="$dispatch('search:open')"
+      >
+        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <circle cx="11" cy="11" r="8"/>
+          <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+        </svg>
+      </button>
+
+      <!-- Dark mode toggle -->
+      <button
+        class="theme-toggle"
+        x-data="darkMode"
+        x-init="init()"
+        @click="toggle()"
+        :aria-label="dark ? 'Switch to light mode' : 'Switch to dark mode'"
+        type="button"
+      >
+        <!-- Sun icon (shown in light mode) -->
+        <svg class="icon-sun" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">
+          <circle cx="12" cy="12" r="5"/>
+          <line x1="12" y1="1" x2="12" y2="3"/>
+          <line x1="12" y1="21" x2="12" y2="23"/>
+          <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/>
+          <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/>
+          <line x1="1" y1="12" x2="3" y2="12"/>
+          <line x1="21" y1="12" x2="23" y2="12"/>
+          <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/>
+          <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>
+        </svg>
+        <!-- Moon icon (shown in dark mode) -->
+        <svg class="icon-moon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">
+          <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+        </svg>
+      </button>
+
+      <!-- Hamburger (mobile only) -->
+      <button
+        class="mobile-nav-toggle"
+        @click="open = !open"
+        :aria-expanded="open"
+        :aria-label="open ? 'Close menu' : 'Open menu'"
+        type="button"
+      >
+        <svg x-show="!open" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <line x1="3" y1="6" x2="21" y2="6"/>
+          <line x1="3" y1="12" x2="21" y2="12"/>
+          <line x1="3" y1="18" x2="21" y2="18"/>
+        </svg>
+        <svg x-show="open" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <line x1="18" y1="6" x2="6" y2="18"/>
+          <line x1="6" y1="6" x2="18" y2="18"/>
+        </svg>
+      </button>
+
+    </div><!-- /.nav-actions -->
+  </div><!-- /.nav-inner -->
+
+  <!-- Mobile drawer -->
+  <div
+    class="mobile-nav"
+    x-show="open"
+    x-transition:enter="transition ease-out duration-200"
+    x-transition:enter-start="opacity-0 -translate-y-1"
+    x-transition:enter-end="opacity-100 translate-y-0"
+    x-transition:leave="transition ease-in duration-150"
+    x-transition:leave-start="opacity-100 translate-y-0"
+    x-transition:leave-end="opacity-0 -translate-y-1"
+    @click.outside="open = false"
+    @keydown.escape.window="open = false"
+  >
+    <ul role="list">
+      
+      <li>
+        <a href="/topics/" @click="open = false">Essays</a>
+      </li>
+      
+      <li>
+        <a href="/series/" @click="open = false">Modelling</a>
+      </li>
+      
+      <li>
+        <a href="/about/" @click="open = false">About</a>
+      </li>
+      
+    </ul>
+  </div><!-- /.mobile-nav -->
+
+</header>
+
+
+<div id="main-content">
+  <!-- Essay stylesheet and runtime — self-contained -->
+<link rel="stylesheet" href="/assets/css/essay.css">
+<script type="module" src="/assets/js/essay/core.js"></script>
+
+<div class="essay-layout" id="essay-layout">
+
+  <!-- essay-toc.html — Sticky table of contents (left column).
+     The <ol> is empty on load; assets/js/essay/core.js populates it
+     from h2/h3 elements found in #essay-content after the page renders. -->
+
+<nav class="essay-toc" id="essay-toc" aria-label="Table of contents">
+  <div class="essay-toc-inner">
+    <p class="essay-toc-heading" aria-hidden="true">Contents</p>
+    <ol class="essay-toc-list" id="essay-toc-list">
+      <!-- Populated at runtime by assets/js/essay/core.js buildToc() -->
+    </ol>
+  </div>
+</nav>
+
+
+  <main class="essay-main" id="essay-main" role="main">
+    <article class="essay-article">
+
+      <!-- essay-hero.html — Header for computational essay template.
+     Displays feature image, tag label, title, excerpt, and post metadata. -->
+
+<header class="essay-hero">
+  
+  <figure class="essay-hero-figure">
+    <img
+      src="/assets/images/time-series.webp"
+      alt="Regression for Continuous Spatial Variables"
+      class="essay-hero-img"
+      loading="eager"
+    >
+    
+  </figure>
+  
+
+  <div class="essay-hero-body">
+
+    
+    
+    
+    
+    
+    <nav class="essay-breadcrumb" aria-label="Series position">
+      
+      <a href="/series/laboratory/" class="essay-breadcrumb-link">Computational geography laboratory</a>
+      
+      
+      
+      <span class="essay-breadcrumb-sep" aria-hidden="true">›</span>
+      <span class="essay-breadcrumb-pos">Model 110</span>
+      
+    </nav>
+    
+
+    <div class="essay-hero-labels">
+      
+      <a href="/topics/modelling/" class="essay-tag-label">modelling</a>
+      
+      
+      <span class="difficulty-badge difficulty-badge--4">Level 4</span>
+      
+    </div>
+
+    <h1 class="essay-title">Regression for Continuous Spatial Variables</h1>
+
+    
+    <p class="essay-excerpt">Predicting continuous spatial variables — soil organic carbon, land surface temperature, species richness — from raster covariates is one of the most common tasks in computational geography. This essay reviews ordinary least squares, derives the ridge and lasso regularisation penalties, explains the bias-variance tradeoff that motivates them, shows why standard k-fold cross- validation fails for spatial data and how spatial cross-validation corrects it, introduces random forest regression for nonlinear relationships, and distinguishes prediction intervals from confidence intervals.
+</p>
+    
+
+    
+    <p class="essay-prereqs"><span class="essay-prereqs-label">Prerequisites:</span> ordinary least squares and normal equations, regularisation (L1 and L2 penalties), bias variance decomposition, tree based ensemble methods</p>
+    
+
+    <div class="essay-meta">
+      
+      <div class="essay-meta-secondary">
+        <time class="essay-date" datetime="2026-03-05">5 Mar 2026</time>
+        
+        
+        <span class="essay-sep" aria-hidden="true">·</span>
+        <span class="essay-updated">Updated <time datetime="2026-03-12">12 Mar 2026</time></span>
+        
+        <span class="essay-sep" aria-hidden="true">·</span>
+        <span class="essay-reading-time">16 min read</span>
+      </div>
+    </div>
+  </div>
+</header>
+
+
+      
+
+
+
+
+
+      <div class="essay-content gh-content" id="essay-content">
+        <p>In 2019, the International Soil Reference and Information Centre completed a global mapping exercise that assigned a soil organic carbon (SOC) value to every 250 m grid cell on Earth’s land surface. They did not measure SOC at every cell — there are approximately 800 million such cells on the global land surface. They measured it at 150,000 sites and used regression models, trained on those measurements, to predict SOC everywhere else from covariate rasters: climate variables, vegetation indices, terrain attributes, and soil parent material classes.</p>
+
+<p>This process — spatially exhaustive prediction from point observations using covariates — is the central task of environmental machine learning. Its success depends on understanding which regression method is appropriate, how to validate that it generalises correctly to new locations, and how to honestly communicate prediction uncertainty.</p>
+
+<hr />
+
+<h2 id="1-the-question">1. The Question</h2>
+
+<p>How do we build a model that predicts a continuous spatial variable from raster covariates? How do we prevent overfitting when covariates are many and correlated? Why does standard cross-validation overestimate predictive skill for spatial data, and what should we do instead? What does a random forest add beyond linear regression?</p>
+
+<hr />
+
+<h2 id="2-the-conceptual-model">2. The Conceptual Model</h2>
+
+<p>Regression models a response variable $y$ (observed at $n$ locations) as a function of $p$ predictor variables (covariates) $\mathbf{x} = (x_1, \ldots, x_p)$. The goal is a function $\hat{f}(\mathbf{x})$ that predicts $y$ at unsampled locations with minimum expected error. The challenge: with many covariates (a raster stack of 20 bands means 20 predictors), the model may fit the training data well but generalise poorly to new locations — <strong>overfitting</strong>.</p>
+
+<hr />
+
+<h2 id="3-building-the-mathematical-model">3. Building the Mathematical Model</h2>
+
+<h3 id="31-ordinary-least-squares">3.1 Ordinary Least Squares</h3>
+
+<p>For $n$ observations, $p$ predictors, response vector $\mathbf{y} \in \mathbb{R}^n$, design matrix $\mathbf{X} \in \mathbb{R}^{n \times p}$:</p>
+
+\[\hat{\boldsymbol{\beta}}_{\text{OLS}} = \arg\min_{\boldsymbol{\beta}} \|\mathbf{y} - \mathbf{X}\boldsymbol{\beta}\|_2^2 = \arg\min_{\boldsymbol{\beta}} \sum_{i=1}^n (y_i - \mathbf{x}_i^\top\boldsymbol{\beta})^2\]
+
+<p>Setting the gradient to zero (normal equations):</p>
+
+\[\mathbf{X}^\top\mathbf{X}\hat{\boldsymbol{\beta}} = \mathbf{X}^\top\mathbf{y} \quad\Rightarrow\quad \hat{\boldsymbol{\beta}}_{\text{OLS}} = (\mathbf{X}^\top\mathbf{X})^{-1}\mathbf{X}^\top\mathbf{y}\]
+
+<p>OLS is the <strong>Best Linear Unbiased Estimator (BLUE)</strong> under the Gauss-Markov assumptions: errors are zero-mean, homoscedastic ($\text{Var}(\varepsilon_i) = \sigma^2$), and uncorrelated. <strong>Spatial data frequently violates the uncorrelated errors assumption</strong> — nearby observations share similar unmeasured environmental conditions, creating <strong>spatial autocorrelation</strong> in residuals. This does not bias $\hat{\boldsymbol{\beta}}$, but it inflates apparent precision (standard errors are too small, t-tests are anti-conservative).</p>
+
+<h3 id="32-ridge-regression-l2-regularisation">3.2 Ridge Regression (L2 Regularisation)</h3>
+
+<p>Ridge regression adds a penalty on the sum of squared coefficients:</p>
+
+\[\hat{\boldsymbol{\beta}}_{\text{ridge}} = \arg\min_{\boldsymbol{\beta}} \left[\|\mathbf{y} - \mathbf{X}\boldsymbol{\beta}\|_2^2 + \lambda\|\boldsymbol{\beta}\|_2^2\right]\]
+
+<p>where $\lambda \geq 0$ is the <strong>regularisation parameter</strong>. Closed-form solution:</p>
+
+\[\hat{\boldsymbol{\beta}}_{\text{ridge}} = (\mathbf{X}^\top\mathbf{X} + \lambda\mathbf{I})^{-1}\mathbf{X}^\top\mathbf{y}\]
+
+<p>Adding $\lambda\mathbf{I}$ to $\mathbf{X}^\top\mathbf{X}$ makes the matrix invertible even when $\mathbf{X}$ is rank-deficient (more predictors than observations, or highly collinear predictors). Ridge shrinks all coefficients toward zero proportionally — large $\lambda$ produces strong shrinkage. It never sets coefficients exactly to zero.</p>
+
+<p><strong>Bayesian interpretation:</strong> Ridge is equivalent to OLS with a Normal prior on coefficients: $\beta_j \sim \mathcal{N}(0, \sigma^2/\lambda)$. The posterior mode under this prior is $\hat{\boldsymbol{\beta}}_{\text{ridge}}$.</p>
+
+<h3 id="33-lasso-regression-l1-regularisation">3.3 Lasso Regression (L1 Regularisation)</h3>
+
+<p>Lasso replaces the L2 penalty with an L1 penalty:</p>
+
+\[\hat{\boldsymbol{\beta}}_{\text{lasso}} = \arg\min_{\boldsymbol{\beta}} \left[\|\mathbf{y} - \mathbf{X}\boldsymbol{\beta}\|_2^2 + \lambda\|\boldsymbol{\beta}\|_1\right]\]
+
+<table>
+  <tbody>
+    <tr>
+      <td>where $|\boldsymbol{\beta}|_1 = \sum_j</td>
+      <td>\beta_j</td>
+      <td>$. No closed-form solution (the L1 norm is not differentiable at zero), but efficient coordinate descent algorithms exist. The geometry of the L1 penalty — a diamond-shaped constraint region — causes solutions to lie at corners where some coefficients are exactly zero. Lasso performs <strong>automatic variable selection</strong>: with sufficient regularisation, only the most important predictors have nonzero coefficients.</td>
+    </tr>
+  </tbody>
+</table>
+
+<p><strong>Bayesian interpretation:</strong> Lasso is equivalent to a Laplace (double-exponential) prior on coefficients.</p>
+
+<p>Comparison at $p = 2$ predictors (geometric intuition):</p>
+
+<table>
+  <thead>
+    <tr>
+      <th>Property</th>
+      <th>Ridge</th>
+      <th>Lasso</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>Constraint region</td>
+      <td>Circle</td>
+      <td>Diamond</td>
+    </tr>
+    <tr>
+      <td>Exactly zero coefficients</td>
+      <td>No</td>
+      <td>Yes</td>
+    </tr>
+    <tr>
+      <td>Solution form</td>
+      <td>Closed-form</td>
+      <td>Iterative</td>
+    </tr>
+    <tr>
+      <td>Handles multicollinearity</td>
+      <td>Yes (shares loading)</td>
+      <td>Yes (picks one)</td>
+    </tr>
+    <tr>
+      <td>When to use</td>
+      <td>All predictors relevant</td>
+      <td>Sparse signal expected</td>
+    </tr>
+  </tbody>
+</table>
+
+<p><strong>Elastic net</strong> combines both penalties: $\lambda_1|\boldsymbol{\beta}|_1 + \lambda_2|\boldsymbol{\beta}|_2^2$ — providing variable selection (L1) and grouping of correlated variables (L2).</p>
+
+<h3 id="34-bias-variance-tradeoff">3.4 Bias-Variance Tradeoff</h3>
+
+<p>The expected prediction error at a new location decomposes as:</p>
+
+\[\text{EPE}(\mathbf{x}_0) = \underbrace{\sigma^2}_{\text{irreducible}} + \underbrace{[\text{Bias}(\hat{f}(\mathbf{x}_0))]^2}_{\text{model error}} + \underbrace{\text{Var}(\hat{f}(\mathbf{x}_0))}_{\text{estimation error}}\]
+
+<ul>
+  <li><strong>Irreducible noise</strong> $\sigma^2$: variance of $\varepsilon$ — cannot be reduced by any model</li>
+  <li><strong>Bias²</strong>: error from wrong model structure — a linear model for a nonlinear relationship always has bias regardless of sample size</li>
+  <li><strong>Variance</strong>: error from fitting random fluctuations in training data — decreases with more data, increases with model complexity</li>
+</ul>
+
+<p>The tradeoff: increasing model complexity (more parameters, lower $\lambda$) reduces bias but increases variance. Regularisation increases bias slightly but reduces variance substantially, typically lowering total error.</p>
+
+<p><strong>Mathematical illustration:</strong> For ridge with regularisation $\lambda$:</p>
+
+\[\text{Bias}(\hat{\beta}_{\text{ridge}}) = -\lambda(\mathbf{X}^\top\mathbf{X}+\lambda\mathbf{I})^{-1}\boldsymbol{\beta}_{\text{true}}\]
+
+<p>As $\lambda \to 0$: bias → 0 (OLS is unbiased). As $\lambda \to \infty$: bias → $-\boldsymbol{\beta}_{\text{true}}$ (all coefficients forced to zero — pure bias). But variance of ridge estimates is always lower than OLS. For small $\lambda$, the variance reduction dominates: total error is lower.</p>
+
+<p><strong>Optimal $\lambda$</strong> minimises cross-validated prediction error. A grid search over $\lambda \in [10^{-4}, 10^2]$ on log scale, evaluating by cross-validated RMSE, finds the optimal regularisation. The “1-se rule” selects the most regularised model within one standard error of the minimum RMSE — favouring parsimony.</p>
+
+<h3 id="35-spatial-cross-validation">3.5 Spatial Cross-Validation</h3>
+
+<p>Standard $k$-fold cross-validation randomly partitions observations into $k$ folds, trains on $k-1$, and tests on the held-out fold. For spatial data with positive autocorrelation, <strong>nearby observations share information</strong> — a training observation 100 m from a test observation provides essentially the same information as the test observation itself. The model’s apparent predictive skill is inflated by spatial proximity, not genuine generalisation.</p>
+
+<p><strong>Spatial cross-validation</strong> (Brenning 2012; Meyer et al. 2019) partitions observations into geographically contiguous blocks:</p>
+
+<ol>
+  <li>
+    <p><strong>Block cross-validation:</strong> Create $k$ spatial blocks (rectangles or geographic clusters); hold out entire blocks, not random points. Separation distance between training and test blocks should exceed the spatial autocorrelation range of the response variable.</p>
+  </li>
+  <li>
+    <p><strong>Buffered LOO-CV:</strong> Leave-one-out with a spatial exclusion buffer — all training observations within radius $d_{\text{buffer}}$ of the test point are also excluded. The buffer radius equals the autocorrelation range.</p>
+  </li>
+</ol>
+
+<p>The difference in RMSE between standard and spatial CV measures how much of the apparent skill was due to spatial autocorrelation rather than genuine predictive information in the covariates.</p>
+
+<p><strong>Autocorrelation range</strong> estimated from the variogram of regression residuals: the lag distance at which semivariance plateaus (the sill). See Essay C7 for variogram methods.</p>
+
+<h3 id="36-feature-engineering-from-raster-datasets">3.6 Feature Engineering from Raster Datasets</h3>
+
+<p>Raw raster pixels are rarely optimal predictors. Feature engineering extracts meaningful quantities:</p>
+
+<p><strong>Terrain features from DEM</strong> (Essay C8): slope, aspect, curvature, topographic wetness index $\text{TWI} = \ln(A_s/\tan\beta)$ where $A_s$ = upslope contributing area and $\beta$ = slope angle.</p>
+
+<p><strong>Spectral indices from multispectral imagery:</strong></p>
+<ul>
+  <li>$\text{NDVI} = (\rho_{\text{NIR}} - \rho_{\text{Red}})/(\rho_{\text{NIR}} + \rho_{\text{Red}})$</li>
+  <li>$\text{NDWI} = (\rho_{\text{Green}} - \rho_{\text{NIR}})/(\rho_{\text{Green}} + \rho_{\text{NIR}})$</li>
+  <li>$\text{EVI} = 2.5(\rho_{\text{NIR}} - \rho_{\text{Red}})/(\rho_{\text{NIR}} + 6\rho_{\text{Red}} - 7.5\rho_{\text{Blue}} + 1)$</li>
+</ul>
+
+<p><strong>Climate aggregates:</strong> Mean, minimum, maximum, and coefficient of variation across months or seasons. Growing degree days. Precipitation seasonality.</p>
+
+<p><strong>Spatial lag features:</strong> Mean value of the response variable (or covariate) within a radius $r$ of each prediction location — captures neighbourhood effects and residual spatial structure not explained by the covariates.</p>
+
+<h3 id="37-random-forest-regression">3.7 Random Forest Regression</h3>
+
+<p>Random forest (Breiman 2001) is an ensemble of $B$ regression trees, each trained on a bootstrap sample of the data and using a random subset of $m_{\text{try}}$ predictors at each split.</p>
+
+<p><strong>Single regression tree:</strong> Recursively partitions the feature space by choosing the split (predictor $j$, threshold $t$) that minimises the residual sum of squares:</p>
+
+\[\text{RSS}(j, t) = \sum_{i:x_{ij}\leq t}(y_i - \bar{y}_L)^2 + \sum_{i:x_{ij}&gt;t}(y_i - \bar{y}_R)^2\]
+
+<p>Each leaf node $R_m$ predicts the mean response of training observations in that region: $\hat{f}(\mathbf{x}) = \bar{y}_m$ for $\mathbf{x} \in R_m$.</p>
+
+<p><strong>Ensemble aggregation:</strong> Random forest prediction is the average over $B$ trees:</p>
+
+\[\hat{f}_{\text{RF}}(\mathbf{x}) = \frac{1}{B}\sum_{b=1}^B T_b(\mathbf{x})\]
+
+<p>Two sources of randomness reduce correlation between trees (key to variance reduction): bootstrap sampling (each tree uses ~63% of observations) and feature subsampling ($m_{\text{try}} \approx p/3$ for regression). Uncorrelated trees average to give lower variance than any individual tree.</p>
+
+<p><strong>Variable importance:</strong> For predictor $j$, permutation importance measures the increase in out-of-bag error when $x_j$ is randomly shuffled (destroying its relationship with $y$). Higher increase = more important predictor.</p>
+
+<p><strong>Out-of-bag (OOB) error:</strong> Each observation is withheld from approximately 37% of trees (not in their bootstrap sample). Predicting each observation from only the trees that did not use it in training gives a cross-validation-equivalent error estimate at no additional computational cost.</p>
+
+<h3 id="38-prediction-intervals-vs-confidence-intervals">3.8 Prediction Intervals vs. Confidence Intervals</h3>
+
+<p>A <strong>confidence interval</strong> on $\hat{f}(\mathbf{x}_0)$ captures uncertainty in the <strong>mean response</strong> at $\mathbf{x}_0$:</p>
+
+\[\hat{y}_0 \pm t_{\alpha/2,\,n-p}\,\hat{\sigma}\sqrt{\mathbf{x}_0^\top(\mathbf{X}^\top\mathbf{X})^{-1}\mathbf{x}_0}\]
+
+<p>A <strong>prediction interval</strong> captures uncertainty in a <strong>new individual observation</strong> at $\mathbf{x}_0$ — wider by the observation noise $\sigma^2$:</p>
+
+\[\hat{y}_0 \pm t_{\alpha/2,\,n-p}\,\hat{\sigma}\sqrt{1 + \mathbf{x}_0^\top(\mathbf{X}^\top\mathbf{X})^{-1}\mathbf{x}_0}\]
+
+<p>For environmental mapping, prediction intervals are appropriate — we predict actual soil carbon at a specific location, not the mean of all locations with those covariates.</p>
+
+<table>
+  <tbody>
+    <tr>
+      <td>For random forests: <strong>quantile regression forests</strong> (Meinshausen 2006) estimate any quantile of the conditional distribution $F(y</td>
+      <td>\mathbf{x})$ by tracking the full distribution of training observations in each leaf. The 5th and 95th quantile predictions form a 90% prediction interval.</td>
+    </tr>
+  </tbody>
+</table>
+
+<hr />
+
+<h2 id="4-worked-example-by-hand">4. Worked Example by Hand</h2>
+
+<p><strong>Setting:</strong> Predicting mean annual precipitation (mm yr⁻¹) at 5 Alberta weather stations from two covariates: elevation $x_1$ (m) and latitude $x_2$ (°N). Data:</p>
+
+<table>
+  <thead>
+    <tr>
+      <th>Station</th>
+      <th>$x_1$ (elev)</th>
+      <th>$x_2$ (lat)</th>
+      <th>$y$ (precip)</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>Calgary</td>
+      <td>1048</td>
+      <td>51.1</td>
+      <td>412</td>
+    </tr>
+    <tr>
+      <td>Edmonton</td>
+      <td>671</td>
+      <td>53.5</td>
+      <td>461</td>
+    </tr>
+    <tr>
+      <td>Lethbridge</td>
+      <td>929</td>
+      <td>49.7</td>
+      <td>386</td>
+    </tr>
+    <tr>
+      <td>Jasper</td>
+      <td>1062</td>
+      <td>52.9</td>
+      <td>500</td>
+    </tr>
+    <tr>
+      <td>Medicine Hat</td>
+      <td>717</td>
+      <td>50.0</td>
+      <td>320</td>
+    </tr>
+  </tbody>
+</table>
+
+<p><strong>OLS solution (simplified, ignoring intercept for illustration):</strong></p>
+
+<p>Centre variables: $\tilde{x}_1 = x_1 - 885$, $\tilde{x}_2 = x_2 - 51.4$, $\tilde{y} = y - 415.8$.</p>
+
+<p>After centering and computing $\hat{\beta}_1$ and $\hat{\beta}_2$ via the normal equations (numerical steps omitted), OLS gives approximately:</p>
+
+\[\hat{y} = 416 + 0.08(x_1 - 885) + 10.5(x_2 - 51.4)\]
+
+<p>Interpretation: each 100 m of elevation adds ~8 mm yr⁻¹ of precipitation (orographic effect); each degree north adds ~10.5 mm yr⁻¹ (shifting from semi-arid southern Alberta toward boreal precipitation).</p>
+
+<p><strong>Ridge with $\lambda = 5$:</strong> Shrinks coefficients toward zero. With only 5 observations and 2 predictors, ridge provides modest benefit; the real advantage appears with 20+ correlated predictors.</p>
+
+<p><strong>Prediction interval at a new site (Banff, $x_1 = 1383$ m, $x_2 = 51.2°$N):</strong>
+$\hat{y} = 416 + 0.08(498) + 10.5(-0.2) = 416 + 39.8 - 2.1 = 453.7$ mm</p>
+
+<p>Given $\hat{\sigma} = 22$ mm from training residuals and the leverage factor for Banff ≈ 1.6:
+95% prediction interval: $453.7 \pm 2.78 \times 22 \times \sqrt{1 + 1.6/5} = 453.7 \pm 68 = [386, 521]$ mm.</p>
+
+<hr />
+
+<h2 id="5-computational-implementation">5. Computational Implementation</h2>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>function ols(X, y):
+    return solve(X.T @ X, X.T @ y)
+
+function ridge(X, y, lambda):
+    n, p = shape(X)
+    return solve(X.T @ X + lambda * identity(p), X.T @ y)
+
+function lasso(X, y, lambda, max_iter=1000):
+    # Coordinate descent
+    beta = zeros(p)
+    for iteration in range(max_iter):
+        for j in range(p):
+            r_j = y - X @ beta + X[:, j] * beta[j]   # partial residual
+            beta[j] = soft_threshold(dot(X[:, j], r_j)/n, lambda/2) / dot(X[:, j], X[:, j])/n
+    return beta
+
+function soft_threshold(z, gamma):
+    return sign(z) * max(0, abs(z) - gamma)
+
+function spatial_cv_blocks(X, y, coords, n_blocks=5):
+    # Cluster coordinates into n_blocks spatial blocks
+    block_labels = kmeans(coords, n_blocks)
+    scores = []
+    for block_id in unique(block_labels):
+        train_mask = block_labels != block_id
+        test_mask  = block_labels == block_id
+        model = fit(X[train_mask], y[train_mask])
+        scores.append(rmse(y[test_mask], predict(model, X[test_mask])))
+    return mean(scores), std(scores)
+</code></pre></div></div>
+
+<pre><code class="language-{pyodide}">import numpy as np
+from sklearn.linear_model import Ridge, Lasso
+from sklearn.model_selection import KFold
+
+rng = np.random.default_rng(42)
+
+# Synthetic spatial dataset: 100 locations, 5 covariates
+n, p = 100, 5
+coords = rng.uniform(0, 100, (n, 2))   # lon, lat (arbitrary units)
+X = rng.standard_normal((n, p))
+# True model: y = 2x1 - 1.5x2 + 0.5x3 + noise (x4, x5 irrelevant)
+beta_true = np.array([2.0, -1.5, 0.5, 0.0, 0.0])
+y = X @ beta_true + rng.standard_normal(n) * 1.5
+
+# Add spatial autocorrelation to y
+dist = np.sqrt(((coords[:, None] - coords[None, :])**2).sum(-1))
+for i in range(n):
+    neighbours = dist[i] &lt; 15
+    y[i] = 0.6 * y[i] + 0.4 * y[neighbours].mean()
+
+# OLS vs Ridge vs Lasso
+from sklearn.linear_model import LinearRegression
+from sklearn.metrics import mean_squared_error
+
+ols  = LinearRegression().fit(X, y)
+ridge = Ridge(alpha=1.0).fit(X, y)
+lasso = Lasso(alpha=0.2).fit(X, y)
+
+print("Coefficients (true: [2, -1.5, 0.5, 0, 0]):")
+print(f"  OLS:   {ols.coef_.round(3)}")
+print(f"  Ridge: {ridge.coef_.round(3)}")
+print(f"  Lasso: {lasso.coef_.round(3)}")
+
+# Standard k-fold CV
+kf = KFold(n_splits=5, shuffle=True, random_state=42)
+rmse_std = []
+for tr, te in kf.split(X):
+    r = Ridge(alpha=1.0).fit(X[tr], y[tr])
+    rmse_std.append(np.sqrt(mean_squared_error(y[te], r.predict(X[te]))))
+
+# Spatial block CV (cluster by coordinates)
+from sklearn.cluster import KMeans
+blocks = KMeans(n_clusters=5, random_state=42).fit_predict(coords)
+rmse_spatial = []
+for b in range(5):
+    tr = blocks != b; te = blocks == b
+    if te.sum() == 0: continue
+    r = Ridge(alpha=1.0).fit(X[tr], y[tr])
+    rmse_spatial.append(np.sqrt(mean_squared_error(y[te], r.predict(X[te]))))
+
+print(f"\nStandard k-fold CV RMSE:  {np.mean(rmse_std):.3f} ± {np.std(rmse_std):.3f}")
+print(f"Spatial block CV RMSE:   {np.mean(rmse_spatial):.3f} ± {np.std(rmse_spatial):.3f}")
+print(f"Optimism bias (spatial autocorr.): {np.mean(rmse_spatial)-np.mean(rmse_std):.3f}")
+</code></pre>
+
+<hr />
+
+<h2 id="6-visualization">6. Visualization</h2>
+
+<div data-viz="echarts" style="height:420px" data-options="{
+  &quot;title&quot;: {&quot;text&quot;: &quot;Bias-Variance Tradeoff — Ridge Regression as λ Varies&quot;, &quot;textStyle&quot;: {&quot;fontSize&quot;: 14}},
+  &quot;tooltip&quot;: {&quot;trigger&quot;: &quot;axis&quot;},
+  &quot;legend&quot;: {&quot;data&quot;: [&quot;Bias²&quot;, &quot;Variance&quot;, &quot;Total error (Bias² + Var + σ²)&quot;], &quot;bottom&quot;: 0},
+  &quot;xAxis&quot;: {&quot;name&quot;: &quot;log₁₀(λ) — regularisation strength&quot;, &quot;nameLocation&quot;: &quot;middle&quot;, &quot;nameGap&quot;: 30,
+    &quot;data&quot;: [&quot;-3&quot;,&quot;-2.5&quot;,&quot;-2&quot;,&quot;-1.5&quot;,&quot;-1&quot;,&quot;-0.5&quot;,&quot;0&quot;,&quot;0.5&quot;,&quot;1&quot;,&quot;1.5&quot;,&quot;2&quot;]},
+  &quot;yAxis&quot;: {&quot;name&quot;: &quot;Expected prediction error&quot;, &quot;nameLocation&quot;: &quot;middle&quot;, &quot;nameGap&quot;: 50},
+  &quot;series&quot;: [
+    {&quot;name&quot;: &quot;Bias²&quot;, &quot;type&quot;: &quot;line&quot;, &quot;smooth&quot;: true,
+     &quot;itemStyle&quot;: {&quot;color&quot;: &quot;#C62828&quot;},
+     &quot;data&quot;: [0.01, 0.02, 0.04, 0.08, 0.15, 0.28, 0.50, 0.75, 1.10, 1.50, 2.00]},
+    {&quot;name&quot;: &quot;Variance&quot;, &quot;type&quot;: &quot;line&quot;, &quot;smooth&quot;: true,
+     &quot;itemStyle&quot;: {&quot;color&quot;: &quot;#1565C0&quot;},
+     &quot;data&quot;: [2.20, 1.80, 1.40, 1.05, 0.75, 0.52, 0.35, 0.25, 0.18, 0.14, 0.12]},
+    {&quot;name&quot;: &quot;Total error (Bias² + Var + σ²)&quot;, &quot;type&quot;: &quot;line&quot;, &quot;smooth&quot;: true,
+     &quot;lineStyle&quot;: {&quot;width&quot;: 3},
+     &quot;itemStyle&quot;: {&quot;color&quot;: &quot;#2E7D32&quot;},
+     &quot;data&quot;: [4.46, 4.07, 3.69, 3.38, 3.15, 3.05, 3.10, 3.25, 3.53, 3.89, 4.37]}
+  ]
+}"></div>
+
+<p>Total error has a minimum at intermediate regularisation (λ ≈ 0.3 in this example). Left of the minimum: variance dominates, the model overfits training data. Right of the minimum: bias dominates, the model is too constrained. Standard cross-validation finds this minimum empirically without needing to know the true signal or noise level.</p>
+
+<hr />
+
+<h2 id="7-interpretation">7. Interpretation</h2>
+
+<p>The spatial cross-validation result carries a direct implication for environmental mapping: reported model accuracy metrics (R², RMSE) from standard cross-validation are optimistic for spatially autocorrelated data. A model that achieves RMSE = 1.2 in standard CV and RMSE = 1.8 in spatial block CV has 50% of its apparent skill from spatial proximity of training and test points, not from genuine feature-response relationships. Publishing standard CV metrics for spatial prediction models is a systematic bias in the environmental literature.</p>
+
+<p>The lasso’s variable selection property is particularly useful when the covariate stack is large and many variables are irrelevant or redundant. In a typical soil mapping workflow with 20–40 environmental covariates, lasso reliably identifies the 5–10 most important predictors while shrinking the rest to zero — producing a more interpretable and more robust model than OLS on all covariates.</p>
+
+<p>Random forest does not require feature selection because its tree structure naturally handles irrelevant predictors (splits on irrelevant variables produce near-zero importance and are quickly superseded). Its main advantages over regularised linear regression are: capturing nonlinear relationships, handling interactions without explicit specification, and providing OOB error estimates at no additional computational cost.</p>
+
+<hr />
+
+<h2 id="8-what-could-go-wrong">8. What Could Go Wrong?</h2>
+
+<p><strong>Spatial leakage invalidates standard cross-validation.</strong> The single most common error in published spatial prediction studies. Always check whether training and test points in your CV folds are spatially separated by more than the autocorrelation range.</p>
+
+<p><strong>Extrapolation beyond the training feature space is unreliable.</strong> A regression model trained on observations with NDVI ∈ [0.2, 0.8] will extrapolate to NDVI = 0.05 (bare soil) by extending its fitted curve, which may be completely wrong. Random forests in particular <strong>cannot extrapolate</strong> — they predict the mean of the nearest training observations in feature space. Detecting extrapolation requires measuring the distance of each prediction point from the training data convex hull in feature space (e.g., the CAST package’s Area of Applicability metric).</p>
+
+<p><strong>Variable importance from random forests is biased when predictors have different cardinalities.</strong> If some predictors are continuous and others are binary, the continuous predictors are artificially favoured in split-finding because they have more possible threshold values. Conditional permutation importance and Shapley values (SHAP) provide more reliable importance estimates.</p>
+
+<p><strong>Prediction intervals from quantile regression forests require large samples.</strong> QRF estimates quantiles by accumulating the leaf node training distributions. With small samples, the tail quantiles (5th, 95th percentile) are poorly estimated. A minimum of 500–1000 training observations is advisable for reliable 90% prediction intervals; below this, Bayesian regression with informative priors (Essay Z1) provides better-calibrated uncertainty.</p>
+
+<hr />
+
+<h2 id="9-summary">9. Summary</h2>
+
+<p>OLS regression minimises residual sum of squares: $\hat{\boldsymbol{\beta}} = (\mathbf{X}^\top\mathbf{X})^{-1}\mathbf{X}^\top\mathbf{y}$. Ridge adds an L2 penalty $\lambda|\boldsymbol{\beta}|_2^2$, shrinking all coefficients and solving multicollinearity; lasso adds an L1 penalty, producing sparse solutions with exact zeros. The bias-variance tradeoff means that optimal regularisation — found by cross-validation — minimises total prediction error.</p>
+
+<p>For spatial data, standard k-fold CV is anti-conservative due to spatial autocorrelation. Block spatial CV or buffered LOO-CV, with separation exceeding the autocorrelation range, gives honest estimates of generalisation error. Random forest regression handles nonlinearity and interactions through ensemble averaging of deep trees, with OOB error as a built-in CV estimate.</p>
+
+<p>Prediction intervals quantify uncertainty for individual new observations; confidence intervals quantify uncertainty about the mean. For environmental mapping, prediction intervals are appropriate and should be reported alongside point predictions.</p>
+
+<p><strong>Key equations:</strong></p>
+
+\[\hat{\boldsymbol{\beta}}_{\text{OLS}} = (\mathbf{X}^\top\mathbf{X})^{-1}\mathbf{X}^\top\mathbf{y}\]
+
+\[\hat{\boldsymbol{\beta}}_{\text{ridge}} = (\mathbf{X}^\top\mathbf{X} + \lambda\mathbf{I})^{-1}\mathbf{X}^\top\mathbf{y}\]
+
+\[\text{EPE} = \sigma^2 + \text{Bias}^2[\hat{f}] + \text{Var}[\hat{f}]\]
+
+\[\hat{f}_{\text{RF}} = \frac{1}{B}\sum_{b=1}^B T_b(\mathbf{x})\]
+
+<hr />
+
+<h2 id="math-refresher">Math Refresher</h2>
+
+<p><strong>The normal equations and matrix inversion.</strong> Minimising $|\mathbf{y}-\mathbf{X}\boldsymbol{\beta}|^2$ is equivalent to finding $\boldsymbol{\beta}$ such that the gradient vector is zero: $\nabla_{\boldsymbol{\beta}} = -2\mathbf{X}^\top(\mathbf{y}-\mathbf{X}\boldsymbol{\beta}) = 0$. Expanding: $\mathbf{X}^\top\mathbf{X}\boldsymbol{\beta} = \mathbf{X}^\top\mathbf{y}$. Solving this linear system gives $\hat{\boldsymbol{\beta}} = (\mathbf{X}^\top\mathbf{X})^{-1}\mathbf{X}^\top\mathbf{y}$ — but only if $\mathbf{X}^\top\mathbf{X}$ is invertible (which requires more observations than predictors and no perfect multicollinearity). Ridge adds $\lambda\mathbf{I}$ to guarantee invertibility regardless.</p>
+
+<table>
+  <tbody>
+    <tr>
+      <td><strong>Soft thresholding in lasso.</strong> The lasso coordinate update is $\hat{\beta}_j = \text{sign}(z_j)\max(0,</td>
+      <td>z_j</td>
+      <td>- \lambda)$ where $z_j$ is the OLS solution for $\beta_j$ holding all others fixed. This “soft threshold” function maps values in $(-\lambda, \lambda)$ to exactly zero — the mathematical mechanism of variable selection. The L1 penalty’s non-differentiability at zero is precisely what makes this zeroing possible; the smooth L2 penalty of ridge can only shrink toward zero, never reach it.</td>
+    </tr>
+  </tbody>
+</table>
+
+      </div>
+
+      
+
+
+
+      
+
+  
+  
+  
+  
+
+
+
+      <!-- essay-footer-notes.html — References / endnotes section.
+     Hidden by default; assets/js/essay/core.js shows it and populates
+     #essay-endnotes-list from [data-cite] elements in the content.
+
+     In posts, create citation markers with:
+       <cite data-cite="Author, Title, URL">1</cite>
+     The JS collects these and renders a numbered reference list here. -->
+
+<footer class="essay-endnotes" id="essay-endnotes" aria-label="References" hidden>
+  <div class="essay-endnotes-inner">
+    <h2 class="essay-endnotes-heading">References</h2>
+    <ol class="essay-endnotes-list" id="essay-endnotes-list">
+      <!-- Populated at runtime by assets/js/essay/core.js buildEndnotes() -->
+    </ol>
+  </div>
+</footer>
+
+
+      
+
+      
+
+      
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    </article>
+  </main>
+
+  <aside
+    class="essay-sidenotes"
+    id="essay-sidenotes"
+    aria-label="Margin notes"
+  ></aside>
+
+</div>
+
+</div>
+
+<footer>
+  <div class="footer-inner">
+
+    <!-- Col 1: Brand -->
+    <div class="footer-brand">
+      <div class="footer-brand-logo">
+        
+        <img loading="lazy" src="/assets/images/logo.webp" alt="WaywardHouse" width="28" height="28">
+        
+        WaywardHouse<span>.</span>
+      </div>
+      
+      
+      <p class="footer-brand-desc">Understanding how place, economy, and environment interact — through analysis, modelling, and open tools.</p>
+      
+
+      <div class="footer-social">
+        
+        
+        <a href="/feed.xml" class="social-icon" target="_blank" rel="noopener noreferrer" aria-label="RSS feed">
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M4 11a9 9 0 0 1 9 9"/>
+            <path d="M4 4a16 16 0 0 1 16 16"/>
+            <circle cx="5" cy="19" r="1"/>
+          </svg>
+        </a>
+      </div>
+    </div>
+
+    <!-- Col 2: Topics (configurable via footer_topics, falls back to auto-categories) -->
+    <nav aria-labelledby="footer-topics">
+      <h3 class="footer-col-title" id="footer-topics">Reading</h3>
+      <ul class="footer-links">
+        
+          
+          <li><a href="/topics/">Essays</a></li>
+          
+          <li><a href="/series/">Modelling</a></li>
+          
+          <li><a href="/archive/">Archive</a></li>
+          
+          <li><a href="/start-here/">Start Here</a></li>
+          
+        
+      </ul>
+    </nav>
+
+    <!-- Col 3: Secondary navigation -->
+    
+    <nav aria-labelledby="footer-company">
+      <h3 class="footer-col-title" id="footer-company">Site</h3>
+      <ul class="footer-links">
+        
+        <li><a href="/start-here/">Start Here</a></li>
+        
+        <li><a href="/about/">About</a></li>
+        
+        <li><a href="/contact/">Contact</a></li>
+        
+      </ul>
+    </nav>
+    
+
+    <!-- Col 4: Resources -->
+    <nav aria-labelledby="footer-resources">
+      <h3 class="footer-col-title" id="footer-resources">Resources</h3>
+      <ul class="footer-links">
+        <li><a href="/archive/">Archive</a></li>
+        <li><a href="/feed.xml">RSS Feed</a></li>
+        <li><a href="/topics/">All Topics</a></li>
+      </ul>
+    </nav>
+
+  </div><!-- /.footer-inner -->
+
+  <div class="footer-bottom">
+    <span class="footer-copy">
+      &copy; 2026 WaywardHouse.
+    </span>
+    <div class="footer-legal">
+      <a href="/privacy/">Privacy Policy</a>
+      <a href="/terms/">Terms of Service</a>
+    </div>
+  </div>
+
+</footer>
+
+
+<!-- Alpine.js bundle -->
+<script type="module" src="/assets/dist/main.js"></script>
+
+<!-- Visualization runtime — detects and loads CDN libraries dynamically -->
+<script type="module" src="/assets/js/core.js"></script>
+
+<!-- Search overlay — event-driven: nav button $dispatches 'search:open' -->
+<div
+  x-data="search"
+  x-init="init()"
+  @search:open.window="open()"
+>
+  <div
+    class="search-overlay"
+    x-show="isOpen"
+    x-transition:enter="transition ease-out duration-150"
+    x-transition:enter-start="opacity-0"
+    x-transition:enter-end="opacity-100"
+    x-transition:leave="transition ease-in duration-100"
+    x-transition:leave-start="opacity-100"
+    x-transition:leave-end="opacity-0"
+    @click.self="close()"
+    style="display: none;"
+    role="dialog"
+    aria-modal="true"
+    aria-label="Search"
+  >
+    <div class="search-panel">
+      <div class="search-input-wrap">
+        <svg class="search-icon" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <circle cx="11" cy="11" r="8"/>
+          <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+        </svg>
+        <input
+          class="search-input"
+          type="search"
+          placeholder="Search posts…"
+          x-model="query"
+          x-ref="input"
+          @input.debounce.300ms="runSearch()"
+          @keydown.escape="close()"
+          autocomplete="off"
+          spellcheck="false"
+          aria-label="Search query"
+        >
+        <kbd class="search-esc" aria-hidden="true">ESC</kbd>
+      </div>
+
+      <div class="search-results" x-show="query.trim().length > 0">
+        <div class="search-status" x-show="loading" aria-live="polite">Searching…</div>
+        <div class="search-status" x-show="!loading && results.length === 0" aria-live="polite">
+          No results for "<span x-text="query"></span>"
+        </div>
+        <ul class="search-result-list" x-show="!loading && results.length > 0" role="list">
+          <template x-for="result in results" :key="result.url">
+            <li>
+              <a :href="result.url" class="search-result-item" @click="close()">
+                <div class="search-result-title" x-text="result.meta?.title || result.url"></div>
+                <div class="search-result-excerpt" x-html="result.excerpt"></div>
+              </a>
+            </li>
+          </template>
+        </ul>
+      </div>
+    </div>
+  </div>
+</div>
+
+</body>
+</html>

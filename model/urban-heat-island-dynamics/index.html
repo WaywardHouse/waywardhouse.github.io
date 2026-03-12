@@ -1,0 +1,972 @@
+<!DOCTYPE html>
+
+<html lang="en" data-brand="wayward" data-theme="light">
+<head>
+  <meta charset="utf-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Urban Heat Island Dynamics — WaywardHouse</title>
+<meta name="description" content="Cities are warmer than the countryside that surrounds them — by 2–8°C on calm, clear nights in large metropolitan areas. That temperature difference, the urban heat island, is not incidental:...">
+
+<!-- Dark mode flash prevention — runs synchronously before first paint -->
+<script>
+  (function () {
+    var defaultDark = 'light' === 'dark';
+    var s = localStorage.getItem('theme');
+    var dark = s !== null ? s === 'dark' : defaultDark;
+    document.documentElement.dataset.theme = dark ? 'dark' : 'light';
+  })();
+</script>
+
+<!-- Preconnect to CDN domains used by the viz runtime -->
+<link rel="preconnect" href="https://cdn.jsdelivr.net">
+<link rel="preconnect" href="https://unpkg.com">
+<link rel="preconnect" href="https://esm.sh">
+<link rel="preconnect" href="https://api.mapbox.com">
+<link rel="preconnect" href="https://events.mapbox.com">
+
+
+<script>window.MAPBOX_TOKEN = 'pk.eyJ1IjoiYnJlYWRlZGNvZCIsImEiOiJjbW0xa25qc2EwMmtwMnJwejJlNndqdnoxIn0._7I9PwXuFLrOQINVZ84y1w';</script>
+
+
+<!-- Fonts -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:ital,wght@0,300;0,400;0,600;0,700;0,800;0,900;1,700;1,800&family=Barlow:wght@300;400&family=IBM+Plex+Mono:ital,wght@0,300;0,400;0,500;1,300&family=Literata:ital,opsz,wght@0,7..72,300;0,7..72,400;0,7..72,500;1,7..72,300;1,7..72,400&display=swap" rel="stylesheet">
+
+<!-- Theme stylesheet (Vite build output) -->
+<link rel="stylesheet" href="/assets/dist/main.css">
+
+<!-- Brand token overrides — loaded after main.css so variables cascade correctly -->
+
+<link rel="stylesheet" href="/assets/css/brand-wayward.css">
+
+
+
+<!-- Syntax highlighting (Rouge — light + dark) -->
+<link rel="stylesheet" href="/assets/css/syntax.css">
+
+<!-- Begin Jekyll SEO tag v2.8.0 -->
+<title>Urban Heat Island Dynamics | WaywardHouse</title>
+<meta name="generator" content="Jekyll v4.4.1" />
+<meta property="og:title" content="Urban Heat Island Dynamics" />
+<meta property="og:locale" content="en" />
+<meta name="description" content="Cities are warmer than the countryside that surrounds them — by 2–8°C on calm, clear nights in large metropolitan areas. That temperature difference, the urban heat island, is not incidental: it is the thermodynamic consequence of replacing vegetation with impervious surfaces, suppressing evaporation, trapping longwave radiation, and releasing anthropogenic heat. This essay derives the urban surface energy balance, quantifies each mechanism, and evaluates the physics of mitigation strategies from cool roofs to urban forests." />
+<meta property="og:description" content="Cities are warmer than the countryside that surrounds them — by 2–8°C on calm, clear nights in large metropolitan areas. That temperature difference, the urban heat island, is not incidental: it is the thermodynamic consequence of replacing vegetation with impervious surfaces, suppressing evaporation, trapping longwave radiation, and releasing anthropogenic heat. This essay derives the urban surface energy balance, quantifies each mechanism, and evaluates the physics of mitigation strategies from cool roofs to urban forests." />
+<link rel="canonical" href="https://wayward.house/model/urban-heat-island-dynamics/" />
+<meta property="og:url" content="https://wayward.house/model/urban-heat-island-dynamics/" />
+<meta property="og:site_name" content="WaywardHouse" />
+<meta property="og:image" content="https://wayward.house/assets/images/urban-flood.webp" />
+<meta property="og:type" content="article" />
+<meta property="article:published_time" content="2026-03-05T00:00:00+00:00" />
+<meta name="twitter:card" content="summary_large_image" />
+<meta property="twitter:image" content="https://wayward.house/assets/images/urban-flood.webp" />
+<meta property="twitter:title" content="Urban Heat Island Dynamics" />
+<meta name="twitter:site" content="@" />
+<script type="application/ld+json">
+{"@context":"https://schema.org","@type":"BlogPosting","dateModified":"2026-03-12T16:57:04+00:00","datePublished":"2026-03-05T00:00:00+00:00","description":"Cities are warmer than the countryside that surrounds them — by 2–8°C on calm, clear nights in large metropolitan areas. That temperature difference, the urban heat island, is not incidental: it is the thermodynamic consequence of replacing vegetation with impervious surfaces, suppressing evaporation, trapping longwave radiation, and releasing anthropogenic heat. This essay derives the urban surface energy balance, quantifies each mechanism, and evaluates the physics of mitigation strategies from cool roofs to urban forests.","headline":"Urban Heat Island Dynamics","image":"https://wayward.house/assets/images/urban-flood.webp","mainEntityOfPage":{"@type":"WebPage","@id":"https://wayward.house/model/urban-heat-island-dynamics/"},"publisher":{"@type":"Organization","logo":{"@type":"ImageObject","url":"https://wayward.house/assets/images/logo.webp"}},"url":"https://wayward.house/model/urban-heat-island-dynamics/"}</script>
+<!-- End Jekyll SEO tag -->
+
+
+
+<!-- Cloudflare Web Analytics -->
+<script defer src="https://static.cloudflareinsights.com/beacon.min.js"
+  data-cf-beacon='{"token": "62c47d78bf9d4c80972d4e6242d79ff8"}'></script>
+
+
+</head>
+<body class="
+  model-template
+   tag-modelling
+   tag-hash-math
+  
+   tag-hash-viz
+  
+  
+  
+  
+  
+  
+">
+
+<a href="#main-content" class="skip-link">Skip to content</a>
+
+<header class="nav" x-data="{ open: false }">
+  <div class="nav-inner">
+
+    <!-- Logo -->
+    <a href="/" class="nav-logo">
+      
+      <img loading="lazy" src="/assets/images/logo.webp" alt="WaywardHouse" width="32" height="32">
+      
+      WaywardHouse<span>.</span>
+    </a>
+
+    <!-- Desktop nav links -->
+    <ul class="nav-links" role="list">
+      
+      <li>
+        <a href="/topics/">Essays</a>
+      </li>
+      
+      <li>
+        <a href="/series/">Modelling</a>
+      </li>
+      
+      <li>
+        <a href="/about/">About</a>
+      </li>
+      
+    </ul>
+
+    <!-- Actions -->
+    <div class="nav-actions">
+
+      <!-- Search button -->
+      <button
+        class="search-toggle"
+        type="button"
+        aria-label="Search (⌘K)"
+        title="Search (⌘K)"
+        @click="$dispatch('search:open')"
+      >
+        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <circle cx="11" cy="11" r="8"/>
+          <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+        </svg>
+      </button>
+
+      <!-- Dark mode toggle -->
+      <button
+        class="theme-toggle"
+        x-data="darkMode"
+        x-init="init()"
+        @click="toggle()"
+        :aria-label="dark ? 'Switch to light mode' : 'Switch to dark mode'"
+        type="button"
+      >
+        <!-- Sun icon (shown in light mode) -->
+        <svg class="icon-sun" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">
+          <circle cx="12" cy="12" r="5"/>
+          <line x1="12" y1="1" x2="12" y2="3"/>
+          <line x1="12" y1="21" x2="12" y2="23"/>
+          <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/>
+          <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/>
+          <line x1="1" y1="12" x2="3" y2="12"/>
+          <line x1="21" y1="12" x2="23" y2="12"/>
+          <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/>
+          <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>
+        </svg>
+        <!-- Moon icon (shown in dark mode) -->
+        <svg class="icon-moon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">
+          <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+        </svg>
+      </button>
+
+      <!-- Hamburger (mobile only) -->
+      <button
+        class="mobile-nav-toggle"
+        @click="open = !open"
+        :aria-expanded="open"
+        :aria-label="open ? 'Close menu' : 'Open menu'"
+        type="button"
+      >
+        <svg x-show="!open" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <line x1="3" y1="6" x2="21" y2="6"/>
+          <line x1="3" y1="12" x2="21" y2="12"/>
+          <line x1="3" y1="18" x2="21" y2="18"/>
+        </svg>
+        <svg x-show="open" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <line x1="18" y1="6" x2="6" y2="18"/>
+          <line x1="6" y1="6" x2="18" y2="18"/>
+        </svg>
+      </button>
+
+    </div><!-- /.nav-actions -->
+  </div><!-- /.nav-inner -->
+
+  <!-- Mobile drawer -->
+  <div
+    class="mobile-nav"
+    x-show="open"
+    x-transition:enter="transition ease-out duration-200"
+    x-transition:enter-start="opacity-0 -translate-y-1"
+    x-transition:enter-end="opacity-100 translate-y-0"
+    x-transition:leave="transition ease-in duration-150"
+    x-transition:leave-start="opacity-100 translate-y-0"
+    x-transition:leave-end="opacity-0 -translate-y-1"
+    @click.outside="open = false"
+    @keydown.escape.window="open = false"
+  >
+    <ul role="list">
+      
+      <li>
+        <a href="/topics/" @click="open = false">Essays</a>
+      </li>
+      
+      <li>
+        <a href="/series/" @click="open = false">Modelling</a>
+      </li>
+      
+      <li>
+        <a href="/about/" @click="open = false">About</a>
+      </li>
+      
+    </ul>
+  </div><!-- /.mobile-nav -->
+
+</header>
+
+
+<div id="main-content">
+  <!-- Essay stylesheet and runtime — self-contained -->
+<link rel="stylesheet" href="/assets/css/essay.css">
+<script type="module" src="/assets/js/essay/core.js"></script>
+
+<div class="essay-layout" id="essay-layout">
+
+  <!-- essay-toc.html — Sticky table of contents (left column).
+     The <ol> is empty on load; assets/js/essay/core.js populates it
+     from h2/h3 elements found in #essay-content after the page renders. -->
+
+<nav class="essay-toc" id="essay-toc" aria-label="Table of contents">
+  <div class="essay-toc-inner">
+    <p class="essay-toc-heading" aria-hidden="true">Contents</p>
+    <ol class="essay-toc-list" id="essay-toc-list">
+      <!-- Populated at runtime by assets/js/essay/core.js buildToc() -->
+    </ol>
+  </div>
+</nav>
+
+
+  <main class="essay-main" id="essay-main" role="main">
+    <article class="essay-article">
+
+      <!-- essay-hero.html — Header for computational essay template.
+     Displays feature image, tag label, title, excerpt, and post metadata. -->
+
+<header class="essay-hero">
+  
+  <figure class="essay-hero-figure">
+    <img
+      src="/assets/images/urban-flood.webp"
+      alt="Urban Heat Island Dynamics"
+      class="essay-hero-img"
+      loading="eager"
+    >
+    
+  </figure>
+  
+
+  <div class="essay-hero-body">
+
+    
+    
+    
+    
+    
+    <nav class="essay-breadcrumb" aria-label="Series position">
+      
+      <a href="/series/laboratory/" class="essay-breadcrumb-link">Computational geography laboratory</a>
+      
+      
+      
+      <span class="essay-breadcrumb-sep" aria-hidden="true">›</span>
+      <span class="essay-breadcrumb-pos">Model 95</span>
+      
+    </nav>
+    
+
+    <div class="essay-hero-labels">
+      
+      <a href="/topics/modelling/" class="essay-tag-label">modelling</a>
+      
+      
+      <span class="difficulty-badge difficulty-badge--3">Level 3</span>
+      
+    </div>
+
+    <h1 class="essay-title">Urban Heat Island Dynamics</h1>
+
+    
+    <p class="essay-excerpt">Cities are warmer than the countryside that surrounds them — by 2–8°C on calm, clear nights in large metropolitan areas. That temperature difference, the urban heat island, is not incidental: it is the thermodynamic consequence of replacing vegetation with impervious surfaces, suppressing evaporation, trapping longwave radiation, and releasing anthropogenic heat. This essay derives the urban surface energy balance, quantifies each mechanism, and evaluates the physics of mitigation strategies from cool roofs to urban forests.
+</p>
+    
+
+    
+    <p class="essay-prereqs"><span class="essay-prereqs-label">Prerequisites:</span> energy balance, Stefan Boltzmann law, exponential decay, dimensional analysis</p>
+    
+
+    <div class="essay-meta">
+      
+      <div class="essay-meta-secondary">
+        <time class="essay-date" datetime="2026-03-05">5 Mar 2026</time>
+        
+        
+        <span class="essay-sep" aria-hidden="true">·</span>
+        <span class="essay-updated">Updated <time datetime="2026-03-12">12 Mar 2026</time></span>
+        
+        <span class="essay-sep" aria-hidden="true">·</span>
+        <span class="essay-reading-time">16 min read</span>
+      </div>
+    </div>
+  </div>
+</header>
+
+
+      
+
+
+
+
+
+      <div class="essay-content gh-content" id="essay-content">
+        <p>On a calm summer night in Phoenix, Arizona, the city centre is routinely 8–10°C warmer than the desert 30 km away. The same phenomenon plays out at smaller magnitude in every city on Earth — a 1°C difference in a small prairie town, 6°C in Tokyo, 3–5°C in Calgary or Edmonton on the coldest January nights when furnaces run full tilt. The urban heat island (UHI) is not a curiosity. It is a public health hazard: during the August 2003 European heat wave, excess mortality was concentrated in Paris’s densest arrondissements, where the UHI amplified synoptic heat stress by several critical degrees.</p>
+
+<p>Understanding the UHI quantitatively means understanding the surface energy balance. A city is not simply a hot version of the surrounding countryside — it is a fundamentally different thermodynamic system that absorbs, stores, and releases energy on a different schedule.</p>
+
+<hr />
+
+<h2 id="1-the-question">1. The Question</h2>
+
+<p>Why are cities warmer than their surroundings? Which physical mechanisms contribute, and in what proportion? How can we predict UHI intensity from measurable urban properties, and which mitigation strategies have the strongest physical basis?</p>
+
+<hr />
+
+<h2 id="2-the-conceptual-model">2. The Conceptual Model</h2>
+
+<p>The surface energy balance describes how incoming radiation is partitioned among sensible heat (warming the air), latent heat (evaporation), ground storage, and longwave emission. Cities alter every term:</p>
+
+<ul>
+  <li><strong>Albedo reduction:</strong> dark roofs and asphalt absorb more solar radiation than vegetated surfaces</li>
+  <li><strong>Evaporation suppression:</strong> impervious surfaces prevent evaporation, forcing absorbed energy into sensible heat</li>
+  <li><strong>Thermal mass increase:</strong> dense building materials store heat by day and release it at night, suppressing nocturnal cooling</li>
+  <li><strong>Anthropogenic heat:</strong> combustion and electricity add heat with no rural counterpart</li>
+  <li><strong>Sky view factor reduction:</strong> buildings trap longwave radiation that would otherwise escape to space</li>
+  <li><strong>Roughness increase:</strong> buildings enhance turbulent mixing but reduce street-level wind speeds</li>
+</ul>
+
+<p>These six mechanisms interact. Their relative importance varies by climate, season, and city form.</p>
+
+<hr />
+
+<h2 id="3-building-the-mathematical-model">3. Building the Mathematical Model</h2>
+
+<h3 id="31-the-surface-energy-balance">3.1 The Surface Energy Balance</h3>
+
+<p>At any surface, net radiation $Q^*$ [W m⁻²] must balance the available heat pathways:</p>
+
+\[Q^* = Q_H + Q_E + \Delta Q_S + Q_F\]
+
+<p>where $Q_H$ is sensible heat flux to the atmosphere, $Q_E$ is latent heat flux (evaporation), $\Delta Q_S$ is net heat storage in the urban fabric, and $Q_F$ is anthropogenic heat release. Net radiation is:</p>
+
+\[Q^* = (1 - \alpha)K_\downarrow + L_\downarrow - L_\uparrow\]
+
+<p>where $\alpha$ is surface albedo, $K_\downarrow$ is incoming shortwave [W m⁻²], $L_\downarrow$ is incoming atmospheric longwave, and $L_\uparrow$ is outgoing longwave emission from the surface:</p>
+
+\[L_\uparrow = \varepsilon_s \sigma T_s^4\]
+
+<p>Here $\varepsilon_s \approx 0.95$–$0.98$ is surface emissivity, $\sigma = 5.67 \times 10^{-8}$ W m⁻² K⁻⁴ is the Stefan-Boltzmann constant, and $T_s$ is surface temperature in Kelvin.</p>
+
+<p>Typical midday values in summer:</p>
+
+<table>
+  <thead>
+    <tr>
+      <th>Term</th>
+      <th>Rural</th>
+      <th>Urban dense</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>$\alpha$</td>
+      <td>0.18–0.25</td>
+      <td>0.10–0.18</td>
+    </tr>
+    <tr>
+      <td>$Q^*$ (W m⁻²)</td>
+      <td>420–480</td>
+      <td>460–540</td>
+    </tr>
+    <tr>
+      <td>$Q_H / Q^*$</td>
+      <td>0.25–0.35</td>
+      <td>0.55–0.75</td>
+    </tr>
+    <tr>
+      <td>$Q_E / Q^*$</td>
+      <td>0.45–0.60</td>
+      <td>0.10–0.20</td>
+    </tr>
+    <tr>
+      <td>$\Delta Q_S / Q^*$</td>
+      <td>0.10–0.15</td>
+      <td>0.20–0.35</td>
+    </tr>
+  </tbody>
+</table>
+
+<h3 id="32-the-bowen-ratio-and-evaporation-suppression">3.2 The Bowen Ratio and Evaporation Suppression</h3>
+
+<p>The <strong>Bowen ratio</strong> $\beta = Q_H / Q_E$ summarises the sensible-to-latent partition. For vegetated rural surfaces in summer, $\beta \approx 0.3$–$0.6$. For dense impervious urban surfaces, $\beta \approx 3$–$10$.</p>
+
+<p>If the latent heat pathway is suppressed by impervious fraction $f_i$, the increase in sensible heat flux is approximately:</p>
+
+\[\Delta Q_H \approx f_i \cdot Q_{E,\text{rural}}\]
+
+<p>For $f_i = 0.65$ and $Q_{E,\text{rural}} = 180$ W m⁻²: $\Delta Q_H \approx 117$ W m⁻². This extra 117 W m⁻² of sensible heat must warm the air — and does so by raising the surface and near-surface temperature. This single mechanism accounts for roughly half of the typical daytime UHI forcing in temperate cities.</p>
+
+<h3 id="33-anthropogenic-heat-flux">3.3 Anthropogenic Heat Flux</h3>
+
+<p>Anthropogenic heat $Q_F$ is the energy released by all human activities per unit city area. It is estimated from energy consumption statistics:</p>
+
+\[Q_F = \frac{E_{\text{fuel}} + E_{\text{electricity}}}{A_{\text{city}}}\]
+
+<p>Representative values:</p>
+
+<table>
+  <thead>
+    <tr>
+      <th>City</th>
+      <th>Season</th>
+      <th>$Q_F$ (W m⁻²)</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>Manhattan</td>
+      <td>Annual</td>
+      <td>100–300</td>
+    </tr>
+    <tr>
+      <td>Tokyo</td>
+      <td>Summer</td>
+      <td>50–90</td>
+    </tr>
+    <tr>
+      <td>London</td>
+      <td>Annual</td>
+      <td>15–40</td>
+    </tr>
+    <tr>
+      <td>Edmonton</td>
+      <td>Winter</td>
+      <td>40–80</td>
+    </tr>
+    <tr>
+      <td>Phoenix</td>
+      <td>Summer</td>
+      <td>20–45</td>
+    </tr>
+  </tbody>
+</table>
+
+<p>Edmonton’s winter $Q_F$ deserves attention: at 40–80 W m⁻² from space heating, it rivals or exceeds the net solar radiation in January. Edmonton’s UHI is therefore <strong>strongest in winter</strong> — the opposite of most sunbelt cities. This counterintuitive result follows directly from the energy balance: when $K_\downarrow$ is small and $Q_F$ is large, the UHI is anthropogenic heat-dominated.</p>
+
+<p>The spatial distribution of $Q_F$ is strongly heterogeneous. Dense commercial cores and industrial districts show $Q_F$ an order of magnitude above residential suburbs. Traffic corridors generate linear filaments of elevated $Q_F$ proportional to vehicle counts and fuel consumption rates.</p>
+
+<h3 id="34-sky-view-factor-and-nocturnal-cooling-suppression">3.4 Sky View Factor and Nocturnal Cooling Suppression</h3>
+
+<p>The <strong>sky view factor</strong> $\psi_s$ [0–1] is the fraction of the upper hemisphere visible as sky from a point at street level. An open rural surface has $\psi_s = 1$; a narrow street canyon may have $\psi_s = 0.2$–$0.4$.</p>
+
+<p>Nocturnal cooling occurs by longwave radiation to the sky. Net longwave loss from the surface:</p>
+
+\[L_{\text{net}} = \psi_s \varepsilon_s \sigma (T_s^4 - T_{\text{sky}}^4)\]
+
+<p>A surface with $\psi_s = 0.3$ loses only 30% of the longwave radiation that the same surface in an open field would emit. The remaining 70% is absorbed and re-emitted by surrounding buildings, staying within the urban system rather than escaping to space.</p>
+
+<p>The nocturnal cooling rate for the surface obeys:</p>
+
+\[\frac{dT_s}{dt} = -\frac{\psi_s \varepsilon_s \sigma \cdot 4\bar{T}^3}{\rho c_p d_{\text{eff}}} (T_s - T_{\text{sky}}) \equiv -\frac{T_s - T_{\text{sky}}}{\tau_{\text{cool}}}\]
+
+<p>where $\tau_{\text{cool}} = \rho c_p d_{\text{eff}} / (4\psi_s \varepsilon_s \sigma \bar{T}^3)$ is the cooling time constant. As $\psi_s$ decreases, $\tau_{\text{cool}}$ increases — urban surfaces cool more slowly, maintaining higher temperatures through the night. This is the dominant mechanism for <strong>nocturnal UHI intensity</strong>: calm, clear nights produce maximum UHI because they maximise radiative cooling potential, which the urban surface cannot realise due to building obstruction of the sky.</p>
+
+<p>The UHI is systematically strongest on calm, clear nights and weakest on windy, cloudy days — a pattern observed in every city on Earth, and a direct consequence of this sky view factor mechanism.</p>
+
+<h3 id="35-thermal-mass-and-heat-storage">3.5 Thermal Mass and Heat Storage</h3>
+
+<p>Urban materials store more daytime heat per unit plan area than rural soils, releasing it after sunset to maintain elevated night temperatures.</p>
+
+<table>
+  <thead>
+    <tr>
+      <th>Material</th>
+      <th>$\rho c_p$ (MJ m⁻³ K⁻¹)</th>
+      <th>$\kappa = k/\rho c_p$ (10⁻⁷ m² s⁻¹)</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>Concrete</td>
+      <td>2.11</td>
+      <td>7.2</td>
+    </tr>
+    <tr>
+      <td>Asphalt</td>
+      <td>1.94</td>
+      <td>3.9</td>
+    </tr>
+    <tr>
+      <td>Dry soil</td>
+      <td>1.00</td>
+      <td>3.0</td>
+    </tr>
+    <tr>
+      <td>Moist soil</td>
+      <td>2.50</td>
+      <td>6.0</td>
+    </tr>
+  </tbody>
+</table>
+
+<p>The <strong>diurnal skin depth</strong> — how deep a diurnal temperature wave penetrates — is:</p>
+
+\[z_d = \sqrt{\frac{2\kappa}{\omega}}\]
+
+<p>where $\omega = 2\pi / 86400 = 7.27 \times 10^{-5}$ rad s⁻¹. For concrete ($\kappa = 7.2 \times 10^{-7}$ m² s⁻¹):</p>
+
+\[z_d = \sqrt{\frac{2 \times 7.2 \times 10^{-7}}{7.27 \times 10^{-5}}} = \sqrt{0.0198} = 0.141 \text{ m}\]
+
+<p>The heat stored in the top 14 cm of concrete per unit area per day is $\Delta Q_S = \rho c_p z_d \Delta T_{\text{surface}} \approx 2.11 \times 10^6 \times 0.141 \times 10 = 2.97 \text{ MJ m}^{-2}$. Averaged over the 12-hour night, this releases $\approx 69$ W m⁻² — a substantial heat source that prevents the urban surface from cooling as rapidly as rural soil.</p>
+
+<h3 id="36-uhi-intensity-prediction">3.6 UHI Intensity Prediction</h3>
+
+<p><strong>Oke (1973) empirical formula</strong> for maximum UHI intensity $\Delta T_{u-r}$ in mid-latitude cities:</p>
+
+\[\Delta T_{u-r,\max} = 2.01 \log_{10} P - 4.06 \quad [°\text{C}]\]
+
+<p>where $P$ is city population. This captures the bulk effect of increasing urban density with population.</p>
+
+<p>A more physically grounded predictor uses sky view factor and impervious fraction:</p>
+
+\[\Delta T_{u-r} \approx A(1 - \psi_s) + B f_i + C \frac{Q_F}{Q^*}\]
+
+<p>Typical North American coefficients: $A \approx 3°\text{C}$, $B \approx 2°\text{C}$, $C \approx 2°\text{C}$ per unit ratio. The three terms represent the sky-view, evaporation-suppression, and anthropogenic mechanisms respectively.</p>
+
+<h3 id="37-green-infrastructure-mitigation">3.7 Green Infrastructure Mitigation</h3>
+
+<p><strong>Cool roofs</strong> increase albedo from $\alpha \approx 0.10$ (dark) to $\alpha \approx 0.65$–$0.80$ (white). Reduction in absorbed solar radiation per unit roof area:</p>
+
+\[\Delta Q_{\text{cool roof}} = \Delta\alpha \cdot K_\downarrow\]
+
+<p>For $\Delta\alpha = 0.55$ and summer noon $K_\downarrow = 600$ W m⁻²: $\Delta Q = 330$ W m⁻². City-scale effect depends on roof fraction of plan area (typically 20–35%). A city with 25% roof coverage achieves $0.25 \times 330 = 82.5$ W m⁻² average reduction in absorbed radiation — comparable to removing a large fraction of the UHI forcing.</p>
+
+<p>Cool roofs are <strong>less effective in cold climates</strong>: in winter, dark roofs usefully absorb solar radiation for space heating. A Canadian analysis must account for the seasonal sign reversal.</p>
+
+<p><strong>Urban trees</strong> cool through two pathways: shading (blocking $K_\downarrow$ from reaching the surface) and evapotranspiration (converting $Q_H$ to $Q_E$). A mature deciduous tree transpires 100–400 L day⁻¹. Converting to heat flux over the canopy projection area $A_{\text{canopy}}$:</p>
+
+\[Q_E^{\text{tree}} = \frac{\dot{m}_{ET} L_v}{A_{\text{canopy}}}\]
+
+<p>For $\dot{m} = 200$ L day⁻¹ = $2.31 \times 10^{-3}$ kg s⁻¹, $L_v = 2.45 \times 10^6$ J kg⁻¹, $A_{\text{canopy}} = 25$ m²:</p>
+
+\[Q_E^{\text{tree}} = \frac{2.31 \times 10^{-3} \times 2.45 \times 10^6}{25} = 226 \text{ W m}^{-2}\]
+
+<p>Under-canopy temperatures are typically 2–5°C cooler than adjacent sun-exposed surfaces.</p>
+
+<p><strong>Park cool island</strong> — the cooling effect extends beyond the park boundary, decaying approximately exponentially with distance:</p>
+
+\[\Delta T_{\text{park}}(d) = \Delta T_{\max} e^{-d/d_0}\]
+
+<p>where $\Delta T_{\max} \approx 1$–$4$°C at the park edge and $d_0 \approx 100$–$400$ m is the e-folding decay distance. Parks larger than 1 ha typically produce measurable cooling; parks larger than 10 ha produce city-scale microclimate effects extending hundreds of metres into surrounding streets.</p>
+
+<hr />
+
+<h2 id="4-worked-example-by-hand">4. Worked Example by Hand</h2>
+
+<p><strong>Setting:</strong> Edmonton, Alberta (pop. ~1 million). Estimate maximum nocturnal UHI intensity and evaluate a cool roof programme covering 25% of plan area.</p>
+
+<p><strong>Given:</strong></p>
+<ul>
+  <li>$f_i = 0.55$, $\psi_s = 0.55$, $Q_F = 55$ W m⁻² (winter average)</li>
+  <li>$K_\downarrow = 130$ W m⁻² (winter average), $Q^* \approx 70$ W m⁻² (winter net radiation)</li>
+  <li>Population: 1,000,000</li>
+</ul>
+
+<p><strong>Step 1: Oke empirical UHI maximum</strong></p>
+
+\[\Delta T_{\max} = 2.01 \times \log_{10}(10^6) - 4.06 = 2.01 \times 6 - 4.06 = 12.06 - 4.06 = 8.0°\text{C}\]
+
+<p>This is the theoretical maximum on the calmest, clearest night.</p>
+
+<p><strong>Step 2: Physical estimate (winter)</strong></p>
+
+<p>\(\Delta T \approx 3(1 - 0.55) + 2(0.55) + 2\left(\frac{55}{70}\right)\)
+\(= 1.35 + 1.10 + 1.57 = 4.0°\text{C}\)</p>
+
+<p>The anthropogenic heat term ($C \cdot Q_F/Q^* = 1.57°\text{C}$) is the largest single contributor in winter — reflecting Edmonton’s heating-dominated climate.</p>
+
+<p><strong>Step 3: Cool roof benefit (summer)</strong></p>
+
+<p>Summer: $K_\downarrow = 480$ W m⁻², $\Delta\alpha = 0.50$, roof fraction = 0.25:</p>
+
+\[\Delta Q_{\text{city}} = 0.25 \times 0.50 \times 480 = 60 \text{ W m}^{-2}\]
+
+<p>UHI forcing (summer) $\approx Q_F + \Delta Q_H \approx 25 + 90 = 115$ W m⁻²</p>
+
+<p>Reduction: $60/115 = 52\%$ of UHI forcing — but this analysis ignores the winter heating penalty. For Edmonton, the net annual benefit of cool roofs is substantially lower than the summer benefit alone.</p>
+
+<hr />
+
+<h2 id="5-computational-implementation">5. Computational Implementation</h2>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>function Q_net(alpha, K_down, L_down, T_s, eps=0.95):
+    sigma = 5.67e-8
+    L_up = eps * sigma * T_s**4
+    return (1 - alpha) * K_down + L_down - L_up
+
+function uhi_predict(f_i, psi_s, Q_F, Q_star, A=3, B=2, C=2):
+    return A * (1 - psi_s) + B * f_i + C * (Q_F / Q_star)
+
+function oke_uhi(population):
+    return max(0, 2.01 * log10(population) - 4.06)
+
+function park_cooling(d, dT_max, d0):
+    return dT_max * exp(-d / d0)
+
+function cool_roof_forcing(delta_alpha, roof_fraction, K_down):
+    return delta_alpha * roof_fraction * K_down
+</code></pre></div></div>
+
+<pre><code class="language-{pyodide}">import numpy as np
+
+sigma = 5.67e-8
+
+def oke_uhi(pop):
+    return max(0, 2.01 * np.log10(pop) - 4.06)
+
+def uhi_physical(fi, psi, QF, Qs, A=3, B=2, C=2):
+    return A*(1-psi) + B*fi + C*(QF/Qs)
+
+def park_cooling(d, dT_max=2.5, d0=200):
+    return dT_max * np.exp(-d/d0)
+
+# Edmonton UHI
+print("Edmonton UHI estimates:")
+print(f"  Oke (1973) max: {oke_uhi(1e6):.1f}°C")
+print(f"  Physical (winter): {uhi_physical(0.55, 0.55, 55, 70):.1f}°C")
+print(f"  Physical (summer): {uhi_physical(0.55, 0.55, 25, 200):.1f}°C")
+
+# Cool roof
+cr = 0.25 * 0.50 * 480
+print(f"\nCool roof city forcing (summer): {cr:.0f} W/m²")
+
+# Oke UHI vs city size
+print("\nUHI max by city size (Oke 1973):")
+for pop in [10_000, 100_000, 500_000, 1_000_000, 5_000_000]:
+    print(f"  {pop:&gt;9,.0f} people: {oke_uhi(pop):.1f}°C")
+
+# Park cooling
+print("\nPark cool island extent:")
+for d in [0, 100, 200, 400, 800]:
+    print(f"  {d:4d}m from park: {park_cooling(d):.2f}°C")
+</code></pre>
+
+<hr />
+
+<h2 id="6-visualization">6. Visualization</h2>
+
+<div data-viz="echarts" style="height:420px" data-options="{
+  &quot;title&quot;: {&quot;text&quot;: &quot;Surface Energy Balance: Rural vs Urban (summer midday)&quot;, &quot;textStyle&quot;: {&quot;fontSize&quot;: 14}},
+  &quot;tooltip&quot;: {&quot;trigger&quot;: &quot;axis&quot;},
+  &quot;legend&quot;: {&quot;data&quot;: [&quot;Rural vegetated&quot;, &quot;Urban dense&quot;], &quot;bottom&quot;: 0},
+  &quot;xAxis&quot;: {&quot;type&quot;: &quot;category&quot;,
+    &quot;data&quot;: [&quot;Net radiation Q*&quot;, &quot;Sensible QH&quot;, &quot;Latent QE&quot;, &quot;Storage ΔQS&quot;, &quot;Anthropogenic QF&quot;],
+    &quot;axisLabel&quot;: {&quot;rotate&quot;: 12}},
+  &quot;yAxis&quot;: {&quot;name&quot;: &quot;Energy flux (W m⁻²)&quot;, &quot;nameLocation&quot;: &quot;middle&quot;, &quot;nameGap&quot;: 50, &quot;min&quot;: 0, &quot;max&quot;: 580},
+  &quot;series&quot;: [
+    {&quot;name&quot;: &quot;Rural vegetated&quot;, &quot;type&quot;: &quot;bar&quot;,
+     &quot;data&quot;: [
+       {&quot;value&quot;: 445, &quot;itemStyle&quot;: {&quot;color&quot;: &quot;#FFC107&quot;}},
+       {&quot;value&quot;: 133, &quot;itemStyle&quot;: {&quot;color&quot;: &quot;#FF7043&quot;}},
+       {&quot;value&quot;: 267, &quot;itemStyle&quot;: {&quot;color&quot;: &quot;#42A5F5&quot;}},
+       {&quot;value&quot;: 45,  &quot;itemStyle&quot;: {&quot;color&quot;: &quot;#8D6E63&quot;}},
+       {&quot;value&quot;: 2,   &quot;itemStyle&quot;: {&quot;color&quot;: &quot;#BDBDBD&quot;}}
+     ]},
+    {&quot;name&quot;: &quot;Urban dense&quot;, &quot;type&quot;: &quot;bar&quot;,
+     &quot;data&quot;: [
+       {&quot;value&quot;: 510, &quot;itemStyle&quot;: {&quot;color&quot;: &quot;#FFA000&quot;}},
+       {&quot;value&quot;: 357, &quot;itemStyle&quot;: {&quot;color&quot;: &quot;#E53935&quot;}},
+       {&quot;value&quot;: 51,  &quot;itemStyle&quot;: {&quot;color&quot;: &quot;#1E88E5&quot;}},
+       {&quot;value&quot;: 42,  &quot;itemStyle&quot;: {&quot;color&quot;: &quot;#5D4037&quot;}},
+       {&quot;value&quot;: 60,  &quot;itemStyle&quot;: {&quot;color&quot;: &quot;#757575&quot;}}
+     ]}
+  ]
+}"></div>
+
+<p>The energy balance shift from rural to urban is primarily the collapse of $Q_E$ (latent heat) and the corresponding rise in $Q_H$ (sensible heat). Rural areas route ~60% of net radiation into evaporation; dense urban areas route less than 10%. That additional ~200 W m⁻² of sensible heat directly warms the urban atmosphere. The anthropogenic term adds a further 60 W m⁻² with no rural analogue.</p>
+
+<hr />
+
+<h2 id="7-interpretation">7. Interpretation</h2>
+
+<p>The UHI is not a single phenomenon — it is the superposition of six mechanisms operating on different timescales. During the day, impervious surface albedo and suppressed evaporation dominate. At night, sky view factor and thermal mass release dominate. On the annual scale in cold climates, anthropogenic heat dominates in winter. Effective UHI management requires identifying which mechanism dominates in a given city and targeting interventions accordingly.</p>
+
+<p>This mechanistic understanding has important policy implications. Cool roofs are the correct intervention in sun-rich, warm climates (Phoenix, Los Angeles, Singapore) but may increase winter heating demand in cold climates (Edmonton, Helsinki) if applied to buildings that currently benefit from passive solar gain. Urban tree planting is most effective in warm, humid climates where ET rates are high; in arid cities, the water demand for irrigation may offset the climate benefit. Sky view factor improvements through setback requirements and building height limits have the strongest effect in dense canyon-like city centres.</p>
+
+<p>The public health dimension is direct. During heat waves, the UHI adds to synoptic heat stress. The 2003 Paris heat wave killed approximately 14,000 people in France; the 2021 Pacific Northwest heat dome killed 619 in British Columbia, with deaths concentrated in dense urban neighbourhoods without air conditioning. Under climate projections, the combination of background warming and UHI means that cities will experience heat stress conditions that would historically have been fatal with increasing frequency — making UHI mitigation a public health intervention as much as a climate one.</p>
+
+<hr />
+
+<h2 id="8-what-could-go-wrong">8. What Could Go Wrong?</h2>
+
+<p><strong>The Oke formula is empirical and context-dependent.</strong> Calibrated on mid-latitude North American and European cities, it overestimates UHI in coastal cities (sea breezes suppress the effect) and in cities with high rural Bowen ratios (arid surroundings already have low evaporation, reducing the rural-urban contrast). It should be treated as a first approximation, not a prediction.</p>
+
+<p><strong>Cool roofs have a winter heating penalty in cold climates.</strong> The analysis above calculates only the summer benefit. In Edmonton, a cool roof that saves 60 W m⁻² of cooling energy in July also costs roughly 30–40 W m⁻² of heating energy in January. Net annual energy balance and net carbon balance depend on the grid electricity source and the heating fuel mix.</p>
+
+<p><strong>Urban trees require water.</strong> Evapotranspirative cooling requires available soil moisture. In drought conditions or on fully paved surfaces with no infiltration opportunity, trees transpire at a fraction of their potential rate and the cooling benefit is reduced to shading alone (~30–50% of the full benefit). Urban irrigation of street trees in arid cities may consume more water than the climate benefit justifies.</p>
+
+<p><strong>The sky view factor varies enormously within a city.</strong> A city-average $\psi_s = 0.55$ masks values ranging from 0.15 in dense downtown canyons to 0.95 in suburban cul-de-sacs. The UHI is not spatially uniform — it is a field with strong gradients that concentrates heat in exactly the dense, low-income neighbourhoods that are least likely to have air conditioning and most vulnerable to heat stress.</p>
+
+<hr />
+
+<h2 id="9-summary">9. Summary</h2>
+
+<p>The urban heat island arises from four interacting modifications to the surface energy balance: increased net radiation absorption (lower albedo, reduced sky view factor); suppressed evaporation (impervious surfaces); elevated thermal mass (dense building materials); and added anthropogenic heat (combustion, electricity). Together these raise urban temperatures 2–8°C above rural surroundings, with maximum intensity on calm, clear nights when radiative cooling is most strongly suppressed by building geometry.</p>
+
+<p>Mitigation strategies target specific mechanisms: cool roofs reduce absorbed solar; urban trees restore the evapotranspiration pathway; parks create decaying cool islands extending hundreds of metres; building setbacks and sky view factor preservation reduce nocturnal trapping. Strategy selection must be matched to the dominant local mechanism and the seasonal climate context.</p>
+
+<p><strong>Key equations:</strong></p>
+
+\[Q^* = (1-\alpha)K_\downarrow + L_\downarrow - \varepsilon_s\sigma T_s^4\]
+
+\[Q^* = Q_H + Q_E + \Delta Q_S + Q_F\]
+
+\[\Delta T_{u-r,\max} = 2.01\log_{10}P - 4.06 \quad \text{[Oke 1973]}\]
+
+\[z_d = \sqrt{2\kappa/\omega} \quad \text{[diurnal skin depth]}\]
+
+\[\Delta T_{\text{park}}(d) = \Delta T_{\max} e^{-d/d_0}\]
+
+<hr />
+
+<h2 id="math-refresher">Math Refresher</h2>
+
+<p><strong>The Stefan-Boltzmann law.</strong> Every object above absolute zero emits electromagnetic radiation. The total power per unit area is $L = \varepsilon\sigma T^4$, with $\sigma = 5.67 \times 10^{-8}$ W m⁻² K⁻⁴ and $T$ in Kelvin. The $T^4$ dependence makes emission very sensitive to temperature: increasing $T$ from 280 K to 300 K (a 7% rise) increases emission by $(300/280)^4 - 1 = 32\%$. The key practical implication: a warm urban surface emits substantially more longwave radiation than the cool rural surface it replaced, but this extra emission is partially re-absorbed by surrounding buildings if $\psi_s$ is small — the building canyon recirculates longwave energy rather than allowing it to escape.</p>
+
+<p><strong>Bowen ratio and energy partitioning.</strong> If $Q^<em>$ is fixed and $\beta = Q_H/Q_E$, then $Q_H = \beta Q^</em>/(\beta+1)$ and $Q_E = Q^*/(\beta+1)$. As $\beta \to \infty$ (dry impervious surface), all net radiation goes to sensible heat. As $\beta \to 0$ (open water), all goes to evaporation. The Bowen ratio is a single dimensionless number that summarises the entire heat partition — a powerful compression of complex land surface physics into one measurable parameter.</p>
+
+      </div>
+
+      
+
+
+
+      
+
+  
+  
+  
+  
+
+
+
+      <!-- essay-footer-notes.html — References / endnotes section.
+     Hidden by default; assets/js/essay/core.js shows it and populates
+     #essay-endnotes-list from [data-cite] elements in the content.
+
+     In posts, create citation markers with:
+       <cite data-cite="Author, Title, URL">1</cite>
+     The JS collects these and renders a numbered reference list here. -->
+
+<footer class="essay-endnotes" id="essay-endnotes" aria-label="References" hidden>
+  <div class="essay-endnotes-inner">
+    <h2 class="essay-endnotes-heading">References</h2>
+    <ol class="essay-endnotes-list" id="essay-endnotes-list">
+      <!-- Populated at runtime by assets/js/essay/core.js buildEndnotes() -->
+    </ol>
+  </div>
+</footer>
+
+
+      
+
+      
+
+      
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    </article>
+  </main>
+
+  <aside
+    class="essay-sidenotes"
+    id="essay-sidenotes"
+    aria-label="Margin notes"
+  ></aside>
+
+</div>
+
+</div>
+
+<footer>
+  <div class="footer-inner">
+
+    <!-- Col 1: Brand -->
+    <div class="footer-brand">
+      <div class="footer-brand-logo">
+        
+        <img loading="lazy" src="/assets/images/logo.webp" alt="WaywardHouse" width="28" height="28">
+        
+        WaywardHouse<span>.</span>
+      </div>
+      
+      
+      <p class="footer-brand-desc">Understanding how place, economy, and environment interact — through analysis, modelling, and open tools.</p>
+      
+
+      <div class="footer-social">
+        
+        
+        <a href="/feed.xml" class="social-icon" target="_blank" rel="noopener noreferrer" aria-label="RSS feed">
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M4 11a9 9 0 0 1 9 9"/>
+            <path d="M4 4a16 16 0 0 1 16 16"/>
+            <circle cx="5" cy="19" r="1"/>
+          </svg>
+        </a>
+      </div>
+    </div>
+
+    <!-- Col 2: Topics (configurable via footer_topics, falls back to auto-categories) -->
+    <nav aria-labelledby="footer-topics">
+      <h3 class="footer-col-title" id="footer-topics">Reading</h3>
+      <ul class="footer-links">
+        
+          
+          <li><a href="/topics/">Essays</a></li>
+          
+          <li><a href="/series/">Modelling</a></li>
+          
+          <li><a href="/archive/">Archive</a></li>
+          
+          <li><a href="/start-here/">Start Here</a></li>
+          
+        
+      </ul>
+    </nav>
+
+    <!-- Col 3: Secondary navigation -->
+    
+    <nav aria-labelledby="footer-company">
+      <h3 class="footer-col-title" id="footer-company">Site</h3>
+      <ul class="footer-links">
+        
+        <li><a href="/start-here/">Start Here</a></li>
+        
+        <li><a href="/about/">About</a></li>
+        
+        <li><a href="/contact/">Contact</a></li>
+        
+      </ul>
+    </nav>
+    
+
+    <!-- Col 4: Resources -->
+    <nav aria-labelledby="footer-resources">
+      <h3 class="footer-col-title" id="footer-resources">Resources</h3>
+      <ul class="footer-links">
+        <li><a href="/archive/">Archive</a></li>
+        <li><a href="/feed.xml">RSS Feed</a></li>
+        <li><a href="/topics/">All Topics</a></li>
+      </ul>
+    </nav>
+
+  </div><!-- /.footer-inner -->
+
+  <div class="footer-bottom">
+    <span class="footer-copy">
+      &copy; 2026 WaywardHouse.
+    </span>
+    <div class="footer-legal">
+      <a href="/privacy/">Privacy Policy</a>
+      <a href="/terms/">Terms of Service</a>
+    </div>
+  </div>
+
+</footer>
+
+
+<!-- Alpine.js bundle -->
+<script type="module" src="/assets/dist/main.js"></script>
+
+<!-- Visualization runtime — detects and loads CDN libraries dynamically -->
+<script type="module" src="/assets/js/core.js"></script>
+
+<!-- Search overlay — event-driven: nav button $dispatches 'search:open' -->
+<div
+  x-data="search"
+  x-init="init()"
+  @search:open.window="open()"
+>
+  <div
+    class="search-overlay"
+    x-show="isOpen"
+    x-transition:enter="transition ease-out duration-150"
+    x-transition:enter-start="opacity-0"
+    x-transition:enter-end="opacity-100"
+    x-transition:leave="transition ease-in duration-100"
+    x-transition:leave-start="opacity-100"
+    x-transition:leave-end="opacity-0"
+    @click.self="close()"
+    style="display: none;"
+    role="dialog"
+    aria-modal="true"
+    aria-label="Search"
+  >
+    <div class="search-panel">
+      <div class="search-input-wrap">
+        <svg class="search-icon" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <circle cx="11" cy="11" r="8"/>
+          <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+        </svg>
+        <input
+          class="search-input"
+          type="search"
+          placeholder="Search posts…"
+          x-model="query"
+          x-ref="input"
+          @input.debounce.300ms="runSearch()"
+          @keydown.escape="close()"
+          autocomplete="off"
+          spellcheck="false"
+          aria-label="Search query"
+        >
+        <kbd class="search-esc" aria-hidden="true">ESC</kbd>
+      </div>
+
+      <div class="search-results" x-show="query.trim().length > 0">
+        <div class="search-status" x-show="loading" aria-live="polite">Searching…</div>
+        <div class="search-status" x-show="!loading && results.length === 0" aria-live="polite">
+          No results for "<span x-text="query"></span>"
+        </div>
+        <ul class="search-result-list" x-show="!loading && results.length > 0" role="list">
+          <template x-for="result in results" :key="result.url">
+            <li>
+              <a :href="result.url" class="search-result-item" @click="close()">
+                <div class="search-result-title" x-text="result.meta?.title || result.url"></div>
+                <div class="search-result-excerpt" x-html="result.excerpt"></div>
+              </a>
+            </li>
+          </template>
+        </ul>
+      </div>
+    </div>
+  </div>
+</div>
+
+</body>
+</html>

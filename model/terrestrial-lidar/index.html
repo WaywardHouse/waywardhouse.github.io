@@ -1,0 +1,1384 @@
+<!DOCTYPE html>
+
+<html lang="en" data-brand="wayward" data-theme="light">
+<head>
+  <meta charset="utf-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Terrestrial LiDAR Point Clouds — WaywardHouse</title>
+<meta name="description" content="How do we create millimeter-accurate 3D models of terrain and structures? Light Detection and Ranging (LiDAR) uses laser pulses to measure distances, generating dense point clouds with billions of 3D...">
+
+<!-- Dark mode flash prevention — runs synchronously before first paint -->
+<script>
+  (function () {
+    var defaultDark = 'light' === 'dark';
+    var s = localStorage.getItem('theme');
+    var dark = s !== null ? s === 'dark' : defaultDark;
+    document.documentElement.dataset.theme = dark ? 'dark' : 'light';
+  })();
+</script>
+
+<!-- Preconnect to CDN domains used by the viz runtime -->
+<link rel="preconnect" href="https://cdn.jsdelivr.net">
+<link rel="preconnect" href="https://unpkg.com">
+<link rel="preconnect" href="https://esm.sh">
+<link rel="preconnect" href="https://api.mapbox.com">
+<link rel="preconnect" href="https://events.mapbox.com">
+
+
+<script>window.MAPBOX_TOKEN = 'pk.eyJ1IjoiYnJlYWRlZGNvZCIsImEiOiJjbW0xa25qc2EwMmtwMnJwejJlNndqdnoxIn0._7I9PwXuFLrOQINVZ84y1w';</script>
+
+
+<!-- Fonts -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:ital,wght@0,300;0,400;0,600;0,700;0,800;0,900;1,700;1,800&family=Barlow:wght@300;400&family=IBM+Plex+Mono:ital,wght@0,300;0,400;0,500;1,300&family=Literata:ital,opsz,wght@0,7..72,300;0,7..72,400;0,7..72,500;1,7..72,300;1,7..72,400&display=swap" rel="stylesheet">
+
+<!-- Theme stylesheet (Vite build output) -->
+<link rel="stylesheet" href="/assets/dist/main.css">
+
+<!-- Brand token overrides — loaded after main.css so variables cascade correctly -->
+
+<link rel="stylesheet" href="/assets/css/brand-wayward.css">
+
+
+
+<!-- Syntax highlighting (Rouge — light + dark) -->
+<link rel="stylesheet" href="/assets/css/syntax.css">
+
+<!-- Begin Jekyll SEO tag v2.8.0 -->
+<title>Terrestrial LiDAR Point Clouds | WaywardHouse</title>
+<meta name="generator" content="Jekyll v4.4.1" />
+<meta property="og:title" content="Terrestrial LiDAR Point Clouds" />
+<meta property="og:locale" content="en" />
+<meta name="description" content="How do we create millimeter-accurate 3D models of terrain and structures? Light Detection and Ranging (LiDAR) uses laser pulses to measure distances, generating dense point clouds with billions of 3D coordinates. This model derives ranging equations, implements point cloud classification, demonstrates DEM generation, and shows applications from forest inventory to archaeological site mapping." />
+<meta property="og:description" content="How do we create millimeter-accurate 3D models of terrain and structures? Light Detection and Ranging (LiDAR) uses laser pulses to measure distances, generating dense point clouds with billions of 3D coordinates. This model derives ranging equations, implements point cloud classification, demonstrates DEM generation, and shows applications from forest inventory to archaeological site mapping." />
+<link rel="canonical" href="https://wayward.house/model/terrestrial-lidar/" />
+<meta property="og:url" content="https://wayward.house/model/terrestrial-lidar/" />
+<meta property="og:site_name" content="WaywardHouse" />
+<meta property="og:image" content="https://wayward.house/assets/images/lidar-point-clouds.webp" />
+<meta property="og:type" content="article" />
+<meta property="article:published_time" content="2026-02-27T00:00:00+00:00" />
+<meta name="twitter:card" content="summary_large_image" />
+<meta property="twitter:image" content="https://wayward.house/assets/images/lidar-point-clouds.webp" />
+<meta property="twitter:title" content="Terrestrial LiDAR Point Clouds" />
+<meta name="twitter:site" content="@" />
+<script type="application/ld+json">
+{"@context":"https://schema.org","@type":"BlogPosting","dateModified":"2026-03-12T16:57:04+00:00","datePublished":"2026-02-27T00:00:00+00:00","description":"How do we create millimeter-accurate 3D models of terrain and structures? Light Detection and Ranging (LiDAR) uses laser pulses to measure distances, generating dense point clouds with billions of 3D coordinates. This model derives ranging equations, implements point cloud classification, demonstrates DEM generation, and shows applications from forest inventory to archaeological site mapping.","headline":"Terrestrial LiDAR Point Clouds","image":"https://wayward.house/assets/images/lidar-point-clouds.webp","mainEntityOfPage":{"@type":"WebPage","@id":"https://wayward.house/model/terrestrial-lidar/"},"publisher":{"@type":"Organization","logo":{"@type":"ImageObject","url":"https://wayward.house/assets/images/logo.webp"}},"url":"https://wayward.house/model/terrestrial-lidar/"}</script>
+<!-- End Jekyll SEO tag -->
+
+
+
+<!-- Cloudflare Web Analytics -->
+<script defer src="https://static.cloudflareinsights.com/beacon.min.js"
+  data-cf-beacon='{"token": "62c47d78bf9d4c80972d4e6242d79ff8"}'></script>
+
+
+</head>
+<body class="
+  model-template
+   tag-modelling
+   tag-hash-math
+  
+   tag-hash-viz
+  
+  
+  
+  
+  
+  
+">
+
+<a href="#main-content" class="skip-link">Skip to content</a>
+
+<header class="nav" x-data="{ open: false }">
+  <div class="nav-inner">
+
+    <!-- Logo -->
+    <a href="/" class="nav-logo">
+      
+      <img loading="lazy" src="/assets/images/logo.webp" alt="WaywardHouse" width="32" height="32">
+      
+      WaywardHouse<span>.</span>
+    </a>
+
+    <!-- Desktop nav links -->
+    <ul class="nav-links" role="list">
+      
+      <li>
+        <a href="/topics/">Essays</a>
+      </li>
+      
+      <li>
+        <a href="/series/">Modelling</a>
+      </li>
+      
+      <li>
+        <a href="/about/">About</a>
+      </li>
+      
+    </ul>
+
+    <!-- Actions -->
+    <div class="nav-actions">
+
+      <!-- Search button -->
+      <button
+        class="search-toggle"
+        type="button"
+        aria-label="Search (⌘K)"
+        title="Search (⌘K)"
+        @click="$dispatch('search:open')"
+      >
+        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <circle cx="11" cy="11" r="8"/>
+          <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+        </svg>
+      </button>
+
+      <!-- Dark mode toggle -->
+      <button
+        class="theme-toggle"
+        x-data="darkMode"
+        x-init="init()"
+        @click="toggle()"
+        :aria-label="dark ? 'Switch to light mode' : 'Switch to dark mode'"
+        type="button"
+      >
+        <!-- Sun icon (shown in light mode) -->
+        <svg class="icon-sun" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">
+          <circle cx="12" cy="12" r="5"/>
+          <line x1="12" y1="1" x2="12" y2="3"/>
+          <line x1="12" y1="21" x2="12" y2="23"/>
+          <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/>
+          <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/>
+          <line x1="1" y1="12" x2="3" y2="12"/>
+          <line x1="21" y1="12" x2="23" y2="12"/>
+          <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/>
+          <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>
+        </svg>
+        <!-- Moon icon (shown in dark mode) -->
+        <svg class="icon-moon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">
+          <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+        </svg>
+      </button>
+
+      <!-- Hamburger (mobile only) -->
+      <button
+        class="mobile-nav-toggle"
+        @click="open = !open"
+        :aria-expanded="open"
+        :aria-label="open ? 'Close menu' : 'Open menu'"
+        type="button"
+      >
+        <svg x-show="!open" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <line x1="3" y1="6" x2="21" y2="6"/>
+          <line x1="3" y1="12" x2="21" y2="12"/>
+          <line x1="3" y1="18" x2="21" y2="18"/>
+        </svg>
+        <svg x-show="open" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <line x1="18" y1="6" x2="6" y2="18"/>
+          <line x1="6" y1="6" x2="18" y2="18"/>
+        </svg>
+      </button>
+
+    </div><!-- /.nav-actions -->
+  </div><!-- /.nav-inner -->
+
+  <!-- Mobile drawer -->
+  <div
+    class="mobile-nav"
+    x-show="open"
+    x-transition:enter="transition ease-out duration-200"
+    x-transition:enter-start="opacity-0 -translate-y-1"
+    x-transition:enter-end="opacity-100 translate-y-0"
+    x-transition:leave="transition ease-in duration-150"
+    x-transition:leave-start="opacity-100 translate-y-0"
+    x-transition:leave-end="opacity-0 -translate-y-1"
+    @click.outside="open = false"
+    @keydown.escape.window="open = false"
+  >
+    <ul role="list">
+      
+      <li>
+        <a href="/topics/" @click="open = false">Essays</a>
+      </li>
+      
+      <li>
+        <a href="/series/" @click="open = false">Modelling</a>
+      </li>
+      
+      <li>
+        <a href="/about/" @click="open = false">About</a>
+      </li>
+      
+    </ul>
+  </div><!-- /.mobile-nav -->
+
+</header>
+
+
+<div id="main-content">
+  <!-- Essay stylesheet and runtime — self-contained -->
+<link rel="stylesheet" href="/assets/css/essay.css">
+<script type="module" src="/assets/js/essay/core.js"></script>
+
+<div class="essay-layout" id="essay-layout">
+
+  <!-- essay-toc.html — Sticky table of contents (left column).
+     The <ol> is empty on load; assets/js/essay/core.js populates it
+     from h2/h3 elements found in #essay-content after the page renders. -->
+
+<nav class="essay-toc" id="essay-toc" aria-label="Table of contents">
+  <div class="essay-toc-inner">
+    <p class="essay-toc-heading" aria-hidden="true">Contents</p>
+    <ol class="essay-toc-list" id="essay-toc-list">
+      <!-- Populated at runtime by assets/js/essay/core.js buildToc() -->
+    </ol>
+  </div>
+</nav>
+
+
+  <main class="essay-main" id="essay-main" role="main">
+    <article class="essay-article">
+
+      <!-- essay-hero.html — Header for computational essay template.
+     Displays feature image, tag label, title, excerpt, and post metadata. -->
+
+<header class="essay-hero">
+  
+  <figure class="essay-hero-figure">
+    <img
+      src="/assets/images/lidar-point-clouds.webp"
+      alt="Terrestrial LiDAR Point Clouds"
+      class="essay-hero-img"
+      loading="eager"
+    >
+    
+  </figure>
+  
+
+  <div class="essay-hero-body">
+
+    
+    
+    
+    
+    
+    <nav class="essay-breadcrumb" aria-label="Series position">
+      
+      <a href="/series/5/" class="essay-breadcrumb-link">Computational geography advanced remote sensing</a>
+      
+      
+      <span class="essay-breadcrumb-sep" aria-hidden="true">›</span>
+      <span class="essay-breadcrumb-cluster">Active Ranging Systems</span>
+      
+      
+      <span class="essay-breadcrumb-sep" aria-hidden="true">›</span>
+      <span class="essay-breadcrumb-pos">Model 3</span>
+      
+    </nav>
+    
+
+    <div class="essay-hero-labels">
+      
+      <a href="/topics/modelling/" class="essay-tag-label">modelling</a>
+      
+      
+      <span class="difficulty-badge difficulty-badge--4">Level 4</span>
+      
+    </div>
+
+    <h1 class="essay-title">Terrestrial LiDAR Point Clouds</h1>
+
+    
+    <p class="essay-excerpt">How do we create millimeter-accurate 3D models of terrain and structures? Light Detection and Ranging (LiDAR) uses laser pulses to measure distances, generating dense point clouds with billions of 3D coordinates. This model derives ranging equations, implements point cloud classification, demonstrates DEM generation, and shows applications from forest inventory to archaeological site mapping.
+</p>
+    
+
+    
+    <p class="essay-prereqs"><span class="essay-prereqs-label">Prerequisites:</span> ranging equations, point cloud processing, surface reconstruction, classification</p>
+    
+
+    <div class="essay-meta">
+      
+      <div class="essay-meta-secondary">
+        <time class="essay-date" datetime="2026-02-27">27 Feb 2026</time>
+        
+        
+        <span class="essay-sep" aria-hidden="true">·</span>
+        <span class="essay-updated">Updated <time datetime="2026-03-12">12 Mar 2026</time></span>
+        
+        <span class="essay-sep" aria-hidden="true">·</span>
+        <span class="essay-reading-time">12 min read</span>
+      </div>
+    </div>
+  </div>
+</header>
+
+
+      
+
+
+
+
+
+      <div class="essay-content gh-content" id="essay-content">
+        <h2 id="1-the-question">1. The Question</h2>
+
+<p>How tall is this forest canopy, and how much biomass does it contain?</p>
+
+<p><strong>LiDAR (Light Detection and Ranging):</strong></p>
+
+<p>Active sensor that measures distance by timing laser pulse return.</p>
+
+<p><strong>Principle:</strong></p>
+
+\[R = \frac{c \times \Delta t}{2}\]
+
+<p>Where:</p>
+<ul>
+  <li>$R$ = range (distance)</li>
+  <li>$c$ = speed of light (3 × 10⁸ m/s)</li>
+  <li>$\Delta t$ = round-trip travel time</li>
+  <li>Factor 2: Light travels to target and back</li>
+</ul>
+
+<p><strong>Example:</strong></p>
+
+<p>$\Delta t = 100$ nanoseconds = 100 × 10⁻⁹ s</p>
+
+\[R = \frac{3 \times 10^8 \times 100 \times 10^{-9}}{2} = \frac{30}{2} = 15 \text{ m}\]
+
+<p><strong>Point cloud:</strong></p>
+
+<p>Million to billions of 3D points, each with (x, y, z) coordinates.</p>
+
+<p><strong>Platforms:</strong></p>
+<ul>
+  <li>Airborne (aircraft, drone)</li>
+  <li>Terrestrial (tripod-mounted scanner)</li>
+  <li>Mobile (vehicle-mounted)</li>
+  <li>Spaceborne (GEDI, ICESat-2)</li>
+</ul>
+
+<p><strong>Applications:</strong></p>
+<ul>
+  <li>High-resolution DEMs (0.5-1 m vertical accuracy)</li>
+  <li>Forest structure (canopy height, biomass)</li>
+  <li>Urban 3D modelling (building extraction)</li>
+  <li>Power line monitoring (vegetation encroachment)</li>
+  <li>Archaeological surveys (detect subtle features)</li>
+  <li>Coastal change (erosion, dune migration)</li>
+</ul>
+
+<hr />
+
+<h2 id="2-the-conceptual-model">2. The Conceptual Model</h2>
+
+<h3 id="pulse-return-characteristics">Pulse Return Characteristics</h3>
+
+<p><strong>Single return:</strong></p>
+<ul>
+  <li>Hard surface (ground, building)</li>
+  <li>All energy reflected from single surface</li>
+  <li>One distance measurement per pulse</li>
+</ul>
+
+<p><strong>Multiple returns:</strong></p>
+<ul>
+  <li>Vegetation canopy (partial transmission)</li>
+  <li>First return: Canopy top</li>
+  <li>Intermediate returns: Mid-canopy</li>
+  <li>Last return: Ground</li>
+</ul>
+
+<p><strong>Full waveform:</strong></p>
+<ul>
+  <li>Record entire return signal shape</li>
+  <li>Extract multiple peaks</li>
+  <li>Provides vertical structure detail</li>
+</ul>
+
+<p><strong>Typical:</strong> 1-5 returns per pulse</p>
+
+<h3 id="point-density">Point Density</h3>
+
+<p><strong>Airborne typical:</strong></p>
+<ul>
+  <li>1-10 points/m² (standard)</li>
+  <li>10-50 points/m² (high-density)</li>
+  <li>50+ points/m² (ultra-high)</li>
+</ul>
+
+<p><strong>Terrestrial:</strong></p>
+<ul>
+  <li>1000-10,000+ points/m² (very dense)</li>
+  <li>Sub-centimeter spacing</li>
+</ul>
+
+<p><strong>Trade-offs:</strong></p>
+<ul>
+  <li>Higher density → better detail, larger file size, slower processing</li>
+  <li>Lower density → faster, cheaper, less detail</li>
+</ul>
+
+<p><strong>Flying height effect:</strong></p>
+
+<p>Point spacing $\approx$ altitude × scan angle / pulse rate</p>
+
+<h3 id="point-cloud-attributes">Point Cloud Attributes</h3>
+
+<p><strong>Essential:</strong></p>
+<ul>
+  <li>X, Y, Z coordinates (location)</li>
+  <li>Intensity (return strength)</li>
+  <li>Return number (first, last, intermediate)</li>
+  <li>Classification (ground, vegetation, building, etc.)</li>
+</ul>
+
+<p><strong>Optional:</strong></p>
+<ul>
+  <li>RGB color (if camera integrated)</li>
+  <li>GPS time</li>
+  <li>Scan angle</li>
+  <li>NIR intensity</li>
+</ul>
+
+<p><strong>File formats:</strong></p>
+<ul>
+  <li>LAS/LAZ (standard, compressed)</li>
+  <li>ASCII XYZ (simple, large)</li>
+  <li>E57 (terrestrial scans)</li>
+</ul>
+
+<hr />
+
+<h2 id="3-building-the-mathematical-model">3. Building the Mathematical Model</h2>
+
+<h3 id="ranging-equation">Ranging Equation</h3>
+
+<p><strong>Received power:</strong></p>
+
+\[P_r = \frac{P_t \eta_{\text{sys}} \eta_{\text{atm}} \beta_{\text{target}} A_r}{R^2}\]
+
+<p>Where:</p>
+<ul>
+  <li>$P_r$ = received power (W)</li>
+  <li>$P_t$ = transmitted power (W)</li>
+  <li>$\eta_{\text{sys}}$ = system efficiency</li>
+  <li>$\eta_{\text{atm}}$ = atmospheric transmission</li>
+  <li>$\beta_{\text{target}}$ = target reflectance (0-1)</li>
+  <li>$A_r$ = receiver aperture area (m²)</li>
+  <li>$R$ = range (m)</li>
+</ul>
+
+<p><strong>Key:</strong> $R^{-2}$ dependence → weaker signal at greater distance</p>
+
+<p><strong>Minimum detectable:</strong></p>
+
+\[P_r &gt; P_{\text{threshold}}\]
+
+<p><strong>Maximum range:</strong></p>
+
+\[R_{\max} = \sqrt{\frac{P_t \eta_{\text{sys}} \eta_{\text{atm}} \beta_{\text{target}} A_r}{P_{\text{threshold}}}}\]
+
+<p><strong>Typical airborne:</strong> $R_{\max} \approx$ 500-3000 m</p>
+
+<h3 id="ground-point-classification">Ground Point Classification</h3>
+
+<p><strong>Progressive TIN Densification algorithm:</strong></p>
+
+<p><strong>Steps:</strong></p>
+
+<ol>
+  <li><strong>Seed points:</strong> Lowest points in grid cells (likely ground)</li>
+  <li><strong>Build initial TIN</strong> (Triangulated Irregular Network)</li>
+  <li><strong>Test remaining points:</strong>
+    <ul>
+      <li>Calculate distance to TIN surface</li>
+      <li>If distance &lt; threshold AND angle &lt; threshold → add to ground</li>
+    </ul>
+  </li>
+  <li><strong>Rebuild TIN</strong> with new points</li>
+  <li><strong>Iterate</strong> until no new points added</li>
+</ol>
+
+<p><strong>Distance threshold:</strong> Typically 0.3-1.5 m</p>
+
+<p><strong>Angle threshold:</strong> Typically 8-15°</p>
+
+<p><strong>Robustness:</strong> Filters vegetation, buildings, bridges</p>
+
+<h3 id="canopy-height-model">Canopy Height Model</h3>
+
+<p><strong>Digital Surface Model (DSM):</strong></p>
+
+<p>Elevation of first returns (top surface).</p>
+
+<p><strong>Digital Terrain Model (DTM):</strong></p>
+
+<p>Elevation of ground points only.</p>
+
+<p><strong>Canopy Height Model (CHM):</strong></p>
+
+\[\text{CHM} = \text{DSM} - \text{DTM}\]
+
+<p><strong>Interpretation:</strong></p>
+<ul>
+  <li>CHM = 0: Bare ground</li>
+  <li>CHM = 20m: 20-meter tall vegetation/structure</li>
+</ul>
+
+<p><strong>Forest applications:</strong></p>
+<ul>
+  <li>Tree height extraction</li>
+  <li>Crown delineation</li>
+  <li>Biomass estimation</li>
+</ul>
+
+<h3 id="biomass-estimation">Biomass Estimation</h3>
+
+<p><strong>Allometric relationship:</strong></p>
+
+\[B = a \times H^b\]
+
+<p>Where:</p>
+<ul>
+  <li>$B$ = aboveground biomass (kg or Mg)</li>
+  <li>$H$ = height (m) from LiDAR CHM</li>
+  <li>$a$, $b$ = species/region-specific constants</li>
+</ul>
+
+<p><strong>Typical:</strong> $b \approx 2-3$</p>
+
+<p><strong>Example (temperate forest):</strong></p>
+
+<p>$a = 0.15$, $b = 2.5$</p>
+
+<p>Tree height $H = 25$ m:</p>
+
+\[B = 0.15 \times 25^{2.5} = 0.15 \times 1953 = 293 \text{ kg}\]
+
+<p><strong>Scale to stand:</strong></p>
+
+<p>Sum all trees, convert to Mg/ha.</p>
+
+<hr />
+
+<h2 id="4-worked-example-by-hand">4. Worked Example by Hand</h2>
+
+<p><strong>Problem:</strong> Calculate range from timing and classify point.</p>
+
+<p><strong>Laser pulse measurements:</strong></p>
+
+<p>Point A:</p>
+<ul>
+  <li>Travel time: 200 ns</li>
+  <li>Intensity: 850</li>
+  <li>Elevation above geoid: 1535 m</li>
+</ul>
+
+<p>Point B (nearby):</p>
+<ul>
+  <li>Travel time: 180 ns</li>
+  <li>Intensity: 920</li>
+  <li>Elevation: 1520 m</li>
+</ul>
+
+<p>Ground elevation in area: ~1520 m</p>
+
+<p>Classify Point A (ground or vegetation).</p>
+
+<h3 id="solution">Solution</h3>
+
+<p><strong>Step 1: Calculate ranges</strong></p>
+
+\[R_A = \frac{3 \times 10^8 \times 200 \times 10^{-9}}{2} = \frac{60}{2} = 30 \text{ m}\]
+
+\[R_B = \frac{3 \times 10^8 \times 180 \times 10^{-9}}{2} = \frac{54}{2} = 27 \text{ m}\]
+
+<p><strong>Step 2: Height above ground</strong></p>
+
+<p>Point A: $1535 - 1520 = 15$ m above ground</p>
+
+<p>Point B: $1520 - 1520 = 0$ m (on ground)</p>
+
+<p><strong>Step 3: Classification</strong></p>
+
+<p>Point A: 15 m above ground → <strong>Vegetation</strong> (likely tree canopy)</p>
+
+<p>Point B: 0 m above ground → <strong>Ground</strong></p>
+
+<p><strong>Step 4: Intensity interpretation</strong></p>
+
+<p>Point B higher intensity (920 vs 850):</p>
+<ul>
+  <li>Ground typically higher reflectance than vegetation</li>
+  <li>Consistent with classification</li>
+</ul>
+
+<p><strong>Step 5: Tree height</strong></p>
+
+<p>If Point A is first return from tree top:</p>
+
+<p>Tree height = 15 m</p>
+
+<p><strong>Step 6: Biomass estimate</strong> (using allometric equation)</p>
+
+\[B = 0.15 \times 15^{2.5} = 0.15 \times 435 = 65 \text{ kg}\]
+
+<p>Single tree biomass ≈ 65 kg (or 0.065 Mg)</p>
+
+<hr />
+
+<h2 id="5-computational-implementation">5. Computational Implementation</h2>
+
+<p>Below is an interactive LiDAR point cloud simulator.</p>
+
+<div class="viz-container" id="lidar-viz">
+  <div class="controls">
+    <label>
+      Terrain type:
+      <select id="terrain-type">
+        <option value="flat">Flat terrain</option>
+        <option value="slope">Sloped terrain</option>
+        <option value="complex" selected="">Complex terrain</option>
+      </select>
+    </label>
+    <label>
+      Vegetation coverage (%):
+      <input type="range" id="veg-coverage" min="0" max="100" step="10" value="60" />
+      <span id="veg-val">60</span>
+    </label>
+    <label>
+      Point density (pts/m²):
+      <input type="range" id="point-density" min="1" max="20" step="1" value="5" />
+      <span id="density-val">5</span>
+    </label>
+    <label>
+      Show classification:
+      <input type="checkbox" id="show-classification" checked="" />
+    </label>
+    <div class="lidar-info">
+      <p><strong>Total points:</strong> <span id="total-points">--</span></p>
+      <p><strong>Ground points:</strong> <span id="ground-points">--</span></p>
+      <p><strong>Vegetation points:</strong> <span id="veg-points">--</span></p>
+      <p><strong>Mean canopy height:</strong> <span id="mean-height">--</span> m</p>
+    </div>
+  </div>
+  <div id="lidar-canvas-container">
+    <canvas id="lidar-canvas" width="700" height="400" style="border: 1px solid #ddd;"></canvas>
+  </div>
+</div>
+
+<script type="module">
+(function() {
+  const canvas = document.getElementById('lidar-canvas');
+  const ctx = canvas.getContext('2d');
+  
+  let terrainType = 'complex';
+  let vegCoverage = 0.60;
+  let pointDensity = 5;
+  let showClassification = true;
+  
+  const width = 100; // m
+  const height = 100; // m
+  
+  function generateTerrain(type) {
+    const terrain = [];
+    
+    for (let x = 0; x < width; x++) {
+      for (let y = 0; y < height; y++) {
+        let z;
+        
+        if (type === 'flat') {
+          z = 100 + (Math.random() - 0.5) * 0.5;
+        } else if (type === 'slope') {
+          z = 100 + x * 0.3 + (Math.random() - 0.5) * 0.5;
+        } else { // complex
+          z = 100 + Math.sin(x / 10) * 5 + Math.cos(y / 10) * 3 + (Math.random() - 0.5) * 0.5;
+        }
+        
+        terrain.push({x, y, z});
+      }
+    }
+    
+    return terrain;
+  }
+  
+  function generateVegetation(terrain, coverage) {
+    const points = [];
+    
+    for (let pt of terrain) {
+      // Ground point
+      if (Math.random() < 1.0 / pointDensity) {
+        points.push({
+          x: pt.x,
+          y: pt.y,
+          z: pt.z,
+          class: 'ground',
+          intensity: 900 + Math.random() * 100
+        });
+      }
+      
+      // Vegetation
+      if (Math.random() < coverage) {
+        const treeHeight = 5 + Math.random() * 20;
+        const numReturns = Math.floor(2 + Math.random() * 3);
+        
+        for (let i = 0; i < numReturns; i++) {
+          const heightFrac = (numReturns - i) / numReturns;
+          const canopyZ = pt.z + heightFrac * treeHeight;
+          
+          if (Math.random() < 1.0 / pointDensity) {
+            points.push({
+              x: pt.x + (Math.random() - 0.5) * 3,
+              y: pt.y + (Math.random() - 0.5) * 3,
+              z: canopyZ,
+              class: 'vegetation',
+              intensity: 600 + Math.random() * 200,
+              heightAboveGround: canopyZ - pt.z
+            });
+          }
+        }
+      }
+    }
+    
+    return points;
+  }
+  
+  function render() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    
+    const terrain = generateTerrain(terrainType);
+    const points = generateVegetation(terrain, vegCoverage);
+    
+    // Statistics
+    const groundPts = points.filter(p => p.class === 'ground').length;
+    const vegPts = points.filter(p => p.class === 'vegetation').length;
+    const vegHeights = points.filter(p => p.class === 'vegetation').map(p => p.heightAboveGround);
+    const meanHeight = vegHeights.length > 0 ? 
+      vegHeights.reduce((a,b) => a+b, 0) / vegHeights.length : 0;
+    
+    document.getElementById('total-points').textContent = points.length;
+    document.getElementById('ground-points').textContent = groundPts;
+    document.getElementById('veg-points').textContent = vegPts;
+    document.getElementById('mean-height').textContent = meanHeight.toFixed(1);
+    
+    // Find z range for coloring
+    const zValues = points.map(p => p.z);
+    const minZ = Math.min(...zValues);
+    const maxZ = Math.max(...zValues);
+    
+    // Draw points (side view projection)
+    const scale = 6;
+    const offsetX = 50;
+    const offsetY = 350;
+    
+    // Sort by y for depth
+    points.sort((a, b) => a.y - b.y);
+    
+    for (let pt of points) {
+      const screenX = offsetX + pt.x * scale;
+      const screenY = offsetY - (pt.z - minZ) * scale;
+      
+      let color;
+      if (showClassification) {
+        color = pt.class === 'ground' ? '#8D6E63' : '#4CAF50';
+      } else {
+        // Color by elevation
+        const frac = (pt.z - minZ) / (maxZ - minZ);
+        const r = Math.floor(255 * frac);
+        const b = Math.floor(255 * (1 - frac));
+        color = `rgb(${r}, 100, ${b})`;
+      }
+      
+      ctx.fillStyle = color;
+      ctx.fillRect(screenX - 1, screenY - 1, 2, 2);
+    }
+    
+    // Labels
+    ctx.fillStyle = '#263238';
+    ctx.font = '12px sans-serif';
+    ctx.fillText('Side View (X-Z)', 10, 20);
+    ctx.fillText('Ground', 10, canvas.height - 60);
+    ctx.fillRect(60, canvas.height - 66, 10, 10);
+    ctx.fillStyle = '#8D6E63';
+    ctx.fillRect(60, canvas.height - 66, 10, 10);
+    
+    ctx.fillStyle = '#263238';
+    ctx.fillText('Vegetation', 10, canvas.height - 40);
+    ctx.fillRect(70, canvas.height - 46, 10, 10);
+    ctx.fillStyle = '#4CAF50';
+    ctx.fillRect(70, canvas.height - 46, 10, 10);
+  }
+  
+  document.getElementById('terrain-type').addEventListener('change', (e) => {
+    terrainType = e.target.value;
+    render();
+  });
+  
+  document.getElementById('veg-coverage').addEventListener('input', (e) => {
+    vegCoverage = parseFloat(e.target.value) / 100;
+    document.getElementById('veg-val').textContent = e.target.value;
+    render();
+  });
+  
+  document.getElementById('point-density').addEventListener('input', (e) => {
+    pointDensity = parseFloat(e.target.value);
+    document.getElementById('density-val').textContent = e.target.value;
+    render();
+  });
+  
+  document.getElementById('show-classification').addEventListener('change', (e) => {
+    showClassification = e.target.checked;
+    render();
+  });
+  
+  render();
+})();
+</script>
+
+<p><strong>Observations:</strong></p>
+<ul>
+  <li>Ground points (brown) form continuous surface</li>
+  <li>Vegetation points (green) distributed above ground</li>
+  <li>Complex terrain shows elevation variations</li>
+  <li>Higher point density reveals finer structure</li>
+  <li>Classification separates ground from vegetation returns</li>
+  <li>Mean canopy height derived from vegetation points</li>
+</ul>
+
+<p><strong>Key insights:</strong></p>
+<ul>
+  <li>Multiple returns capture vertical structure</li>
+  <li>Point cloud density affects detail level</li>
+  <li>Classification algorithms identify ground surface</li>
+  <li>Canopy height directly measurable from point cloud</li>
+</ul>
+
+<hr />
+
+<h2 id="6-interpretation">6. Interpretation</h2>
+
+<h3 id="high-resolution-dems">High-Resolution DEMs</h3>
+
+<p><strong>LiDAR advantages over photogrammetry:</strong></p>
+
+<p><strong>Penetration:</strong> Sees ground through vegetation canopy</p>
+
+<p><strong>Accuracy:</strong> ±5-15 cm vertical (vs ±30-50 cm stereo photos)</p>
+
+<p><strong>Automation:</strong> Less manual editing required</p>
+
+<p><strong>Examples:</strong></p>
+
+<p><strong>USGS 3DEP (3D Elevation Program):</strong></p>
+<ul>
+  <li>National LiDAR coverage (USA)</li>
+  <li>1-m resolution DEMs</li>
+  <li>Quality level 2 (8 points/m²)</li>
+</ul>
+
+<p><strong>Applications:</strong></p>
+<ul>
+  <li>Flood modelling (precise elevations critical)</li>
+  <li>Infrastructure planning</li>
+  <li>Archaeological features (subtle earthworks)</li>
+</ul>
+
+<h3 id="forest-inventory">Forest Inventory</h3>
+
+<p><strong>Metrics from LiDAR:</strong></p>
+
+<p><strong>Individual tree detection:</strong></p>
+<ul>
+  <li>Local maxima in CHM = tree tops</li>
+  <li>Watershed segmentation = crown boundaries</li>
+  <li>Height, crown diameter, position</li>
+</ul>
+
+<p><strong>Stand-level:</strong></p>
+<ul>
+  <li>Mean height, height percentiles</li>
+  <li>Canopy cover fraction</li>
+  <li>Vertical structure (understory presence)</li>
+</ul>
+
+<p><strong>Biomass:</strong></p>
+
+<p>Plot-level calibration:</p>
+<ul>
+  <li>Field measure biomass (destructive sampling or allometry)</li>
+  <li>Correlate with LiDAR metrics</li>
+  <li>Apply regression across landscape</li>
+</ul>
+
+<p><strong>Accuracy:</strong> ±15-25% biomass estimation (vs ±30-50% optical)</p>
+
+<p><strong>Carbon accounting:</strong></p>
+
+<p>Forest biomass × 0.5 = carbon stock</p>
+
+<p>Critical for:</p>
+<ul>
+  <li>REDD+ programs</li>
+  <li>Carbon offset verification</li>
+  <li>Climate change mitigation</li>
+</ul>
+
+<h3 id="archaeological-applications">Archaeological Applications</h3>
+
+<p><strong>Bare-earth DEM reveals:</strong></p>
+<ul>
+  <li>Ancient roads/paths</li>
+  <li>Building foundations</li>
+  <li>Earthworks/fortifications</li>
+  <li>Agricultural terraces</li>
+</ul>
+
+<p><strong>Example - Angkor Wat, Cambodia:</strong></p>
+<ul>
+  <li>LiDAR through jungle canopy</li>
+  <li>Revealed extensive urban grid</li>
+  <li>Hydraulic infrastructure</li>
+  <li>Changed understanding of city extent</li>
+</ul>
+
+<p><strong>Example - Mayan cities, Central America:</strong></p>
+<ul>
+  <li>Discovered hidden structures</li>
+  <li>Population estimates revised upward</li>
+  <li>Settlement patterns clarified</li>
+</ul>
+
+<hr />
+
+<h2 id="7-what-could-go-wrong">7. What Could Go Wrong?</h2>
+
+<h3 id="ground-classification-errors">Ground Classification Errors</h3>
+
+<p><strong>Type I (commission):</strong></p>
+
+<p>Vegetation misclassified as ground.</p>
+
+<p><strong>Cause:</strong> Low vegetation, dense understory</p>
+
+<p><strong>Impact:</strong> DTM too high → CHM underestimate</p>
+
+<p><strong>Type II (omission):</strong></p>
+
+<p>Ground misclassified as vegetation.</p>
+
+<p><strong>Cause:</strong> Bridges, large boulders, low point density</p>
+
+<p><strong>Impact:</strong> DTM too low → CHM overestimate</p>
+
+<p><strong>Solution:</strong></p>
+<ul>
+  <li>Visual inspection</li>
+  <li>Cross-validation with field data</li>
+  <li>Iterative editing</li>
+</ul>
+
+<h3 id="point-density-insufficient">Point Density Insufficient</h3>
+
+<p><strong>Sparse data</strong> misses features.</p>
+
+<p><strong>Critical density:</strong></p>
+
+<p>Buildings: 4-8 pts/m²<br />
+Forest: 2-5 pts/m²<br />
+Bare earth: 1-2 pts/m²</p>
+
+<p><strong>Example:</strong></p>
+
+<p>1 pt/m² → Miss narrow roads, small buildings</p>
+
+<p><strong>Solution:</strong> Increase flight density or lower altitude</p>
+
+<h3 id="co-registration-errors">Co-Registration Errors</h3>
+
+<p><strong>GPS/IMU accuracy:</strong></p>
+
+<p>Determines absolute positioning.</p>
+
+<p><strong>Typical:</strong> ±5-10 cm horizontal, ±10-15 cm vertical</p>
+
+<p><strong>Differential GPS</strong> improves to ±2-5 cm</p>
+
+<p><strong>Multi-temporal comparison:</strong></p>
+
+<p>Requires precise registration or errors appear as change.</p>
+
+<p><strong>Solution:</strong></p>
+<ul>
+  <li>Ground control points</li>
+  <li>Strip adjustment</li>
+  <li>ICP (Iterative Closest Point) alignment</li>
+</ul>
+
+<h3 id="vegetation-penetration-limits">Vegetation Penetration Limits</h3>
+
+<p><strong>Dense canopy:</strong></p>
+
+<p>Few pulses reach ground.</p>
+
+<p><strong>Rainforest:</strong> &lt;5% ground returns</p>
+
+<p><strong>Conifers:</strong> 10-30% ground returns</p>
+
+<p><strong>Deciduous (leaf-off):</strong> 60-90% ground returns</p>
+
+<p><strong>Solution:</strong></p>
+<ul>
+  <li>Leaf-off acquisition (temperate forests)</li>
+  <li>Higher point density</li>
+  <li>Full-waveform LiDAR (better penetration)</li>
+</ul>
+
+<hr />
+
+<h2 id="8-extension-full-waveform-lidar">8. Extension: Full-Waveform LiDAR</h2>
+
+<p><strong>Discrete return LiDAR:</strong></p>
+
+<p>Records 1-5 return distances per pulse.</p>
+
+<p><strong>Full-waveform:</strong></p>
+
+<p>Records entire reflected signal (continuous function).</p>
+
+<p><strong>Advantages:</strong></p>
+
+<p><strong>More returns:</strong> Extract 10+ returns per pulse</p>
+
+<p><strong>Intensity variation:</strong> Within canopy structure</p>
+
+<p><strong>Ground detection:</strong> Better in dense vegetation</p>
+
+<p><strong>Calibrated intensity:</strong> Physical reflectance</p>
+
+<p><strong>Applications:</strong></p>
+
+<p><strong>Forestry:</strong> Leaf area index, understory structure</p>
+
+<p><strong>Bathymetry:</strong> Water column returns</p>
+
+<p><strong>Snow depth:</strong> Snow surface + ground returns</p>
+
+<p><strong>Urban:</strong> Power line detection, facade detail</p>
+
+<p><strong>Processing:</strong></p>
+
+<p>Gaussian decomposition:</p>
+<ul>
+  <li>Fit multiple Gaussian peaks to waveform</li>
+  <li>Each peak = one return</li>
+  <li>Width = target extent</li>
+</ul>
+
+<hr />
+
+<h2 id="9-math-refresher-speed-of-light-constant">9. Math Refresher: Speed of Light Constant</h2>
+
+<h3 id="fundamental-constant">Fundamental Constant</h3>
+
+\[c = 299,792,458 \text{ m/s}\]
+
+<p><strong>Exactly defined</strong> (SI definition of meter).</p>
+
+<p><strong>In vacuum:</strong> Truly constant</p>
+
+<p><strong>In atmosphere:</strong> Slightly slower</p>
+
+\[c_{\text{air}} = \frac{c}{n}\]
+
+<p>Where $n$ = refractive index ≈ 1.0003</p>
+
+<p><strong>Effect on ranging:</strong></p>
+
+\[\Delta R = R \times (n - 1) \approx R \times 0.0003\]
+
+<p><strong>For 1000 m range:</strong> Error = 30 cm</p>
+
+<p><strong>Correction applied</strong> in precision LiDAR.</p>
+
+<h3 id="nanosecond-timing">Nanosecond Timing</h3>
+
+<p><strong>1 nanosecond = 10⁻⁹ seconds</strong></p>
+
+<p>Light travels in 1 ns:</p>
+
+\[d = c \times 1 \times 10^{-9} = 3 \times 10^8 \times 10^{-9} = 0.3 \text{ m} = 30 \text{ cm}\]
+
+<p><strong>Round trip:</strong> 15 cm range resolution</p>
+
+<p><strong>LiDAR timing precision:</strong> Sub-nanosecond</p>
+
+<p><strong>Achieves:</strong> &lt;5 cm range precision</p>
+
+<hr />
+
+<h2 id="summary">Summary</h2>
+
+<ul>
+  <li>LiDAR measures distance by laser pulse timing enabling precise 3D point clouds</li>
+  <li>Range equation: R = c·Δt/2 where timing precision determines accuracy</li>
+  <li>Point clouds contain millions to billions of x,y,z coordinates with intensity and classification</li>
+  <li>Ground point classification via progressive TIN densification filters non-ground returns</li>
+  <li>Canopy Height Model derived as DSM minus DTM reveals vegetation structure</li>
+  <li>Applications span high-resolution DEMs, forest biomass, urban 3D modelling, archaeology</li>
+  <li>Accuracy typically ±5-15 cm vertical, ±5-10 cm horizontal with differential GPS</li>
+  <li>Challenges include ground classification errors, vegetation penetration limits, co-registration</li>
+  <li>Full-waveform LiDAR captures complete return signal for enhanced information extraction</li>
+  <li>Critical tool for topographic mapping, vegetation analysis, and change detection</li>
+</ul>
+
+<hr />
+
+      </div>
+
+      
+
+
+
+      
+
+  
+  
+  
+  
+
+
+
+      <!-- essay-footer-notes.html — References / endnotes section.
+     Hidden by default; assets/js/essay/core.js shows it and populates
+     #essay-endnotes-list from [data-cite] elements in the content.
+
+     In posts, create citation markers with:
+       <cite data-cite="Author, Title, URL">1</cite>
+     The JS collects these and renders a numbered reference list here. -->
+
+<footer class="essay-endnotes" id="essay-endnotes" aria-label="References" hidden>
+  <div class="essay-endnotes-inner">
+    <h2 class="essay-endnotes-heading">References</h2>
+    <ol class="essay-endnotes-list" id="essay-endnotes-list">
+      <!-- Populated at runtime by assets/js/essay/core.js buildEndnotes() -->
+    </ol>
+  </div>
+</footer>
+
+
+      
+
+      
+
+      
+
+
+
+
+
+
+
+
+
+
+
+
+
+<aside class="related-posts" aria-label="Related articles">
+  <h2 class="related-posts-heading">Related</h2>
+  <div class="related-posts-grid">
+    
+    <a href="/essay/hyperspectral-imaging-wyvern/" class="related-post-card">
+      
+      <div class="related-post-img" style="background-image:url('/assets/images/wyvern_dragonette.webp')"></div>
+      
+      <div class="related-post-body">
+        
+        <span class="related-post-tag">Monitoring</span>
+        
+        <h3 class="related-post-title">What Light Reveals</h3>
+        <time class="related-post-date" datetime="2025-03-10">10 Mar 2025</time>
+      </div>
+    </a>
+    
+  </div>
+</aside>
+
+
+
+    </article>
+  </main>
+
+  <aside
+    class="essay-sidenotes"
+    id="essay-sidenotes"
+    aria-label="Margin notes"
+  ></aside>
+
+</div>
+
+</div>
+
+<footer>
+  <div class="footer-inner">
+
+    <!-- Col 1: Brand -->
+    <div class="footer-brand">
+      <div class="footer-brand-logo">
+        
+        <img loading="lazy" src="/assets/images/logo.webp" alt="WaywardHouse" width="28" height="28">
+        
+        WaywardHouse<span>.</span>
+      </div>
+      
+      
+      <p class="footer-brand-desc">Understanding how place, economy, and environment interact — through analysis, modelling, and open tools.</p>
+      
+
+      <div class="footer-social">
+        
+        
+        <a href="/feed.xml" class="social-icon" target="_blank" rel="noopener noreferrer" aria-label="RSS feed">
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M4 11a9 9 0 0 1 9 9"/>
+            <path d="M4 4a16 16 0 0 1 16 16"/>
+            <circle cx="5" cy="19" r="1"/>
+          </svg>
+        </a>
+      </div>
+    </div>
+
+    <!-- Col 2: Topics (configurable via footer_topics, falls back to auto-categories) -->
+    <nav aria-labelledby="footer-topics">
+      <h3 class="footer-col-title" id="footer-topics">Reading</h3>
+      <ul class="footer-links">
+        
+          
+          <li><a href="/topics/">Essays</a></li>
+          
+          <li><a href="/series/">Modelling</a></li>
+          
+          <li><a href="/archive/">Archive</a></li>
+          
+          <li><a href="/start-here/">Start Here</a></li>
+          
+        
+      </ul>
+    </nav>
+
+    <!-- Col 3: Secondary navigation -->
+    
+    <nav aria-labelledby="footer-company">
+      <h3 class="footer-col-title" id="footer-company">Site</h3>
+      <ul class="footer-links">
+        
+        <li><a href="/start-here/">Start Here</a></li>
+        
+        <li><a href="/about/">About</a></li>
+        
+        <li><a href="/contact/">Contact</a></li>
+        
+      </ul>
+    </nav>
+    
+
+    <!-- Col 4: Resources -->
+    <nav aria-labelledby="footer-resources">
+      <h3 class="footer-col-title" id="footer-resources">Resources</h3>
+      <ul class="footer-links">
+        <li><a href="/archive/">Archive</a></li>
+        <li><a href="/feed.xml">RSS Feed</a></li>
+        <li><a href="/topics/">All Topics</a></li>
+      </ul>
+    </nav>
+
+  </div><!-- /.footer-inner -->
+
+  <div class="footer-bottom">
+    <span class="footer-copy">
+      &copy; 2026 WaywardHouse.
+    </span>
+    <div class="footer-legal">
+      <a href="/privacy/">Privacy Policy</a>
+      <a href="/terms/">Terms of Service</a>
+    </div>
+  </div>
+
+</footer>
+
+
+<!-- Alpine.js bundle -->
+<script type="module" src="/assets/dist/main.js"></script>
+
+<!-- Visualization runtime — detects and loads CDN libraries dynamically -->
+<script type="module" src="/assets/js/core.js"></script>
+
+<!-- Search overlay — event-driven: nav button $dispatches 'search:open' -->
+<div
+  x-data="search"
+  x-init="init()"
+  @search:open.window="open()"
+>
+  <div
+    class="search-overlay"
+    x-show="isOpen"
+    x-transition:enter="transition ease-out duration-150"
+    x-transition:enter-start="opacity-0"
+    x-transition:enter-end="opacity-100"
+    x-transition:leave="transition ease-in duration-100"
+    x-transition:leave-start="opacity-100"
+    x-transition:leave-end="opacity-0"
+    @click.self="close()"
+    style="display: none;"
+    role="dialog"
+    aria-modal="true"
+    aria-label="Search"
+  >
+    <div class="search-panel">
+      <div class="search-input-wrap">
+        <svg class="search-icon" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <circle cx="11" cy="11" r="8"/>
+          <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+        </svg>
+        <input
+          class="search-input"
+          type="search"
+          placeholder="Search posts…"
+          x-model="query"
+          x-ref="input"
+          @input.debounce.300ms="runSearch()"
+          @keydown.escape="close()"
+          autocomplete="off"
+          spellcheck="false"
+          aria-label="Search query"
+        >
+        <kbd class="search-esc" aria-hidden="true">ESC</kbd>
+      </div>
+
+      <div class="search-results" x-show="query.trim().length > 0">
+        <div class="search-status" x-show="loading" aria-live="polite">Searching…</div>
+        <div class="search-status" x-show="!loading && results.length === 0" aria-live="polite">
+          No results for "<span x-text="query"></span>"
+        </div>
+        <ul class="search-result-list" x-show="!loading && results.length > 0" role="list">
+          <template x-for="result in results" :key="result.url">
+            <li>
+              <a :href="result.url" class="search-result-item" @click="close()">
+                <div class="search-result-title" x-text="result.meta?.title || result.url"></div>
+                <div class="search-result-excerpt" x-html="result.excerpt"></div>
+              </a>
+            </li>
+          </template>
+        </ul>
+      </div>
+    </div>
+  </div>
+</div>
+
+</body>
+</html>

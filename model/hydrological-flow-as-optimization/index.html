@@ -1,0 +1,1200 @@
+<!DOCTYPE html>
+
+<html lang="en" data-brand="wayward" data-theme="light">
+<head>
+  <meta charset="utf-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Hydrological Flow as Optimization — WaywardHouse</title>
+<meta name="description" content="Water always flows downhill, following the path of steepest descent. Given a digital elevation model, we can trace every raindrop from where it lands to where it exits the landscape....">
+
+<!-- Dark mode flash prevention — runs synchronously before first paint -->
+<script>
+  (function () {
+    var defaultDark = 'light' === 'dark';
+    var s = localStorage.getItem('theme');
+    var dark = s !== null ? s === 'dark' : defaultDark;
+    document.documentElement.dataset.theme = dark ? 'dark' : 'light';
+  })();
+</script>
+
+<!-- Preconnect to CDN domains used by the viz runtime -->
+<link rel="preconnect" href="https://cdn.jsdelivr.net">
+<link rel="preconnect" href="https://unpkg.com">
+<link rel="preconnect" href="https://esm.sh">
+<link rel="preconnect" href="https://api.mapbox.com">
+<link rel="preconnect" href="https://events.mapbox.com">
+
+
+<script>window.MAPBOX_TOKEN = 'pk.eyJ1IjoiYnJlYWRlZGNvZCIsImEiOiJjbW0xa25qc2EwMmtwMnJwejJlNndqdnoxIn0._7I9PwXuFLrOQINVZ84y1w';</script>
+
+
+<!-- Fonts -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:ital,wght@0,300;0,400;0,600;0,700;0,800;0,900;1,700;1,800&family=Barlow:wght@300;400&family=IBM+Plex+Mono:ital,wght@0,300;0,400;0,500;1,300&family=Literata:ital,opsz,wght@0,7..72,300;0,7..72,400;0,7..72,500;1,7..72,300;1,7..72,400&display=swap" rel="stylesheet">
+
+<!-- Theme stylesheet (Vite build output) -->
+<link rel="stylesheet" href="/assets/dist/main.css">
+
+<!-- Brand token overrides — loaded after main.css so variables cascade correctly -->
+
+<link rel="stylesheet" href="/assets/css/brand-wayward.css">
+
+
+
+<!-- Syntax highlighting (Rouge — light + dark) -->
+<link rel="stylesheet" href="/assets/css/syntax.css">
+
+<!-- Begin Jekyll SEO tag v2.8.0 -->
+<title>Hydrological Flow as Optimization | WaywardHouse</title>
+<meta name="generator" content="Jekyll v4.4.1" />
+<meta property="og:title" content="Hydrological Flow as Optimization" />
+<meta property="og:locale" content="en" />
+<meta name="description" content="Water always flows downhill, following the path of steepest descent. Given a digital elevation model, we can trace every raindrop from where it lands to where it exits the landscape. This model shows how local gradients generate global drainage networks — a beautiful example of optimization in nature." />
+<meta property="og:description" content="Water always flows downhill, following the path of steepest descent. Given a digital elevation model, we can trace every raindrop from where it lands to where it exits the landscape. This model shows how local gradients generate global drainage networks — a beautiful example of optimization in nature." />
+<link rel="canonical" href="https://wayward.house/model/hydrological-flow-as-optimization/" />
+<meta property="og:url" content="https://wayward.house/model/hydrological-flow-as-optimization/" />
+<meta property="og:site_name" content="WaywardHouse" />
+<meta property="og:image" content="https://wayward.house/assets/images/cryosphere-and-hydrology.webp" />
+<meta property="og:type" content="article" />
+<meta property="article:published_time" content="2026-02-26T00:00:00+00:00" />
+<meta name="twitter:card" content="summary_large_image" />
+<meta property="twitter:image" content="https://wayward.house/assets/images/cryosphere-and-hydrology.webp" />
+<meta property="twitter:title" content="Hydrological Flow as Optimization" />
+<meta name="twitter:site" content="@" />
+<script type="application/ld+json">
+{"@context":"https://schema.org","@type":"BlogPosting","dateModified":"2026-03-12T16:57:04+00:00","datePublished":"2026-02-26T00:00:00+00:00","description":"Water always flows downhill, following the path of steepest descent. Given a digital elevation model, we can trace every raindrop from where it lands to where it exits the landscape. This model shows how local gradients generate global drainage networks — a beautiful example of optimization in nature.","headline":"Hydrological Flow as Optimization","image":"https://wayward.house/assets/images/cryosphere-and-hydrology.webp","mainEntityOfPage":{"@type":"WebPage","@id":"https://wayward.house/model/hydrological-flow-as-optimization/"},"publisher":{"@type":"Organization","logo":{"@type":"ImageObject","url":"https://wayward.house/assets/images/logo.webp"}},"url":"https://wayward.house/model/hydrological-flow-as-optimization/"}</script>
+<!-- End Jekyll SEO tag -->
+
+
+
+<!-- Cloudflare Web Analytics -->
+<script defer src="https://static.cloudflareinsights.com/beacon.min.js"
+  data-cf-beacon='{"token": "62c47d78bf9d4c80972d4e6242d79ff8"}'></script>
+
+
+</head>
+<body class="
+  model-template
+   tag-modelling
+   tag-hash-math
+  
+   tag-hash-viz
+  
+  
+  
+  
+  
+  
+">
+
+<a href="#main-content" class="skip-link">Skip to content</a>
+
+<header class="nav" x-data="{ open: false }">
+  <div class="nav-inner">
+
+    <!-- Logo -->
+    <a href="/" class="nav-logo">
+      
+      <img loading="lazy" src="/assets/images/logo.webp" alt="WaywardHouse" width="32" height="32">
+      
+      WaywardHouse<span>.</span>
+    </a>
+
+    <!-- Desktop nav links -->
+    <ul class="nav-links" role="list">
+      
+      <li>
+        <a href="/topics/">Essays</a>
+      </li>
+      
+      <li>
+        <a href="/series/">Modelling</a>
+      </li>
+      
+      <li>
+        <a href="/about/">About</a>
+      </li>
+      
+    </ul>
+
+    <!-- Actions -->
+    <div class="nav-actions">
+
+      <!-- Search button -->
+      <button
+        class="search-toggle"
+        type="button"
+        aria-label="Search (⌘K)"
+        title="Search (⌘K)"
+        @click="$dispatch('search:open')"
+      >
+        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <circle cx="11" cy="11" r="8"/>
+          <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+        </svg>
+      </button>
+
+      <!-- Dark mode toggle -->
+      <button
+        class="theme-toggle"
+        x-data="darkMode"
+        x-init="init()"
+        @click="toggle()"
+        :aria-label="dark ? 'Switch to light mode' : 'Switch to dark mode'"
+        type="button"
+      >
+        <!-- Sun icon (shown in light mode) -->
+        <svg class="icon-sun" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">
+          <circle cx="12" cy="12" r="5"/>
+          <line x1="12" y1="1" x2="12" y2="3"/>
+          <line x1="12" y1="21" x2="12" y2="23"/>
+          <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/>
+          <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/>
+          <line x1="1" y1="12" x2="3" y2="12"/>
+          <line x1="21" y1="12" x2="23" y2="12"/>
+          <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/>
+          <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>
+        </svg>
+        <!-- Moon icon (shown in dark mode) -->
+        <svg class="icon-moon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">
+          <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+        </svg>
+      </button>
+
+      <!-- Hamburger (mobile only) -->
+      <button
+        class="mobile-nav-toggle"
+        @click="open = !open"
+        :aria-expanded="open"
+        :aria-label="open ? 'Close menu' : 'Open menu'"
+        type="button"
+      >
+        <svg x-show="!open" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <line x1="3" y1="6" x2="21" y2="6"/>
+          <line x1="3" y1="12" x2="21" y2="12"/>
+          <line x1="3" y1="18" x2="21" y2="18"/>
+        </svg>
+        <svg x-show="open" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <line x1="18" y1="6" x2="6" y2="18"/>
+          <line x1="6" y1="6" x2="18" y2="18"/>
+        </svg>
+      </button>
+
+    </div><!-- /.nav-actions -->
+  </div><!-- /.nav-inner -->
+
+  <!-- Mobile drawer -->
+  <div
+    class="mobile-nav"
+    x-show="open"
+    x-transition:enter="transition ease-out duration-200"
+    x-transition:enter-start="opacity-0 -translate-y-1"
+    x-transition:enter-end="opacity-100 translate-y-0"
+    x-transition:leave="transition ease-in duration-150"
+    x-transition:leave-start="opacity-100 translate-y-0"
+    x-transition:leave-end="opacity-0 -translate-y-1"
+    @click.outside="open = false"
+    @keydown.escape.window="open = false"
+  >
+    <ul role="list">
+      
+      <li>
+        <a href="/topics/" @click="open = false">Essays</a>
+      </li>
+      
+      <li>
+        <a href="/series/" @click="open = false">Modelling</a>
+      </li>
+      
+      <li>
+        <a href="/about/" @click="open = false">About</a>
+      </li>
+      
+    </ul>
+  </div><!-- /.mobile-nav -->
+
+</header>
+
+
+<div id="main-content">
+  <!-- Essay stylesheet and runtime — self-contained -->
+<link rel="stylesheet" href="/assets/css/essay.css">
+<script type="module" src="/assets/js/essay/core.js"></script>
+
+<div class="essay-layout" id="essay-layout">
+
+  <!-- essay-toc.html — Sticky table of contents (left column).
+     The <ol> is empty on load; assets/js/essay/core.js populates it
+     from h2/h3 elements found in #essay-content after the page renders. -->
+
+<nav class="essay-toc" id="essay-toc" aria-label="Table of contents">
+  <div class="essay-toc-inner">
+    <p class="essay-toc-heading" aria-hidden="true">Contents</p>
+    <ol class="essay-toc-list" id="essay-toc-list">
+      <!-- Populated at runtime by assets/js/essay/core.js buildToc() -->
+    </ol>
+  </div>
+</nav>
+
+
+  <main class="essay-main" id="essay-main" role="main">
+    <article class="essay-article">
+
+      <!-- essay-hero.html — Header for computational essay template.
+     Displays feature image, tag label, title, excerpt, and post metadata. -->
+
+<header class="essay-hero">
+  
+  <figure class="essay-hero-figure">
+    <img
+      src="/assets/images/cryosphere-and-hydrology.webp"
+      alt="Hydrological Flow as Optimization"
+      class="essay-hero-img"
+      loading="eager"
+    >
+    
+  </figure>
+  
+
+  <div class="essay-hero-body">
+
+    
+    
+    
+    
+    
+    <nav class="essay-breadcrumb" aria-label="Series position">
+      
+      <a href="/series/1/" class="essay-breadcrumb-link">Computational geography foundations</a>
+      
+      
+      <span class="essay-breadcrumb-sep" aria-hidden="true">›</span>
+      <span class="essay-breadcrumb-cluster">Terrain and Spatial Derivatives</span>
+      
+      
+      <span class="essay-breadcrumb-sep" aria-hidden="true">›</span>
+      <span class="essay-breadcrumb-pos">Model 9</span>
+      
+    </nav>
+    
+
+    <div class="essay-hero-labels">
+      
+      <a href="/topics/modelling/" class="essay-tag-label">modelling</a>
+      
+      
+      <span class="difficulty-badge difficulty-badge--4">Level 4</span>
+      
+    </div>
+
+    <h1 class="essay-title">Hydrological Flow as Optimization</h1>
+
+    
+    <p class="essay-excerpt">Water always flows downhill, following the path of steepest descent. Given a digital elevation model, we can trace every raindrop from where it lands to where it exits the landscape. This model shows how local gradients generate global drainage networks — a beautiful example of optimization in nature.
+</p>
+    
+
+    
+    <p class="essay-prereqs"><span class="essay-prereqs-label">Prerequisites:</span> optimization, graph traversal, local minima, flow accumulation</p>
+    
+
+    <div class="essay-meta">
+      
+      <div class="essay-meta-secondary">
+        <time class="essay-date" datetime="2026-02-26">26 Feb 2026</time>
+        
+        
+        <span class="essay-sep" aria-hidden="true">·</span>
+        <span class="essay-updated">Updated <time datetime="2026-03-12">12 Mar 2026</time></span>
+        
+        <span class="essay-sep" aria-hidden="true">·</span>
+        <span class="essay-reading-time">13 min read</span>
+      </div>
+    </div>
+  </div>
+</header>
+
+
+      
+
+
+
+
+
+      <div class="essay-content gh-content" id="essay-content">
+        <h2 id="1-the-question">1. The Question</h2>
+
+<p>Where does the water go?</p>
+
+<p>A raindrop lands on a hillslope. Gravity pulls it downhill. At each point, it moves in the direction of steepest descent — the direction where elevation drops fastest. It continues until it reaches a stream, a lake, or the edge of the DEM.</p>
+
+<p>If we know the elevation at every point, can we predict:</p>
+<ol>
+  <li><strong>Flow direction</strong> — which way does water move from each cell?</li>
+  <li><strong>Flow accumulation</strong> — how much water passes through each cell?</li>
+  <li><strong>Watersheds</strong> — which areas drain to the same outlet?</li>
+  <li><strong>Stream networks</strong> — where do channels form?</li>
+</ol>
+
+<p>All four questions are answered by the same fundamental algorithm: <strong>routing flow according to the gradient</strong>.</p>
+
+<hr />
+
+<h2 id="2-the-conceptual-model">2. The Conceptual Model</h2>
+
+<h3 id="flow-as-a-graph-problem">Flow as a Graph Problem</h3>
+
+<p>A digital elevation model is a grid of cells. Each cell can pass water to one or more <strong>downslope neighbors</strong>.</p>
+
+<p><strong>Graph representation:</strong></p>
+<ul>
+  <li><strong>Nodes:</strong> Grid cells</li>
+  <li><strong>Edges:</strong> Flow connections from one cell to a downslope neighbor</li>
+  <li><strong>Directed:</strong> Water flows in one direction (downhill)</li>
+</ul>
+
+<p><strong>Flow routing algorithms:</strong></p>
+<ol>
+  <li><strong>D8 (Deterministic 8-direction):</strong> Flow goes to the <strong>steepest</strong> of 8 neighbors</li>
+  <li><strong>D-infinity:</strong> Flow direction can be any angle (not constrained to 8 directions)</li>
+  <li><strong>Multiple flow direction (MFD):</strong> Flow splits among all downslope neighbors</li>
+</ol>
+
+<p>This model focuses on <strong>D8</strong> — the simplest and most widely used.</p>
+
+<h3 id="local-rule-global-pattern">Local Rule, Global Pattern</h3>
+
+<p><strong>Local rule:</strong> At each cell, send water to the steepest downslope neighbor.</p>
+
+<p><strong>Global pattern:</strong> This creates a <strong>dendritic network</strong> — a branching tree structure where small tributaries merge into larger streams.</p>
+
+<p><strong>Key insight:</strong> Complex drainage networks emerge from a simple local optimization (follow the steepest descent).</p>
+
+<hr />
+
+<h2 id="3-building-the-mathematical-model">3. Building the Mathematical Model</h2>
+
+<h3 id="step-1-flow-direction-d8-algorithm">Step 1: Flow Direction (D8 Algorithm)</h3>
+
+<p>For each cell $(i, j)$, examine the 8 neighbors:</p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>[i-1,j-1]  [i-1,j]  [i-1,j+1]
+[i,j-1]    [i,j]    [i,j+1]
+[i+1,j-1]  [i+1,j]  [i+1,j+1]
+</code></pre></div></div>
+
+<p>For each neighbor $n$, compute the <strong>slope</strong> from $(i, j)$ to $n$:</p>
+
+\[s_n = \frac{z_{i,j} - z_n}{d_n}\]
+
+<p>Where:</p>
+<ul>
+  <li>$z_{i,j}$ is the elevation of the center cell</li>
+  <li>$z_n$ is the elevation of neighbor $n$</li>
+  <li>$d_n$ is the distance to neighbor $n$:
+    <ul>
+      <li>Cardinal neighbors (N, S, E, W): $d = \Delta x$ (cell size)</li>
+      <li>Diagonal neighbors (NE, SE, SW, NW): $d = \Delta x \sqrt{2}$</li>
+    </ul>
+  </li>
+</ul>
+
+<p><strong>Flow direction:</strong> The neighbor with the <strong>maximum</strong> positive slope (steepest descent).</p>
+
+<p>If all neighbors are upslope or equal elevation, the cell is a <strong>sink</strong> (local minimum) — water pools here.</p>
+
+<h3 id="step-2-flow-accumulation">Step 2: Flow Accumulation</h3>
+
+<p>Once flow direction is determined for every cell, trace water <strong>upstream</strong> to count how many cells drain through each location.</p>
+
+<p><strong>Algorithm:</strong></p>
+<ol>
+  <li>Initialize accumulation to 1 for every cell (each cell contributes itself)</li>
+  <li>Process cells in order from <strong>highest to lowest elevation</strong></li>
+  <li>For each cell, add its accumulation to the accumulation of its downstream neighbor</li>
+</ol>
+
+<p><strong>Result:</strong> Cells with high accumulation values are <strong>streams</strong> — many upstream cells drain through them.</p>
+
+<h3 id="step-3-watershed-delineation">Step 3: Watershed Delineation</h3>
+
+<p>A <strong>watershed</strong> (or catchment) is the area that drains to a specific outlet.</p>
+
+<p><strong>Algorithm:</strong></p>
+<ol>
+  <li>Choose an <strong>outlet</strong> cell (e.g., where a stream exits the DEM)</li>
+  <li>Trace <strong>upstream</strong> from the outlet, marking all cells that flow (directly or indirectly) to it</li>
+  <li>The marked cells form the watershed</li>
+</ol>
+
+<p><strong>Multiple watersheds:</strong> Divide the landscape by tracing from multiple outlets. Cells on <strong>ridges</strong> are watershed boundaries (divides).</p>
+
+<h3 id="step-4-stream-network-extraction">Step 4: Stream Network Extraction</h3>
+
+<p>Cells with accumulation above a threshold are classified as <strong>streams</strong>.</p>
+
+<p><strong>Threshold:</strong> e.g., accumulation &gt; 100 cells (0.1 km² if cells are 30 m × 30 m).</p>
+
+<p><strong>Network topology:</strong> Streams connect where tributaries meet. The flow direction graph defines the network structure.</p>
+
+<hr />
+
+<h2 id="4-worked-example-by-hand">4. Worked Example by Hand</h2>
+
+<p><strong>Problem:</strong> A 5×5 DEM with cell size 10 m:</p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>     Col 0   Col 1   Col 2   Col 3   Col 4
+Row 0:  20      19      18      17      16
+Row 1:  19      18      17      16      15
+Row 2:  18      17      16      15      14
+Row 3:  17      16      15      14      13
+Row 4:  16      15      14      13      12
+</code></pre></div></div>
+
+<p>(a) Determine the flow direction for cell (2, 2) using D8.<br />
+(b) If every cell contributes 1 unit of flow, what is the flow accumulation at cell (4, 4)?</p>
+
+<h3 id="solution">Solution</h3>
+
+<p><strong>(a) Flow direction from cell (2, 2)</strong></p>
+
+<p>Cell (2, 2) has elevation $z = 16$ m.</p>
+
+<p><strong>Eight neighbors:</strong></p>
+
+<table>
+  <thead>
+    <tr>
+      <th>Neighbor</th>
+      <th>Row</th>
+      <th>Col</th>
+      <th>Elevation</th>
+      <th>Distance</th>
+      <th>Slope</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>NW</td>
+      <td>1</td>
+      <td>1</td>
+      <td>18</td>
+      <td>14.14 m</td>
+      <td>(16-18)/14.14 = -0.141 (uphill)</td>
+    </tr>
+    <tr>
+      <td>N</td>
+      <td>1</td>
+      <td>2</td>
+      <td>17</td>
+      <td>10 m</td>
+      <td>(16-17)/10 = -0.1 (uphill)</td>
+    </tr>
+    <tr>
+      <td>NE</td>
+      <td>1</td>
+      <td>3</td>
+      <td>16</td>
+      <td>14.14 m</td>
+      <td>(16-16)/14.14 = 0 (flat)</td>
+    </tr>
+    <tr>
+      <td>E</td>
+      <td>2</td>
+      <td>3</td>
+      <td>15</td>
+      <td>10 m</td>
+      <td>(16-15)/10 = <strong>0.1</strong></td>
+    </tr>
+    <tr>
+      <td>SE</td>
+      <td>3</td>
+      <td>3</td>
+      <td>14</td>
+      <td>14.14 m</td>
+      <td>(16-14)/14.14 = <strong>0.141</strong> ✓</td>
+    </tr>
+    <tr>
+      <td>S</td>
+      <td>3</td>
+      <td>2</td>
+      <td>15</td>
+      <td>10 m</td>
+      <td>(16-15)/10 = 0.1</td>
+    </tr>
+    <tr>
+      <td>SW</td>
+      <td>3</td>
+      <td>1</td>
+      <td>16</td>
+      <td>14.14 m</td>
+      <td>(16-16)/14.14 = 0</td>
+    </tr>
+    <tr>
+      <td>W</td>
+      <td>2</td>
+      <td>1</td>
+      <td>17</td>
+      <td>10 m</td>
+      <td>(16-17)/10 = -0.1 (uphill)</td>
+    </tr>
+  </tbody>
+</table>
+
+<p><strong>Steepest descent:</strong> SE (slope = 0.141)</p>
+
+<p><strong>Flow direction from (2, 2): Southeast → cell (3, 3)</strong></p>
+
+<p><strong>(b) Flow accumulation at (4, 4)</strong></p>
+
+<p>Cell (4, 4) is the <strong>lowest point</strong> (elevation 12 m) — all other cells ultimately drain here.</p>
+
+<p>Trace upstream to count contributing cells:</p>
+
+<p>Every cell in the grid flows toward (4, 4) along the gradient. The entire 5×5 grid = <strong>25 cells</strong> contribute.</p>
+
+<p><strong>Flow accumulation at (4, 4): 25</strong></p>
+
+<p>(This assumes uniform diagonal flow pattern. In reality, D8 creates a specific tree structure, but for this uniformly sloping DEM, all paths lead to the corner.)</p>
+
+<hr />
+
+<h2 id="5-computational-implementation">5. Computational Implementation</h2>
+
+<p>Below is an interactive flow routing visualization.</p>
+
+<div class="viz-container" id="flow-routing-viz">
+  <div class="controls">
+    <label>
+      Terrain type:
+      <select id="terrain-flow-select">
+        <option value="plane">Tilted plane</option>
+        <option value="valley">Valley</option>
+        <option value="ridge">Ridge</option>
+        <option value="cone">Cone (radial)</option>
+        <option value="crater">Crater (sink)</option>
+      </select>
+    </label>
+    <label>
+      Display mode:
+      <select id="display-flow-select">
+        <option value="elevation">Elevation</option>
+        <option value="flow-direction">Flow direction (arrows)</option>
+        <option value="accumulation">Flow accumulation</option>
+      </select>
+    </label>
+    <label>
+      Grid size:
+      <input type="range" id="grid-flow-slider" min="20" max="50" step="10" value="30" />
+      <span id="grid-flow-value">30</span> × 30
+    </label>
+  </div>
+  <div id="flow-chart" style="width: 100%; height: 600px;"></div>
+  <div class="info-panel">
+    <p id="flow-stats"></p>
+  </div>
+</div>
+
+<script type="module">
+await new Promise(resolve => {
+  const checkECharts = () => {
+    if (typeof echarts !== 'undefined') resolve();
+    else setTimeout(checkECharts, 50);
+  };
+  checkECharts();
+});
+
+(function() {
+  const chart = echarts.init(document.getElementById('flow-chart'));
+  
+  let terrainType = 'plane';
+  let displayMode = 'elevation';
+  let gridSize = 30;
+  
+  function generateDEM(type, size) {
+    const z = [];
+    const extent = 100;
+    const step = extent / size;
+    
+    for (let i = 0; i < size; i++) {
+      z[i] = [];
+      for (let j = 0; j < size; j++) {
+        const x = (j - size/2) * step;
+        const y = (i - size/2) * step;
+        
+        switch(type) {
+          case 'plane':
+            z[i][j] = 50 + x * 0.3 + y * 0.2;
+            break;
+          case 'valley':
+            z[i][j] = Math.abs(y) * 0.5 + x * 0.1;
+            break;
+          case 'ridge':
+            z[i][j] = 50 - Math.abs(x) * 0.5 + y * 0.1;
+            break;
+          case 'cone':
+            z[i][j] = 60 - Math.sqrt(x*x + y*y) * 0.4;
+            break;
+          case 'crater':
+            const r = Math.sqrt(x*x + y*y);
+            z[i][j] = r < 30 ? r * 0.5 : 50 - (r - 30) * 0.3;
+            break;
+        }
+      }
+    }
+    return z;
+  }
+  
+  function computeFlowDirection(z, cellSize) {
+    const size = z.length;
+    const flowDir = [];
+    const directions = [
+      [-1, -1, Math.sqrt(2)], [-1, 0, 1], [-1, 1, Math.sqrt(2)],
+      [0, -1, 1],                         [0, 1, 1],
+      [1, -1, Math.sqrt(2)],  [1, 0, 1],  [1, 1, Math.sqrt(2)]
+    ];
+    
+    for (let i = 0; i < size; i++) {
+      flowDir[i] = [];
+      for (let j = 0; j < size; j++) {
+        let maxSlope = -Infinity;
+        let bestDir = null;
+        
+        for (let d = 0; d < directions.length; d++) {
+          const ni = i + directions[d][0];
+          const nj = j + directions[d][1];
+          const dist = directions[d][2] * cellSize;
+          
+          if (ni >= 0 && ni < size && nj >= 0 && nj < size) {
+            const slope = (z[i][j] - z[ni][nj]) / dist;
+            if (slope > maxSlope) {
+              maxSlope = slope;
+              bestDir = d;
+            }
+          }
+        }
+        
+        flowDir[i][j] = bestDir !== null ? bestDir : -1; // -1 = sink
+      }
+    }
+    
+    return flowDir;
+  }
+  
+  function computeFlowAccumulation(z, flowDir) {
+    const size = z.length;
+    const acc = Array(size).fill(0).map(() => Array(size).fill(1));
+    const directions = [
+      [-1, -1], [-1, 0], [-1, 1],
+      [0, -1],           [0, 1],
+      [1, -1],  [1, 0],  [1, 1]
+    ];
+    
+    // Create sorted list of cells by elevation (high to low)
+    const cells = [];
+    for (let i = 0; i < size; i++) {
+      for (let j = 0; j < size; j++) {
+        cells.push({i, j, z: z[i][j]});
+      }
+    }
+    cells.sort((a, b) => b.z - a.z);
+    
+    // Process from high to low
+    for (const cell of cells) {
+      const {i, j} = cell;
+      const dir = flowDir[i][j];
+      
+      if (dir !== -1) {
+        const ni = i + directions[dir][0];
+        const nj = j + directions[dir][1];
+        if (ni >= 0 && ni < size && nj >= 0 && nj < size) {
+          acc[ni][nj] += acc[i][j];
+        }
+      }
+    }
+    
+    return acc;
+  }
+  
+  function updateChart() {
+    const z = generateDEM(terrainType, gridSize);
+    const cellSize = 100 / gridSize;
+    const flowDir = computeFlowDirection(z, cellSize);
+    const acc = computeFlowAccumulation(z, flowDir);
+    
+    let data = [];
+    let option = {};
+    
+    if (displayMode === 'elevation') {
+      for (let i = 0; i < gridSize; i++) {
+        for (let j = 0; j < gridSize; j++) {
+          data.push([j, gridSize - 1 - i, z[i][j]]);
+        }
+      }
+      
+      option = {
+        title: { text: `Elevation: ${terrainType}`, left: 'center' },
+        tooltip: { position: 'top' },
+        grid: { left: 60, right: 60, top: 60, bottom: 60 },
+        xAxis: { type: 'category', show: false },
+        yAxis: { type: 'category', show: false },
+        visualMap: {
+          min: Math.min(...data.map(d => d[2])),
+          max: Math.max(...data.map(d => d[2])),
+          calculable: true,
+          orient: 'horizontal',
+          left: 'center',
+          bottom: 10,
+          inRange: {
+            color: ['#313695', '#74add1', '#e0f3f8', '#ffffbf', '#fee090', '#f46d43', '#a50026']
+          }
+        },
+        series: [{
+          type: 'heatmap',
+          data: data,
+          label: { show: false }
+        }]
+      };
+      
+    } else if (displayMode === 'accumulation') {
+      const maxAcc = Math.max(...acc.flat());
+      for (let i = 0; i < gridSize; i++) {
+        for (let j = 0; j < gridSize; j++) {
+          data.push([j, gridSize - 1 - i, Math.log10(acc[i][j] + 1)]);
+        }
+      }
+      
+      document.getElementById('flow-stats').innerHTML = 
+        `<strong>Max accumulation:</strong> ${maxAcc.toFixed(0)} cells`;
+      
+      option = {
+        title: { text: `Flow Accumulation (log scale): ${terrainType}`, left: 'center' },
+        tooltip: { 
+          position: 'top',
+          formatter: params => {
+            const i = gridSize - 1 - params.value[1];
+            const j = params.value[0];
+            return `Flow accumulation: ${acc[i][j].toFixed(0)} cells`;
+          }
+        },
+        grid: { left: 60, right: 60, top: 60, bottom: 60 },
+        xAxis: { type: 'category', show: false },
+        yAxis: { type: 'category', show: false },
+        visualMap: {
+          min: 0,
+          max: Math.log10(maxAcc + 1),
+          calculable: true,
+          orient: 'horizontal',
+          left: 'center',
+          bottom: 10,
+          text: ['High', 'Low'],
+          inRange: {
+            color: ['#ffffcc', '#c7e9b4', '#7fcdbb', '#41b6c4', '#2c7fb8', '#253494']
+          }
+        },
+        series: [{
+          type: 'heatmap',
+          data: data,
+          label: { show: false }
+        }]
+      };
+    }
+    
+    chart.setOption(option);
+  }
+  
+  document.getElementById('terrain-flow-select').addEventListener('change', (e) => {
+    terrainType = e.target.value;
+    updateChart();
+  });
+  
+  document.getElementById('display-flow-select').addEventListener('change', (e) => {
+    displayMode = e.target.value;
+    updateChart();
+  });
+  
+  document.getElementById('grid-flow-slider').addEventListener('input', (e) => {
+    gridSize = parseInt(e.target.value);
+    document.getElementById('grid-flow-value').textContent = gridSize;
+    updateChart();
+  });
+  
+  updateChart();
+  
+  window.addEventListener('resize', () => chart.resize());
+})();
+</script>
+
+<p><strong>Try this:</strong></p>
+<ul>
+  <li><strong>Plane:</strong> Uniform flow direction; accumulation increases downslope</li>
+  <li><strong>Valley:</strong> Flow converges to valley axis; high accumulation along the channel</li>
+  <li><strong>Ridge:</strong> Flow diverges from ridgeline; low accumulation on the crest</li>
+  <li><strong>Cone:</strong> Radial flow from peak; accumulation low everywhere</li>
+  <li><strong>Crater:</strong> Flow converges to the center (sink); high accumulation in the crater</li>
+</ul>
+
+<p><strong>Key insight:</strong> High accumulation → streams. Low accumulation → ridges or hillslopes.</p>
+
+<hr />
+
+<h2 id="6-interpretation">6. Interpretation</h2>
+
+<h3 id="stream-network-threshold">Stream Network Threshold</h3>
+
+<p><strong>Question:</strong> At what accumulation value does a “stream” begin?</p>
+
+<p><strong>Answer:</strong> Depends on climate, geology, vegetation. Typical thresholds:</p>
+<ul>
+  <li><strong>Humid regions:</strong> 0.1–1 km² contributing area</li>
+  <li><strong>Arid regions:</strong> 10–100 km² contributing area</li>
+</ul>
+
+<p>If cell size = 30 m, then 1 km² = 1,111 cells.</p>
+
+<p><strong>Stream order:</strong> Classify streams by their position in the network (Strahler ordering, Shreve ordering).</p>
+
+<h3 id="watershed-area">Watershed Area</h3>
+
+<p>Sum the number of cells in a watershed, multiply by cell area:</p>
+
+\[A_{\text{watershed}} = N_{\text{cells}} \times (\Delta x)^2\]
+
+<p><strong>Example:</strong> 5000 cells, 30 m cell size:</p>
+
+\[A = 5000 \times (30)^2 = 4,500,000 \text{ m}^2 = 4.5 \text{ km}^2\]
+
+<h3 id="sinks-and-depressions">Sinks and Depressions</h3>
+
+<p>Real DEMs often contain <strong>sinks</strong> — cells lower than all neighbors (artifacts or real depressions like lakes).</p>
+
+<p><strong>Problem:</strong> Water accumulates in sinks and can’t flow out, breaking the drainage network.</p>
+
+<p><strong>Solution:</strong> <strong>Fill sinks</strong> — raise sink elevations to the lowest pour point (the lowest cell on the perimeter of the depression).</p>
+
+<hr />
+
+<h2 id="7-what-could-go-wrong">7. What Could Go Wrong?</h2>
+
+<h3 id="flat-areas">Flat Areas</h3>
+
+<p>If multiple cells have identical elevation, slope is zero in all directions — flow direction is ambiguous.</p>
+
+<p><strong>Solutions:</strong></p>
+<ul>
+  <li>Add small random perturbations to elevations</li>
+  <li>Use <strong>flow direction from surrounding higher cells</strong> to infer flow across flats</li>
+  <li>Specialized flat-routing algorithms</li>
+</ul>
+
+<h3 id="parallel-flow-on-uniform-slopes">Parallel Flow on Uniform Slopes</h3>
+
+<p>D8 forces flow into discrete 45° sectors. On a uniformly tilted plane, flow should be perpendicular to contours, but D8 approximates this with stepped paths.</p>
+
+<p><strong>D-infinity</strong> (infinite-direction) algorithms handle this better but are more complex.</p>
+
+<h3 id="spurious-sinks-from-noise">Spurious Sinks from Noise</h3>
+
+<p>Low-quality DEMs have measurement errors that create artificial pits.</p>
+
+<p><strong>Solution:</strong> Smooth the DEM before flow routing (but not so much that real features disappear).</p>
+
+<h3 id="edge-effects">Edge Effects</h3>
+
+<p>Flow at the edge of a DEM exits the grid. These cells need special handling (treat as outlets or mark as no-data).</p>
+
+<hr />
+
+<h2 id="8-extension-real-world-applications">8. Extension: Real-World Applications</h2>
+
+<h3 id="flood-prediction">Flood Prediction</h3>
+
+<p>Given rainfall intensity and duration, route water across the DEM to predict:</p>
+<ul>
+  <li><strong>Peak discharge</strong> at stream gauges</li>
+  <li><strong>Inundation extent</strong> (which areas flood)</li>
+  <li><strong>Time to peak</strong> (how long until floodwaters arrive)</li>
+</ul>
+
+<h3 id="erosion-and-sediment-transport">Erosion and Sediment Transport</h3>
+
+<p>Flow accumulation is a proxy for <strong>stream power</strong> — the ability to erode and transport sediment.</p>
+
+<p>High accumulation + steep slope = high erosion potential.</p>
+
+<h3 id="pollution-routing">Pollution Routing</h3>
+
+<p>Track contaminants (agricultural runoff, industrial spills) as they move downslope through the drainage network.</p>
+
+<h3 id="ecosystem-connectivity">Ecosystem Connectivity</h3>
+
+<p>Flow networks define <strong>hydrologic connectivity</strong> — which wetlands, streams, and riparian zones are linked. Important for fish migration, amphibian breeding, nutrient cycling.</p>
+
+<hr />
+
+<h2 id="9-math-refresher-graphs-and-traversal">9. Math Refresher: Graphs and Traversal</h2>
+
+<h3 id="graph-terminology">Graph Terminology</h3>
+
+<p><strong>Graph:</strong> A set of <strong>nodes</strong> (vertices) connected by <strong>edges</strong>.</p>
+
+<p><strong>Directed graph:</strong> Edges have direction (A → B, not B → A).</p>
+
+<p><strong>Tree:</strong> A connected graph with no cycles.</p>
+
+<h3 id="traversal-algorithms">Traversal Algorithms</h3>
+
+<p><strong>Depth-first search (DFS):</strong> Follow one path as far as possible before backtracking.</p>
+
+<p><strong>Breadth-first search (BFS):</strong> Explore all neighbors before moving to the next level.</p>
+
+<p>For flow accumulation, we process cells in <strong>topological order</strong> (upstream to downstream), which requires sorting by elevation.</p>
+
+<h3 id="connectivity">Connectivity</h3>
+
+<p>Two cells are <strong>hydrologically connected</strong> if there’s a flow path from one to the other.</p>
+
+<p>A <strong>watershed</strong> is a connected component of the flow graph rooted at an outlet.</p>
+
+<hr />
+
+<h2 id="summary">Summary</h2>
+
+<ul>
+  <li>Water flows downhill along the path of steepest descent</li>
+  <li><strong>D8 algorithm:</strong> Each cell flows to the steepest of 8 neighbors</li>
+  <li><strong>Flow accumulation:</strong> Count how many cells drain through each location</li>
+  <li>High accumulation → streams; low accumulation → ridges</li>
+  <li><strong>Watersheds:</strong> Areas draining to the same outlet</li>
+  <li>Sinks and flat areas require special handling</li>
+  <li>Flow routing underlies flood modelling, erosion prediction, and watershed delineation</li>
+</ul>
+
+<hr />
+
+      </div>
+
+      
+
+
+
+      
+
+  
+  
+  
+  
+
+
+
+      <!-- essay-footer-notes.html — References / endnotes section.
+     Hidden by default; assets/js/essay/core.js shows it and populates
+     #essay-endnotes-list from [data-cite] elements in the content.
+
+     In posts, create citation markers with:
+       <cite data-cite="Author, Title, URL">1</cite>
+     The JS collects these and renders a numbered reference list here. -->
+
+<footer class="essay-endnotes" id="essay-endnotes" aria-label="References" hidden>
+  <div class="essay-endnotes-inner">
+    <h2 class="essay-endnotes-heading">References</h2>
+    <ol class="essay-endnotes-list" id="essay-endnotes-list">
+      <!-- Populated at runtime by assets/js/essay/core.js buildEndnotes() -->
+    </ol>
+  </div>
+</footer>
+
+
+      
+
+      
+
+      
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    </article>
+  </main>
+
+  <aside
+    class="essay-sidenotes"
+    id="essay-sidenotes"
+    aria-label="Margin notes"
+  ></aside>
+
+</div>
+
+</div>
+
+<footer>
+  <div class="footer-inner">
+
+    <!-- Col 1: Brand -->
+    <div class="footer-brand">
+      <div class="footer-brand-logo">
+        
+        <img loading="lazy" src="/assets/images/logo.webp" alt="WaywardHouse" width="28" height="28">
+        
+        WaywardHouse<span>.</span>
+      </div>
+      
+      
+      <p class="footer-brand-desc">Understanding how place, economy, and environment interact — through analysis, modelling, and open tools.</p>
+      
+
+      <div class="footer-social">
+        
+        
+        <a href="/feed.xml" class="social-icon" target="_blank" rel="noopener noreferrer" aria-label="RSS feed">
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M4 11a9 9 0 0 1 9 9"/>
+            <path d="M4 4a16 16 0 0 1 16 16"/>
+            <circle cx="5" cy="19" r="1"/>
+          </svg>
+        </a>
+      </div>
+    </div>
+
+    <!-- Col 2: Topics (configurable via footer_topics, falls back to auto-categories) -->
+    <nav aria-labelledby="footer-topics">
+      <h3 class="footer-col-title" id="footer-topics">Reading</h3>
+      <ul class="footer-links">
+        
+          
+          <li><a href="/topics/">Essays</a></li>
+          
+          <li><a href="/series/">Modelling</a></li>
+          
+          <li><a href="/archive/">Archive</a></li>
+          
+          <li><a href="/start-here/">Start Here</a></li>
+          
+        
+      </ul>
+    </nav>
+
+    <!-- Col 3: Secondary navigation -->
+    
+    <nav aria-labelledby="footer-company">
+      <h3 class="footer-col-title" id="footer-company">Site</h3>
+      <ul class="footer-links">
+        
+        <li><a href="/start-here/">Start Here</a></li>
+        
+        <li><a href="/about/">About</a></li>
+        
+        <li><a href="/contact/">Contact</a></li>
+        
+      </ul>
+    </nav>
+    
+
+    <!-- Col 4: Resources -->
+    <nav aria-labelledby="footer-resources">
+      <h3 class="footer-col-title" id="footer-resources">Resources</h3>
+      <ul class="footer-links">
+        <li><a href="/archive/">Archive</a></li>
+        <li><a href="/feed.xml">RSS Feed</a></li>
+        <li><a href="/topics/">All Topics</a></li>
+      </ul>
+    </nav>
+
+  </div><!-- /.footer-inner -->
+
+  <div class="footer-bottom">
+    <span class="footer-copy">
+      &copy; 2026 WaywardHouse.
+    </span>
+    <div class="footer-legal">
+      <a href="/privacy/">Privacy Policy</a>
+      <a href="/terms/">Terms of Service</a>
+    </div>
+  </div>
+
+</footer>
+
+
+<!-- Alpine.js bundle -->
+<script type="module" src="/assets/dist/main.js"></script>
+
+<!-- Visualization runtime — detects and loads CDN libraries dynamically -->
+<script type="module" src="/assets/js/core.js"></script>
+
+<!-- Search overlay — event-driven: nav button $dispatches 'search:open' -->
+<div
+  x-data="search"
+  x-init="init()"
+  @search:open.window="open()"
+>
+  <div
+    class="search-overlay"
+    x-show="isOpen"
+    x-transition:enter="transition ease-out duration-150"
+    x-transition:enter-start="opacity-0"
+    x-transition:enter-end="opacity-100"
+    x-transition:leave="transition ease-in duration-100"
+    x-transition:leave-start="opacity-100"
+    x-transition:leave-end="opacity-0"
+    @click.self="close()"
+    style="display: none;"
+    role="dialog"
+    aria-modal="true"
+    aria-label="Search"
+  >
+    <div class="search-panel">
+      <div class="search-input-wrap">
+        <svg class="search-icon" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <circle cx="11" cy="11" r="8"/>
+          <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+        </svg>
+        <input
+          class="search-input"
+          type="search"
+          placeholder="Search posts…"
+          x-model="query"
+          x-ref="input"
+          @input.debounce.300ms="runSearch()"
+          @keydown.escape="close()"
+          autocomplete="off"
+          spellcheck="false"
+          aria-label="Search query"
+        >
+        <kbd class="search-esc" aria-hidden="true">ESC</kbd>
+      </div>
+
+      <div class="search-results" x-show="query.trim().length > 0">
+        <div class="search-status" x-show="loading" aria-live="polite">Searching…</div>
+        <div class="search-status" x-show="!loading && results.length === 0" aria-live="polite">
+          No results for "<span x-text="query"></span>"
+        </div>
+        <ul class="search-result-list" x-show="!loading && results.length > 0" role="list">
+          <template x-for="result in results" :key="result.url">
+            <li>
+              <a :href="result.url" class="search-result-item" @click="close()">
+                <div class="search-result-title" x-text="result.meta?.title || result.url"></div>
+                <div class="search-result-excerpt" x-html="result.excerpt"></div>
+              </a>
+            </li>
+          </template>
+        </ul>
+      </div>
+    </div>
+  </div>
+</div>
+
+</body>
+</html>

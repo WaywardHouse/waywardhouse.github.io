@@ -1,0 +1,978 @@
+<!DOCTYPE html>
+
+<html lang="en" data-brand="wayward" data-theme="light">
+<head>
+  <meta charset="utf-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Reservoir Operations and Mass Balance — WaywardHouse</title>
+<meta name="description" content="A reservoir is a mass balance problem: inflows fill it, outflows drain it, evaporation removes it. The sequent peak algorithm finds the minimum storage capacity required to deliver a target...">
+
+<!-- Dark mode flash prevention — runs synchronously before first paint -->
+<script>
+  (function () {
+    var defaultDark = 'light' === 'dark';
+    var s = localStorage.getItem('theme');
+    var dark = s !== null ? s === 'dark' : defaultDark;
+    document.documentElement.dataset.theme = dark ? 'dark' : 'light';
+  })();
+</script>
+
+<!-- Preconnect to CDN domains used by the viz runtime -->
+<link rel="preconnect" href="https://cdn.jsdelivr.net">
+<link rel="preconnect" href="https://unpkg.com">
+<link rel="preconnect" href="https://esm.sh">
+<link rel="preconnect" href="https://api.mapbox.com">
+<link rel="preconnect" href="https://events.mapbox.com">
+
+
+<script>window.MAPBOX_TOKEN = 'pk.eyJ1IjoiYnJlYWRlZGNvZCIsImEiOiJjbW0xa25qc2EwMmtwMnJwejJlNndqdnoxIn0._7I9PwXuFLrOQINVZ84y1w';</script>
+
+
+<!-- Fonts -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:ital,wght@0,300;0,400;0,600;0,700;0,800;0,900;1,700;1,800&family=Barlow:wght@300;400&family=IBM+Plex+Mono:ital,wght@0,300;0,400;0,500;1,300&family=Literata:ital,opsz,wght@0,7..72,300;0,7..72,400;0,7..72,500;1,7..72,300;1,7..72,400&display=swap" rel="stylesheet">
+
+<!-- Theme stylesheet (Vite build output) -->
+<link rel="stylesheet" href="/assets/dist/main.css">
+
+<!-- Brand token overrides — loaded after main.css so variables cascade correctly -->
+
+<link rel="stylesheet" href="/assets/css/brand-wayward.css">
+
+
+
+<!-- Syntax highlighting (Rouge — light + dark) -->
+<link rel="stylesheet" href="/assets/css/syntax.css">
+
+<!-- Begin Jekyll SEO tag v2.8.0 -->
+<title>Reservoir Operations and Mass Balance | WaywardHouse</title>
+<meta name="generator" content="Jekyll v4.4.1" />
+<meta property="og:title" content="Reservoir Operations and Mass Balance" />
+<meta property="og:locale" content="en" />
+<meta name="description" content="A reservoir is a mass balance problem: inflows fill it, outflows drain it, evaporation removes it. The sequent peak algorithm finds the minimum storage capacity required to deliver a target yield through the worst drought on record. Multi-purpose reservoirs must balance flood control, irrigation, hydropower, and ecology simultaneously — objectives that conflict. This essay derives the storage-yield relationship, works the sequent peak algorithm by hand, constructs tradeoff curves between competing uses, and quantifies reservoir design life from sedimentation rates." />
+<meta property="og:description" content="A reservoir is a mass balance problem: inflows fill it, outflows drain it, evaporation removes it. The sequent peak algorithm finds the minimum storage capacity required to deliver a target yield through the worst drought on record. Multi-purpose reservoirs must balance flood control, irrigation, hydropower, and ecology simultaneously — objectives that conflict. This essay derives the storage-yield relationship, works the sequent peak algorithm by hand, constructs tradeoff curves between competing uses, and quantifies reservoir design life from sedimentation rates." />
+<link rel="canonical" href="https://wayward.house/model/Reservoir-Operations-and-Mass-Balance-102/" />
+<meta property="og:url" content="https://wayward.house/model/Reservoir-Operations-and-Mass-Balance-102/" />
+<meta property="og:site_name" content="WaywardHouse" />
+<meta property="og:image" content="https://wayward.house/assets/images/watershed-models.webp" />
+<meta property="og:type" content="article" />
+<meta property="article:published_time" content="2026-03-05T00:00:00+00:00" />
+<meta name="twitter:card" content="summary_large_image" />
+<meta property="twitter:image" content="https://wayward.house/assets/images/watershed-models.webp" />
+<meta property="twitter:title" content="Reservoir Operations and Mass Balance" />
+<meta name="twitter:site" content="@" />
+<script type="application/ld+json">
+{"@context":"https://schema.org","@type":"BlogPosting","dateModified":"2026-03-12T16:57:04+00:00","datePublished":"2026-03-05T00:00:00+00:00","description":"A reservoir is a mass balance problem: inflows fill it, outflows drain it, evaporation removes it. The sequent peak algorithm finds the minimum storage capacity required to deliver a target yield through the worst drought on record. Multi-purpose reservoirs must balance flood control, irrigation, hydropower, and ecology simultaneously — objectives that conflict. This essay derives the storage-yield relationship, works the sequent peak algorithm by hand, constructs tradeoff curves between competing uses, and quantifies reservoir design life from sedimentation rates.","headline":"Reservoir Operations and Mass Balance","image":"https://wayward.house/assets/images/watershed-models.webp","mainEntityOfPage":{"@type":"WebPage","@id":"https://wayward.house/model/Reservoir-Operations-and-Mass-Balance-102/"},"publisher":{"@type":"Organization","logo":{"@type":"ImageObject","url":"https://wayward.house/assets/images/logo.webp"}},"url":"https://wayward.house/model/Reservoir-Operations-and-Mass-Balance-102/"}</script>
+<!-- End Jekyll SEO tag -->
+
+
+
+<!-- Cloudflare Web Analytics -->
+<script defer src="https://static.cloudflareinsights.com/beacon.min.js"
+  data-cf-beacon='{"token": "62c47d78bf9d4c80972d4e6242d79ff8"}'></script>
+
+
+</head>
+<body class="
+  model-template
+   tag-modelling
+   tag-hash-math
+  
+   tag-hash-viz
+  
+  
+  
+  
+  
+  
+">
+
+<a href="#main-content" class="skip-link">Skip to content</a>
+
+<header class="nav" x-data="{ open: false }">
+  <div class="nav-inner">
+
+    <!-- Logo -->
+    <a href="/" class="nav-logo">
+      
+      <img loading="lazy" src="/assets/images/logo.webp" alt="WaywardHouse" width="32" height="32">
+      
+      WaywardHouse<span>.</span>
+    </a>
+
+    <!-- Desktop nav links -->
+    <ul class="nav-links" role="list">
+      
+      <li>
+        <a href="/topics/">Essays</a>
+      </li>
+      
+      <li>
+        <a href="/series/">Modelling</a>
+      </li>
+      
+      <li>
+        <a href="/about/">About</a>
+      </li>
+      
+    </ul>
+
+    <!-- Actions -->
+    <div class="nav-actions">
+
+      <!-- Search button -->
+      <button
+        class="search-toggle"
+        type="button"
+        aria-label="Search (⌘K)"
+        title="Search (⌘K)"
+        @click="$dispatch('search:open')"
+      >
+        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <circle cx="11" cy="11" r="8"/>
+          <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+        </svg>
+      </button>
+
+      <!-- Dark mode toggle -->
+      <button
+        class="theme-toggle"
+        x-data="darkMode"
+        x-init="init()"
+        @click="toggle()"
+        :aria-label="dark ? 'Switch to light mode' : 'Switch to dark mode'"
+        type="button"
+      >
+        <!-- Sun icon (shown in light mode) -->
+        <svg class="icon-sun" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">
+          <circle cx="12" cy="12" r="5"/>
+          <line x1="12" y1="1" x2="12" y2="3"/>
+          <line x1="12" y1="21" x2="12" y2="23"/>
+          <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/>
+          <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/>
+          <line x1="1" y1="12" x2="3" y2="12"/>
+          <line x1="21" y1="12" x2="23" y2="12"/>
+          <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/>
+          <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>
+        </svg>
+        <!-- Moon icon (shown in dark mode) -->
+        <svg class="icon-moon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">
+          <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+        </svg>
+      </button>
+
+      <!-- Hamburger (mobile only) -->
+      <button
+        class="mobile-nav-toggle"
+        @click="open = !open"
+        :aria-expanded="open"
+        :aria-label="open ? 'Close menu' : 'Open menu'"
+        type="button"
+      >
+        <svg x-show="!open" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <line x1="3" y1="6" x2="21" y2="6"/>
+          <line x1="3" y1="12" x2="21" y2="12"/>
+          <line x1="3" y1="18" x2="21" y2="18"/>
+        </svg>
+        <svg x-show="open" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <line x1="18" y1="6" x2="6" y2="18"/>
+          <line x1="6" y1="6" x2="18" y2="18"/>
+        </svg>
+      </button>
+
+    </div><!-- /.nav-actions -->
+  </div><!-- /.nav-inner -->
+
+  <!-- Mobile drawer -->
+  <div
+    class="mobile-nav"
+    x-show="open"
+    x-transition:enter="transition ease-out duration-200"
+    x-transition:enter-start="opacity-0 -translate-y-1"
+    x-transition:enter-end="opacity-100 translate-y-0"
+    x-transition:leave="transition ease-in duration-150"
+    x-transition:leave-start="opacity-100 translate-y-0"
+    x-transition:leave-end="opacity-0 -translate-y-1"
+    @click.outside="open = false"
+    @keydown.escape.window="open = false"
+  >
+    <ul role="list">
+      
+      <li>
+        <a href="/topics/" @click="open = false">Essays</a>
+      </li>
+      
+      <li>
+        <a href="/series/" @click="open = false">Modelling</a>
+      </li>
+      
+      <li>
+        <a href="/about/" @click="open = false">About</a>
+      </li>
+      
+    </ul>
+  </div><!-- /.mobile-nav -->
+
+</header>
+
+
+<div id="main-content">
+  <!-- Essay stylesheet and runtime — self-contained -->
+<link rel="stylesheet" href="/assets/css/essay.css">
+<script type="module" src="/assets/js/essay/core.js"></script>
+
+<div class="essay-layout" id="essay-layout">
+
+  <!-- essay-toc.html — Sticky table of contents (left column).
+     The <ol> is empty on load; assets/js/essay/core.js populates it
+     from h2/h3 elements found in #essay-content after the page renders. -->
+
+<nav class="essay-toc" id="essay-toc" aria-label="Table of contents">
+  <div class="essay-toc-inner">
+    <p class="essay-toc-heading" aria-hidden="true">Contents</p>
+    <ol class="essay-toc-list" id="essay-toc-list">
+      <!-- Populated at runtime by assets/js/essay/core.js buildToc() -->
+    </ol>
+  </div>
+</nav>
+
+
+  <main class="essay-main" id="essay-main" role="main">
+    <article class="essay-article">
+
+      <!-- essay-hero.html — Header for computational essay template.
+     Displays feature image, tag label, title, excerpt, and post metadata. -->
+
+<header class="essay-hero">
+  
+  <figure class="essay-hero-figure">
+    <img
+      src="/assets/images/watershed-models.webp"
+      alt="Reservoir Operations and Mass Balance"
+      class="essay-hero-img"
+      loading="eager"
+    >
+    
+  </figure>
+  
+
+  <div class="essay-hero-body">
+
+    
+    
+    
+    
+    
+    <nav class="essay-breadcrumb" aria-label="Series position">
+      
+      <a href="/series/laboratory/" class="essay-breadcrumb-link">Computational geography laboratory</a>
+      
+      
+      
+      <span class="essay-breadcrumb-sep" aria-hidden="true">›</span>
+      <span class="essay-breadcrumb-pos">Model 102</span>
+      
+    </nav>
+    
+
+    <div class="essay-hero-labels">
+      
+      <a href="/topics/modelling/" class="essay-tag-label">modelling</a>
+      
+      
+      <span class="difficulty-badge difficulty-badge--3">Level 3</span>
+      
+    </div>
+
+    <h1 class="essay-title">Reservoir Operations and Mass Balance</h1>
+
+    
+    <p class="essay-excerpt">A reservoir is a mass balance problem: inflows fill it, outflows drain it, evaporation removes it. The sequent peak algorithm finds the minimum storage capacity required to deliver a target yield through the worst drought on record. Multi-purpose reservoirs must balance flood control, irrigation, hydropower, and ecology simultaneously — objectives that conflict. This essay derives the storage-yield relationship, works the sequent peak algorithm by hand, constructs tradeoff curves between competing uses, and quantifies reservoir design life from sedimentation rates.
+</p>
+    
+
+    
+    <p class="essay-prereqs"><span class="essay-prereqs-label">Prerequisites:</span> mass balance, cumulative sums, optimisation (tradeoff curves), dimensional analysis</p>
+    
+
+    <div class="essay-meta">
+      
+      <div class="essay-meta-secondary">
+        <time class="essay-date" datetime="2026-03-05">5 Mar 2026</time>
+        
+        
+        <span class="essay-sep" aria-hidden="true">·</span>
+        <span class="essay-updated">Updated <time datetime="2026-03-12">12 Mar 2026</time></span>
+        
+        <span class="essay-sep" aria-hidden="true">·</span>
+        <span class="essay-reading-time">13 min read</span>
+      </div>
+    </div>
+  </div>
+</header>
+
+
+      
+
+
+
+
+
+      <div class="essay-content gh-content" id="essay-content">
+        <p>The W.A.C. Bennett Dam on the Peace River in British Columbia impounds 74 km³ of water — one of the largest reservoirs in the world by volume. It took seven years to fill after completion in 1968. Since then it has generated 2,730 MW of hydroelectric power, regulated spring floods downstream, and supplied irrigation water to the Peace River valley. It has also been accumulating sediment at rates that are gradually reducing its storage capacity, and its downstream flow regime has transformed the Peace-Athabasca Delta in ways that continue to be debated.</p>
+
+<p>That package of outcomes — power, flood control, irrigation, ecological transformation, and eventual capacity loss — defines the multi-purpose reservoir problem. Understanding any one outcome quantitatively requires the mass balance framework that underlies all reservoir analysis.</p>
+
+<hr />
+
+<h2 id="1-the-question">1. The Question</h2>
+
+<p>How large must a reservoir be to guarantee delivery of a target water supply through the worst drought on record? How should storage be operated to balance competing demands — flood control, irrigation, power generation, and environmental flows? How much storage capacity is lost to sedimentation over the reservoir’s design life?</p>
+
+<hr />
+
+<h2 id="2-the-conceptual-model">2. The Conceptual Model</h2>
+
+<p>A reservoir is a bathtub with a time-varying faucet (inflow) and time-varying drain (release). The faucet is controlled by nature (streamflow); the drain is controlled by the operator (releases for downstream uses). The difference accumulates in storage. When storage is empty and inflow is insufficient to meet demand, there is a shortage. The design question is: how large a bathtub is needed to limit shortages to an acceptable frequency and severity?</p>
+
+<p>The <strong>sequent peak algorithm</strong> answers this for a target constant yield: given the historical record of monthly streamflows, find the minimum storage capacity that allows the target yield to be met in every time step — including through the most severe drought in the record.</p>
+
+<hr />
+
+<h2 id="3-building-the-mathematical-model">3. Building the Mathematical Model</h2>
+
+<h3 id="31-reservoir-mass-balance">3.1 Reservoir Mass Balance</h3>
+
+<p>The fundamental equation governing reservoir storage $S(t)$ [volume, e.g. Mm³]:</p>
+
+\[\frac{dS}{dt} = Q_{\text{in}}(t) - Q_{\text{out}}(t) - E(t) - L(t)\]
+
+<p>where $Q_{\text{in}}$ = inflow (natural streamflow), $Q_{\text{out}}$ = controlled release, $E$ = evaporation from reservoir surface, and $L$ = seepage losses. In discrete monthly form:</p>
+
+\[S(t+1) = S(t) + Q_{\text{in}}(t)\Delta t - Q_{\text{out}}(t)\Delta t - E(t)\Delta t\]
+
+<table>
+  <tbody>
+    <tr>
+      <td>subject to $0 \leq S(t) \leq S_{\max}$. When $S(t+1) &gt; S_{\max}$, the excess <strong>spills</strong>; when $S(t+1) &lt; 0$, there is a <strong>shortage</strong> of magnitude $</td>
+      <td>S(t+1)</td>
+      <td>$.</td>
+    </tr>
+  </tbody>
+</table>
+
+<h3 id="32-the-sequent-peak-algorithm">3.2 The Sequent Peak Algorithm</h3>
+
+<p>The <strong>sequent peak algorithm</strong> (Rippl 1882) determines the minimum storage capacity $K$ required to deliver a constant target yield $D$ from a given inflow sequence $Q_1, Q_2, \ldots, Q_n$.</p>
+
+<p><strong>Step 1:</strong> Compute net surplus/deficit at each time step:</p>
+
+\[d_t = Q_t - D\]
+
+<p><strong>Step 2:</strong> Compute cumulative departure:</p>
+
+\[X_t = \sum_{k=1}^{t} (Q_k - D)\]
+
+<p><strong>Step 3:</strong> Find <strong>sequent peaks</strong> — local maxima in $X_t$ — and for each pair of consecutive peaks at times $t_1 &lt; t_2$, compute the required storage:</p>
+
+\[K_{t_1,t_2} = X_{t_1} - \min_{t_1 \le t \le t_2}(X_t)\]
+
+<p><strong>Step 4:</strong> The required capacity is:</p>
+
+\[K = \max_{t_1,t_2} K_{t_1,t_2}\]
+
+<p>The algorithm is applied to the inflow sequence repeated twice (length $2n$) to handle droughts that straddle the record’s start/end boundary.</p>
+
+<p><strong>Intuition:</strong> $X_t$ rises during surplus periods (reservoir filling) and falls during deficits (reservoir draining). The maximum drop from any peak to its subsequent trough is exactly the storage needed to bridge that drought without running dry.</p>
+
+<h3 id="33-storage-yield-relationship">3.3 Storage-Yield Relationship</h3>
+
+<p>Running the sequent peak for a range of target yields $D$ produces the <strong>storage-yield curve</strong> $K(D)$ — the minimum capacity required to guarantee yield $D$ through the drought of record. This curve rises steeply near the mean annual flow: delivering near 100% of mean annual flow requires enormous storage to bridge multi-year droughts, while delivering 50–70% requires far less.</p>
+
+<p>The <strong>firm yield</strong> $D_{\text{firm}}(K)$ is the maximum yield deliverable from a reservoir of capacity $K$, read directly from the storage-yield curve.</p>
+
+<h3 id="34-multi-purpose-operating-rules">3.4 Multi-Purpose Operating Rules</h3>
+
+<p>Zone-based operating policies divide reservoir storage into vertical zones with different release rules:</p>
+
+<table>
+  <thead>
+    <tr>
+      <th>Zone</th>
+      <th>Storage level</th>
+      <th>Purpose</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>Flood control</td>
+      <td>Top pool</td>
+      <td>Empty space to absorb floods</td>
+    </tr>
+    <tr>
+      <td>Joint use</td>
+      <td>Upper conservation</td>
+      <td>Available for all uses</td>
+    </tr>
+    <tr>
+      <td>Conservation</td>
+      <td>Lower conservation</td>
+      <td>Water supply priority</td>
+    </tr>
+    <tr>
+      <td>Buffer (dead pool)</td>
+      <td>Minimum pool</td>
+      <td>Power intake minimum level</td>
+    </tr>
+  </tbody>
+</table>
+
+<p>The <strong>hedging rule</strong> begins reducing deliveries before the reservoir empties, spreading shortages over time:</p>
+
+\[Q_{\text{release}}(t) = \begin{cases} D &amp; \text{if } S(t)/K \geq h \\ D \cdot S(t)/(hK) &amp; \text{if } S(t)/K &lt; h \end{cases}\]
+
+<p>where $h$ [0–1] is the hedging threshold. Below $h$, releases are proportionally reduced — avoiding abrupt total failure at the cost of modest continuous shortfalls.</p>
+
+<h3 id="35-hydropower-and-competing-objectives">3.5 Hydropower and Competing Objectives</h3>
+
+<p>Hydropower output depends on both head and flow:</p>
+
+\[P = \eta \rho g H Q \quad [\text{W}]\]
+
+<p>where $\eta \approx 0.87$ (efficiency), $\rho = 1000$ kg m⁻³, $g = 9.81$ m s⁻², $H$ [m] is water surface elevation above turbine outlet, and $Q$ [m³ s⁻¹] is turbine flow. High reservoir levels maximise $H$ and power; irrigation drawdown reduces both.</p>
+
+<p>The fundamental conflict: flood control requires <strong>empty</strong> storage; water supply requires <strong>full</strong> storage; hydropower wants <strong>high</strong> water levels; environmental flows require <strong>minimum releases</strong> during low-flow periods. A <strong>Pareto tradeoff frontier</strong> maps the achievable combinations of any two objectives — no point inside the frontier is optimal, and no point outside it is feasible.</p>
+
+<p>For flood control vs. water supply with total capacity $K_{\text{total}} = K_F + K_C$:</p>
+
+<ul>
+  <li>Flood performance: peak outflow reduction $\propto K_F$</li>
+  <li>Water supply reliability: $r = g(K_C, D)$ from the storage-yield curve</li>
+</ul>
+
+<p>Plotting $(K_F, K_C)$ allocations traces the tradeoff frontier.</p>
+
+<h3 id="36-reservoir-sedimentation-and-design-life">3.6 Reservoir Sedimentation and Design Life</h3>
+
+<p>The <strong>trap efficiency</strong> $\eta_T$ — fraction of incoming sediment retained — depends on the capacity-to-inflow ratio $C_v = K/Q_{\text{annual}}$ via the empirical <strong>Brune (1953) curve</strong>:</p>
+
+\[\eta_T \approx 1 - \frac{0.05}{0.05 + C_v}\]
+
+<p>(simplified approximation; the full curve is read graphically). Large reservoirs ($C_v &gt; 0.5$) trap &gt;94% of incoming sediment; small run-of-river structures ($C_v &lt; 0.05$) trap &lt;70%.</p>
+
+<p>Annual storage loss:</p>
+
+\[\Delta K = \frac{\eta_T \cdot Q_{s,\text{annual}}}{\rho_b}\]
+
+<p>where $Q_{s,\text{annual}}$ [t yr⁻¹] is annual sediment load and $\rho_b$ [t m⁻³] ≈ 1.1–1.4 is deposited sediment bulk density. Design life to 50% capacity loss:</p>
+
+\[T_{50} = \frac{0.5 \, K_0}{\Delta K}\]
+
+<p>For South Asian and Andean reservoirs with high erosion rates, $T_{50}$ can be as short as 20–40 years. Management options include periodic flushing (lowering reservoir to scour deposits), turbidity current venting, and upstream sediment retention structures.</p>
+
+<hr />
+
+<h2 id="4-worked-example-by-hand">4. Worked Example by Hand</h2>
+
+<p><strong>Setting:</strong> Reservoir design for a tributary of the North Saskatchewan River, Alberta. Target yield $D = 15$ Mm³/month. Monthly inflows over a critical drought sequence (Mm³):</p>
+
+<table>
+  <thead>
+    <tr>
+      <th>Month</th>
+      <th>$Q_t$</th>
+      <th>$d_t = Q_t - 15$</th>
+      <th>$X_t$</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>Jan</td>
+      <td>8</td>
+      <td>−7</td>
+      <td>−7</td>
+    </tr>
+    <tr>
+      <td>Feb</td>
+      <td>6</td>
+      <td>−9</td>
+      <td>−16</td>
+    </tr>
+    <tr>
+      <td>Mar</td>
+      <td>10</td>
+      <td>−5</td>
+      <td>−21</td>
+    </tr>
+    <tr>
+      <td>Apr</td>
+      <td>25</td>
+      <td>+10</td>
+      <td>−11</td>
+    </tr>
+    <tr>
+      <td>May</td>
+      <td>40</td>
+      <td>+25</td>
+      <td>+14</td>
+    </tr>
+    <tr>
+      <td>Jun</td>
+      <td>50</td>
+      <td>+35</td>
+      <td>+49</td>
+    </tr>
+    <tr>
+      <td><strong>Jul</strong></td>
+      <td>30</td>
+      <td>+15</td>
+      <td><strong>+64 ← peak</strong></td>
+    </tr>
+    <tr>
+      <td>Aug</td>
+      <td>12</td>
+      <td>−3</td>
+      <td>+61</td>
+    </tr>
+    <tr>
+      <td>Sep</td>
+      <td>8</td>
+      <td>−7</td>
+      <td>+54</td>
+    </tr>
+    <tr>
+      <td>Oct</td>
+      <td>5</td>
+      <td>−10</td>
+      <td>+44</td>
+    </tr>
+    <tr>
+      <td>Nov</td>
+      <td>4</td>
+      <td>−11</td>
+      <td>+33</td>
+    </tr>
+    <tr>
+      <td>Dec</td>
+      <td>3</td>
+      <td>−12</td>
+      <td>+21</td>
+    </tr>
+    <tr>
+      <td>Jan+1</td>
+      <td>4</td>
+      <td>−11</td>
+      <td>+10</td>
+    </tr>
+    <tr>
+      <td>Feb+1</td>
+      <td>6</td>
+      <td>−9</td>
+      <td>+1</td>
+    </tr>
+    <tr>
+      <td><strong>Mar+1</strong></td>
+      <td>10</td>
+      <td>−5</td>
+      <td><strong>−4 ← trough</strong></td>
+    </tr>
+    <tr>
+      <td>Apr+1</td>
+      <td>22</td>
+      <td>+7</td>
+      <td>+3 ← sequent peak</td>
+    </tr>
+  </tbody>
+</table>
+
+<p><strong>Required storage:</strong> $K = X_{\text{peak}} - X_{\text{trough}} = 64 - (-4) = \boxed{68 \text{ Mm}^3}$</p>
+
+<p><strong>Sedimentation:</strong>
+$C_v = 68 / (16.5 \times 12) = 0.34$, $\eta_T \approx 1 - 0.05/0.40 = 0.875$</p>
+
+<p>Annual sediment load = 500,000 t yr⁻¹, $\rho_b = 1.2$ t m⁻³:</p>
+
+\[\Delta K = \frac{0.875 \times 500{,}000}{1.2 \times 10^6} = 0.365 \text{ Mm}^3/\text{yr}\]
+
+\[T_{50} = \frac{0.5 \times 68}{0.365} = 93 \text{ years}\]
+
+<p>Adequate for a 100-year design life, but marginal — sediment management provisions warranted.</p>
+
+<hr />
+
+<h2 id="5-computational-implementation">5. Computational Implementation</h2>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>function sequent_peak(Q_array, D_target):
+    d = Q_array - D_target
+    X = cumsum(d)
+    X2 = concatenate([X, X])   # double for wrap-around
+    K = 0
+    for t1 in range(len(X2) - 1):
+        if is_local_maximum(X2, t1):
+            trough = min(X2[t1 : t1 + len(Q_array)])
+            K = max(K, X2[t1] - trough)
+    return K
+
+function simulate(Q, D, K_max):
+    S = 0; storage=[]; shortage=[]; spill=[]
+    for q, d in zip(Q, D):
+        S_new = S + q - d
+        sp = max(0, S_new - K_max); S_new = min(S_new, K_max)
+        sh = max(0, -S_new);        S_new = max(0, S_new)
+        storage.append(S_new); shortage.append(sh); spill.append(sp)
+        S = S_new
+    return storage, shortage, spill
+
+function brune(Cv):
+    return 1 - 0.05 / (0.05 + Cv)
+</code></pre></div></div>
+
+<pre><code class="language-{pyodide}">import numpy as np
+
+def sequent_peak(Q, D):
+    d = Q - D
+    X = np.cumsum(d)
+    X2 = np.concatenate([X, X])
+    K = 0
+    n = len(Q)
+    for t1 in range(n):
+        trough = np.min(X2[t1:t1+n])
+        K = max(K, X2[t1] - trough)
+    return K
+
+def simulate(Q, D_array, K_max):
+    S = 0; storage=[]; shortage=[]; spill=[]
+    for q, d in zip(Q, D_array):
+        S_new = S + q - d
+        sp = max(0, S_new - K_max); S_new = min(S_new, K_max)
+        sh = max(0, -S_new);        S_new = max(0, S_new)
+        storage.append(S_new); shortage.append(sh); spill.append(sp)
+        S = S_new
+    return np.array(storage), np.array(shortage), np.array(spill)
+
+def brune(Cv):
+    return 1 - 0.05 / (0.05 + Cv)
+
+Q = np.array([8,6,10,25,40,50,30,12,8,5,4,3,4,6,10,22], dtype=float)
+D = 15.0
+K = sequent_peak(Q, D)
+print(f"Required capacity: {K:.1f} Mm³")
+
+# Simulate with this reservoir
+Darray = np.full(len(Q), D)
+storage, shortage, spill = simulate(Q, Darray, K)
+print(f"Total shortage in period: {shortage.sum():.1f} Mm³")
+print(f"Total spill:              {spill.sum():.1f} Mm³")
+
+# Storage-yield curve
+yields = np.arange(6, 19, 1.5)
+K_req  = [sequent_peak(np.tile(Q[:12], 3), d) for d in yields]
+print(f"\nStorage-yield curve:")
+for d, k in zip(yields, K_req):
+    print(f"  D = {d:4.1f} Mm³/mo  →  K = {k:6.1f} Mm³")
+
+# Sedimentation
+Cv = K / (Q[:12].mean() * 12)
+eta = brune(Cv)
+dK = eta * 500_000 / 1.2e6
+T50 = 0.5 * K / dK
+print(f"\nCv={Cv:.2f}, η_T={eta:.3f}, ΔK={dK:.3f} Mm³/yr, T_50={T50:.0f} yr")
+</code></pre>
+
+<hr />
+
+<h2 id="6-visualization">6. Visualization</h2>
+
+<div data-viz="echarts" style="height:420px" data-options="{
+  &quot;title&quot;: {&quot;text&quot;: &quot;Sequent Peak — Cumulative Departure and Required Storage&quot;, &quot;textStyle&quot;: {&quot;fontSize&quot;: 14}},
+  &quot;tooltip&quot;: {&quot;trigger&quot;: &quot;axis&quot;},
+  &quot;legend&quot;: {&quot;data&quot;: [&quot;Cumulative departure X(t)&quot;, &quot;Required storage K = 68&quot;], &quot;bottom&quot;: 0},
+  &quot;xAxis&quot;: {&quot;type&quot;: &quot;category&quot;, &quot;name&quot;: &quot;Month&quot;, &quot;nameLocation&quot;: &quot;middle&quot;, &quot;nameGap&quot;: 28,
+    &quot;data&quot;: [&quot;J&quot;,&quot;F&quot;,&quot;M&quot;,&quot;A&quot;,&quot;M&quot;,&quot;J&quot;,&quot;J&quot;,&quot;A&quot;,&quot;S&quot;,&quot;O&quot;,&quot;N&quot;,&quot;D&quot;,&quot;J+1&quot;,&quot;F+1&quot;,&quot;M+1&quot;,&quot;A+1&quot;]},
+  &quot;yAxis&quot;: {&quot;name&quot;: &quot;Departure from yield (Mm³)&quot;, &quot;nameLocation&quot;: &quot;middle&quot;, &quot;nameGap&quot;: 55},
+  &quot;series&quot;: [
+    {&quot;name&quot;: &quot;Cumulative departure X(t)&quot;, &quot;type&quot;: &quot;line&quot;, &quot;smooth&quot;: false,
+     &quot;itemStyle&quot;: {&quot;color&quot;: &quot;#1565C0&quot;},
+     &quot;data&quot;: [-7,-16,-21,-11,14,49,64,61,54,44,33,21,10,1,-4,3]},
+    {&quot;name&quot;: &quot;Required storage K = 68&quot;, &quot;type&quot;: &quot;line&quot;,
+     &quot;lineStyle&quot;: {&quot;type&quot;: &quot;dashed&quot;, &quot;color&quot;: &quot;#C62828&quot;},
+     &quot;data&quot;: [68,68,68,68,68,68,68,68,68,68,68,68,68,68,68,68]}
+  ]
+}"></div>
+
+<p>The cumulative departure falls 68 Mm³ from the July peak (+64) to the March trough (−4). Any reservoir smaller than 68 Mm³ would run dry between July and the following spring. The recovery in April+1 represents the next snowmelt freshet that refills storage.</p>
+
+<hr />
+
+<h2 id="7-interpretation">7. Interpretation</h2>
+
+<p>The sequent peak algorithm is deterministic: it guarantees delivery through the exact historical drought sequence, nothing more. If the future contains a worse drought — plausible under climate projections for western Canada — the reservoir will fail. Risk-based design (Essay AR2) extends this to probabilistic statements by generating synthetic flow sequences longer than the historical record.</p>
+
+<p>The sedimentation result forces a design revision: a reservoir sized for today’s yield will be undersized in 50 years as sediment accumulates. Conservative design increases initial capacity to account for the 50-year capacity loss, accepting higher upfront cost to maintain performance through the design life.</p>
+
+<p>The multi-objective conflict is irreducible. Flood control wants empty storage available before storms; water supply wants full storage available during droughts. In the same month, both cannot be optimally satisfied. Formal multi-criteria decision analysis provides a structured framework for negotiating this conflict among stakeholders — but cannot make the physical trade-off disappear.</p>
+
+<hr />
+
+<h2 id="8-what-could-go-wrong">8. What Could Go Wrong?</h2>
+
+<p><strong>The drought of record understates risk.</strong> Instrumental records rarely exceed 100 years. Paleoclimate evidence (tree rings, lake sediments) in the Canadian Rockies documents multi-decadal droughts far more severe than any 20th-century event. Designing to the historical record provides a false sense of security.</p>
+
+<p><strong>Climate change is altering inflow timing.</strong> Glacially-fed rivers in the Rockies are experiencing earlier, lower peak flows as glaciers retreat. The summer baseflows that historically supported water supply — sustained by glacier melt — are declining. The historical inflow record is a progressively less reliable predictor of future conditions.</p>
+
+<p><strong>Evaporation from large reservoirs is significant.</strong> At 1.5 m yr⁻¹ evaporation over a 50 km² reservoir surface, annual evaporative loss is 75 Mm³ — comparable to the reservoir’s conservation storage. Omitting this from the mass balance overestimates firm yield by 15–30%.</p>
+
+<p><strong>Sediment flushing harms downstream ecology.</strong> Pulse releases of turbid water during flushing events can kill fish, smother spawning beds, and violate downstream water quality permits. Sediment management must therefore be integrated with environmental flow requirements — constraining the operational flexibility that makes flushing most effective.</p>
+
+<hr />
+
+<h2 id="9-summary">9. Summary</h2>
+
+<p>The reservoir mass balance $S(t+1) = S(t) + Q_{\text{in}} - Q_{\text{out}} - E$ links inflow, release, and storage. The sequent peak algorithm finds the minimum capacity $K$ to deliver target yield $D$ through the historical drought, computed as the maximum cumulative deficit in the inflow series. The storage-yield curve $K(D)$ rises steeply near mean annual flow, reflecting the large storage needed to bridge multi-year droughts.</p>
+
+<p>Multi-purpose reservoirs face irreducible tradeoffs between flood control (empty storage), water supply (full storage), and hydropower (high head). Zone-based operating rules and hedging strategies manage these conflicts. Sedimentation reduces capacity at rate $\Delta K = \eta_T Q_s / \rho_b$; design life to 50% capacity loss is $T_{50} = 0.5 K_0 / \Delta K$, typically 50–200 years for large reservoirs.</p>
+
+<p><strong>Key equations:</strong></p>
+
+\[S(t+1) = S(t) + Q_{\text{in}} - Q_{\text{out}} - E\]
+
+\[K = \max[X_{t_1} - \min_{t_1\le t\le t_2} X_t], \quad X_t = \sum_{k=1}^t (Q_k - D)\]
+
+\[P = \eta\rho g H Q \quad\text{[hydropower]}\]
+
+\[\Delta K = \eta_T Q_{s,\text{annual}}/\rho_b, \quad T_{50} = 0.5K_0/\Delta K\]
+
+<hr />
+
+<h2 id="math-refresher">Math Refresher</h2>
+
+<p><strong>Cumulative sums and the Rippl diagram.</strong> The cumulative departure $X_t = \sum_{k=1}^t(Q_k - D)$ is a running total of how far ahead or behind the inflow is relative to demand. Rising = surplus (reservoir filling); falling = deficit (reservoir draining). The maximum drop from any peak to the next trough is the storage needed to bridge that drought — geometrically, the largest vertical descent in the $X_t$ curve. This insight (Rippl 1882) predates digital computing by 80 years.</p>
+
+<p><strong>Dimensional consistency in hydropower.</strong> $P = \eta\rho g H Q$: units are [dimensionless × kg m⁻³ × m s⁻² × m × m³ s⁻¹] = [kg m² s⁻³] = [W]. The product $\rho g H$ is pressure [Pa = N m⁻²]; multiplied by flow rate [m³ s⁻¹] gives power [N m s⁻¹ = W]. Annual energy in kWh: $E = P \times 8760 / 1000$.</p>
+
+      </div>
+
+      
+
+
+
+      
+
+  
+  
+  
+  
+
+
+
+      <!-- essay-footer-notes.html — References / endnotes section.
+     Hidden by default; assets/js/essay/core.js shows it and populates
+     #essay-endnotes-list from [data-cite] elements in the content.
+
+     In posts, create citation markers with:
+       <cite data-cite="Author, Title, URL">1</cite>
+     The JS collects these and renders a numbered reference list here. -->
+
+<footer class="essay-endnotes" id="essay-endnotes" aria-label="References" hidden>
+  <div class="essay-endnotes-inner">
+    <h2 class="essay-endnotes-heading">References</h2>
+    <ol class="essay-endnotes-list" id="essay-endnotes-list">
+      <!-- Populated at runtime by assets/js/essay/core.js buildEndnotes() -->
+    </ol>
+  </div>
+</footer>
+
+
+      
+
+      
+
+      
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    </article>
+  </main>
+
+  <aside
+    class="essay-sidenotes"
+    id="essay-sidenotes"
+    aria-label="Margin notes"
+  ></aside>
+
+</div>
+
+</div>
+
+<footer>
+  <div class="footer-inner">
+
+    <!-- Col 1: Brand -->
+    <div class="footer-brand">
+      <div class="footer-brand-logo">
+        
+        <img loading="lazy" src="/assets/images/logo.webp" alt="WaywardHouse" width="28" height="28">
+        
+        WaywardHouse<span>.</span>
+      </div>
+      
+      
+      <p class="footer-brand-desc">Understanding how place, economy, and environment interact — through analysis, modelling, and open tools.</p>
+      
+
+      <div class="footer-social">
+        
+        
+        <a href="/feed.xml" class="social-icon" target="_blank" rel="noopener noreferrer" aria-label="RSS feed">
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M4 11a9 9 0 0 1 9 9"/>
+            <path d="M4 4a16 16 0 0 1 16 16"/>
+            <circle cx="5" cy="19" r="1"/>
+          </svg>
+        </a>
+      </div>
+    </div>
+
+    <!-- Col 2: Topics (configurable via footer_topics, falls back to auto-categories) -->
+    <nav aria-labelledby="footer-topics">
+      <h3 class="footer-col-title" id="footer-topics">Reading</h3>
+      <ul class="footer-links">
+        
+          
+          <li><a href="/topics/">Essays</a></li>
+          
+          <li><a href="/series/">Modelling</a></li>
+          
+          <li><a href="/archive/">Archive</a></li>
+          
+          <li><a href="/start-here/">Start Here</a></li>
+          
+        
+      </ul>
+    </nav>
+
+    <!-- Col 3: Secondary navigation -->
+    
+    <nav aria-labelledby="footer-company">
+      <h3 class="footer-col-title" id="footer-company">Site</h3>
+      <ul class="footer-links">
+        
+        <li><a href="/start-here/">Start Here</a></li>
+        
+        <li><a href="/about/">About</a></li>
+        
+        <li><a href="/contact/">Contact</a></li>
+        
+      </ul>
+    </nav>
+    
+
+    <!-- Col 4: Resources -->
+    <nav aria-labelledby="footer-resources">
+      <h3 class="footer-col-title" id="footer-resources">Resources</h3>
+      <ul class="footer-links">
+        <li><a href="/archive/">Archive</a></li>
+        <li><a href="/feed.xml">RSS Feed</a></li>
+        <li><a href="/topics/">All Topics</a></li>
+      </ul>
+    </nav>
+
+  </div><!-- /.footer-inner -->
+
+  <div class="footer-bottom">
+    <span class="footer-copy">
+      &copy; 2026 WaywardHouse.
+    </span>
+    <div class="footer-legal">
+      <a href="/privacy/">Privacy Policy</a>
+      <a href="/terms/">Terms of Service</a>
+    </div>
+  </div>
+
+</footer>
+
+
+<!-- Alpine.js bundle -->
+<script type="module" src="/assets/dist/main.js"></script>
+
+<!-- Visualization runtime — detects and loads CDN libraries dynamically -->
+<script type="module" src="/assets/js/core.js"></script>
+
+<!-- Search overlay — event-driven: nav button $dispatches 'search:open' -->
+<div
+  x-data="search"
+  x-init="init()"
+  @search:open.window="open()"
+>
+  <div
+    class="search-overlay"
+    x-show="isOpen"
+    x-transition:enter="transition ease-out duration-150"
+    x-transition:enter-start="opacity-0"
+    x-transition:enter-end="opacity-100"
+    x-transition:leave="transition ease-in duration-100"
+    x-transition:leave-start="opacity-100"
+    x-transition:leave-end="opacity-0"
+    @click.self="close()"
+    style="display: none;"
+    role="dialog"
+    aria-modal="true"
+    aria-label="Search"
+  >
+    <div class="search-panel">
+      <div class="search-input-wrap">
+        <svg class="search-icon" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <circle cx="11" cy="11" r="8"/>
+          <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+        </svg>
+        <input
+          class="search-input"
+          type="search"
+          placeholder="Search posts…"
+          x-model="query"
+          x-ref="input"
+          @input.debounce.300ms="runSearch()"
+          @keydown.escape="close()"
+          autocomplete="off"
+          spellcheck="false"
+          aria-label="Search query"
+        >
+        <kbd class="search-esc" aria-hidden="true">ESC</kbd>
+      </div>
+
+      <div class="search-results" x-show="query.trim().length > 0">
+        <div class="search-status" x-show="loading" aria-live="polite">Searching…</div>
+        <div class="search-status" x-show="!loading && results.length === 0" aria-live="polite">
+          No results for "<span x-text="query"></span>"
+        </div>
+        <ul class="search-result-list" x-show="!loading && results.length > 0" role="list">
+          <template x-for="result in results" :key="result.url">
+            <li>
+              <a :href="result.url" class="search-result-item" @click="close()">
+                <div class="search-result-title" x-text="result.meta?.title || result.url"></div>
+                <div class="search-result-excerpt" x-html="result.excerpt"></div>
+              </a>
+            </li>
+          </template>
+        </ul>
+      </div>
+    </div>
+  </div>
+</div>
+
+</body>
+</html>

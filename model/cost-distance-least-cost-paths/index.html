@@ -1,0 +1,1425 @@
+<!DOCTYPE html>
+
+<html lang="en" data-brand="wayward" data-theme="light">
+<head>
+  <meta charset="utf-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Cost-Distance and Least-Cost Paths — WaywardHouse</title>
+<meta name="description" content="Where should a trail go to minimize slope? What's the easiest route for wildlife between habitats? How do you route a pipeline across variable terrain? Cost-distance analysis finds accumulated cost...">
+
+<!-- Dark mode flash prevention — runs synchronously before first paint -->
+<script>
+  (function () {
+    var defaultDark = 'light' === 'dark';
+    var s = localStorage.getItem('theme');
+    var dark = s !== null ? s === 'dark' : defaultDark;
+    document.documentElement.dataset.theme = dark ? 'dark' : 'light';
+  })();
+</script>
+
+<!-- Preconnect to CDN domains used by the viz runtime -->
+<link rel="preconnect" href="https://cdn.jsdelivr.net">
+<link rel="preconnect" href="https://unpkg.com">
+<link rel="preconnect" href="https://esm.sh">
+<link rel="preconnect" href="https://api.mapbox.com">
+<link rel="preconnect" href="https://events.mapbox.com">
+
+
+<script>window.MAPBOX_TOKEN = 'pk.eyJ1IjoiYnJlYWRlZGNvZCIsImEiOiJjbW0xa25qc2EwMmtwMnJwejJlNndqdnoxIn0._7I9PwXuFLrOQINVZ84y1w';</script>
+
+
+<!-- Fonts -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:ital,wght@0,300;0,400;0,600;0,700;0,800;0,900;1,700;1,800&family=Barlow:wght@300;400&family=IBM+Plex+Mono:ital,wght@0,300;0,400;0,500;1,300&family=Literata:ital,opsz,wght@0,7..72,300;0,7..72,400;0,7..72,500;1,7..72,300;1,7..72,400&display=swap" rel="stylesheet">
+
+<!-- Theme stylesheet (Vite build output) -->
+<link rel="stylesheet" href="/assets/dist/main.css">
+
+<!-- Brand token overrides — loaded after main.css so variables cascade correctly -->
+
+<link rel="stylesheet" href="/assets/css/brand-wayward.css">
+
+
+
+<!-- Syntax highlighting (Rouge — light + dark) -->
+<link rel="stylesheet" href="/assets/css/syntax.css">
+
+<!-- Begin Jekyll SEO tag v2.8.0 -->
+<title>Cost-Distance and Least-Cost Paths | WaywardHouse</title>
+<meta name="generator" content="Jekyll v4.4.1" />
+<meta property="og:title" content="Cost-Distance and Least-Cost Paths" />
+<meta property="og:locale" content="en" />
+<meta name="description" content="Where should a trail go to minimize slope? What’s the easiest route for wildlife between habitats? How do you route a pipeline across variable terrain? Cost-distance analysis finds accumulated cost surfaces, and least-cost paths trace optimal routes through them. This model derives Dijkstra’s algorithm and implements it on raster grids." />
+<meta property="og:description" content="Where should a trail go to minimize slope? What’s the easiest route for wildlife between habitats? How do you route a pipeline across variable terrain? Cost-distance analysis finds accumulated cost surfaces, and least-cost paths trace optimal routes through them. This model derives Dijkstra’s algorithm and implements it on raster grids." />
+<link rel="canonical" href="https://wayward.house/model/cost-distance-least-cost-paths/" />
+<meta property="og:url" content="https://wayward.house/model/cost-distance-least-cost-paths/" />
+<meta property="og:site_name" content="WaywardHouse" />
+<meta property="og:image" content="https://wayward.house/assets/images/cost-distance-path.webp" />
+<meta property="og:type" content="article" />
+<meta property="article:published_time" content="2026-02-27T00:00:00+00:00" />
+<meta name="twitter:card" content="summary_large_image" />
+<meta property="twitter:image" content="https://wayward.house/assets/images/cost-distance-path.webp" />
+<meta property="twitter:title" content="Cost-Distance and Least-Cost Paths" />
+<meta name="twitter:site" content="@" />
+<script type="application/ld+json">
+{"@context":"https://schema.org","@type":"BlogPosting","dateModified":"2026-03-12T16:57:04+00:00","datePublished":"2026-02-27T00:00:00+00:00","description":"Where should a trail go to minimize slope? What’s the easiest route for wildlife between habitats? How do you route a pipeline across variable terrain? Cost-distance analysis finds accumulated cost surfaces, and least-cost paths trace optimal routes through them. This model derives Dijkstra’s algorithm and implements it on raster grids.","headline":"Cost-Distance and Least-Cost Paths","image":"https://wayward.house/assets/images/cost-distance-path.webp","mainEntityOfPage":{"@type":"WebPage","@id":"https://wayward.house/model/cost-distance-least-cost-paths/"},"publisher":{"@type":"Organization","logo":{"@type":"ImageObject","url":"https://wayward.house/assets/images/logo.webp"}},"url":"https://wayward.house/model/cost-distance-least-cost-paths/"}</script>
+<!-- End Jekyll SEO tag -->
+
+
+
+<!-- Cloudflare Web Analytics -->
+<script defer src="https://static.cloudflareinsights.com/beacon.min.js"
+  data-cf-beacon='{"token": "62c47d78bf9d4c80972d4e6242d79ff8"}'></script>
+
+
+</head>
+<body class="
+  model-template
+   tag-modelling
+   tag-hash-math
+  
+   tag-hash-viz
+  
+  
+  
+  
+  
+  
+">
+
+<a href="#main-content" class="skip-link">Skip to content</a>
+
+<header class="nav" x-data="{ open: false }">
+  <div class="nav-inner">
+
+    <!-- Logo -->
+    <a href="/" class="nav-logo">
+      
+      <img loading="lazy" src="/assets/images/logo.webp" alt="WaywardHouse" width="32" height="32">
+      
+      WaywardHouse<span>.</span>
+    </a>
+
+    <!-- Desktop nav links -->
+    <ul class="nav-links" role="list">
+      
+      <li>
+        <a href="/topics/">Essays</a>
+      </li>
+      
+      <li>
+        <a href="/series/">Modelling</a>
+      </li>
+      
+      <li>
+        <a href="/about/">About</a>
+      </li>
+      
+    </ul>
+
+    <!-- Actions -->
+    <div class="nav-actions">
+
+      <!-- Search button -->
+      <button
+        class="search-toggle"
+        type="button"
+        aria-label="Search (⌘K)"
+        title="Search (⌘K)"
+        @click="$dispatch('search:open')"
+      >
+        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <circle cx="11" cy="11" r="8"/>
+          <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+        </svg>
+      </button>
+
+      <!-- Dark mode toggle -->
+      <button
+        class="theme-toggle"
+        x-data="darkMode"
+        x-init="init()"
+        @click="toggle()"
+        :aria-label="dark ? 'Switch to light mode' : 'Switch to dark mode'"
+        type="button"
+      >
+        <!-- Sun icon (shown in light mode) -->
+        <svg class="icon-sun" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">
+          <circle cx="12" cy="12" r="5"/>
+          <line x1="12" y1="1" x2="12" y2="3"/>
+          <line x1="12" y1="21" x2="12" y2="23"/>
+          <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/>
+          <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/>
+          <line x1="1" y1="12" x2="3" y2="12"/>
+          <line x1="21" y1="12" x2="23" y2="12"/>
+          <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/>
+          <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>
+        </svg>
+        <!-- Moon icon (shown in dark mode) -->
+        <svg class="icon-moon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">
+          <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+        </svg>
+      </button>
+
+      <!-- Hamburger (mobile only) -->
+      <button
+        class="mobile-nav-toggle"
+        @click="open = !open"
+        :aria-expanded="open"
+        :aria-label="open ? 'Close menu' : 'Open menu'"
+        type="button"
+      >
+        <svg x-show="!open" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <line x1="3" y1="6" x2="21" y2="6"/>
+          <line x1="3" y1="12" x2="21" y2="12"/>
+          <line x1="3" y1="18" x2="21" y2="18"/>
+        </svg>
+        <svg x-show="open" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <line x1="18" y1="6" x2="6" y2="18"/>
+          <line x1="6" y1="6" x2="18" y2="18"/>
+        </svg>
+      </button>
+
+    </div><!-- /.nav-actions -->
+  </div><!-- /.nav-inner -->
+
+  <!-- Mobile drawer -->
+  <div
+    class="mobile-nav"
+    x-show="open"
+    x-transition:enter="transition ease-out duration-200"
+    x-transition:enter-start="opacity-0 -translate-y-1"
+    x-transition:enter-end="opacity-100 translate-y-0"
+    x-transition:leave="transition ease-in duration-150"
+    x-transition:leave-start="opacity-100 translate-y-0"
+    x-transition:leave-end="opacity-0 -translate-y-1"
+    @click.outside="open = false"
+    @keydown.escape.window="open = false"
+  >
+    <ul role="list">
+      
+      <li>
+        <a href="/topics/" @click="open = false">Essays</a>
+      </li>
+      
+      <li>
+        <a href="/series/" @click="open = false">Modelling</a>
+      </li>
+      
+      <li>
+        <a href="/about/" @click="open = false">About</a>
+      </li>
+      
+    </ul>
+  </div><!-- /.mobile-nav -->
+
+</header>
+
+
+<div id="main-content">
+  <!-- Essay stylesheet and runtime — self-contained -->
+<link rel="stylesheet" href="/assets/css/essay.css">
+<script type="module" src="/assets/js/essay/core.js"></script>
+
+<div class="essay-layout" id="essay-layout">
+
+  <!-- essay-toc.html — Sticky table of contents (left column).
+     The <ol> is empty on load; assets/js/essay/core.js populates it
+     from h2/h3 elements found in #essay-content after the page renders. -->
+
+<nav class="essay-toc" id="essay-toc" aria-label="Table of contents">
+  <div class="essay-toc-inner">
+    <p class="essay-toc-heading" aria-hidden="true">Contents</p>
+    <ol class="essay-toc-list" id="essay-toc-list">
+      <!-- Populated at runtime by assets/js/essay/core.js buildToc() -->
+    </ol>
+  </div>
+</nav>
+
+
+  <main class="essay-main" id="essay-main" role="main">
+    <article class="essay-article">
+
+      <!-- essay-hero.html — Header for computational essay template.
+     Displays feature image, tag label, title, excerpt, and post metadata. -->
+
+<header class="essay-hero">
+  
+  <figure class="essay-hero-figure">
+    <img
+      src="/assets/images/cost-distance-path.webp"
+      alt="Cost-Distance and Least-Cost Paths"
+      class="essay-hero-img"
+      loading="eager"
+    >
+    
+  </figure>
+  
+
+  <div class="essay-hero-body">
+
+    
+    
+    
+    
+    
+    <nav class="essay-breadcrumb" aria-label="Series position">
+      
+      <a href="/series/3/" class="essay-breadcrumb-link">Computational geography spatial</a>
+      
+      
+      <span class="essay-breadcrumb-sep" aria-hidden="true">›</span>
+      <span class="essay-breadcrumb-cluster">Terrain Analysis</span>
+      
+      
+      <span class="essay-breadcrumb-sep" aria-hidden="true">›</span>
+      <span class="essay-breadcrumb-pos">Model 9</span>
+      
+    </nav>
+    
+
+    <div class="essay-hero-labels">
+      
+      <a href="/topics/modelling/" class="essay-tag-label">modelling</a>
+      
+      
+      <span class="difficulty-badge difficulty-badge--4">Level 4</span>
+      
+    </div>
+
+    <h1 class="essay-title">Cost-Distance and Least-Cost Paths</h1>
+
+    
+    <p class="essay-excerpt">Where should a trail go to minimize slope? What's the easiest route for wildlife between habitats? How do you route a pipeline across variable terrain? Cost-distance analysis finds accumulated cost surfaces, and least-cost paths trace optimal routes through them. This model derives Dijkstra's algorithm and implements it on raster grids.
+</p>
+    
+
+    
+    <p class="essay-prereqs"><span class="essay-prereqs-label">Prerequisites:</span> dijkstra algorithm, graph theory, optimization, dynamic programming</p>
+    
+
+    <div class="essay-meta">
+      
+      <div class="essay-meta-secondary">
+        <time class="essay-date" datetime="2026-02-27">27 Feb 2026</time>
+        
+        
+        <span class="essay-sep" aria-hidden="true">·</span>
+        <span class="essay-updated">Updated <time datetime="2026-03-12">12 Mar 2026</time></span>
+        
+        <span class="essay-sep" aria-hidden="true">·</span>
+        <span class="essay-reading-time">14 min read</span>
+      </div>
+    </div>
+  </div>
+</header>
+
+
+      
+
+
+
+
+
+      <div class="essay-content gh-content" id="essay-content">
+        <h2 id="1-the-question">1. The Question</h2>
+
+<p>What’s the easiest hiking route from the trailhead to the summit?</p>
+
+<p><strong>Euclidean distance</strong> doesn’t account for terrain difficulty:</p>
+<ul>
+  <li>Steep slopes are harder to traverse</li>
+  <li>Roads are easier than off-trail</li>
+  <li>Rivers may be impassable</li>
+</ul>
+
+<p><strong>Cost-distance</strong> accumulates travel cost across a surface:</p>
+
+<p><strong>Applications:</strong></p>
+<ul>
+  <li><strong>Hiking trails:</strong> Minimize elevation gain and distance</li>
+  <li><strong>Wildlife corridors:</strong> Connect habitats through suitable terrain</li>
+  <li><strong>Pipelines:</strong> Minimize construction cost (avoid wetlands, steep slopes)</li>
+  <li><strong>Power lines:</strong> Balance distance vs. terrain difficulty</li>
+  <li><strong>Emergency response:</strong> Fastest route considering traffic and terrain</li>
+</ul>
+
+<p>The mathematical question: Given a cost surface (where each cell has a traversal cost), find the minimum accumulated cost to reach any location, and trace the optimal path.</p>
+
+<hr />
+
+<h2 id="2-the-conceptual-model">2. The Conceptual Model</h2>
+
+<h3 id="cost-surface">Cost Surface</h3>
+
+<p><strong>Cost raster:</strong> Each cell has a value representing difficulty/cost of traversal.</p>
+
+<p><strong>Examples:</strong></p>
+
+<p><strong>Slope-based cost:</strong></p>
+
+\[\text{cost} = e^{3.5 \times |\tan(\text{slope}) + 0.05|}\]
+
+<p>(Tobler’s hiking function—models walking speed on slopes)</p>
+
+<p><strong>Land cover cost:</strong></p>
+
+<table>
+  <thead>
+    <tr>
+      <th>Type</th>
+      <th>Cost</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>Road</td>
+      <td>1</td>
+    </tr>
+    <tr>
+      <td>Grass</td>
+      <td>5</td>
+    </tr>
+    <tr>
+      <td>Forest</td>
+      <td>10</td>
+    </tr>
+    <tr>
+      <td>Wetland</td>
+      <td>50</td>
+    </tr>
+    <tr>
+      <td>Water</td>
+      <td>∞ (impassable)</td>
+    </tr>
+  </tbody>
+</table>
+
+<p><strong>Combined cost:</strong></p>
+
+\[\text{cost}_{\text{total}} = w_1 \times \text{cost}_{\text{slope}} + w_2 \times \text{cost}_{\text{landcover}}\]
+
+<h3 id="accumulated-cost-surface">Accumulated Cost Surface</h3>
+
+<p><strong>For each cell:</strong> Minimum total cost to reach it from source.</p>
+
+<p><strong>Initialization:</strong></p>
+<ul>
+  <li>Source cell: cost = 0</li>
+  <li>All others: cost = ∞</li>
+</ul>
+
+<p><strong>Propagation:</strong> Iteratively update neighbors, choosing minimum cost path.</p>
+
+<p><strong>Result:</strong> Raster where value = minimum accumulated cost from source.</p>
+
+<h3 id="least-cost-path">Least-Cost Path</h3>
+
+<p><strong>Trace route</strong> from destination back to source following steepest descent in cost surface.</p>
+
+<p><strong>Backtracking:</strong></p>
+<ul>
+  <li>Start at destination</li>
+  <li>Move to neighbor with lowest accumulated cost</li>
+  <li>Repeat until reaching source</li>
+</ul>
+
+<p><strong>Result:</strong> Polyline representing optimal route.</p>
+
+<hr />
+
+<h2 id="3-building-the-mathematical-model">3. Building the Mathematical Model</h2>
+
+<h3 id="graph-representation">Graph Representation</h3>
+
+<p><strong>Raster as graph:</strong></p>
+<ul>
+  <li><strong>Nodes:</strong> Grid cells</li>
+  <li><strong>Edges:</strong> Connections to neighbors (4-neighbor or 8-neighbor)</li>
+  <li><strong>Edge weights:</strong> Cost to traverse from cell to neighbor</li>
+</ul>
+
+<p><strong>Edge cost from cell $i$ to neighbor $j$:</strong></p>
+
+\[c_{ij} = \text{distance}_{ij} \times \frac{\text{cost}_i + \text{cost}_j}{2}\]
+
+<p><strong>Distance:</strong></p>
+<ul>
+  <li>Cardinal neighbors (N, S, E, W): distance = 1 (cell size)</li>
+  <li>Diagonal neighbors: distance = $\sqrt{2}$ (cell size)</li>
+</ul>
+
+<p><strong>Average cost:</strong> Use mean of source and destination cell costs.</p>
+
+<h3 id="dijkstras-algorithm">Dijkstra’s Algorithm</h3>
+
+<p><strong>Classic shortest-path algorithm</strong> (Edsger Dijkstra, 1956).</p>
+
+<p><strong>Data structures:</strong></p>
+<ul>
+  <li><code class="language-plaintext highlighter-rouge">dist[v]</code>: Minimum distance from source to node <code class="language-plaintext highlighter-rouge">v</code></li>
+  <li><code class="language-plaintext highlighter-rouge">visited</code>: Set of nodes with finalized distances</li>
+  <li><code class="language-plaintext highlighter-rouge">priority_queue</code>: Nodes to process, ordered by distance</li>
+</ul>
+
+<p><strong>Algorithm:</strong></p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>function dijkstra(graph, source):
+    dist[source] = 0
+    dist[all others] = ∞
+    priority_queue = {source: 0}
+    
+    while priority_queue not empty:
+        u = node with minimum dist in queue
+        remove u from queue
+        add u to visited
+        
+        for each neighbor v of u:
+            if v not in visited:
+                new_dist = dist[u] + edge_cost(u, v)
+                if new_dist &lt; dist[v]:
+                    dist[v] = new_dist
+                    parent[v] = u
+                    add/update v in queue
+    
+    return dist, parent
+</code></pre></div></div>
+
+<p><strong>Complexity:</strong> $O((V + E) \log V)$ with priority queue</p>
+
+<p>Where $V$ = cells, $E$ = edges (typically 8V for 8-neighbor grid)</p>
+
+<p><strong>For $n \times n$ grid:</strong> $O(n^2 \log n)$</p>
+
+<h3 id="path-reconstruction">Path Reconstruction</h3>
+
+<p><strong>After Dijkstra’s, trace back using parent pointers:</strong></p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>function reconstruct_path(parent, source, destination):
+    path = []
+    current = destination
+    
+    while current != source:
+        path.append(current)
+        current = parent[current]
+    
+    path.append(source)
+    return reverse(path)
+</code></pre></div></div>
+
+<p><strong>Result:</strong> Sequence of cells from source to destination.</p>
+
+<h3 id="anisotropic-cost-direction-dependent">Anisotropic Cost (Direction-Dependent)</h3>
+
+<p><strong>Cost may vary by direction:</strong></p>
+
+<p><strong>Uphill vs. downhill:</strong></p>
+
+<p>\(\text{cost}_{\text{uphill}} = \text{base} \times e^{k \times \text{slope}}\)
+\(\text{cost}_{\text{downhill}} = \text{base} \times e^{-k \times \text{slope}}\)</p>
+
+<p><strong>Wind resistance:</strong></p>
+
+\[\text{cost}_{\text{headwind}} &gt; \text{cost}_{\text{tailwind}}\]
+
+<p><strong>Implementation:</strong> Edge cost depends on both source and destination cells plus direction.</p>
+
+<hr />
+
+<h2 id="4-worked-example-by-hand">4. Worked Example by Hand</h2>
+
+<p><strong>Problem:</strong> Find least-cost path from (0,0) to (3,3) in this cost grid.</p>
+
+<p><strong>Cost surface:</strong></p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>      j=0  j=1  j=2  j=3
+i=0    1    5   10    5
+i=1    1    1    5   10
+i=2    5    1    1    5
+i=3   10    5    1    1
+</code></pre></div></div>
+
+<p>Use 4-neighbor connectivity (N, S, E, W only).</p>
+
+<h3 id="solution">Solution</h3>
+
+<p><strong>Initialization:</strong></p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>dist[0,0] = 0
+dist[all others] = ∞
+</code></pre></div></div>
+
+<p><strong>Iteration 1:</strong> Process (0,0), cost = 0</p>
+
+<p>Neighbors: (0,1) and (1,0)</p>
+
+<p>Update (0,1):</p>
+<ul>
+  <li>Edge cost = $1 \times \frac{1 + 5}{2} = 3$</li>
+  <li><code class="language-plaintext highlighter-rouge">dist[0,1] = 0 + 3 = 3</code></li>
+</ul>
+
+<p>Update (1,0):</p>
+<ul>
+  <li>Edge cost = $1 \times \frac{1 + 1}{2} = 1$</li>
+  <li><code class="language-plaintext highlighter-rouge">dist[1,0] = 0 + 1 = 1</code></li>
+</ul>
+
+<p><strong>Iteration 2:</strong> Process (1,0), cost = 1 (minimum unvisited)</p>
+
+<p>Neighbors: (0,0) [visited], (1,1), (2,0)</p>
+
+<p>Update (1,1):</p>
+<ul>
+  <li>Edge cost = $1 \times \frac{1 + 1}{2} = 1$</li>
+  <li><code class="language-plaintext highlighter-rouge">dist[1,1] = 1 + 1 = 2</code></li>
+</ul>
+
+<p>Update (2,0):</p>
+<ul>
+  <li>Edge cost = $1 \times \frac{1 + 5}{2} = 3$</li>
+  <li><code class="language-plaintext highlighter-rouge">dist[2,0] = 1 + 3 = 4</code></li>
+</ul>
+
+<p><strong>Continue…</strong></p>
+
+<p><strong>After full algorithm:</strong></p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>Accumulated cost:
+      j=0  j=1  j=2  j=3
+i=0    0    3    8   11
+i=1    1    2    4    9
+i=2    4    3    3    5
+i=3    9    6    4    4
+</code></pre></div></div>
+
+<p><strong>Least-cost path from (0,0) to (3,3):</strong></p>
+
+<p>Trace back from (3,3):</p>
+<ul>
+  <li>(3,3) cost=4, parent=(3,2)</li>
+  <li>(3,2) cost=4, parent=(2,2)</li>
+  <li>(2,2) cost=3, parent=(2,1)</li>
+  <li>(2,1) cost=3, parent=(1,1)</li>
+  <li>(1,1) cost=2, parent=(1,0)</li>
+  <li>(1,0) cost=1, parent=(0,0)</li>
+  <li>(0,0) source</li>
+</ul>
+
+<p><strong>Path:</strong> (0,0) → (1,0) → (1,1) → (2,1) → (2,2) → (3,2) → (3,3)</p>
+
+<p><strong>Total cost:</strong> 4 units</p>
+
+<p><strong>Path avoids high-cost cells</strong> in top-right and bottom-left corners.</p>
+
+<hr />
+
+<h2 id="5-computational-implementation">5. Computational Implementation</h2>
+
+<p>Below is an interactive cost-distance path finder.</p>
+
+<div class="viz-container" id="costpath-viz">
+  <div class="controls">
+    <label>
+      Cost type:
+      <select id="cost-type">
+        <option value="slope" selected="">Slope-based</option>
+        <option value="landcover">Land Cover</option>
+        <option value="random">Random Terrain</option>
+      </select>
+    </label>
+    <label>
+      Connectivity:
+      <select id="connectivity">
+        <option value="4">4-neighbor</option>
+        <option value="8" selected="">8-neighbor</option>
+      </select>
+    </label>
+    <label>
+      Show cost surface:
+      <input type="checkbox" id="show-cost" checked="" />
+    </label>
+    <label>
+      Show accumulated cost:
+      <input type="checkbox" id="show-accum" />
+    </label>
+    <div class="path-info">
+      <p><strong>Path length:</strong> <span id="path-length">--</span> cells</p>
+      <p><strong>Total cost:</strong> <span id="total-cost">--</span></p>
+      <p><strong>Avg cost/cell:</strong> <span id="avg-cost">--</span></p>
+    </div>
+  </div>
+  <div id="costpath-canvas-container">
+    <canvas id="costpath-canvas" width="600" height="600" style="border: 1px solid #ddd; cursor: crosshair;"></canvas>
+  </div>
+  <div class="instructions">
+    <p><em>Click to set start (green) and end (red) points, then path will compute automatically.</em></p>
+  </div>
+</div>
+
+<script type="module">
+(function() {
+  const canvas = document.getElementById('costpath-canvas');
+  const ctx = canvas.getContext('2d');
+  
+  let costType = 'slope';
+  let connectivity = 8;
+  let showCost = true;
+  let showAccum = false;
+  
+  const size = 40;
+  const cellSize = 600 / size;
+  
+  let startCell = null;
+  let endCell = null;
+  
+  // Generate cost surfaces
+  const costs = {
+    slope: [],
+    landcover: [],
+    random: []
+  };
+  
+  // Slope-based (hill in center)
+  for (let i = 0; i < size; i++) {
+    const row = [];
+    for (let j = 0; j < size; j++) {
+      const cx = size / 2, cy = size / 2;
+      const dist = Math.sqrt((i - cx) ** 2 + (j - cy) ** 2);
+      const elevation = 100 * Math.exp(-dist / 10);
+      const slope = Math.abs(elevation - 50) / 10;
+      row.push(1 + slope * 2);
+    }
+    costs.slope.push(row);
+  }
+  
+  // Land cover (patches)
+  for (let i = 0; i < size; i++) {
+    const row = [];
+    for (let j = 0; j < size; j++) {
+      const noise = Math.sin(i / 5) * Math.cos(j / 5);
+      const cost = noise > 0 ? 1 : (noise > -0.5 ? 5 : 20);
+      row.push(cost);
+    }
+    costs.landcover.push(row);
+  }
+  
+  // Random
+  for (let i = 0; i < size; i++) {
+    const row = [];
+    for (let j = 0; j < size; j++) {
+      row.push(1 + Math.random() * 10);
+    }
+    costs.random.push(row);
+  }
+  
+  function getCost() {
+    return costs[costType];
+  }
+  
+  function dijkstra(cost, start, end) {
+    const dist = Array(size).fill(null).map(() => Array(size).fill(Infinity));
+    const parent = Array(size).fill(null).map(() => Array(size).fill(null));
+    const visited = Array(size).fill(null).map(() => Array(size).fill(false));
+    
+    dist[start.i][start.j] = 0;
+    
+    const queue = [{i: start.i, j: start.j, dist: 0}];
+    
+    const neighbors = connectivity === 4 ? 
+      [{di: -1, dj: 0}, {di: 1, dj: 0}, {di: 0, dj: -1}, {di: 0, dj: 1}] :
+      [{di: -1, dj: 0}, {di: 1, dj: 0}, {di: 0, dj: -1}, {di: 0, dj: 1},
+       {di: -1, dj: -1}, {di: -1, dj: 1}, {di: 1, dj: -1}, {di: 1, dj: 1}];
+    
+    while (queue.length > 0) {
+      // Find minimum
+      queue.sort((a, b) => a.dist - b.dist);
+      const u = queue.shift();
+      
+      if (visited[u.i][u.j]) continue;
+      visited[u.i][u.j] = true;
+      
+      if (u.i === end.i && u.j === end.j) break;
+      
+      for (let {di, dj} of neighbors) {
+        const ni = u.i + di;
+        const nj = u.j + dj;
+        
+        if (ni < 0 || ni >= size || nj < 0 || nj >= size) continue;
+        if (visited[ni][nj]) continue;
+        
+        const edgeDist = Math.sqrt(di * di + dj * dj);
+        const edgeCost = edgeDist * (cost[u.i][u.j] + cost[ni][nj]) / 2;
+        const newDist = dist[u.i][u.j] + edgeCost;
+        
+        if (newDist < dist[ni][nj]) {
+          dist[ni][nj] = newDist;
+          parent[ni][nj] = {i: u.i, j: u.j};
+          queue.push({i: ni, j: nj, dist: newDist});
+        }
+      }
+    }
+    
+    return {dist, parent};
+  }
+  
+  function reconstructPath(parent, start, end) {
+    const path = [];
+    let current = {i: end.i, j: end.j};
+    
+    while (current) {
+      path.push(current);
+      if (current.i === start.i && current.j === start.j) break;
+      current = parent[current.i][current.j];
+    }
+    
+    return path.reverse();
+  }
+  
+  function drawCostSurface(cost) {
+    let min = Infinity, max = -Infinity;
+    for (let row of cost) {
+      for (let val of row) {
+        min = Math.min(min, val);
+        max = Math.max(max, val);
+      }
+    }
+    
+    for (let i = 0; i < size; i++) {
+      for (let j = 0; j < size; j++) {
+        const normalized = (cost[i][j] - min) / (max - min);
+        const gray = Math.floor(255 * (1 - normalized));
+        
+        ctx.fillStyle = `rgb(${gray}, ${gray}, ${gray})`;
+        ctx.fillRect(j * cellSize, i * cellSize, cellSize, cellSize);
+      }
+    }
+  }
+  
+  function drawAccumCost(dist) {
+    let min = Infinity, max = -Infinity;
+    for (let row of dist) {
+      for (let val of row) {
+        if (isFinite(val)) {
+          min = Math.min(min, val);
+          max = Math.max(max, val);
+        }
+      }
+    }
+    
+    for (let i = 0; i < size; i++) {
+      for (let j = 0; j < size; j++) {
+        if (!isFinite(dist[i][j])) continue;
+        
+        const normalized = (dist[i][j] - min) / (max - min);
+        const hue = 240 * (1 - normalized); // Blue to red
+        
+        ctx.fillStyle = `hsl(${hue}, 70%, 50%)`;
+        ctx.fillRect(j * cellSize, i * cellSize, cellSize, cellSize);
+      }
+    }
+  }
+  
+  function drawPath(path) {
+    if (!path || path.length < 2) return;
+    
+    ctx.strokeStyle = '#F39C12';
+    ctx.lineWidth = 3;
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
+    
+    ctx.beginPath();
+    ctx.moveTo(
+      path[0].j * cellSize + cellSize / 2,
+      path[0].i * cellSize + cellSize / 2
+    );
+    
+    for (let i = 1; i < path.length; i++) {
+      ctx.lineTo(
+        path[i].j * cellSize + cellSize / 2,
+        path[i].i * cellSize + cellSize / 2
+      );
+    }
+    
+    ctx.stroke();
+  }
+  
+  function drawMarkers() {
+    if (startCell) {
+      ctx.fillStyle = '#2ECC71';
+      ctx.beginPath();
+      ctx.arc(
+        startCell.j * cellSize + cellSize / 2,
+        startCell.i * cellSize + cellSize / 2,
+        cellSize / 3, 0, 2 * Math.PI
+      );
+      ctx.fill();
+    }
+    
+    if (endCell) {
+      ctx.fillStyle = '#E74C3C';
+      ctx.beginPath();
+      ctx.arc(
+        endCell.j * cellSize + cellSize / 2,
+        endCell.i * cellSize + cellSize / 2,
+        cellSize / 3, 0, 2 * Math.PI
+      );
+      ctx.fill();
+    }
+  }
+  
+  function render() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    
+    const cost = getCost();
+    
+    if (showCost && !showAccum) {
+      drawCostSurface(cost);
+    }
+    
+    let path = null;
+    let totalCost = 0;
+    
+    if (startCell && endCell) {
+      const {dist, parent} = dijkstra(cost, startCell, endCell);
+      
+      if (showAccum) {
+        drawAccumCost(dist);
+      }
+      
+      path = reconstructPath(parent, startCell, endCell);
+      totalCost = dist[endCell.i][endCell.j];
+      
+      drawPath(path);
+      
+      document.getElementById('path-length').textContent = path.length;
+      document.getElementById('total-cost').textContent = totalCost.toFixed(1);
+      document.getElementById('avg-cost').textContent = (totalCost / path.length).toFixed(2);
+    } else {
+      document.getElementById('path-length').textContent = '--';
+      document.getElementById('total-cost').textContent = '--';
+      document.getElementById('avg-cost').textContent = '--';
+    }
+    
+    drawMarkers();
+  }
+  
+  canvas.addEventListener('click', (e) => {
+    const rect = canvas.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+    
+    const j = Math.floor(x / cellSize);
+    const i = Math.floor(y / cellSize);
+    
+    if (!startCell) {
+      startCell = {i, j};
+    } else if (!endCell) {
+      endCell = {i, j};
+    } else {
+      startCell = {i, j};
+      endCell = null;
+    }
+    
+    render();
+  });
+  
+  document.getElementById('cost-type').addEventListener('change', (e) => {
+    costType = e.target.value;
+    render();
+  });
+  
+  document.getElementById('connectivity').addEventListener('change', (e) => {
+    connectivity = parseInt(e.target.value);
+    render();
+  });
+  
+  document.getElementById('show-cost').addEventListener('change', (e) => {
+    showCost = e.target.checked;
+    render();
+  });
+  
+  document.getElementById('show-accum').addEventListener('change', (e) => {
+    showAccum = e.target.checked;
+    render();
+  });
+  
+  render();
+})();
+</script>
+
+<p><strong>Try this:</strong></p>
+<ul>
+  <li><strong>Click to set start (green) and end (red)</strong> - path computes automatically</li>
+  <li><strong>Slope-based:</strong> Path avoids steep center (darker = higher cost)</li>
+  <li><strong>Land cover:</strong> Path finds low-cost patches</li>
+  <li><strong>8-neighbor vs 4-neighbor:</strong> Diagonal moves allowed vs cardinal only</li>
+  <li><strong>Show accumulated cost:</strong> Blue (near start) to red (far) - distance from source</li>
+  <li><strong>Path (orange):</strong> Follows minimum cost, not straight line</li>
+  <li>Notice: Path curves around high-cost areas even if that means longer distance!</li>
+</ul>
+
+<p><strong>Key insight:</strong> Optimal path balances distance vs. terrain cost—sometimes the long way is easier!</p>
+
+<hr />
+
+<h2 id="6-interpretation">6. Interpretation</h2>
+
+<h3 id="wildlife-corridor-design">Wildlife Corridor Design</h3>
+
+<p><strong>Problem:</strong> Connect two habitat patches for animal movement.</p>
+
+<p><strong>Approach:</strong></p>
+<ol>
+  <li>Create cost surface from habitat suitability
+    <ul>
+      <li>Low cost: Forest, grassland</li>
+      <li>High cost: Urban, agricultural</li>
+      <li>Infinite: Highways (impassable)</li>
+    </ul>
+  </li>
+  <li>Compute accumulated cost from source habitat</li>
+  <li>Find least-cost path to destination habitat</li>
+  <li>Widen path to create corridor (buffer)</li>
+</ol>
+
+<p><strong>Result:</strong> Protected corridor enabling wildlife movement.</p>
+
+<p><strong>Example:</strong> Mountain lion corridors in Southern California.</p>
+
+<h3 id="pipeline-routing">Pipeline Routing</h3>
+
+<p><strong>Cost factors:</strong></p>
+<ul>
+  <li>Slope (steep = expensive construction)</li>
+  <li>Land ownership (private &gt; public)</li>
+  <li>Environmental sensitivity (wetlands = regulatory cost)</li>
+  <li>Crossings (rivers, roads = high cost)</li>
+</ul>
+
+<p><strong>Optimization:</strong></p>
+
+\[\text{cost} = w_1 \times \text{construction} + w_2 \times \text{permits} + w_3 \times \text{maintenance}\]
+
+<p><strong>Least-cost path</strong> minimizes total project cost.</p>
+
+<h3 id="trail-design">Trail Design</h3>
+
+<p><strong>Tobler’s hiking function</strong> (optimal walking speed vs. slope):</p>
+
+\[v = 6 e^{-3.5|\tan(\text{slope}) + 0.05|}\]
+
+<p>Where $v$ is speed in km/h.</p>
+
+<p><strong>Travel time:</strong></p>
+
+\[t = \frac{d}{v}\]
+
+<p><strong>Trail routing:</strong></p>
+<ul>
+  <li>Minimize total time</li>
+  <li>Avoid slopes &gt; 15% (too steep)</li>
+  <li>Stay near scenic viewpoints (negative cost)</li>
+</ul>
+
+<p><strong>Result:</strong> Enjoyable, efficient trail.</p>
+
+<hr />
+
+<h2 id="7-what-could-go-wrong">7. What Could Go Wrong?</h2>
+
+<h3 id="local-minima">Local Minima</h3>
+
+<p><strong>Greedy algorithms can get stuck:</strong></p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>High cost barrier surrounds low-cost destination
+Greedy descent stops at barrier (local minimum)
+Never finds global optimum (go around barrier)
+</code></pre></div></div>
+
+<p><strong>Dijkstra avoids this</strong> by exploring all possibilities.</p>
+
+<h3 id="diagonal-bias">Diagonal Bias</h3>
+
+<p><strong>In 4-neighbor grid:</strong></p>
+
+<p>Diagonal moves unavailable → Manhattan distance artifacts</p>
+
+<p><strong>In 8-neighbor grid:</strong></p>
+
+<p>Diagonal cost = $\sqrt{2} \approx 1.41$ but often approximated as 1.5 or 1</p>
+
+<p><strong>Bias:</strong> Paths may zigzag when straight diagonal is optimal</p>
+
+<p><strong>Solution:</strong> Use correct $\sqrt{2}$ weight for diagonals</p>
+
+<h3 id="raster-resolution">Raster Resolution</h3>
+
+<p><strong>Coarse DEM misses fine-scale barriers:</strong></p>
+<ul>
+  <li>Small cliffs</li>
+  <li>Narrow canyons</li>
+  <li>Local hazards</li>
+</ul>
+
+<p><strong>10m DEM:</strong> Can route through 5m cliff (invisible at this resolution)</p>
+
+<p><strong>Solution:</strong> Use finest available resolution for critical applications</p>
+
+<h3 id="memory-limits">Memory Limits</h3>
+
+<p><strong>Large grids require huge memory:</strong></p>
+
+<p>10,000 × 10,000 grid = 100 million cells</p>
+
+<p>Each cell needs:</p>
+<ul>
+  <li>Distance value (8 bytes)</li>
+  <li>Parent pointer (8 bytes)</li>
+  <li>Priority queue entry (variable)</li>
+</ul>
+
+<p><strong>Total:</strong> ~2 GB minimum</p>
+
+<p><strong>Solution:</strong></p>
+<ul>
+  <li>Process in tiles</li>
+  <li>Use sparse data structures</li>
+  <li>Hierarchical pathfinding (coarse → fine)</li>
+</ul>
+
+<hr />
+
+<h2 id="8-extension-a-algorithm">8. Extension: A* Algorithm</h2>
+
+<p><strong>A* improves Dijkstra with heuristic guidance.</strong></p>
+
+<p><strong>Heuristic:</strong> Estimated cost from node to goal.</p>
+
+<p><strong>For spatial grids:</strong> Euclidean distance to goal</p>
+
+\[h(n) = \sqrt{(x_n - x_{\text{goal}})^2 + (y_n - y_{\text{goal}})^2}\]
+
+<p><strong>Priority:</strong> $f(n) = g(n) + h(n)$</p>
+
+<p>Where:</p>
+<ul>
+  <li>$g(n)$ = actual cost from start to $n$</li>
+  <li>$h(n)$ = estimated cost from $n$ to goal</li>
+  <li>$f(n)$ = estimated total cost</li>
+</ul>
+
+<p><strong>Advantage:</strong> Explores toward goal → faster than Dijkstra</p>
+
+<p><strong>Requirement:</strong> Heuristic must be <strong>admissible</strong> (never overestimate)</p>
+
+<p><strong>For grid:</strong> Euclidean distance is admissible (straight line is shortest)</p>
+
+<p><strong>Speedup:</strong> 2-10× faster for long paths</p>
+
+<hr />
+
+<h2 id="9-math-refresher-priority-queues">9. Math Refresher: Priority Queues</h2>
+
+<h3 id="definition">Definition</h3>
+
+<p><strong>Priority queue:</strong> Data structure supporting:</p>
+<ul>
+  <li><code class="language-plaintext highlighter-rouge">insert(item, priority)</code>: Add item with priority</li>
+  <li><code class="language-plaintext highlighter-rouge">extract_min()</code>: Remove and return item with minimum priority</li>
+  <li><code class="language-plaintext highlighter-rouge">decrease_priority(item, new_priority)</code>: Update priority</li>
+</ul>
+
+<h3 id="implementation-options">Implementation Options</h3>
+
+<p><strong>Array (unsorted):</strong></p>
+<ul>
+  <li>Insert: $O(1)$</li>
+  <li>Extract min: $O(n)$ (must scan)</li>
+</ul>
+
+<p><strong>Array (sorted):</strong></p>
+<ul>
+  <li>Insert: $O(n)$ (maintain order)</li>
+  <li>Extract min: $O(1)$ (first element)</li>
+</ul>
+
+<p><strong>Binary heap:</strong></p>
+<ul>
+  <li>Insert: $O(\log n)$</li>
+  <li>Extract min: $O(\log n)$</li>
+  <li><strong>Best for Dijkstra</strong></li>
+</ul>
+
+<p><strong>Fibonacci heap:</strong></p>
+<ul>
+  <li>Decrease priority: $O(1)$ amortized</li>
+  <li>Theoretical improvement for Dijkstra</li>
+  <li>Complex implementation, rarely used in practice</li>
+</ul>
+
+<h3 id="dijkstra-with-priority-queue">Dijkstra with Priority Queue</h3>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>dist[source] = 0
+pq.insert(source, 0)
+
+while pq not empty:
+    u = pq.extract_min()
+    
+    for each neighbor v:
+        alt = dist[u] + cost(u, v)
+        if alt &lt; dist[v]:
+            dist[v] = alt
+            if v in pq:
+                pq.decrease_priority(v, alt)
+            else:
+                pq.insert(v, alt)
+</code></pre></div></div>
+
+<p><strong>Complexity:</strong> $O((V + E) \log V)$ with binary heap</p>
+
+<hr />
+
+<h2 id="summary">Summary</h2>
+
+<ul>
+  <li><strong>Cost-distance</strong> accumulates travel cost across variable terrain</li>
+  <li><strong>Cost surface</strong> assigns traversal cost to each cell (slope, land cover, etc.)</li>
+  <li><strong>Dijkstra’s algorithm</strong> finds minimum accumulated cost to all reachable cells</li>
+  <li><strong>Least-cost path</strong> traces optimal route by backtracking through cost surface</li>
+  <li><strong>Edge cost</strong> combines cell costs and distance: $c = d \times (c_1 + c_2)/2$</li>
+  <li><strong>8-neighbor connectivity</strong> allows diagonal movement (more realistic paths)</li>
+  <li><strong>Applications:</strong> Wildlife corridors, pipeline routing, trail design, emergency response</li>
+  <li><strong>Challenges:</strong> Memory limits, raster resolution, diagonal bias</li>
+  <li><strong>A* algorithm</strong> improves performance with heuristic guidance</li>
+  <li>Critical for infrastructure planning, conservation, and spatial optimization</li>
+</ul>
+
+<hr />
+
+      </div>
+
+      
+
+
+
+      
+
+  
+  
+  
+  
+
+
+
+      <!-- essay-footer-notes.html — References / endnotes section.
+     Hidden by default; assets/js/essay/core.js shows it and populates
+     #essay-endnotes-list from [data-cite] elements in the content.
+
+     In posts, create citation markers with:
+       <cite data-cite="Author, Title, URL">1</cite>
+     The JS collects these and renders a numbered reference list here. -->
+
+<footer class="essay-endnotes" id="essay-endnotes" aria-label="References" hidden>
+  <div class="essay-endnotes-inner">
+    <h2 class="essay-endnotes-heading">References</h2>
+    <ol class="essay-endnotes-list" id="essay-endnotes-list">
+      <!-- Populated at runtime by assets/js/essay/core.js buildEndnotes() -->
+    </ol>
+  </div>
+</footer>
+
+
+      
+
+      
+
+      
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    </article>
+  </main>
+
+  <aside
+    class="essay-sidenotes"
+    id="essay-sidenotes"
+    aria-label="Margin notes"
+  ></aside>
+
+</div>
+
+</div>
+
+<footer>
+  <div class="footer-inner">
+
+    <!-- Col 1: Brand -->
+    <div class="footer-brand">
+      <div class="footer-brand-logo">
+        
+        <img loading="lazy" src="/assets/images/logo.webp" alt="WaywardHouse" width="28" height="28">
+        
+        WaywardHouse<span>.</span>
+      </div>
+      
+      
+      <p class="footer-brand-desc">Understanding how place, economy, and environment interact — through analysis, modelling, and open tools.</p>
+      
+
+      <div class="footer-social">
+        
+        
+        <a href="/feed.xml" class="social-icon" target="_blank" rel="noopener noreferrer" aria-label="RSS feed">
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M4 11a9 9 0 0 1 9 9"/>
+            <path d="M4 4a16 16 0 0 1 16 16"/>
+            <circle cx="5" cy="19" r="1"/>
+          </svg>
+        </a>
+      </div>
+    </div>
+
+    <!-- Col 2: Topics (configurable via footer_topics, falls back to auto-categories) -->
+    <nav aria-labelledby="footer-topics">
+      <h3 class="footer-col-title" id="footer-topics">Reading</h3>
+      <ul class="footer-links">
+        
+          
+          <li><a href="/topics/">Essays</a></li>
+          
+          <li><a href="/series/">Modelling</a></li>
+          
+          <li><a href="/archive/">Archive</a></li>
+          
+          <li><a href="/start-here/">Start Here</a></li>
+          
+        
+      </ul>
+    </nav>
+
+    <!-- Col 3: Secondary navigation -->
+    
+    <nav aria-labelledby="footer-company">
+      <h3 class="footer-col-title" id="footer-company">Site</h3>
+      <ul class="footer-links">
+        
+        <li><a href="/start-here/">Start Here</a></li>
+        
+        <li><a href="/about/">About</a></li>
+        
+        <li><a href="/contact/">Contact</a></li>
+        
+      </ul>
+    </nav>
+    
+
+    <!-- Col 4: Resources -->
+    <nav aria-labelledby="footer-resources">
+      <h3 class="footer-col-title" id="footer-resources">Resources</h3>
+      <ul class="footer-links">
+        <li><a href="/archive/">Archive</a></li>
+        <li><a href="/feed.xml">RSS Feed</a></li>
+        <li><a href="/topics/">All Topics</a></li>
+      </ul>
+    </nav>
+
+  </div><!-- /.footer-inner -->
+
+  <div class="footer-bottom">
+    <span class="footer-copy">
+      &copy; 2026 WaywardHouse.
+    </span>
+    <div class="footer-legal">
+      <a href="/privacy/">Privacy Policy</a>
+      <a href="/terms/">Terms of Service</a>
+    </div>
+  </div>
+
+</footer>
+
+
+<!-- Alpine.js bundle -->
+<script type="module" src="/assets/dist/main.js"></script>
+
+<!-- Visualization runtime — detects and loads CDN libraries dynamically -->
+<script type="module" src="/assets/js/core.js"></script>
+
+<!-- Search overlay — event-driven: nav button $dispatches 'search:open' -->
+<div
+  x-data="search"
+  x-init="init()"
+  @search:open.window="open()"
+>
+  <div
+    class="search-overlay"
+    x-show="isOpen"
+    x-transition:enter="transition ease-out duration-150"
+    x-transition:enter-start="opacity-0"
+    x-transition:enter-end="opacity-100"
+    x-transition:leave="transition ease-in duration-100"
+    x-transition:leave-start="opacity-100"
+    x-transition:leave-end="opacity-0"
+    @click.self="close()"
+    style="display: none;"
+    role="dialog"
+    aria-modal="true"
+    aria-label="Search"
+  >
+    <div class="search-panel">
+      <div class="search-input-wrap">
+        <svg class="search-icon" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <circle cx="11" cy="11" r="8"/>
+          <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+        </svg>
+        <input
+          class="search-input"
+          type="search"
+          placeholder="Search posts…"
+          x-model="query"
+          x-ref="input"
+          @input.debounce.300ms="runSearch()"
+          @keydown.escape="close()"
+          autocomplete="off"
+          spellcheck="false"
+          aria-label="Search query"
+        >
+        <kbd class="search-esc" aria-hidden="true">ESC</kbd>
+      </div>
+
+      <div class="search-results" x-show="query.trim().length > 0">
+        <div class="search-status" x-show="loading" aria-live="polite">Searching…</div>
+        <div class="search-status" x-show="!loading && results.length === 0" aria-live="polite">
+          No results for "<span x-text="query"></span>"
+        </div>
+        <ul class="search-result-list" x-show="!loading && results.length > 0" role="list">
+          <template x-for="result in results" :key="result.url">
+            <li>
+              <a :href="result.url" class="search-result-item" @click="close()">
+                <div class="search-result-title" x-text="result.meta?.title || result.url"></div>
+                <div class="search-result-excerpt" x-html="result.excerpt"></div>
+              </a>
+            </li>
+          </template>
+        </ul>
+      </div>
+    </div>
+  </div>
+</div>
+
+</body>
+</html>

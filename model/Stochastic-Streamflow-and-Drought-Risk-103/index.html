@@ -1,0 +1,939 @@
+<!DOCTYPE html>
+
+<html lang="en" data-brand="wayward" data-theme="light">
+<head>
+  <meta charset="utf-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Stochastic Streamflow and Drought Risk — WaywardHouse</title>
+<meta name="description" content="A 100-year drought is not a drought that happens once per century — it is a drought with a 1% probability of occurring in any given year. The distinction matters...">
+
+<!-- Dark mode flash prevention — runs synchronously before first paint -->
+<script>
+  (function () {
+    var defaultDark = 'light' === 'dark';
+    var s = localStorage.getItem('theme');
+    var dark = s !== null ? s === 'dark' : defaultDark;
+    document.documentElement.dataset.theme = dark ? 'dark' : 'light';
+  })();
+</script>
+
+<!-- Preconnect to CDN domains used by the viz runtime -->
+<link rel="preconnect" href="https://cdn.jsdelivr.net">
+<link rel="preconnect" href="https://unpkg.com">
+<link rel="preconnect" href="https://esm.sh">
+<link rel="preconnect" href="https://api.mapbox.com">
+<link rel="preconnect" href="https://events.mapbox.com">
+
+
+<script>window.MAPBOX_TOKEN = 'pk.eyJ1IjoiYnJlYWRlZGNvZCIsImEiOiJjbW0xa25qc2EwMmtwMnJwejJlNndqdnoxIn0._7I9PwXuFLrOQINVZ84y1w';</script>
+
+
+<!-- Fonts -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:ital,wght@0,300;0,400;0,600;0,700;0,800;0,900;1,700;1,800&family=Barlow:wght@300;400&family=IBM+Plex+Mono:ital,wght@0,300;0,400;0,500;1,300&family=Literata:ital,opsz,wght@0,7..72,300;0,7..72,400;0,7..72,500;1,7..72,300;1,7..72,400&display=swap" rel="stylesheet">
+
+<!-- Theme stylesheet (Vite build output) -->
+<link rel="stylesheet" href="/assets/dist/main.css">
+
+<!-- Brand token overrides — loaded after main.css so variables cascade correctly -->
+
+<link rel="stylesheet" href="/assets/css/brand-wayward.css">
+
+
+
+<!-- Syntax highlighting (Rouge — light + dark) -->
+<link rel="stylesheet" href="/assets/css/syntax.css">
+
+<!-- Begin Jekyll SEO tag v2.8.0 -->
+<title>Stochastic Streamflow and Drought Risk | WaywardHouse</title>
+<meta name="generator" content="Jekyll v4.4.1" />
+<meta property="og:title" content="Stochastic Streamflow and Drought Risk" />
+<meta property="og:locale" content="en" />
+<meta name="description" content="A 100-year drought is not a drought that happens once per century — it is a drought with a 1% probability of occurring in any given year. The distinction matters enormously for infrastructure design. This essay derives the flow duration curve and exceedance probability framework, explains why streamflow must be modelled stochastically to capture multi-year drought risk, implements the Thomas-Fiering autoregressive model to generate synthetic flow sequences, defines drought indices (SPI, PDSI), and applies reliability-resilience- vulnerability metrics to water supply systems." />
+<meta property="og:description" content="A 100-year drought is not a drought that happens once per century — it is a drought with a 1% probability of occurring in any given year. The distinction matters enormously for infrastructure design. This essay derives the flow duration curve and exceedance probability framework, explains why streamflow must be modelled stochastically to capture multi-year drought risk, implements the Thomas-Fiering autoregressive model to generate synthetic flow sequences, defines drought indices (SPI, PDSI), and applies reliability-resilience- vulnerability metrics to water supply systems." />
+<link rel="canonical" href="https://wayward.house/model/Stochastic-Streamflow-and-Drought-Risk-103/" />
+<meta property="og:url" content="https://wayward.house/model/Stochastic-Streamflow-and-Drought-Risk-103/" />
+<meta property="og:site_name" content="WaywardHouse" />
+<meta property="og:image" content="https://wayward.house/assets/images/watershed-delineation.webp" />
+<meta property="og:type" content="article" />
+<meta property="article:published_time" content="2026-03-05T00:00:00+00:00" />
+<meta name="twitter:card" content="summary_large_image" />
+<meta property="twitter:image" content="https://wayward.house/assets/images/watershed-delineation.webp" />
+<meta property="twitter:title" content="Stochastic Streamflow and Drought Risk" />
+<meta name="twitter:site" content="@" />
+<script type="application/ld+json">
+{"@context":"https://schema.org","@type":"BlogPosting","dateModified":"2026-03-12T16:57:04+00:00","datePublished":"2026-03-05T00:00:00+00:00","description":"A 100-year drought is not a drought that happens once per century — it is a drought with a 1% probability of occurring in any given year. The distinction matters enormously for infrastructure design. This essay derives the flow duration curve and exceedance probability framework, explains why streamflow must be modelled stochastically to capture multi-year drought risk, implements the Thomas-Fiering autoregressive model to generate synthetic flow sequences, defines drought indices (SPI, PDSI), and applies reliability-resilience- vulnerability metrics to water supply systems.","headline":"Stochastic Streamflow and Drought Risk","image":"https://wayward.house/assets/images/watershed-delineation.webp","mainEntityOfPage":{"@type":"WebPage","@id":"https://wayward.house/model/Stochastic-Streamflow-and-Drought-Risk-103/"},"publisher":{"@type":"Organization","logo":{"@type":"ImageObject","url":"https://wayward.house/assets/images/logo.webp"}},"url":"https://wayward.house/model/Stochastic-Streamflow-and-Drought-Risk-103/"}</script>
+<!-- End Jekyll SEO tag -->
+
+
+
+<!-- Cloudflare Web Analytics -->
+<script defer src="https://static.cloudflareinsights.com/beacon.min.js"
+  data-cf-beacon='{"token": "62c47d78bf9d4c80972d4e6242d79ff8"}'></script>
+
+
+</head>
+<body class="
+  model-template
+   tag-modelling
+   tag-hash-math
+  
+   tag-hash-viz
+  
+  
+  
+  
+  
+  
+">
+
+<a href="#main-content" class="skip-link">Skip to content</a>
+
+<header class="nav" x-data="{ open: false }">
+  <div class="nav-inner">
+
+    <!-- Logo -->
+    <a href="/" class="nav-logo">
+      
+      <img loading="lazy" src="/assets/images/logo.webp" alt="WaywardHouse" width="32" height="32">
+      
+      WaywardHouse<span>.</span>
+    </a>
+
+    <!-- Desktop nav links -->
+    <ul class="nav-links" role="list">
+      
+      <li>
+        <a href="/topics/">Essays</a>
+      </li>
+      
+      <li>
+        <a href="/series/">Modelling</a>
+      </li>
+      
+      <li>
+        <a href="/about/">About</a>
+      </li>
+      
+    </ul>
+
+    <!-- Actions -->
+    <div class="nav-actions">
+
+      <!-- Search button -->
+      <button
+        class="search-toggle"
+        type="button"
+        aria-label="Search (⌘K)"
+        title="Search (⌘K)"
+        @click="$dispatch('search:open')"
+      >
+        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <circle cx="11" cy="11" r="8"/>
+          <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+        </svg>
+      </button>
+
+      <!-- Dark mode toggle -->
+      <button
+        class="theme-toggle"
+        x-data="darkMode"
+        x-init="init()"
+        @click="toggle()"
+        :aria-label="dark ? 'Switch to light mode' : 'Switch to dark mode'"
+        type="button"
+      >
+        <!-- Sun icon (shown in light mode) -->
+        <svg class="icon-sun" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">
+          <circle cx="12" cy="12" r="5"/>
+          <line x1="12" y1="1" x2="12" y2="3"/>
+          <line x1="12" y1="21" x2="12" y2="23"/>
+          <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/>
+          <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/>
+          <line x1="1" y1="12" x2="3" y2="12"/>
+          <line x1="21" y1="12" x2="23" y2="12"/>
+          <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/>
+          <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>
+        </svg>
+        <!-- Moon icon (shown in dark mode) -->
+        <svg class="icon-moon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">
+          <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+        </svg>
+      </button>
+
+      <!-- Hamburger (mobile only) -->
+      <button
+        class="mobile-nav-toggle"
+        @click="open = !open"
+        :aria-expanded="open"
+        :aria-label="open ? 'Close menu' : 'Open menu'"
+        type="button"
+      >
+        <svg x-show="!open" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <line x1="3" y1="6" x2="21" y2="6"/>
+          <line x1="3" y1="12" x2="21" y2="12"/>
+          <line x1="3" y1="18" x2="21" y2="18"/>
+        </svg>
+        <svg x-show="open" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <line x1="18" y1="6" x2="6" y2="18"/>
+          <line x1="6" y1="6" x2="18" y2="18"/>
+        </svg>
+      </button>
+
+    </div><!-- /.nav-actions -->
+  </div><!-- /.nav-inner -->
+
+  <!-- Mobile drawer -->
+  <div
+    class="mobile-nav"
+    x-show="open"
+    x-transition:enter="transition ease-out duration-200"
+    x-transition:enter-start="opacity-0 -translate-y-1"
+    x-transition:enter-end="opacity-100 translate-y-0"
+    x-transition:leave="transition ease-in duration-150"
+    x-transition:leave-start="opacity-100 translate-y-0"
+    x-transition:leave-end="opacity-0 -translate-y-1"
+    @click.outside="open = false"
+    @keydown.escape.window="open = false"
+  >
+    <ul role="list">
+      
+      <li>
+        <a href="/topics/" @click="open = false">Essays</a>
+      </li>
+      
+      <li>
+        <a href="/series/" @click="open = false">Modelling</a>
+      </li>
+      
+      <li>
+        <a href="/about/" @click="open = false">About</a>
+      </li>
+      
+    </ul>
+  </div><!-- /.mobile-nav -->
+
+</header>
+
+
+<div id="main-content">
+  <!-- Essay stylesheet and runtime — self-contained -->
+<link rel="stylesheet" href="/assets/css/essay.css">
+<script type="module" src="/assets/js/essay/core.js"></script>
+
+<div class="essay-layout" id="essay-layout">
+
+  <!-- essay-toc.html — Sticky table of contents (left column).
+     The <ol> is empty on load; assets/js/essay/core.js populates it
+     from h2/h3 elements found in #essay-content after the page renders. -->
+
+<nav class="essay-toc" id="essay-toc" aria-label="Table of contents">
+  <div class="essay-toc-inner">
+    <p class="essay-toc-heading" aria-hidden="true">Contents</p>
+    <ol class="essay-toc-list" id="essay-toc-list">
+      <!-- Populated at runtime by assets/js/essay/core.js buildToc() -->
+    </ol>
+  </div>
+</nav>
+
+
+  <main class="essay-main" id="essay-main" role="main">
+    <article class="essay-article">
+
+      <!-- essay-hero.html — Header for computational essay template.
+     Displays feature image, tag label, title, excerpt, and post metadata. -->
+
+<header class="essay-hero">
+  
+  <figure class="essay-hero-figure">
+    <img
+      src="/assets/images/watershed-delineation.webp"
+      alt="Stochastic Streamflow and Drought Risk"
+      class="essay-hero-img"
+      loading="eager"
+    >
+    
+  </figure>
+  
+
+  <div class="essay-hero-body">
+
+    
+    
+    
+    
+    
+    <nav class="essay-breadcrumb" aria-label="Series position">
+      
+      <a href="/series/laboratory/" class="essay-breadcrumb-link">Computational geography laboratory</a>
+      
+      
+      
+      <span class="essay-breadcrumb-sep" aria-hidden="true">›</span>
+      <span class="essay-breadcrumb-pos">Model 103</span>
+      
+    </nav>
+    
+
+    <div class="essay-hero-labels">
+      
+      <a href="/topics/modelling/" class="essay-tag-label">modelling</a>
+      
+      
+      <span class="difficulty-badge difficulty-badge--4">Level 4</span>
+      
+    </div>
+
+    <h1 class="essay-title">Stochastic Streamflow and Drought Risk</h1>
+
+    
+    <p class="essay-excerpt">A 100-year drought is not a drought that happens once per century — it is a drought with a 1% probability of occurring in any given year. The distinction matters enormously for infrastructure design. This essay derives the flow duration curve and exceedance probability framework, explains why streamflow must be modelled stochastically to capture multi-year drought risk, implements the Thomas-Fiering autoregressive model to generate synthetic flow sequences, defines drought indices (SPI, PDSI), and applies reliability-resilience- vulnerability metrics to water supply systems.
+</p>
+    
+
+    
+    <p class="essay-prereqs"><span class="essay-prereqs-label">Prerequisites:</span> probability and exceedance, log normal distribution, autoregressive models, reliability theory</p>
+    
+
+    <div class="essay-meta">
+      
+      <div class="essay-meta-secondary">
+        <time class="essay-date" datetime="2026-03-05">5 Mar 2026</time>
+        
+        
+        <span class="essay-sep" aria-hidden="true">·</span>
+        <span class="essay-updated">Updated <time datetime="2026-03-12">12 Mar 2026</time></span>
+        
+        <span class="essay-sep" aria-hidden="true">·</span>
+        <span class="essay-reading-time">15 min read</span>
+      </div>
+    </div>
+  </div>
+</header>
+
+
+      
+
+
+
+
+
+      <div class="essay-content gh-content" id="essay-content">
+        <p>On October 3, 1988, the Colorado River below Hoover Dam dropped to its lowest recorded flow in more than 50 years — a direct consequence of a multi-year drought that had drawn Lake Mead to 39% of capacity. The event was not unprecedented: tree-ring records show that the 20th century was one of the wettest in the past 1,200 years of Colorado River history, meaning the entire reservoir system was sized on an anomalously wet baseline. The same pattern applies to almost every major river basin in western North America: the instrumental record is too short to characterise the worst droughts that will occur over a 100-year infrastructure design life.</p>
+
+<p>The solution is stochastic hydrology: generating many synthetic streamflow sequences — each statistically consistent with the historical record but covering the full range of natural variability — and evaluating reservoir performance across all of them.</p>
+
+<hr />
+
+<h2 id="1-the-question">1. The Question</h2>
+
+<p>How do we characterise the statistical properties of streamflow? What is the return period of a drought, and how is it calculated? How do we generate synthetic flow sequences for risk analysis? How do we measure drought severity? And what metrics quantify water supply system reliability?</p>
+
+<hr />
+
+<h2 id="2-the-conceptual-model">2. The Conceptual Model</h2>
+
+<p>Streamflow is neither random nor deterministic. It is a stochastic process: driven by random precipitation and temperature, shaped by watershed memory (soils, groundwater, snowpack), and exhibiting both persistence (wet years tend to follow wet years) and seasonality. Capturing these properties in a statistical model allows generating arbitrarily long synthetic records that preserve the observed mean, variance, autocorrelation, and seasonal patterns — while exploring flow sequences more severe than any in the historical record.</p>
+
+<hr />
+
+<h2 id="3-building-the-mathematical-model">3. Building the Mathematical Model</h2>
+
+<h3 id="31-flow-duration-curve">3.1 Flow Duration Curve</h3>
+
+<p>The <strong>flow duration curve</strong> (FDC) is the cumulative frequency distribution of streamflow — it shows the fraction of time that flow equals or exceeds any given value. Construction:</p>
+
+<ol>
+  <li>Sort the $n$ observed daily (or monthly) flow values in descending order: $Q_{(1)} \geq Q_{(2)} \geq \ldots \geq Q_{(n)}$</li>
+  <li>Assign exceedance probability to rank $i$: $P_{\text{exceed}}(i) = i/(n+1)$ (Weibull plotting position)</li>
+  <li>Plot $Q_{(i)}$ against $P_{\text{exceed}}(i)$</li>
+</ol>
+
+<p>Key percentiles:</p>
+
+<table>
+  <thead>
+    <tr>
+      <th>Percentile</th>
+      <th>Notation</th>
+      <th>Interpretation</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>$Q_{5}$</td>
+      <td>5% exceedance</td>
+      <td>Flood flow: exceeded only 5% of the time</td>
+    </tr>
+    <tr>
+      <td>$Q_{50}$</td>
+      <td>50% exceedance</td>
+      <td>Median flow</td>
+    </tr>
+    <tr>
+      <td>$Q_{90}$</td>
+      <td>90% exceedance</td>
+      <td>Low flow: only 10% of the time is flow this low or lower</td>
+    </tr>
+    <tr>
+      <td>$Q_{95}$</td>
+      <td>95% exceedance</td>
+      <td>Near-minimum flow: environmental flow standard</td>
+    </tr>
+  </tbody>
+</table>
+
+<p>The <strong>slope</strong> of the FDC reflects flow regime: a steep slope indicates highly variable flow (flashy streams, small snow-dominated basins); a shallow slope indicates stable flow (large regulated rivers, groundwater-fed streams).</p>
+
+<h3 id="32-return-period-and-exceedance-probability">3.2 Return Period and Exceedance Probability</h3>
+
+<p>The <strong>return period</strong> $T$ [years] of an extreme event is the average recurrence interval — the expected number of years between events of that magnitude or worse:</p>
+
+\[T = \frac{1}{P_{\text{exceed}}}\]
+
+<p>A 100-year event has $P_{\text{exceed}} = 0.01$ — a 1% chance of being exceeded in any given year. This is a probability statement about annual maxima (for floods) or annual minima (for droughts), not a prediction about timing.</p>
+
+<p>The probability that at least one 100-year event occurs in a $n$-year design life:</p>
+
+\[P(\text{at least one exceedance in } n \text{ years}) = 1 - (1 - 1/T)^n\]
+
+<p>For $T = 100$ years and $n = 50$ year design life:</p>
+
+\[P = 1 - (1 - 0.01)^{50} = 1 - 0.99^{50} = 1 - 0.605 = 0.395\]
+
+<p>There is a 39.5% chance that a 100-year drought occurs at least once in a 50-year design life — a substantial risk that purely deterministic design (sizing to the observed worst drought) does not capture.</p>
+
+<p><strong>Extreme value distributions:</strong> Annual maximum flows are often modelled by the <strong>Gumbel (EV1)</strong> distribution; annual minimum flows by the log-Pearson Type III (LP3) or log-normal. For the log-normal distribution of annual streamflow $Q$:</p>
+
+\[\ln Q \sim \mathcal{N}(\mu_{\ln Q},\, \sigma_{\ln Q}^2)\]
+
+<p>The $T$-year minimum flow:</p>
+
+\[Q_T = \exp(\mu_{\ln Q} - z_{1/T} \cdot \sigma_{\ln Q})\]
+
+<p>where $z_{1/T} = \Phi^{-1}(1/T)$ is the standard normal quantile at exceedance probability $1/T$.</p>
+
+<h3 id="33-the-thomas-fiering-autoregressive-model">3.3 The Thomas-Fiering Autoregressive Model</h3>
+
+<p>The <strong>Thomas-Fiering model</strong> (1962) generates monthly synthetic streamflow by preserving the historical mean, standard deviation, and lag-1 autocorrelation for each calendar month:</p>
+
+\[Q_{t+1}^{(m+1)} = \bar{Q}^{(m+1)} + b_m \left(Q_t^{(m)} - \bar{Q}^{(m)}\right) + \varepsilon_t \sigma^{(m+1)}\sqrt{1 - r_m^2}\]
+
+<p>where:</p>
+<ul>
+  <li>$Q_t^{(m)}$ = streamflow in month $m$ of year $t$</li>
+  <li>$\bar{Q}^{(m)}$ = mean flow in calendar month $m$ over historical record</li>
+  <li>$\sigma^{(m)}$ = standard deviation of flow in calendar month $m$</li>
+  <li>$r_m$ = lag-1 cross-correlation between month $m$ and month $m+1$ in the historical record</li>
+  <li>$b_m = r_m \sigma^{(m+1)} / \sigma^{(m)}$ = regression coefficient</li>
+  <li>$\varepsilon_t \sim \mathcal{N}(0,1)$ = standard normal random deviate</li>
+</ul>
+
+<p>The term $b_m(Q_t^{(m)} - \bar{Q}^{(m)})$ propagates the departure from the mean forward to the next month — modelling persistence. The $\varepsilon$ term adds random variability. The factor $\sqrt{1-r_m^2}$ scales the random noise so that the generated series has the correct variance.</p>
+
+<p><strong>Log-transformation:</strong> Because streamflow is non-negative and often right-skewed, the Thomas-Fiering model is typically applied to $\ln Q$ values rather than $Q$ directly, then exponentiated. This preserves positivity and reduces skewness.</p>
+
+<p><strong>Generating long records:</strong> Running the Thomas-Fiering model for 10,000 years of synthetic monthly flows produces a record 100× longer than a typical instrumental record, providing:</p>
+<ul>
+  <li>Better estimation of rare drought probabilities</li>
+  <li>More robust sequent peak analysis (Essay AR1)</li>
+  <li>Quantification of the full distribution of water supply reliability</li>
+</ul>
+
+<h3 id="34-drought-indices">3.4 Drought Indices</h3>
+
+<p><strong>Standardised Precipitation Index (SPI)</strong> measures precipitation anomaly relative to the long-term distribution. For a given accumulation period $k$ (1, 3, 6, 12, 24 months):</p>
+
+<ol>
+  <li>Fit a gamma distribution to the historical precipitation totals over $k$ months</li>
+  <li>Transform to cumulative probability: $P = F_{\gamma}(x; \hat{\alpha}, \hat{\beta})$</li>
+  <li>Transform to standard normal: $\text{SPI}_k = \Phi^{-1}(P)$</li>
+</ol>
+
+<p>SPI interpretation:</p>
+
+<table>
+  <thead>
+    <tr>
+      <th>SPI value</th>
+      <th>Category</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>≥ 2.0</td>
+      <td>Extremely wet</td>
+    </tr>
+    <tr>
+      <td>1.0–1.99</td>
+      <td>Moderately wet</td>
+    </tr>
+    <tr>
+      <td>−0.99 to 0.99</td>
+      <td>Near normal</td>
+    </tr>
+    <tr>
+      <td>−1.0 to −1.49</td>
+      <td>Moderately dry</td>
+    </tr>
+    <tr>
+      <td>−1.5 to −1.99</td>
+      <td>Severely dry</td>
+    </tr>
+    <tr>
+      <td>≤ −2.0</td>
+      <td>Extremely dry</td>
+    </tr>
+  </tbody>
+</table>
+
+<p>SPI-12 (12-month accumulation) is the standard metric for hydrological drought; SPI-3 captures agricultural drought; SPI-1 reflects meteorological drought.</p>
+
+<p><strong>Palmer Drought Severity Index (PDSI)</strong> extends the drought index to incorporate both precipitation and temperature effects on soil moisture via a simplified water balance model. It has longer memory than SPI and better captures agricultural drought impacts but is more complex to compute and calibrated for specific climate regions (the original calibration was for the US Great Plains; Alberta calibration uses regional parameters).</p>
+
+<p>The PDSI formula:</p>
+
+\[X_t = 0.897 X_{t-1} + \frac{Z_t}{3}\]
+
+<p>where $Z_t$ is the monthly <strong>moisture anomaly index</strong> $Z_t = K_t(d_t)$, with $d_t$ the moisture departure (actual minus climatologically appropriate moisture) and $K_t$ a regional scaling factor. The 0.897 autoregressive coefficient gives PDSI its characteristic memory — a drought that began months ago continues to influence the current index even after precipitation has returned.</p>
+
+<h3 id="35-reliability-resilience-vulnerability-framework">3.5 Reliability-Resilience-Vulnerability Framework</h3>
+
+<p>The <strong>RRV framework</strong> (Hashimoto et al. 1982) provides three complementary metrics for evaluating water supply system performance:</p>
+
+<p><strong>Reliability</strong> $\alpha$ — fraction of time steps with no failure:</p>
+
+\[\alpha = 1 - \frac{\text{number of failure time steps}}{\text{total time steps}}\]
+
+<p><strong>Resilience</strong> $\gamma$ — probability of recovering from a failure in the next time step (how quickly the system bounces back):</p>
+
+\[\gamma = \frac{\text{number of transitions from failure to success}}{\text{number of failure time steps}}\]
+
+<p><strong>Vulnerability</strong> $v$ — average severity of failures when they occur:</p>
+
+\[v = \frac{\sum_{\text{failure}} (\text{Demand} - \text{Supply})_t}{\text{number of failure time steps}}\]
+
+<p>A system with high reliability but low resilience recovers slowly once a drought begins — possibly experiencing an extended severe shortage. A system with moderate reliability but high resilience experiences frequent but brief shortfalls. The relative importance of these metrics depends on context: urban water supply prioritises reliability; irrigation with crop flexibility may tolerate lower reliability with high resilience.</p>
+
+<p><strong>Deficit ratio:</strong> total cumulative deficit as a fraction of total demand, also called <strong>vulnerability index</strong>:</p>
+
+\[VI = \frac{\sum_t \max(0, D - S_t)}{\sum_t D}\]
+
+<hr />
+
+<h2 id="4-worked-example-by-hand">4. Worked Example by Hand</h2>
+
+<p><strong>Setting:</strong> Monthly SPI calculation for Edmonton, December 2021. The 12-month precipitation total ending December 2021 was 340 mm; historical 12-month December totals have mean 415 mm and standard deviation 68 mm (approximately normal).</p>
+
+<p><strong>Step 1:</strong> Standardise the precipitation anomaly. For approximately normal $P$ totals:</p>
+
+\[\text{SPI}_{12} \approx \frac{x - \mu}{\sigma} = \frac{340 - 415}{68} = \frac{-75}{68} = -1.10\]
+
+<p><strong>Interpretation:</strong> SPI-12 = −1.10 → Moderately dry. The 12-month precipitation ending December 2021 was 1.10 standard deviations below the historical mean — consistent with the moderate drought conditions observed across central Alberta in 2021.</p>
+
+<p><strong>Return period of this SPI level:</strong> $P(\text{SPI} \leq -1.10) = \Phi(-1.10) = 0.136$. A year with SPI-12 ≤ −1.10 occurs in 13.6% of years → return period $T = 1/0.136 = 7.4$ years. Moderately dry conditions of this severity or worse occur roughly every 7–8 years in the Edmonton climate record.</p>
+
+<p><strong>Thomas-Fiering one-step generation:</strong></p>
+
+<p>Historical parameters for January: $\bar{Q}<em>{\text{Jan}} = 9.5$ Mm³/mo, $\sigma</em>{\text{Jan}} = 2.1$ Mm³/mo, $r_{\text{Dec-Jan}} = 0.68$.</p>
+
+<p>If December flow was $Q_{\text{Dec}} = 7.2$ Mm³ ($\bar{Q}<em>{\text{Dec}} = 8.8$, $\sigma</em>{\text{Dec}} = 1.9$), and $\varepsilon = -0.4$:</p>
+
+\[b_{\text{Dec}} = 0.68 \times \frac{2.1}{1.9} = 0.752\]
+
+<p>\(Q_{\text{Jan}} = 9.5 + 0.752(7.2 - 8.8) + (-0.4)(2.1)\sqrt{1 - 0.68^2}\)
+\(= 9.5 + 0.752(-1.6) + (-0.4)(2.1)(0.733)\)
+\(= 9.5 - 1.203 - 0.615 = 7.68 \text{ Mm}^3/\text{mo}\)</p>
+
+<p>The below-average December flow (7.2 vs. mean 8.8) propagates as a below-average January (7.68 vs. mean 9.5), consistent with drought persistence.</p>
+
+<hr />
+
+<h2 id="5-computational-implementation">5. Computational Implementation</h2>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>function flow_duration_curve(Q_array):
+    Q_sorted = sort_descending(Q_array)
+    n = len(Q_sorted)
+    exceedance = [(i+1)/(n+1) for i in range(n)]
+    return Q_sorted, exceedance
+
+function return_period_lognormal(Q_array, T):
+    mu = mean(log(Q_array))
+    sigma = std(log(Q_array))
+    z = inverse_normal_cdf(1/T)     # left tail (drought)
+    return exp(mu + z * sigma)
+
+function thomas_fiering(n_years, monthly_stats, seed=42):
+    # monthly_stats: list of (mean, std, lag1_corr) for 12 months
+    Q = zeros(n_years * 12)
+    Q[0] = monthly_stats[0].mean
+    for t in range(1, n_years * 12):
+        m_prev = (t-1) % 12; m_curr = t % 12
+        mu_prev, sigma_prev, _ = monthly_stats[m_prev]
+        mu_curr, sigma_curr, r = monthly_stats[m_prev]  # r is Dec→Jan corr
+        b = r * sigma_curr / sigma_prev
+        eps = normal_random()
+        Q[t] = mu_curr + b*(Q[t-1] - mu_prev) + eps * sigma_curr * sqrt(1 - r**2)
+        Q[t] = max(0, Q[t])
+    return Q
+
+function spi(precip_series, k_months):
+    totals = rolling_sum(precip_series, k_months)
+    mu, sigma = mean(totals), std(totals)
+    return (totals - mu) / sigma   # approximate (normal assumption)
+</code></pre></div></div>
+
+<pre><code class="language-{pyodide}">import numpy as np
+from scipy import stats
+
+rng = np.random.default_rng(42)
+
+def flow_duration_curve(Q):
+    Qs = np.sort(Q)[::-1]
+    n = len(Qs)
+    p = np.arange(1, n+1) / (n+1)
+    return Qs, p
+
+def return_period_lognormal(Q, T):
+    mu = np.mean(np.log(Q))
+    sigma = np.std(np.log(Q), ddof=1)
+    z = stats.norm.ppf(1.0/T)   # lower tail for drought
+    return np.exp(mu + z * sigma)
+
+def thomas_fiering(n_years, means, stds, corrs):
+    """Monthly Thomas-Fiering model."""
+    Q = []
+    q = means[0]
+    for yr in range(n_years):
+        for m in range(12):
+            m_next = (m + 1) % 12
+            b = corrs[m] * stds[m_next] / stds[m]
+            eps = rng.standard_normal()
+            q_next = (means[m_next] + b*(q - means[m])
+                      + eps * stds[m_next] * np.sqrt(1 - corrs[m]**2))
+            Q.append(max(0.01, q_next))
+            q = q_next
+    return np.array(Q)
+
+# Generate 200 years of monthly flows
+means = np.array([8,7,9,18,35,45,28,12,9,6,5,4], dtype=float)
+stds  = np.array([2,1.8,2,4,7,8,6,3,2,1.5,1.3,1.2])
+corrs = np.array([0.7,0.7,0.65,0.6,0.55,0.5,0.55,0.6,0.65,0.7,0.72,0.72])
+
+Q_syn = thomas_fiering(200, means, stds, corrs)
+annual = Q_syn.reshape(-1, 12).sum(axis=1)
+print(f"Generated {len(Q_syn)//12} years of monthly flow")
+print(f"Annual mean: {annual.mean():.1f} Mm³/yr  (historical: {means.sum():.0f})")
+print(f"Annual std:  {annual.std():.1f} Mm³/yr")
+
+# Return period of low flows
+for T in [10, 50, 100, 200]:
+    Q_T = return_period_lognormal(annual, T)
+    print(f"  {T:3d}-yr minimum annual flow: {Q_T:.1f} Mm³")
+
+# SPI example
+precip_monthly = rng.normal(35, 12, 120)  # 10 years synthetic
+spi_12 = []
+for i in range(11, len(precip_monthly)):
+    total = precip_monthly[i-11:i+1].sum()
+    spi_12.append(total)
+spi_12 = np.array(spi_12)
+spi_12 = (spi_12 - spi_12.mean()) / spi_12.std()
+n_drought = (spi_12 &lt;= -1.5).sum()
+print(f"\nSPI-12 severe drought months: {n_drought}/{len(spi_12)} ({100*n_drought/len(spi_12):.1f}%)")
+</code></pre>
+
+<hr />
+
+<h2 id="6-visualization">6. Visualization</h2>
+
+<div data-viz="echarts" style="height:420px" data-options="{
+  &quot;title&quot;: {&quot;text&quot;: &quot;Flow Duration Curve — North Saskatchewan Tributary (typical)&quot;, &quot;textStyle&quot;: {&quot;fontSize&quot;: 14}},
+  &quot;tooltip&quot;: {&quot;trigger&quot;: &quot;axis&quot;, &quot;formatter&quot;: &quot;Exceedance: {b}&lt;br/&gt;Flow: {c} Mm³/mo&quot;},
+  &quot;legend&quot;: {&quot;data&quot;: [&quot;Monthly flow&quot;], &quot;bottom&quot;: 0},
+  &quot;xAxis&quot;: {&quot;name&quot;: &quot;Exceedance probability (%)&quot;, &quot;nameLocation&quot;: &quot;middle&quot;, &quot;nameGap&quot;: 30,
+    &quot;data&quot;: [1,5,10,20,30,40,50,60,70,80,90,95,99]},
+  &quot;yAxis&quot;: {&quot;name&quot;: &quot;Monthly flow (Mm³)&quot;, &quot;nameLocation&quot;: &quot;middle&quot;, &quot;nameGap&quot;: 50, &quot;min&quot;: 0},
+  &quot;series&quot;: [{
+    &quot;name&quot;: &quot;Monthly flow&quot;,
+    &quot;type&quot;: &quot;line&quot;, &quot;smooth&quot;: true,
+    &quot;itemStyle&quot;: {&quot;color&quot;: &quot;#1565C0&quot;},
+    &quot;areaStyle&quot;: {&quot;color&quot;: &quot;#BBDEFB&quot;, &quot;opacity&quot;: 0.4},
+    &quot;data&quot;: [92, 65, 50, 38, 29, 22, 17, 13, 10, 7.5, 5.2, 4.0, 2.5]
+  }]
+}"></div>
+
+<p>The FDC spans two orders of magnitude from the highest 1% flows (92 Mm³/mo, spring snowmelt) to the lowest 1% flows (2.5 Mm³/mo, January baseflow). The steep slope reflects the highly seasonal flow regime of a Rocky Mountain tributary. Environmental flow standards typically protect the $Q_{90}$–$Q_{95}$ range (5–7 Mm³/mo) as minimum ecologically required flows.</p>
+
+<hr />
+
+<h2 id="7-interpretation">7. Interpretation</h2>
+
+<p>The return period framework transforms drought risk from a qualitative concern into a quantitative design criterion. A water authority that accepts a 10% probability of shortage in any given year is implicitly designing to a 10-year return period drought. If the design life is 50 years, this implies a 99.5% probability of at least one shortage in 50 years — a very different statement than “10% annual risk” suggests.</p>
+
+<p>The Thomas-Fiering model’s key property is preservation of <strong>persistence</strong> through the lag-1 autocorrelation. Streamflow exhibits persistence: wet years tend to follow wet years because soil moisture, snowpack, and groundwater carry hydrological memory from month to month. A model without persistence (i.e., drawing each month’s flow independently from its historical distribution) underestimates multi-year drought risk because it cannot reproduce the clustering of below-average years that constitutes a genuine prolonged drought. The autoregressive structure directly addresses this — and the 10,000-year synthetic records it produces reveal drought events of severity and duration that never appear in the 80-year instrumental record.</p>
+
+<hr />
+
+<h2 id="8-what-could-go-wrong">8. What Could Go Wrong?</h2>
+
+<p><strong>Log-normality is an approximation.</strong> Many streamflow series exhibit heavier tails than the log-normal — particularly in flashy semi-arid catchments. Using a log-normal fit underestimates the probability of extreme low flows. Fitting the LP3 (log-Pearson Type III) distribution, which has an additional skewness parameter, provides better tail representation. For planning in data-limited regions, the choice of distribution can change the estimated 100-year drought flow by 20–40%.</p>
+
+<p><strong>Thomas-Fiering preserves only lag-1 autocorrelation.</strong> Multi-year droughts like the 1930s Dust Bowl involve correlations at lag 2, 3, and beyond — El Niño teleconnections, Pacific Decadal Oscillation (PDO), and Atlantic Multidecadal Oscillation (AMO) drive correlated anomalies over years to decades. The first-order autoregressive model generates multi-year droughts less severe than observed paleoclimate records suggest is possible. Higher-order AR models or ARIMA models capture more of this persistence.</p>
+
+<p><strong>SPI assumes stationarity.</strong> The SPI is calibrated to the historical precipitation distribution, which is assumed to represent future conditions. Under climate change, both the mean and variance of precipitation are shifting — the historical calibration period no longer represents the climatological baseline. Non-stationary SPI calculations using rolling calibration windows are an active research area.</p>
+
+<p><strong>The RRV framework treats all shortfalls equally.</strong> A 1% deficit in delivery and a 50% deficit both count as one “failure time step” in the reliability count, and vulnerability averages their severities. In practice, a 50% water shortage is not merely 50× worse than 1% — it triggers rationing, social conflict, and economic disruption that grow nonlinearly with deficit magnitude. Weighted vulnerability metrics and economic damage functions provide more realistic risk characterisation.</p>
+
+<hr />
+
+<h2 id="9-summary">9. Summary</h2>
+
+<p>The flow duration curve characterises the full distribution of streamflow magnitudes. Return period $T = 1/P$ converts exceedance probability to recurrence interval; a 100-year event has a 39.5% chance of occurring at least once in a 50-year design life. The Thomas-Fiering model generates synthetic monthly flows preserving mean, variance, and lag-1 autocorrelation, enabling probabilistic risk assessment from arbitrarily long synthetic records.</p>
+
+<p>Drought indices — SPI (precipitation anomaly) and PDSI (water balance anomaly) — quantify drought severity on standardised scales. The RRV framework measures system performance as reliability (fraction of time without failure), resilience (recovery speed), and vulnerability (average deficit magnitude). Together these metrics provide a complete characterisation of water supply risk.</p>
+
+<p><strong>Key equations:</strong></p>
+
+\[P_{\text{exceed}}(i) = i/(n+1) \quad\text{[Weibull plotting position]}\]
+
+\[T = 1/P_{\text{exceed}}, \quad P(\ge 1 \text{ event in } n \text{ yr}) = 1-(1-1/T)^n\]
+
+\[Q_{t+1}^{(m+1)} = \bar{Q}^{(m+1)} + b_m(Q_t^{(m)}-\bar{Q}^{(m)}) + \varepsilon\sigma^{(m+1)}\sqrt{1-r_m^2}\]
+
+\[\text{SPI}_k = \Phi^{-1}(F_\gamma(x;\hat\alpha,\hat\beta))\]
+
+<hr />
+
+<h2 id="math-refresher">Math Refresher</h2>
+
+<p><strong>The normal distribution and standardisation.</strong> Subtracting the mean and dividing by the standard deviation — $z = (x-\mu)/\sigma$ — transforms any normal distribution to the standard normal $\mathcal{N}(0,1)$. The resulting $z$-score measures how many standard deviations the observation is from the mean. SPI exploits this: by first transforming precipitation to a normal distribution and then standardising, it produces a score that is directly interpretable and comparable across climates and accumulation periods. SPI = −1.5 means “1.5 standard deviations below the mean” — a meaningful statement regardless of whether the local precipitation mean is 300 mm or 1200 mm per year.</p>
+
+<p><strong>Autoregressive models as memory.</strong> The AR(1) model $Q_t = \phi Q_{t-1} + \varepsilon_t$ says: this month’s flow equals last month’s flow times a persistence coefficient $\phi$, plus random noise. If $\phi = 0$, months are independent. If $\phi = 0.7$, 70% of the current anomaly is inherited from the previous month. Applying this monthly: after $k$ months without forcing, the anomaly decays by factor $\phi^k$. For $\phi = 0.7$, a drought anomaly decays to 7% of its initial size after $k = \log(0.07)/\log(0.7) \approx 8$ months — roughly one season of persistence, consistent with observed streamflow memory in snow-dominated basins.</p>
+
+      </div>
+
+      
+
+
+
+      
+
+  
+  
+  
+  
+
+
+
+      <!-- essay-footer-notes.html — References / endnotes section.
+     Hidden by default; assets/js/essay/core.js shows it and populates
+     #essay-endnotes-list from [data-cite] elements in the content.
+
+     In posts, create citation markers with:
+       <cite data-cite="Author, Title, URL">1</cite>
+     The JS collects these and renders a numbered reference list here. -->
+
+<footer class="essay-endnotes" id="essay-endnotes" aria-label="References" hidden>
+  <div class="essay-endnotes-inner">
+    <h2 class="essay-endnotes-heading">References</h2>
+    <ol class="essay-endnotes-list" id="essay-endnotes-list">
+      <!-- Populated at runtime by assets/js/essay/core.js buildEndnotes() -->
+    </ol>
+  </div>
+</footer>
+
+
+      
+
+      
+
+      
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    </article>
+  </main>
+
+  <aside
+    class="essay-sidenotes"
+    id="essay-sidenotes"
+    aria-label="Margin notes"
+  ></aside>
+
+</div>
+
+</div>
+
+<footer>
+  <div class="footer-inner">
+
+    <!-- Col 1: Brand -->
+    <div class="footer-brand">
+      <div class="footer-brand-logo">
+        
+        <img loading="lazy" src="/assets/images/logo.webp" alt="WaywardHouse" width="28" height="28">
+        
+        WaywardHouse<span>.</span>
+      </div>
+      
+      
+      <p class="footer-brand-desc">Understanding how place, economy, and environment interact — through analysis, modelling, and open tools.</p>
+      
+
+      <div class="footer-social">
+        
+        
+        <a href="/feed.xml" class="social-icon" target="_blank" rel="noopener noreferrer" aria-label="RSS feed">
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M4 11a9 9 0 0 1 9 9"/>
+            <path d="M4 4a16 16 0 0 1 16 16"/>
+            <circle cx="5" cy="19" r="1"/>
+          </svg>
+        </a>
+      </div>
+    </div>
+
+    <!-- Col 2: Topics (configurable via footer_topics, falls back to auto-categories) -->
+    <nav aria-labelledby="footer-topics">
+      <h3 class="footer-col-title" id="footer-topics">Reading</h3>
+      <ul class="footer-links">
+        
+          
+          <li><a href="/topics/">Essays</a></li>
+          
+          <li><a href="/series/">Modelling</a></li>
+          
+          <li><a href="/archive/">Archive</a></li>
+          
+          <li><a href="/start-here/">Start Here</a></li>
+          
+        
+      </ul>
+    </nav>
+
+    <!-- Col 3: Secondary navigation -->
+    
+    <nav aria-labelledby="footer-company">
+      <h3 class="footer-col-title" id="footer-company">Site</h3>
+      <ul class="footer-links">
+        
+        <li><a href="/start-here/">Start Here</a></li>
+        
+        <li><a href="/about/">About</a></li>
+        
+        <li><a href="/contact/">Contact</a></li>
+        
+      </ul>
+    </nav>
+    
+
+    <!-- Col 4: Resources -->
+    <nav aria-labelledby="footer-resources">
+      <h3 class="footer-col-title" id="footer-resources">Resources</h3>
+      <ul class="footer-links">
+        <li><a href="/archive/">Archive</a></li>
+        <li><a href="/feed.xml">RSS Feed</a></li>
+        <li><a href="/topics/">All Topics</a></li>
+      </ul>
+    </nav>
+
+  </div><!-- /.footer-inner -->
+
+  <div class="footer-bottom">
+    <span class="footer-copy">
+      &copy; 2026 WaywardHouse.
+    </span>
+    <div class="footer-legal">
+      <a href="/privacy/">Privacy Policy</a>
+      <a href="/terms/">Terms of Service</a>
+    </div>
+  </div>
+
+</footer>
+
+
+<!-- Alpine.js bundle -->
+<script type="module" src="/assets/dist/main.js"></script>
+
+<!-- Visualization runtime — detects and loads CDN libraries dynamically -->
+<script type="module" src="/assets/js/core.js"></script>
+
+<!-- Search overlay — event-driven: nav button $dispatches 'search:open' -->
+<div
+  x-data="search"
+  x-init="init()"
+  @search:open.window="open()"
+>
+  <div
+    class="search-overlay"
+    x-show="isOpen"
+    x-transition:enter="transition ease-out duration-150"
+    x-transition:enter-start="opacity-0"
+    x-transition:enter-end="opacity-100"
+    x-transition:leave="transition ease-in duration-100"
+    x-transition:leave-start="opacity-100"
+    x-transition:leave-end="opacity-0"
+    @click.self="close()"
+    style="display: none;"
+    role="dialog"
+    aria-modal="true"
+    aria-label="Search"
+  >
+    <div class="search-panel">
+      <div class="search-input-wrap">
+        <svg class="search-icon" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <circle cx="11" cy="11" r="8"/>
+          <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+        </svg>
+        <input
+          class="search-input"
+          type="search"
+          placeholder="Search posts…"
+          x-model="query"
+          x-ref="input"
+          @input.debounce.300ms="runSearch()"
+          @keydown.escape="close()"
+          autocomplete="off"
+          spellcheck="false"
+          aria-label="Search query"
+        >
+        <kbd class="search-esc" aria-hidden="true">ESC</kbd>
+      </div>
+
+      <div class="search-results" x-show="query.trim().length > 0">
+        <div class="search-status" x-show="loading" aria-live="polite">Searching…</div>
+        <div class="search-status" x-show="!loading && results.length === 0" aria-live="polite">
+          No results for "<span x-text="query"></span>"
+        </div>
+        <ul class="search-result-list" x-show="!loading && results.length > 0" role="list">
+          <template x-for="result in results" :key="result.url">
+            <li>
+              <a :href="result.url" class="search-result-item" @click="close()">
+                <div class="search-result-title" x-text="result.meta?.title || result.url"></div>
+                <div class="search-result-excerpt" x-html="result.excerpt"></div>
+              </a>
+            </li>
+          </template>
+        </ul>
+      </div>
+    </div>
+  </div>
+</div>
+
+</body>
+</html>
