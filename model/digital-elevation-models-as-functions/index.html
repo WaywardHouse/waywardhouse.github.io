@@ -1,0 +1,1091 @@
+<!DOCTYPE html>
+
+<html lang="en" data-brand="wayward" data-theme="light">
+<head>
+  <meta charset="utf-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Digital Elevation Models as Functions — WaywardHouse</title>
+<meta name="description" content="Terrain has structure: it rises and falls continuously across space. We can represent elevation as a mathematical function z = f(x, y), where every point in the horizontal plane has...">
+
+<!-- Dark mode flash prevention — runs synchronously before first paint -->
+<script>
+  (function () {
+    var defaultDark = 'light' === 'dark';
+    var s = localStorage.getItem('theme');
+    var dark = s !== null ? s === 'dark' : defaultDark;
+    document.documentElement.dataset.theme = dark ? 'dark' : 'light';
+  })();
+</script>
+
+<!-- Preconnect to CDN domains used by the viz runtime -->
+<link rel="preconnect" href="https://cdn.jsdelivr.net">
+<link rel="preconnect" href="https://unpkg.com">
+<link rel="preconnect" href="https://esm.sh">
+<link rel="preconnect" href="https://api.mapbox.com">
+<link rel="preconnect" href="https://events.mapbox.com">
+
+
+<script>window.MAPBOX_TOKEN = 'pk.eyJ1IjoiYnJlYWRlZGNvZCIsImEiOiJjbW0xa25qc2EwMmtwMnJwejJlNndqdnoxIn0._7I9PwXuFLrOQINVZ84y1w';</script>
+
+
+<!-- Fonts -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:ital,wght@0,300;0,400;0,600;0,700;0,800;0,900;1,700;1,800&family=Barlow:wght@300;400&family=IBM+Plex+Mono:ital,wght@0,300;0,400;0,500;1,300&family=Literata:ital,opsz,wght@0,7..72,300;0,7..72,400;0,7..72,500;1,7..72,300;1,7..72,400&display=swap" rel="stylesheet">
+
+<!-- Theme stylesheet (Vite build output) -->
+<link rel="stylesheet" href="/assets/dist/main.css">
+
+<!-- Brand token overrides — loaded after main.css so variables cascade correctly -->
+
+<link rel="stylesheet" href="/assets/css/brand-wayward.css">
+
+
+
+<!-- Syntax highlighting (Rouge — light + dark) -->
+<link rel="stylesheet" href="/assets/css/syntax.css">
+
+<!-- Begin Jekyll SEO tag v2.8.0 -->
+<title>Digital Elevation Models as Functions | WaywardHouse</title>
+<meta name="generator" content="Jekyll v4.4.1" />
+<meta property="og:title" content="Digital Elevation Models as Functions" />
+<meta property="og:locale" content="en" />
+<meta name="description" content="Terrain has structure: it rises and falls continuously across space. We can represent elevation as a mathematical function z = f(x, y), where every point in the horizontal plane has a unique elevation. In practice, we discretize this into a raster grid. This model bridges continuous mathematics and digital data." />
+<meta property="og:description" content="Terrain has structure: it rises and falls continuously across space. We can represent elevation as a mathematical function z = f(x, y), where every point in the horizontal plane has a unique elevation. In practice, we discretize this into a raster grid. This model bridges continuous mathematics and digital data." />
+<link rel="canonical" href="https://wayward.house/model/digital-elevation-models-as-functions/" />
+<meta property="og:url" content="https://wayward.house/model/digital-elevation-models-as-functions/" />
+<meta property="og:site_name" content="WaywardHouse" />
+<meta property="og:image" content="https://wayward.house/assets/images/spatial-analysis.webp" />
+<meta property="og:type" content="article" />
+<meta property="article:published_time" content="2026-02-26T00:00:00+00:00" />
+<meta name="twitter:card" content="summary_large_image" />
+<meta property="twitter:image" content="https://wayward.house/assets/images/spatial-analysis.webp" />
+<meta property="twitter:title" content="Digital Elevation Models as Functions" />
+<meta name="twitter:site" content="@" />
+<script type="application/ld+json">
+{"@context":"https://schema.org","@type":"BlogPosting","dateModified":"2026-03-18T02:42:46+00:00","datePublished":"2026-02-26T00:00:00+00:00","description":"Terrain has structure: it rises and falls continuously across space. We can represent elevation as a mathematical function z = f(x, y), where every point in the horizontal plane has a unique elevation. In practice, we discretize this into a raster grid. This model bridges continuous mathematics and digital data.","headline":"Digital Elevation Models as Functions","image":"https://wayward.house/assets/images/spatial-analysis.webp","mainEntityOfPage":{"@type":"WebPage","@id":"https://wayward.house/model/digital-elevation-models-as-functions/"},"publisher":{"@type":"Organization","logo":{"@type":"ImageObject","url":"https://wayward.house/assets/images/logo.webp"}},"url":"https://wayward.house/model/digital-elevation-models-as-functions/"}</script>
+<!-- End Jekyll SEO tag -->
+
+
+
+<!-- Cloudflare Web Analytics -->
+<script defer src="https://static.cloudflareinsights.com/beacon.min.js"
+  data-cf-beacon='{"token": "62c47d78bf9d4c80972d4e6242d79ff8"}'></script>
+
+
+</head>
+<body class="
+  model-template
+   tag-modelling
+   tag-hash-math
+  
+   tag-hash-viz
+  
+  
+  
+  
+  
+  
+">
+
+<a href="#main-content" class="skip-link">Skip to content</a>
+
+<header class="nav" x-data="{ open: false }">
+  <div class="nav-inner">
+
+    <!-- Logo -->
+    <a href="/" class="nav-logo">
+      
+      <img loading="lazy" src="/assets/images/logo.webp" alt="WaywardHouse" width="32" height="32">
+      
+      WaywardHouse<span>.</span>
+    </a>
+
+    <!-- Desktop nav links -->
+    <ul class="nav-links" role="list">
+      
+      <li>
+        <a href="/topics/">Essays</a>
+      </li>
+      
+      <li>
+        <a href="/series/">Modelling</a>
+      </li>
+      
+      <li>
+        <a href="/about/">About</a>
+      </li>
+      
+    </ul>
+
+    <!-- Actions -->
+    <div class="nav-actions">
+
+      <!-- Search button -->
+      <button
+        class="search-toggle"
+        type="button"
+        aria-label="Search (⌘K)"
+        title="Search (⌘K)"
+        @click="$dispatch('search:open')"
+      >
+        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <circle cx="11" cy="11" r="8"/>
+          <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+        </svg>
+      </button>
+
+      <!-- Dark mode toggle -->
+      <button
+        class="theme-toggle"
+        x-data="darkMode"
+        x-init="init()"
+        @click="toggle()"
+        :aria-label="dark ? 'Switch to light mode' : 'Switch to dark mode'"
+        type="button"
+      >
+        <!-- Sun icon (shown in light mode) -->
+        <svg class="icon-sun" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">
+          <circle cx="12" cy="12" r="5"/>
+          <line x1="12" y1="1" x2="12" y2="3"/>
+          <line x1="12" y1="21" x2="12" y2="23"/>
+          <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/>
+          <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/>
+          <line x1="1" y1="12" x2="3" y2="12"/>
+          <line x1="21" y1="12" x2="23" y2="12"/>
+          <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/>
+          <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>
+        </svg>
+        <!-- Moon icon (shown in dark mode) -->
+        <svg class="icon-moon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">
+          <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+        </svg>
+      </button>
+
+      <!-- Hamburger (mobile only) -->
+      <button
+        class="mobile-nav-toggle"
+        @click="open = !open"
+        :aria-expanded="open"
+        :aria-label="open ? 'Close menu' : 'Open menu'"
+        type="button"
+      >
+        <svg x-show="!open" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <line x1="3" y1="6" x2="21" y2="6"/>
+          <line x1="3" y1="12" x2="21" y2="12"/>
+          <line x1="3" y1="18" x2="21" y2="18"/>
+        </svg>
+        <svg x-show="open" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <line x1="18" y1="6" x2="6" y2="18"/>
+          <line x1="6" y1="6" x2="18" y2="18"/>
+        </svg>
+      </button>
+
+    </div><!-- /.nav-actions -->
+  </div><!-- /.nav-inner -->
+
+  <!-- Mobile drawer -->
+  <div
+    class="mobile-nav"
+    x-show="open"
+    x-transition:enter="transition ease-out duration-200"
+    x-transition:enter-start="opacity-0 -translate-y-1"
+    x-transition:enter-end="opacity-100 translate-y-0"
+    x-transition:leave="transition ease-in duration-150"
+    x-transition:leave-start="opacity-100 translate-y-0"
+    x-transition:leave-end="opacity-0 -translate-y-1"
+    @click.outside="open = false"
+    @keydown.escape.window="open = false"
+  >
+    <ul role="list">
+      
+      <li>
+        <a href="/topics/" @click="open = false">Essays</a>
+      </li>
+      
+      <li>
+        <a href="/series/" @click="open = false">Modelling</a>
+      </li>
+      
+      <li>
+        <a href="/about/" @click="open = false">About</a>
+      </li>
+      
+    </ul>
+  </div><!-- /.mobile-nav -->
+
+</header>
+
+
+<div id="main-content">
+  <!-- Essay stylesheet and runtime — self-contained -->
+<link rel="stylesheet" href="/assets/css/essay.css">
+<script type="module" src="/assets/js/essay/core.js"></script>
+
+<div class="essay-layout" id="essay-layout">
+
+  <!-- essay-toc.html — Sticky table of contents (left column).
+     The <ol> is empty on load; assets/js/essay/core.js populates it
+     from h2/h3 elements found in #essay-content after the page renders. -->
+
+<nav class="essay-toc" id="essay-toc" aria-label="Table of contents">
+  <div class="essay-toc-inner">
+    <p class="essay-toc-heading" aria-hidden="true">Contents</p>
+    <ol class="essay-toc-list" id="essay-toc-list">
+      <!-- Populated at runtime by assets/js/essay/core.js buildToc() -->
+    </ol>
+  </div>
+</nav>
+
+
+  <main class="essay-main" id="essay-main" role="main">
+    <article class="essay-article">
+
+      <!-- essay-hero.html — Header for computational essay template.
+     Displays feature image, tag label, title, excerpt, and post metadata. -->
+
+<header class="essay-hero">
+  
+  <figure class="essay-hero-figure">
+    <img
+      src="/assets/images/spatial-analysis.webp"
+      alt="Digital Elevation Models as Functions"
+      class="essay-hero-img"
+      loading="eager"
+    >
+    
+  </figure>
+  
+
+  <div class="essay-hero-body">
+
+    
+    
+    
+    
+    
+    <nav class="essay-breadcrumb" aria-label="Series position">
+      
+      <a href="/series/1/" class="essay-breadcrumb-link">Computational geography foundations</a>
+      
+      
+      <span class="essay-breadcrumb-sep" aria-hidden="true">›</span>
+      <span class="essay-breadcrumb-cluster">Terrain and Spatial Derivatives</span>
+      
+      
+      <span class="essay-breadcrumb-sep" aria-hidden="true">›</span>
+      <span class="essay-breadcrumb-pos">Model 8</span>
+      
+    </nav>
+    
+
+    <div class="essay-hero-labels">
+      
+      <a href="/topics/modelling/" class="essay-tag-label">modelling</a>
+      
+      
+      <span class="difficulty-badge difficulty-badge--3">Level 3</span>
+      
+    </div>
+
+    <h1 class="essay-title">Digital Elevation Models as Functions</h1>
+
+    
+    <p class="essay-excerpt">Terrain has structure: it rises and falls continuously across space. We can represent elevation as a mathematical function z = f(x, y), where every point in the horizontal plane has a unique elevation. In practice, we discretize this into a raster grid. This model bridges continuous mathematics and digital data.
+</p>
+    
+
+    
+    <p class="essay-prereqs"><span class="essay-prereqs-label">Prerequisites:</span> functions of two variables, discretization, finite differences</p>
+    
+
+    <div class="essay-meta">
+      
+      <div class="essay-meta-secondary">
+        <time class="essay-date" datetime="2026-02-26">26 Feb 2026</time>
+        
+        
+        <span class="essay-sep" aria-hidden="true">·</span>
+        <span class="essay-updated">Updated <time datetime="2026-03-18">18 Mar 2026</time></span>
+        
+        <span class="essay-sep" aria-hidden="true">·</span>
+        <span class="essay-reading-time">12 min read</span>
+      </div>
+    </div>
+  </div>
+</header>
+
+
+      
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<nav class="series-nav" aria-label="Series navigation">
+
+  <div class="series-nav-header">
+    <span class="series-nav-label">C</span>
+    <span class="series-nav-title">Terrain and Spatial Derivatives</span>
+  </div>
+
+  <ol class="series-nav-list">
+    
+    <li class="series-nav-item series-nav-item--current">
+      
+      <span class="series-nav-link series-nav-link--current" aria-current="page">
+        <span class="series-nav-number">8</span>
+        Digital Elevation Models as Functions
+      </span>
+      
+    </li>
+    
+    <li class="series-nav-item">
+      
+      <a href="/model/hydrological-flow-as-optimization/" class="series-nav-link">
+        <span class="series-nav-number">10</span>
+        Hydrological Flow as Optimization
+      </a>
+      
+    </li>
+    
+  </ol>
+
+  
+  <div class="series-nav-footer">
+    <a href="/series/1/" class="series-nav-all">
+      All 12 in this series &rarr;
+    </a>
+  </div>
+  
+
+</nav>
+
+
+
+
+      <div class="essay-content gh-content" id="essay-content">
+        <p>The SRTM mission, flown aboard Space Shuttle Endeavour in February 2000, used a radar interferometer to measure the elevation of virtually the entire land surface of Earth in eleven days. The result — a 30-metre resolution grid of elevations covering 80% of the globe — transformed terrain analysis from a laborious manual discipline into something any laptop could compute in seconds. But behind the data product is a conceptual leap worth making explicit: a landscape is a function.</p>
+
+<p>Elevation at any location is determined entirely by its coordinates. Given a position (x, y), there is exactly one elevation z. That is what a mathematical function does — it assigns a unique output to every input. For terrain, z = f(x, y) is the one-line summary on which slope calculation, hydrological flow routing, viewshed analysis, and landslide prediction are all built. Understanding what it means to represent a continuous surface as a discrete grid — and what information is preserved or lost in that digitisation — is the first step toward doing terrain analysis whose results you can actually interpret and trust.</p>
+
+<h2 id="1-the-question">1. The Question</h2>
+
+<p>How do we represent the shape of the land mathematically?</p>
+
+<p>A landscape is not at all just flat. Mountains rise, valleys sink, hillslopes tilt. Every point on the surface has an <strong>elevation</strong> above some reference (usually sea level).</p>
+
+<p>If we know the coordinates $(x, y)$ of a point on the ground, can we write down a function that gives us the elevation $z$?</p>
+
+<p><strong>Yes</strong> — and this is the foundation of <strong>terrain analysis</strong>, <strong>hydrology</strong>, <strong>viewshed modelling</strong>, and <strong>landslide prediction</strong>.</p>
+
+<p>The mathematical question: How do we go from a continuous surface to a computable representation?</p>
+
+<hr />
+
+<h2 id="2-the-conceptual-model">2. The Conceptual Model</h2>
+
+<h3 id="terrain-as-a-function">Terrain as a Function</h3>
+
+<p>Imagine standing at a point with coordinates $(x, y)$ measured in meters east and north from some origin. The elevation at that point is $z$.</p>
+
+<p><strong>Mathematically:</strong></p>
+
+\[z = f(x, y)\]
+
+<p>This is a <strong>function of two variables</strong>:</p>
+<ul>
+  <li><strong>Input:</strong> A position $(x, y)$ in the horizontal plane</li>
+  <li><strong>Output:</strong> Elevation $z$ at that position</li>
+</ul>
+
+<p><strong>Examples of terrain functions:</strong></p>
+
+<ol>
+  <li><strong>Flat plane:</strong> $z = 100$ (elevation is constant everywhere)</li>
+  <li><strong>Tilted plane:</strong> $z = 500 + 0.05x - 0.02y$ (uniform slope)</li>
+  <li><strong>Cone:</strong> $z = 1000 - \sqrt{x^2 + y^2}$ (peak at origin, decreasing radially)</li>
+  <li><strong>Saddle:</strong> $z = x^2 - y^2$ (up in one direction, down in the perpendicular direction)</li>
+</ol>
+
+<p>Real terrain is more complex, but the <strong>concept</strong> is the same: elevation is determined by position.</p>
+
+<h3 id="from-continuous-to-discrete">From Continuous to Discrete</h3>
+
+<p>In reality, we can’t write down a simple algebraic formula for real terrain. Instead, we <strong>measure</strong> elevation at many points and store the values in a grid.</p>
+
+<p><strong>Digital Elevation Model (DEM):</strong> A raster grid where each cell contains the elevation of the terrain at that location.</p>
+
+<p><strong>Grid structure:</strong></p>
+<ul>
+  <li>Rows and columns define positions</li>
+  <li>Cell size (resolution) determines how finely we sample the terrain (e.g., 10 m × 10 m cells)</li>
+  <li>Elevation values are stored as numbers (integers or floating point)</li>
+</ul>
+
+<p><strong>Example:</strong> A 5×5 DEM (rows from north to south, columns from west to east):</p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>110  115  120  125  130
+108  112  118  124  129
+105  110  115  121  127
+103  108  113  118  123
+100  105  110  115  120
+</code></pre></div></div>
+
+<p>Each number is the elevation (in meters) at the center of that cell.</p>
+
+<hr />
+
+<h2 id="3-building-the-mathematical-model">3. Building the Mathematical Model</h2>
+
+<h3 id="defining-the-coordinate-system">Defining the Coordinate System</h3>
+
+<p>To turn a grid into a function, we need to define:</p>
+<ol>
+  <li><strong>Origin:</strong> Where is $(x, y) = (0, 0)$?</li>
+  <li><strong>Cell size:</strong> $\Delta x$ (east-west), $\Delta y$ (north-south)</li>
+  <li><strong>Grid extent:</strong> How many rows and columns?</li>
+</ol>
+
+<p><strong>Standard convention:</strong></p>
+<ul>
+  <li>x increases <strong>eastward</strong></li>
+  <li>y increases <strong>northward</strong></li>
+  <li>Origin is typically the <strong>southwest corner</strong> of the grid</li>
+</ul>
+
+<p>If the grid has $m$ rows and $n$ columns, with cell size $\Delta x = \Delta y = d$:</p>
+
+<p>\(x_j = x_0 + j \cdot d, \quad j = 0, 1, \ldots, n-1\)
+\(y_i = y_0 + i \cdot d, \quad i = 0, 1, \ldots, m-1\)</p>
+
+<p>The elevation at grid cell $(i, j)$ is $z_{i,j}$.</p>
+
+<h3 id="from-grid-indices-to-coordinates">From Grid Indices to Coordinates</h3>
+
+<p>Given a grid cell index $(i, j)$, the corresponding real-world coordinates are:</p>
+
+\[(x, y) = (x_0 + j \cdot d, \; y_0 + i \cdot d)\]
+
+<p><strong>Example:</strong> Grid with origin $(x_0, y_0) = (500000, 4500000)$ (UTM coordinates), cell size $d = 30$ m, cell $(i=2, j=3)$:</p>
+
+<p>\(x = 500000 + 3 \times 30 = 500090 \text{ m}\)
+\(y = 4500000 + 2 \times 30 = 4500060 \text{ m}\)</p>
+
+<h3 id="interpolating-between-grid-points">Interpolating Between Grid Points</h3>
+
+<p>A DEM gives elevation only at grid cell <strong>centers</strong>. What about points between cells?</p>
+
+<p><strong>Bilinear interpolation:</strong> Given a point $(x, y)$ inside a grid cell, interpolate elevation using the four surrounding cell values.</p>
+
+<p>Let the four corners have elevations $z_{00}, z_{01}, z_{10}, z_{11}$ at positions:</p>
+
+\[\begin{align}
+(x_0, y_0) &amp;\rightarrow z_{00} \\
+(x_0, y_1) &amp;\rightarrow z_{01} \\
+(x_1, y_0) &amp;\rightarrow z_{10} \\
+(x_1, y_1) &amp;\rightarrow z_{11}
+\end{align}\]
+
+<p>For a point $(x, y)$ with $x_0 &lt; x &lt; x_1$ and $y_0 &lt; y &lt; y_1$:</p>
+
+\[z(x, y) = (1 - s)(1 - t) z_{00} + s(1 - t) z_{10} + (1 - s)t z_{01} + st z_{11}\]
+
+<p>Where:</p>
+
+\[s = \frac{x - x_0}{x_1 - x_0}, \quad t = \frac{y - y_0}{y_1 - y_0}\]
+
+<p>This creates a <strong>piecewise continuous surface</strong> — smooth within each cell, potentially discontinuous at cell boundaries.</p>
+
+<hr />
+
+<h2 id="4-worked-example-by-hand">4. Worked Example by Hand</h2>
+
+<p><strong>Problem:</strong> A 3×3 DEM has cell size 10 m and origin at $(x_0, y_0) = (0, 0)$. Elevations (in meters):</p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>Row 0:  100  105  110
+Row 1:  102  107  112
+Row 2:  105  110  115
+</code></pre></div></div>
+
+<p>(a) What is the elevation at grid cell $(i=1, j=2)$?<br />
+(b) What are the real-world coordinates of this cell center?<br />
+(c) Estimate the elevation at point $(x, y) = (15, 5)$ using bilinear interpolation.</p>
+
+<h3 id="solution">Solution</h3>
+
+<p><strong>(a) Elevation at cell (1, 2)</strong></p>
+
+<p>Row 1, column 2: $z_{1,2} = 112$ m</p>
+
+<p><strong>(b) Coordinates of cell center</strong></p>
+
+<p>\(x = x_0 + j \cdot d = 0 + 2 \times 10 = 20 \text{ m}\)
+\(y = y_0 + i \cdot d = 0 + 1 \times 10 = 10 \text{ m}\)</p>
+
+<p>Cell center: <strong>(20, 10)</strong> m</p>
+
+<p><strong>(c) Interpolation at (15, 5)</strong></p>
+
+<p>Point $(15, 5)$ lies between cells:</p>
+<ul>
+  <li>$x$: between column 1 ($x = 10$) and column 2 ($x = 20$)</li>
+  <li>$y$: between row 0 ($y = 0$) and row 1 ($y = 10$)</li>
+</ul>
+
+<p>Four corner elevations:</p>
+<ul>
+  <li>$(10, 0)$: $z = 105$ (row 0, col 1)</li>
+  <li>$(20, 0)$: $z = 110$ (row 0, col 2)</li>
+  <li>$(10, 10)$: $z = 107$ (row 1, col 1)</li>
+  <li>$(20, 10)$: $z = 112$ (row 1, col 2)</li>
+</ul>
+
+<p>Interpolation parameters:</p>
+
+\[s = \frac{15 - 10}{20 - 10} = \frac{5}{10} = 0.5\]
+
+\[t = \frac{5 - 0}{10 - 0} = \frac{5}{10} = 0.5\]
+
+<p>Interpolated elevation:</p>
+
+\[\begin{align}
+z(15, 5) &amp;= (1 - 0.5)(1 - 0.5)(105) + (0.5)(1 - 0.5)(110) \\
+&amp;\quad + (1 - 0.5)(0.5)(107) + (0.5)(0.5)(112) \\
+&amp;= 0.25 \times 105 + 0.25 \times 110 + 0.25 \times 107 + 0.25 \times 112 \\
+&amp;= 26.25 + 27.5 + 26.75 + 28 \\
+&amp;= 108.5 \text{ m}
+\end{align}\]
+
+<p><strong>Elevation at (15, 5): 108.5 m</strong></p>
+
+<hr />
+
+<h2 id="5-computational-implementation">5. Computational Implementation</h2>
+
+<p>Below is an interactive 3D visualization of a synthetic DEM.</p>
+
+<div class="viz-container" id="dem-viz">
+  <div class="controls">
+    <label>
+      Terrain type:
+      <select id="terrain-select">
+        <option value="cone">Cone (radial peak)</option>
+        <option value="saddle">Saddle point</option>
+        <option value="plane">Tilted plane</option>
+        <option value="ridge">Ridge</option>
+        <option value="valley">Valley</option>
+      </select>
+    </label>
+    <label>
+      Grid resolution:
+      <input type="range" id="resolution-slider" min="10" max="50" step="5" value="30" />
+      <span id="resolution-value">30</span> cells
+    </label>
+  </div>
+  <div id="dem-chart" style="width: 100%; height: 500px;"></div>
+  <div class="info-panel">
+    <p>Each cell represents one grid point in the raster. Colour encodes elevation (blue = low, red = high). This top-down view is exactly how a DEM is stored: a 2D array of elevation values.</p>
+  </div>
+</div>
+
+<script type="module">
+while (!window.echarts) await new Promise(r => setTimeout(r, 50));
+
+const chart = window.echarts.init(document.getElementById('dem-chart'));
+
+let terrainType = 'cone';
+let resolution = 30;
+
+function generateDEM(type, res) {
+  const data = [];
+  const extent = 100;
+  const step = extent / res;
+
+  for (let i = 0; i < res; i++) {
+    for (let j = 0; j < res; j++) {
+      const x = (j - res / 2) * step;
+      const y = (i - res / 2) * step;
+      let z;
+
+      switch (type) {
+        case 'cone':   z = 50 - Math.sqrt(x * x + y * y) * 0.5; break;
+        case 'saddle': z = (x * x - y * y) * 0.01; break;
+        case 'plane':  z = 10 + x * 0.3 + y * 0.2; break;
+        case 'ridge':  z = 30 - Math.abs(x) * 0.3 + y * 0.1; break;
+        case 'valley': z = Math.abs(y) * 0.3 - 20 + x * 0.1; break;
+      }
+
+      data.push([j, i, +z.toFixed(2)]);
+    }
+  }
+  return data;
+}
+
+function updateChart() {
+  const data = generateDEM(terrainType, resolution);
+  const zValues = data.map(d => d[2]);
+  const zMin = Math.min(...zValues);
+  const zMax = Math.max(...zValues);
+  const cols = Array.from({ length: resolution }, (_, i) => i);
+  const rows = Array.from({ length: resolution }, (_, i) => i);
+
+  const option = {
+    title: {
+      text: `DEM Grid: ${terrainType} (${resolution}×${resolution} cells)`,
+      left: 'center'
+    },
+    tooltip: {
+      trigger: 'item',
+      formatter: params => {
+        const [col, row, z] = params.value;
+        return `Col ${col} (East), Row ${row} (North)<br/>Elevation: ${z} m`;
+      }
+    },
+    visualMap: {
+      show: true,
+      min: zMin,
+      max: zMax,
+      calculable: true,
+      orient: 'horizontal',
+      left: 'center',
+      bottom: '2%',
+      inRange: {
+        color: ['#313695', '#4575b4', '#74add1', '#abd9e9', '#e0f3f8',
+                '#ffffbf', '#fee090', '#fdae61', '#f46d43', '#d73027', '#a50026']
+      }
+    },
+    grid: { top: 60, bottom: 90, left: 50, right: 20 },
+    xAxis: {
+      type: 'category',
+      data: cols,
+      name: 'Column (East →)',
+      nameLocation: 'middle',
+      nameGap: 25,
+      axisLabel: { show: resolution <= 20 }
+    },
+    yAxis: {
+      type: 'category',
+      data: rows,
+      name: 'Row (North ↑)',
+      nameLocation: 'middle',
+      nameGap: 35,
+      axisLabel: { show: resolution <= 20 }
+    },
+    series: [{
+      type: 'heatmap',
+      data: data,
+      emphasis: {
+        itemStyle: { shadowBlur: 5, shadowColor: 'rgba(0,0,0,0.4)' }
+      }
+    }]
+  };
+
+  chart.setOption(option);
+}
+
+document.getElementById('terrain-select').addEventListener('change', e => {
+  terrainType = e.target.value;
+  updateChart();
+});
+
+document.getElementById('resolution-slider').addEventListener('input', e => {
+  resolution = parseInt(e.target.value);
+  document.getElementById('resolution-value').textContent = resolution;
+  updateChart();
+});
+
+updateChart();
+window.addEventListener('resize', () => chart.resize());
+</script>
+
+<p><strong>Try this:</strong></p>
+<ul>
+  <li><strong>Cone:</strong> Radial symmetry, single peak</li>
+  <li><strong>Saddle:</strong> Up in one direction, down in perpendicular direction (mountain pass)</li>
+  <li><strong>Plane:</strong> Uniform slope (no curvature)</li>
+  <li><strong>Ridge:</strong> Linear high feature</li>
+  <li><strong>Valley:</strong> Linear low feature</li>
+  <li>Increase resolution: Smoother surface, more cells, same terrain shape</li>
+  <li>Decrease resolution: Coarser surface, blockier appearance</li>
+</ul>
+
+<p><strong>Key insight:</strong> The mathematical function is continuous, but the DEM is discrete. Higher resolution approximates the continuous surface better.</p>
+
+<hr />
+
+<h2 id="6-interpretation">6. Interpretation</h2>
+
+<h3 id="resolution-and-detail">Resolution and Detail</h3>
+
+<p><strong>Coarse DEM</strong> (90 m cells):</p>
+<ul>
+  <li>Good for regional analysis</li>
+  <li>Misses small features (gullies, terraces)</li>
+  <li>Fast to process</li>
+</ul>
+
+<p><strong>Fine DEM</strong> (1 m cells):</p>
+<ul>
+  <li>Captures detailed topography</li>
+  <li>Required for local hydrology, erosion modelling</li>
+  <li>Large file sizes, slower computation</li>
+</ul>
+
+<p><strong>Rule of thumb:</strong> Cell size should be smaller than the features you care about.</p>
+
+<h3 id="vertical-accuracy-vs-horizontal-resolution">Vertical Accuracy vs. Horizontal Resolution</h3>
+
+<p>A DEM with 10 m horizontal resolution might have:</p>
+<ul>
+  <li>±1 m vertical accuracy (high-quality lidar)</li>
+  <li>±10 m vertical accuracy (older photogrammetry)</li>
+</ul>
+
+<p><strong>Don’t confuse the two.</strong> Resolution is spacing; accuracy is error.</p>
+
+<h3 id="edge-effects">Edge Effects</h3>
+
+<p>At the edge of a DEM, there are no neighboring cells beyond the boundary. Calculations requiring neighbors (slope, aspect) are undefined or require special handling (mirror, clamp, or mark as no-data).</p>
+
+<hr />
+
+<h2 id="7-what-could-go-wrong">7. What Could Go Wrong?</h2>
+
+<h3 id="confusing-rowcolumn-with-xy">Confusing Row/Column with X/Y</h3>
+
+<p><strong>Common error:</strong> Treating row index as x-coordinate.</p>
+
+<p><strong>Correct:</strong></p>
+<ul>
+  <li>Row index $i$ corresponds to <strong>y-coordinate</strong> (north-south)</li>
+  <li>Column index $j$ corresponds to <strong>x-coordinate</strong> (east-west)</li>
+</ul>
+
+<p>Always check your coordinate system convention.</p>
+
+<h3 id="assuming-regular-grids">Assuming Regular Grids</h3>
+
+<p>Not all DEMs are regular grids:</p>
+<ul>
+  <li><strong>Triangulated Irregular Networks (TINs):</strong> Points connected by triangles (better for sparse data)</li>
+  <li><strong>Irregular point clouds:</strong> Lidar before gridding</li>
+</ul>
+
+<p>This model focuses on regular grids (rasters) because they’re simpler and more common.</p>
+
+<h3 id="interpolation-artifacts">Interpolation Artifacts</h3>
+
+<p>Bilinear interpolation creates a <strong>piecewise planar surface</strong> — each cell becomes a flat facet. This can introduce:</p>
+<ul>
+  <li>Artificial terracing</li>
+  <li>Discontinuous slopes at cell boundaries</li>
+</ul>
+
+<p>More sophisticated interpolation (bicubic, splines) can smooth these, but at computational cost.</p>
+
+<h3 id="coordinate-reference-systems">Coordinate Reference Systems</h3>
+
+<p>Real-world DEMs use <strong>projected coordinate systems</strong> (e.g., UTM) or <strong>geographic coordinates</strong> (latitude/longitude). Geographic coordinates are <strong>not</strong> uniform in distance — 1° longitude spans different distances at different latitudes.</p>
+
+<p>Always check the CRS before doing distance-based calculations.</p>
+
+<hr />
+
+<h2 id="8-extension-functions-of-two-variables-in-calculus">8. Extension: Functions of Two Variables in Calculus</h2>
+
+<p>A function $z = f(x, y)$ defines a <strong>surface</strong> in 3D space.</p>
+
+<p><strong>Partial derivatives</strong> measure how the surface changes when you move in one direction while holding the other constant:</p>
+
+\[\frac{\partial z}{\partial x} = \text{rate of change in the x-direction (eastward)}\]
+
+\[\frac{\partial z}{\partial y} = \text{rate of change in the y-direction (northward)}\]
+
+<p>In terrain analysis:</p>
+<ul>
+  <li>$\frac{\partial z}{\partial x}$ is the <strong>east-west slope component</strong></li>
+  <li>$\frac{\partial z}{\partial y}$ is the <strong>north-south slope component</strong></li>
+</ul>
+
+<p><strong>Next model (Model 8)</strong> will show how to compute these from a DEM using <strong>finite differences</strong> and combine them into <strong>gradient</strong> and <strong>aspect</strong>.</p>
+
+<hr />
+
+<h2 id="9-math-refresher-functions-of-two-variables">9. Math Refresher: Functions of Two Variables</h2>
+
+<h3 id="notation">Notation</h3>
+
+\[z = f(x, y)\]
+
+<p><strong>Read as:</strong> “z is a function of x and y.”</p>
+
+<h3 id="example">Example</h3>
+
+\[f(x, y) = x^2 + y^2\]
+
+<p><strong>Evaluation:</strong></p>
+<ul>
+  <li>$f(3, 4) = 3^2 + 4^2 = 9 + 16 = 25$</li>
+  <li>$f(0, 0) = 0$</li>
+  <li>$f(-1, 2) = 1 + 4 = 5$</li>
+</ul>
+
+<h3 id="level-curves-contour-lines">Level Curves (Contour Lines)</h3>
+
+<p>A <strong>level curve</strong> is the set of all $(x, y)$ points where $f(x, y)$ equals a constant.</p>
+
+<p><strong>Example:</strong> For $z = x^2 + y^2$, the level curve $z = 25$ is the circle $x^2 + y^2 = 25$ (radius 5).</p>
+
+<p>In terrain, level curves are <strong>contour lines</strong> — lines of constant elevation.</p>
+
+<hr />
+
+<h2 id="summary">Summary</h2>
+
+<ul>
+  <li>Terrain can be represented as a function $z = f(x, y)$</li>
+  <li>A <strong>Digital Elevation Model (DEM)</strong> discretizes this function into a raster grid</li>
+  <li>Grid cells have indices $(i, j)$ corresponding to coordinates $(x, y)$</li>
+  <li><strong>Bilinear interpolation</strong> estimates elevation between grid points</li>
+  <li><strong>Resolution</strong> (cell size) determines how finely the terrain is sampled</li>
+  <li>Functions of two variables define surfaces; partial derivatives measure slope</li>
+  <li>Real DEMs require careful attention to coordinate systems and interpolation methods</li>
+</ul>
+
+      </div>
+
+      
+
+
+
+      
+
+  
+  
+  
+  
+
+
+
+      <!-- essay-footer-notes.html — References / endnotes section.
+     Hidden by default; assets/js/essay/core.js shows it and populates
+     #essay-endnotes-list from [data-cite] elements in the content.
+
+     In posts, create citation markers with:
+       <cite data-cite="Author, Title, URL">1</cite>
+     The JS collects these and renders a numbered reference list here. -->
+
+<footer class="essay-endnotes" id="essay-endnotes" aria-label="References" hidden>
+  <div class="essay-endnotes-inner">
+    <h2 class="essay-endnotes-heading">References</h2>
+    <ol class="essay-endnotes-list" id="essay-endnotes-list">
+      <!-- Populated at runtime by assets/js/essay/core.js buildEndnotes() -->
+    </ol>
+  </div>
+</footer>
+
+
+      
+
+      
+
+      
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    </article>
+  </main>
+
+  <aside
+    class="essay-sidenotes"
+    id="essay-sidenotes"
+    aria-label="Margin notes"
+  ></aside>
+
+</div>
+
+</div>
+
+<footer>
+  <div class="footer-inner">
+
+    <!-- Col 1: Brand -->
+    <div class="footer-brand">
+      <div class="footer-brand-logo">
+        
+        <img loading="lazy" src="/assets/images/logo.webp" alt="WaywardHouse" width="28" height="28">
+        
+        WaywardHouse<span>.</span>
+      </div>
+      
+      
+      <p class="footer-brand-desc">Understanding how place, economy, and environment interact — through analysis, modelling, and open tools.</p>
+      
+
+      <div class="footer-social">
+        
+        
+        
+        <a href="/feed.xml" class="social-icon" target="_blank" rel="noopener noreferrer" aria-label="RSS feed">
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M4 11a9 9 0 0 1 9 9"/>
+            <path d="M4 4a16 16 0 0 1 16 16"/>
+            <circle cx="5" cy="19" r="1"/>
+          </svg>
+        </a>
+      </div>
+    </div>
+
+    <!-- Col 2: Topics (configurable via footer_topics, falls back to auto-categories) -->
+    <nav aria-labelledby="footer-topics">
+      <h3 class="footer-col-title" id="footer-topics">Reading</h3>
+      <ul class="footer-links">
+        
+          
+          <li><a href="/topics/">Essays</a></li>
+          
+          <li><a href="/series/">Modelling</a></li>
+          
+          <li><a href="/archive/">Archive</a></li>
+          
+          <li><a href="/start-here/">Start Here</a></li>
+          
+        
+      </ul>
+    </nav>
+
+    <!-- Col 3: Secondary navigation -->
+    
+    <nav aria-labelledby="footer-company">
+      <h3 class="footer-col-title" id="footer-company">Site</h3>
+      <ul class="footer-links">
+        
+        <li><a href="/start-here/">Start Here</a></li>
+        
+        <li><a href="/about/">About</a></li>
+        
+        <li><a href="/contact/">Contact</a></li>
+        
+      </ul>
+    </nav>
+    
+
+    <!-- Col 4: Resources -->
+    <nav aria-labelledby="footer-resources">
+      <h3 class="footer-col-title" id="footer-resources">Resources</h3>
+      <ul class="footer-links">
+        <li><a href="/archive/">Archive</a></li>
+        <li><a href="/feed.xml">RSS Feed</a></li>
+        <li><a href="/topics/">All Topics</a></li>
+      </ul>
+    </nav>
+
+  </div><!-- /.footer-inner -->
+
+  <div class="footer-bottom">
+    <span class="footer-copy">
+      &copy; 2026 WaywardHouse.
+    </span>
+    <div class="footer-legal">
+      <a href="/privacy/">Privacy Policy</a>
+      <a href="/terms/">Terms of Service</a>
+    </div>
+  </div>
+
+</footer>
+
+
+<!-- Alpine.js bundle -->
+<script type="module" src="/assets/dist/main.js"></script>
+
+<!-- Visualization runtime — detects and loads CDN libraries dynamically -->
+<script type="module" src="/assets/js/core.js"></script>
+
+<!-- Search overlay — event-driven: nav button $dispatches 'search:open' -->
+<div
+  x-data="search"
+  x-init="init()"
+  @search:open.window="open()"
+>
+  <div
+    class="search-overlay"
+    x-show="isOpen"
+    x-transition:enter="transition ease-out duration-150"
+    x-transition:enter-start="opacity-0"
+    x-transition:enter-end="opacity-100"
+    x-transition:leave="transition ease-in duration-100"
+    x-transition:leave-start="opacity-100"
+    x-transition:leave-end="opacity-0"
+    @click.self="close()"
+    style="display: none;"
+    role="dialog"
+    aria-modal="true"
+    aria-label="Search"
+  >
+    <div class="search-panel">
+      <div class="search-input-wrap">
+        <svg class="search-icon" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <circle cx="11" cy="11" r="8"/>
+          <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+        </svg>
+        <input
+          class="search-input"
+          type="search"
+          placeholder="Search posts…"
+          x-model="query"
+          x-ref="input"
+          @input.debounce.300ms="runSearch()"
+          @keydown.escape="close()"
+          autocomplete="off"
+          spellcheck="false"
+          aria-label="Search query"
+        >
+        <kbd class="search-esc" aria-hidden="true">ESC</kbd>
+      </div>
+
+      <div class="search-results" x-show="query.trim().length > 0">
+        <div class="search-status" x-show="loading" aria-live="polite">Searching…</div>
+        <div class="search-status" x-show="!loading && results.length === 0" aria-live="polite">
+          No results for "<span x-text="query"></span>"
+        </div>
+        <ul class="search-result-list" x-show="!loading && results.length > 0" role="list">
+          <template x-for="result in results" :key="result.url">
+            <li>
+              <a :href="result.url" class="search-result-item" @click="close()">
+                <div class="search-result-title" x-text="result.meta?.title || result.url"></div>
+                <div class="search-result-excerpt" x-html="result.excerpt"></div>
+              </a>
+            </li>
+          </template>
+        </ul>
+      </div>
+    </div>
+  </div>
+</div>
+
+</body>
+</html>

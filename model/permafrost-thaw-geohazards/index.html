@@ -1,0 +1,1477 @@
+<!DOCTYPE html>
+
+<html lang="en" data-brand="wayward" data-theme="light">
+<head>
+  <meta charset="utf-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Permafrost Thaw and Geohazards — WaywardHouse</title>
+<meta name="description" content="What happens when permanently frozen ground thaws? Permafrost contains massive ice volumes that, when melted, cause ground subsidence, slope failures, and infrastructure damage. This model derives thaw depth equations, implements...">
+
+<!-- Dark mode flash prevention — runs synchronously before first paint -->
+<script>
+  (function () {
+    var defaultDark = 'light' === 'dark';
+    var s = localStorage.getItem('theme');
+    var dark = s !== null ? s === 'dark' : defaultDark;
+    document.documentElement.dataset.theme = dark ? 'dark' : 'light';
+  })();
+</script>
+
+<!-- Preconnect to CDN domains used by the viz runtime -->
+<link rel="preconnect" href="https://cdn.jsdelivr.net">
+<link rel="preconnect" href="https://unpkg.com">
+<link rel="preconnect" href="https://esm.sh">
+<link rel="preconnect" href="https://api.mapbox.com">
+<link rel="preconnect" href="https://events.mapbox.com">
+
+
+<script>window.MAPBOX_TOKEN = 'pk.eyJ1IjoiYnJlYWRlZGNvZCIsImEiOiJjbW0xa25qc2EwMmtwMnJwejJlNndqdnoxIn0._7I9PwXuFLrOQINVZ84y1w';</script>
+
+
+<!-- Fonts -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:ital,wght@0,300;0,400;0,600;0,700;0,800;0,900;1,700;1,800&family=Barlow:wght@300;400&family=IBM+Plex+Mono:ital,wght@0,300;0,400;0,500;1,300&family=Literata:ital,opsz,wght@0,7..72,300;0,7..72,400;0,7..72,500;1,7..72,300;1,7..72,400&display=swap" rel="stylesheet">
+
+<!-- Theme stylesheet (Vite build output) -->
+<link rel="stylesheet" href="/assets/dist/main.css">
+
+<!-- Brand token overrides — loaded after main.css so variables cascade correctly -->
+
+<link rel="stylesheet" href="/assets/css/brand-wayward.css">
+
+
+
+<!-- Syntax highlighting (Rouge — light + dark) -->
+<link rel="stylesheet" href="/assets/css/syntax.css">
+
+<!-- Begin Jekyll SEO tag v2.8.0 -->
+<title>Permafrost Thaw and Geohazards | WaywardHouse</title>
+<meta name="generator" content="Jekyll v4.4.1" />
+<meta property="og:title" content="Permafrost Thaw and Geohazards" />
+<meta property="og:locale" content="en" />
+<meta name="description" content="What happens when permanently frozen ground thaws? Permafrost contains massive ice volumes that, when melted, cause ground subsidence, slope failures, and infrastructure damage. This model derives thaw depth equations, implements active layer models, calculates settlement from ice-rich permafrost thaw, and maps permafrost degradation hazards under climate warming scenarios." />
+<meta property="og:description" content="What happens when permanently frozen ground thaws? Permafrost contains massive ice volumes that, when melted, cause ground subsidence, slope failures, and infrastructure damage. This model derives thaw depth equations, implements active layer models, calculates settlement from ice-rich permafrost thaw, and maps permafrost degradation hazards under climate warming scenarios." />
+<link rel="canonical" href="https://wayward.house/model/permafrost-thaw-geohazards/" />
+<meta property="og:url" content="https://wayward.house/model/permafrost-thaw-geohazards/" />
+<meta property="og:site_name" content="WaywardHouse" />
+<meta property="og:image" content="https://wayward.house/assets/images/permafrost-hazards.webp" />
+<meta property="og:type" content="article" />
+<meta property="article:published_time" content="2026-02-27T00:00:00+00:00" />
+<meta name="twitter:card" content="summary_large_image" />
+<meta property="twitter:image" content="https://wayward.house/assets/images/permafrost-hazards.webp" />
+<meta property="twitter:title" content="Permafrost Thaw and Geohazards" />
+<meta name="twitter:site" content="@" />
+<script type="application/ld+json">
+{"@context":"https://schema.org","@type":"BlogPosting","dateModified":"2026-03-18T03:00:54+00:00","datePublished":"2026-02-27T00:00:00+00:00","description":"What happens when permanently frozen ground thaws? Permafrost contains massive ice volumes that, when melted, cause ground subsidence, slope failures, and infrastructure damage. This model derives thaw depth equations, implements active layer models, calculates settlement from ice-rich permafrost thaw, and maps permafrost degradation hazards under climate warming scenarios.","headline":"Permafrost Thaw and Geohazards","image":"https://wayward.house/assets/images/permafrost-hazards.webp","mainEntityOfPage":{"@type":"WebPage","@id":"https://wayward.house/model/permafrost-thaw-geohazards/"},"publisher":{"@type":"Organization","logo":{"@type":"ImageObject","url":"https://wayward.house/assets/images/logo.webp"}},"url":"https://wayward.house/model/permafrost-thaw-geohazards/"}</script>
+<!-- End Jekyll SEO tag -->
+
+
+
+<!-- Cloudflare Web Analytics -->
+<script defer src="https://static.cloudflareinsights.com/beacon.min.js"
+  data-cf-beacon='{"token": "62c47d78bf9d4c80972d4e6242d79ff8"}'></script>
+
+
+</head>
+<body class="
+  model-template
+   tag-modelling
+   tag-hash-math
+  
+   tag-hash-viz
+  
+  
+  
+  
+  
+  
+">
+
+<a href="#main-content" class="skip-link">Skip to content</a>
+
+<header class="nav" x-data="{ open: false }">
+  <div class="nav-inner">
+
+    <!-- Logo -->
+    <a href="/" class="nav-logo">
+      
+      <img loading="lazy" src="/assets/images/logo.webp" alt="WaywardHouse" width="32" height="32">
+      
+      WaywardHouse<span>.</span>
+    </a>
+
+    <!-- Desktop nav links -->
+    <ul class="nav-links" role="list">
+      
+      <li>
+        <a href="/topics/">Essays</a>
+      </li>
+      
+      <li>
+        <a href="/series/">Modelling</a>
+      </li>
+      
+      <li>
+        <a href="/about/">About</a>
+      </li>
+      
+    </ul>
+
+    <!-- Actions -->
+    <div class="nav-actions">
+
+      <!-- Search button -->
+      <button
+        class="search-toggle"
+        type="button"
+        aria-label="Search (⌘K)"
+        title="Search (⌘K)"
+        @click="$dispatch('search:open')"
+      >
+        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <circle cx="11" cy="11" r="8"/>
+          <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+        </svg>
+      </button>
+
+      <!-- Dark mode toggle -->
+      <button
+        class="theme-toggle"
+        x-data="darkMode"
+        x-init="init()"
+        @click="toggle()"
+        :aria-label="dark ? 'Switch to light mode' : 'Switch to dark mode'"
+        type="button"
+      >
+        <!-- Sun icon (shown in light mode) -->
+        <svg class="icon-sun" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">
+          <circle cx="12" cy="12" r="5"/>
+          <line x1="12" y1="1" x2="12" y2="3"/>
+          <line x1="12" y1="21" x2="12" y2="23"/>
+          <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/>
+          <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/>
+          <line x1="1" y1="12" x2="3" y2="12"/>
+          <line x1="21" y1="12" x2="23" y2="12"/>
+          <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/>
+          <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>
+        </svg>
+        <!-- Moon icon (shown in dark mode) -->
+        <svg class="icon-moon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">
+          <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+        </svg>
+      </button>
+
+      <!-- Hamburger (mobile only) -->
+      <button
+        class="mobile-nav-toggle"
+        @click="open = !open"
+        :aria-expanded="open"
+        :aria-label="open ? 'Close menu' : 'Open menu'"
+        type="button"
+      >
+        <svg x-show="!open" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <line x1="3" y1="6" x2="21" y2="6"/>
+          <line x1="3" y1="12" x2="21" y2="12"/>
+          <line x1="3" y1="18" x2="21" y2="18"/>
+        </svg>
+        <svg x-show="open" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <line x1="18" y1="6" x2="6" y2="18"/>
+          <line x1="6" y1="6" x2="18" y2="18"/>
+        </svg>
+      </button>
+
+    </div><!-- /.nav-actions -->
+  </div><!-- /.nav-inner -->
+
+  <!-- Mobile drawer -->
+  <div
+    class="mobile-nav"
+    x-show="open"
+    x-transition:enter="transition ease-out duration-200"
+    x-transition:enter-start="opacity-0 -translate-y-1"
+    x-transition:enter-end="opacity-100 translate-y-0"
+    x-transition:leave="transition ease-in duration-150"
+    x-transition:leave-start="opacity-100 translate-y-0"
+    x-transition:leave-end="opacity-0 -translate-y-1"
+    @click.outside="open = false"
+    @keydown.escape.window="open = false"
+  >
+    <ul role="list">
+      
+      <li>
+        <a href="/topics/" @click="open = false">Essays</a>
+      </li>
+      
+      <li>
+        <a href="/series/" @click="open = false">Modelling</a>
+      </li>
+      
+      <li>
+        <a href="/about/" @click="open = false">About</a>
+      </li>
+      
+    </ul>
+  </div><!-- /.mobile-nav -->
+
+</header>
+
+
+<div id="main-content">
+  <!-- Essay stylesheet and runtime — self-contained -->
+<link rel="stylesheet" href="/assets/css/essay.css">
+<script type="module" src="/assets/js/essay/core.js"></script>
+
+<div class="essay-layout" id="essay-layout">
+
+  <!-- essay-toc.html — Sticky table of contents (left column).
+     The <ol> is empty on load; assets/js/essay/core.js populates it
+     from h2/h3 elements found in #essay-content after the page renders. -->
+
+<nav class="essay-toc" id="essay-toc" aria-label="Table of contents">
+  <div class="essay-toc-inner">
+    <p class="essay-toc-heading" aria-hidden="true">Contents</p>
+    <ol class="essay-toc-list" id="essay-toc-list">
+      <!-- Populated at runtime by assets/js/essay/core.js buildToc() -->
+    </ol>
+  </div>
+</nav>
+
+
+  <main class="essay-main" id="essay-main" role="main">
+    <article class="essay-article">
+
+      <!-- essay-hero.html — Header for computational essay template.
+     Displays feature image, tag label, title, excerpt, and post metadata. -->
+
+<header class="essay-hero">
+  
+  <figure class="essay-hero-figure">
+    <img
+      src="/assets/images/permafrost-hazards.webp"
+      alt="Permafrost Thaw and Geohazards"
+      class="essay-hero-img"
+      loading="eager"
+    >
+    
+  </figure>
+  
+
+  <div class="essay-hero-body">
+
+    
+    
+    
+    
+    
+    <nav class="essay-breadcrumb" aria-label="Series position">
+      
+      <a href="/series/4/" class="essay-breadcrumb-link">Computational geography cryosphere</a>
+      
+      
+      <span class="essay-breadcrumb-sep" aria-hidden="true">›</span>
+      <span class="essay-breadcrumb-cluster">Mountain Hazards</span>
+      
+      
+      <span class="essay-breadcrumb-sep" aria-hidden="true">›</span>
+      <span class="essay-breadcrumb-pos">Model 10</span>
+      
+    </nav>
+    
+
+    <div class="essay-hero-labels">
+      
+      <a href="/topics/modelling/" class="essay-tag-label">modelling</a>
+      
+      
+      <span class="difficulty-badge difficulty-badge--4">Level 4</span>
+      
+    </div>
+
+    <h1 class="essay-title">Permafrost Thaw and Geohazards</h1>
+
+    
+    <p class="essay-excerpt">What happens when permanently frozen ground thaws? Permafrost contains massive ice volumes that, when melted, cause ground subsidence, slope failures, and infrastructure damage. This model derives thaw depth equations, implements active layer models, calculates settlement from ice-rich permafrost thaw, and maps permafrost degradation hazards under climate warming scenarios.
+</p>
+    
+
+    
+    <p class="essay-prereqs"><span class="essay-prereqs-label">Prerequisites:</span> heat transfer, phase change, thaw settlement, thermal modelling</p>
+    
+
+    <div class="essay-meta">
+      
+      <div class="essay-meta-secondary">
+        <time class="essay-date" datetime="2026-02-27">27 Feb 2026</time>
+        
+        
+        <span class="essay-sep" aria-hidden="true">·</span>
+        <span class="essay-updated">Updated <time datetime="2026-03-18">18 Mar 2026</time></span>
+        
+        <span class="essay-sep" aria-hidden="true">·</span>
+        <span class="essay-reading-time">14 min read</span>
+      </div>
+    </div>
+  </div>
+</header>
+
+
+      
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<nav class="series-nav" aria-label="Series navigation">
+
+  <div class="series-nav-header">
+    <span class="series-nav-label">R</span>
+    <span class="series-nav-title">Mountain Hazards</span>
+  </div>
+
+  <ol class="series-nav-list">
+    
+    <li class="series-nav-item">
+      
+      <a href="/model/slope-stability-analysis/" class="series-nav-link">
+        <span class="series-nav-number">8</span>
+        Slope Stability Analysis
+      </a>
+      
+    </li>
+    
+    <li class="series-nav-item">
+      
+      <a href="/model/debris-flow-modeling/" class="series-nav-link">
+        <span class="series-nav-number">9</span>
+        Debris Flow modelling
+      </a>
+      
+    </li>
+    
+    <li class="series-nav-item series-nav-item--current">
+      
+      <span class="series-nav-link series-nav-link--current" aria-current="page">
+        <span class="series-nav-number">10</span>
+        Permafrost Thaw and Geohazards
+      </span>
+      
+    </li>
+    
+  </ol>
+
+  
+  <div class="series-nav-footer">
+    <a href="/series/4/" class="series-nav-all">
+      All 10 in this series &rarr;
+    </a>
+  </div>
+  
+
+</nav>
+
+
+
+
+      <div class="essay-content gh-content" id="essay-content">
+        <p>The Siberian Highway — officially the M56 Kolyma Highway and informally known as the Road of Bones — was built on permafrost by gulag labour in the 1930s and 1940s. As the climate has warmed, sections of the road have begun to undulate in the spring as ground ice melts and the surface subsides unevenly. Buildings in Yakutsk, the largest city in the world built on permafrost, are increasingly found to be tilting as their foundations lose bearing capacity. The Trans-Alaska Pipeline, designed in the 1970s with permafrost thaw explicitly accounted for, still requires ongoing monitoring and remediation as thaw depths exceed design assumptions. In each case the engineering problem is the same: ground that was reliably frozen has become unreliable because the latent heat barrier maintaining it — the energy required to melt ground ice before temperature can rise — is being overcome.</p>
+
+<p>Permafrost underlies roughly a quarter of the Northern Hemisphere land surface and stores an estimated 1,500 billion tonnes of organic carbon — roughly twice the current atmospheric carbon burden. Its thaw is therefore both an engineering crisis and a potential climate feedback: as permafrost thaws, the organic matter stored in it becomes available for microbial decomposition, releasing CO₂ and methane. The active layer — the zone that freezes and thaws annually above the permanently frozen ground — deepens as mean annual temperatures rise. This model derives the Stefan equation for thaw depth from the heat conduction physics of phase change, calculates ground settlement from ice-rich permafrost thaw, and maps the hazard implications of projected warming across the permafrost zone.</p>
+
+<h2 id="1-the-question">1. The Question</h2>
+
+<p>How deep will permafrost thaw this century, and what will collapse?</p>
+
+<p><strong>Permafrost definition:</strong></p>
+
+<p>Ground remaining below 0°C for two or more consecutive years.</p>
+
+<p><strong>Global extent:</strong></p>
+<ul>
+  <li>24% of Northern Hemisphere land</li>
+  <li>14 million km² in Arctic regions</li>
+  <li>Thickness: 1-1000+ meters</li>
+</ul>
+
+<p><strong>Characteristics:</strong></p>
+<ul>
+  <li>Contains massive ground ice (10-90% by volume)</li>
+  <li>Stores 1600 Gt of organic carbon</li>
+  <li>Underlies critical infrastructure (buildings, pipelines, roads)</li>
+</ul>
+
+<p><strong>Thaw consequences:</strong></p>
+<ul>
+  <li>Ground subsidence (thermokarst)</li>
+  <li>Slope instability (active layer detachment slides)</li>
+  <li>Infrastructure damage (buildings tilt, pipelines rupture)</li>
+  <li>Carbon release (permafrost carbon feedback)</li>
+  <li>Coastal erosion acceleration</li>
+</ul>
+
+<p><strong>Climate sensitivity:</strong></p>
+
+<p>Arctic warming at 2-3× global rate drives rapid permafrost degradation.</p>
+
+<hr />
+
+<h2 id="2-the-conceptual-model">2. The Conceptual Model</h2>
+
+<h3 id="permafrost-structure">Permafrost Structure</h3>
+
+<p><strong>Active layer:</strong></p>
+<ul>
+  <li>Surface layer that thaws each summer, refreezes each winter</li>
+  <li>Depth: 0.3-3 m (varies with climate, vegetation, soil)</li>
+  <li>Maximum thaw depth = active layer thickness (ALT)</li>
+</ul>
+
+<p><strong>Permafrost table:</strong></p>
+<ul>
+  <li>Top of permanently frozen ground</li>
+  <li>Depth = ALT (end of summer)</li>
+</ul>
+
+<p><strong>Permafrost body:</strong></p>
+<ul>
+  <li>Continuously frozen ground below permafrost table</li>
+  <li>May contain massive ice (pure ice lenses, wedges)</li>
+  <li>Temperature: -10°C to 0°C</li>
+</ul>
+
+<p><strong>Talik:</strong></p>
+<ul>
+  <li>Unfrozen zone within permafrost</li>
+  <li>Occurs under lakes, rivers (thermal disturbance)</li>
+</ul>
+
+<h3 id="thermal-regime">Thermal Regime</h3>
+
+<p><strong>Temperature profile with depth:</strong></p>
+
+<p><strong>Summer:</strong></p>
+<ul>
+  <li>Surface: +10 to +20°C (diurnal variation)</li>
+  <li>Active layer: +5 to 0°C (seasonal thaw)</li>
+  <li>Permafrost: Below 0°C (stable)</li>
+</ul>
+
+<p><strong>Winter:</strong></p>
+<ul>
+  <li>Surface: -30 to -40°C</li>
+  <li>Active layer: -10 to 0°C (seasonal freeze)</li>
+  <li>Permafrost: Below 0°C (warming from below)</li>
+</ul>
+
+<p><strong>Mean annual ground temperature (MAGT):</strong></p>
+
+<p>Critical parameter: permafrost stable when MAGT &lt; 0°C</p>
+
+<p><strong>Warming trend:</strong></p>
+
+<p>MAGT increasing 0.3-0.5°C per decade in Arctic regions.</p>
+
+<h3 id="ice-content">Ice Content</h3>
+
+<p><strong>Massive ice:</strong></p>
+<ul>
+  <li>Ice wedges (polygonal patterns)</li>
+  <li>Ice lenses (horizontal layers)</li>
+  <li>Pore ice (filling voids)</li>
+</ul>
+
+<p><strong>Volumetric ice content:</strong></p>
+
+\[\theta_i = \frac{V_{\text{ice}}}{V_{\text{total}}}\]
+
+<p><strong>Typical values:</strong></p>
+<ul>
+  <li>Sandy soils: 20-40%</li>
+  <li>Silty soils: 40-70%</li>
+  <li>Organic-rich: 60-90%</li>
+</ul>
+
+<p><strong>Excess ice:</strong></p>
+
+<p>Ice volume exceeding pore space when thawed.</p>
+
+\[\theta_{\text{excess}} = \theta_i - \theta_{\text{porosity}}\]
+
+<p><strong>Controls settlement</strong> upon thaw.</p>
+
+<hr />
+
+<h2 id="3-building-the-mathematical-model">3. Building the Mathematical Model</h2>
+
+<h3 id="stefan-equation-thaw-depth">Stefan Equation (Thaw Depth)</h3>
+
+<p><strong>One-dimensional heat conduction with phase change:</strong></p>
+
+<p><strong>Assumptions:</strong></p>
+<ul>
+  <li>Uniform soil properties</li>
+  <li>Step change in surface temperature</li>
+  <li>Semi-infinite domain</li>
+</ul>
+
+<p><strong>Stefan solution:</strong></p>
+
+\[X(t) = \lambda \sqrt{\alpha t}\]
+
+<p>Where:</p>
+<ul>
+  <li>$X$ = thaw depth (m)</li>
+  <li>$\alpha$ = thermal diffusivity (m²/s)</li>
+  <li>$t$ = time (s)</li>
+  <li>$\lambda$ = dimensionless parameter</li>
+</ul>
+
+<p><strong>Dimensionless parameter:</strong></p>
+
+\[\lambda = \sqrt{\frac{2(T_s - T_f)}{\pi L_f / c}}\]
+
+<p>Where:</p>
+<ul>
+  <li>$T_s$ = surface temperature (°C)</li>
+  <li>$T_f$ = freezing point (0°C)</li>
+  <li>$L_f$ = latent heat of fusion (334 kJ/kg)</li>
+  <li>$c$ = volumetric heat capacity (MJ/m³/K)</li>
+</ul>
+
+<p><strong>Simplified empirical (degree-day model):</strong></p>
+
+\[X = k \sqrt{\text{TDD}}\]
+
+<p>Where:</p>
+<ul>
+  <li>TDD = thawing degree days (°C·days)</li>
+  <li>$k$ = empirical coefficient (0.01-0.05 m/(°C·day)^{0.5})</li>
+</ul>
+
+<p><strong>Example:</strong></p>
+
+<p>Summer with TDD = 1200 °C·days, k = 0.03:</p>
+
+\[X = 0.03 \sqrt{1200} = 0.03 \times 34.6 = 1.04 \text{ m}\]
+
+<p><strong>Active layer thickness = 1.04 m</strong></p>
+
+<h3 id="thaw-settlement">Thaw Settlement</h3>
+
+<p><strong>Excess ice melt causes subsidence:</strong></p>
+
+<p><strong>Thaw strain:</strong></p>
+
+\[\varepsilon_t = \frac{\Delta h}{h} = \frac{\theta_{\text{excess}}}{1 - \theta_{\text{excess}}}\]
+
+<p>Where:</p>
+<ul>
+  <li>$\Delta h$ = settlement (m)</li>
+  <li>$h$ = original thickness (m)</li>
+</ul>
+
+<p><strong>For layer with 60% ice content, 40% porosity:</strong></p>
+
+\[\theta_{\text{excess}} = 0.60 - 0.40 = 0.20\]
+
+\[\varepsilon_t = \frac{0.20}{1 - 0.20} = 0.25 = 25\%\]
+
+<p><strong>Massive settlement</strong> from ice-rich permafrost!</p>
+
+<p><strong>Total settlement:</strong></p>
+
+\[S = \sum_{i=1}^{n} h_i \varepsilon_{t,i}\]
+
+<p>Sum over all thawed layers.</p>
+
+<h3 id="temperature-change-with-depth">Temperature Change with Depth</h3>
+
+<p><strong>Thermal diffusion equation:</strong></p>
+
+\[\frac{\partial T}{\partial t} = \alpha \frac{\partial^2 T}{\partial z^2}\]
+
+<p><strong>Steady-state geothermal gradient:</strong></p>
+
+\[\frac{dT}{dz} = \frac{q}{k}\]
+
+<p>Where:</p>
+<ul>
+  <li>$q$ = geothermal heat flux (~50-70 mW/m²)</li>
+  <li>$k$ = thermal conductivity (W/m/K)</li>
+</ul>
+
+<p><strong>Typical gradient:</strong> 0.02-0.03°C/m</p>
+
+<p><strong>At 100 m depth:</strong> Temperature ~2-3°C warmer than surface MAGT</p>
+
+<p><strong>Climate change signal:</strong></p>
+
+<p>Propagates downward at rate $\sim\sqrt{\alpha/t}$</p>
+
+<p>Takes decades to centuries to reach depth.</p>
+
+<h3 id="active-layer-detachment-slides">Active Layer Detachment Slides</h3>
+
+<p><strong>Failure when:</strong></p>
+
+<p>Thawed active layer slides on ice-rich permafrost table.</p>
+
+<p><strong>Critical condition:</strong></p>
+
+\[FS = \frac{\tau_f}{\tau_d} &lt; 1\]
+
+<p><strong>Active layer on slope $\theta$:</strong></p>
+
+<p><strong>Driving stress:</strong></p>
+
+\[\tau_d = \gamma z \sin\theta \cos\theta\]
+
+<p><strong>Resisting stress (active layer - permafrost interface):</strong></p>
+
+<p>Very low friction when ice-rich: $\phi \approx 5-15°$</p>
+
+\[\tau_f = c + \gamma z \cos^2\theta \tan\phi\]
+
+<p><strong>Failure common when:</strong></p>
+<ul>
+  <li>ALT increases rapidly (climate warming)</li>
+  <li>Heavy rainfall (increases weight, pore pressure)</li>
+  <li>Slopes &gt; 5° (even gentle slopes!)</li>
+</ul>
+
+<hr />
+
+<h2 id="4-worked-example-by-hand">4. Worked Example by Hand</h2>
+
+<p><strong>Problem:</strong> Calculate active layer thickness increase and settlement under warming scenario.</p>
+
+<p><strong>Site conditions:</strong></p>
+<ul>
+  <li>Current MAGT: -2°C</li>
+  <li>Current ALT: 0.8 m</li>
+  <li>Soil: Silty with 55% ice content, 35% porosity</li>
+  <li>Thaw index coefficient: k = 0.025 m/(°C·day)^{0.5}</li>
+</ul>
+
+<p><strong>Current climate:</strong></p>
+<ul>
+  <li>Thawing degree days: 900 °C·days</li>
+</ul>
+
+<p><strong>Warming scenario (+3°C summer):</strong></p>
+<ul>
+  <li>Increased TDD: 1350 °C·days</li>
+</ul>
+
+<p>Calculate new ALT and settlement if permafrost thaws to new depth.</p>
+
+<h3 id="solution">Solution</h3>
+
+<p><strong>Step 1: Current active layer thickness</strong></p>
+
+\[X_{\text{current}} = 0.025 \sqrt{900} = 0.025 \times 30 = 0.75 \text{ m}\]
+
+<p>(Close to observed 0.8 m - within uncertainty)</p>
+
+<p><strong>Step 2: Future active layer thickness</strong></p>
+
+\[X_{\text{future}} = 0.025 \sqrt{1350} = 0.025 \times 36.7 = 0.92 \text{ m}\]
+
+<p><strong>Increase: 0.92 - 0.80 = 0.12 m</strong></p>
+
+<p><strong>Step 3: Calculate excess ice</strong></p>
+
+\[\theta_{\text{excess}} = 0.55 - 0.35 = 0.20\]
+
+<p><strong>Step 4: Thaw strain</strong></p>
+
+\[\varepsilon_t = \frac{0.20}{1 - 0.20} = \frac{0.20}{0.80} = 0.25 = 25\%\]
+
+<p><strong>Step 5: Settlement from new thaw</strong></p>
+
+<p>Additional thaw depth: 0.12 m</p>
+
+\[S = 0.12 \times 0.25 = 0.03 \text{ m} = 30 \text{ mm}\]
+
+<p><strong>Summary:</strong></p>
+<ul>
+  <li>ALT increases from 0.80 m to 0.92 m</li>
+  <li>Additional 12 cm of permafrost thaws</li>
+  <li>Ground surface subsides 30 mm</li>
+  <li><strong>Impact:</strong> Differential settlement damages buildings on variable permafrost</li>
+</ul>
+
+<p><strong>Note:</strong> This is single-season response. Multi-decadal warming produces cumulative deepening and greater settlement.</p>
+
+<hr />
+
+<h2 id="5-computational-implementation">5. Computational Implementation</h2>
+
+<p>Below is an interactive permafrost thaw simulator.</p>
+
+<div class="viz-container" id="permafrost-viz">
+  <div class="controls">
+    <label>
+      Mean summer temperature (°C):
+      <input type="range" id="summer-temp" min="5" max="20" step="1" value="10" />
+      <span id="temp-val">10</span>
+    </label>
+    <label>
+      Ice content (%):
+      <input type="range" id="ice-content" min="20" max="80" step="5" value="55" />
+      <span id="ice-val">55</span>
+    </label>
+    <label>
+      Porosity (%):
+      <input type="range" id="porosity" min="25" max="50" step="5" value="35" />
+      <span id="porosity-val">35</span>
+    </label>
+    <label>
+      Climate scenario:
+      <select id="climate-scenario">
+        <option value="current">Current (baseline)</option>
+        <option value="rcp45">RCP 4.5 (+2°C by 2100)</option>
+        <option value="rcp85" selected="">RCP 8.5 (+4°C by 2100)</option>
+      </select>
+    </label>
+    <div class="permafrost-info">
+      <p><strong>Active layer depth:</strong> <span id="alt-depth">--</span> m</p>
+      <p><strong>Thaw settlement:</strong> <span id="settlement">--</span> mm</p>
+      <p><strong>Status:</strong> <span id="permafrost-status">--</span></p>
+      <p><strong>Years to 3m thaw:</strong> <span id="years-to-thaw">--</span></p>
+    </div>
+  </div>
+  <div id="permafrost-canvas-container">
+    <canvas id="permafrost-canvas" width="700" height="400" style="border: 1px solid #ddd;"></canvas>
+  </div>
+</div>
+
+<script type="module">
+await new Promise(resolve => {
+  const checkECharts = () => {
+    if (typeof echarts !== 'undefined') resolve();
+    else setTimeout(checkECharts, 50);
+  };
+  checkECharts();
+});
+
+(function() {
+  const chart = echarts.init(document.getElementById('permafrost-canvas'));
+  
+  let summerTemp = 10;
+  let iceContent = 0.55;
+  let porosity = 0.35;
+  let scenario = 'rcp85';
+  
+  const k = 0.025; // thaw coefficient
+  const summerDays = 120;
+  
+  function calculatePermafrost() {
+    // TDD calculation
+    const TDD = Math.max(0, summerTemp) * summerDays;
+    
+    // Active layer thickness
+    const ALT = k * Math.sqrt(TDD);
+    
+    // Excess ice
+    const excessIce = Math.max(0, iceContent - porosity);
+    
+    // Thaw strain
+    const thawStrain = excessIce / (1 - excessIce);
+    
+    // Settlement (for newly thawed layer)
+    const settlement = ALT * thawStrain * 1000; // mm
+    
+    // Status
+    let status;
+    if (summerTemp < 5) status = 'Stable permafrost';
+    else if (summerTemp < 10) status = 'Marginal permafrost';
+    else if (summerTemp < 15) status = 'Degrading permafrost';
+    else status = 'Permafrost loss';
+    
+    // Years to 3m thaw (simplified)
+    const warmingRate = scenario === 'current' ? 0 : 
+                       scenario === 'rcp45' ? 0.025 : 0.05; // °C/year
+    
+    const targetTemp = 15; // temp for 3m thaw
+    const yearsToThaw = warmingRate > 0 ? 
+      Math.max(0, (targetTemp - summerTemp) / warmingRate) : 999;
+    
+    return {ALT, settlement, status, yearsToThaw, TDD, thawStrain};
+  }
+  
+  function generateTimeSeries() {
+    const years = 100;
+    const data = [];
+    
+    const warmingRate = scenario === 'current' ? 0 : 
+                       scenario === 'rcp45' ? 0.02 : 0.04;
+    
+    for (let year = 0; year <= years; year++) {
+      const temp = summerTemp + warmingRate * year;
+      const TDD = Math.max(0, temp) * summerDays;
+      const ALT = k * Math.sqrt(TDD);
+      
+      data.push([year, ALT]);
+    }
+    
+    return data;
+  }
+  
+  function render() {
+    const result = calculatePermafrost();
+    
+    document.getElementById('alt-depth').textContent = result.ALT.toFixed(2);
+    document.getElementById('settlement').textContent = result.settlement.toFixed(0);
+    document.getElementById('permafrost-status').textContent = result.status;
+    document.getElementById('years-to-thaw').textContent = 
+      result.yearsToThaw < 200 ? result.yearsToThaw.toFixed(0) : '>200';
+    
+    const statusEl = document.getElementById('permafrost-status');
+    if (result.status.includes('Stable')) statusEl.style.color = '#2E7D32';
+    else if (result.status.includes('Marginal')) statusEl.style.color = '#F57F17';
+    else if (result.status.includes('Degrading')) statusEl.style.color = '#E64A19';
+    else statusEl.style.color = '#B71C1C';
+    
+    const timeSeries = generateTimeSeries();
+    
+    const series = [
+      {
+        name: 'Active Layer Thickness',
+        type: 'line',
+        data: timeSeries,
+        lineStyle: {color: '#1976D2', width: 3},
+        areaStyle: {
+          color: {
+            type: 'linear',
+            x: 0, y: 0, x2: 0, y2: 1,
+            colorStops: [
+              {offset: 0, color: 'rgba(244, 67, 54, 0.4)'},
+              {offset: 0.5, color: 'rgba(255, 193, 7, 0.4)'},
+              {offset: 1, color: 'rgba(33, 150, 243, 0.4)'}
+            ]
+          }
+        }
+      },
+      {
+        name: '3m Threshold',
+        type: 'line',
+        data: [[0, 3], [100, 3]],
+        lineStyle: {color: '#D32F2F', width: 2, type: 'dashed'},
+        markLine: {
+          silent: true,
+          label: {formatter: 'Permafrost base (3m)', position: 'insideEndTop'}
+        }
+      },
+      {
+        name: 'Current Year',
+        type: 'scatter',
+        data: [[0, result.ALT]],
+        symbolSize: 15,
+        itemStyle: {color: '#E91E63'},
+        label: {
+          show: true,
+          formatter: 'Now',
+          position: 'top',
+          color: '#E91E63',
+          fontWeight: 'bold'
+        }
+      }
+    ];
+    
+    const option = {
+      title: {
+        text: `Active Layer Evolution (${scenario.toUpperCase()})`,
+        left: 'center'
+      },
+      tooltip: {
+        trigger: 'axis',
+        axisPointer: {type: 'cross'}
+      },
+      legend: {
+        data: ['Active Layer Thickness', '3m Threshold', 'Current Year'],
+        top: 30
+      },
+      grid: {
+        left: 80,
+        right: 40,
+        top: 80,
+        bottom: 60
+      },
+      xAxis: {
+        type: 'value',
+        name: 'Years from present',
+        nameLocation: 'middle',
+        nameGap: 30,
+        min: 0,
+        max: 100
+      },
+      yAxis: {
+        type: 'value',
+        name: 'Active Layer Depth (m)',
+        nameLocation: 'middle',
+        nameGap: 50,
+        min: 0,
+        max: 4
+      },
+      series: series
+    };
+    
+    chart.setOption(option, true);
+  }
+  
+  document.getElementById('summer-temp').addEventListener('input', (e) => {
+    summerTemp = parseFloat(e.target.value);
+    document.getElementById('temp-val').textContent = summerTemp;
+    render();
+  });
+  
+  document.getElementById('ice-content').addEventListener('input', (e) => {
+    iceContent = parseFloat(e.target.value) / 100;
+    document.getElementById('ice-val').textContent = e.target.value;
+    render();
+  });
+  
+  document.getElementById('porosity').addEventListener('input', (e) => {
+    porosity = parseFloat(e.target.value) / 100;
+    document.getElementById('porosity-val').textContent = e.target.value;
+    render();
+  });
+  
+  document.getElementById('climate-scenario').addEventListener('change', (e) => {
+    scenario = e.target.value;
+    render();
+  });
+  
+  render();
+  
+  window.addEventListener('resize', () => chart.resize());
+})();
+</script>
+
+<p><strong>Observations:</strong></p>
+<ul>
+  <li>Higher summer temperature increases active layer thickness</li>
+  <li>RCP 8.5 scenario shows accelerating thaw over century</li>
+  <li>High ice content produces greater settlement</li>
+  <li>3m threshold marks approximate permafrost base at shallow sites</li>
+  <li>Current trajectory suggests complete thaw within decades at many sites</li>
+  <li>Settlement proportional to excess ice volume</li>
+</ul>
+
+<p><strong>Key findings:</strong></p>
+<ul>
+  <li>Temperature increases directly drive active layer deepening</li>
+  <li>Ice-rich permafrost experiences massive settlement upon thaw</li>
+  <li>Climate warming scenarios project multi-meter thaw by 2100</li>
+  <li>Infrastructure on permafrost faces severe damage risk</li>
+</ul>
+
+<hr />
+
+<h2 id="6-interpretation">6. Interpretation</h2>
+
+<h3 id="infrastructure-impacts">Infrastructure Impacts</h3>
+
+<p><strong>Trans-Alaska Pipeline:</strong></p>
+<ul>
+  <li>1300 km crosses permafrost</li>
+  <li>Elevated on vertical support members</li>
+  <li>Thermosyphons prevent thaw</li>
+  <li>Maintenance cost: $100s millions annually</li>
+</ul>
+
+<p><strong>Arctic communities:</strong></p>
+<ul>
+  <li>Buildings tilting, cracking</li>
+  <li>Roads buckling</li>
+  <li>Airport runways settling</li>
+  <li>Water/sewer systems rupturing</li>
+</ul>
+
+<p><strong>Mitigation strategies:</strong></p>
+<ul>
+  <li>Thermosyphons (passive cooling)</li>
+  <li>Insulation layers</li>
+  <li>Ventilated foundations</li>
+  <li>Geotextile reinforcement</li>
+</ul>
+
+<p><strong>Cost:</strong></p>
+<ul>
+  <li>Permafrost-safe design: 2-5× normal construction</li>
+  <li>Repair/replacement: Billions USD across Arctic</li>
+</ul>
+
+<h3 id="coastal-erosion">Coastal Erosion</h3>
+
+<p><strong>Mechanism:</strong></p>
+
+<p>Permafrost stabilizes coastal bluffs.</p>
+
+<p>Thaw → bluff collapse → rapid erosion</p>
+
+<p><strong>Alaska North Slope:</strong></p>
+<ul>
+  <li>Erosion rate: 1-2 m/year historically</li>
+  <li>Accelerating to 10-20 m/year at some sites</li>
+  <li>Villages relocating (Kivalina, Shishmaref)</li>
+</ul>
+
+<p><strong>Driver combination:</strong></p>
+<ul>
+  <li>Permafrost thaw (weakens bluffs)</li>
+  <li>Sea ice decline (longer wave action season)</li>
+  <li>Storm intensity increase</li>
+</ul>
+
+<h3 id="carbon-feedback">Carbon Feedback</h3>
+
+<p><strong>Permafrost carbon pool:</strong></p>
+<ul>
+  <li>1600 Gt organic carbon stored</li>
+  <li>2× atmospheric carbon</li>
+</ul>
+
+<p><strong>Thaw release mechanisms:</strong></p>
+<ul>
+  <li>Microbial decomposition (CO₂, CH₄)</li>
+  <li>Thermokarst lake formation (CH₄ hotspots)</li>
+  <li>Wildfire in newly thawed terrain</li>
+</ul>
+
+<p><strong>Emission estimates:</strong></p>
+<ul>
+  <li>RCP 8.5: 150-200 Gt C release by 2100</li>
+  <li>Positive feedback (warming → thaw → emissions → warming)</li>
+</ul>
+
+<p><strong>Methane particularly concerning:</strong></p>
+<ul>
+  <li>25× warming potential vs CO₂</li>
+  <li>Anaerobic decomposition in wet thaw areas</li>
+</ul>
+
+<hr />
+
+<h2 id="7-what-could-go-wrong">7. What Could Go Wrong?</h2>
+
+<h3 id="assuming-uniform-thaw">Assuming Uniform Thaw</h3>
+
+<p><strong>Reality:</strong> Highly variable spatially</p>
+
+<p><strong>Factors causing variation:</strong></p>
+<ul>
+  <li>Vegetation (insulates)</li>
+  <li>Snow depth (insulates)</li>
+  <li>Soil moisture (latent heat)</li>
+  <li>Aspect (solar radiation)</li>
+  <li>Microtopography (drainage)</li>
+</ul>
+
+<p><strong>Result:</strong> Differential settlement</p>
+
+<p><strong>Example:</strong></p>
+<ul>
+  <li>North side of building: 2 cm settlement</li>
+  <li>South side: 15 cm settlement</li>
+  <li>Building rotates, cracks</li>
+</ul>
+
+<p><strong>Solution:</strong> Site-specific investigation, account for heterogeneity</p>
+
+<h3 id="ignoring-talik-development">Ignoring Talik Development</h3>
+
+<p><strong>Talik:</strong> Unfrozen zone within permafrost</p>
+
+<p>Forms under:</p>
+<ul>
+  <li>Lakes (thermal disturbance)</li>
+  <li>Rivers</li>
+  <li>Disturbed areas (cleared vegetation)</li>
+</ul>
+
+<p><strong>Consequence:</strong></p>
+<ul>
+  <li>Throughflow of groundwater</li>
+  <li>Accelerated lateral thaw</li>
+  <li>Sudden drainage (catastrophic lake loss)</li>
+</ul>
+
+<p><strong>Solution:</strong> Monitor subsurface temperature, model 3D heat flow</p>
+
+<h3 id="ground-ice-distribution-unknown">Ground Ice Distribution Unknown</h3>
+
+<p><strong>Difficult to characterize without drilling</strong></p>
+
+<p><strong>Geophysical methods:</strong></p>
+<ul>
+  <li>Ground-penetrating radar (GPR)</li>
+  <li>Electrical resistivity tomography (ERT)</li>
+  <li>Seismic surveys</li>
+</ul>
+
+<p><strong>Problem:</strong> Expensive, time-consuming</p>
+
+<p><strong>Risk:</strong> Build on assumed conditions, discover massive ice after construction</p>
+
+<p><strong>Solution:</strong> Conservative design, expect worst case</p>
+
+<h3 id="abrupt-thaw-not-captured">Abrupt Thaw Not Captured</h3>
+
+<p><strong>Gradual thaw models miss:</strong></p>
+<ul>
+  <li>Thermokarst collapse (sudden subsidence)</li>
+  <li>Retrogressive thaw slumps (headwall retreat 10s m/year)</li>
+  <li>Active layer detachments (slope failures)</li>
+</ul>
+
+<p><strong>These processes:</strong></p>
+<ul>
+  <li>Localized but severe</li>
+  <li>Triggered by extreme events</li>
+  <li>Difficult to predict</li>
+</ul>
+
+<p><strong>Solution:</strong> Identify susceptible areas, plan for rapid change</p>
+
+<hr />
+
+<h2 id="8-extension-permafrost-carbon-models">8. Extension: Permafrost-Carbon Models</h2>
+
+<p><strong>Coupled permafrost-carbon-climate:</strong></p>
+
+<p><strong>Temperature forcing:</strong></p>
+
+\[T_{\text{air}}(t) = T_0 + \Delta T_{\text{climate}}(t) + \Delta T_{\text{feedback}}(t)\]
+
+<p><strong>Active layer response:</strong></p>
+
+\[\frac{\partial T}{\partial t} = \alpha \frac{\partial^2 T}{\partial z^2} - \frac{L_f}{\rho c} \frac{\partial \theta_i}{\partial t}\]
+
+<p><strong>Carbon decomposition:</strong></p>
+
+\[\frac{dC}{dt} = -k(T) C\]
+
+<p>Where $k(T) = k_0 e^{-E_a/RT}$ (Arrhenius)</p>
+
+<p><strong>Emissions:</strong></p>
+
+\[E_{\text{CO}_2} = k_{\text{aerobic}} C_{\text{thawed}}\]
+
+\[E_{\text{CH}_4} = k_{\text{anaerobic}} C_{\text{wet}}\]
+
+<p><strong>Climate feedback:</strong></p>
+
+\[\Delta T_{\text{feedback}} = \lambda (E_{\text{CO}_2} + 25 E_{\text{CH}_4})\]
+
+<p><strong>Integrated models:</strong></p>
+<ul>
+  <li>Community Land Model (CLM)</li>
+  <li>Permafrost Carbon Network models</li>
+  <li>Earth System Models with permafrost</li>
+</ul>
+
+<hr />
+
+<h2 id="9-math-refresher-heat-conduction-with-phase-change">9. Math Refresher: Heat Conduction with Phase Change</h2>
+
+<h3 id="fouriers-law">Fourier’s Law</h3>
+
+<p><strong>Heat flux:</strong></p>
+
+\[q = -k \frac{\partial T}{\partial z}\]
+
+<p>Where:</p>
+<ul>
+  <li>$q$ = heat flux (W/m²)</li>
+  <li>$k$ = thermal conductivity (W/m/K)</li>
+  <li>Negative sign: heat flows from hot to cold</li>
+</ul>
+
+<h3 id="heat-equation">Heat Equation</h3>
+
+<p><strong>Conservation of energy:</strong></p>
+
+\[\rho c \frac{\partial T}{\partial t} = \frac{\partial}{\partial z}\left(k \frac{\partial T}{\partial z}\right)\]
+
+<p><strong>For constant properties:</strong></p>
+
+\[\frac{\partial T}{\partial t} = \alpha \frac{\partial^2 T}{\partial z^2}\]
+
+<p>Where $\alpha = k/(\rho c)$ = thermal diffusivity</p>
+
+<h3 id="phase-change">Phase Change</h3>
+
+<p><strong>Latent heat release/absorption:</strong></p>
+
+<p>When ice melts or water freezes, temperature remains at 0°C until phase change complete.</p>
+
+<p><strong>Energy required to melt ice:</strong></p>
+
+\[Q = L_f m = L_f \rho_i V\]
+
+<p>Where:</p>
+<ul>
+  <li>$L_f$ = 334 kJ/kg (latent heat of fusion)</li>
+  <li>$\rho_i$ = 917 kg/m³ (ice density)</li>
+</ul>
+
+<p><strong>This energy must come from heat conduction</strong> → slows thaw front propagation.</p>
+
+<hr />
+
+<h2 id="summary">Summary</h2>
+
+<ul>
+  <li>Permafrost contains massive ground ice that causes settlement upon thaw</li>
+  <li>Active layer thickness increases with warming following square-root relationship with thawing degree days</li>
+  <li>Excess ice content controls settlement magnitude via thaw strain calculation</li>
+  <li>Ice-rich permafrost can experience 25-50% settlement upon complete thaw</li>
+  <li>Infrastructure damage severe due to differential settlement and foundation failure</li>
+  <li>Active layer detachment slides occur on gentle slopes when ice-rich permafrost table exposed</li>
+  <li>Climate scenarios project 1-3m active layer deepening by 2100 in many regions</li>
+  <li>Carbon feedback from permafrost thaw represents significant climate forcing</li>
+  <li>Coastal erosion accelerating where permafrost stabilization lost</li>
+  <li>Mitigation requires specialized engineering and substantial additional cost</li>
+  <li>
+    <h2 id="critical-challenge-for-arctic-infrastructure-communities-and-global-climate-system">Critical challenge for Arctic infrastructure, communities, and global climate system</h2>
+  </li>
+</ul>
+
+      </div>
+
+      
+
+
+
+      
+
+  
+  
+  
+  
+
+
+
+      <!-- essay-footer-notes.html — References / endnotes section.
+     Hidden by default; assets/js/essay/core.js shows it and populates
+     #essay-endnotes-list from [data-cite] elements in the content.
+
+     In posts, create citation markers with:
+       <cite data-cite="Author, Title, URL">1</cite>
+     The JS collects these and renders a numbered reference list here. -->
+
+<footer class="essay-endnotes" id="essay-endnotes" aria-label="References" hidden>
+  <div class="essay-endnotes-inner">
+    <h2 class="essay-endnotes-heading">References</h2>
+    <ol class="essay-endnotes-list" id="essay-endnotes-list">
+      <!-- Populated at runtime by assets/js/essay/core.js buildEndnotes() -->
+    </ol>
+  </div>
+</footer>
+
+
+      
+
+      
+
+      
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    </article>
+  </main>
+
+  <aside
+    class="essay-sidenotes"
+    id="essay-sidenotes"
+    aria-label="Margin notes"
+  ></aside>
+
+</div>
+
+</div>
+
+<footer>
+  <div class="footer-inner">
+
+    <!-- Col 1: Brand -->
+    <div class="footer-brand">
+      <div class="footer-brand-logo">
+        
+        <img loading="lazy" src="/assets/images/logo.webp" alt="WaywardHouse" width="28" height="28">
+        
+        WaywardHouse<span>.</span>
+      </div>
+      
+      
+      <p class="footer-brand-desc">Understanding how place, economy, and environment interact — through analysis, modelling, and open tools.</p>
+      
+
+      <div class="footer-social">
+        
+        
+        
+        <a href="/feed.xml" class="social-icon" target="_blank" rel="noopener noreferrer" aria-label="RSS feed">
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M4 11a9 9 0 0 1 9 9"/>
+            <path d="M4 4a16 16 0 0 1 16 16"/>
+            <circle cx="5" cy="19" r="1"/>
+          </svg>
+        </a>
+      </div>
+    </div>
+
+    <!-- Col 2: Topics (configurable via footer_topics, falls back to auto-categories) -->
+    <nav aria-labelledby="footer-topics">
+      <h3 class="footer-col-title" id="footer-topics">Reading</h3>
+      <ul class="footer-links">
+        
+          
+          <li><a href="/topics/">Essays</a></li>
+          
+          <li><a href="/series/">Modelling</a></li>
+          
+          <li><a href="/archive/">Archive</a></li>
+          
+          <li><a href="/start-here/">Start Here</a></li>
+          
+        
+      </ul>
+    </nav>
+
+    <!-- Col 3: Secondary navigation -->
+    
+    <nav aria-labelledby="footer-company">
+      <h3 class="footer-col-title" id="footer-company">Site</h3>
+      <ul class="footer-links">
+        
+        <li><a href="/start-here/">Start Here</a></li>
+        
+        <li><a href="/about/">About</a></li>
+        
+        <li><a href="/contact/">Contact</a></li>
+        
+      </ul>
+    </nav>
+    
+
+    <!-- Col 4: Resources -->
+    <nav aria-labelledby="footer-resources">
+      <h3 class="footer-col-title" id="footer-resources">Resources</h3>
+      <ul class="footer-links">
+        <li><a href="/archive/">Archive</a></li>
+        <li><a href="/feed.xml">RSS Feed</a></li>
+        <li><a href="/topics/">All Topics</a></li>
+      </ul>
+    </nav>
+
+  </div><!-- /.footer-inner -->
+
+  <div class="footer-bottom">
+    <span class="footer-copy">
+      &copy; 2026 WaywardHouse.
+    </span>
+    <div class="footer-legal">
+      <a href="/privacy/">Privacy Policy</a>
+      <a href="/terms/">Terms of Service</a>
+    </div>
+  </div>
+
+</footer>
+
+
+<!-- Alpine.js bundle -->
+<script type="module" src="/assets/dist/main.js"></script>
+
+<!-- Visualization runtime — detects and loads CDN libraries dynamically -->
+<script type="module" src="/assets/js/core.js"></script>
+
+<!-- Search overlay — event-driven: nav button $dispatches 'search:open' -->
+<div
+  x-data="search"
+  x-init="init()"
+  @search:open.window="open()"
+>
+  <div
+    class="search-overlay"
+    x-show="isOpen"
+    x-transition:enter="transition ease-out duration-150"
+    x-transition:enter-start="opacity-0"
+    x-transition:enter-end="opacity-100"
+    x-transition:leave="transition ease-in duration-100"
+    x-transition:leave-start="opacity-100"
+    x-transition:leave-end="opacity-0"
+    @click.self="close()"
+    style="display: none;"
+    role="dialog"
+    aria-modal="true"
+    aria-label="Search"
+  >
+    <div class="search-panel">
+      <div class="search-input-wrap">
+        <svg class="search-icon" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <circle cx="11" cy="11" r="8"/>
+          <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+        </svg>
+        <input
+          class="search-input"
+          type="search"
+          placeholder="Search posts…"
+          x-model="query"
+          x-ref="input"
+          @input.debounce.300ms="runSearch()"
+          @keydown.escape="close()"
+          autocomplete="off"
+          spellcheck="false"
+          aria-label="Search query"
+        >
+        <kbd class="search-esc" aria-hidden="true">ESC</kbd>
+      </div>
+
+      <div class="search-results" x-show="query.trim().length > 0">
+        <div class="search-status" x-show="loading" aria-live="polite">Searching…</div>
+        <div class="search-status" x-show="!loading && results.length === 0" aria-live="polite">
+          No results for "<span x-text="query"></span>"
+        </div>
+        <ul class="search-result-list" x-show="!loading && results.length > 0" role="list">
+          <template x-for="result in results" :key="result.url">
+            <li>
+              <a :href="result.url" class="search-result-item" @click="close()">
+                <div class="search-result-title" x-text="result.meta?.title || result.url"></div>
+                <div class="search-result-excerpt" x-html="result.excerpt"></div>
+              </a>
+            </li>
+          </template>
+        </ul>
+      </div>
+    </div>
+  </div>
+</div>
+
+</body>
+</html>

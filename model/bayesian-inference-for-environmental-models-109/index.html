@@ -1,0 +1,1095 @@
+<!DOCTYPE html>
+
+<html lang="en" data-brand="wayward" data-theme="light">
+<head>
+  <meta charset="utf-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Bayesian Inference for Environmental Models — WaywardHouse</title>
+<meta name="description" content="Every environmental model has parameters we don't know exactly — a Manning's n here, a decay rate there, an initial condition we can only estimate. Bayesian inference treats these parameters...">
+
+<!-- Dark mode flash prevention — runs synchronously before first paint -->
+<script>
+  (function () {
+    var defaultDark = 'light' === 'dark';
+    var s = localStorage.getItem('theme');
+    var dark = s !== null ? s === 'dark' : defaultDark;
+    document.documentElement.dataset.theme = dark ? 'dark' : 'light';
+  })();
+</script>
+
+<!-- Preconnect to CDN domains used by the viz runtime -->
+<link rel="preconnect" href="https://cdn.jsdelivr.net">
+<link rel="preconnect" href="https://unpkg.com">
+<link rel="preconnect" href="https://esm.sh">
+<link rel="preconnect" href="https://api.mapbox.com">
+<link rel="preconnect" href="https://events.mapbox.com">
+
+
+<script>window.MAPBOX_TOKEN = 'pk.eyJ1IjoiYnJlYWRlZGNvZCIsImEiOiJjbW0xa25qc2EwMmtwMnJwejJlNndqdnoxIn0._7I9PwXuFLrOQINVZ84y1w';</script>
+
+
+<!-- Fonts -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:ital,wght@0,300;0,400;0,600;0,700;0,800;0,900;1,700;1,800&family=Barlow:wght@300;400&family=IBM+Plex+Mono:ital,wght@0,300;0,400;0,500;1,300&family=Literata:ital,opsz,wght@0,7..72,300;0,7..72,400;0,7..72,500;1,7..72,300;1,7..72,400&display=swap" rel="stylesheet">
+
+<!-- Theme stylesheet (Vite build output) -->
+<link rel="stylesheet" href="/assets/dist/main.css">
+
+<!-- Brand token overrides — loaded after main.css so variables cascade correctly -->
+
+<link rel="stylesheet" href="/assets/css/brand-wayward.css">
+
+
+
+<!-- Syntax highlighting (Rouge — light + dark) -->
+<link rel="stylesheet" href="/assets/css/syntax.css">
+
+<!-- Begin Jekyll SEO tag v2.8.0 -->
+<title>Bayesian Inference for Environmental Models | WaywardHouse</title>
+<meta name="generator" content="Jekyll v4.4.1" />
+<meta property="og:title" content="Bayesian Inference for Environmental Models" />
+<meta property="og:locale" content="en" />
+<meta name="description" content="Every environmental model has parameters we don’t know exactly — a Manning’s n here, a decay rate there, an initial condition we can only estimate. Bayesian inference treats these parameters not as fixed unknowns to be estimated, but as probability distributions to be updated. This essay derives Bayes’ theorem from first principles, specifies priors and likelihoods for common environmental parameters, implements the Metropolis-Hastings MCMC sampler, constructs posterior predictive distributions, and compares models by Bayes factor." />
+<meta property="og:description" content="Every environmental model has parameters we don’t know exactly — a Manning’s n here, a decay rate there, an initial condition we can only estimate. Bayesian inference treats these parameters not as fixed unknowns to be estimated, but as probability distributions to be updated. This essay derives Bayes’ theorem from first principles, specifies priors and likelihoods for common environmental parameters, implements the Metropolis-Hastings MCMC sampler, constructs posterior predictive distributions, and compares models by Bayes factor." />
+<link rel="canonical" href="https://wayward.house/model/bayesian-inference-for-environmental-models-109/" />
+<meta property="og:url" content="https://wayward.house/model/bayesian-inference-for-environmental-models-109/" />
+<meta property="og:site_name" content="WaywardHouse" />
+<meta property="og:image" content="https://wayward.house/assets/images/time-series.webp" />
+<meta property="og:type" content="article" />
+<meta property="article:published_time" content="2026-03-05T00:00:00+00:00" />
+<meta name="twitter:card" content="summary_large_image" />
+<meta property="twitter:image" content="https://wayward.house/assets/images/time-series.webp" />
+<meta property="twitter:title" content="Bayesian Inference for Environmental Models" />
+<meta name="twitter:site" content="@" />
+<script type="application/ld+json">
+{"@context":"https://schema.org","@type":"BlogPosting","dateModified":"2026-03-17T22:54:02+00:00","datePublished":"2026-03-05T00:00:00+00:00","description":"Every environmental model has parameters we don’t know exactly — a Manning’s n here, a decay rate there, an initial condition we can only estimate. Bayesian inference treats these parameters not as fixed unknowns to be estimated, but as probability distributions to be updated. This essay derives Bayes’ theorem from first principles, specifies priors and likelihoods for common environmental parameters, implements the Metropolis-Hastings MCMC sampler, constructs posterior predictive distributions, and compares models by Bayes factor.","headline":"Bayesian Inference for Environmental Models","image":"https://wayward.house/assets/images/time-series.webp","mainEntityOfPage":{"@type":"WebPage","@id":"https://wayward.house/model/bayesian-inference-for-environmental-models-109/"},"publisher":{"@type":"Organization","logo":{"@type":"ImageObject","url":"https://wayward.house/assets/images/logo.webp"}},"url":"https://wayward.house/model/bayesian-inference-for-environmental-models-109/"}</script>
+<!-- End Jekyll SEO tag -->
+
+
+
+<!-- Cloudflare Web Analytics -->
+<script defer src="https://static.cloudflareinsights.com/beacon.min.js"
+  data-cf-beacon='{"token": "62c47d78bf9d4c80972d4e6242d79ff8"}'></script>
+
+
+</head>
+<body class="
+  model-template
+   tag-modelling
+   tag-hash-math
+  
+   tag-hash-viz
+  
+  
+  
+  
+  
+  
+">
+
+<a href="#main-content" class="skip-link">Skip to content</a>
+
+<header class="nav" x-data="{ open: false }">
+  <div class="nav-inner">
+
+    <!-- Logo -->
+    <a href="/" class="nav-logo">
+      
+      <img loading="lazy" src="/assets/images/logo.webp" alt="WaywardHouse" width="32" height="32">
+      
+      WaywardHouse<span>.</span>
+    </a>
+
+    <!-- Desktop nav links -->
+    <ul class="nav-links" role="list">
+      
+      <li>
+        <a href="/topics/">Essays</a>
+      </li>
+      
+      <li>
+        <a href="/series/">Modelling</a>
+      </li>
+      
+      <li>
+        <a href="/about/">About</a>
+      </li>
+      
+    </ul>
+
+    <!-- Actions -->
+    <div class="nav-actions">
+
+      <!-- Search button -->
+      <button
+        class="search-toggle"
+        type="button"
+        aria-label="Search (⌘K)"
+        title="Search (⌘K)"
+        @click="$dispatch('search:open')"
+      >
+        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <circle cx="11" cy="11" r="8"/>
+          <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+        </svg>
+      </button>
+
+      <!-- Dark mode toggle -->
+      <button
+        class="theme-toggle"
+        x-data="darkMode"
+        x-init="init()"
+        @click="toggle()"
+        :aria-label="dark ? 'Switch to light mode' : 'Switch to dark mode'"
+        type="button"
+      >
+        <!-- Sun icon (shown in light mode) -->
+        <svg class="icon-sun" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">
+          <circle cx="12" cy="12" r="5"/>
+          <line x1="12" y1="1" x2="12" y2="3"/>
+          <line x1="12" y1="21" x2="12" y2="23"/>
+          <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/>
+          <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/>
+          <line x1="1" y1="12" x2="3" y2="12"/>
+          <line x1="21" y1="12" x2="23" y2="12"/>
+          <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/>
+          <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>
+        </svg>
+        <!-- Moon icon (shown in dark mode) -->
+        <svg class="icon-moon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">
+          <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+        </svg>
+      </button>
+
+      <!-- Hamburger (mobile only) -->
+      <button
+        class="mobile-nav-toggle"
+        @click="open = !open"
+        :aria-expanded="open"
+        :aria-label="open ? 'Close menu' : 'Open menu'"
+        type="button"
+      >
+        <svg x-show="!open" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <line x1="3" y1="6" x2="21" y2="6"/>
+          <line x1="3" y1="12" x2="21" y2="12"/>
+          <line x1="3" y1="18" x2="21" y2="18"/>
+        </svg>
+        <svg x-show="open" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <line x1="18" y1="6" x2="6" y2="18"/>
+          <line x1="6" y1="6" x2="18" y2="18"/>
+        </svg>
+      </button>
+
+    </div><!-- /.nav-actions -->
+  </div><!-- /.nav-inner -->
+
+  <!-- Mobile drawer -->
+  <div
+    class="mobile-nav"
+    x-show="open"
+    x-transition:enter="transition ease-out duration-200"
+    x-transition:enter-start="opacity-0 -translate-y-1"
+    x-transition:enter-end="opacity-100 translate-y-0"
+    x-transition:leave="transition ease-in duration-150"
+    x-transition:leave-start="opacity-100 translate-y-0"
+    x-transition:leave-end="opacity-0 -translate-y-1"
+    @click.outside="open = false"
+    @keydown.escape.window="open = false"
+  >
+    <ul role="list">
+      
+      <li>
+        <a href="/topics/" @click="open = false">Essays</a>
+      </li>
+      
+      <li>
+        <a href="/series/" @click="open = false">Modelling</a>
+      </li>
+      
+      <li>
+        <a href="/about/" @click="open = false">About</a>
+      </li>
+      
+    </ul>
+  </div><!-- /.mobile-nav -->
+
+</header>
+
+
+<div id="main-content">
+  <!-- Essay stylesheet and runtime — self-contained -->
+<link rel="stylesheet" href="/assets/css/essay.css">
+<script type="module" src="/assets/js/essay/core.js"></script>
+
+<div class="essay-layout" id="essay-layout">
+
+  <!-- essay-toc.html — Sticky table of contents (left column).
+     The <ol> is empty on load; assets/js/essay/core.js populates it
+     from h2/h3 elements found in #essay-content after the page renders. -->
+
+<nav class="essay-toc" id="essay-toc" aria-label="Table of contents">
+  <div class="essay-toc-inner">
+    <p class="essay-toc-heading" aria-hidden="true">Contents</p>
+    <ol class="essay-toc-list" id="essay-toc-list">
+      <!-- Populated at runtime by assets/js/essay/core.js buildToc() -->
+    </ol>
+  </div>
+</nav>
+
+
+  <main class="essay-main" id="essay-main" role="main">
+    <article class="essay-article">
+
+      <!-- essay-hero.html — Header for computational essay template.
+     Displays feature image, tag label, title, excerpt, and post metadata. -->
+
+<header class="essay-hero">
+  
+  <figure class="essay-hero-figure">
+    <img
+      src="/assets/images/time-series.webp"
+      alt="Bayesian Inference for Environmental Models"
+      class="essay-hero-img"
+      loading="eager"
+    >
+    
+  </figure>
+  
+
+  <div class="essay-hero-body">
+
+    
+    
+    
+    
+    
+    <nav class="essay-breadcrumb" aria-label="Series position">
+      
+      <a href="/series/laboratory/" class="essay-breadcrumb-link">Computational geography laboratory</a>
+      
+      
+      <span class="essay-breadcrumb-sep" aria-hidden="true">›</span>
+      <span class="essay-breadcrumb-cluster">Foundations of Geographic Machine Learning</span>
+      
+      
+      <span class="essay-breadcrumb-sep" aria-hidden="true">›</span>
+      <span class="essay-breadcrumb-pos">Model 109</span>
+      
+    </nav>
+    
+
+    <div class="essay-hero-labels">
+      
+      <a href="/topics/modelling/" class="essay-tag-label">modelling</a>
+      
+      
+      <span class="difficulty-badge difficulty-badge--4">Level 4</span>
+      
+    </div>
+
+    <h1 class="essay-title">Bayesian Inference for Environmental Models</h1>
+
+    
+    <p class="essay-excerpt">Every environmental model has parameters we don't know exactly — a Manning's n here, a decay rate there, an initial condition we can only estimate. Bayesian inference treats these parameters not as fixed unknowns to be estimated, but as probability distributions to be updated. This essay derives Bayes' theorem from first principles, specifies priors and likelihoods for common environmental parameters, implements the Metropolis-Hastings MCMC sampler, constructs posterior predictive distributions, and compares models by Bayes factor.
+</p>
+    
+
+    
+    <p class="essay-prereqs"><span class="essay-prereqs-label">Prerequisites:</span> probability and Bayes' theorem, probability distributions (normal, beta, gamma), Markov chain Monte Carlo, logarithms and log likelihoods</p>
+    
+
+    <div class="essay-meta">
+      
+      <div class="essay-meta-secondary">
+        <time class="essay-date" datetime="2026-03-05">5 Mar 2026</time>
+        
+        
+        <span class="essay-sep" aria-hidden="true">·</span>
+        <span class="essay-updated">Updated <time datetime="2026-03-17">17 Mar 2026</time></span>
+        
+        <span class="essay-sep" aria-hidden="true">·</span>
+        <span class="essay-reading-time">16 min read</span>
+      </div>
+    </div>
+  </div>
+</header>
+
+
+      
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<nav class="series-nav" aria-label="Series navigation">
+
+  <div class="series-nav-header">
+    <span class="series-nav-label">Z</span>
+    <span class="series-nav-title">Foundations of Geographic Machine Learning</span>
+  </div>
+
+  <ol class="series-nav-list">
+    
+    <li class="series-nav-item series-nav-item--current">
+      
+      <span class="series-nav-link series-nav-link--current" aria-current="page">
+        <span class="series-nav-number">109</span>
+        Bayesian Inference for Environmental Models
+      </span>
+      
+    </li>
+    
+    <li class="series-nav-item">
+      
+      <a href="/model/regression-for-continuous-spatial-variables-110/" class="series-nav-link">
+        <span class="series-nav-number">110</span>
+        Regression for Continuous Spatial Variables
+      </a>
+      
+    </li>
+    
+    <li class="series-nav-item">
+      
+      <a href="/model/dimensionality-reduction-for-high-dimensional-geographic-data-111/" class="series-nav-link">
+        <span class="series-nav-number">111</span>
+        Dimensionality Reduction for High-Dimensional Geographic Data
+      </a>
+      
+    </li>
+    
+  </ol>
+
+  
+  <div class="series-nav-footer">
+    <a href="/series/laboratory/" class="series-nav-all">
+      All 40 in this series &rarr;
+    </a>
+  </div>
+  
+
+</nav>
+
+
+
+
+      <div class="essay-content gh-content" id="essay-content">
+        <p>In 1783, the Reverend Thomas Bayes left behind an unpublished manuscript that would not see print until two years after his death. Its central insight was almost embarrassingly simple: the probability that a hypothesis is true, given the data we observe, is proportional to the probability of observing that data if the hypothesis were true, multiplied by how probable we thought the hypothesis was before we saw any data. Prior belief, updated by evidence, yields posterior belief.</p>
+
+<p>For two and a half centuries, this idea has been contested, celebrated, applied, and misapplied. In environmental modelling today, Bayesian inference is indispensable — not because it is philosophically superior to frequentism (a debate that continues), but because it naturally handles the situation environmental scientists actually face: sparse data, uncertain parameters, multiple competing models, and a need to communicate not just best estimates but the full range of possible outcomes.</p>
+
+<hr />
+
+<h2 id="1-the-question">1. The Question</h2>
+
+<p>How do we update our uncertainty about a model parameter when we collect new observations? How do we propagate that parameter uncertainty into predictions? How do we compare two competing model structures and decide which fits the data better? And what do we do when the mathematics does not yield a closed-form solution?</p>
+
+<hr />
+
+<h2 id="2-the-conceptual-model">2. The Conceptual Model</h2>
+
+<table>
+  <tbody>
+    <tr>
+      <td>Bayesian inference treats model parameters as random variables with probability distributions, not as fixed unknowns with point estimates. Before seeing any data, we specify a <strong>prior distribution</strong> $p(\theta)$ encoding our existing knowledge or ignorance. We observe data $\mathbf{y}$ and specify a <strong>likelihood function</strong> $p(\mathbf{y}</td>
+      <td>\theta)$ — the probability of the data given the parameter. Bayes’ theorem combines these into the <strong>posterior distribution</strong> $p(\theta</td>
+      <td>\mathbf{y})$ — our updated belief about the parameter after seeing the data.</td>
+    </tr>
+  </tbody>
+</table>
+
+<p>The posterior is the complete answer to the inference question. A frequentist analysis produces a point estimate and a confidence interval; Bayesian analysis produces a probability distribution that can be interrogated at any quantile, propagated through any function, and updated with further data.</p>
+
+<hr />
+
+<h2 id="3-building-the-mathematical-model">3. Building the Mathematical Model</h2>
+
+<h3 id="31-bayes-theorem">3.1 Bayes’ Theorem</h3>
+
+<p>From the definition of conditional probability:</p>
+
+\[p(A|B) = \frac{p(A \cap B)}{p(B)} \quad\text{and}\quad p(B|A) = \frac{p(A \cap B)}{p(A)}\]
+
+<table>
+  <tbody>
+    <tr>
+      <td>Combining: $p(A \cap B) = p(A</td>
+      <td>B)p(B) = p(B</td>
+      <td>A)p(A)$. Therefore:</td>
+    </tr>
+  </tbody>
+</table>
+
+\[\boxed{p(\theta|\mathbf{y}) = \frac{p(\mathbf{y}|\theta)\,p(\theta)}{p(\mathbf{y})}}\]
+
+<table>
+  <tbody>
+    <tr>
+      <td>The denominator $p(\mathbf{y}) = \int p(\mathbf{y}</td>
+      <td>\theta)p(\theta)\,d\theta$ is the <strong>marginal likelihood</strong> (evidence) — the probability of the data averaged over all possible parameter values. Since $p(\mathbf{y})$ does not depend on $\theta$, we write:</td>
+    </tr>
+  </tbody>
+</table>
+
+\[p(\theta|\mathbf{y}) \propto p(\mathbf{y}|\theta)\,p(\theta)\]
+
+<p><strong>Posterior $\propto$ Likelihood × Prior.</strong> This is the operational form used in MCMC.</p>
+
+<p>In words: our updated belief about $\theta$ is proportional to how probable the data would be if $\theta$ were true, multiplied by how probable we thought $\theta$ was beforehand. Evidence that is improbable under the prior can still dominate if the likelihood strongly favours it.</p>
+
+<h3 id="32-prior-distributions">3.2 Prior Distributions</h3>
+
+<p>A prior encodes knowledge before observing data. Choices:</p>
+
+<p><strong>Conjugate priors</strong> — chosen so the posterior has the same functional form as the prior, yielding closed-form updates.</p>
+
+<table>
+  <thead>
+    <tr>
+      <th>Likelihood</th>
+      <th>Conjugate prior</th>
+      <th>Posterior</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>Normal ($\sigma^2$ known)</td>
+      <td>Normal on $\mu$</td>
+      <td>Normal</td>
+    </tr>
+    <tr>
+      <td>Poisson</td>
+      <td>Gamma on $\lambda$</td>
+      <td>Gamma</td>
+    </tr>
+    <tr>
+      <td>Binomial</td>
+      <td>Beta on $p$</td>
+      <td>Beta</td>
+    </tr>
+    <tr>
+      <td>Normal (both unknown)</td>
+      <td>Normal-Inverse-Gamma</td>
+      <td>Normal-Inverse-Gamma</td>
+    </tr>
+  </tbody>
+</table>
+
+<p><strong>Example — Beta-Binomial (conjugate):</strong> Estimating the probability $p$ of a site being occupied by a species. Prior: $p \sim \text{Beta}(\alpha, \beta)$. After observing $k$ successes in $n$ trials:</p>
+
+\[p|\mathbf{y} \sim \text{Beta}(\alpha + k,\ \beta + n - k)\]
+
+<p>If we start with $\text{Beta}(1,1)$ (uniform, no prior knowledge) and observe 7 occupied sites out of 10: posterior is $\text{Beta}(8, 4)$, with mean $8/12 = 0.667$ and 90% credible interval $[0.42, 0.89]$.</p>
+
+<p><strong>Weakly informative priors</strong> — constrain parameters to physically plausible ranges without strongly influencing the posterior when data are plentiful. For a decay rate $k &gt; 0$: half-normal or log-normal prior centred near the expected order of magnitude.</p>
+
+<p><strong>Jeffreys prior</strong> — objective prior proportional to $\sqrt{I(\theta)}$, the square root of the Fisher information, representing the information content of the likelihood. Scale-invariant; appropriate when prior knowledge is genuinely absent.</p>
+
+<h3 id="33-likelihood-functions">3.3 Likelihood Functions</h3>
+
+<table>
+  <tbody>
+    <tr>
+      <td>The likelihood $p(\mathbf{y}</td>
+      <td>\theta)$ is the probability density of observing the data $\mathbf{y}$ given parameter $\theta$. For $n$ independent observations $y_1, \ldots, y_n$:</td>
+    </tr>
+  </tbody>
+</table>
+
+\[p(\mathbf{y}|\theta) = \prod_{i=1}^n p(y_i|\theta)\]
+
+<p>Taking logs (computationally essential — products of small probabilities underflow):</p>
+
+\[\ln p(\mathbf{y}|\theta) = \sum_{i=1}^n \ln p(y_i|\theta)\]
+
+<p><strong>Normal likelihood</strong> — appropriate for continuous measurements with additive Gaussian error:</p>
+
+\[\ln p(\mathbf{y}|\mu,\sigma) = -\frac{n}{2}\ln(2\pi\sigma^2) - \frac{1}{2\sigma^2}\sum_{i=1}^n(y_i - \mu)^2\]
+
+<p><strong>Poisson likelihood</strong> — appropriate for count data (species counts, flood events, contamination detections):</p>
+
+\[\ln p(\mathbf{y}|\lambda) = \sum_{i=1}^n \left[y_i\ln\lambda - \lambda - \ln(y_i!)\right]\]
+
+<p><strong>Lognormal likelihood</strong> — appropriate for strictly positive, right-skewed environmental variables (streamflow, sediment concentration, contaminant concentration):</p>
+
+\[\ln p(\mathbf{y}|\mu,\sigma) = -n\ln\sigma - \sum_{i=1}^n\ln y_i - \frac{1}{2\sigma^2}\sum_{i=1}^n(\ln y_i - \mu)^2\]
+
+<h3 id="34-conjugate-update-normal-normal">3.4 Conjugate Update: Normal-Normal</h3>
+
+<p>For observations $y_i \sim \mathcal{N}(\mu, \sigma^2)$ with known $\sigma^2$ and prior $\mu \sim \mathcal{N}(\mu_0, \tau_0^2)$:</p>
+
+\[\mu|\mathbf{y} \sim \mathcal{N}(\mu_n, \tau_n^2)\]
+
+<p>where:</p>
+
+\[\frac{1}{\tau_n^2} = \frac{1}{\tau_0^2} + \frac{n}{\sigma^2}, \quad \mu_n = \tau_n^2\left(\frac{\mu_0}{\tau_0^2} + \frac{\bar{y}n}{\sigma^2}\right)\]
+
+<p>The posterior mean is a <strong>precision-weighted average</strong> of the prior mean and the sample mean. Precision = 1/variance. As $n \to \infty$, the prior is overwhelmed: $\mu_n \to \bar{y}$. With very few observations, the posterior stays close to the prior.</p>
+
+<p><strong>Environmental interpretation:</strong> Suppose we estimate mean annual runoff $\mu$ for an ungauged watershed. Prior from regional regression: $\mu_0 = 180$ mm yr⁻¹, $\tau_0 = 40$ mm (moderate prior uncertainty). We collect 3 years of data: $\bar{y} = 220$ mm, $\sigma = 30$ mm yr⁻¹.</p>
+
+\[\frac{1}{\tau_n^2} = \frac{1}{40^2} + \frac{3}{30^2} = 0.000625 + 0.00333 = 0.003958 \Rightarrow \tau_n = 15.9 \text{ mm}\]
+
+\[\mu_n = 15.9^2 \times\left(\frac{180}{1600} + \frac{220\times3}{900}\right) = 253 \times (0.1125 + 0.7333) = 213.9 \text{ mm}\]
+
+<p>Three years of data pulled the estimate from 180 to 214 mm — closer to the observed 220 but not all the way there, because the prior had meaningful weight. The posterior uncertainty (16 mm) is substantially smaller than either the prior (40 mm) or the data uncertainty (30/√3 = 17 mm) — combining information from both sources.</p>
+
+<h3 id="35-metropolis-hastings-mcmc">3.5 Metropolis-Hastings MCMC</h3>
+
+<p>When conjugate priors are unavailable (most environmental models), we approximate the posterior by drawing samples using <strong>Markov chain Monte Carlo</strong>. The <strong>Metropolis-Hastings algorithm</strong> constructs a Markov chain whose stationary distribution is the target posterior:</p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>Algorithm: Metropolis-Hastings
+1. Initialise θ₀ (any starting value)
+2. For iteration t = 1, 2, ..., N:
+   a. Propose θ* ~ q(θ* | θₜ₋₁)   [proposal distribution, e.g. Normal(θₜ₋₁, σ_prop)]
+   b. Compute acceptance ratio:
+      α = min(1, p(θ*|y) / p(θₜ₋₁|y))
+        = min(1, p(y|θ*) p(θ*) / [p(y|θₜ₋₁) p(θₜ₋₁)])
+   c. Accept with probability α: θₜ = θ*
+      Reject with probability 1-α: θₜ = θₜ₋₁
+3. Discard first B iterations (burn-in)
+4. Return {θ_B, θ_{B+1}, ..., θ_N} as posterior samples
+</code></pre></div></div>
+
+<table>
+  <tbody>
+    <tr>
+      <td>Because the marginal likelihood $p(\mathbf{y})$ cancels in the ratio, we only need to evaluate $\ln p(\mathbf{y}</td>
+      <td>\theta) + \ln p(\theta)$ — the log-posterior up to an additive constant.</td>
+    </tr>
+  </tbody>
+</table>
+
+<p><strong>Proposal tuning:</strong> The proposal width $\sigma_{\text{prop}}$ controls acceptance rate. Target acceptance rate ≈ 23–44% for scalar or low-dimensional problems (Roberts et al. 1997). Too wide → nearly all proposals rejected; too narrow → chain mixes slowly.</p>
+
+<p><strong>Diagnostics:</strong></p>
+<ul>
+  <li><strong>Trace plot:</strong> $\theta_t$ vs. $t$ should look like white noise around the posterior mean (not trending, not stuck)</li>
+  <li><strong>Gelman-Rubin $\hat{R}$:</strong> Compare variance between multiple chains to variance within chains; $\hat{R} &lt; 1.05$ indicates convergence</li>
+  <li><strong>Effective sample size (ESS):</strong> Number of effectively independent samples after accounting for autocorrelation; ESS &gt; 400 for reliable quantiles</li>
+</ul>
+
+<h3 id="36-posterior-predictive-distribution">3.6 Posterior Predictive Distribution</h3>
+
+<p>The <strong>posterior predictive distribution</strong> for a new observation $\tilde{y}$ integrates over parameter uncertainty:</p>
+
+\[p(\tilde{y}|\mathbf{y}) = \int p(\tilde{y}|\theta)\,p(\theta|\mathbf{y})\,d\theta\]
+
+<p>In practice, with $N$ posterior samples ${\theta^{(s)}}$:</p>
+
+\[p(\tilde{y}|\mathbf{y}) \approx \frac{1}{N}\sum_{s=1}^N p(\tilde{y}|\theta^{(s)})\]
+
+<p>This is broader than a prediction made at the posterior mean parameter — it correctly propagates parameter uncertainty into prediction uncertainty.</p>
+
+<h3 id="37-model-comparison-by-bayes-factor">3.7 Model Comparison by Bayes Factor</h3>
+
+<p>Given two models $M_1$ and $M_2$ with the same data $\mathbf{y}$, the <strong>Bayes factor</strong>:</p>
+
+\[B_{12} = \frac{p(\mathbf{y}|M_1)}{p(\mathbf{y}|M_2)} = \frac{\int p(\mathbf{y}|\theta_1,M_1)p(\theta_1|M_1)d\theta_1}{\int p(\mathbf{y}|\theta_2,M_2)p(\theta_2|M_2)d\theta_2}\]
+
+<p>The Bayes factor is the ratio of marginal likelihoods — the evidence for $M_1$ relative to $M_2$. It automatically penalises model complexity: a model with many parameters can fit the data better at any single parameter value, but its marginal likelihood is averaged over all parameter space and is diluted by all the values that fit poorly.</p>
+
+<p>Jeffreys (1961) interpretation:</p>
+
+<table>
+  <thead>
+    <tr>
+      <th>$\ln B_{12}$</th>
+      <th>Evidence for $M_1$</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>0–1</td>
+      <td>Weak</td>
+    </tr>
+    <tr>
+      <td>1–3</td>
+      <td>Positive</td>
+    </tr>
+    <tr>
+      <td>3–5</td>
+      <td>Strong</td>
+    </tr>
+    <tr>
+      <td>&gt; 5</td>
+      <td>Very strong</td>
+    </tr>
+  </tbody>
+</table>
+
+<p><strong>Parameter identifiability:</strong> A parameter is <strong>non-identifiable</strong> if many different values of $\theta$ produce the same likelihood — the data cannot distinguish them. In a Bayesian context, the posterior for a non-identifiable parameter is identical to the prior: no amount of data narrows the distribution. This is a model structure problem, not a data problem. Identifiability analysis before fitting prevents the false confidence that MCMC results always imply.</p>
+
+<hr />
+
+<h2 id="4-worked-example-by-hand">4. Worked Example by Hand</h2>
+
+<p><strong>Setting:</strong> Estimating the decay rate $k$ of a contaminant in a small Alberta lake. We believe (from literature on similar compounds) that $k \sim \mathcal{N}(0.05, 0.02^2)$ day⁻¹ (prior: mean 0.05, sd 0.02). We observe concentrations at day 0 and day 30. Model: $C(t) = C_0 e^{-kt}$, so $C(30) = C_0 e^{-30k}$. Observed: $C_0 = 100$ mg/L, $C(30) = 21.5$ mg/L, measurement error $\sigma = 3$ mg/L.</p>
+
+<p><strong>Likelihood at $k = 0.05$:</strong>
+$C_{\text{pred}}(30) = 100 e^{-30\times0.05} = 100 e^{-1.5} = 22.31$ mg/L</p>
+
+<table>
+  <tbody>
+    <tr>
+      <td>$\ln p(21.5</td>
+      <td>k=0.05) = -\frac{1}{2}\ln(2\pi \times 9) - \frac{(21.5-22.31)^2}{18} = -2.072 - 0.0365 = -2.108$</td>
+    </tr>
+  </tbody>
+</table>
+
+<p><strong>Likelihood at $k = 0.06$:</strong>
+$C_{\text{pred}}(30) = 100 e^{-1.8} = 16.53$ mg/L</p>
+
+<table>
+  <tbody>
+    <tr>
+      <td>$\ln p(21.5</td>
+      <td>k=0.06) = -2.072 - \frac{(21.5-16.53)^2}{18} = -2.072 - 1.370 = -3.442$</td>
+    </tr>
+  </tbody>
+</table>
+
+<p><strong>Log-prior at $k = 0.05$:</strong> $\ln p(0.05) = -\frac{(0.05-0.05)^2}{2\times0.0004} = 0$</p>
+
+<p><strong>Log-prior at $k = 0.06$:</strong> $\ln p(0.06) = -\frac{(0.06-0.05)^2}{0.0008} = -1.25$</p>
+
+<p><strong>Log-posterior:</strong></p>
+<ul>
+  <li>$k = 0.05$: $-2.108 + 0 = -2.108$ → proportional to $e^{-2.108} = 0.1216$</li>
+  <li>$k = 0.06$: $-3.442 + (-1.25) = -4.692$ → proportional to $e^{-4.692} = 0.00916$</li>
+</ul>
+
+<p><strong>Acceptance ratio (MH step):</strong> Proposing $k = 0.06$ from $k = 0.05$: $\alpha = \min(1, 0.00916/0.1216) = 0.075$. Reject with probability 0.925 — the proposal is much worse and usually rejected, so the chain stays at 0.05.</p>
+
+<p><strong>True posterior mean</strong> (analytically for this conjugate-like case): The observed ratio $21.5/100 = 0.215 = e^{-30k}$ gives the MLE $k_{\text{MLE}} = -\ln(0.215)/30 = 1.537/30 = 0.0512$ day⁻¹. The posterior will be near this value, pulled slightly toward the prior mean of 0.05.</p>
+
+<hr />
+
+<h2 id="5-computational-implementation">5. Computational Implementation</h2>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>function log_posterior(theta, y_obs, prior_mean, prior_sd, C0, t, sigma_obs):
+    # Model prediction
+    C_pred = C0 * exp(-theta * t)
+    # Log-likelihood
+    ll = -0.5 * log(2*pi*sigma_obs**2) - (y_obs - C_pred)**2 / (2*sigma_obs**2)
+    # Log-prior (normal)
+    lp = -0.5 * ((theta - prior_mean)/prior_sd)**2
+    return ll + lp
+
+function metropolis_hastings(log_post_fn, theta_init, n_iter, proposal_sd):
+    theta_current = theta_init
+    lp_current = log_post_fn(theta_current)
+    samples = []
+    n_accept = 0
+    for i in range(n_iter):
+        theta_proposed = theta_current + normal(0, proposal_sd)
+        if theta_proposed &lt;= 0: continue   # enforce positivity
+        lp_proposed = log_post_fn(theta_proposed)
+        log_alpha = lp_proposed - lp_current
+        if log(uniform(0,1)) &lt; log_alpha:
+            theta_current = theta_proposed
+            lp_current = lp_proposed
+            n_accept += 1
+        samples.append(theta_current)
+    return samples, n_accept / n_iter
+
+function posterior_predictive(samples, model_fn, x_pred):
+    predictions = [model_fn(theta, x_pred) for theta in samples]
+    return predictions  # distribution of predictions
+</code></pre></div></div>
+
+<pre><code class="language-{pyodide}">import numpy as np
+from scipy import stats
+
+rng = np.random.default_rng(42)
+
+def log_posterior(k, y_obs, C0, t_obs, sigma_obs, prior_mean=0.05, prior_sd=0.02):
+    if k &lt;= 0: return -np.inf
+    C_pred = C0 * np.exp(-k * t_obs)
+    ll = stats.norm.logpdf(y_obs, loc=C_pred, scale=sigma_obs)
+    lp = stats.norm.logpdf(k, loc=prior_mean, scale=prior_sd)
+    return ll + lp
+
+def metropolis_hastings(log_post, theta0, n_iter=10_000, prop_sd=0.005):
+    theta = theta0
+    lp = log_post(theta)
+    samples, n_acc = [theta], 0
+    for _ in range(n_iter - 1):
+        proposal = theta + rng.normal(0, prop_sd)
+        lp_new = log_post(proposal)
+        if np.log(rng.uniform()) &lt; lp_new - lp:
+            theta, lp = proposal, lp_new
+            n_acc += 1
+        samples.append(theta)
+    return np.array(samples), n_acc / n_iter
+
+# Data
+C0, t_obs, y_obs, sigma_obs = 100.0, 30.0, 21.5, 3.0
+
+log_post_fn = lambda k: log_posterior(k, y_obs, C0, t_obs, sigma_obs)
+samples, acc_rate = metropolis_hastings(log_post_fn, theta0=0.05)
+
+# Discard burn-in
+posterior = samples[2000:]
+print(f"Acceptance rate: {acc_rate:.2f}")
+print(f"Posterior mean:  {posterior.mean():.4f} day⁻¹")
+print(f"Posterior sd:    {posterior.std():.4f} day⁻¹")
+print(f"95% credible interval: [{np.percentile(posterior,2.5):.4f}, {np.percentile(posterior,97.5):.4f}]")
+print(f"Prior mean: 0.0500, MLE: {-np.log(y_obs/C0)/t_obs:.4f}")
+
+# Posterior predictive at t=60
+C60_samples = C0 * np.exp(-posterior * 60)
+noise = rng.normal(0, sigma_obs, len(C60_samples))
+C60_pred = C60_samples + noise
+print(f"\nPosterior predictive C(60):")
+print(f"  Mean: {C60_pred.mean():.2f} mg/L")
+print(f"  90% interval: [{np.percentile(C60_pred,5):.2f}, {np.percentile(C60_pred,95):.2f}]")
+</code></pre>
+
+<hr />
+
+<h2 id="6-visualization">6. Visualization</h2>
+
+<div data-viz="echarts" style="height:420px" data-options="{
+  &quot;title&quot;: {&quot;text&quot;: &quot;Prior, Likelihood, and Posterior for Decay Rate k&quot;, &quot;textStyle&quot;: {&quot;fontSize&quot;: 14}},
+  &quot;tooltip&quot;: {&quot;trigger&quot;: &quot;axis&quot;},
+  &quot;legend&quot;: {&quot;data&quot;: [&quot;Prior p(k)&quot;, &quot;Likelihood p(y|k) (scaled)&quot;, &quot;Posterior p(k|y)&quot;], &quot;bottom&quot;: 0},
+  &quot;xAxis&quot;: {&quot;name&quot;: &quot;Decay rate k (day⁻¹)&quot;, &quot;nameLocation&quot;: &quot;middle&quot;, &quot;nameGap&quot;: 30,
+    &quot;data&quot;: [&quot;0.00&quot;,&quot;0.01&quot;,&quot;0.02&quot;,&quot;0.03&quot;,&quot;0.04&quot;,&quot;0.05&quot;,&quot;0.06&quot;,&quot;0.07&quot;,&quot;0.08&quot;,&quot;0.09&quot;,&quot;0.10&quot;]},
+  &quot;yAxis&quot;: {&quot;name&quot;: &quot;Relative density&quot;, &quot;nameLocation&quot;: &quot;middle&quot;, &quot;nameGap&quot;: 45},
+  &quot;series&quot;: [
+    {&quot;name&quot;: &quot;Prior p(k)&quot;, &quot;type&quot;: &quot;line&quot;, &quot;smooth&quot;: true,
+     &quot;itemStyle&quot;: {&quot;color&quot;: &quot;#90A4AE&quot;},
+     &quot;data&quot;: [0.5,2.2,6.1,12.1,17.6,19.9,17.6,12.1,6.1,2.2,0.5]},
+    {&quot;name&quot;: &quot;Likelihood p(y|k) (scaled)&quot;, &quot;type&quot;: &quot;line&quot;, &quot;smooth&quot;: true,
+     &quot;itemStyle&quot;: {&quot;color&quot;: &quot;#1565C0&quot;},
+     &quot;data&quot;: [0.0,0.0,0.1,0.5,2.8,9.8,8.2,2.1,0.2,0.0,0.0]},
+    {&quot;name&quot;: &quot;Posterior p(k|y)&quot;, &quot;type&quot;: &quot;line&quot;, &quot;smooth&quot;: true,
+     &quot;itemStyle&quot;: {&quot;color&quot;: &quot;#C62828&quot;},
+     &quot;areaStyle&quot;: {&quot;color&quot;: &quot;#FFCDD2&quot;, &quot;opacity&quot;: 0.5},
+     &quot;data&quot;: [0.0,0.0,0.1,0.8,5.4,18.6,15.0,4.0,0.4,0.0,0.0]}
+  ]
+}"></div>
+
+<p>The posterior is concentrated between the prior (peaked at 0.05) and the likelihood (peaked near 0.051 from the MLE). With only one observation at t=30, the prior carries substantial weight and the posterior is noticeably narrower than either component alone — demonstrating Bayesian updating as a principled combination of prior knowledge and new evidence.</p>
+
+<hr />
+
+<h2 id="7-interpretation">7. Interpretation</h2>
+
+<p>The Bayesian framework answers three questions that frequentist methods struggle with: what is the probability that the parameter lies in this interval (credible interval, not confidence interval); what is the probability of a future observation exceeding a threshold (posterior predictive); and which of two models is better supported by the data, accounting for complexity (Bayes factor)?</p>
+
+<p>The credible interval has a direct probability interpretation: there is a 95% probability that $k$ lies in $[0.042, 0.064]$ day⁻¹ — given the prior and the data. The frequentist confidence interval does not make this statement; it says that 95% of intervals constructed by this procedure would contain the true value. The distinction matters when communicating risk to decision-makers.</p>
+
+<p>The posterior predictive distribution is richer than a prediction at the maximum likelihood estimate because it propagates all parameter uncertainty into the forecast. A prediction at $k_{\text{MLE}} = 0.0512$ gives a single point; the posterior predictive gives a distribution whose width reflects both observation noise and parameter uncertainty. Ignoring parameter uncertainty systematically produces prediction intervals that are too narrow — a chronic problem in environmental risk assessment.</p>
+
+<hr />
+
+<h2 id="8-what-could-go-wrong">8. What Could Go Wrong?</h2>
+
+<p><strong>The prior is a modelling choice with consequences.</strong> An informative prior that places significant probability outside the true parameter range will bias the posterior, especially with small samples. The right response is not to use “non-informative” priors blindly — truly uninformative priors do not exist for all parameterisations — but to document prior choices, conduct sensitivity analysis (how much does the posterior change if the prior is varied?), and be transparent about the information encoded.</p>
+
+<p><strong>MCMC convergence is not guaranteed.</strong> A Metropolis-Hastings chain that has not converged produces samples from a distribution that is not the posterior — but there is no mathematical guarantee that any finite run has converged. Convergence diagnostics ($\hat{R}$, trace plots, ESS) are necessary but not sufficient. Multimodal posteriors — common when the model is poorly identified — can trap single chains in one mode. Running multiple chains from different starting values and verifying they reach the same distribution is essential.</p>
+
+<table>
+  <tbody>
+    <tr>
+      <td><strong>Model comparison by Bayes factor requires accurate marginal likelihood estimates.</strong> Computing $p(\mathbf{y}</td>
+      <td>M) = \int p(\mathbf{y}</td>
+      <td>\theta)p(\theta)d\theta$ is difficult in high dimensions. Harmonic mean estimators (the simplest MCMC-based approach) are notoriously unstable. Thermodynamic integration, nested sampling (MultiNest), and bridge sampling provide more reliable estimates but at significant computational cost.</td>
+    </tr>
+  </tbody>
+</table>
+
+<p><strong>Identifiability is a prerequisite, not a guarantee.</strong> If two parameters $\theta_1$ and $\theta_2$ produce the same predictions for all data, MCMC will not fail — it will simply return the prior. The posterior will look informative (it will be narrow) only if the prior was informative. Checking identifiability analytically, or through synthetic data experiments, before deploying MCMC prevents false confidence in posterior results from unidentified models.</p>
+
+<hr />
+
+<h2 id="9-summary">9. Summary</h2>
+
+<table>
+  <tbody>
+    <tr>
+      <td>Bayes’ theorem $p(\theta</td>
+      <td>\mathbf{y}) \propto p(\mathbf{y}</td>
+      <td>\theta)\,p(\theta)$ updates a prior distribution over parameters by the likelihood of the data, yielding a posterior distribution. Conjugate pairs (Beta-Binomial, Normal-Normal, Gamma-Poisson) admit closed-form posteriors. For non-conjugate models, Metropolis-Hastings MCMC draws samples from the posterior by constructing a Markov chain with the target distribution as its stationary distribution, accepting or rejecting proposals in proportion to the posterior ratio.</td>
+    </tr>
+  </tbody>
+</table>
+
+<table>
+  <tbody>
+    <tr>
+      <td>The posterior predictive distribution $p(\tilde{y}</td>
+      <td>\mathbf{y}) = \int p(\tilde{y}</td>
+      <td>\theta)p(\theta</td>
+      <td>\mathbf{y})d\theta$ propagates parameter uncertainty into forecasts. Model comparison by Bayes factor automatically penalises complexity. Non-identifiable parameters return their prior — a diagnostic that reveals structural model problems.</td>
+    </tr>
+  </tbody>
+</table>
+
+<p><strong>Key equations:</strong></p>
+
+\[p(\theta|\mathbf{y}) \propto p(\mathbf{y}|\theta)\,p(\theta)\]
+
+\[\mu_n = \tau_n^2\!\left(\frac{\mu_0}{\tau_0^2} + \frac{n\bar{y}}{\sigma^2}\right), \quad \frac{1}{\tau_n^2} = \frac{1}{\tau_0^2} + \frac{n}{\sigma^2}\]
+
+\[\alpha = \min\!\left(1,\frac{p(\mathbf{y}|\theta^*)p(\theta^*)}{p(\mathbf{y}|\theta_{t-1})p(\theta_{t-1})}\right) \quad\text{[MH acceptance ratio]}\]
+
+\[B_{12} = \frac{p(\mathbf{y}|M_1)}{p(\mathbf{y}|M_2)} \quad\text{[Bayes factor]}\]
+
+<hr />
+
+<h2 id="math-refresher">Math Refresher</h2>
+
+<table>
+  <tbody>
+    <tr>
+      <td><strong>Conditional probability and independence.</strong> The conditional probability $p(A</td>
+      <td>B) = p(A\cap B)/p(B)$ asks: given that $B$ occurred, how probable is $A$? If $A$ and $B$ are independent, $p(A</td>
+      <td>B) = p(A)$ — knowing $B$ provides no information about $A$. Bayes’ theorem is nothing more than two applications of the conditional probability definition; its power comes from inverting the conditioning — from $p(\text{data}</td>
+      <td>\text{parameter})$ (the forward model) to $p(\text{parameter}</td>
+      <td>\text{data})$ (the inference we actually want).</td>
+    </tr>
+  </tbody>
+</table>
+
+<p><strong>Log-probabilities and numerical stability.</strong> Probabilities of multiple observations are products of numbers between 0 and 1. With 100 observations each having probability 0.1, the joint probability is $0.1^{100} = 10^{-100}$ — smaller than any floating-point number. Working in log-space converts products to sums: $\ln(0.1^{100}) = 100\ln(0.1) = -230.3$ — perfectly representable. The MCMC acceptance ratio $\alpha = \min(1, r)$ with $r = p(\theta^<em>)/p(\theta_{t-1})$ is computed as $r = \exp(\ln p(\theta^</em>) - \ln p(\theta_{t-1}))$ — the difference of log-posteriors — which never underflows.</p>
+
+      </div>
+
+      
+
+
+
+      
+
+  
+  
+  
+  
+
+
+
+      <!-- essay-footer-notes.html — References / endnotes section.
+     Hidden by default; assets/js/essay/core.js shows it and populates
+     #essay-endnotes-list from [data-cite] elements in the content.
+
+     In posts, create citation markers with:
+       <cite data-cite="Author, Title, URL">1</cite>
+     The JS collects these and renders a numbered reference list here. -->
+
+<footer class="essay-endnotes" id="essay-endnotes" aria-label="References" hidden>
+  <div class="essay-endnotes-inner">
+    <h2 class="essay-endnotes-heading">References</h2>
+    <ol class="essay-endnotes-list" id="essay-endnotes-list">
+      <!-- Populated at runtime by assets/js/essay/core.js buildEndnotes() -->
+    </ol>
+  </div>
+</footer>
+
+
+      
+
+      
+
+      
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    </article>
+  </main>
+
+  <aside
+    class="essay-sidenotes"
+    id="essay-sidenotes"
+    aria-label="Margin notes"
+  ></aside>
+
+</div>
+
+</div>
+
+<footer>
+  <div class="footer-inner">
+
+    <!-- Col 1: Brand -->
+    <div class="footer-brand">
+      <div class="footer-brand-logo">
+        
+        <img loading="lazy" src="/assets/images/logo.webp" alt="WaywardHouse" width="28" height="28">
+        
+        WaywardHouse<span>.</span>
+      </div>
+      
+      
+      <p class="footer-brand-desc">Understanding how place, economy, and environment interact — through analysis, modelling, and open tools.</p>
+      
+
+      <div class="footer-social">
+        
+        
+        
+        <a href="/feed.xml" class="social-icon" target="_blank" rel="noopener noreferrer" aria-label="RSS feed">
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M4 11a9 9 0 0 1 9 9"/>
+            <path d="M4 4a16 16 0 0 1 16 16"/>
+            <circle cx="5" cy="19" r="1"/>
+          </svg>
+        </a>
+      </div>
+    </div>
+
+    <!-- Col 2: Topics (configurable via footer_topics, falls back to auto-categories) -->
+    <nav aria-labelledby="footer-topics">
+      <h3 class="footer-col-title" id="footer-topics">Reading</h3>
+      <ul class="footer-links">
+        
+          
+          <li><a href="/topics/">Essays</a></li>
+          
+          <li><a href="/series/">Modelling</a></li>
+          
+          <li><a href="/archive/">Archive</a></li>
+          
+          <li><a href="/start-here/">Start Here</a></li>
+          
+        
+      </ul>
+    </nav>
+
+    <!-- Col 3: Secondary navigation -->
+    
+    <nav aria-labelledby="footer-company">
+      <h3 class="footer-col-title" id="footer-company">Site</h3>
+      <ul class="footer-links">
+        
+        <li><a href="/start-here/">Start Here</a></li>
+        
+        <li><a href="/about/">About</a></li>
+        
+        <li><a href="/contact/">Contact</a></li>
+        
+      </ul>
+    </nav>
+    
+
+    <!-- Col 4: Resources -->
+    <nav aria-labelledby="footer-resources">
+      <h3 class="footer-col-title" id="footer-resources">Resources</h3>
+      <ul class="footer-links">
+        <li><a href="/archive/">Archive</a></li>
+        <li><a href="/feed.xml">RSS Feed</a></li>
+        <li><a href="/topics/">All Topics</a></li>
+      </ul>
+    </nav>
+
+  </div><!-- /.footer-inner -->
+
+  <div class="footer-bottom">
+    <span class="footer-copy">
+      &copy; 2026 WaywardHouse.
+    </span>
+    <div class="footer-legal">
+      <a href="/privacy/">Privacy Policy</a>
+      <a href="/terms/">Terms of Service</a>
+    </div>
+  </div>
+
+</footer>
+
+
+<!-- Alpine.js bundle -->
+<script type="module" src="/assets/dist/main.js"></script>
+
+<!-- Visualization runtime — detects and loads CDN libraries dynamically -->
+<script type="module" src="/assets/js/core.js"></script>
+
+<!-- Search overlay — event-driven: nav button $dispatches 'search:open' -->
+<div
+  x-data="search"
+  x-init="init()"
+  @search:open.window="open()"
+>
+  <div
+    class="search-overlay"
+    x-show="isOpen"
+    x-transition:enter="transition ease-out duration-150"
+    x-transition:enter-start="opacity-0"
+    x-transition:enter-end="opacity-100"
+    x-transition:leave="transition ease-in duration-100"
+    x-transition:leave-start="opacity-100"
+    x-transition:leave-end="opacity-0"
+    @click.self="close()"
+    style="display: none;"
+    role="dialog"
+    aria-modal="true"
+    aria-label="Search"
+  >
+    <div class="search-panel">
+      <div class="search-input-wrap">
+        <svg class="search-icon" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <circle cx="11" cy="11" r="8"/>
+          <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+        </svg>
+        <input
+          class="search-input"
+          type="search"
+          placeholder="Search posts…"
+          x-model="query"
+          x-ref="input"
+          @input.debounce.300ms="runSearch()"
+          @keydown.escape="close()"
+          autocomplete="off"
+          spellcheck="false"
+          aria-label="Search query"
+        >
+        <kbd class="search-esc" aria-hidden="true">ESC</kbd>
+      </div>
+
+      <div class="search-results" x-show="query.trim().length > 0">
+        <div class="search-status" x-show="loading" aria-live="polite">Searching…</div>
+        <div class="search-status" x-show="!loading && results.length === 0" aria-live="polite">
+          No results for "<span x-text="query"></span>"
+        </div>
+        <ul class="search-result-list" x-show="!loading && results.length > 0" role="list">
+          <template x-for="result in results" :key="result.url">
+            <li>
+              <a :href="result.url" class="search-result-item" @click="close()">
+                <div class="search-result-title" x-text="result.meta?.title || result.url"></div>
+                <div class="search-result-excerpt" x-html="result.excerpt"></div>
+              </a>
+            </li>
+          </template>
+        </ul>
+      </div>
+    </div>
+  </div>
+</div>
+
+</body>
+</html>

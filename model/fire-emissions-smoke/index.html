@@ -1,0 +1,1389 @@
+<!DOCTYPE html>
+
+<html lang="en" data-brand="wayward" data-theme="light">
+<head>
+  <meta charset="utf-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Fire Emissions and Smoke Dispersion — WaywardHouse</title>
+<meta name="description" content="How much pollution does a wildfire release, and where will the smoke go? Fire emissions depend on fuel consumption and combustion efficiency, while smoke dispersion follows atmospheric transport. This model...">
+
+<!-- Dark mode flash prevention — runs synchronously before first paint -->
+<script>
+  (function () {
+    var defaultDark = 'light' === 'dark';
+    var s = localStorage.getItem('theme');
+    var dark = s !== null ? s === 'dark' : defaultDark;
+    document.documentElement.dataset.theme = dark ? 'dark' : 'light';
+  })();
+</script>
+
+<!-- Preconnect to CDN domains used by the viz runtime -->
+<link rel="preconnect" href="https://cdn.jsdelivr.net">
+<link rel="preconnect" href="https://unpkg.com">
+<link rel="preconnect" href="https://esm.sh">
+<link rel="preconnect" href="https://api.mapbox.com">
+<link rel="preconnect" href="https://events.mapbox.com">
+
+
+<script>window.MAPBOX_TOKEN = 'pk.eyJ1IjoiYnJlYWRlZGNvZCIsImEiOiJjbW0xa25qc2EwMmtwMnJwejJlNndqdnoxIn0._7I9PwXuFLrOQINVZ84y1w';</script>
+
+
+<!-- Fonts -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:ital,wght@0,300;0,400;0,600;0,700;0,800;0,900;1,700;1,800&family=Barlow:wght@300;400&family=IBM+Plex+Mono:ital,wght@0,300;0,400;0,500;1,300&family=Literata:ital,opsz,wght@0,7..72,300;0,7..72,400;0,7..72,500;1,7..72,300;1,7..72,400&display=swap" rel="stylesheet">
+
+<!-- Theme stylesheet (Vite build output) -->
+<link rel="stylesheet" href="/assets/dist/main.css">
+
+<!-- Brand token overrides — loaded after main.css so variables cascade correctly -->
+
+<link rel="stylesheet" href="/assets/css/brand-wayward.css">
+
+
+
+<!-- Syntax highlighting (Rouge — light + dark) -->
+<link rel="stylesheet" href="/assets/css/syntax.css">
+
+<!-- Begin Jekyll SEO tag v2.8.0 -->
+<title>Fire Emissions and Smoke Dispersion | WaywardHouse</title>
+<meta name="generator" content="Jekyll v4.4.1" />
+<meta property="og:title" content="Fire Emissions and Smoke Dispersion" />
+<meta property="og:locale" content="en" />
+<meta name="description" content="How much pollution does a wildfire release, and where will the smoke go? Fire emissions depend on fuel consumption and combustion efficiency, while smoke dispersion follows atmospheric transport. This model derives emission factor equations, implements plume rise models, demonstrates Gaussian dispersion, and maps air quality impacts from wildfire smoke." />
+<meta property="og:description" content="How much pollution does a wildfire release, and where will the smoke go? Fire emissions depend on fuel consumption and combustion efficiency, while smoke dispersion follows atmospheric transport. This model derives emission factor equations, implements plume rise models, demonstrates Gaussian dispersion, and maps air quality impacts from wildfire smoke." />
+<link rel="canonical" href="https://wayward.house/model/fire-emissions-smoke/" />
+<meta property="og:url" content="https://wayward.house/model/fire-emissions-smoke/" />
+<meta property="og:site_name" content="WaywardHouse" />
+<meta property="og:image" content="https://wayward.house/assets/images/fire-modelling.webp" />
+<meta property="og:type" content="article" />
+<meta property="article:published_time" content="2026-02-27T00:00:00+00:00" />
+<meta name="twitter:card" content="summary_large_image" />
+<meta property="twitter:image" content="https://wayward.house/assets/images/fire-modelling.webp" />
+<meta property="twitter:title" content="Fire Emissions and Smoke Dispersion" />
+<meta name="twitter:site" content="@" />
+<script type="application/ld+json">
+{"@context":"https://schema.org","@type":"BlogPosting","dateModified":"2026-03-18T03:00:54+00:00","datePublished":"2026-02-27T00:00:00+00:00","description":"How much pollution does a wildfire release, and where will the smoke go? Fire emissions depend on fuel consumption and combustion efficiency, while smoke dispersion follows atmospheric transport. This model derives emission factor equations, implements plume rise models, demonstrates Gaussian dispersion, and maps air quality impacts from wildfire smoke.","headline":"Fire Emissions and Smoke Dispersion","image":"https://wayward.house/assets/images/fire-modelling.webp","mainEntityOfPage":{"@type":"WebPage","@id":"https://wayward.house/model/fire-emissions-smoke/"},"publisher":{"@type":"Organization","logo":{"@type":"ImageObject","url":"https://wayward.house/assets/images/logo.webp"}},"url":"https://wayward.house/model/fire-emissions-smoke/"}</script>
+<!-- End Jekyll SEO tag -->
+
+
+
+<!-- Cloudflare Web Analytics -->
+<script defer src="https://static.cloudflareinsights.com/beacon.min.js"
+  data-cf-beacon='{"token": "62c47d78bf9d4c80972d4e6242d79ff8"}'></script>
+
+
+</head>
+<body class="
+  model-template
+   tag-modelling
+   tag-hash-math
+  
+   tag-hash-viz
+  
+  
+  
+  
+  
+  
+">
+
+<a href="#main-content" class="skip-link">Skip to content</a>
+
+<header class="nav" x-data="{ open: false }">
+  <div class="nav-inner">
+
+    <!-- Logo -->
+    <a href="/" class="nav-logo">
+      
+      <img loading="lazy" src="/assets/images/logo.webp" alt="WaywardHouse" width="32" height="32">
+      
+      WaywardHouse<span>.</span>
+    </a>
+
+    <!-- Desktop nav links -->
+    <ul class="nav-links" role="list">
+      
+      <li>
+        <a href="/topics/">Essays</a>
+      </li>
+      
+      <li>
+        <a href="/series/">Modelling</a>
+      </li>
+      
+      <li>
+        <a href="/about/">About</a>
+      </li>
+      
+    </ul>
+
+    <!-- Actions -->
+    <div class="nav-actions">
+
+      <!-- Search button -->
+      <button
+        class="search-toggle"
+        type="button"
+        aria-label="Search (⌘K)"
+        title="Search (⌘K)"
+        @click="$dispatch('search:open')"
+      >
+        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <circle cx="11" cy="11" r="8"/>
+          <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+        </svg>
+      </button>
+
+      <!-- Dark mode toggle -->
+      <button
+        class="theme-toggle"
+        x-data="darkMode"
+        x-init="init()"
+        @click="toggle()"
+        :aria-label="dark ? 'Switch to light mode' : 'Switch to dark mode'"
+        type="button"
+      >
+        <!-- Sun icon (shown in light mode) -->
+        <svg class="icon-sun" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">
+          <circle cx="12" cy="12" r="5"/>
+          <line x1="12" y1="1" x2="12" y2="3"/>
+          <line x1="12" y1="21" x2="12" y2="23"/>
+          <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/>
+          <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/>
+          <line x1="1" y1="12" x2="3" y2="12"/>
+          <line x1="21" y1="12" x2="23" y2="12"/>
+          <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/>
+          <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>
+        </svg>
+        <!-- Moon icon (shown in dark mode) -->
+        <svg class="icon-moon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">
+          <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+        </svg>
+      </button>
+
+      <!-- Hamburger (mobile only) -->
+      <button
+        class="mobile-nav-toggle"
+        @click="open = !open"
+        :aria-expanded="open"
+        :aria-label="open ? 'Close menu' : 'Open menu'"
+        type="button"
+      >
+        <svg x-show="!open" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <line x1="3" y1="6" x2="21" y2="6"/>
+          <line x1="3" y1="12" x2="21" y2="12"/>
+          <line x1="3" y1="18" x2="21" y2="18"/>
+        </svg>
+        <svg x-show="open" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <line x1="18" y1="6" x2="6" y2="18"/>
+          <line x1="6" y1="6" x2="18" y2="18"/>
+        </svg>
+      </button>
+
+    </div><!-- /.nav-actions -->
+  </div><!-- /.nav-inner -->
+
+  <!-- Mobile drawer -->
+  <div
+    class="mobile-nav"
+    x-show="open"
+    x-transition:enter="transition ease-out duration-200"
+    x-transition:enter-start="opacity-0 -translate-y-1"
+    x-transition:enter-end="opacity-100 translate-y-0"
+    x-transition:leave="transition ease-in duration-150"
+    x-transition:leave-start="opacity-100 translate-y-0"
+    x-transition:leave-end="opacity-0 -translate-y-1"
+    @click.outside="open = false"
+    @keydown.escape.window="open = false"
+  >
+    <ul role="list">
+      
+      <li>
+        <a href="/topics/" @click="open = false">Essays</a>
+      </li>
+      
+      <li>
+        <a href="/series/" @click="open = false">Modelling</a>
+      </li>
+      
+      <li>
+        <a href="/about/" @click="open = false">About</a>
+      </li>
+      
+    </ul>
+  </div><!-- /.mobile-nav -->
+
+</header>
+
+
+<div id="main-content">
+  <!-- Essay stylesheet and runtime — self-contained -->
+<link rel="stylesheet" href="/assets/css/essay.css">
+<script type="module" src="/assets/js/essay/core.js"></script>
+
+<div class="essay-layout" id="essay-layout">
+
+  <!-- essay-toc.html — Sticky table of contents (left column).
+     The <ol> is empty on load; assets/js/essay/core.js populates it
+     from h2/h3 elements found in #essay-content after the page renders. -->
+
+<nav class="essay-toc" id="essay-toc" aria-label="Table of contents">
+  <div class="essay-toc-inner">
+    <p class="essay-toc-heading" aria-hidden="true">Contents</p>
+    <ol class="essay-toc-list" id="essay-toc-list">
+      <!-- Populated at runtime by assets/js/essay/core.js buildToc() -->
+    </ol>
+  </div>
+</nav>
+
+
+  <main class="essay-main" id="essay-main" role="main">
+    <article class="essay-article">
+
+      <!-- essay-hero.html — Header for computational essay template.
+     Displays feature image, tag label, title, excerpt, and post metadata. -->
+
+<header class="essay-hero">
+  
+  <figure class="essay-hero-figure">
+    <img
+      src="/assets/images/fire-modelling.webp"
+      alt="Fire Emissions and Smoke Dispersion"
+      class="essay-hero-img"
+      loading="eager"
+    >
+    
+  </figure>
+  
+
+  <div class="essay-hero-body">
+
+    
+    
+    
+    
+    
+    <nav class="essay-breadcrumb" aria-label="Series position">
+      
+      <a href="/series/6/" class="essay-breadcrumb-link">Computational geography atmospheric hazards</a>
+      
+      
+      <span class="essay-breadcrumb-sep" aria-hidden="true">›</span>
+      <span class="essay-breadcrumb-cluster">Fire Science</span>
+      
+      
+      <span class="essay-breadcrumb-sep" aria-hidden="true">›</span>
+      <span class="essay-breadcrumb-pos">Model 3</span>
+      
+    </nav>
+    
+
+    <div class="essay-hero-labels">
+      
+      <a href="/topics/modelling/" class="essay-tag-label">modelling</a>
+      
+      
+      <span class="difficulty-badge difficulty-badge--4">Level 4</span>
+      
+    </div>
+
+    <h1 class="essay-title">Fire Emissions and Smoke Dispersion</h1>
+
+    
+    <p class="essay-excerpt">How much pollution does a wildfire release, and where will the smoke go? Fire emissions depend on fuel consumption and combustion efficiency, while smoke dispersion follows atmospheric transport. This model derives emission factor equations, implements plume rise models, demonstrates Gaussian dispersion, and maps air quality impacts from wildfire smoke.
+</p>
+    
+
+    
+    <p class="essay-prereqs"><span class="essay-prereqs-label">Prerequisites:</span> emission factors, plume rise, gaussian dispersion, particulate transport</p>
+    
+
+    <div class="essay-meta">
+      
+      <div class="essay-meta-secondary">
+        <time class="essay-date" datetime="2026-02-27">27 Feb 2026</time>
+        
+        
+        <span class="essay-sep" aria-hidden="true">·</span>
+        <span class="essay-updated">Updated <time datetime="2026-03-18">18 Mar 2026</time></span>
+        
+        <span class="essay-sep" aria-hidden="true">·</span>
+        <span class="essay-reading-time">13 min read</span>
+      </div>
+    </div>
+  </div>
+</header>
+
+
+      
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<nav class="series-nav" aria-label="Series navigation">
+
+  <div class="series-nav-header">
+    <span class="series-nav-label">V</span>
+    <span class="series-nav-title">Fire Science</span>
+  </div>
+
+  <ol class="series-nav-list">
+    
+    <li class="series-nav-item">
+      
+      <a href="/model/fire-weather-ignition/" class="series-nav-link">
+        <span class="series-nav-number">1</span>
+        Fire Weather and Ignition Potential
+      </a>
+      
+    </li>
+    
+    <li class="series-nav-item">
+      
+      <a href="/model/fire-spread-modeling/" class="series-nav-link">
+        <span class="series-nav-number">2</span>
+        Fire Spread modelling
+      </a>
+      
+    </li>
+    
+    <li class="series-nav-item series-nav-item--current">
+      
+      <span class="series-nav-link series-nav-link--current" aria-current="page">
+        <span class="series-nav-number">3</span>
+        Fire Emissions and Smoke Dispersion
+      </span>
+      
+    </li>
+    
+  </ol>
+
+  
+  <div class="series-nav-footer">
+    <a href="/series/6/" class="series-nav-all">
+      All 11 in this series &rarr;
+    </a>
+  </div>
+  
+
+</nav>
+
+
+
+
+      <div class="essay-content gh-content" id="essay-content">
+        <p>In the summer of 2023, wildfire smoke from Quebec and Ontario turned the skies over New York City orange. PM2.5 concentrations reached 11 times the WHO daily guideline, schools cancelled outdoor activities, and the United States issued its worst-ever air quality alerts across the Northeast. The smoke had travelled more than 1,500 km from fires consuming millions of hectares of boreal forest. The public health impact — measured in respiratory hospital admissions, reduced visibility, and premature deaths — rivalled the fires’ direct destruction of property. And it was predictable: atmospheric transport models had been forecasting the smoke plume’s trajectory for days before it arrived.</p>
+
+<p>Wildfire smoke is a complex mixture of gases and particles produced by incomplete combustion of organic material. The quantities emitted depend on what is burning (fuel type and loading), how efficiently it is burning (flaming versus smouldering), and how much area has burned. Each fuel type has characteristic emission factors — grams of PM2.5, carbon monoxide, or volatile organic compounds per kilogram of fuel consumed — derived from laboratory burns and field measurements. Once released, the smoke plume rises due to thermal buoyancy (Briggs plume rise equations), is advected by the mean wind, and disperses by turbulent mixing. The Gaussian plume model — the workhorse of atmospheric dispersion for point and area sources — predicts concentrations downwind as a function of emission rate, wind speed, atmospheric stability, and distance. This model derives the emission accounting, implements plume rise, and calculates ground-level concentrations from wildfire smoke using the Gaussian framework.</p>
+
+<h2 id="1-the-question">1. The Question</h2>
+
+<p>What is the air quality impact 50 km downwind from this wildfire?</p>
+
+<p><strong>Fire emissions:</strong></p>
+
+<p>Pollutants released during combustion.</p>
+
+<p><strong>Major species:</strong></p>
+<ul>
+  <li>CO₂ (carbon dioxide): ~1650 g/kg fuel</li>
+  <li>CO (carbon monoxide): ~60-100 g/kg</li>
+  <li>PM₂.₅ (fine particles): ~10-20 g/kg</li>
+  <li>NOₓ (nitrogen oxides): ~1-3 g/kg</li>
+  <li>VOCs (volatile organics): ~10-30 g/kg</li>
+  <li>CH₄ (methane): ~5-10 g/kg</li>
+</ul>
+
+<p><strong>Health impacts:</strong></p>
+
+<p>PM₂.₅ primary concern:</p>
+<ul>
+  <li>Respiratory issues</li>
+  <li>Cardiovascular stress</li>
+  <li>Premature mortality</li>
+</ul>
+
+<p><strong>Air quality standards:</strong></p>
+
+<p>EPA: 35 μg/m³ (24-hour PM₂.₅)</p>
+
+<p>Wildfire smoke: 100-500 μg/m³ common, &gt;1000 μg/m³ near fires</p>
+
+<p><strong>Applications:</strong></p>
+<ul>
+  <li>Air quality forecasting</li>
+  <li>Evacuation decisions</li>
+  <li>Health advisories</li>
+  <li>Climate forcing calculations</li>
+  <li>Carbon accounting</li>
+</ul>
+
+<hr />
+
+<h2 id="2-the-conceptual-model">2. The Conceptual Model</h2>
+
+<h3 id="emission-factors">Emission Factors</h3>
+
+<p><strong>Mass of pollutant per mass of fuel:</strong></p>
+
+\[EF_i = \frac{m_i}{m_{\text{fuel}}}\]
+
+<p>Where:</p>
+<ul>
+  <li>$EF_i$ = emission factor for species $i$ (g/kg)</li>
+  <li>$m_i$ = mass of species emitted</li>
+  <li>$m_{\text{fuel}}$ = dry fuel consumed</li>
+</ul>
+
+<p><strong>Total emissions:</strong></p>
+
+\[E_i = A \times B \times C \times EF_i\]
+
+<p>Where:</p>
+<ul>
+  <li>$A$ = area burned (ha)</li>
+  <li>$B$ = fuel loading (kg/ha)</li>
+  <li>$C$ = combustion completeness (fraction, 0-1)</li>
+</ul>
+
+<p><strong>Modified combustion efficiency (MCE):</strong></p>
+
+\[MCE = \frac{\Delta CO_2}{\Delta CO_2 + \Delta CO}\]
+
+<p><strong>Flaming:</strong> MCE &gt; 0.95 (high efficiency, less PM)<br />
+<strong>Smoldering:</strong> MCE &lt; 0.85 (low efficiency, more PM, CO)</p>
+
+<p><strong>PM₂.₅ increases as MCE decreases:</strong></p>
+
+\[EF_{PM_{2.5}} = a - b \times MCE\]
+
+<p>Typical: $a = 60$, $b = 50$ → flaming = 12.5 g/kg, smoldering = 17.5 g/kg</p>
+
+<h3 id="plume-rise">Plume Rise</h3>
+
+<p><strong>Buoyancy-driven ascent:</strong></p>
+
+<p>Hot emissions rise above fire.</p>
+
+<p><strong>Final plume height:</strong></p>
+
+\[H = H_s + \frac{1.6 F^{1/3}}{U s^{1/3}}\]
+
+<p>Where:</p>
+<ul>
+  <li>$H$ = plume top height (m)</li>
+  <li>$H_s$ = stack (fire) height (m)</li>
+  <li>$F$ = buoyancy flux (m⁴/s³)</li>
+  <li>$U$ = wind speed (m/s)</li>
+  <li>$s$ = stability parameter</li>
+</ul>
+
+<p><strong>Buoyancy flux:</strong></p>
+
+\[F = g \frac{Q_H}{c_p T_a \rho_a}\]
+
+<p>Where:</p>
+<ul>
+  <li>$g$ = 9.81 m/s²</li>
+  <li>$Q_H$ = sensible heat flux (W)</li>
+  <li>$c_p$ = 1005 J/kg/K</li>
+  <li>$T_a$ = ambient temperature (K)</li>
+  <li>$\rho_a$ = air density (kg/m³)</li>
+</ul>
+
+<p><strong>Typical wildfire:</strong></p>
+
+<p>$Q_H = 10^8$ W → plume rise 1000-3000 m</p>
+
+<h3 id="gaussian-dispersion">Gaussian Dispersion</h3>
+
+<p><strong>Concentration downwind:</strong></p>
+
+\[C(x,y,z) = \frac{Q}{2\pi U \sigma_y \sigma_z} \exp\left(-\frac{y^2}{2\sigma_y^2}\right) \left[\exp\left(-\frac{(z-H)^2}{2\sigma_z^2}\right) + \exp\left(-\frac{(z+H)^2}{2\sigma_z^2}\right)\right]\]
+
+<p>Where:</p>
+<ul>
+  <li>$C$ = concentration (μg/m³)</li>
+  <li>$Q$ = emission rate (μg/s)</li>
+  <li>$U$ = wind speed (m/s)</li>
+  <li>$\sigma_y, \sigma_z$ = dispersion parameters (m)</li>
+  <li>$H$ = effective release height (m)</li>
+  <li>Second exponential = ground reflection</li>
+</ul>
+
+<p><strong>Dispersion parameters:</strong></p>
+
+<p>Power-law with distance:</p>
+
+<p>\(\sigma_y = a x^b\)
+\(\sigma_z = c x^d\)</p>
+
+<p>Constants depend on atmospheric stability class.</p>
+
+<p><strong>Ground-level concentration (z=0):</strong></p>
+
+\[C(x,y,0) = \frac{Q}{\pi U \sigma_y \sigma_z} \exp\left(-\frac{y^2}{2\sigma_y^2}\right) \exp\left(-\frac{H^2}{2\sigma_z^2}\right)\]
+
+<hr />
+
+<h2 id="3-building-the-mathematical-model">3. Building the Mathematical Model</h2>
+
+<h3 id="total-emissions-calculation">Total Emissions Calculation</h3>
+
+<p><strong>Fuel consumption:</strong></p>
+
+\[FC = A \times FL \times CC\]
+
+<p>Where:</p>
+<ul>
+  <li>$FC$ = fuel consumed (kg)</li>
+  <li>$A$ = burned area (m²)</li>
+  <li>$FL$ = fuel loading (kg/m²)</li>
+  <li>$CC$ = combustion completeness</li>
+</ul>
+
+<p><strong>Species emission:</strong></p>
+
+<p>\(E_i = FC \times EF_i \times 10^{-6}\) (tonnes)</p>
+
+<p><strong>Example:</strong></p>
+
+<p>Area = 1000 ha = 10⁷ m²<br />
+Fuel loading = 1.5 kg/m² (forest)<br />
+CC = 0.9<br />
+$EF_{PM_{2.5}}$ = 15 g/kg</p>
+
+\[FC = 10^7 \times 1.5 \times 0.9 = 1.35 \times 10^7 \text{ kg}\]
+
+\[E_{PM_{2.5}} = 1.35 \times 10^7 \times 15 \times 10^{-6} = 202.5 \text{ tonnes}\]
+
+<p><strong>Over 200 tonnes of PM₂.₅!</strong></p>
+
+<h3 id="emission-rate">Emission Rate</h3>
+
+<p><strong>Temporal distribution:</strong></p>
+
+<p>Fire burns over time $T$ (hours/days).</p>
+
+<p><strong>Emission rate:</strong></p>
+
+\[Q(t) = \frac{E_i}{T} \times f(t)\]
+
+<p>Where $f(t)$ = temporal distribution (peak during active burning).</p>
+
+<p><strong>Simplified:</strong> Assume constant during active burning period.</p>
+
+<p>\(Q = \frac{E_i}{T \times 3600}\) (g/s)</p>
+
+<h3 id="stability-class">Stability Class</h3>
+
+<p><strong>Pasquill-Gifford classes:</strong></p>
+
+<p>A: Extremely unstable (strong solar heating, light winds)<br />
+B: Moderately unstable<br />
+C: Slightly unstable<br />
+D: Neutral<br />
+E: Slightly stable<br />
+F: Moderately stable (clear night, light winds)</p>
+
+<p><strong>Affects dispersion:</strong></p>
+
+<p>Unstable (A-C): Rapid vertical mixing, lower ground concentrations<br />
+Stable (E-F): Limited mixing, concentrated plume</p>
+
+<p><strong>Wildfire context:</strong></p>
+
+<p>Heat from fire creates instability → often class C-D even at night.</p>
+
+<hr />
+
+<h2 id="4-worked-example-by-hand">4. Worked Example by Hand</h2>
+
+<p><strong>Problem:</strong> Calculate PM₂.₅ emissions and downwind concentration.</p>
+
+<p><strong>Fire characteristics:</strong></p>
+<ul>
+  <li>Burned area: 500 ha</li>
+  <li>Fuel type: Conifer forest</li>
+  <li>Fuel loading: 2.0 kg/m²</li>
+  <li>Combustion completeness: 85%</li>
+  <li>Burn duration: 8 hours</li>
+</ul>
+
+<p><strong>Meteorology:</strong></p>
+<ul>
+  <li>Wind speed: 5 m/s</li>
+  <li>Stability: Class C (slightly unstable)</li>
+  <li>Plume height: 800 m</li>
+</ul>
+
+<p><strong>Location of interest:</strong></p>
+<ul>
+  <li>Downwind distance: 20 km</li>
+  <li>Lateral offset: 2 km</li>
+</ul>
+
+<p>Calculate total PM₂.₅ and ground-level concentration.</p>
+
+<h3 id="solution">Solution</h3>
+
+<p><strong>Step 1: Fuel consumed</strong></p>
+
+\[A = 500 \times 10^4 = 5 \times 10^6 \text{ m}^2\]
+
+\[FC = 5 \times 10^6 \times 2.0 \times 0.85 = 8.5 \times 10^6 \text{ kg}\]
+
+<p><strong>Step 2: PM₂.₅ emission</strong></p>
+
+<p>$EF_{PM_{2.5}} = 15$ g/kg (typical conifer)</p>
+
+\[E_{PM_{2.5}} = 8.5 \times 10^6 \times 15 = 1.275 \times 10^8 \text{ g} = 127.5 \text{ tonnes}\]
+
+<p><strong>Step 3: Emission rate</strong></p>
+
+\[Q = \frac{1.275 \times 10^8}{8 \times 3600} = \frac{1.275 \times 10^8}{28800} = 4427 \text{ g/s}\]
+
+<p><strong>Step 4: Dispersion parameters (Class C, x=20 km)</strong></p>
+
+<p>From standard tables:</p>
+
+\[\sigma_y = 0.20 \times 20000^{0.894} = 0.20 \times 8913 = 1783 \text{ m}\]
+
+\[\sigma_z = 0.14 \times 20000^{0.885} = 0.14 \times 8318 = 1164 \text{ m}\]
+
+<p><strong>Step 5: Concentration at (x=20 km, y=2 km, z=0)</strong></p>
+
+\[C = \frac{4427}{\pi \times 5 \times 1783 \times 1164} \exp\left(-\frac{2000^2}{2 \times 1783^2}\right) \exp\left(-\frac{800^2}{2 \times 1164^2}\right)\]
+
+\[= \frac{4427}{32.5 \times 10^6} \times \exp(-0.63) \times \exp(-0.24)\]
+
+\[= 1.36 \times 10^{-4} \times 0.533 \times 0.787\]
+
+\[= 5.7 \times 10^{-5} \text{ g/m}^3 = 57 \text{ μg/m}^3\]
+
+<p><strong>Step 6: Interpret</strong></p>
+
+<p>57 μg/m³ <strong>exceeds EPA standard</strong> (35 μg/m³)</p>
+
+<p>Health advisory warranted at this location.</p>
+
+<p><strong>Directly downwind (y=0):</strong> Concentration would be ~107 μg/m³ (worse)</p>
+
+<hr />
+
+<h2 id="5-computational-implementation">5. Computational Implementation</h2>
+
+<p>Below is an interactive smoke dispersion simulator.</p>
+
+<div class="viz-container" id="smoke-viz">
+  <div class="controls">
+    <label>
+      Burned area (ha):
+      <input type="range" id="burned-area" min="100" max="5000" step="100" value="1000" />
+      <span id="area-val">1000</span>
+    </label>
+    <label>
+      Wind speed (m/s):
+      <input type="range" id="wind" min="2" max="15" step="1" value="5" />
+      <span id="wind-val">5</span>
+    </label>
+    <label>
+      Plume height (m):
+      <input type="range" id="plume-height" min="200" max="2000" step="100" value="800" />
+      <span id="height-val">800</span>
+    </label>
+    <label>
+      Stability class:
+      <select id="stability">
+        <option value="A">A (Very unstable)</option>
+        <option value="B">B (Unstable)</option>
+        <option value="C" selected="">C (Slightly unstable)</option>
+        <option value="D">D (Neutral)</option>
+        <option value="E">E (Slightly stable)</option>
+      </select>
+    </label>
+    <div class="smoke-info">
+      <p><strong>Total PM₂.₅:</strong> <span id="total-pm">--</span> tonnes</p>
+      <p><strong>Max concentration:</strong> <span id="max-conc">--</span> μg/m³</p>
+      <p><strong>Distance to standard:</strong> <span id="dist-standard">--</span> km</p>
+    </div>
+  </div>
+  <div id="smoke-canvas-container">
+    <canvas id="smoke-canvas" width="700" height="400" style="border: 1px solid #ddd;"></canvas>
+  </div>
+</div>
+
+<script type="module">
+await new Promise(resolve => {
+  const checkECharts = () => {
+    if (typeof echarts !== 'undefined') resolve();
+    else setTimeout(checkECharts, 50);
+  };
+  checkECharts();
+});
+
+(function() {
+  const chart = echarts.init(document.getElementById('smoke-canvas'));
+  
+  let burnedArea = 1000;
+  let windSpeed = 5;
+  let plumeHeight = 800;
+  let stabilityClass = 'C';
+  
+  const stabilityParams = {
+    'A': {a: 0.22, b: 0.894, c: 0.20, d: 0.894},
+    'B': {a: 0.16, b: 0.894, c: 0.12, d: 0.894},
+    'C': {a: 0.11, b: 0.894, c: 0.08, d: 0.894},
+    'D': {a: 0.08, b: 0.894, c: 0.06, d: 0.894},
+    'E': {a: 0.06, b: 0.894, c: 0.03, d: 0.894}
+  };
+  
+  function calculateEmissions() {
+    const fuelLoading = 1.5; // kg/m²
+    const CC = 0.85;
+    const EF_PM25 = 15; // g/kg
+    
+    const area = burnedArea * 10000; // m²
+    const FC = area * fuelLoading * CC;
+    const totalPM = FC * EF_PM25 / 1e6; // tonnes
+    
+    const Q = FC * EF_PM25 / (8 * 3600); // g/s (8 hour burn)
+    
+    return {totalPM, Q};
+  }
+  
+  function calculateConcentration(x, y) {
+    const {Q} = calculateEmissions();
+    const params = stabilityParams[stabilityClass];
+    
+    const sigmaY = params.a * Math.pow(x, params.b);
+    const sigmaZ = params.c * Math.pow(x, params.d);
+    
+    const H = plumeHeight;
+    
+    const C = (Q / (Math.PI * windSpeed * sigmaY * sigmaZ)) *
+              Math.exp(-Math.pow(y, 2) / (2 * Math.pow(sigmaY, 2))) *
+              Math.exp(-Math.pow(H, 2) / (2 * Math.pow(sigmaZ, 2)));
+    
+    return C; // μg/m³
+  }
+  
+  function generatePlume() {
+    const data = [];
+    const maxDist = 50000; // 50 km
+    
+    for (let x = 1000; x <= maxDist; x += 1000) {
+      const C = calculateConcentration(x, 0); // centerline
+      data.push([x/1000, C]);
+    }
+    
+    return data;
+  }
+  
+  function findDistanceToStandard() {
+    const standard = 35; // μg/m³
+    
+    for (let x = 1000; x <= 100000; x += 500) {
+      const C = calculateConcentration(x, 0);
+      if (C < standard) {
+        return x / 1000;
+      }
+    }
+    
+    return '>100';
+  }
+  
+  function render() {
+    const {totalPM} = calculateEmissions();
+    const plumeData = generatePlume();
+    
+    const maxConc = Math.max(...plumeData.map(d => d[1]));
+    const distStandard = findDistanceToStandard();
+    
+    document.getElementById('total-pm').textContent = totalPM.toFixed(0);
+    document.getElementById('max-conc').textContent = maxConc.toFixed(0);
+    document.getElementById('dist-standard').textContent = 
+      typeof distStandard === 'number' ? distStandard.toFixed(0) : distStandard;
+    
+    const series = [
+      {
+        name: 'PM₂.₅ Concentration',
+        type: 'line',
+        data: plumeData,
+        lineStyle: {color: '#F44336', width: 3},
+        areaStyle: {color: 'rgba(244, 67, 54, 0.3)'}
+      },
+      {
+        name: 'EPA Standard (35 μg/m³)',
+        type: 'line',
+        data: [[0, 35], [50, 35]],
+        lineStyle: {color: '#FF9800', width: 2, type: 'dashed'},
+        markLine: {
+          silent: true,
+          label: {formatter: 'EPA 24-hr standard'}
+        }
+      },
+      {
+        name: 'Unhealthy (55 μg/m³)',
+        type: 'line',
+        data: [[0, 55], [50, 55]],
+        lineStyle: {color: '#F57F17', width: 2, type: 'dotted'}
+      }
+    ];
+    
+    const option = {
+      title: {
+        text: 'Smoke Concentration vs Distance',
+        left: 'center'
+      },
+      tooltip: {
+        trigger: 'axis',
+        axisPointer: {type: 'cross'}
+      },
+      legend: {
+        data: series.map(s => s.name),
+        top: 30
+      },
+      grid: {
+        left: 80,
+        right: 40,
+        top: 80,
+        bottom: 60
+      },
+      xAxis: {
+        type: 'value',
+        name: 'Distance Downwind (km)',
+        nameLocation: 'middle',
+        nameGap: 30,
+        min: 0,
+        max: 50
+      },
+      yAxis: {
+        type: 'value',
+        name: 'PM₂.₅ (μg/m³)',
+        nameLocation: 'middle',
+        nameGap: 50,
+        min: 0
+      },
+      series: series
+    };
+    
+    chart.setOption(option, true);
+  }
+  
+  document.getElementById('burned-area').addEventListener('input', (e) => {
+    burnedArea = parseFloat(e.target.value);
+    document.getElementById('area-val').textContent = burnedArea;
+    render();
+  });
+  
+  document.getElementById('wind').addEventListener('input', (e) => {
+    windSpeed = parseFloat(e.target.value);
+    document.getElementById('wind-val').textContent = windSpeed;
+    render();
+  });
+  
+  document.getElementById('plume-height').addEventListener('input', (e) => {
+    plumeHeight = parseFloat(e.target.value);
+    document.getElementById('height-val').textContent = plumeHeight;
+    render();
+  });
+  
+  document.getElementById('stability').addEventListener('change', (e) => {
+    stabilityClass = e.target.value;
+    render();
+  });
+  
+  render();
+  
+  window.addEventListener('resize', () => chart.resize());
+})();
+</script>
+
+<p><strong>Observations:</strong></p>
+<ul>
+  <li>Concentration decreases with distance as plume disperses</li>
+  <li>Higher plume rise reduces ground-level concentrations</li>
+  <li>Unstable atmosphere promotes mixing (lower peak concentrations)</li>
+  <li>EPA standard often exceeded 10-30 km downwind</li>
+  <li>Larger fires produce proportionally more emissions</li>
+  <li>Wind speed dilutes concentrations but transports farther</li>
+</ul>
+
+<p><strong>Key insights:</strong></p>
+<ul>
+  <li>Smoke impacts extend far beyond fire perimeter</li>
+  <li>Atmospheric stability critically affects dispersion</li>
+  <li>PM₂.₅ health risks significant at large distances</li>
+  <li>Multiple factors determine air quality impacts</li>
+</ul>
+
+<hr />
+
+<h2 id="6-interpretation">6. Interpretation</h2>
+
+<h3 id="health-impacts">Health Impacts</h3>
+
+<p><strong>PM₂.₅ exposure effects:</strong></p>
+
+<p><strong>Short-term (hours-days):</strong></p>
+<ul>
+  <li>Respiratory irritation</li>
+  <li>Asthma attacks</li>
+  <li>Reduced lung function</li>
+</ul>
+
+<p><strong>Long-term (weeks-months):</strong></p>
+<ul>
+  <li>Cardiovascular events</li>
+  <li>Premature mortality</li>
+  <li>Chronic conditions</li>
+</ul>
+
+<p><strong>Vulnerable populations:</strong></p>
+<ul>
+  <li>Children</li>
+  <li>Elderly</li>
+  <li>Respiratory disease</li>
+  <li>Cardiovascular disease</li>
+</ul>
+
+<p><strong>2020 California fires:</strong></p>
+
+<p>Estimated 1200-3000 premature deaths from smoke exposure.</p>
+
+<p><strong>Economic impact:</strong> $10-80 billion (health costs).</p>
+
+<h3 id="air-quality-forecasting">Air Quality Forecasting</h3>
+
+<p><strong>BlueSky framework:</strong></p>
+
+<ol>
+  <li><strong>Fuel consumption:</strong> From fire progression models</li>
+  <li><strong>Emissions:</strong> Apply emission factors</li>
+  <li><strong>Dispersion:</strong> HYSPLIT or CALPUFF models</li>
+  <li><strong>Forecast:</strong> 1-3 day PM₂.₅ predictions</li>
+</ol>
+
+<p><strong>Operational use:</strong></p>
+
+<p>NOAA Smoke Forecasting System (daily products).</p>
+
+<p><strong>Applications:</strong></p>
+<ul>
+  <li>Public health advisories</li>
+  <li>School closures</li>
+  <li>Outdoor event cancellations</li>
+  <li>Hospital preparedness</li>
+</ul>
+
+<h3 id="carbon-accounting">Carbon Accounting</h3>
+
+<p><strong>CO₂ emissions:</strong></p>
+
+\[E_{CO_2} = FC \times 1650 \text{ g/kg}\]
+
+<p><strong>Example:</strong> 10 million hectares burned globally (annual average)</p>
+
+<p>Fuel loading ~1.5 kg/m², CC = 0.9:</p>
+
+\[FC = 10^{10} \times 1.5 \times 0.9 = 1.35 \times 10^{10} \text{ kg}\]
+
+\[E_{CO_2} = 1.35 \times 10^{10} \times 1650 \times 10^{-12} = 22.3 \text{ Gt CO}_2\]
+
+<p><strong>~5% of global fossil fuel emissions!</strong></p>
+
+<hr />
+
+<h2 id="7-what-could-go-wrong">7. What Could Go Wrong?</h2>
+
+<h3 id="injection-height-uncertain">Injection Height Uncertain</h3>
+
+<p><strong>Plume rise depends</strong> on fire intensity, atmospheric stability.</p>
+
+<p><strong>Under-prediction:</strong></p>
+
+<p>Plume rises higher than modelled → lower ground concentrations (false alarm).</p>
+
+<p><strong>Over-prediction:</strong></p>
+
+<p>Plume doesn’t rise → higher ground concentrations (missed hazard).</p>
+
+<p><strong>Example - 2003 Canberra:</strong></p>
+
+<p>Pyrocumulonimbus (fire-generated thunderstorm) injected smoke to 15 km (vs predicted 3 km).</p>
+
+<p><strong>Solution:</strong> Real-time satellite observations (GOES, MODIS).</p>
+
+<h3 id="complex-terrain">Complex Terrain</h3>
+
+<p><strong>Gaussian model assumes</strong> flat terrain, uniform meteorology.</p>
+
+<p><strong>Mountains:</strong></p>
+<ul>
+  <li>Channeled flows (valleys)</li>
+  <li>Slope winds</li>
+  <li>Thermal circulations</li>
+</ul>
+
+<p><strong>Result:</strong> Smoke pooling in valleys, unpredicted transport.</p>
+
+<p><strong>Solution:</strong> CALPUFF (puff model) or WRF-Chem (3D meteorology + chemistry).</p>
+
+<h3 id="chemistry-ignored">Chemistry Ignored</h3>
+
+<p><strong>Simple models:</strong> Transport PM₂.₅ as inert tracer.</p>
+
+<p><strong>Reality:</strong></p>
+
+<p>Photochemical aging:</p>
+<ul>
+  <li>VOCs + NOₓ → ozone, secondary PM</li>
+  <li>PM₂.₅ mass increases downwind</li>
+  <li>Composition changes</li>
+</ul>
+
+<p><strong>Solution:</strong> Chemical transport models (CMAQ, WRF-Chem).</p>
+
+<h3 id="background-pm-not-considered">Background PM Not Considered</h3>
+
+<p><strong>Model predicts</strong> fire contribution only.</p>
+
+<p><strong>Total exposure:</strong></p>
+
+\[PM_{total} = PM_{background} + PM_{fire}\]
+
+<p><strong>Urban areas:</strong></p>
+
+<p>$PM_{background}$ = 10-20 μg/m³ (normal)</p>
+
+<p>Fire adds 30 μg/m³ → total = 40-50 μg/m³</p>
+
+<p><strong>Exceeds standard</strong> even though fire alone wouldn’t.</p>
+
+<hr />
+
+<h2 id="8-extension-satellite-based-emissions">8. Extension: Satellite-Based Emissions</h2>
+
+<p><strong>Bottom-up (models):</strong></p>
+
+<p>Fire area × fuel × EF (this model’s approach).</p>
+
+<p><strong>Top-down (satellites):</strong></p>
+
+<p>Directly observe emissions from space.</p>
+
+<p><strong>Fire radiative power (FRP):</strong></p>
+
+<p>Thermal emission from fire (MW).</p>
+
+<p><strong>FRP to emissions:</strong></p>
+
+\[E_i = FRP \times CE_i\]
+
+<p>Where $CE_i$ = conversion efficiency (g/MJ).</p>
+
+<p><strong>Advantages:</strong></p>
+<ul>
+  <li>Near real-time</li>
+  <li>No fuel data needed</li>
+  <li>Global coverage</li>
+</ul>
+
+<p><strong>Sensors:</strong></p>
+<ul>
+  <li>MODIS: 1 km, 4× daily</li>
+  <li>VIIRS: 375 m, 2× daily</li>
+  <li>GOES: 2 km, 5-15 min</li>
+</ul>
+
+<p><strong>Example - GFAS (Global Fire Assimilation System):</strong></p>
+
+<p>Copernicus service, daily global fire emissions.</p>
+
+<hr />
+
+<h2 id="9-math-refresher-gaussian-function">9. Math Refresher: Gaussian Function</h2>
+
+<h3 id="standard-form">Standard Form</h3>
+
+\[f(x) = \frac{1}{\sigma\sqrt{2\pi}} \exp\left(-\frac{(x-\mu)^2}{2\sigma^2}\right)\]
+
+<p>Where:</p>
+<ul>
+  <li>$\mu$ = mean</li>
+  <li>$\sigma$ = standard deviation</li>
+</ul>
+
+<p><strong>Properties:</strong></p>
+<ul>
+  <li>Symmetric around $\mu$</li>
+  <li>Total area = 1 (probability distribution)</li>
+  <li>68% within ±σ, 95% within ±2σ</li>
+</ul>
+
+<h3 id="two-dimensional">Two-Dimensional</h3>
+
+\[f(x,y) = \frac{1}{2\pi\sigma_x\sigma_y} \exp\left(-\frac{x^2}{2\sigma_x^2} - \frac{y^2}{2\sigma_y^2}\right)\]
+
+<p><strong>Dispersion plume:</strong></p>
+
+<p>Concentration follows Gaussian in crosswind (y) and vertical (z).</p>
+
+<p><strong>Peak concentration:</strong> On centerline (y=0, z=H).</p>
+
+<hr />
+
+<h2 id="summary">Summary</h2>
+
+<ul>
+  <li>Fire emissions quantified using emission factors relating pollutant mass to fuel consumed</li>
+  <li>PM₂.₅ primary health concern with emission factors 10-20 g/kg fuel varying by fire type</li>
+  <li>Plume rise driven by buoyancy determines effective release height for dispersion</li>
+  <li>Gaussian dispersion model predicts ground-level concentrations based on meteorology</li>
+  <li>Atmospheric stability critically affects smoke dispersion and ground concentrations</li>
+  <li>Applications span air quality forecasting, health advisories, carbon accounting</li>
+  <li>2020 California fires estimated 1200-3000 premature deaths from smoke exposure</li>
+  <li>Challenges include injection height uncertainty, complex terrain, atmospheric chemistry</li>
+  <li>Satellite observations provide real-time emissions estimates via fire radiative power</li>
+  <li>Critical tool for public health protection during wildfire events</li>
+</ul>
+
+      </div>
+
+      
+
+
+
+      
+
+  
+  
+  
+  
+
+
+
+      <!-- essay-footer-notes.html — References / endnotes section.
+     Hidden by default; assets/js/essay/core.js shows it and populates
+     #essay-endnotes-list from [data-cite] elements in the content.
+
+     In posts, create citation markers with:
+       <cite data-cite="Author, Title, URL">1</cite>
+     The JS collects these and renders a numbered reference list here. -->
+
+<footer class="essay-endnotes" id="essay-endnotes" aria-label="References" hidden>
+  <div class="essay-endnotes-inner">
+    <h2 class="essay-endnotes-heading">References</h2>
+    <ol class="essay-endnotes-list" id="essay-endnotes-list">
+      <!-- Populated at runtime by assets/js/essay/core.js buildEndnotes() -->
+    </ol>
+  </div>
+</footer>
+
+
+      
+
+      
+
+      
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    </article>
+  </main>
+
+  <aside
+    class="essay-sidenotes"
+    id="essay-sidenotes"
+    aria-label="Margin notes"
+  ></aside>
+
+</div>
+
+</div>
+
+<footer>
+  <div class="footer-inner">
+
+    <!-- Col 1: Brand -->
+    <div class="footer-brand">
+      <div class="footer-brand-logo">
+        
+        <img loading="lazy" src="/assets/images/logo.webp" alt="WaywardHouse" width="28" height="28">
+        
+        WaywardHouse<span>.</span>
+      </div>
+      
+      
+      <p class="footer-brand-desc">Understanding how place, economy, and environment interact — through analysis, modelling, and open tools.</p>
+      
+
+      <div class="footer-social">
+        
+        
+        
+        <a href="/feed.xml" class="social-icon" target="_blank" rel="noopener noreferrer" aria-label="RSS feed">
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M4 11a9 9 0 0 1 9 9"/>
+            <path d="M4 4a16 16 0 0 1 16 16"/>
+            <circle cx="5" cy="19" r="1"/>
+          </svg>
+        </a>
+      </div>
+    </div>
+
+    <!-- Col 2: Topics (configurable via footer_topics, falls back to auto-categories) -->
+    <nav aria-labelledby="footer-topics">
+      <h3 class="footer-col-title" id="footer-topics">Reading</h3>
+      <ul class="footer-links">
+        
+          
+          <li><a href="/topics/">Essays</a></li>
+          
+          <li><a href="/series/">Modelling</a></li>
+          
+          <li><a href="/archive/">Archive</a></li>
+          
+          <li><a href="/start-here/">Start Here</a></li>
+          
+        
+      </ul>
+    </nav>
+
+    <!-- Col 3: Secondary navigation -->
+    
+    <nav aria-labelledby="footer-company">
+      <h3 class="footer-col-title" id="footer-company">Site</h3>
+      <ul class="footer-links">
+        
+        <li><a href="/start-here/">Start Here</a></li>
+        
+        <li><a href="/about/">About</a></li>
+        
+        <li><a href="/contact/">Contact</a></li>
+        
+      </ul>
+    </nav>
+    
+
+    <!-- Col 4: Resources -->
+    <nav aria-labelledby="footer-resources">
+      <h3 class="footer-col-title" id="footer-resources">Resources</h3>
+      <ul class="footer-links">
+        <li><a href="/archive/">Archive</a></li>
+        <li><a href="/feed.xml">RSS Feed</a></li>
+        <li><a href="/topics/">All Topics</a></li>
+      </ul>
+    </nav>
+
+  </div><!-- /.footer-inner -->
+
+  <div class="footer-bottom">
+    <span class="footer-copy">
+      &copy; 2026 WaywardHouse.
+    </span>
+    <div class="footer-legal">
+      <a href="/privacy/">Privacy Policy</a>
+      <a href="/terms/">Terms of Service</a>
+    </div>
+  </div>
+
+</footer>
+
+
+<!-- Alpine.js bundle -->
+<script type="module" src="/assets/dist/main.js"></script>
+
+<!-- Visualization runtime — detects and loads CDN libraries dynamically -->
+<script type="module" src="/assets/js/core.js"></script>
+
+<!-- Search overlay — event-driven: nav button $dispatches 'search:open' -->
+<div
+  x-data="search"
+  x-init="init()"
+  @search:open.window="open()"
+>
+  <div
+    class="search-overlay"
+    x-show="isOpen"
+    x-transition:enter="transition ease-out duration-150"
+    x-transition:enter-start="opacity-0"
+    x-transition:enter-end="opacity-100"
+    x-transition:leave="transition ease-in duration-100"
+    x-transition:leave-start="opacity-100"
+    x-transition:leave-end="opacity-0"
+    @click.self="close()"
+    style="display: none;"
+    role="dialog"
+    aria-modal="true"
+    aria-label="Search"
+  >
+    <div class="search-panel">
+      <div class="search-input-wrap">
+        <svg class="search-icon" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <circle cx="11" cy="11" r="8"/>
+          <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+        </svg>
+        <input
+          class="search-input"
+          type="search"
+          placeholder="Search posts…"
+          x-model="query"
+          x-ref="input"
+          @input.debounce.300ms="runSearch()"
+          @keydown.escape="close()"
+          autocomplete="off"
+          spellcheck="false"
+          aria-label="Search query"
+        >
+        <kbd class="search-esc" aria-hidden="true">ESC</kbd>
+      </div>
+
+      <div class="search-results" x-show="query.trim().length > 0">
+        <div class="search-status" x-show="loading" aria-live="polite">Searching…</div>
+        <div class="search-status" x-show="!loading && results.length === 0" aria-live="polite">
+          No results for "<span x-text="query"></span>"
+        </div>
+        <ul class="search-result-list" x-show="!loading && results.length > 0" role="list">
+          <template x-for="result in results" :key="result.url">
+            <li>
+              <a :href="result.url" class="search-result-item" @click="close()">
+                <div class="search-result-title" x-text="result.meta?.title || result.url"></div>
+                <div class="search-result-excerpt" x-html="result.excerpt"></div>
+              </a>
+            </li>
+          </template>
+        </ul>
+      </div>
+    </div>
+  </div>
+</div>
+
+</body>
+</html>
