@@ -1,0 +1,985 @@
+<!DOCTYPE html>
+
+<html lang="en" data-brand="wayward" data-theme="light">
+<head>
+  <meta charset="utf-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Ensemble Forecasting and Uncertainty Quantification — WaywardHouse</title>
+<meta name="description" content="A single deterministic weather forecast answers "what will happen." An ensemble of 50 slightly-different forecasts answers "what might happen and with what probability." The spread of the ensemble is a...">
+
+<!-- Dark mode flash prevention — runs synchronously before first paint -->
+<script>
+  (function () {
+    var defaultDark = 'light' === 'dark';
+    var s = localStorage.getItem('theme');
+    var dark = s !== null ? s === 'dark' : defaultDark;
+    document.documentElement.dataset.theme = dark ? 'dark' : 'light';
+  })();
+</script>
+
+<!-- Preconnect to CDN domains used by the viz runtime -->
+<link rel="preconnect" href="https://cdn.jsdelivr.net">
+<link rel="preconnect" href="https://unpkg.com">
+<link rel="preconnect" href="https://esm.sh">
+<link rel="preconnect" href="https://api.mapbox.com">
+<link rel="preconnect" href="https://events.mapbox.com">
+
+
+<script>window.MAPBOX_TOKEN = 'pk.eyJ1IjoiYnJlYWRlZGNvZCIsImEiOiJjbW0xa25qc2EwMmtwMnJwejJlNndqdnoxIn0._7I9PwXuFLrOQINVZ84y1w';</script>
+
+
+<!-- Fonts -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:ital,wght@0,300;0,400;0,600;0,700;0,800;0,900;1,700;1,800&family=Barlow:wght@300;400&family=IBM+Plex+Mono:ital,wght@0,300;0,400;0,500;1,300&family=Literata:ital,opsz,wght@0,7..72,300;0,7..72,400;0,7..72,500;1,7..72,300;1,7..72,400&display=swap" rel="stylesheet">
+
+<!-- Theme stylesheet (Vite build output) -->
+<link rel="stylesheet" href="/assets/dist/main.css">
+
+<!-- Brand token overrides — loaded after main.css so variables cascade correctly -->
+
+<link rel="stylesheet" href="/assets/css/brand-wayward.css">
+
+
+
+<!-- Syntax highlighting (Rouge — light + dark) -->
+<link rel="stylesheet" href="/assets/css/syntax.css">
+
+<!-- Begin Jekyll SEO tag v2.8.0 -->
+<title>Ensemble Forecasting and Uncertainty Quantification | WaywardHouse</title>
+<meta name="generator" content="Jekyll v4.4.1" />
+<meta property="og:title" content="Ensemble Forecasting and Uncertainty Quantification" />
+<meta property="og:locale" content="en" />
+<meta name="description" content="A single deterministic weather forecast answers “what will happen.” An ensemble of 50 slightly-different forecasts answers “what might happen and with what probability.” The spread of the ensemble is a prediction of the uncertainty in the forecast. This essay derives the spread-skill relationship, implements Monte Carlo ensemble generation, evaluates ensemble reliability with rank histograms and reliability diagrams, applies Bayesian Model Averaging to combine models, and discusses the fundamental limits of predictability in chaotic systems." />
+<meta property="og:description" content="A single deterministic weather forecast answers “what will happen.” An ensemble of 50 slightly-different forecasts answers “what might happen and with what probability.” The spread of the ensemble is a prediction of the uncertainty in the forecast. This essay derives the spread-skill relationship, implements Monte Carlo ensemble generation, evaluates ensemble reliability with rank histograms and reliability diagrams, applies Bayesian Model Averaging to combine models, and discusses the fundamental limits of predictability in chaotic systems." />
+<link rel="canonical" href="https://wayward.house/model/ensemble-forecasting-and-uncertainty-quantification-112/" />
+<meta property="og:url" content="https://wayward.house/model/ensemble-forecasting-and-uncertainty-quantification-112/" />
+<meta property="og:site_name" content="WaywardHouse" />
+<meta property="og:image" content="https://wayward.house/assets/images/time-series.webp" />
+<meta property="og:type" content="article" />
+<meta property="article:published_time" content="2026-03-05T00:00:00+00:00" />
+<meta name="twitter:card" content="summary_large_image" />
+<meta property="twitter:image" content="https://wayward.house/assets/images/time-series.webp" />
+<meta property="twitter:title" content="Ensemble Forecasting and Uncertainty Quantification" />
+<meta name="twitter:site" content="@" />
+<script type="application/ld+json">
+{"@context":"https://schema.org","@type":"BlogPosting","dateModified":"2026-03-17T22:54:02+00:00","datePublished":"2026-03-05T00:00:00+00:00","description":"A single deterministic weather forecast answers “what will happen.” An ensemble of 50 slightly-different forecasts answers “what might happen and with what probability.” The spread of the ensemble is a prediction of the uncertainty in the forecast. This essay derives the spread-skill relationship, implements Monte Carlo ensemble generation, evaluates ensemble reliability with rank histograms and reliability diagrams, applies Bayesian Model Averaging to combine models, and discusses the fundamental limits of predictability in chaotic systems.","headline":"Ensemble Forecasting and Uncertainty Quantification","image":"https://wayward.house/assets/images/time-series.webp","mainEntityOfPage":{"@type":"WebPage","@id":"https://wayward.house/model/ensemble-forecasting-and-uncertainty-quantification-112/"},"publisher":{"@type":"Organization","logo":{"@type":"ImageObject","url":"https://wayward.house/assets/images/logo.webp"}},"url":"https://wayward.house/model/ensemble-forecasting-and-uncertainty-quantification-112/"}</script>
+<!-- End Jekyll SEO tag -->
+
+
+
+<!-- Cloudflare Web Analytics -->
+<script defer src="https://static.cloudflareinsights.com/beacon.min.js"
+  data-cf-beacon='{"token": "62c47d78bf9d4c80972d4e6242d79ff8"}'></script>
+
+
+</head>
+<body class="
+  model-template
+   tag-modelling
+   tag-hash-math
+  
+   tag-hash-viz
+  
+  
+  
+  
+  
+  
+">
+
+<a href="#main-content" class="skip-link">Skip to content</a>
+
+<header class="nav" x-data="{ open: false }">
+  <div class="nav-inner">
+
+    <!-- Logo -->
+    <a href="/" class="nav-logo">
+      
+      <img loading="lazy" src="/assets/images/logo.webp" alt="WaywardHouse" width="32" height="32">
+      
+      WaywardHouse<span>.</span>
+    </a>
+
+    <!-- Desktop nav links -->
+    <ul class="nav-links" role="list">
+      
+      <li>
+        <a href="/topics/">Essays</a>
+      </li>
+      
+      <li>
+        <a href="/series/">Modelling</a>
+      </li>
+      
+      <li>
+        <a href="/about/">About</a>
+      </li>
+      
+    </ul>
+
+    <!-- Actions -->
+    <div class="nav-actions">
+
+      <!-- Search button -->
+      <button
+        class="search-toggle"
+        type="button"
+        aria-label="Search (⌘K)"
+        title="Search (⌘K)"
+        @click="$dispatch('search:open')"
+      >
+        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <circle cx="11" cy="11" r="8"/>
+          <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+        </svg>
+      </button>
+
+      <!-- Dark mode toggle -->
+      <button
+        class="theme-toggle"
+        x-data="darkMode"
+        x-init="init()"
+        @click="toggle()"
+        :aria-label="dark ? 'Switch to light mode' : 'Switch to dark mode'"
+        type="button"
+      >
+        <!-- Sun icon (shown in light mode) -->
+        <svg class="icon-sun" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">
+          <circle cx="12" cy="12" r="5"/>
+          <line x1="12" y1="1" x2="12" y2="3"/>
+          <line x1="12" y1="21" x2="12" y2="23"/>
+          <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/>
+          <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/>
+          <line x1="1" y1="12" x2="3" y2="12"/>
+          <line x1="21" y1="12" x2="23" y2="12"/>
+          <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/>
+          <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>
+        </svg>
+        <!-- Moon icon (shown in dark mode) -->
+        <svg class="icon-moon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">
+          <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+        </svg>
+      </button>
+
+      <!-- Hamburger (mobile only) -->
+      <button
+        class="mobile-nav-toggle"
+        @click="open = !open"
+        :aria-expanded="open"
+        :aria-label="open ? 'Close menu' : 'Open menu'"
+        type="button"
+      >
+        <svg x-show="!open" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <line x1="3" y1="6" x2="21" y2="6"/>
+          <line x1="3" y1="12" x2="21" y2="12"/>
+          <line x1="3" y1="18" x2="21" y2="18"/>
+        </svg>
+        <svg x-show="open" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <line x1="18" y1="6" x2="6" y2="18"/>
+          <line x1="6" y1="6" x2="18" y2="18"/>
+        </svg>
+      </button>
+
+    </div><!-- /.nav-actions -->
+  </div><!-- /.nav-inner -->
+
+  <!-- Mobile drawer -->
+  <div
+    class="mobile-nav"
+    x-show="open"
+    x-transition:enter="transition ease-out duration-200"
+    x-transition:enter-start="opacity-0 -translate-y-1"
+    x-transition:enter-end="opacity-100 translate-y-0"
+    x-transition:leave="transition ease-in duration-150"
+    x-transition:leave-start="opacity-100 translate-y-0"
+    x-transition:leave-end="opacity-0 -translate-y-1"
+    @click.outside="open = false"
+    @keydown.escape.window="open = false"
+  >
+    <ul role="list">
+      
+      <li>
+        <a href="/topics/" @click="open = false">Essays</a>
+      </li>
+      
+      <li>
+        <a href="/series/" @click="open = false">Modelling</a>
+      </li>
+      
+      <li>
+        <a href="/about/" @click="open = false">About</a>
+      </li>
+      
+    </ul>
+  </div><!-- /.mobile-nav -->
+
+</header>
+
+
+<div id="main-content">
+  <!-- Essay stylesheet and runtime — self-contained -->
+<link rel="stylesheet" href="/assets/css/essay.css">
+<script type="module" src="/assets/js/essay/core.js"></script>
+
+<div class="essay-layout" id="essay-layout">
+
+  <!-- essay-toc.html — Sticky table of contents (left column).
+     The <ol> is empty on load; assets/js/essay/core.js populates it
+     from h2/h3 elements found in #essay-content after the page renders. -->
+
+<nav class="essay-toc" id="essay-toc" aria-label="Table of contents">
+  <div class="essay-toc-inner">
+    <p class="essay-toc-heading" aria-hidden="true">Contents</p>
+    <ol class="essay-toc-list" id="essay-toc-list">
+      <!-- Populated at runtime by assets/js/essay/core.js buildToc() -->
+    </ol>
+  </div>
+</nav>
+
+
+  <main class="essay-main" id="essay-main" role="main">
+    <article class="essay-article">
+
+      <!-- essay-hero.html — Header for computational essay template.
+     Displays feature image, tag label, title, excerpt, and post metadata. -->
+
+<header class="essay-hero">
+  
+  <figure class="essay-hero-figure">
+    <img
+      src="/assets/images/time-series.webp"
+      alt="Ensemble Forecasting and Uncertainty Quantification"
+      class="essay-hero-img"
+      loading="eager"
+    >
+    
+  </figure>
+  
+
+  <div class="essay-hero-body">
+
+    
+    
+    
+    
+    
+    <nav class="essay-breadcrumb" aria-label="Series position">
+      
+      <a href="/series/laboratory/" class="essay-breadcrumb-link">Computational geography laboratory</a>
+      
+      
+      <span class="essay-breadcrumb-sep" aria-hidden="true">›</span>
+      <span class="essay-breadcrumb-cluster">Ensemble Methods and Data Assimilation</span>
+      
+      
+      <span class="essay-breadcrumb-sep" aria-hidden="true">›</span>
+      <span class="essay-breadcrumb-pos">Model 112</span>
+      
+    </nav>
+    
+
+    <div class="essay-hero-labels">
+      
+      <a href="/topics/modelling/" class="essay-tag-label">modelling</a>
+      
+      
+      <span class="difficulty-badge difficulty-badge--4">Level 4</span>
+      
+    </div>
+
+    <h1 class="essay-title">Ensemble Forecasting and Uncertainty Quantification</h1>
+
+    
+    <p class="essay-excerpt">A single deterministic weather forecast answers "what will happen." An ensemble of 50 slightly-different forecasts answers "what might happen and with what probability." The spread of the ensemble is a prediction of the uncertainty in the forecast. This essay derives the spread-skill relationship, implements Monte Carlo ensemble generation, evaluates ensemble reliability with rank histograms and reliability diagrams, applies Bayesian Model Averaging to combine models, and discusses the fundamental limits of predictability in chaotic systems.
+</p>
+    
+
+    
+    <p class="essay-prereqs"><span class="essay-prereqs-label">Prerequisites:</span> Monte Carlo sampling, probability distributions for forecast verification, rank histograms, Brier score and reliability</p>
+    
+
+    <div class="essay-meta">
+      
+      <div class="essay-meta-secondary">
+        <time class="essay-date" datetime="2026-03-05">5 Mar 2026</time>
+        
+        
+        <span class="essay-sep" aria-hidden="true">·</span>
+        <span class="essay-updated">Updated <time datetime="2026-03-17">17 Mar 2026</time></span>
+        
+        <span class="essay-sep" aria-hidden="true">·</span>
+        <span class="essay-reading-time">15 min read</span>
+      </div>
+    </div>
+  </div>
+</header>
+
+
+      
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<nav class="series-nav" aria-label="Series navigation">
+
+  <div class="series-nav-header">
+    <span class="series-nav-label">AU</span>
+    <span class="series-nav-title">Ensemble Methods and Data Assimilation</span>
+  </div>
+
+  <ol class="series-nav-list">
+    
+    <li class="series-nav-item series-nav-item--current">
+      
+      <span class="series-nav-link series-nav-link--current" aria-current="page">
+        <span class="series-nav-number">112</span>
+        Ensemble Forecasting and Uncertainty Quantification
+      </span>
+      
+    </li>
+    
+    <li class="series-nav-item">
+      
+      <a href="/model/the-kalman-filter-and-sequential-data-assimilation-113/" class="series-nav-link">
+        <span class="series-nav-number">113</span>
+        The Kalman Filter and Sequential Data Assimilation
+      </a>
+      
+    </li>
+    
+    <li class="series-nav-item">
+      
+      <a href="/model/satellite-data-assimilation-in-environmental-models-114/" class="series-nav-link">
+        <span class="series-nav-number">114</span>
+        Satellite Data Assimilation in Environmental Models
+      </a>
+      
+    </li>
+    
+  </ol>
+
+  
+  <div class="series-nav-footer">
+    <a href="/series/laboratory/" class="series-nav-all">
+      All 39 in this series &rarr;
+    </a>
+  </div>
+  
+
+</nav>
+
+
+
+
+      <div class="essay-content gh-content" id="essay-content">
+        <p>On January 4, 1992, the European Centre for Medium-Range Weather Forecasts (ECMWF) ran its first operational ensemble forecast — 33 slightly perturbed versions of the same numerical weather prediction model, run simultaneously, producing a range of possible futures rather than a single prediction. In 2025, ECMWF’s operational ensemble contains 51 members and is run twice daily to 15 days; ensemble products from Environment and Climate Change Canada (ECCC) drive the forecasts on which Canadian flood warning systems, wildfire behaviour models, and agricultural advisories depend.</p>
+
+<p>The philosophical shift from deterministic to probabilistic forecasting is deeper than it appears. A deterministic forecast is falsifiable in a binary way: it was right or wrong. A probabilistic forecast — “70% probability of precipitation exceeding 10 mm” — is only falsifiable in a statistical sense: if you collect 1000 such forecasts, exactly 700 should verify. This is a fundamentally different epistemology, and it requires fundamentally different verification methods.</p>
+
+<hr />
+
+<h2 id="1-the-question">1. The Question</h2>
+
+<p>How do we generate an ensemble of forecasts that represents forecast uncertainty? What does “well-calibrated” mean for a probabilistic forecast, and how do we verify it? When is the ensemble mean better than the best individual member? How do ensemble post-processing methods improve raw ensemble output?</p>
+
+<hr />
+
+<h2 id="2-the-conceptual-model">2. The Conceptual Model</h2>
+
+<p>Forecast uncertainty has two sources: <strong>initial condition uncertainty</strong> (we do not know the exact state of the atmosphere or catchment at the start of the forecast) and <strong>model uncertainty</strong> (the model is an imperfect representation of reality). Ensemble forecasting addresses both:</p>
+
+<ul>
+  <li><strong>Perturbation of initial conditions:</strong> Multiple slightly-different starting states are generated (by singular vectors, bred vectors, or random perturbations), then each is run forward with the same model. Divergence of ensemble members represents sensitivity to initial conditions.</li>
+  <li><strong>Multi-model ensembles:</strong> Different models (or parameterisation schemes) are run from the same initial state. Spread represents structural model uncertainty.</li>
+</ul>
+
+<p>A well-calibrated ensemble’s spread honestly represents the uncertainty: on average, the observation should behave like a random draw from the ensemble distribution.</p>
+
+<hr />
+
+<h2 id="3-building-the-mathematical-model">3. Building the Mathematical Model</h2>
+
+<h3 id="31-monte-carlo-ensemble-generation">3.1 Monte Carlo Ensemble Generation</h3>
+
+<p>For a model with uncertain parameter vector $\boldsymbol{\theta}$ and uncertain initial state $\mathbf{x}_0$:</p>
+
+<ol>
+  <li>
+    <p>Sample $M$ realisations from the parameter/initial state uncertainty distribution:
+\(\boldsymbol{\theta}^{(m)}, \mathbf{x}_0^{(m)} \sim p(\boldsymbol{\theta}, \mathbf{x}_0), \quad m = 1, \ldots, M\)</p>
+  </li>
+  <li>
+    <p>Run the model forward for each member:
+\(\mathbf{x}_t^{(m)} = \mathcal{F}(\mathbf{x}_0^{(m)}, \boldsymbol{\theta}^{(m)}, t)\)</p>
+  </li>
+  <li>
+    <p>The ensemble ${\mathbf{x}_t^{(1)}, \ldots, \mathbf{x}_t^{(M)}}$ represents the forecast probability distribution at time $t$.</p>
+  </li>
+</ol>
+
+<p>The <strong>ensemble mean</strong> is the best point forecast in terms of minimising mean squared error (assuming the ensemble is unbiased):</p>
+
+\[\bar{\mathbf{x}}_t = \frac{1}{M}\sum_{m=1}^M \mathbf{x}_t^{(m)}\]
+
+<p>The <strong>ensemble spread</strong> (standard deviation):</p>
+
+\[s_t = \sqrt{\frac{1}{M-1}\sum_{m=1}^M (\mathbf{x}_t^{(m)} - \bar{\mathbf{x}}_t)^2}\]
+
+<p>represents the forecast’s self-assessed uncertainty.</p>
+
+<p>For environmental applications: Monte Carlo perturbation of rainfall forcing for hydrological models, soil hydraulic parameters for soil moisture models, Manning’s $n$ for flood inundation models.</p>
+
+<h3 id="32-spread-skill-relationship">3.2 Spread-Skill Relationship</h3>
+
+<table>
+  <tbody>
+    <tr>
+      <td>For a well-calibrated ensemble, spread should equal error: the ensemble spread $s_t$ should be a reliable predictor of forecast error $</td>
+      <td>x_t^{\text{obs}} - \bar{x}_t</td>
+      <td>$. The <strong>spread-skill relationship</strong> is assessed by:</td>
+    </tr>
+  </tbody>
+</table>
+
+<ol>
+  <li>Sorting forecasts by their ensemble spread $s$</li>
+  <li>Computing mean absolute error (MAE) for each spread bin</li>
+  <li>Plotting MAE vs. $s$: should follow the 1:1 line</li>
+</ol>
+
+<p>For weather forecasting:</p>
+<ul>
+  <li><strong>Over-confident ensemble</strong> ($s &lt; \text{error}$): spread is too small; the ensemble underestimates uncertainty; observations frequently fall outside the ensemble range</li>
+  <li><strong>Under-confident ensemble</strong> ($s &gt; \text{error}$): spread is too large; the ensemble overestimates uncertainty; useful signal is diluted</li>
+</ul>
+
+<p>In practice, atmospheric ensemble systems tend to be under-dispersive (over-confident) due to ensemble size limitations and imperfect perturbation methods.</p>
+
+<p>The <strong>perfect spread-skill ratio</strong> at forecast time $t$ for a $M$-member ensemble should satisfy:</p>
+
+\[\frac{\text{RMSE}(\bar{x}_t)}{s_t} \approx \sqrt{\frac{M+1}{M-1}} \to 1 \text{ as } M \to \infty\]
+
+<p>(Fortin et al. 2014). For a 50-member ensemble, the target ratio is $\sqrt{51/49} = 1.02$ — essentially 1. Ratios significantly above 1 indicate under-dispersion; below 1 indicate over-dispersion.</p>
+
+<h3 id="33-rank-histogram-talagrand-diagram">3.3 Rank Histogram (Talagrand Diagram)</h3>
+
+<p>The <strong>rank histogram</strong> tests whether the observation is statistically indistinguishable from an ensemble member — the central calibration requirement.</p>
+
+<p>For each forecast-observation pair:</p>
+<ol>
+  <li>Rank the observation among the $M$ ensemble members: it should fall equally often in any of the $M+1$ intervals</li>
+  <li>Accumulate ranks over all forecast cases</li>
+  <li>Plot the histogram of observation ranks</li>
+</ol>
+
+<p>Interpretation:</p>
+<ul>
+  <li><strong>Flat histogram:</strong> Well-calibrated ensemble — observation is equally likely to fall anywhere</li>
+  <li><strong>U-shaped (ends high):</strong> Under-dispersive — observations frequently fall outside the ensemble range (ensemble is too confident)</li>
+  <li><strong>∩-shaped (centre high):</strong> Over-dispersive — observations cluster in the middle of the ensemble range (ensemble spread is too large)</li>
+  <li><strong>Skewed (one side high):</strong> Biased ensemble mean</li>
+</ul>
+
+<p>The Kolmogorov-Smirnov or Pearson $\chi^2$ test provides a formal test of flatness:</p>
+
+\[\chi^2 = \sum_{k=1}^{M+1}\frac{(O_k - E_k)^2}{E_k}\]
+
+<p>where $O_k$ is the observed count in bin $k$ and $E_k = n/(M+1)$ is the expected count under uniformity.</p>
+
+<h3 id="34-reliability-diagrams">3.4 Reliability Diagrams</h3>
+
+<p>For probabilistic forecasts of binary events (e.g., P(precipitation &gt; 10 mm)), a <strong>reliability diagram</strong> plots the observed relative frequency against the forecast probability:</p>
+
+<ol>
+  <li>Bin forecasts by predicted probability: $[0, 0.1)$, $[0.1, 0.2)$, …, $[0.9, 1.0]$</li>
+  <li>For each bin, compute the observed relative frequency (fraction of cases in that bin where the event occurred)</li>
+  <li>Plot observed frequency vs. forecast probability</li>
+</ol>
+
+<p>A <strong>perfectly reliable</strong> forecast lies on the diagonal: when the model says 70% probability, the event occurs 70% of the time.</p>
+
+<p><strong>Brier Score (BS)</strong> — mean squared error of probability forecasts:</p>
+
+\[\text{BS} = \frac{1}{n}\sum_{i=1}^n (p_i - o_i)^2\]
+
+<p>where $p_i \in [0,1]$ is the forecast probability and $o_i \in {0,1}$ is the outcome. BS = 0 is perfect; BS = $p_{\text{clim}}(1-p_{\text{clim}})$ is climatological reference (always forecasting the base rate).</p>
+
+<p><strong>Brier Skill Score:</strong> $\text{BSS} = 1 - \text{BS}/\text{BS}_{\text{clim}}$. Positive BSS indicates skill above climatology.</p>
+
+<p><strong>Decomposition</strong> (Murphy 1973): $\text{BS} = \text{Reliability} + \text{Resolution} - \text{Uncertainty}$</p>
+
+<ul>
+  <li><strong>Reliability:</strong> Calibration term — measures deviation from the diagonal in the reliability diagram</li>
+  <li><strong>Resolution:</strong> Ability to distinguish high-probability from low-probability events</li>
+  <li><strong>Uncertainty:</strong> Variance of the observation — irreducible (equals BS of climatological forecast)</li>
+</ul>
+
+<h3 id="35-ensemble-mean-vs-best-member">3.5 Ensemble Mean vs. Best Member</h3>
+
+<p>Counterintuitively, the ensemble mean is almost always a better point forecast than any individual member, despite being physically unrealisable (no actual realisation of the system corresponds to the average of 50 members).</p>
+
+<p><strong>Mathematical reason:</strong> For $M$ unbiased, uncorrelated members with equal variance $\sigma^2$:</p>
+
+\[\text{Var}(\bar{x}) = \frac{\sigma^2}{M}\]
+
+<p>The ensemble mean variance is $M$-times smaller than any individual member. In practice, members are not uncorrelated (they share model structure and boundary conditions), so the gain is less than $M$-fold but still substantial.</p>
+
+<p><strong>When the best member is preferred:</strong> Ensemble means produce spatially and temporally smooth fields that lack the fine-scale structure present in individual members. For applications requiring realistic spatial structure (wildfire spotting, flood inundation mapping), single plausible members are preferable to the smooth ensemble mean. Selecting the “best” member requires knowing the truth — impossible in operational settings. Post-processing by quantile mapping or machine learning is a middle path.</p>
+
+<h3 id="36-ensemble-post-processing-bayesian-model-averaging">3.6 Ensemble Post-Processing: Bayesian Model Averaging</h3>
+
+<p><strong>Bayesian Model Averaging (BMA)</strong> (Raftery et al. 2005) assigns weights to ensemble members based on their historical forecast performance and returns a weighted mixture distribution:</p>
+
+\[p(y|\mathbf{f}) = \sum_{m=1}^M w_m \cdot g_m(y|f_m)\]
+
+<p>where $f_m$ is the forecast from member $m$, $g_m$ is a conditional distribution (typically Gaussian) centred on $f_m$, and $w_m \geq 0$ with $\sum_m w_m = 1$ are the BMA weights.</p>
+
+<p>Weights are estimated by maximising the predictive likelihood over a training period (typically 25–40 recent cases):</p>
+
+\[\hat{w}_m, \hat{\sigma}_m = \arg\max \sum_{i=1}^n \ln\left[\sum_{m=1}^M w_m g_m(y_i|f_{m,i})\right]\]
+
+<p>via the Expectation-Maximisation (EM) algorithm:</p>
+
+<ul>
+  <li>
+    <table>
+      <tbody>
+        <tr>
+          <td><strong>E-step:</strong> $z_{i,m} = w_m g_m(y_i</td>
+          <td>f_{m,i}) / \sum_k w_k g_k(y_i</td>
+          <td>f_{k,i})$ (posterior probability that member $m$ is “best” for case $i$)</td>
+        </tr>
+      </tbody>
+    </table>
+  </li>
+  <li><strong>M-step:</strong> $w_m = \frac{1}{n}\sum_i z_{i,m}$; update $\sigma_m$ from weighted residuals</li>
+</ul>
+
+<p><strong>EMOS (Ensemble Model Output Statistics)</strong> is a simpler parametric alternative: fit a single normal distribution whose mean is a linear function of the ensemble mean and whose variance is a linear function of ensemble variance:</p>
+
+\[y \sim \mathcal{N}(a + b\bar{f},\ c + d\cdot s_f^2)\]
+
+<p>fitting $(a, b, c, d)$ by minimising the continuous ranked probability score (CRPS) over a training period.</p>
+
+<hr />
+
+<h2 id="4-worked-example-by-hand">4. Worked Example by Hand</h2>
+
+<p><strong>Setting:</strong> 10-member ensemble temperature forecast for Edmonton, verified against observations over 20 cases. Ensemble spread averages 2.4°C; RMSE of ensemble mean averages 3.1°C.</p>
+
+<p><strong>Spread-skill ratio:</strong> $3.1/2.4 = 1.29$ — ensemble is moderately under-dispersive (too confident). A spread-skill ratio of 1.29 means the ensemble needs to be inflated by about 29% to be calibrated.</p>
+
+<p><strong>Rank histogram:</strong> In 20 cases, observed temperatures fall in these ranks (1 = below all members, 11 = above all members):</p>
+
+<p>Ranks: [11, 1, 9, 8, 11, 3, 10, 11, 2, 7, 11, 6, 10, 11, 4, 9, 11, 2, 8, 11]</p>
+
+<p>Count by rank: rank 1 → 2, rank 2 → 2, rank 3 → 1, rank 4 → 1, rank 5 → 0, rank 6 → 1, rank 7 → 1, rank 8 → 2, rank 9 → 2, rank 10 → 2, rank 11 → 6</p>
+
+<p>Expected count (uniform): $20/11 = 1.82$. Actual: rank 11 has 6 observations — far more than expected. This right-skewed, U-tailed histogram indicates the ensemble is both biased (too cold) and under-dispersive. The observation falls above all members 30% of the time — strong evidence of a warm bias or insufficient ensemble spread.</p>
+
+<hr />
+
+<h2 id="5-computational-implementation">5. Computational Implementation</h2>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>function rank_histogram(obs_array, ensemble_matrix):
+    # ensemble_matrix: n_cases × n_members
+    n, M = shape(ensemble_matrix)
+    ranks = []
+    for i in range(n):
+        sorted_ens = sorted(ensemble_matrix[i])
+        rank = searchsorted(sorted_ens, obs_array[i]) + 1  # 1 to M+1
+        ranks.append(rank)
+    return histogram(ranks, bins=range(1, M+3))
+
+function brier_score(probabilities, outcomes):
+    return mean((probabilities - outcomes)**2)
+
+function reliability_diagram_data(probs, outcomes, n_bins=10):
+    bins = linspace(0, 1, n_bins+1)
+    bin_means, obs_freqs, counts = [], [], []
+    for lo, hi in zip(bins[:-1], bins[1:]):
+        mask = (probs &gt;= lo) &amp; (probs &lt; hi)
+        if mask.sum() &gt; 0:
+            bin_means.append(probs[mask].mean())
+            obs_freqs.append(outcomes[mask].mean())
+            counts.append(mask.sum())
+    return bin_means, obs_freqs, counts
+
+function bma_weights_em(forecasts, obs, n_iter=100):
+    M = forecasts.shape[1]
+    w = ones(M) / M
+    sigma = ones(M) * std(obs)
+    for _ in range(n_iter):
+        # E-step
+        g = [normal_pdf(obs, forecasts[:,m], sigma[m]) for m in range(M)]
+        z = (w * stack(g).T) / sum(w * stack(g).T, axis=1, keepdims=True)
+        # M-step
+        w = z.mean(axis=0)
+        for m in range(M):
+            sigma[m] = sqrt(sum(z[:,m] * (obs - forecasts[:,m])**2) / sum(z[:,m]))
+    return w, sigma
+</code></pre></div></div>
+
+<pre><code class="language-{pyodide}">import numpy as np
+from scipy import stats
+
+rng = np.random.default_rng(42)
+
+def rank_histogram(obs, ens):
+    n, M = ens.shape
+    ranks = []
+    for i in range(n):
+        r = np.searchsorted(np.sort(ens[i]), obs[i]) + 1
+        ranks.append(r)
+    return np.array(ranks), M+1
+
+def brier_score(p, o):
+    return np.mean((p - o)**2)
+
+def spread_skill_ratio(obs, ens_mean, ens):
+    rmse = np.sqrt(np.mean((obs - ens_mean)**2))
+    spread = np.sqrt(np.mean(np.var(ens, axis=1, ddof=1)))
+    return rmse, spread, rmse/spread
+
+# Simulate under-dispersive ensemble (10 members, 500 cases)
+n_cases, M = 500, 10
+truth = rng.normal(0, 5, n_cases)
+# Under-dispersive: members drawn from too-narrow distribution
+ens = truth[:, None] + rng.normal(0, 2.5, (n_cases, M))  # spread too small
+
+rmse, spread, ratio = spread_skill_ratio(truth, ens.mean(1), ens)
+print(f"Ensemble spread-skill:")
+print(f"  RMSE: {rmse:.2f},  Spread: {spread:.2f},  Ratio: {ratio:.2f}")
+print(f"  {'Under-dispersive' if ratio&gt;1.05 else 'Over-dispersive' if ratio&lt;0.95 else 'Well-calibrated'}")
+
+# Rank histogram
+ranks, n_bins = rank_histogram(truth, ens)
+counts = np.bincount(ranks - 1, minlength=M+1)
+print(f"\nRank histogram (uniform expected {n_cases/(M+1):.0f} per bin):")
+expected = n_cases / (M+1)
+for r, c in enumerate(counts, 1):
+    bar = '#' * int(c/5)
+    flag = ' ← HIGH' if c &gt; expected * 1.5 else (' ← low' if c &lt; expected * 0.6 else '')
+    print(f"  Rank {r:2d}: {c:3d} {bar}{flag}")
+
+# Probabilistic verification (Brier score)
+# Threshold event: truth &gt; 3°C
+thresh = 3.0
+obs_binary = (truth &gt; thresh).astype(float)
+ens_probs = (ens &gt; thresh).mean(axis=1)  # fraction of members exceeding threshold
+bs = brier_score(ens_probs, obs_binary)
+bs_clim = brier_score(np.full(n_cases, obs_binary.mean()), obs_binary)
+bss = 1 - bs/bs_clim
+print(f"\nBrier score (threshold &gt; {thresh}°C): {bs:.3f}")
+print(f"Brier skill score: {bss:.3f}")
+</code></pre>
+
+<hr />
+
+<h2 id="6-visualization">6. Visualization</h2>
+
+<div data-viz="echarts" style="height:420px" data-options="{
+  &quot;title&quot;: {&quot;text&quot;: &quot;Rank Histogram — Under-Dispersive Ensemble (U-shape = too confident)&quot;, &quot;textStyle&quot;: {&quot;fontSize&quot;: 14}},
+  &quot;tooltip&quot;: {&quot;trigger&quot;: &quot;axis&quot;},
+  &quot;legend&quot;: {&quot;data&quot;: [&quot;Observed rank counts&quot;, &quot;Expected (uniform)&quot;], &quot;bottom&quot;: 0},
+  &quot;xAxis&quot;: {&quot;name&quot;: &quot;Rank of observation among ensemble members&quot;, &quot;nameLocation&quot;: &quot;middle&quot;, &quot;nameGap&quot;: 30,
+    &quot;data&quot;: [&quot;Below all&quot;,&quot;2&quot;,&quot;3&quot;,&quot;4&quot;,&quot;5&quot;,&quot;6&quot;,&quot;7&quot;,&quot;8&quot;,&quot;9&quot;,&quot;10&quot;,&quot;Above all&quot;]},
+  &quot;yAxis&quot;: {&quot;name&quot;: &quot;Count&quot;, &quot;nameLocation&quot;: &quot;middle&quot;, &quot;nameGap&quot;: 40},
+  &quot;series&quot;: [
+    {&quot;name&quot;: &quot;Observed rank counts&quot;, &quot;type&quot;: &quot;bar&quot;,
+     &quot;itemStyle&quot;: {&quot;color&quot;: &quot;#1565C0&quot;},
+     &quot;data&quot;: [62, 30, 28, 26, 28, 27, 29, 31, 28, 27, 64]},
+    {&quot;name&quot;: &quot;Expected (uniform)&quot;, &quot;type&quot;: &quot;line&quot;,
+     &quot;lineStyle&quot;: {&quot;type&quot;: &quot;dashed&quot;, &quot;color&quot;: &quot;#C62828&quot;},
+     &quot;data&quot;: [45.5,45.5,45.5,45.5,45.5,45.5,45.5,45.5,45.5,45.5,45.5]}
+  ]
+}"></div>
+
+<p>The U-shape confirms under-dispersion: the observation falls outside the ensemble range (ranks 1 and 11) far more often than expected. A uniform histogram would indicate perfect calibration. This diagnostic directly informs post-processing: the ensemble spread needs to be inflated, or a BMA/EMOS model needs to be trained on recent cases to recalibrate.</p>
+
+<hr />
+
+<h2 id="7-interpretation">7. Interpretation</h2>
+
+<p>The rank histogram is a necessary but not sufficient condition for ensemble calibration. A flat rank histogram guarantees that the ensemble is marginally calibrated — observations behave like random ensemble draws — but does not guarantee that the ensemble predicts the right probabilities for specific events (which is what the reliability diagram tests) or that the ensemble spread correctly tracks forecast difficulty case-by-case (which is what the spread-skill relationship tests).</p>
+
+<p>The BMA result highlights a conceptually important property of ensemble post-processing: the weights $w_m$ are not fixed forever. They are estimated on a sliding training window (typically 25–40 cases) that adapts to recent model performance. If the operational NWP model is updated and one ensemble member suddenly becomes more skilful, the BMA weights shift to increase its influence within a few weeks of training. This adaptive weighting is a practical advantage over fixed model hierarchies.</p>
+
+<p>The ensemble mean’s mathematical superiority over any individual member (lower MSE) has a counterintuitive implication: when weather forecasters pick the “best” member from the ensemble for public communication, they are (on average) degrading the probabilistic information in the ensemble. The correct communication of ensemble information is through probabilistic products — “30–70% probability of snowfall exceeding 15 cm overnight” — not by selecting a representative deterministic member.</p>
+
+<hr />
+
+<h2 id="8-what-could-go-wrong">8. What Could Go Wrong?</h2>
+
+<p><strong>Ensemble spread from initial condition perturbations alone is insufficient.</strong> Numerical weather models have structural biases that are not captured by perturbing initial conditions. The same model, run from perturbed initial states, will produce a spread that reflects initial condition uncertainty but not model structural uncertainty. This is why multi-model ensembles (from different modelling centres) consistently outperform single-model ensembles of the same size.</p>
+
+<p><strong>Rank histogram flatness can be achieved trivially and meaninglessly.</strong> A random noise ensemble (members drawn from a climatological distribution regardless of the actual forecast) will produce a perfectly flat rank histogram — it’s calibrated but completely uninformative. Calibration is necessary but not sufficient for forecast quality; resolution (ability to distinguish between high-probability and low-probability events) must also be quantified.</p>
+
+<p><strong>Small ensemble size produces sampling error in rank histograms.</strong> A 10-member ensemble evaluated on 100 cases produces a rank histogram with 100 observations distributed across 11 bins (~9 per bin). The sampling uncertainty in each bin is $\pm\sqrt{9} \approx 3$ — so apparent deviations of ±5 from the expected count are not statistically significant. Reliable rank histogram evaluation requires hundreds to thousands of forecast-observation pairs.</p>
+
+<p><strong>Post-processing training assumes stationarity.</strong> BMA and EMOS are calibrated on a recent training window, assuming that model performance is stationary. After a model upgrade or a systematic change in climate (e.g., more frequent compound extremes), the training window statistics may no longer be representative. Adaptive or non-stationary post-processing frameworks are an active research area.</p>
+
+<hr />
+
+<h2 id="9-summary">9. Summary</h2>
+
+<p>Monte Carlo ensemble forecasting generates multiple model realisations from perturbed initial conditions and/or parameters; the ensemble represents the forecast probability distribution. A well-calibrated ensemble satisfies: spread ≈ RMSE (spread-skill ratio ≈ 1), rank histogram ≈ uniform, and reliability diagram ≈ diagonal.</p>
+
+<p>The rank histogram (Talagrand diagram) tests whether observations behave like random ensemble draws; a U-shape indicates under-dispersion. The Brier score BS $= \frac{1}{n}\sum(p_i-o_i)^2$ measures probabilistic forecast accuracy; BSS $= 1 - \text{BS}/\text{BS}_{\text{clim}}$ measures skill against climatology. BMA post-processing assigns member weights by EM, producing a calibrated mixture distribution; EMOS fits a linear map from ensemble statistics to forecast distribution parameters.</p>
+
+<p><strong>Key equations:</strong></p>
+
+\[\bar{x}_t = \frac{1}{M}\sum_{m=1}^M x_t^{(m)}, \quad s_t = \sqrt{\frac{1}{M-1}\sum_m(x_t^{(m)}-\bar{x}_t)^2}\]
+
+\[\text{SS ratio} = \frac{\text{RMSE}(\bar{x})}{s} \approx 1 \text{ (calibrated)}\]
+
+\[\text{BS} = \frac{1}{n}\sum_i(p_i - o_i)^2, \quad \text{BSS} = 1 - \text{BS}/\text{BS}_{\text{clim}}\]
+
+\[p(y|\mathbf{f}) = \sum_m w_m g_m(y|f_m) \quad\text{[BMA]}\]
+
+<hr />
+
+<h2 id="math-refresher">Math Refresher</h2>
+
+<p><strong>Why ensemble mean MSE &lt; member MSE.</strong> Let $x^{(m)} = \mu + \varepsilon^{(m)}$ where $\varepsilon^{(m)} \sim (0,\sigma^2)$ are i.i.d. errors. Member MSE = $E[(x^{(m)} - \mu_{\text{true}})^2] = \sigma^2$. Ensemble mean MSE = $E[(\bar{x} - \mu_{\text{true}})^2] = E[(\frac{1}{M}\sum_m\varepsilon^{(m)})^2] = \frac{1}{M^2}\sum_m E[(\varepsilon^{(m)})^2] = \sigma^2/M$. The variance of a sample mean is $M$ times smaller than the variance of individual draws — always, for uncorrelated errors. This is why averaging forecasts works: the systematic error (bias) remains but the random error shrinks by $\sqrt{M}$.</p>
+
+<p><strong>The Brier score is just mean squared error.</strong> Treating probability forecasts as continuous variables in $[0,1]$ and binary outcomes as 0/1, the Brier score $\frac{1}{n}\sum(p_i-o_i)^2$ is literally the MSE of probability estimates. A perfect forecast ($p_i = o_i$ always) has BS = 0. A forecast that always predicts the climatological base rate $\bar{p}$ has BS = $\bar{p}(1-\bar{p})$. A forecast that perfectly predicts all events ($p_i = 1$ if event occurs, $p_i = 0$ otherwise) achieves BS = 0 — but so does a randomly calibrated forecast with high resolution. The decomposition into reliability + resolution − uncertainty clarifies what each component contributes to the total score.</p>
+
+      </div>
+
+      
+
+
+
+      
+
+  
+  
+  
+  
+
+
+
+      <!-- essay-footer-notes.html — References / endnotes section.
+     Hidden by default; assets/js/essay/core.js shows it and populates
+     #essay-endnotes-list from [data-cite] elements in the content.
+
+     In posts, create citation markers with:
+       <cite data-cite="Author, Title, URL">1</cite>
+     The JS collects these and renders a numbered reference list here. -->
+
+<footer class="essay-endnotes" id="essay-endnotes" aria-label="References" hidden>
+  <div class="essay-endnotes-inner">
+    <h2 class="essay-endnotes-heading">References</h2>
+    <ol class="essay-endnotes-list" id="essay-endnotes-list">
+      <!-- Populated at runtime by assets/js/essay/core.js buildEndnotes() -->
+    </ol>
+  </div>
+</footer>
+
+
+      
+
+      
+
+      
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    </article>
+  </main>
+
+  <aside
+    class="essay-sidenotes"
+    id="essay-sidenotes"
+    aria-label="Margin notes"
+  ></aside>
+
+</div>
+
+</div>
+
+<footer>
+  <div class="footer-inner">
+
+    <!-- Col 1: Brand -->
+    <div class="footer-brand">
+      <div class="footer-brand-logo">
+        
+        <img loading="lazy" src="/assets/images/logo.webp" alt="WaywardHouse" width="28" height="28">
+        
+        WaywardHouse<span>.</span>
+      </div>
+      
+      
+      <p class="footer-brand-desc">Understanding how place, economy, and environment interact — through analysis, modelling, and open tools.</p>
+      
+
+      <div class="footer-social">
+        
+        
+        
+        <a href="/feed.xml" class="social-icon" target="_blank" rel="noopener noreferrer" aria-label="RSS feed">
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M4 11a9 9 0 0 1 9 9"/>
+            <path d="M4 4a16 16 0 0 1 16 16"/>
+            <circle cx="5" cy="19" r="1"/>
+          </svg>
+        </a>
+      </div>
+    </div>
+
+    <!-- Col 2: Topics (configurable via footer_topics, falls back to auto-categories) -->
+    <nav aria-labelledby="footer-topics">
+      <h3 class="footer-col-title" id="footer-topics">Reading</h3>
+      <ul class="footer-links">
+        
+          
+          <li><a href="/topics/">Essays</a></li>
+          
+          <li><a href="/series/">Modelling</a></li>
+          
+          <li><a href="/archive/">Archive</a></li>
+          
+          <li><a href="/start-here/">Start Here</a></li>
+          
+        
+      </ul>
+    </nav>
+
+    <!-- Col 3: Secondary navigation -->
+    
+    <nav aria-labelledby="footer-company">
+      <h3 class="footer-col-title" id="footer-company">Site</h3>
+      <ul class="footer-links">
+        
+        <li><a href="/start-here/">Start Here</a></li>
+        
+        <li><a href="/about/">About</a></li>
+        
+        <li><a href="/contact/">Contact</a></li>
+        
+      </ul>
+    </nav>
+    
+
+    <!-- Col 4: Resources -->
+    <nav aria-labelledby="footer-resources">
+      <h3 class="footer-col-title" id="footer-resources">Resources</h3>
+      <ul class="footer-links">
+        <li><a href="/archive/">Archive</a></li>
+        <li><a href="/feed.xml">RSS Feed</a></li>
+        <li><a href="/topics/">All Topics</a></li>
+      </ul>
+    </nav>
+
+  </div><!-- /.footer-inner -->
+
+  <div class="footer-bottom">
+    <span class="footer-copy">
+      &copy; 2026 WaywardHouse.
+    </span>
+    <div class="footer-legal">
+      <a href="/privacy/">Privacy Policy</a>
+      <a href="/terms/">Terms of Service</a>
+    </div>
+  </div>
+
+</footer>
+
+
+<!-- Alpine.js bundle -->
+<script type="module" src="/assets/dist/main.js"></script>
+
+<!-- Visualization runtime — detects and loads CDN libraries dynamically -->
+<script type="module" src="/assets/js/core.js"></script>
+
+<!-- Search overlay — event-driven: nav button $dispatches 'search:open' -->
+<div
+  x-data="search"
+  x-init="init()"
+  @search:open.window="open()"
+>
+  <div
+    class="search-overlay"
+    x-show="isOpen"
+    x-transition:enter="transition ease-out duration-150"
+    x-transition:enter-start="opacity-0"
+    x-transition:enter-end="opacity-100"
+    x-transition:leave="transition ease-in duration-100"
+    x-transition:leave-start="opacity-100"
+    x-transition:leave-end="opacity-0"
+    @click.self="close()"
+    style="display: none;"
+    role="dialog"
+    aria-modal="true"
+    aria-label="Search"
+  >
+    <div class="search-panel">
+      <div class="search-input-wrap">
+        <svg class="search-icon" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <circle cx="11" cy="11" r="8"/>
+          <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+        </svg>
+        <input
+          class="search-input"
+          type="search"
+          placeholder="Search posts…"
+          x-model="query"
+          x-ref="input"
+          @input.debounce.300ms="runSearch()"
+          @keydown.escape="close()"
+          autocomplete="off"
+          spellcheck="false"
+          aria-label="Search query"
+        >
+        <kbd class="search-esc" aria-hidden="true">ESC</kbd>
+      </div>
+
+      <div class="search-results" x-show="query.trim().length > 0">
+        <div class="search-status" x-show="loading" aria-live="polite">Searching…</div>
+        <div class="search-status" x-show="!loading && results.length === 0" aria-live="polite">
+          No results for "<span x-text="query"></span>"
+        </div>
+        <ul class="search-result-list" x-show="!loading && results.length > 0" role="list">
+          <template x-for="result in results" :key="result.url">
+            <li>
+              <a :href="result.url" class="search-result-item" @click="close()">
+                <div class="search-result-title" x-text="result.meta?.title || result.url"></div>
+                <div class="search-result-excerpt" x-html="result.excerpt"></div>
+              </a>
+            </li>
+          </template>
+        </ul>
+      </div>
+    </div>
+  </div>
+</div>
+
+</body>
+</html>

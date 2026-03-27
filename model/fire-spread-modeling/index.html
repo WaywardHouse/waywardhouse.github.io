@@ -1,0 +1,1401 @@
+<!DOCTYPE html>
+
+<html lang="en" data-brand="wayward" data-theme="light">
+<head>
+  <meta charset="utf-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Fire Spread modelling — WaywardHouse</title>
+<meta name="description" content="How fast will this fire spread and in which direction? Fire spread models predict rate and direction of propagation using fuel properties, topography, and weather. This model derives the Rothermel...">
+
+<!-- Dark mode flash prevention — runs synchronously before first paint -->
+<script>
+  (function () {
+    var defaultDark = 'light' === 'dark';
+    var s = localStorage.getItem('theme');
+    var dark = s !== null ? s === 'dark' : defaultDark;
+    document.documentElement.dataset.theme = dark ? 'dark' : 'light';
+  })();
+</script>
+
+<!-- Preconnect to CDN domains used by the viz runtime -->
+<link rel="preconnect" href="https://cdn.jsdelivr.net">
+<link rel="preconnect" href="https://unpkg.com">
+<link rel="preconnect" href="https://esm.sh">
+<link rel="preconnect" href="https://api.mapbox.com">
+<link rel="preconnect" href="https://events.mapbox.com">
+
+
+<script>window.MAPBOX_TOKEN = 'pk.eyJ1IjoiYnJlYWRlZGNvZCIsImEiOiJjbW0xa25qc2EwMmtwMnJwejJlNndqdnoxIn0._7I9PwXuFLrOQINVZ84y1w';</script>
+
+
+<!-- Fonts -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:ital,wght@0,300;0,400;0,600;0,700;0,800;0,900;1,700;1,800&family=Barlow:wght@300;400&family=IBM+Plex+Mono:ital,wght@0,300;0,400;0,500;1,300&family=Literata:ital,opsz,wght@0,7..72,300;0,7..72,400;0,7..72,500;1,7..72,300;1,7..72,400&display=swap" rel="stylesheet">
+
+<!-- Theme stylesheet (Vite build output) -->
+<link rel="stylesheet" href="/assets/dist/main.css">
+
+<!-- Brand token overrides — loaded after main.css so variables cascade correctly -->
+
+<link rel="stylesheet" href="/assets/css/brand-wayward.css">
+
+
+
+<!-- Syntax highlighting (Rouge — light + dark) -->
+<link rel="stylesheet" href="/assets/css/syntax.css">
+
+<!-- Begin Jekyll SEO tag v2.8.0 -->
+<title>Fire Spread modelling | WaywardHouse</title>
+<meta name="generator" content="Jekyll v4.4.1" />
+<meta property="og:title" content="Fire Spread modelling" />
+<meta property="og:locale" content="en" />
+<meta name="description" content="How fast will this fire spread and in which direction? Fire spread models predict rate and direction of propagation using fuel properties, topography, and weather. This model derives the Rothermel equation, implements elliptical fire growth, demonstrates cellular automaton simulation, and maps fire perimeters over time." />
+<meta property="og:description" content="How fast will this fire spread and in which direction? Fire spread models predict rate and direction of propagation using fuel properties, topography, and weather. This model derives the Rothermel equation, implements elliptical fire growth, demonstrates cellular automaton simulation, and maps fire perimeters over time." />
+<link rel="canonical" href="https://wayward.house/model/fire-spread-modeling/" />
+<meta property="og:url" content="https://wayward.house/model/fire-spread-modeling/" />
+<meta property="og:site_name" content="WaywardHouse" />
+<meta property="og:image" content="https://wayward.house/assets/images/fire-modelling.webp" />
+<meta property="og:type" content="article" />
+<meta property="article:published_time" content="2026-02-27T00:00:00+00:00" />
+<meta name="twitter:card" content="summary_large_image" />
+<meta property="twitter:image" content="https://wayward.house/assets/images/fire-modelling.webp" />
+<meta property="twitter:title" content="Fire Spread modelling" />
+<meta name="twitter:site" content="@" />
+<script type="application/ld+json">
+{"@context":"https://schema.org","@type":"BlogPosting","dateModified":"2026-03-18T03:00:54+00:00","datePublished":"2026-02-27T00:00:00+00:00","description":"How fast will this fire spread and in which direction? Fire spread models predict rate and direction of propagation using fuel properties, topography, and weather. This model derives the Rothermel equation, implements elliptical fire growth, demonstrates cellular automaton simulation, and maps fire perimeters over time.","headline":"Fire Spread modelling","image":"https://wayward.house/assets/images/fire-modelling.webp","mainEntityOfPage":{"@type":"WebPage","@id":"https://wayward.house/model/fire-spread-modeling/"},"publisher":{"@type":"Organization","logo":{"@type":"ImageObject","url":"https://wayward.house/assets/images/logo.webp"}},"url":"https://wayward.house/model/fire-spread-modeling/"}</script>
+<!-- End Jekyll SEO tag -->
+
+
+
+<!-- Cloudflare Web Analytics -->
+<script defer src="https://static.cloudflareinsights.com/beacon.min.js"
+  data-cf-beacon='{"token": "62c47d78bf9d4c80972d4e6242d79ff8"}'></script>
+
+
+</head>
+<body class="
+  model-template
+   tag-modelling
+   tag-hash-math
+  
+   tag-hash-viz
+  
+  
+  
+  
+  
+  
+">
+
+<a href="#main-content" class="skip-link">Skip to content</a>
+
+<header class="nav" x-data="{ open: false }">
+  <div class="nav-inner">
+
+    <!-- Logo -->
+    <a href="/" class="nav-logo">
+      
+      <img loading="lazy" src="/assets/images/logo.webp" alt="WaywardHouse" width="32" height="32">
+      
+      WaywardHouse<span>.</span>
+    </a>
+
+    <!-- Desktop nav links -->
+    <ul class="nav-links" role="list">
+      
+      <li>
+        <a href="/topics/">Essays</a>
+      </li>
+      
+      <li>
+        <a href="/series/">Modelling</a>
+      </li>
+      
+      <li>
+        <a href="/about/">About</a>
+      </li>
+      
+    </ul>
+
+    <!-- Actions -->
+    <div class="nav-actions">
+
+      <!-- Search button -->
+      <button
+        class="search-toggle"
+        type="button"
+        aria-label="Search (⌘K)"
+        title="Search (⌘K)"
+        @click="$dispatch('search:open')"
+      >
+        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <circle cx="11" cy="11" r="8"/>
+          <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+        </svg>
+      </button>
+
+      <!-- Dark mode toggle -->
+      <button
+        class="theme-toggle"
+        x-data="darkMode"
+        x-init="init()"
+        @click="toggle()"
+        :aria-label="dark ? 'Switch to light mode' : 'Switch to dark mode'"
+        type="button"
+      >
+        <!-- Sun icon (shown in light mode) -->
+        <svg class="icon-sun" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">
+          <circle cx="12" cy="12" r="5"/>
+          <line x1="12" y1="1" x2="12" y2="3"/>
+          <line x1="12" y1="21" x2="12" y2="23"/>
+          <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/>
+          <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/>
+          <line x1="1" y1="12" x2="3" y2="12"/>
+          <line x1="21" y1="12" x2="23" y2="12"/>
+          <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/>
+          <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>
+        </svg>
+        <!-- Moon icon (shown in dark mode) -->
+        <svg class="icon-moon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">
+          <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+        </svg>
+      </button>
+
+      <!-- Hamburger (mobile only) -->
+      <button
+        class="mobile-nav-toggle"
+        @click="open = !open"
+        :aria-expanded="open"
+        :aria-label="open ? 'Close menu' : 'Open menu'"
+        type="button"
+      >
+        <svg x-show="!open" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <line x1="3" y1="6" x2="21" y2="6"/>
+          <line x1="3" y1="12" x2="21" y2="12"/>
+          <line x1="3" y1="18" x2="21" y2="18"/>
+        </svg>
+        <svg x-show="open" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <line x1="18" y1="6" x2="6" y2="18"/>
+          <line x1="6" y1="6" x2="18" y2="18"/>
+        </svg>
+      </button>
+
+    </div><!-- /.nav-actions -->
+  </div><!-- /.nav-inner -->
+
+  <!-- Mobile drawer -->
+  <div
+    class="mobile-nav"
+    x-show="open"
+    x-transition:enter="transition ease-out duration-200"
+    x-transition:enter-start="opacity-0 -translate-y-1"
+    x-transition:enter-end="opacity-100 translate-y-0"
+    x-transition:leave="transition ease-in duration-150"
+    x-transition:leave-start="opacity-100 translate-y-0"
+    x-transition:leave-end="opacity-0 -translate-y-1"
+    @click.outside="open = false"
+    @keydown.escape.window="open = false"
+  >
+    <ul role="list">
+      
+      <li>
+        <a href="/topics/" @click="open = false">Essays</a>
+      </li>
+      
+      <li>
+        <a href="/series/" @click="open = false">Modelling</a>
+      </li>
+      
+      <li>
+        <a href="/about/" @click="open = false">About</a>
+      </li>
+      
+    </ul>
+  </div><!-- /.mobile-nav -->
+
+</header>
+
+
+<div id="main-content">
+  <!-- Essay stylesheet and runtime — self-contained -->
+<link rel="stylesheet" href="/assets/css/essay.css">
+<script type="module" src="/assets/js/essay/core.js"></script>
+
+<div class="essay-layout" id="essay-layout">
+
+  <!-- essay-toc.html — Sticky table of contents (left column).
+     The <ol> is empty on load; assets/js/essay/core.js populates it
+     from h2/h3 elements found in #essay-content after the page renders. -->
+
+<nav class="essay-toc" id="essay-toc" aria-label="Table of contents">
+  <div class="essay-toc-inner">
+    <p class="essay-toc-heading" aria-hidden="true">Contents</p>
+    <ol class="essay-toc-list" id="essay-toc-list">
+      <!-- Populated at runtime by assets/js/essay/core.js buildToc() -->
+    </ol>
+  </div>
+</nav>
+
+
+  <main class="essay-main" id="essay-main" role="main">
+    <article class="essay-article">
+
+      <!-- essay-hero.html — Header for computational essay template.
+     Displays feature image, tag label, title, excerpt, and post metadata. -->
+
+<header class="essay-hero">
+  
+  <figure class="essay-hero-figure">
+    <img
+      src="/assets/images/fire-modelling.webp"
+      alt="Fire Spread modelling"
+      class="essay-hero-img"
+      loading="eager"
+    >
+    
+  </figure>
+  
+
+  <div class="essay-hero-body">
+
+    
+    
+    
+    
+    
+    <nav class="essay-breadcrumb" aria-label="Series position">
+      
+      <a href="/series/6/" class="essay-breadcrumb-link">Computational geography atmospheric hazards</a>
+      
+      
+      <span class="essay-breadcrumb-sep" aria-hidden="true">›</span>
+      <span class="essay-breadcrumb-cluster">Fire Science</span>
+      
+      
+      <span class="essay-breadcrumb-sep" aria-hidden="true">›</span>
+      <span class="essay-breadcrumb-pos">Model 2</span>
+      
+    </nav>
+    
+
+    <div class="essay-hero-labels">
+      
+      <a href="/topics/modelling/" class="essay-tag-label">modelling</a>
+      
+      
+      <span class="difficulty-badge difficulty-badge--4">Level 4</span>
+      
+    </div>
+
+    <h1 class="essay-title">Fire Spread modelling</h1>
+
+    
+    <p class="essay-excerpt">How fast will this fire spread and in which direction? Fire spread models predict rate and direction of propagation using fuel properties, topography, and weather. This model derives the Rothermel equation, implements elliptical fire growth, demonstrates cellular automaton simulation, and maps fire perimeters over time.
+</p>
+    
+
+    
+    <p class="essay-prereqs"><span class="essay-prereqs-label">Prerequisites:</span> rothermel equation, fire spread rate, elliptical fire growth, cellular automata</p>
+    
+
+    <div class="essay-meta">
+      
+      <div class="essay-meta-secondary">
+        <time class="essay-date" datetime="2026-02-27">27 Feb 2026</time>
+        
+        
+        <span class="essay-sep" aria-hidden="true">·</span>
+        <span class="essay-updated">Updated <time datetime="2026-03-18">18 Mar 2026</time></span>
+        
+        <span class="essay-sep" aria-hidden="true">·</span>
+        <span class="essay-reading-time">13 min read</span>
+      </div>
+    </div>
+  </div>
+</header>
+
+
+      
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<nav class="series-nav" aria-label="Series navigation">
+
+  <div class="series-nav-header">
+    <span class="series-nav-label">V</span>
+    <span class="series-nav-title">Fire Science</span>
+  </div>
+
+  <ol class="series-nav-list">
+    
+    <li class="series-nav-item">
+      
+      <a href="/model/fire-weather-ignition/" class="series-nav-link">
+        <span class="series-nav-number">1</span>
+        Fire Weather and Ignition Potential
+      </a>
+      
+    </li>
+    
+    <li class="series-nav-item series-nav-item--current">
+      
+      <span class="series-nav-link series-nav-link--current" aria-current="page">
+        <span class="series-nav-number">2</span>
+        Fire Spread modelling
+      </span>
+      
+    </li>
+    
+    <li class="series-nav-item">
+      
+      <a href="/model/fire-emissions-smoke/" class="series-nav-link">
+        <span class="series-nav-number">3</span>
+        Fire Emissions and Smoke Dispersion
+      </a>
+      
+    </li>
+    
+  </ol>
+
+  
+  <div class="series-nav-footer">
+    <a href="/series/6/" class="series-nav-all">
+      All 11 in this series &rarr;
+    </a>
+  </div>
+  
+
+</nav>
+
+
+
+
+      <div class="essay-content gh-content" id="essay-content">
+        <p>On the afternoon of 16 August 2003, the Okanagan Mountain Park fire in British Columbia jumped Highway 33 and ran 25 km before midnight. By the time it stopped, 30,000 residents of Kelowna were under evacuation order and 239 homes had been destroyed. Prometheus, Canada’s operational wildfire growth model, was running simulations of the fire’s likely spread as incident commanders made decisions about where to deploy suppression resources and which communities to evacuate first. The simulations did not tell the commanders exactly where the fire would be — fire behaviour is too sensitive to local wind gusts and terrain for that — but they produced probabilistic spread envelopes that captured where the fire was likely to reach under a range of weather scenarios.</p>
+
+<p>The physics of fire spread is encoded in the Rothermel equations, first published in 1972 and still the backbone of every operational fire behaviour model in North America. The equations predict the rate at which a fire front moves through fuel of given type, loading, and moisture, under given wind and slope conditions. The spread rate varies with direction — wind and slope both push the fire, so headfire spreads far faster than backfire — producing an elliptical fire shape that grows over time. Combining spread rate, direction, and an initial perimeter with a cellular automaton or vector propagation scheme produces a fire perimeter evolution that can be computed in near-real time. This model derives the Rothermel rate-of-spread equation, implements elliptical fire growth, and shows how the cellular automaton approach simulates fire spread across heterogeneous landscapes.</p>
+
+<h2 id="1-the-question">1. The Question</h2>
+
+<p>Where will this fire be in 6 hours, and what communities are at risk?</p>
+
+<p><strong>Fire spread modelling:</strong></p>
+
+<p>Predicts fire perimeter expansion over time.</p>
+
+<p><strong>Inputs:</strong></p>
+<ul>
+  <li>Fuel type and loading</li>
+  <li>Fuel moisture</li>
+  <li>Wind speed and direction</li>
+  <li>Topography (slope, aspect)</li>
+  <li>Weather forecast</li>
+</ul>
+
+<p><strong>Outputs:</strong></p>
+<ul>
+  <li>Rate of spread (m/min)</li>
+  <li>Fire perimeter at time $t$</li>
+  <li>Fireline intensity</li>
+  <li>Flame length</li>
+  <li>Arrival time at locations</li>
+</ul>
+
+<p><strong>Models:</strong></p>
+
+<p><strong>Empirical:</strong> Rothermel (1972)<br />
+<strong>Physical:</strong> FIRETEC, WFDS (computational fluid dynamics)<br />
+<strong>Statistical:</strong> Machine learning on historical fires<br />
+<strong>Hybrid:</strong> Couple multiple approaches</p>
+
+<p><strong>Operational systems:</strong></p>
+<ul>
+  <li>FARSITE (USA Forest Service)</li>
+  <li>Phoenix RapidFire (Australia)</li>
+  <li>Prometheus (Canada)</li>
+  <li>FlamMap (landscape fire potential)</li>
+</ul>
+
+<hr />
+
+<h2 id="2-the-conceptual-model">2. The Conceptual Model</h2>
+
+<h3 id="rothermel-fire-spread">Rothermel Fire Spread</h3>
+
+<p><strong>Basic principle:</strong></p>
+
+<p>Fire spreads when radiant/convective heat preheats adjacent fuel to ignition.</p>
+
+<p><strong>Rate of spread:</strong></p>
+
+\[ROS = \frac{I_R \xi (1 + \Phi_w + \Phi_s)}{\rho_b \epsilon Q_{ig}}\]
+
+<p>Where:</p>
+<ul>
+  <li>$ROS$ = rate of spread (m/min)</li>
+  <li>$I_R$ = reaction intensity (kW/m²)</li>
+  <li>$\xi$ = propagating flux ratio</li>
+  <li>$\Phi_w$ = wind coefficient</li>
+  <li>$\Phi_s$ = slope coefficient</li>
+  <li>$\rho_b$ = bulk density (kg/m³)</li>
+  <li>$\epsilon$ = effective heating number</li>
+  <li>$Q_{ig}$ = heat of preignition (kJ/kg)</li>
+</ul>
+
+<p><strong>Reaction intensity:</strong></p>
+
+<p>Energy release rate per unit area.</p>
+
+\[I_R = \Gamma' w_n h\]
+
+<p>Where:</p>
+<ul>
+  <li>$\Gamma’$ = optimum reaction velocity (min⁻¹)</li>
+  <li>$w_n$ = net fuel loading (kg/m²)</li>
+  <li>$h$ = heat content (kJ/kg, ~18,600 for wood)</li>
+</ul>
+
+<h3 id="elliptical-fire-growth">Elliptical Fire Growth</h3>
+
+<p><strong>Wind-driven fires:</strong> Elongated downwind.</p>
+
+<p><strong>Head fire:</strong> Fastest spread (downwind)<br />
+<strong>Flank fire:</strong> Perpendicular to wind<br />
+<strong>Back fire:</strong> Upwind (slow)</p>
+
+<p><strong>Ellipse parameters:</strong></p>
+
+\[a = \frac{ROS_h + ROS_b}{2}\]
+
+\[b = \frac{ROS_h + ROS_b}{2 \times LB}\]
+
+<p>Where:</p>
+<ul>
+  <li>$a$ = semi-major axis</li>
+  <li>$b$ = semi-minor axis</li>
+  <li>$ROS_h$ = head fire rate</li>
+  <li>$ROS_b$ = backing fire rate</li>
+  <li>$LB$ = length-to-breadth ratio (~3-4 typical)</li>
+</ul>
+
+<p><strong>Area at time $t$:</strong></p>
+
+\[A(t) = \pi a b t^2\]
+
+<h3 id="fireline-intensity">Fireline Intensity</h3>
+
+<p><strong>Energy release per unit length:</strong></p>
+
+\[I = h w ROS\]
+
+<p>Where:</p>
+<ul>
+  <li>$I$ = fireline intensity (kW/m)</li>
+  <li>$h$ = heat content (kJ/kg)</li>
+  <li>$w$ = fuel consumed (kg/m²)</li>
+  <li>$ROS$ = rate of spread (m/s)</li>
+</ul>
+
+<p><strong>Byram’s flame length:</strong></p>
+
+\[L = 0.0775 I^{0.46}\]
+
+<p>Where $L$ = flame length (m)</p>
+
+<p><strong>Suppression difficulty:</strong></p>
+<ul>
+  <li>$I &lt; 500$ kW/m: Direct attack possible</li>
+  <li>$I = 500-2000$ kW/m: Indirect attack</li>
+  <li>$I = 2000-4000$ kW/m: Very difficult</li>
+  <li>$I &gt; 4000$ kW/m: Suppression ineffective</li>
+</ul>
+
+<hr />
+
+<h2 id="3-building-the-mathematical-model">3. Building the Mathematical Model</h2>
+
+<h3 id="rothermel-coefficients">Rothermel Coefficients</h3>
+
+<p><strong>Wind coefficient:</strong></p>
+
+\[\Phi_w = C \left(\frac{\beta}{\beta_{op}}\right)^{-E} \left(\frac{U_m}{60}\right)^B\]
+
+<p>Where:</p>
+<ul>
+  <li>$C, E, B$ = fuel-specific constants</li>
+  <li>$\beta$ = packing ratio (fuel density / particle density)</li>
+  <li>$\beta_{op}$ = optimum packing ratio</li>
+  <li>$U_m$ = midflame wind speed (ft/min)</li>
+</ul>
+
+<p><strong>Typical:</strong> $B \approx 1.5$ (spread ∝ wind^1.5)</p>
+
+<p><strong>Slope coefficient:</strong></p>
+
+\[\Phi_s = 5.275 \beta^{-0.3} \tan^2\theta\]
+
+<p>Where $\theta$ = slope angle</p>
+
+<p><strong>Example:</strong> 20° slope</p>
+
+\[\Phi_s = 5.275 \times (0.01)^{-0.3} \times \tan^2(20°)\]
+
+\[= 5.275 \times 2.15 \times 0.133 = 1.51\]
+
+<p><strong>Slope multiplies spread</strong> by factor of 2.5 (1 + 1.51)!</p>
+
+<h3 id="cellular-automaton-fire-spread">Cellular Automaton Fire Spread</h3>
+
+<p><strong>Discretize landscape:</strong></p>
+
+<p>Grid cells (30-100 m resolution).</p>
+
+<p><strong>State:</strong> Unburned / Burning / Burned</p>
+
+<p><strong>Transition rules:</strong></p>
+
+\[P_{\text{ignite}} = f(\text{fuel, weather, distance, time})\]
+
+<p><strong>Simplified:</strong></p>
+
+\[P = P_0 \times \exp\left(-\frac{d}{ROS \times \Delta t}\right)\]
+
+<p>Where:</p>
+<ul>
+  <li>$P$ = ignition probability</li>
+  <li>$P_0$ = base probability</li>
+  <li>$d$ = distance to burning cell</li>
+  <li>$ROS$ = rate of spread</li>
+  <li>$\Delta t$ = time step</li>
+</ul>
+
+<p><strong>Algorithm:</strong></p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>For each time step:
+  For each burning cell:
+    For each neighbor:
+      Calculate P_ignite
+      If random() &lt; P_ignite:
+        Ignite neighbor
+  Burning cells → Burned
+</code></pre></div></div>
+
+<p><strong>Advantages:</strong></p>
+<ul>
+  <li>Computationally fast</li>
+  <li>Handles complex landscapes</li>
+  <li>Stochastic variation</li>
+</ul>
+
+<p><strong>Disadvantages:</strong></p>
+<ul>
+  <li>Requires calibration</li>
+  <li>Less physical basis than Rothermel</li>
+</ul>
+
+<h3 id="fire-arrival-time">Fire Arrival Time</h3>
+
+<p><strong>Minimum time path:</strong></p>
+
+\[T(x,y) = \min_{\text{path}} \int_{\text{path}} \frac{ds}{ROS(s)}\]
+
+<p>Where:</p>
+<ul>
+  <li>$T$ = arrival time</li>
+  <li>$ds$ = path element</li>
+  <li>$ROS(s)$ = rate of spread along path</li>
+</ul>
+
+<p><strong>Solved by:</strong></p>
+
+<p>Level-set methods or Dijkstra’s algorithm on grid.</p>
+
+<p><strong>Isochrones:</strong></p>
+
+<p>Contours of equal arrival time.</p>
+
+<hr />
+
+<h2 id="4-worked-example-by-hand">4. Worked Example by Hand</h2>
+
+<p><strong>Problem:</strong> Calculate fire spread and perimeter.</p>
+
+<p><strong>Conditions:</strong></p>
+<ul>
+  <li>Fuel: Grass (short, dry)</li>
+  <li>Fuel load: 0.5 kg/m²</li>
+  <li>Fuel moisture: 6%</li>
+  <li>Wind speed: 30 km/h (8.3 m/s)</li>
+  <li>Slope: 15° downwind</li>
+  <li>Initial ignition: Point source</li>
+</ul>
+
+<p><strong>Constants (grass fuel model):</strong></p>
+<ul>
+  <li>$\xi = 0.4$ (propagating flux ratio)</li>
+  <li>$\epsilon = 0.7$ (effective heating)</li>
+  <li>$Q_{ig} = 300$ kJ/kg (heat of preignition)</li>
+  <li>$h = 18,600$ kJ/kg (heat content)</li>
+</ul>
+
+<p>Calculate ROS, fire perimeter after 1 hour.</p>
+
+<h3 id="solution">Solution</h3>
+
+<p><strong>Step 1: Wind coefficient</strong></p>
+
+<p>Simplified: $\Phi_w \approx 0.15 U^{1.5}$ where $U$ in m/s</p>
+
+\[\Phi_w = 0.15 \times 8.3^{1.5} = 0.15 \times 23.9 = 3.6\]
+
+<p><strong>Step 2: Slope coefficient</strong></p>
+
+\[\Phi_s = 5.275 \times (0.01)^{-0.3} \times \tan^2(15°)\]
+
+\[= 5.275 \times 2.15 \times 0.072 = 0.82\]
+
+<p><strong>Step 3: Reaction intensity</strong></p>
+
+<p>Assume $\Gamma’ = 15$ min⁻¹ (typical grass):</p>
+
+\[I_R = 15 \times 0.5 \times 18600 = 139,500 \text{ kW/m}^2\]
+
+<p><strong>Step 4: Rate of spread</strong></p>
+
+\[ROS = \frac{139500 \times 0.4 \times (1 + 3.6 + 0.82)}{500 \times 0.7 \times 300}\]
+
+\[= \frac{139500 \times 0.4 \times 5.42}{105000}\]
+
+\[= \frac{302,472}{105000} = 2.88 \text{ m/min}\]
+
+<p><strong>Head fire ROS = 2.88 m/min = 173 m/h</strong></p>
+
+<p><strong>Step 5: Backing fire</strong></p>
+
+<p>Assume $ROS_b = 0.1 \times ROS_h = 0.29$ m/min</p>
+
+<p><strong>Step 6: Ellipse parameters</strong></p>
+
+\[a = \frac{2.88 + 0.29}{2} = 1.59 \text{ m/min}\]
+
+<p>Length-to-breadth ratio $LB = 3$:</p>
+
+\[b = \frac{1.59}{3} = 0.53 \text{ m/min}\]
+
+<p><strong>Step 7: Perimeter after 1 hour</strong></p>
+
+<p>Semi-axes at $t = 60$ min:</p>
+
+\[a_{60} = 1.59 \times 60 = 95.4 \text{ m}\]
+
+\[b_{60} = 0.53 \times 60 = 31.8 \text{ m}\]
+
+<p>Area:</p>
+
+\[A = \pi \times 95.4 \times 31.8 = 9,540 \text{ m}^2 \approx 1 \text{ hectare}\]
+
+<p><strong>Fire spread 95 m downwind, 32 m on flanks</strong> in 1 hour.</p>
+
+<p><strong>Step 8: Fireline intensity (head)</strong></p>
+
+\[I = 18600 \times 0.5 \times \frac{2.88}{60} = 446 \text{ kW/m}\]
+
+<p><strong>Flame length:</strong></p>
+
+\[L = 0.0775 \times 446^{0.46} = 0.0775 \times 12.3 = 0.95 \text{ m}\]
+
+<p><strong>Moderate intensity</strong> (direct attack still possible if resources available quickly)</p>
+
+<hr />
+
+<h2 id="5-computational-implementation">5. Computational Implementation</h2>
+
+<p>Below is an interactive fire spread simulator.</p>
+
+<div class="viz-container" id="spread-viz">
+  <div class="controls">
+    <label>
+      Wind speed (km/h):
+      <input type="range" id="wind" min="0" max="60" step="5" value="20" />
+      <span id="wind-val">20</span>
+    </label>
+    <label>
+      Slope (°):
+      <input type="range" id="slope" min="0" max="30" step="5" value="10" />
+      <span id="slope-val">10</span>
+    </label>
+    <label>
+      Fuel moisture (%):
+      <input type="range" id="moisture" min="4" max="20" step="2" value="8" />
+      <span id="moist-val">8</span>
+    </label>
+    <label>
+      Time elapsed (hours):
+      <input type="range" id="time" min="1" max="12" step="1" value="4" />
+      <span id="time-val">4</span>
+    </label>
+    <div class="spread-info">
+      <p><strong>Head ROS:</strong> <span id="ros-head">--</span> m/min</p>
+      <p><strong>Fire area:</strong> <span id="fire-area">--</span> ha</p>
+      <p><strong>Fireline intensity:</strong> <span id="intensity">--</span> kW/m</p>
+      <p><strong>Suppression:</strong> <span id="suppression">--</span></p>
+    </div>
+  </div>
+  <div id="spread-canvas-container">
+    <canvas id="spread-canvas" width="700" height="400" style="border: 1px solid #ddd;"></canvas>
+  </div>
+</div>
+
+<script type="module">
+(function() {
+  const canvas = document.getElementById('spread-canvas');
+  const ctx = canvas.getContext('2d');
+  
+  let wind = 20;
+  let slope = 10;
+  let moisture = 8;
+  let time = 4;
+  
+  function calculateSpread() {
+    const windMS = wind / 3.6;
+    
+    // Wind and slope coefficients
+    const PhiW = 0.15 * Math.pow(windMS, 1.5);
+    const slopeRad = slope * Math.PI / 180;
+    const PhiS = 5.275 * Math.pow(0.01, -0.3) * Math.pow(Math.tan(slopeRad), 2);
+    
+    // Moisture effect (simplified)
+    const moistureFactor = Math.max(0.1, 1 - moisture / 30);
+    
+    // ROS head fire
+    const baseROS = 2.0; // m/min for standard grass
+    const ROShead = baseROS * (1 + PhiW + PhiS) * moistureFactor;
+    
+    // Backing fire
+    const ROSback = ROShead * 0.1;
+    
+    // Ellipse parameters
+    const a = (ROShead + ROSback) / 2;
+    const LB = 3;
+    const b = a / LB;
+    
+    // Area at time
+    const aT = a * time * 60; // meters
+    const bT = b * time * 60;
+    const area = Math.PI * aT * bT / 10000; // hectares
+    
+    // Fireline intensity
+    const fuelLoad = 0.5; // kg/m²
+    const heatContent = 18600; // kJ/kg
+    const intensity = heatContent * fuelLoad * (ROShead / 60); // kW/m
+    
+    let suppression;
+    if (intensity < 500) suppression = 'Direct attack possible';
+    else if (intensity < 2000) suppression = 'Indirect attack';
+    else if (intensity < 4000) suppression = 'Very difficult';
+    else suppression = 'Ineffective';
+    
+    return {ROShead, aT, bT, area, intensity, suppression};
+  }
+  
+  function render() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    
+    const result = calculateSpread();
+    
+    document.getElementById('ros-head').textContent = result.ROShead.toFixed(1);
+    document.getElementById('fire-area').textContent = result.area.toFixed(0);
+    document.getElementById('intensity').textContent = result.intensity.toFixed(0);
+    document.getElementById('suppression').textContent = result.suppression;
+    
+    // Draw fire perimeter (ellipse)
+    const centerX = 200;
+    const centerY = 300;
+    
+    // Wind arrow
+    ctx.strokeStyle = '#2196F3';
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    ctx.moveTo(50, 50);
+    ctx.lineTo(100, 50);
+    ctx.stroke();
+    
+    // Arrow head
+    ctx.beginPath();
+    ctx.moveTo(100, 50);
+    ctx.lineTo(90, 45);
+    ctx.lineTo(90, 55);
+    ctx.closePath();
+    ctx.fillStyle = '#2196F3';
+    ctx.fill();
+    
+    ctx.fillStyle = '#263238';
+    ctx.font = '12px sans-serif';
+    ctx.fillText(`Wind ${wind} km/h`, 50, 70);
+    
+    // Slope indicator
+    ctx.fillText(`Slope ${slope}°`, 50, 90);
+    
+    // Scale for visualization (scale down for canvas)
+    const scale = 0.15;
+    const a = result.aT * scale;
+    const b = result.bT * scale;
+    
+    // Fire perimeter (ellipse)
+    ctx.strokeStyle = '#F44336';
+    ctx.fillStyle = 'rgba(244, 67, 54, 0.2)';
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    ctx.ellipse(centerX, centerY, a, b, 0, 0, 2 * Math.PI);
+    ctx.fill();
+    ctx.stroke();
+    
+    // Ignition point
+    ctx.fillStyle = '#000';
+    ctx.beginPath();
+    ctx.arc(centerX, centerY, 5, 0, 2 * Math.PI);
+    ctx.fill();
+    
+    // Direction labels
+    ctx.fillStyle = '#263238';
+    ctx.font = 'bold 14px sans-serif';
+    ctx.fillText('Head Fire', centerX - 30, centerY - a - 10);
+    ctx.fillText('Backing Fire', centerX - 40, centerY + a + 20);
+    ctx.fillText('Flank', centerX - b - 40, centerY);
+    
+    // Scale bar
+    const scaleBarLength = 100; // pixels
+    const scaleMeters = scaleBarLength / scale;
+    ctx.strokeStyle = '#000';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(500, 370);
+    ctx.lineTo(600, 370);
+    ctx.stroke();
+    
+    ctx.fillStyle = '#000';
+    ctx.font = '11px sans-serif';
+    ctx.fillText(`${scaleMeters.toFixed(0)} m`, 530, 385);
+  }
+  
+  document.getElementById('wind').addEventListener('input', (e) => {
+    wind = parseFloat(e.target.value);
+    document.getElementById('wind-val').textContent = wind;
+    render();
+  });
+  
+  document.getElementById('slope').addEventListener('input', (e) => {
+    slope = parseFloat(e.target.value);
+    document.getElementById('slope-val').textContent = slope;
+    render();
+  });
+  
+  document.getElementById('moisture').addEventListener('input', (e) => {
+    moisture = parseFloat(e.target.value);
+    document.getElementById('moist-val').textContent = moisture;
+    render();
+  });
+  
+  document.getElementById('time').addEventListener('input', (e) => {
+    time = parseFloat(e.target.value);
+    document.getElementById('time-val').textContent = time;
+    render();
+  });
+  
+  render();
+})();
+</script>
+
+<p><strong>Observations:</strong></p>
+<ul>
+  <li>Fire spreads fastest downwind (head fire)</li>
+  <li>Elliptical shape elongated in wind direction</li>
+  <li>Higher wind dramatically increases spread rate</li>
+  <li>Slope amplifies spread when aligned with wind</li>
+  <li>Low moisture enables rapid spread</li>
+  <li>Fireline intensity determines suppression feasibility</li>
+</ul>
+
+<p><strong>Key insights:</strong></p>
+<ul>
+  <li>Exponential area growth over time</li>
+  <li>Wind and slope effects multiplicative</li>
+  <li>Even moderate winds create elongated fires</li>
+  <li>Suppression window closes quickly with high intensity</li>
+</ul>
+
+<hr />
+
+<h2 id="6-interpretation">6. Interpretation</h2>
+
+<h3 id="operational-fire-prediction">Operational Fire Prediction</h3>
+
+<p><strong>FARSITE workflow:</strong></p>
+
+<ol>
+  <li><strong>Initialize:</strong> Ignition point, time, weather</li>
+  <li><strong>Propagate:</strong> Calculate ROS at fire perimeter</li>
+  <li><strong>Advance:</strong> Move perimeter based on ROS, timestep</li>
+  <li><strong>Repeat:</strong> Until forecast end or fire containment</li>
+</ol>
+
+<p><strong>Outputs:</strong></p>
+<ul>
+  <li>Fire perimeter evolution (hourly)</li>
+  <li>Arrival time maps</li>
+  <li>Intensity maps</li>
+  <li>Flame length maps</li>
+</ul>
+
+<p><strong>Used for:</strong></p>
+<ul>
+  <li>Evacuation planning</li>
+  <li>Resource pre-positioning</li>
+  <li>Backfire/burnout strategy</li>
+  <li>Structure triage</li>
+</ul>
+
+<p><strong>Example - 2018 Camp Fire (California):</strong></p>
+
+<p>FARSITE predicted Paradise threatened within 6 hours.</p>
+
+<p>Enabled evacuation (though still 85 deaths, rapid spread).</p>
+
+<h3 id="prescribed-burn-planning">Prescribed Burn Planning</h3>
+
+<p><strong>Objective:</strong> Reduce fuel loads safely.</p>
+
+<p><strong>Model used to:</strong></p>
+
+<p>Determine burn window (weather conditions for control).</p>
+
+<p><strong>Required:</strong></p>
+<ul>
+  <li>Low intensity (&lt; 1000 kW/m)</li>
+  <li>Slow spread (&lt; 1 m/min)</li>
+  <li>Favorable wind direction (away from structures)</li>
+</ul>
+
+<p><strong>Example conditions:</strong></p>
+<ul>
+  <li>Fuel MC: 12-15%</li>
+  <li>Wind: 10-15 km/h</li>
+  <li>Atmospheric stability: Stable</li>
+  <li>RH: 40-60%</li>
+</ul>
+
+<p><strong>Model confirms</strong> burn will remain controllable.</p>
+
+<h3 id="post-fire-analysis">Post-Fire Analysis</h3>
+
+<p><strong>Reconstruct fire behavior:</strong></p>
+
+<p>Given final perimeter, weather records.</p>
+
+<p><strong>Calibrate models:</strong></p>
+
+<p>Adjust parameters (fuel models, moisture, wind reduction factors).</p>
+
+<p><strong>Improve predictions:</strong></p>
+
+<p>Better local fuel characterization.</p>
+
+<p><strong>Identify extreme fire behavior:</strong></p>
+
+<p>Rates of spread » model predictions indicate:</p>
+<ul>
+  <li>Spotting (long-range ember transport)</li>
+  <li>Crown fire (not surface fire)</li>
+  <li>Fire whirls (tornadic circulation)</li>
+</ul>
+
+<hr />
+
+<h2 id="7-what-could-go-wrong">7. What Could Go Wrong?</h2>
+
+<h3 id="crown-fire-transition">Crown Fire Transition</h3>
+
+<p><strong>Surface fire models</strong> (Rothermel) don’t predict crown fire.</p>
+
+<p><strong>Crown fire:</strong> Spreads through tree canopy, 10-100× faster.</p>
+
+<p><strong>Transition:</strong> Occurs when:</p>
+
+\[I &gt; I_{\text{critical}}\]
+
+<p><strong>Critical intensity:</strong></p>
+
+\[I_{\text{crit}} = \frac{(460 + 25.9 \times MC)^{3/2}}{60} \times 0.01 \times \rho_{\text{canopy}}\]
+
+<p><strong>Once in crown:</strong></p>
+
+<p>ROS can exceed 100 m/min (vs 2-10 m/min surface).</p>
+
+<p><strong>Solution:</strong> Van Wagner crown fire models, FIRETEC 3D physics.</p>
+
+<h3 id="spotting-ignored">Spotting Ignored</h3>
+
+<p><strong>Embers travel</strong> ahead of fire front.</p>
+
+<p><strong>Distance:</strong> Function of ember size, height lofted, wind.</p>
+
+<p><strong>Model (Albini):</strong></p>
+
+\[d_{\text{spot}} = f(\text{flame length, wind, terrain})\]
+
+<p><strong>Typically:</strong> 0.5-2 km, extreme cases 10-30 km.</p>
+
+<p><strong>Creates secondary ignitions</strong> ahead of modelled perimeter.</p>
+
+<p><strong>Catastrophic</strong> when embers land in receptive fuel.</p>
+
+<p><strong>Solution:</strong> Spotting submodels, but highly stochastic.</p>
+
+<h3 id="fuel-heterogeneity">Fuel Heterogeneity</h3>
+
+<p><strong>Models assume uniform fuel</strong> in each type.</p>
+
+<p><strong>Reality:</strong></p>
+
+<p>Variable loading, moisture, species within same classification.</p>
+
+<p><strong>Result:</strong> Under/overprediction locally.</p>
+
+<p><strong>Solution:</strong></p>
+<ul>
+  <li>Fine-scale fuel mapping (LiDAR-derived)</li>
+  <li>Stochastic variation in parameters</li>
+</ul>
+
+<h3 id="weather-forecast-uncertainty">Weather Forecast Uncertainty</h3>
+
+<p><strong>Fire spread depends</strong> on forecast wind, temperature, humidity.</p>
+
+<p><strong>Forecast errors propagate:</strong></p>
+
+<p>10% wind error → 15% ROS error → 25% perimeter error.</p>
+
+<p><strong>Solution:</strong></p>
+<ul>
+  <li>Ensemble forecasts (multiple weather scenarios)</li>
+  <li>Probabilistic fire prediction</li>
+</ul>
+
+<hr />
+
+<h2 id="8-extension-machine-learning-fire-spread">8. Extension: Machine Learning Fire Spread</h2>
+
+<p><strong>Data-driven approaches:</strong></p>
+
+<p>Train on historical fires (perimeter progression, weather, fuels).</p>
+
+<p><strong>Neural networks:</strong></p>
+
+<p>Input: Fuel, weather, terrain<br />
+Output: ROS or probability of burning</p>
+
+<p><strong>Advantages:</strong></p>
+<ul>
+  <li>Capture complex nonlinear relationships</li>
+  <li>No need to specify physics</li>
+  <li>Fast inference</li>
+</ul>
+
+<p><strong>Disadvantages:</strong></p>
+<ul>
+  <li>Requires large training datasets</li>
+  <li>Difficult to extrapolate beyond training conditions</li>
+  <li>Less interpretable than physics-based</li>
+</ul>
+
+<p><strong>Hybrid:</strong> Use physics model as baseline, ML for corrections.</p>
+
+<hr />
+
+<h2 id="9-math-refresher-ellipse-geometry">9. Math Refresher: Ellipse Geometry</h2>
+
+<h3 id="standard-form">Standard Form</h3>
+
+\[\frac{x^2}{a^2} + \frac{y^2}{b^2} = 1\]
+
+<p>Where:</p>
+<ul>
+  <li>$a$ = semi-major axis (larger)</li>
+  <li>$b$ = semi-minor axis (smaller)</li>
+</ul>
+
+<p><strong>Area:</strong></p>
+
+\[A = \pi a b\]
+
+<p><strong>Perimeter (approximate):</strong></p>
+
+\[P \approx \pi (3(a+b) - \sqrt{(3a+b)(a+3b)})\]
+
+<h3 id="eccentricity">Eccentricity</h3>
+
+\[e = \sqrt{1 - \frac{b^2}{a^2}}\]
+
+<p><strong>Circle:</strong> $e = 0$ ($a = b$)<br />
+<strong>Elongated:</strong> $e \to 1$ ($b \ll a$)</p>
+
+<p><strong>Fire ellipses:</strong></p>
+
+<p>Typical $e = 0.8-0.95$ (highly elongated in strong wind).</p>
+
+<hr />
+
+<h2 id="summary">Summary</h2>
+
+<ul>
+  <li>Fire spread rate determined by fuel, weather, and topography via Rothermel equation</li>
+  <li>Wind and slope effects multiplicative increasing spread exponentially</li>
+  <li>Elliptical fire growth results from directional spread differences</li>
+  <li>Fireline intensity determines suppression difficulty with threshold at 500 kW/m</li>
+  <li>Cellular automaton models provide computationally efficient landscape-scale simulation</li>
+  <li>Operational systems like FARSITE predict fire perimeter evolution for planning</li>
+  <li>Applications span wildfire prediction, prescribed burn planning, post-fire analysis</li>
+  <li>Challenges include crown fire transition, spotting, fuel heterogeneity, weather uncertainty</li>
+  <li>Machine learning approaches complement physics-based models</li>
+  <li>Critical tool for emergency management and firefighter safety</li>
+</ul>
+
+      </div>
+
+      
+
+
+
+      
+
+  
+  
+  
+  
+
+
+
+      <!-- essay-footer-notes.html — References / endnotes section.
+     Hidden by default; assets/js/essay/core.js shows it and populates
+     #essay-endnotes-list from [data-cite] elements in the content.
+
+     In posts, create citation markers with:
+       <cite data-cite="Author, Title, URL">1</cite>
+     The JS collects these and renders a numbered reference list here. -->
+
+<footer class="essay-endnotes" id="essay-endnotes" aria-label="References" hidden>
+  <div class="essay-endnotes-inner">
+    <h2 class="essay-endnotes-heading">References</h2>
+    <ol class="essay-endnotes-list" id="essay-endnotes-list">
+      <!-- Populated at runtime by assets/js/essay/core.js buildEndnotes() -->
+    </ol>
+  </div>
+</footer>
+
+
+      
+
+      
+
+      
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    </article>
+  </main>
+
+  <aside
+    class="essay-sidenotes"
+    id="essay-sidenotes"
+    aria-label="Margin notes"
+  ></aside>
+
+</div>
+
+</div>
+
+<footer>
+  <div class="footer-inner">
+
+    <!-- Col 1: Brand -->
+    <div class="footer-brand">
+      <div class="footer-brand-logo">
+        
+        <img loading="lazy" src="/assets/images/logo.webp" alt="WaywardHouse" width="28" height="28">
+        
+        WaywardHouse<span>.</span>
+      </div>
+      
+      
+      <p class="footer-brand-desc">Understanding how place, economy, and environment interact — through analysis, modelling, and open tools.</p>
+      
+
+      <div class="footer-social">
+        
+        
+        
+        <a href="/feed.xml" class="social-icon" target="_blank" rel="noopener noreferrer" aria-label="RSS feed">
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M4 11a9 9 0 0 1 9 9"/>
+            <path d="M4 4a16 16 0 0 1 16 16"/>
+            <circle cx="5" cy="19" r="1"/>
+          </svg>
+        </a>
+      </div>
+    </div>
+
+    <!-- Col 2: Topics (configurable via footer_topics, falls back to auto-categories) -->
+    <nav aria-labelledby="footer-topics">
+      <h3 class="footer-col-title" id="footer-topics">Reading</h3>
+      <ul class="footer-links">
+        
+          
+          <li><a href="/topics/">Essays</a></li>
+          
+          <li><a href="/series/">Modelling</a></li>
+          
+          <li><a href="/archive/">Archive</a></li>
+          
+          <li><a href="/start-here/">Start Here</a></li>
+          
+        
+      </ul>
+    </nav>
+
+    <!-- Col 3: Secondary navigation -->
+    
+    <nav aria-labelledby="footer-company">
+      <h3 class="footer-col-title" id="footer-company">Site</h3>
+      <ul class="footer-links">
+        
+        <li><a href="/start-here/">Start Here</a></li>
+        
+        <li><a href="/about/">About</a></li>
+        
+        <li><a href="/contact/">Contact</a></li>
+        
+      </ul>
+    </nav>
+    
+
+    <!-- Col 4: Resources -->
+    <nav aria-labelledby="footer-resources">
+      <h3 class="footer-col-title" id="footer-resources">Resources</h3>
+      <ul class="footer-links">
+        <li><a href="/archive/">Archive</a></li>
+        <li><a href="/feed.xml">RSS Feed</a></li>
+        <li><a href="/topics/">All Topics</a></li>
+      </ul>
+    </nav>
+
+  </div><!-- /.footer-inner -->
+
+  <div class="footer-bottom">
+    <span class="footer-copy">
+      &copy; 2026 WaywardHouse.
+    </span>
+    <div class="footer-legal">
+      <a href="/privacy/">Privacy Policy</a>
+      <a href="/terms/">Terms of Service</a>
+    </div>
+  </div>
+
+</footer>
+
+
+<!-- Alpine.js bundle -->
+<script type="module" src="/assets/dist/main.js"></script>
+
+<!-- Visualization runtime — detects and loads CDN libraries dynamically -->
+<script type="module" src="/assets/js/core.js"></script>
+
+<!-- Search overlay — event-driven: nav button $dispatches 'search:open' -->
+<div
+  x-data="search"
+  x-init="init()"
+  @search:open.window="open()"
+>
+  <div
+    class="search-overlay"
+    x-show="isOpen"
+    x-transition:enter="transition ease-out duration-150"
+    x-transition:enter-start="opacity-0"
+    x-transition:enter-end="opacity-100"
+    x-transition:leave="transition ease-in duration-100"
+    x-transition:leave-start="opacity-100"
+    x-transition:leave-end="opacity-0"
+    @click.self="close()"
+    style="display: none;"
+    role="dialog"
+    aria-modal="true"
+    aria-label="Search"
+  >
+    <div class="search-panel">
+      <div class="search-input-wrap">
+        <svg class="search-icon" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <circle cx="11" cy="11" r="8"/>
+          <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+        </svg>
+        <input
+          class="search-input"
+          type="search"
+          placeholder="Search posts…"
+          x-model="query"
+          x-ref="input"
+          @input.debounce.300ms="runSearch()"
+          @keydown.escape="close()"
+          autocomplete="off"
+          spellcheck="false"
+          aria-label="Search query"
+        >
+        <kbd class="search-esc" aria-hidden="true">ESC</kbd>
+      </div>
+
+      <div class="search-results" x-show="query.trim().length > 0">
+        <div class="search-status" x-show="loading" aria-live="polite">Searching…</div>
+        <div class="search-status" x-show="!loading && results.length === 0" aria-live="polite">
+          No results for "<span x-text="query"></span>"
+        </div>
+        <ul class="search-result-list" x-show="!loading && results.length > 0" role="list">
+          <template x-for="result in results" :key="result.url">
+            <li>
+              <a :href="result.url" class="search-result-item" @click="close()">
+                <div class="search-result-title" x-text="result.meta?.title || result.url"></div>
+                <div class="search-result-excerpt" x-html="result.excerpt"></div>
+              </a>
+            </li>
+          </template>
+        </ul>
+      </div>
+    </div>
+  </div>
+</div>
+
+</body>
+</html>

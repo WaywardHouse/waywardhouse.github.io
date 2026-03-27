@@ -1,0 +1,1389 @@
+<!DOCTYPE html>
+
+<html lang="en" data-brand="wayward" data-theme="light">
+<head>
+  <meta charset="utf-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Slope Stability Analysis — WaywardHouse</title>
+<meta name="description" content="Which slopes are stable, and which will fail? Slope stability analysis balances driving forces (gravity) against resisting forces (friction, cohesion). This model derives the infinite slope model, implements factor of...">
+
+<!-- Dark mode flash prevention — runs synchronously before first paint -->
+<script>
+  (function () {
+    var defaultDark = 'light' === 'dark';
+    var s = localStorage.getItem('theme');
+    var dark = s !== null ? s === 'dark' : defaultDark;
+    document.documentElement.dataset.theme = dark ? 'dark' : 'light';
+  })();
+</script>
+
+<!-- Preconnect to CDN domains used by the viz runtime -->
+<link rel="preconnect" href="https://cdn.jsdelivr.net">
+<link rel="preconnect" href="https://unpkg.com">
+<link rel="preconnect" href="https://esm.sh">
+<link rel="preconnect" href="https://api.mapbox.com">
+<link rel="preconnect" href="https://events.mapbox.com">
+
+
+<script>window.MAPBOX_TOKEN = 'pk.eyJ1IjoiYnJlYWRlZGNvZCIsImEiOiJjbW0xa25qc2EwMmtwMnJwejJlNndqdnoxIn0._7I9PwXuFLrOQINVZ84y1w';</script>
+
+
+<!-- Fonts -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:ital,wght@0,300;0,400;0,600;0,700;0,800;0,900;1,700;1,800&family=Barlow:wght@300;400&family=IBM+Plex+Mono:ital,wght@0,300;0,400;0,500;1,300&family=Literata:ital,opsz,wght@0,7..72,300;0,7..72,400;0,7..72,500;1,7..72,300;1,7..72,400&display=swap" rel="stylesheet">
+
+<!-- Theme stylesheet (Vite build output) -->
+<link rel="stylesheet" href="/assets/dist/main.css">
+
+<!-- Brand token overrides — loaded after main.css so variables cascade correctly -->
+
+<link rel="stylesheet" href="/assets/css/brand-wayward.css">
+
+
+
+<!-- Syntax highlighting (Rouge — light + dark) -->
+<link rel="stylesheet" href="/assets/css/syntax.css">
+
+<!-- Begin Jekyll SEO tag v2.8.0 -->
+<title>Slope Stability Analysis | WaywardHouse</title>
+<meta name="generator" content="Jekyll v4.4.1" />
+<meta property="og:title" content="Slope Stability Analysis" />
+<meta property="og:locale" content="en" />
+<meta name="description" content="Which slopes are stable, and which will fail? Slope stability analysis balances driving forces (gravity) against resisting forces (friction, cohesion). This model derives the infinite slope model, implements factor of safety calculations, shows how water pressure and earthquakes reduce stability, and maps landslide susceptibility." />
+<meta property="og:description" content="Which slopes are stable, and which will fail? Slope stability analysis balances driving forces (gravity) against resisting forces (friction, cohesion). This model derives the infinite slope model, implements factor of safety calculations, shows how water pressure and earthquakes reduce stability, and maps landslide susceptibility." />
+<link rel="canonical" href="https://wayward.house/model/slope-stability-analysis/" />
+<meta property="og:url" content="https://wayward.house/model/slope-stability-analysis/" />
+<meta property="og:site_name" content="WaywardHouse" />
+<meta property="og:image" content="https://wayward.house/assets/images/slope-stability.jpg" />
+<meta property="og:type" content="article" />
+<meta property="article:published_time" content="2026-02-27T00:00:00+00:00" />
+<meta name="twitter:card" content="summary_large_image" />
+<meta property="twitter:image" content="https://wayward.house/assets/images/slope-stability.jpg" />
+<meta property="twitter:title" content="Slope Stability Analysis" />
+<meta name="twitter:site" content="@" />
+<script type="application/ld+json">
+{"@context":"https://schema.org","@type":"BlogPosting","dateModified":"2026-03-18T03:37:31+00:00","datePublished":"2026-02-27T00:00:00+00:00","description":"Which slopes are stable, and which will fail? Slope stability analysis balances driving forces (gravity) against resisting forces (friction, cohesion). This model derives the infinite slope model, implements factor of safety calculations, shows how water pressure and earthquakes reduce stability, and maps landslide susceptibility.","headline":"Slope Stability Analysis","image":"https://wayward.house/assets/images/slope-stability.jpg","mainEntityOfPage":{"@type":"WebPage","@id":"https://wayward.house/model/slope-stability-analysis/"},"publisher":{"@type":"Organization","logo":{"@type":"ImageObject","url":"https://wayward.house/assets/images/logo.webp"}},"url":"https://wayward.house/model/slope-stability-analysis/"}</script>
+<!-- End Jekyll SEO tag -->
+
+
+
+<!-- Cloudflare Web Analytics -->
+<script defer src="https://static.cloudflareinsights.com/beacon.min.js"
+  data-cf-beacon='{"token": "62c47d78bf9d4c80972d4e6242d79ff8"}'></script>
+
+
+</head>
+<body class="
+  model-template
+   tag-modelling
+   tag-hash-math
+  
+   tag-hash-viz
+  
+  
+  
+  
+  
+  
+">
+
+<a href="#main-content" class="skip-link">Skip to content</a>
+
+<header class="nav" x-data="{ open: false }">
+  <div class="nav-inner">
+
+    <!-- Logo -->
+    <a href="/" class="nav-logo">
+      
+      <img loading="lazy" src="/assets/images/logo.webp" alt="WaywardHouse" width="32" height="32">
+      
+      WaywardHouse<span>.</span>
+    </a>
+
+    <!-- Desktop nav links -->
+    <ul class="nav-links" role="list">
+      
+      <li>
+        <a href="/topics/">Essays</a>
+      </li>
+      
+      <li>
+        <a href="/series/">Modelling</a>
+      </li>
+      
+      <li>
+        <a href="/about/">About</a>
+      </li>
+      
+    </ul>
+
+    <!-- Actions -->
+    <div class="nav-actions">
+
+      <!-- Search button -->
+      <button
+        class="search-toggle"
+        type="button"
+        aria-label="Search (⌘K)"
+        title="Search (⌘K)"
+        @click="$dispatch('search:open')"
+      >
+        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <circle cx="11" cy="11" r="8"/>
+          <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+        </svg>
+      </button>
+
+      <!-- Dark mode toggle -->
+      <button
+        class="theme-toggle"
+        x-data="darkMode"
+        x-init="init()"
+        @click="toggle()"
+        :aria-label="dark ? 'Switch to light mode' : 'Switch to dark mode'"
+        type="button"
+      >
+        <!-- Sun icon (shown in light mode) -->
+        <svg class="icon-sun" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">
+          <circle cx="12" cy="12" r="5"/>
+          <line x1="12" y1="1" x2="12" y2="3"/>
+          <line x1="12" y1="21" x2="12" y2="23"/>
+          <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/>
+          <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/>
+          <line x1="1" y1="12" x2="3" y2="12"/>
+          <line x1="21" y1="12" x2="23" y2="12"/>
+          <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/>
+          <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>
+        </svg>
+        <!-- Moon icon (shown in dark mode) -->
+        <svg class="icon-moon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">
+          <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+        </svg>
+      </button>
+
+      <!-- Hamburger (mobile only) -->
+      <button
+        class="mobile-nav-toggle"
+        @click="open = !open"
+        :aria-expanded="open"
+        :aria-label="open ? 'Close menu' : 'Open menu'"
+        type="button"
+      >
+        <svg x-show="!open" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <line x1="3" y1="6" x2="21" y2="6"/>
+          <line x1="3" y1="12" x2="21" y2="12"/>
+          <line x1="3" y1="18" x2="21" y2="18"/>
+        </svg>
+        <svg x-show="open" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <line x1="18" y1="6" x2="6" y2="18"/>
+          <line x1="6" y1="6" x2="18" y2="18"/>
+        </svg>
+      </button>
+
+    </div><!-- /.nav-actions -->
+  </div><!-- /.nav-inner -->
+
+  <!-- Mobile drawer -->
+  <div
+    class="mobile-nav"
+    x-show="open"
+    x-transition:enter="transition ease-out duration-200"
+    x-transition:enter-start="opacity-0 -translate-y-1"
+    x-transition:enter-end="opacity-100 translate-y-0"
+    x-transition:leave="transition ease-in duration-150"
+    x-transition:leave-start="opacity-100 translate-y-0"
+    x-transition:leave-end="opacity-0 -translate-y-1"
+    @click.outside="open = false"
+    @keydown.escape.window="open = false"
+  >
+    <ul role="list">
+      
+      <li>
+        <a href="/topics/" @click="open = false">Essays</a>
+      </li>
+      
+      <li>
+        <a href="/series/" @click="open = false">Modelling</a>
+      </li>
+      
+      <li>
+        <a href="/about/" @click="open = false">About</a>
+      </li>
+      
+    </ul>
+  </div><!-- /.mobile-nav -->
+
+</header>
+
+
+<div id="main-content">
+  <!-- Essay stylesheet and runtime — self-contained -->
+<link rel="stylesheet" href="/assets/css/essay.css">
+<script type="module" src="/assets/js/essay/core.js"></script>
+
+<div class="essay-layout" id="essay-layout">
+
+  <!-- essay-toc.html — Sticky table of contents (left column).
+     The <ol> is empty on load; assets/js/essay/core.js populates it
+     from h2/h3 elements found in #essay-content after the page renders. -->
+
+<nav class="essay-toc" id="essay-toc" aria-label="Table of contents">
+  <div class="essay-toc-inner">
+    <p class="essay-toc-heading" aria-hidden="true">Contents</p>
+    <ol class="essay-toc-list" id="essay-toc-list">
+      <!-- Populated at runtime by assets/js/essay/core.js buildToc() -->
+    </ol>
+  </div>
+</nav>
+
+
+  <main class="essay-main" id="essay-main" role="main">
+    <article class="essay-article">
+
+      <!-- essay-hero.html — Header for computational essay template.
+     Displays feature image, tag label, title, excerpt, and post metadata. -->
+
+<header class="essay-hero">
+  
+  <figure class="essay-hero-figure">
+    <img
+      src="/assets/images/slope-stability.jpg"
+      alt="Slope Stability Analysis"
+      class="essay-hero-img"
+      loading="eager"
+    >
+    
+  </figure>
+  
+
+  <div class="essay-hero-body">
+
+    
+    
+    
+    
+    
+    <nav class="essay-breadcrumb" aria-label="Series position">
+      
+      <a href="/series/4/" class="essay-breadcrumb-link">Computational geography cryosphere</a>
+      
+      
+      <span class="essay-breadcrumb-sep" aria-hidden="true">›</span>
+      <span class="essay-breadcrumb-cluster">Mountain Hazards</span>
+      
+      
+      <span class="essay-breadcrumb-sep" aria-hidden="true">›</span>
+      <span class="essay-breadcrumb-pos">Model 8</span>
+      
+    </nav>
+    
+
+    <div class="essay-hero-labels">
+      
+      <a href="/topics/modelling/" class="essay-tag-label">modelling</a>
+      
+      
+      <span class="difficulty-badge difficulty-badge--4">Level 4</span>
+      
+    </div>
+
+    <h1 class="essay-title">Slope Stability Analysis</h1>
+
+    
+    <p class="essay-excerpt">Which slopes are stable, and which will fail? Slope stability analysis balances driving forces (gravity) against resisting forces (friction, cohesion). This model derives the infinite slope model, implements factor of safety calculations, shows how water pressure and earthquakes reduce stability, and maps landslide susceptibility.
+</p>
+    
+
+    
+    <p class="essay-prereqs"><span class="essay-prereqs-label">Prerequisites:</span> force balance, mohr coulomb, factor of safety, limit equilibrium</p>
+    
+
+    <div class="essay-meta">
+      
+      <div class="essay-meta-secondary">
+        <time class="essay-date" datetime="2026-02-27">27 Feb 2026</time>
+        
+        
+        <span class="essay-sep" aria-hidden="true">·</span>
+        <span class="essay-updated">Updated <time datetime="2026-03-18">18 Mar 2026</time></span>
+        
+        <span class="essay-sep" aria-hidden="true">·</span>
+        <span class="essay-reading-time">13 min read</span>
+      </div>
+    </div>
+  </div>
+</header>
+
+
+      
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<nav class="series-nav" aria-label="Series navigation">
+
+  <div class="series-nav-header">
+    <span class="series-nav-label">R</span>
+    <span class="series-nav-title">Mountain Hazards</span>
+  </div>
+
+  <ol class="series-nav-list">
+    
+    <li class="series-nav-item series-nav-item--current">
+      
+      <span class="series-nav-link series-nav-link--current" aria-current="page">
+        <span class="series-nav-number">8</span>
+        Slope Stability Analysis
+      </span>
+      
+    </li>
+    
+    <li class="series-nav-item">
+      
+      <a href="/model/debris-flow-modeling/" class="series-nav-link">
+        <span class="series-nav-number">9</span>
+        Debris Flow modelling
+      </a>
+      
+    </li>
+    
+    <li class="series-nav-item">
+      
+      <a href="/model/permafrost-thaw-geohazards/" class="series-nav-link">
+        <span class="series-nav-number">10</span>
+        Permafrost Thaw and Geohazards
+      </a>
+      
+    </li>
+    
+  </ol>
+
+  
+  <div class="series-nav-footer">
+    <a href="/series/4/" class="series-nav-all">
+      All 10 in this series &rarr;
+    </a>
+  </div>
+  
+
+</nav>
+
+
+
+
+      <div class="essay-content gh-content" id="essay-content">
+        <p>On the morning of 9 August 2010, a hillside above the village of Gansu in northwestern China had stood for centuries. By that evening it was gone. A combination of weeks of saturation from unusually heavy rainfall and a steep slope angle produced a landslide that buried more than 700 homes and killed over 1,700 people. The slope had failed because the pore water pressure from saturated soils had reduced the effective friction holding the soil to the bedrock below — the resisting force dropped below the driving force of gravity, and the whole mass began to move.</p>
+
+<p>Slope stability analysis is the quantitative answer to a question that engineers, geologists, and land-use planners need to answer precisely: given this slope geometry, these soil properties, and these groundwater conditions, how close is this hillside to failure? The tool is the Factor of Safety — the ratio of resisting to driving forces — derived from the Mohr-Coulomb failure criterion that describes how soils and rocks resist shear. A Factor of Safety above 1 means the slope is stable; below 1 means it has already failed; exactly 1 is the critical condition. The power of the method is that it converts a qualitative question about hazard into a number that can be mapped, compared across landscapes, and updated as conditions change with rainfall, earthquake shaking, or excavation.</p>
+
+<h2 id="1-the-question">1. The Question</h2>
+
+<p>After heavy rain, which hillslopes will fail as landslides?</p>
+
+<p><strong>Slope stability</strong> determines whether soil/rock remains in place or slides downslope.</p>
+
+<p><strong>Driving forces:</strong></p>
+<ul>
+  <li>Gravity (weight component parallel to slope)</li>
+  <li>Water pressure (reduces effective stress)</li>
+  <li>Earthquakes (dynamic loading)</li>
+  <li>External loads (buildings, traffic)</li>
+</ul>
+
+<p><strong>Resisting forces:</strong></p>
+<ul>
+  <li>Friction (depends on normal stress)</li>
+  <li>Cohesion (soil/rock strength)</li>
+  <li>Vegetation (root reinforcement)</li>
+</ul>
+
+<p><strong>Critical question:</strong> Does resistance exceed driving force?</p>
+
+<p><strong>Applications:</strong></p>
+<ul>
+  <li>Landslide hazard mapping</li>
+  <li>Cut/fill slope design (roads, buildings)</li>
+  <li>Dam stability</li>
+  <li>Mine pit walls</li>
+  <li>Post-earthquake assessment</li>
+</ul>
+
+<hr />
+
+<h2 id="2-the-conceptual-model">2. The Conceptual Model</h2>
+
+<h3 id="landslide-types">Landslide Types</h3>
+
+<p><strong>By material:</strong></p>
+<ul>
+  <li><strong>Rock slide:</strong> Bedrock failure</li>
+  <li><strong>Debris slide:</strong> Soil + rock fragments</li>
+  <li><strong>Earth slide:</strong> Predominantly soil</li>
+</ul>
+
+<p><strong>By mechanism:</strong></p>
+<ul>
+  <li><strong>Rotational:</strong> Curved failure surface</li>
+  <li><strong>Translational:</strong> Planar failure surface</li>
+  <li><strong>Complex:</strong> Multiple failure modes</li>
+</ul>
+
+<p><strong>By movement:</strong></p>
+<ul>
+  <li><strong>Slide:</strong> Mass moves as coherent unit</li>
+  <li><strong>Flow:</strong> Fluid-like behavior</li>
+  <li><strong>Fall:</strong> Free-fall from cliff</li>
+  <li><strong>Topple:</strong> Forward rotation</li>
+</ul>
+
+<h3 id="mohr-coulomb-failure-criterion">Mohr-Coulomb Failure Criterion</h3>
+
+<p><strong>Shear strength:</strong></p>
+
+\[\tau_f = c + \sigma' \tan\phi\]
+
+<p>Where:</p>
+<ul>
+  <li>$\tau_f$ = shear strength (kPa)</li>
+  <li>$c$ = cohesion (kPa)</li>
+  <li>$\sigma’$ = effective normal stress (kPa)</li>
+  <li>$\phi$ = friction angle (degrees)</li>
+</ul>
+
+<p><strong>Effective stress:</strong></p>
+
+\[\sigma' = \sigma - u\]
+
+<p>Where:</p>
+<ul>
+  <li>$\sigma$ = total stress</li>
+  <li>$u$ = pore water pressure</li>
+</ul>
+
+<p><strong>Key insight:</strong> Water reduces effective stress → reduces shear strength!</p>
+
+<h3 id="factor-of-safety">Factor of Safety</h3>
+
+\[FS = \frac{\text{Resisting Forces}}{\text{Driving Forces}} = \frac{\tau_f}{\tau}\]
+
+<p><strong>Interpretation:</strong></p>
+<ul>
+  <li>$FS &gt; 1.5$: Stable (safe)</li>
+  <li>$FS = 1.0-1.5$: Marginal (monitor)</li>
+  <li>$FS &lt; 1.0$: <strong>Failure</strong> (landslide occurs)</li>
+</ul>
+
+<p><strong>Design criterion:</strong> Typically require $FS &gt; 1.5$ for permanent slopes.</p>
+
+<hr />
+
+<h2 id="3-building-the-mathematical-model">3. Building the Mathematical Model</h2>
+
+<h3 id="infinite-slope-model">Infinite Slope Model</h3>
+
+<p><strong>Assumptions:</strong></p>
+<ul>
+  <li>Uniform slope angle $\theta$</li>
+  <li>Failure parallel to surface</li>
+  <li>Infinite extent (no edge effects)</li>
+</ul>
+
+<p><strong>Forces on soil element:</strong></p>
+
+<p><strong>Weight:</strong> $W = \gamma z b L$</p>
+
+<p>Where:</p>
+<ul>
+  <li>$\gamma$ = unit weight of soil (kN/m³)</li>
+  <li>$z$ = depth to failure plane (m)</li>
+  <li>$b$ = width (m)</li>
+  <li>$L$ = length along slope (m)</li>
+</ul>
+
+<p><strong>Weight components:</strong></p>
+
+<p><strong>Parallel to slope (driving):</strong></p>
+
+\[W_\parallel = W \sin\theta = \gamma z b L \sin\theta\]
+
+<p><strong>Perpendicular (normal):</strong></p>
+
+\[W_\perp = W \cos\theta = \gamma z b L \cos\theta\]
+
+<p><strong>Normal stress:</strong></p>
+
+\[\sigma = \frac{W_\perp}{b L / \cos\theta} = \gamma z \cos^2\theta\]
+
+<p><strong>Shear stress (driving):</strong></p>
+
+\[\tau = \frac{W_\parallel}{b L / \cos\theta} = \gamma z \sin\theta \cos\theta\]
+
+<p><strong>Shear strength (resisting):</strong></p>
+
+\[\tau_f = c + \sigma' \tan\phi = c + \gamma z \cos^2\theta \tan\phi\]
+
+<p>(Assuming dry slope: $\sigma’ = \sigma$)</p>
+
+<p><strong>Factor of Safety:</strong></p>
+
+\[FS = \frac{\tau_f}{\tau} = \frac{c + \gamma z \cos^2\theta \tan\phi}{\gamma z \sin\theta \cos\theta}\]
+
+<p><strong>Simplified:</strong></p>
+
+\[FS = \frac{c}{\gamma z \sin\theta \cos\theta} + \frac{\tan\phi}{\tan\theta}\]
+
+<p><strong>For cohesionless soil ($c = 0$):</strong></p>
+
+\[FS = \frac{\tan\phi}{\tan\theta}\]
+
+<p><strong>Critical slope angle:</strong> $\theta_{\text{crit}} = \phi$ (where $FS = 1$)</p>
+
+<h3 id="effect-of-water">Effect of Water</h3>
+
+<p><strong>Saturated slope with seepage parallel to surface:</strong></p>
+
+<p><strong>Pore pressure:</strong> $u = \gamma_w z_w \cos^2\theta$</p>
+
+<p>Where:</p>
+<ul>
+  <li>$\gamma_w$ = unit weight of water (9.81 kN/m³)</li>
+  <li>$z_w$ = depth to water table</li>
+</ul>
+
+<p><strong>Effective stress:</strong></p>
+
+\[\sigma' = \gamma z \cos^2\theta - \gamma_w z_w \cos^2\theta\]
+
+<p><strong>If fully saturated ($z_w = z$):</strong></p>
+
+\[\sigma' = (\gamma - \gamma_w) z \cos^2\theta = \gamma' z \cos^2\theta\]
+
+<p>Where $\gamma’ = \gamma - \gamma_w$ = buoyant unit weight</p>
+
+<p><strong>Factor of Safety (saturated):</strong></p>
+
+\[FS = \frac{c}{\gamma z \sin\theta \cos\theta} + \frac{\gamma'}{\gamma} \frac{\tan\phi}{\tan\theta}\]
+
+<p><strong>Key result:</strong> $\gamma’/\gamma \approx 0.5$ for typical soils → <strong>FS reduced by ~50%</strong> when saturated!</p>
+
+<h3 id="seismic-loading">Seismic Loading</h3>
+
+<p><strong>Earthquake adds horizontal force:</strong></p>
+
+<p><strong>Pseudo-static approach:</strong></p>
+
+\[F_h = k_h W\]
+
+<p>Where $k_h$ = horizontal seismic coefficient (~0.1-0.3 for strong shaking)</p>
+
+<p><strong>Modified driving stress:</strong></p>
+
+\[\tau_{\text{seismic}} = \gamma z (\sin\theta + k_h \cos\theta) \cos\theta\]
+
+<p><strong>Factor of Safety:</strong></p>
+
+\[FS_{\text{seismic}} = \frac{c + \gamma z \cos^2\theta \tan\phi}{\gamma z (\sin\theta + k_h \cos\theta) \cos\theta}\]
+
+<p><strong>Earthquake reduces FS</strong> by increasing driving force.</p>
+
+<hr />
+
+<h2 id="4-worked-example-by-hand">4. Worked Example by Hand</h2>
+
+<p><strong>Problem:</strong> Calculate factor of safety for hillslope.</p>
+
+<p><strong>Slope conditions:</strong></p>
+<ul>
+  <li>Angle: $\theta = 30°$</li>
+  <li>Soil depth to bedrock: $z = 3$ m</li>
+  <li>Unit weight: $\gamma = 18$ kN/m³</li>
+  <li>Cohesion: $c = 5$ kPa</li>
+  <li>Friction angle: $\phi = 35°$</li>
+</ul>
+
+<p><strong>Calculate FS for:</strong></p>
+<ol>
+  <li>Dry slope</li>
+  <li>Fully saturated slope</li>
+  <li>Saturated slope with earthquake ($k_h = 0.15$)</li>
+</ol>
+
+<h3 id="solution">Solution</h3>
+
+<p><strong>Case 1: Dry slope</strong></p>
+
+\[\tau = \gamma z \sin\theta \cos\theta = 18 \times 3 \times \sin(30°) \times \cos(30°)\]
+
+\[= 18 \times 3 \times 0.5 \times 0.866 = 23.4 \text{ kPa}\]
+
+\[\sigma = \gamma z \cos^2\theta = 18 \times 3 \times (0.866)^2 = 40.5 \text{ kPa}\]
+
+\[\tau_f = c + \sigma \tan\phi = 5 + 40.5 \times \tan(35°) = 5 + 40.5 \times 0.700 = 33.4 \text{ kPa}\]
+
+\[FS = \frac{33.4}{23.4} = 1.43\]
+
+<p><strong>Marginal stability</strong> (just below typical design criterion of 1.5)</p>
+
+<p><strong>Case 2: Saturated slope</strong></p>
+
+<p>Buoyant unit weight: $\gamma’ = 18 - 9.81 = 8.19$ kN/m³</p>
+
+\[\sigma' = \gamma' z \cos^2\theta = 8.19 \times 3 \times 0.75 = 18.4 \text{ kPa}\]
+
+\[\tau_f = 5 + 18.4 \times 0.700 = 17.9 \text{ kPa}\]
+
+\[FS = \frac{17.9}{23.4} = 0.76\]
+
+<p><strong>FAILURE!</strong> (FS &lt; 1.0)</p>
+
+<p><strong>Case 3: Saturated + earthquake</strong></p>
+
+\[\tau_{\text{eq}} = \gamma z (\sin\theta + k_h\cos\theta) \cos\theta\]
+
+\[= 18 \times 3 \times (0.5 + 0.15 \times 0.866) \times 0.866\]
+
+\[= 18 \times 3 \times (0.5 + 0.130) \times 0.866 = 29.4 \text{ kPa}\]
+
+\[FS = \frac{17.9}{29.4} = 0.61\]
+
+<p><strong>Catastrophic failure</strong> (FS well below 1.0)</p>
+
+<p><strong>Summary:</strong></p>
+<ul>
+  <li>Dry: FS = 1.43 (marginal)</li>
+  <li>Saturated: FS = 0.76 (fails)</li>
+  <li>Saturated + earthquake: FS = 0.61 (catastrophic)</li>
+</ul>
+
+<p><strong>This explains why landslides often occur during/after heavy rain or earthquakes!</strong></p>
+
+<hr />
+
+<h2 id="5-computational-implementation">5. Computational Implementation</h2>
+
+<p>Below is an interactive slope stability calculator.</p>
+
+<div class="viz-container" id="stability-viz">
+  <div class="controls">
+    <label>
+      Slope angle (°):
+      <input type="range" id="slope-angle" min="10" max="50" step="1" value="30" />
+      <span id="angle-val">30</span>°
+    </label>
+    <label>
+      Friction angle φ (°):
+      <input type="range" id="friction-angle" min="20" max="45" step="1" value="35" />
+      <span id="friction-val">35</span>°
+    </label>
+    <label>
+      Cohesion (kPa):
+      <input type="range" id="cohesion" min="0" max="20" step="1" value="5" />
+      <span id="cohesion-val">5</span>
+    </label>
+    <label>
+      Water table depth (m):
+      <input type="range" id="water-depth" min="0" max="3" step="0.5" value="3" />
+      <span id="water-val">3.0</span> (3m = dry)
+    </label>
+    <label>
+      Seismic coefficient:
+      <input type="range" id="seismic" min="0" max="0.3" step="0.05" value="0" />
+      <span id="seismic-val">0.00</span>
+    </label>
+    <div class="stability-info">
+      <p><strong>Factor of Safety:</strong> <span id="fs-value">--</span></p>
+      <p><strong>Status:</strong> <span id="stability-status">--</span></p>
+      <p><strong>Driving stress:</strong> <span id="tau-drive">--</span> kPa</p>
+      <p><strong>Resisting stress:</strong> <span id="tau-resist">--</span> kPa</p>
+    </div>
+  </div>
+  <div id="stability-canvas-container">
+    <canvas id="stability-canvas" width="700" height="400" style="border: 1px solid #ddd;"></canvas>
+  </div>
+</div>
+
+<script type="module">
+await new Promise(resolve => {
+  const checkECharts = () => {
+    if (typeof echarts !== 'undefined') resolve();
+    else setTimeout(checkECharts, 50);
+  };
+  checkECharts();
+});
+
+(function() {
+  const chart = echarts.init(document.getElementById('stability-canvas'));
+  
+  let slopeAngle = 30;
+  let frictionAngle = 35;
+  let cohesion = 5;
+  let waterDepth = 3;
+  let seismicCoef = 0;
+  
+  const z = 3; // depth to failure (m)
+  const gamma = 18; // unit weight (kN/m³)
+  const gammaW = 9.81; // water unit weight
+  
+  function calculateStability() {
+    const thetaRad = slopeAngle * Math.PI / 180;
+    const phiRad = frictionAngle * Math.PI / 180;
+    
+    const sinTheta = Math.sin(thetaRad);
+    const cosTheta = Math.cos(thetaRad);
+    const tanPhi = Math.tan(phiRad);
+    
+    // Effective stress
+    let gammaPrime = gamma;
+    if (waterDepth < z) {
+      // Partially saturated
+      const satFraction = (z - waterDepth) / z;
+      gammaPrime = gamma - satFraction * gammaW;
+    }
+    
+    const sigma = gammaPrime * z * cosTheta * cosTheta;
+    
+    // Driving stress
+    const tauDrive = gamma * z * (sinTheta + seismicCoef * cosTheta) * cosTheta;
+    
+    // Resisting stress
+    const tauResist = cohesion + sigma * tanPhi;
+    
+    // Factor of Safety
+    const FS = tauResist / tauDrive;
+    
+    let status;
+    if (FS > 1.5) status = 'Stable';
+    else if (FS > 1.2) status = 'Marginally Stable';
+    else if (FS > 1.0) status = 'Critical';
+    else status = 'FAILURE';
+    
+    return {FS, status, tauDrive, tauResist, sigma};
+  }
+  
+  function generateFSvsAngle() {
+    const data = [];
+    
+    for (let angle = 10; angle <= 50; angle += 1) {
+      slopeAngle = angle;
+      const result = calculateStability();
+      data.push([angle, result.FS]);
+    }
+    
+    slopeAngle = parseFloat(document.getElementById('slope-angle').value);
+    return data;
+  }
+  
+  function render() {
+    const result = calculateStability();
+    
+    document.getElementById('fs-value').textContent = result.FS.toFixed(2);
+    document.getElementById('stability-status').textContent = result.status;
+    document.getElementById('tau-drive').textContent = result.tauDrive.toFixed(1);
+    document.getElementById('tau-resist').textContent = result.tauResist.toFixed(1);
+    
+    const statusEl = document.getElementById('stability-status');
+    if (result.status === 'Stable') statusEl.style.color = '#2E7D32';
+    else if (result.status.includes('Marginal')) statusEl.style.color = '#F57F17';
+    else if (result.status === 'Critical') statusEl.style.color = '#E64A19';
+    else statusEl.style.color = '#B71C1C';
+    
+    const fsData = generateFSvsAngle();
+    
+    const series = [
+      {
+        name: 'Factor of Safety',
+        type: 'line',
+        data: fsData,
+        lineStyle: {color: '#1976D2', width: 3},
+        areaStyle: {
+          color: {
+            type: 'linear',
+            x: 0, y: 0, x2: 0, y2: 1,
+            colorStops: [
+              {offset: 0, color: 'rgba(76, 175, 80, 0.3)'},
+              {offset: 0.5, color: 'rgba(255, 193, 7, 0.3)'},
+              {offset: 1, color: 'rgba(244, 67, 54, 0.3)'}
+            ]
+          }
+        }
+      },
+      {
+        name: 'FS = 1.0 (Failure)',
+        type: 'line',
+        data: [[10, 1.0], [50, 1.0]],
+        lineStyle: {color: '#D32F2F', width: 2, type: 'dashed'},
+        markLine: {
+          silent: true,
+          lineStyle: {color: '#D32F2F', width: 2, type: 'dashed'},
+          data: [{yAxis: 1.0}],
+          label: {formatter: 'Failure threshold', position: 'insideEndTop'}
+        }
+      },
+      {
+        name: 'FS = 1.5 (Design)',
+        type: 'line',
+        data: [[10, 1.5], [50, 1.5]],
+        lineStyle: {color: '#FF9800', width: 2, type: 'dotted'},
+        markLine: {
+          silent: true,
+          lineStyle: {color: '#FF9800', width: 2, type: 'dotted'},
+          data: [{yAxis: 1.5}],
+          label: {formatter: 'Design criterion', position: 'insideEndTop'}
+        }
+      },
+      {
+        name: 'Current Slope',
+        type: 'scatter',
+        data: [[slopeAngle, result.FS]],
+        symbolSize: 15,
+        itemStyle: {color: '#E91E63'},
+        label: {
+          show: true,
+          formatter: `${slopeAngle}°`,
+          position: 'top',
+          color: '#E91E63',
+          fontWeight: 'bold'
+        }
+      }
+    ];
+    
+    const option = {
+      title: {
+        text: 'Factor of Safety vs Slope Angle',
+        left: 'center'
+      },
+      tooltip: {
+        trigger: 'axis',
+        axisPointer: {type: 'cross'}
+      },
+      legend: {
+        data: ['Factor of Safety', 'FS = 1.0 (Failure)', 'FS = 1.5 (Design)', 'Current Slope'],
+        top: 30
+      },
+      grid: {
+        left: 80,
+        right: 40,
+        top: 80,
+        bottom: 60
+      },
+      xAxis: {
+        type: 'value',
+        name: 'Slope Angle (degrees)',
+        nameLocation: 'middle',
+        nameGap: 30,
+        min: 10,
+        max: 50
+      },
+      yAxis: {
+        type: 'value',
+        name: 'Factor of Safety',
+        nameLocation: 'middle',
+        nameGap: 50,
+        min: 0,
+        max: 3
+      },
+      series: series
+    };
+    
+    chart.setOption(option, true);
+  }
+  
+  document.getElementById('slope-angle').addEventListener('input', (e) => {
+    slopeAngle = parseFloat(e.target.value);
+    document.getElementById('angle-val').textContent = slopeAngle;
+    render();
+  });
+  
+  document.getElementById('friction-angle').addEventListener('input', (e) => {
+    frictionAngle = parseFloat(e.target.value);
+    document.getElementById('friction-val').textContent = frictionAngle;
+    render();
+  });
+  
+  document.getElementById('cohesion').addEventListener('input', (e) => {
+    cohesion = parseFloat(e.target.value);
+    document.getElementById('cohesion-val').textContent = cohesion;
+    render();
+  });
+  
+  document.getElementById('water-depth').addEventListener('input', (e) => {
+    waterDepth = parseFloat(e.target.value);
+    document.getElementById('water-val').textContent = waterDepth.toFixed(1);
+    render();
+  });
+  
+  document.getElementById('seismic').addEventListener('input', (e) => {
+    seismicCoef = parseFloat(e.target.value);
+    document.getElementById('seismic-val').textContent = seismicCoef.toFixed(2);
+    render();
+  });
+  
+  render();
+  
+  window.addEventListener('resize', () => chart.resize());
+})();
+</script>
+
+<p><strong>Try this:</strong></p>
+<ul>
+  <li><strong>Increase slope angle:</strong> FS drops (steeper = less stable)</li>
+  <li><strong>Lower water table (0m = saturated):</strong> FS drops dramatically!</li>
+  <li><strong>Add seismic loading:</strong> FS drops further</li>
+  <li><strong>Increase friction angle:</strong> Higher FS (stronger soil)</li>
+  <li><strong>Add cohesion:</strong> Raises FS curve (especially at steep angles)</li>
+  <li><strong>Green area:</strong> Stable (FS &gt; 1.5)</li>
+  <li><strong>Yellow area:</strong> Marginal (FS 1.0-1.5)</li>
+  <li><strong>Red area:</strong> Failure (FS &lt; 1.0)</li>
+  <li><strong>Pink dot:</strong> Current slope condition</li>
+  <li>Watch FS cross failure threshold!</li>
+</ul>
+
+<p><strong>Key insight:</strong> Water + earthquakes = catastrophic combination for slope stability!</p>
+
+<hr />
+
+<h2 id="6-interpretation">6. Interpretation</h2>
+
+<h3 id="rainfall-induced-landslides">Rainfall-Induced Landslides</h3>
+
+<p><strong>Mechanism:</strong></p>
+<ol>
+  <li>Rain infiltrates soil</li>
+  <li>Water table rises</li>
+  <li>Pore pressure increases</li>
+  <li>Effective stress decreases</li>
+  <li>Shear strength drops</li>
+  <li><strong>Failure</strong> when FS &lt; 1.0</li>
+</ol>
+
+<p><strong>Threshold rainfall:</strong></p>
+<ul>
+  <li>Short duration, high intensity: Shallow slides</li>
+  <li>Long duration, moderate intensity: Deep-seated slides</li>
+</ul>
+
+<p><strong>Example - Pacific Northwest:</strong></p>
+<ul>
+  <li>Threshold: ~200mm in 3 days</li>
+  <li>Thousands of landslides triggered</li>
+</ul>
+
+<h3 id="earthquake-induced-landslides">Earthquake-Induced Landslides</h3>
+
+<p><strong>Case study - 2015 Nepal:</strong></p>
+<ul>
+  <li>Magnitude 7.8 earthquake</li>
+  <li>25,000+ landslides triggered</li>
+  <li>Some on slopes previously stable (FS &gt; 1.5 dry)</li>
+  <li>Liquefaction in saturated soils</li>
+</ul>
+
+<p><strong>Newmark displacement:</strong></p>
+<ul>
+  <li>Permanent downslope movement during shaking</li>
+  <li>Depends on: Peak acceleration, critical acceleration, duration</li>
+</ul>
+
+<h3 id="cut-slope-design">Cut Slope Design</h3>
+
+<p><strong>Road construction:</strong></p>
+
+<p><strong>Typical criterion:</strong> FS &gt; 1.5 for permanent cuts</p>
+
+<p><strong>Design strategies:</strong></p>
+<ul>
+  <li>Flatten slope (reduce $\theta$)</li>
+  <li>Improve drainage (keep dry)</li>
+  <li>Soil nails/anchors (add resistance)</li>
+  <li>Retaining walls</li>
+</ul>
+
+<p><strong>Cost trade-off:</strong></p>
+<ul>
+  <li>Steeper → less excavation → cheaper</li>
+  <li>BUT steeper → lower FS → higher failure risk</li>
+</ul>
+
+<hr />
+
+<h2 id="7-what-could-go-wrong">7. What Could Go Wrong?</h2>
+
+<h3 id="assuming-homogeneous-soil">Assuming Homogeneous Soil</h3>
+
+<p><strong>Reality:</strong> Soil has layers with different properties.</p>
+
+<p><strong>Weak layer</strong> controls failure (lowest strength).</p>
+
+<p><strong>Example:</strong></p>
+<ul>
+  <li>Strong surface soil (c=10 kPa, φ=40°)</li>
+  <li>Weak clay layer at depth (c=2 kPa, φ=25°)</li>
+  <li><strong>Failure occurs along clay</strong></li>
+</ul>
+
+<p><strong>Solution:</strong> Multilayer analysis, find critical surface.</p>
+
+<h3 id="ignoring-time-dependent-strength">Ignoring Time-Dependent Strength</h3>
+
+<p><strong>Creep:</strong> Slow downslope movement</p>
+
+<p><strong>Residual strength:</strong> After movement starts, strength drops to residual value (&lt; peak).</p>
+
+<p><strong>Progressive failure:</strong> Small movements → strength reduction → more movement</p>
+
+<p><strong>Solution:</strong> Use residual strength for long-term stability.</p>
+
+<h3 id="2d-vs-3d-effects">2D vs 3D Effects</h3>
+
+<p><strong>Infinite slope = 2D</strong> (no edge effects)</p>
+
+<p><strong>Real slopes:</strong> 3D geometry matters</p>
+<ul>
+  <li>Converging topography (gullies) → less stable</li>
+  <li>Diverging topography (ridges) → more stable</li>
+</ul>
+
+<p><strong>Solution:</strong> 3D limit equilibrium or FEM analysis.</p>
+
+<h3 id="vegetation-effects">Vegetation Effects</h3>
+
+<p><strong>Roots:</strong> Add tensile strength (resistance)</p>
+
+<p><strong>But:</strong> Trees add weight (driving force) + wind loading</p>
+
+<p><strong>Net effect:</strong> Usually stabilizing for shallow slides, destabilizing for deep slides</p>
+
+<p><strong>Deforestation:</strong> Increases landslide risk (roots decay in 2-5 years)</p>
+
+<hr />
+
+<h2 id="8-extension-landslide-susceptibility-mapping">8. Extension: Landslide Susceptibility Mapping</h2>
+
+<p><strong>Combine factors spatially:</strong></p>
+
+<p><strong>From DEM:</strong></p>
+<ul>
+  <li>Slope angle</li>
+  <li>Aspect (wetness)</li>
+  <li>Curvature (convergent topography)</li>
+  <li>Upslope contributing area (water accumulation)</li>
+</ul>
+
+<p><strong>From soils:</strong></p>
+<ul>
+  <li>Soil type (strength parameters)</li>
+  <li>Depth to bedrock</li>
+</ul>
+
+<p><strong>From land cover:</strong></p>
+<ul>
+  <li>Vegetation (root strength)</li>
+  <li>Land use</li>
+</ul>
+
+<p><strong>Statistical model (logistic regression):</strong></p>
+
+\[P(\text{landslide}) = \frac{1}{1 + e^{-(\beta_0 + \beta_1 \theta + \beta_2 c + \cdots)}}\]
+
+<p><strong>Or physically-based (SHALSTAB, SINMAP):</strong></p>
+
+<p>Apply infinite slope model to every pixel, calculate FS.</p>
+
+<p><strong>Output:</strong> Landslide susceptibility map (high/medium/low)</p>
+
+<hr />
+
+<h2 id="9-math-refresher-free-body-diagrams">9. Math Refresher: Free Body Diagrams</h2>
+
+<h3 id="force-resolution">Force Resolution</h3>
+
+<p><strong>Vector components:</strong></p>
+
+<p>Force $F$ at angle $\alpha$:</p>
+
+<p>\(F_x = F \cos\alpha\)
+\(F_y = F \sin\alpha\)</p>
+
+<h3 id="equilibrium-conditions">Equilibrium Conditions</h3>
+
+<p><strong>Translational equilibrium:</strong></p>
+
+<p>\(\sum F_x = 0\)
+\(\sum F_y = 0\)</p>
+
+<p><strong>Rotational equilibrium:</strong></p>
+
+\[\sum M = 0\]
+
+<p>(Sum of moments about any point)</p>
+
+<h3 id="slope-forces">Slope Forces</h3>
+
+<p><strong>Weight $W$ on slope angle $\theta$:</strong></p>
+
+<p><strong>Parallel to slope:</strong></p>
+
+\[W_\parallel = W \sin\theta\]
+
+<p><strong>Normal to slope:</strong></p>
+
+\[W_\perp = W \cos\theta\]
+
+<p><strong>These satisfy:</strong> $W_\parallel^2 + W_\perp^2 = W^2$</p>
+
+<hr />
+
+<h2 id="summary">Summary</h2>
+
+<ul>
+  <li><strong>Slope stability:</strong> Balance of driving forces (gravity) vs resisting forces (friction + cohesion)</li>
+  <li><strong>Mohr-Coulomb criterion:</strong> $\tau_f = c + \sigma’ \tan\phi$ (shear strength)</li>
+  <li><strong>Factor of Safety:</strong> FS = resisting/driving, failure when FS &lt; 1.0</li>
+  <li><strong>Infinite slope model:</strong> Simplified analysis for uniform slopes</li>
+  <li><strong>Water effect:</strong> Reduces effective stress by ~50%, can drop FS from 1.5 to 0.75</li>
+  <li><strong>Earthquake effect:</strong> Adds horizontal force, further reduces FS</li>
+  <li><strong>Critical slope angle:</strong> $\theta_{crit} = \phi$ for cohesionless soils</li>
+  <li><strong>Applications:</strong> Landslide hazard, road cuts, dam stability, earthquake response</li>
+  <li><strong>Challenges:</strong> Heterogeneous soils, 3D geometry, time-dependent strength</li>
+  <li><strong>Susceptibility mapping:</strong> Combine DEM + soils + vegetation for spatial risk</li>
+  <li>Foundation for understanding when and where landslides occur</li>
+</ul>
+
+      </div>
+
+      
+
+
+
+      
+
+  
+  
+  
+  
+
+
+
+      <!-- essay-footer-notes.html — References / endnotes section.
+     Hidden by default; assets/js/essay/core.js shows it and populates
+     #essay-endnotes-list from [data-cite] elements in the content.
+
+     In posts, create citation markers with:
+       <cite data-cite="Author, Title, URL">1</cite>
+     The JS collects these and renders a numbered reference list here. -->
+
+<footer class="essay-endnotes" id="essay-endnotes" aria-label="References" hidden>
+  <div class="essay-endnotes-inner">
+    <h2 class="essay-endnotes-heading">References</h2>
+    <ol class="essay-endnotes-list" id="essay-endnotes-list">
+      <!-- Populated at runtime by assets/js/essay/core.js buildEndnotes() -->
+    </ol>
+  </div>
+</footer>
+
+
+      
+
+      
+
+      
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    </article>
+  </main>
+
+  <aside
+    class="essay-sidenotes"
+    id="essay-sidenotes"
+    aria-label="Margin notes"
+  ></aside>
+
+</div>
+
+</div>
+
+<footer>
+  <div class="footer-inner">
+
+    <!-- Col 1: Brand -->
+    <div class="footer-brand">
+      <div class="footer-brand-logo">
+        
+        <img loading="lazy" src="/assets/images/logo.webp" alt="WaywardHouse" width="28" height="28">
+        
+        WaywardHouse<span>.</span>
+      </div>
+      
+      
+      <p class="footer-brand-desc">Understanding how place, economy, and environment interact — through analysis, modelling, and open tools.</p>
+      
+
+      <div class="footer-social">
+        
+        
+        
+        <a href="/feed.xml" class="social-icon" target="_blank" rel="noopener noreferrer" aria-label="RSS feed">
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M4 11a9 9 0 0 1 9 9"/>
+            <path d="M4 4a16 16 0 0 1 16 16"/>
+            <circle cx="5" cy="19" r="1"/>
+          </svg>
+        </a>
+      </div>
+    </div>
+
+    <!-- Col 2: Topics (configurable via footer_topics, falls back to auto-categories) -->
+    <nav aria-labelledby="footer-topics">
+      <h3 class="footer-col-title" id="footer-topics">Reading</h3>
+      <ul class="footer-links">
+        
+          
+          <li><a href="/topics/">Essays</a></li>
+          
+          <li><a href="/series/">Modelling</a></li>
+          
+          <li><a href="/archive/">Archive</a></li>
+          
+          <li><a href="/start-here/">Start Here</a></li>
+          
+        
+      </ul>
+    </nav>
+
+    <!-- Col 3: Secondary navigation -->
+    
+    <nav aria-labelledby="footer-company">
+      <h3 class="footer-col-title" id="footer-company">Site</h3>
+      <ul class="footer-links">
+        
+        <li><a href="/start-here/">Start Here</a></li>
+        
+        <li><a href="/about/">About</a></li>
+        
+        <li><a href="/contact/">Contact</a></li>
+        
+      </ul>
+    </nav>
+    
+
+    <!-- Col 4: Resources -->
+    <nav aria-labelledby="footer-resources">
+      <h3 class="footer-col-title" id="footer-resources">Resources</h3>
+      <ul class="footer-links">
+        <li><a href="/archive/">Archive</a></li>
+        <li><a href="/feed.xml">RSS Feed</a></li>
+        <li><a href="/topics/">All Topics</a></li>
+      </ul>
+    </nav>
+
+  </div><!-- /.footer-inner -->
+
+  <div class="footer-bottom">
+    <span class="footer-copy">
+      &copy; 2026 WaywardHouse.
+    </span>
+    <div class="footer-legal">
+      <a href="/privacy/">Privacy Policy</a>
+      <a href="/terms/">Terms of Service</a>
+    </div>
+  </div>
+
+</footer>
+
+
+<!-- Alpine.js bundle -->
+<script type="module" src="/assets/dist/main.js"></script>
+
+<!-- Visualization runtime — detects and loads CDN libraries dynamically -->
+<script type="module" src="/assets/js/core.js"></script>
+
+<!-- Search overlay — event-driven: nav button $dispatches 'search:open' -->
+<div
+  x-data="search"
+  x-init="init()"
+  @search:open.window="open()"
+>
+  <div
+    class="search-overlay"
+    x-show="isOpen"
+    x-transition:enter="transition ease-out duration-150"
+    x-transition:enter-start="opacity-0"
+    x-transition:enter-end="opacity-100"
+    x-transition:leave="transition ease-in duration-100"
+    x-transition:leave-start="opacity-100"
+    x-transition:leave-end="opacity-0"
+    @click.self="close()"
+    style="display: none;"
+    role="dialog"
+    aria-modal="true"
+    aria-label="Search"
+  >
+    <div class="search-panel">
+      <div class="search-input-wrap">
+        <svg class="search-icon" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <circle cx="11" cy="11" r="8"/>
+          <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+        </svg>
+        <input
+          class="search-input"
+          type="search"
+          placeholder="Search posts…"
+          x-model="query"
+          x-ref="input"
+          @input.debounce.300ms="runSearch()"
+          @keydown.escape="close()"
+          autocomplete="off"
+          spellcheck="false"
+          aria-label="Search query"
+        >
+        <kbd class="search-esc" aria-hidden="true">ESC</kbd>
+      </div>
+
+      <div class="search-results" x-show="query.trim().length > 0">
+        <div class="search-status" x-show="loading" aria-live="polite">Searching…</div>
+        <div class="search-status" x-show="!loading && results.length === 0" aria-live="polite">
+          No results for "<span x-text="query"></span>"
+        </div>
+        <ul class="search-result-list" x-show="!loading && results.length > 0" role="list">
+          <template x-for="result in results" :key="result.url">
+            <li>
+              <a :href="result.url" class="search-result-item" @click="close()">
+                <div class="search-result-title" x-text="result.meta?.title || result.url"></div>
+                <div class="search-result-excerpt" x-html="result.excerpt"></div>
+              </a>
+            </li>
+          </template>
+        </ul>
+      </div>
+    </div>
+  </div>
+</div>
+
+</body>
+</html>

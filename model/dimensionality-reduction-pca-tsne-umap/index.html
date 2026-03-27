@@ -1,0 +1,1514 @@
+<!DOCTYPE html>
+
+<html lang="en" data-brand="wayward" data-theme="light">
+<head>
+  <meta charset="utf-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dimensionality Reduction: PCA, t-SNE, and UMAP — WaywardHouse</title>
+<meta name="description" content="How do we visualize and analyze hyperspectral imagery with 200+ bands or spatial datasets with dozens of correlated features? Dimensionality reduction techniques compress high-dimensional data into 2-3 interpretable dimensions while...">
+
+<!-- Dark mode flash prevention — runs synchronously before first paint -->
+<script>
+  (function () {
+    var defaultDark = 'light' === 'dark';
+    var s = localStorage.getItem('theme');
+    var dark = s !== null ? s === 'dark' : defaultDark;
+    document.documentElement.dataset.theme = dark ? 'dark' : 'light';
+  })();
+</script>
+
+<!-- Preconnect to CDN domains used by the viz runtime -->
+<link rel="preconnect" href="https://cdn.jsdelivr.net">
+<link rel="preconnect" href="https://unpkg.com">
+<link rel="preconnect" href="https://esm.sh">
+<link rel="preconnect" href="https://api.mapbox.com">
+<link rel="preconnect" href="https://events.mapbox.com">
+
+
+<script>window.MAPBOX_TOKEN = 'pk.eyJ1IjoiYnJlYWRlZGNvZCIsImEiOiJjbW0xa25qc2EwMmtwMnJwejJlNndqdnoxIn0._7I9PwXuFLrOQINVZ84y1w';</script>
+
+
+<!-- Fonts -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:ital,wght@0,300;0,400;0,600;0,700;0,800;0,900;1,700;1,800&family=Barlow:wght@300;400&family=IBM+Plex+Mono:ital,wght@0,300;0,400;0,500;1,300&family=Literata:ital,opsz,wght@0,7..72,300;0,7..72,400;0,7..72,500;1,7..72,300;1,7..72,400&display=swap" rel="stylesheet">
+
+<!-- Theme stylesheet (Vite build output) -->
+<link rel="stylesheet" href="/assets/dist/main.css">
+
+<!-- Brand token overrides — loaded after main.css so variables cascade correctly -->
+
+<link rel="stylesheet" href="/assets/css/brand-wayward.css">
+
+
+
+<!-- Syntax highlighting (Rouge — light + dark) -->
+<link rel="stylesheet" href="/assets/css/syntax.css">
+
+<!-- Begin Jekyll SEO tag v2.8.0 -->
+<title>Dimensionality Reduction: PCA, t-SNE, and UMAP | WaywardHouse</title>
+<meta name="generator" content="Jekyll v4.4.1" />
+<meta property="og:title" content="Dimensionality Reduction: PCA, t-SNE, and UMAP" />
+<meta property="og:locale" content="en" />
+<meta name="description" content="How do we visualize and analyze hyperspectral imagery with 200+ bands or spatial datasets with dozens of correlated features? Dimensionality reduction techniques compress high-dimensional data into 2-3 interpretable dimensions while preserving essential structure. This model derives Principal Component Analysis from covariance eigendecomposition, implements t-SNE for nonlinear manifold learning, applies UMAP for scalable clustering, and demonstrates feature compression for classification." />
+<meta property="og:description" content="How do we visualize and analyze hyperspectral imagery with 200+ bands or spatial datasets with dozens of correlated features? Dimensionality reduction techniques compress high-dimensional data into 2-3 interpretable dimensions while preserving essential structure. This model derives Principal Component Analysis from covariance eigendecomposition, implements t-SNE for nonlinear manifold learning, applies UMAP for scalable clustering, and demonstrates feature compression for classification." />
+<link rel="canonical" href="https://wayward.house/model/dimensionality-reduction-pca-tsne-umap/" />
+<meta property="og:url" content="https://wayward.house/model/dimensionality-reduction-pca-tsne-umap/" />
+<meta property="og:site_name" content="WaywardHouse" />
+<meta property="og:image" content="https://wayward.house/assets/images/dimentionality-reduction.webp" />
+<meta property="og:type" content="article" />
+<meta property="article:published_time" content="2026-03-01T00:00:00+00:00" />
+<meta name="twitter:card" content="summary_large_image" />
+<meta property="twitter:image" content="https://wayward.house/assets/images/dimentionality-reduction.webp" />
+<meta property="twitter:title" content="Dimensionality Reduction: PCA, t-SNE, and UMAP" />
+<meta name="twitter:site" content="@" />
+<script type="application/ld+json">
+{"@context":"https://schema.org","@type":"BlogPosting","dateModified":"2026-03-18T03:00:54+00:00","datePublished":"2026-03-01T00:00:00+00:00","description":"How do we visualize and analyze hyperspectral imagery with 200+ bands or spatial datasets with dozens of correlated features? Dimensionality reduction techniques compress high-dimensional data into 2-3 interpretable dimensions while preserving essential structure. This model derives Principal Component Analysis from covariance eigendecomposition, implements t-SNE for nonlinear manifold learning, applies UMAP for scalable clustering, and demonstrates feature compression for classification.","headline":"Dimensionality Reduction: PCA, t-SNE, and UMAP","image":"https://wayward.house/assets/images/dimentionality-reduction.webp","mainEntityOfPage":{"@type":"WebPage","@id":"https://wayward.house/model/dimensionality-reduction-pca-tsne-umap/"},"publisher":{"@type":"Organization","logo":{"@type":"ImageObject","url":"https://wayward.house/assets/images/logo.webp"}},"url":"https://wayward.house/model/dimensionality-reduction-pca-tsne-umap/"}</script>
+<!-- End Jekyll SEO tag -->
+
+
+
+<!-- Cloudflare Web Analytics -->
+<script defer src="https://static.cloudflareinsights.com/beacon.min.js"
+  data-cf-beacon='{"token": "62c47d78bf9d4c80972d4e6242d79ff8"}'></script>
+
+
+</head>
+<body class="
+  model-template
+   tag-modelling tag-machine-learning
+   tag-hash-math
+  
+   tag-hash-viz
+  
+  
+  
+  
+  
+  
+">
+
+<a href="#main-content" class="skip-link">Skip to content</a>
+
+<header class="nav" x-data="{ open: false }">
+  <div class="nav-inner">
+
+    <!-- Logo -->
+    <a href="/" class="nav-logo">
+      
+      <img loading="lazy" src="/assets/images/logo.webp" alt="WaywardHouse" width="32" height="32">
+      
+      WaywardHouse<span>.</span>
+    </a>
+
+    <!-- Desktop nav links -->
+    <ul class="nav-links" role="list">
+      
+      <li>
+        <a href="/topics/">Essays</a>
+      </li>
+      
+      <li>
+        <a href="/series/">Modelling</a>
+      </li>
+      
+      <li>
+        <a href="/about/">About</a>
+      </li>
+      
+    </ul>
+
+    <!-- Actions -->
+    <div class="nav-actions">
+
+      <!-- Search button -->
+      <button
+        class="search-toggle"
+        type="button"
+        aria-label="Search (⌘K)"
+        title="Search (⌘K)"
+        @click="$dispatch('search:open')"
+      >
+        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <circle cx="11" cy="11" r="8"/>
+          <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+        </svg>
+      </button>
+
+      <!-- Dark mode toggle -->
+      <button
+        class="theme-toggle"
+        x-data="darkMode"
+        x-init="init()"
+        @click="toggle()"
+        :aria-label="dark ? 'Switch to light mode' : 'Switch to dark mode'"
+        type="button"
+      >
+        <!-- Sun icon (shown in light mode) -->
+        <svg class="icon-sun" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">
+          <circle cx="12" cy="12" r="5"/>
+          <line x1="12" y1="1" x2="12" y2="3"/>
+          <line x1="12" y1="21" x2="12" y2="23"/>
+          <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/>
+          <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/>
+          <line x1="1" y1="12" x2="3" y2="12"/>
+          <line x1="21" y1="12" x2="23" y2="12"/>
+          <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/>
+          <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>
+        </svg>
+        <!-- Moon icon (shown in dark mode) -->
+        <svg class="icon-moon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">
+          <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+        </svg>
+      </button>
+
+      <!-- Hamburger (mobile only) -->
+      <button
+        class="mobile-nav-toggle"
+        @click="open = !open"
+        :aria-expanded="open"
+        :aria-label="open ? 'Close menu' : 'Open menu'"
+        type="button"
+      >
+        <svg x-show="!open" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <line x1="3" y1="6" x2="21" y2="6"/>
+          <line x1="3" y1="12" x2="21" y2="12"/>
+          <line x1="3" y1="18" x2="21" y2="18"/>
+        </svg>
+        <svg x-show="open" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <line x1="18" y1="6" x2="6" y2="18"/>
+          <line x1="6" y1="6" x2="18" y2="18"/>
+        </svg>
+      </button>
+
+    </div><!-- /.nav-actions -->
+  </div><!-- /.nav-inner -->
+
+  <!-- Mobile drawer -->
+  <div
+    class="mobile-nav"
+    x-show="open"
+    x-transition:enter="transition ease-out duration-200"
+    x-transition:enter-start="opacity-0 -translate-y-1"
+    x-transition:enter-end="opacity-100 translate-y-0"
+    x-transition:leave="transition ease-in duration-150"
+    x-transition:leave-start="opacity-100 translate-y-0"
+    x-transition:leave-end="opacity-0 -translate-y-1"
+    @click.outside="open = false"
+    @keydown.escape.window="open = false"
+  >
+    <ul role="list">
+      
+      <li>
+        <a href="/topics/" @click="open = false">Essays</a>
+      </li>
+      
+      <li>
+        <a href="/series/" @click="open = false">Modelling</a>
+      </li>
+      
+      <li>
+        <a href="/about/" @click="open = false">About</a>
+      </li>
+      
+    </ul>
+  </div><!-- /.mobile-nav -->
+
+</header>
+
+
+<div id="main-content">
+  <!-- Essay stylesheet and runtime — self-contained -->
+<link rel="stylesheet" href="/assets/css/essay.css">
+<script type="module" src="/assets/js/essay/core.js"></script>
+
+<div class="essay-layout" id="essay-layout">
+
+  <!-- essay-toc.html — Sticky table of contents (left column).
+     The <ol> is empty on load; assets/js/essay/core.js populates it
+     from h2/h3 elements found in #essay-content after the page renders. -->
+
+<nav class="essay-toc" id="essay-toc" aria-label="Table of contents">
+  <div class="essay-toc-inner">
+    <p class="essay-toc-heading" aria-hidden="true">Contents</p>
+    <ol class="essay-toc-list" id="essay-toc-list">
+      <!-- Populated at runtime by assets/js/essay/core.js buildToc() -->
+    </ol>
+  </div>
+</nav>
+
+
+  <main class="essay-main" id="essay-main" role="main">
+    <article class="essay-article">
+
+      <!-- essay-hero.html — Header for computational essay template.
+     Displays feature image, tag label, title, excerpt, and post metadata. -->
+
+<header class="essay-hero">
+  
+  <figure class="essay-hero-figure">
+    <img
+      src="/assets/images/dimentionality-reduction.webp"
+      alt="Dimensionality Reduction: PCA, t-SNE, and UMAP"
+      class="essay-hero-img"
+      loading="eager"
+    >
+    
+  </figure>
+  
+
+  <div class="essay-hero-body">
+
+    
+    
+    
+    
+    
+    <nav class="essay-breadcrumb" aria-label="Series position">
+      
+      <a href="/series/ml/" class="essay-breadcrumb-link">Computational geography ml</a>
+      
+      
+      <span class="essay-breadcrumb-sep" aria-hidden="true">›</span>
+      <span class="essay-breadcrumb-cluster">Foundations of Geographic ML</span>
+      
+      
+      <span class="essay-breadcrumb-sep" aria-hidden="true">›</span>
+      <span class="essay-breadcrumb-pos">Model 3</span>
+      
+    </nav>
+    
+
+    <div class="essay-hero-labels">
+      
+      <a href="/topics/modelling/" class="essay-tag-label">modelling</a>
+      
+      
+      <span class="difficulty-badge difficulty-badge--3">Level 3</span>
+      
+    </div>
+
+    <h1 class="essay-title">Dimensionality Reduction: PCA, t-SNE, and UMAP</h1>
+
+    
+    <p class="essay-excerpt">How do we visualize and analyze hyperspectral imagery with 200+ bands or spatial datasets with dozens of correlated features? Dimensionality reduction techniques compress high-dimensional data into 2-3 interpretable dimensions while preserving essential structure. This model derives Principal Component Analysis from covariance eigendecomposition, implements t-SNE for nonlinear manifold learning, applies UMAP for scalable clustering, and demonstrates feature compression for classification.
+</p>
+    
+
+    
+    <p class="essay-prereqs"><span class="essay-prereqs-label">Prerequisites:</span> eigenvalues, eigenvectors, covariance matrix, manifold learning</p>
+    
+
+    <div class="essay-meta">
+      
+      <div class="essay-meta-secondary">
+        <time class="essay-date" datetime="2026-03-01">1 Mar 2026</time>
+        
+        
+        <span class="essay-sep" aria-hidden="true">·</span>
+        <span class="essay-updated">Updated <time datetime="2026-03-18">18 Mar 2026</time></span>
+        
+        <span class="essay-sep" aria-hidden="true">·</span>
+        <span class="essay-reading-time">20 min read</span>
+      </div>
+    </div>
+  </div>
+</header>
+
+
+      
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<nav class="series-nav" aria-label="Series navigation">
+
+  <div class="series-nav-header">
+    <span class="series-nav-label">Z</span>
+    <span class="series-nav-title">Foundations of Geographic ML</span>
+  </div>
+
+  <ol class="series-nav-list">
+    
+    <li class="series-nav-item">
+      
+      <a href="/model/regression-continuous-variables/" class="series-nav-link">
+        <span class="series-nav-number">2</span>
+        Regression for Continuous Variables
+      </a>
+      
+    </li>
+    
+    <li class="series-nav-item series-nav-item--current">
+      
+      <span class="series-nav-link series-nav-link--current" aria-current="page">
+        <span class="series-nav-number">3</span>
+        Dimensionality Reduction: PCA, t-SNE, and UMAP
+      </span>
+      
+    </li>
+    
+  </ol>
+
+  
+  <div class="series-nav-footer">
+    <a href="/series/ml/" class="series-nav-all">
+      All 2 in this series &rarr;
+    </a>
+  </div>
+  
+
+</nav>
+
+
+
+
+      <div class="essay-content gh-content" id="essay-content">
+        <p>In 1991, geologists flying the Airborne Visible/Infrared Imaging Spectrometer (AVIRIS) over the Cuprite mining district of Nevada were able to distinguish 22 separate mineral assemblages in a single overflight pass — a mapping task that had previously required weeks of field crews on foot. The capability came from hyperspectral imaging: instead of capturing three colour channels as a camera does, AVIRIS recorded 224 spectral bands simultaneously, each 10 nm wide. Different minerals — alunite, kaolinite, calcite, muscovite — absorb infrared energy at subtly different wavelengths, and those absorption features became their spectral fingerprints.</p>
+
+<p>The catch is that 224-dimensional data is not interpretable by a human eye trained on three dimensions. You cannot plot a 224-axis scatterplot. You cannot visualise which pixels are similar and which are different without first compressing the data into a form the human visual system can process. And yet most of the variance in that 224-band cube is explained by a much smaller number of underlying factors — surface mineralogy, vegetation fraction, soil moisture — so compression is possible without catastrophic loss.</p>
+
+<p>Dimensionality reduction is the family of techniques that performs this compression. Principal Component Analysis (PCA) finds the axes of maximum variance via eigendecomposition of the covariance matrix and projects the data onto them; it is linear, interpretable, and computationally cheap. t-SNE and UMAP are nonlinear methods that preserve local neighbourhood structure — they pull similar pixels together even when the similarity lives in a curved manifold that PCA cannot capture. Each method reveals different structure in the same data, and choosing between them requires understanding what each one optimises and what it sacrifices.</p>
+
+<h2 id="1-the-question">1. The Question</h2>
+
+<p>A hyperspectral sensor captures 224 spectral bands from 400nm to 2500nm. How do we visualize this data or identify distinct land cover types?</p>
+
+<p><strong>Direct visualization impossible.</strong></p>
+
+<p>Humans perceive 3 color channels (RGB).</p>
+
+<p>Hyperspectral: 224 dimensions.</p>
+
+<p>Standard scatter plots: Can only show 2-3 dimensions at once.</p>
+
+<p><strong>Dimensionality reduction provides solution:</strong></p>
+
+<p>Compress 224 bands → 3 principal components.</p>
+
+<p>Visualize in RGB color space.</p>
+
+<p>Retain 95%+ of variance.</p>
+
+<p><strong>Applications:</strong></p>
+<ul>
+  <li>Hyperspectral image visualization (224 bands → RGB)</li>
+  <li>Feature compression for classification (reduce computation)</li>
+  <li>Anomaly detection (outliers visible in reduced space)</li>
+  <li>Clustering similar pixels (spectral signatures group together)</li>
+  <li>Data exploration (discover patterns visually)</li>
+  <li>Noise reduction (minor components = noise)</li>
+</ul>
+
+<p><strong>Why it works:</strong></p>
+
+<p>Many features correlated (redundancy).</p>
+
+<p><strong>Example - Landsat 8:</strong></p>
+<ul>
+  <li>Blue and Green bands: $r = 0.92$ (both measure visible light)</li>
+  <li>NIR and Red bands: $r = -0.78$ (vegetation signature)</li>
+  <li>SWIR1 and SWIR2: $r = 0.95$ (both measure soil/rock)</li>
+</ul>
+
+<p>Principal Component Analysis (PCA) removes redundancy.</p>
+
+<p>Finds uncorrelated components capturing maximum variance.</p>
+
+<hr />
+
+<h2 id="2-the-conceptual-model">2. The Conceptual Model</h2>
+
+<h3 id="principal-component-analysis-pca">Principal Component Analysis (PCA)</h3>
+
+<p><strong>Core idea: Find directions of maximum variance.</strong></p>
+
+<p><strong>First principal component (PC1):</strong></p>
+<ul>
+  <li>Direction with largest variance</li>
+  <li>Linear combination of original features</li>
+  <li>Captures most information</li>
+</ul>
+
+<p><strong>Second principal component (PC2):</strong></p>
+<ul>
+  <li>Orthogonal to PC1 (perpendicular)</li>
+  <li>Next largest variance</li>
+  <li>Uncorrelated with PC1</li>
+</ul>
+
+<p><strong>Continue</strong> until all variance explained.</p>
+
+<p><strong>Mathematical framework:</strong></p>
+
+<p>Given data matrix $\mathbf{X}$ ($n$ samples × $p$ features).</p>
+
+<p>Find orthogonal directions $\mathbf{w}_1, \mathbf{w}_2, …, \mathbf{w}_p$ such that:</p>
+
+\[\text{Var}(\mathbf{X}\mathbf{w}_1) \geq \text{Var}(\mathbf{X}\mathbf{w}_2) \geq ... \geq \text{Var}(\mathbf{X}\mathbf{w}_p)\]
+
+<p><strong>Solution via eigendecomposition:</strong></p>
+
+<p>Covariance matrix:</p>
+
+\[\mathbf{C} = \frac{1}{n-1}\mathbf{X}^T\mathbf{X}\]
+
+<p>(Assuming $\mathbf{X}$ centered: each column has mean 0)</p>
+
+<p>Eigenvalue problem:</p>
+
+\[\mathbf{C}\mathbf{w}_i = \lambda_i \mathbf{w}_i\]
+
+<p><strong>Principal components</strong> = eigenvectors of $\mathbf{C}$</p>
+
+<p><strong>Variance explained</strong> = eigenvalues $\lambda_i$</p>
+
+<h3 id="variance-explained">Variance Explained</h3>
+
+<p><strong>Total variance:</strong></p>
+
+\[\text{Total} = \sum_{i=1}^p \lambda_i = \text{trace}(\mathbf{C})\]
+
+<p><strong>Proportion explained by PC $i$:</strong></p>
+
+\[\text{Proportion}_i = \frac{\lambda_i}{\sum_{j=1}^p \lambda_j}\]
+
+<p><strong>Cumulative variance:</strong></p>
+
+\[\text{Cumulative}_k = \frac{\sum_{i=1}^k \lambda_i}{\sum_{j=1}^p \lambda_j}\]
+
+<p><strong>Example:</strong></p>
+
+<p>PC1: $\lambda_1 = 45$ → 45% variance<br />
+PC2: $\lambda_2 = 30$ → 30% variance<br />
+PC3: $\lambda_3 = 15$ → 15% variance<br />
+Remaining: 10%</p>
+
+<p>First 3 PCs: 90% variance retained.</p>
+
+<h3 id="t-sne-t-distributed-stochastic-neighbor-embedding">t-SNE (t-Distributed Stochastic Neighbor Embedding)</h3>
+
+<p><strong>Nonlinear dimensionality reduction.</strong></p>
+
+<p>PCA: Linear (straight lines, planes)<br />
+t-SNE: Nonlinear (can unfold curved manifolds)</p>
+
+<p><strong>Core idea:</strong></p>
+
+<p>Preserve local neighborhoods in high dimensions when mapping to low dimensions.</p>
+
+<p><strong>Algorithm:</strong></p>
+
+<ol>
+  <li>Compute pairwise similarities in high-D space (Gaussian)</li>
+  <li>Initialize random low-D embedding</li>
+  <li>Optimize embedding to match high-D similarities</li>
+  <li>Use t-distribution in low-D (long tails prevent crowding)</li>
+</ol>
+
+<p><strong>Hyperparameters:</strong></p>
+<ul>
+  <li>Perplexity (effective number of neighbors, typical: 5-50)</li>
+  <li>Learning rate</li>
+  <li>Number of iterations (typical: 1000-5000)</li>
+</ul>
+
+<p><strong>Advantages:</strong></p>
+<ul>
+  <li>Reveals clusters (nonlinear structure)</li>
+  <li>Beautiful visualizations</li>
+</ul>
+
+<p><strong>Disadvantages:</strong></p>
+<ul>
+  <li>Computationally expensive: $O(n^2)$</li>
+  <li>Stochastic (different runs give different results)</li>
+  <li>Distances not meaningful (only clusters)</li>
+</ul>
+
+<h3 id="umap-uniform-manifold-approximation-and-projection">UMAP (Uniform Manifold Approximation and Projection)</h3>
+
+<p><strong>Modern alternative to t-SNE.</strong></p>
+
+<p><strong>Advantages over t-SNE:</strong></p>
+<ul>
+  <li>Faster: $O(n \log n)$ with approximate nearest neighbors</li>
+  <li>Preserves global structure better</li>
+  <li>Deterministic (reproducible)</li>
+  <li>Meaningful distances</li>
+</ul>
+
+<p><strong>Similar usage:</strong></p>
+
+<p>Clustering, visualization, preprocessing for classification.</p>
+
+<p><strong>Typical parameters:</strong></p>
+<ul>
+  <li>n_neighbors (local structure, typical: 15)</li>
+  <li>min_dist (how tight clusters are, typical: 0.1)</li>
+  <li>n_components (usually 2 or 3)</li>
+</ul>
+
+<hr />
+
+<h2 id="3-building-the-mathematical-model">3. Building the Mathematical Model</h2>
+
+<h3 id="pca-derivation">PCA Derivation</h3>
+
+<p><strong>Objective:</strong> Find direction $\mathbf{w}$ maximizing variance of projections.</p>
+
+<p><strong>Setup:</strong></p>
+
+<p>Data matrix $\mathbf{X}$ ($n \times p$), centered (column means = 0).</p>
+
+<p>Project data onto unit vector $\mathbf{w}$: $\mathbf{z} = \mathbf{X}\mathbf{w}$</p>
+
+<p><strong>Variance of projection:</strong></p>
+
+\[\text{Var}(\mathbf{z}) = \frac{1}{n-1}\mathbf{z}^T\mathbf{z} = \frac{1}{n-1}(\mathbf{X}\mathbf{w})^T(\mathbf{X}\mathbf{w})\]
+
+\[= \frac{1}{n-1}\mathbf{w}^T\mathbf{X}^T\mathbf{X}\mathbf{w} = \mathbf{w}^T\mathbf{C}\mathbf{w}\]
+
+<p>Where $\mathbf{C} = \frac{1}{n-1}\mathbf{X}^T\mathbf{X}$ is covariance matrix.</p>
+
+<p><strong>Optimization problem:</strong></p>
+
+\[\max_{\mathbf{w}} \mathbf{w}^T\mathbf{C}\mathbf{w} \quad \text{subject to} \quad \|\mathbf{w}\| = 1\]
+
+<p><strong>Lagrangian:</strong></p>
+
+\[L(\mathbf{w}, \lambda) = \mathbf{w}^T\mathbf{C}\mathbf{w} - \lambda(\mathbf{w}^T\mathbf{w} - 1)\]
+
+<p><strong>Derivative with respect to $\mathbf{w}$:</strong></p>
+
+\[\frac{\partial L}{\partial \mathbf{w}} = 2\mathbf{C}\mathbf{w} - 2\lambda\mathbf{w} = 0\]
+
+\[\mathbf{C}\mathbf{w} = \lambda\mathbf{w}\]
+
+<p><strong>Eigenvalue equation!</strong></p>
+
+<p>$\mathbf{w}$ is eigenvector of $\mathbf{C}$.</p>
+
+<p>$\lambda$ is eigenvalue (variance explained).</p>
+
+<p><strong>Solution:</strong></p>
+
+<p>Sort eigenvalues: $\lambda_1 \geq \lambda_2 \geq … \geq \lambda_p$</p>
+
+<p>Corresponding eigenvectors: $\mathbf{w}_1, \mathbf{w}_2, …, \mathbf{w}_p$</p>
+
+<p><strong>Projection onto first $k$ components:</strong></p>
+
+\[\mathbf{Z} = \mathbf{X}\mathbf{W}_k\]
+
+<table>
+  <tbody>
+    <tr>
+      <td>Where $\mathbf{W}_k = [\mathbf{w}_1</td>
+      <td>\mathbf{w}_2</td>
+      <td>…</td>
+      <td>\mathbf{w}_k]$</td>
+    </tr>
+  </tbody>
+</table>
+
+<h3 id="reconstruction">Reconstruction</h3>
+
+<p><strong>Transform:</strong> $\mathbf{Z} = \mathbf{X}\mathbf{W}_k$ (high-D → low-D)</p>
+
+<p><strong>Reconstruct:</strong> $\mathbf{X}_{approx} = \mathbf{Z}\mathbf{W}_k^T$ (low-D → high-D)</p>
+
+<p><strong>Reconstruction error:</strong></p>
+
+\[E = \|\mathbf{X} - \mathbf{X}_{approx}\|^2 = \sum_{i=k+1}^p \lambda_i\]
+
+<p>Sum of discarded eigenvalues.</p>
+
+<hr />
+
+<h2 id="4-worked-example-by-hand">4. Worked Example by Hand</h2>
+
+<p><strong>Problem:</strong> Apply PCA to hyperspectral data (simplified).</p>
+
+<p><strong>Data:</strong> 4 pixels, 3 bands (Blue, Green, NIR)</p>
+
+<table>
+  <thead>
+    <tr>
+      <th>Pixel</th>
+      <th>Blue</th>
+      <th>Green</th>
+      <th>NIR</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>1</td>
+      <td>0.2</td>
+      <td>0.3</td>
+      <td>0.6</td>
+    </tr>
+    <tr>
+      <td>2</td>
+      <td>0.4</td>
+      <td>0.5</td>
+      <td>0.8</td>
+    </tr>
+    <tr>
+      <td>3</td>
+      <td>0.1</td>
+      <td>0.2</td>
+      <td>0.4</td>
+    </tr>
+    <tr>
+      <td>4</td>
+      <td>0.3</td>
+      <td>0.4</td>
+      <td>0.7</td>
+    </tr>
+  </tbody>
+</table>
+
+<p><strong>Goal:</strong> Reduce to 2 principal components by hand.</p>
+
+<h3 id="step-1-center-the-data">Step 1: Center the data</h3>
+
+<p><strong>Original matrix:</strong></p>
+
+\[\mathbf{X} = \begin{bmatrix} 0.2 &amp; 0.3 &amp; 0.6 \\ 0.4 &amp; 0.5 &amp; 0.8 \\ 0.1 &amp; 0.2 &amp; 0.4 \\ 0.3 &amp; 0.4 &amp; 0.7 \end{bmatrix}\]
+
+<p><strong>Column means:</strong></p>
+
+\[\bar{x}_{Blue} = \frac{0.2+0.4+0.1+0.3}{4} = 0.25\]
+
+\[\bar{x}_{Green} = \frac{0.3+0.5+0.2+0.4}{4} = 0.35\]
+
+\[\bar{x}_{NIR} = \frac{0.6+0.8+0.4+0.7}{4} = 0.625\]
+
+<p><strong>Centered data:</strong></p>
+
+\[\mathbf{X}_{centered} = \begin{bmatrix} -0.05 &amp; -0.05 &amp; -0.025 \\ 0.15 &amp; 0.15 &amp; 0.175 \\ -0.15 &amp; -0.15 &amp; -0.225 \\ 0.05 &amp; 0.05 &amp; 0.075 \end{bmatrix}\]
+
+<h3 id="step-2-compute-covariance-matrix">Step 2: Compute covariance matrix</h3>
+
+\[\mathbf{C} = \frac{1}{n-1}\mathbf{X}_{centered}^T\mathbf{X}_{centered}\]
+
+\[\mathbf{X}_{centered}^T\mathbf{X}_{centered} = \begin{bmatrix} 0.05 &amp; 0.05 &amp; 0.0625 \\ 0.05 &amp; 0.05 &amp; 0.0625 \\ 0.0625 &amp; 0.0625 &amp; 0.078125 \end{bmatrix}\]
+
+\[\mathbf{C} = \frac{1}{3}\begin{bmatrix} 0.05 &amp; 0.05 &amp; 0.0625 \\ 0.05 &amp; 0.05 &amp; 0.0625 \\ 0.0625 &amp; 0.0625 &amp; 0.078125 \end{bmatrix}\]
+
+\[= \begin{bmatrix} 0.0167 &amp; 0.0167 &amp; 0.0208 \\ 0.0167 &amp; 0.0167 &amp; 0.0208 \\ 0.0208 &amp; 0.0208 &amp; 0.0260 \end{bmatrix}\]
+
+<h3 id="step-3-find-eigenvalues">Step 3: Find eigenvalues</h3>
+
+<p><strong>Characteristic equation:</strong> $\det(\mathbf{C} - \lambda\mathbf{I}) = 0$</p>
+
+<p>For this matrix (highly correlated bands):</p>
+
+\[\lambda_1 \approx 0.0594, \quad \lambda_2 \approx 0.0000, \quad \lambda_3 \approx 0.0000\]
+
+<p>(In practice, use numpy.linalg.eig - by hand is tedious for 3×3!)</p>
+
+<h3 id="step-4-find-eigenvectors">Step 4: Find eigenvectors</h3>
+
+<p>For $\lambda_1 = 0.0594$:</p>
+
+\[\mathbf{w}_1 \approx \begin{bmatrix} 0.577 \\ 0.577 \\ 0.577 \end{bmatrix}\]
+
+<p>All bands contribute equally (highly correlated).</p>
+
+<p>For $\lambda_2, \lambda_3$ (near zero):</p>
+
+<p>Correspond to noise/rounding errors in this toy example.</p>
+
+<h3 id="step-5-project-data">Step 5: Project data</h3>
+
+<p><strong>First principal component:</strong></p>
+
+\[PC1 = \mathbf{X}_{centered} \times \mathbf{w}_1\]
+
+\[= \begin{bmatrix} -0.05 &amp; -0.05 &amp; -0.025 \\ 0.15 &amp; 0.15 &amp; 0.175 \\ -0.15 &amp; -0.15 &amp; -0.225 \\ 0.05 &amp; 0.05 &amp; 0.075 \end{bmatrix} \begin{bmatrix} 0.577 \\ 0.577 \\ 0.577 \end{bmatrix}\]
+
+\[\approx \begin{bmatrix} -0.073 \\ 0.274 \\ -0.305 \\ 0.104 \end{bmatrix}\]
+
+<p><strong>Interpretation:</strong></p>
+
+<p>PC1 = “overall brightness” (average of all bands)</p>
+
+<p>Pixel 2: Brightest (+0.274)<br />
+Pixel 3: Darkest (-0.305)</p>
+
+<h3 id="step-6-variance-explained">Step 6: Variance explained</h3>
+
+<p><strong>Total variance:</strong></p>
+
+\[\text{Total} = \lambda_1 + \lambda_2 + \lambda_3 \approx 0.0594\]
+
+<p><strong>PC1 explains:</strong></p>
+
+\[\frac{0.0594}{0.0594} = 100\%\]
+
+<p>(Because bands are perfectly correlated in this toy example)</p>
+
+<hr />
+
+<h2 id="5-computational-implementation">5. Computational Implementation</h2>
+
+<h3 id="tier-1-foundation-path-pilaptop">Tier 1: Foundation Path (Pi/Laptop)</h3>
+
+<p><strong>PCA from scratch (Python/NumPy):</strong></p>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kn">import</span> <span class="n">numpy</span> <span class="k">as</span> <span class="n">np</span>
+<span class="kn">import</span> <span class="n">matplotlib.pyplot</span> <span class="k">as</span> <span class="n">plt</span>
+
+<span class="k">class</span> <span class="nc">PCA</span><span class="p">:</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="n">self</span><span class="p">,</span> <span class="n">n_components</span><span class="o">=</span><span class="mi">2</span><span class="p">):</span>
+        <span class="n">self</span><span class="p">.</span><span class="n">n_components</span> <span class="o">=</span> <span class="n">n_components</span>
+        <span class="n">self</span><span class="p">.</span><span class="n">components</span> <span class="o">=</span> <span class="bp">None</span>
+        <span class="n">self</span><span class="p">.</span><span class="n">mean</span> <span class="o">=</span> <span class="bp">None</span>
+        <span class="n">self</span><span class="p">.</span><span class="n">explained_variance</span> <span class="o">=</span> <span class="bp">None</span>
+    
+    <span class="k">def</span> <span class="nf">fit</span><span class="p">(</span><span class="n">self</span><span class="p">,</span> <span class="n">X</span><span class="p">):</span>
+        <span class="sh">"""</span><span class="s">Fit PCA model</span><span class="sh">"""</span>
+        <span class="c1"># Center data
+</span>        <span class="n">self</span><span class="p">.</span><span class="n">mean</span> <span class="o">=</span> <span class="n">np</span><span class="p">.</span><span class="nf">mean</span><span class="p">(</span><span class="n">X</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+        <span class="n">X_centered</span> <span class="o">=</span> <span class="n">X</span> <span class="o">-</span> <span class="n">self</span><span class="p">.</span><span class="n">mean</span>
+        
+        <span class="c1"># Compute covariance matrix
+</span>        <span class="n">cov_matrix</span> <span class="o">=</span> <span class="n">np</span><span class="p">.</span><span class="nf">cov</span><span class="p">(</span><span class="n">X_centered</span><span class="p">.</span><span class="n">T</span><span class="p">)</span>
+        
+        <span class="c1"># Eigendecomposition
+</span>        <span class="n">eigenvalues</span><span class="p">,</span> <span class="n">eigenvectors</span> <span class="o">=</span> <span class="n">np</span><span class="p">.</span><span class="n">linalg</span><span class="p">.</span><span class="nf">eig</span><span class="p">(</span><span class="n">cov_matrix</span><span class="p">)</span>
+        
+        <span class="c1"># Sort by eigenvalue (descending)
+</span>        <span class="n">idx</span> <span class="o">=</span> <span class="n">np</span><span class="p">.</span><span class="nf">argsort</span><span class="p">(</span><span class="n">eigenvalues</span><span class="p">)[::</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+        <span class="n">eigenvalues</span> <span class="o">=</span> <span class="n">eigenvalues</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span>
+        <span class="n">eigenvectors</span> <span class="o">=</span> <span class="n">eigenvectors</span><span class="p">[:,</span> <span class="n">idx</span><span class="p">]</span>
+        
+        <span class="c1"># Store principal components
+</span>        <span class="n">self</span><span class="p">.</span><span class="n">components</span> <span class="o">=</span> <span class="n">eigenvectors</span><span class="p">[:,</span> <span class="p">:</span><span class="n">self</span><span class="p">.</span><span class="n">n_components</span><span class="p">]</span>
+        <span class="n">self</span><span class="p">.</span><span class="n">explained_variance</span> <span class="o">=</span> <span class="n">eigenvalues</span><span class="p">[:</span><span class="n">self</span><span class="p">.</span><span class="n">n_components</span><span class="p">]</span>
+        
+        <span class="k">return</span> <span class="n">self</span>
+    
+    <span class="k">def</span> <span class="nf">transform</span><span class="p">(</span><span class="n">self</span><span class="p">,</span> <span class="n">X</span><span class="p">):</span>
+        <span class="sh">"""</span><span class="s">Project data onto principal components</span><span class="sh">"""</span>
+        <span class="n">X_centered</span> <span class="o">=</span> <span class="n">X</span> <span class="o">-</span> <span class="n">self</span><span class="p">.</span><span class="n">mean</span>
+        <span class="k">return</span> <span class="n">X_centered</span> <span class="o">@</span> <span class="n">self</span><span class="p">.</span><span class="n">components</span>
+    
+    <span class="k">def</span> <span class="nf">fit_transform</span><span class="p">(</span><span class="n">self</span><span class="p">,</span> <span class="n">X</span><span class="p">):</span>
+        <span class="sh">"""</span><span class="s">Fit and transform in one step</span><span class="sh">"""</span>
+        <span class="n">self</span><span class="p">.</span><span class="nf">fit</span><span class="p">(</span><span class="n">X</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">self</span><span class="p">.</span><span class="nf">transform</span><span class="p">(</span><span class="n">X</span><span class="p">)</span>
+    
+    <span class="k">def</span> <span class="nf">inverse_transform</span><span class="p">(</span><span class="n">self</span><span class="p">,</span> <span class="n">Z</span><span class="p">):</span>
+        <span class="sh">"""</span><span class="s">Reconstruct from reduced dimensions</span><span class="sh">"""</span>
+        <span class="k">return</span> <span class="n">Z</span> <span class="o">@</span> <span class="n">self</span><span class="p">.</span><span class="n">components</span><span class="p">.</span><span class="n">T</span> <span class="o">+</span> <span class="n">self</span><span class="p">.</span><span class="n">mean</span>
+    
+    <span class="k">def</span> <span class="nf">explained_variance_ratio</span><span class="p">(</span><span class="n">self</span><span class="p">):</span>
+        <span class="sh">"""</span><span class="s">Proportion of variance explained</span><span class="sh">"""</span>
+        <span class="k">return</span> <span class="n">self</span><span class="p">.</span><span class="n">explained_variance</span> <span class="o">/</span> <span class="n">np</span><span class="p">.</span><span class="nf">sum</span><span class="p">(</span><span class="n">self</span><span class="p">.</span><span class="n">explained_variance</span><span class="p">)</span>
+
+
+<span class="c1"># Example: Hyperspectral image
+</span><span class="k">if</span> <span class="n">__name__</span> <span class="o">==</span> <span class="sh">"</span><span class="s">__main__</span><span class="sh">"</span><span class="p">:</span>
+    <span class="c1"># Generate synthetic hyperspectral data
+</span>    <span class="c1"># 1000 pixels, 50 bands
+</span>    <span class="n">np</span><span class="p">.</span><span class="n">random</span><span class="p">.</span><span class="nf">seed</span><span class="p">(</span><span class="mi">42</span><span class="p">)</span>
+    
+    <span class="c1"># Create correlated bands (simulating real hyperspectral)
+</span>    <span class="n">n_pixels</span> <span class="o">=</span> <span class="mi">1000</span>
+    <span class="n">n_bands</span> <span class="o">=</span> <span class="mi">50</span>
+    
+    <span class="c1"># Base signals
+</span>    <span class="n">signal1</span> <span class="o">=</span> <span class="n">np</span><span class="p">.</span><span class="n">random</span><span class="p">.</span><span class="nf">randn</span><span class="p">(</span><span class="n">n_pixels</span><span class="p">)</span>  <span class="c1"># Vegetation
+</span>    <span class="n">signal2</span> <span class="o">=</span> <span class="n">np</span><span class="p">.</span><span class="n">random</span><span class="p">.</span><span class="nf">randn</span><span class="p">(</span><span class="n">n_pixels</span><span class="p">)</span>  <span class="c1"># Soil
+</span>    <span class="n">signal3</span> <span class="o">=</span> <span class="n">np</span><span class="p">.</span><span class="n">random</span><span class="p">.</span><span class="nf">randn</span><span class="p">(</span><span class="n">n_pixels</span><span class="p">)</span>  <span class="c1"># Water
+</span>    
+    <span class="c1"># Mix signals across bands with noise
+</span>    <span class="n">X</span> <span class="o">=</span> <span class="n">np</span><span class="p">.</span><span class="nf">zeros</span><span class="p">((</span><span class="n">n_pixels</span><span class="p">,</span> <span class="n">n_bands</span><span class="p">))</span>
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nf">range</span><span class="p">(</span><span class="n">n_bands</span><span class="p">):</span>
+        <span class="c1"># Wavelength-dependent mixing
+</span>        <span class="n">w1</span> <span class="o">=</span> <span class="n">np</span><span class="p">.</span><span class="nf">exp</span><span class="p">(</span><span class="o">-</span><span class="p">(</span><span class="n">i</span><span class="o">-</span><span class="mi">20</span><span class="p">)</span><span class="o">**</span><span class="mi">2</span><span class="o">/</span><span class="mi">100</span><span class="p">)</span>  <span class="c1"># Peak at band 20
+</span>        <span class="n">w2</span> <span class="o">=</span> <span class="n">np</span><span class="p">.</span><span class="nf">exp</span><span class="p">(</span><span class="o">-</span><span class="p">(</span><span class="n">i</span><span class="o">-</span><span class="mi">35</span><span class="p">)</span><span class="o">**</span><span class="mi">2</span><span class="o">/</span><span class="mi">100</span><span class="p">)</span>  <span class="c1"># Peak at band 35
+</span>        <span class="n">w3</span> <span class="o">=</span> <span class="mi">1</span> <span class="o">-</span> <span class="n">w1</span> <span class="o">-</span> <span class="n">w2</span>
+        
+        <span class="n">X</span><span class="p">[:,</span> <span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="n">w1</span> <span class="o">*</span> <span class="n">signal1</span> <span class="o">+</span> <span class="n">w2</span> <span class="o">*</span> <span class="n">signal2</span> <span class="o">+</span> <span class="n">w3</span> <span class="o">*</span> <span class="n">signal3</span> <span class="o">+</span> 
+                   <span class="mf">0.1</span> <span class="o">*</span> <span class="n">np</span><span class="p">.</span><span class="n">random</span><span class="p">.</span><span class="nf">randn</span><span class="p">(</span><span class="n">n_pixels</span><span class="p">))</span>
+    
+    <span class="c1"># Apply PCA
+</span>    <span class="n">pca</span> <span class="o">=</span> <span class="nc">PCA</span><span class="p">(</span><span class="n">n_components</span><span class="o">=</span><span class="mi">3</span><span class="p">)</span>
+    <span class="n">Z</span> <span class="o">=</span> <span class="n">pca</span><span class="p">.</span><span class="nf">fit_transform</span><span class="p">(</span><span class="n">X</span><span class="p">)</span>
+    
+    <span class="c1"># Analyze results
+</span>    <span class="n">var_ratio</span> <span class="o">=</span> <span class="n">pca</span><span class="p">.</span><span class="nf">explained_variance_ratio</span><span class="p">()</span>
+    <span class="nf">print</span><span class="p">(</span><span class="sa">f</span><span class="sh">"</span><span class="s">Variance explained by PC1: </span><span class="si">{</span><span class="n">var_ratio</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="si">:</span><span class="p">.</span><span class="mi">1</span><span class="o">%</span><span class="si">}</span><span class="sh">"</span><span class="p">)</span>
+    <span class="nf">print</span><span class="p">(</span><span class="sa">f</span><span class="sh">"</span><span class="s">Variance explained by PC2: </span><span class="si">{</span><span class="n">var_ratio</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="si">:</span><span class="p">.</span><span class="mi">1</span><span class="o">%</span><span class="si">}</span><span class="sh">"</span><span class="p">)</span>
+    <span class="nf">print</span><span class="p">(</span><span class="sa">f</span><span class="sh">"</span><span class="s">Variance explained by PC3: </span><span class="si">{</span><span class="n">var_ratio</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span><span class="si">:</span><span class="p">.</span><span class="mi">1</span><span class="o">%</span><span class="si">}</span><span class="sh">"</span><span class="p">)</span>
+    <span class="nf">print</span><span class="p">(</span><span class="sa">f</span><span class="sh">"</span><span class="s">Total (3 PCs): </span><span class="si">{</span><span class="n">np</span><span class="p">.</span><span class="nf">sum</span><span class="p">(</span><span class="n">var_ratio</span><span class="p">)</span><span class="si">:</span><span class="p">.</span><span class="mi">1</span><span class="o">%</span><span class="si">}</span><span class="sh">"</span><span class="p">)</span>
+    
+    <span class="c1"># Visualize
+</span>    <span class="n">fig</span> <span class="o">=</span> <span class="n">plt</span><span class="p">.</span><span class="nf">figure</span><span class="p">(</span><span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">12</span><span class="p">,</span> <span class="mi">4</span><span class="p">))</span>
+    
+    <span class="c1"># Scree plot
+</span>    <span class="n">ax1</span> <span class="o">=</span> <span class="n">fig</span><span class="p">.</span><span class="nf">add_subplot</span><span class="p">(</span><span class="mi">131</span><span class="p">)</span>
+    <span class="n">ax1</span><span class="p">.</span><span class="nf">bar</span><span class="p">(</span><span class="nf">range</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="nf">len</span><span class="p">(</span><span class="n">var_ratio</span><span class="p">)</span><span class="o">+</span><span class="mi">1</span><span class="p">),</span> <span class="n">var_ratio</span><span class="p">)</span>
+    <span class="n">ax1</span><span class="p">.</span><span class="nf">set_xlabel</span><span class="p">(</span><span class="sh">'</span><span class="s">Principal Component</span><span class="sh">'</span><span class="p">)</span>
+    <span class="n">ax1</span><span class="p">.</span><span class="nf">set_ylabel</span><span class="p">(</span><span class="sh">'</span><span class="s">Variance Explained</span><span class="sh">'</span><span class="p">)</span>
+    <span class="n">ax1</span><span class="p">.</span><span class="nf">set_title</span><span class="p">(</span><span class="sh">'</span><span class="s">Scree Plot</span><span class="sh">'</span><span class="p">)</span>
+    
+    <span class="c1"># 2D projection
+</span>    <span class="n">ax2</span> <span class="o">=</span> <span class="n">fig</span><span class="p">.</span><span class="nf">add_subplot</span><span class="p">(</span><span class="mi">132</span><span class="p">)</span>
+    <span class="n">scatter</span> <span class="o">=</span> <span class="n">ax2</span><span class="p">.</span><span class="nf">scatter</span><span class="p">(</span><span class="n">Z</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">],</span> <span class="n">Z</span><span class="p">[:,</span> <span class="mi">1</span><span class="p">],</span> <span class="n">c</span><span class="o">=</span><span class="n">signal1</span><span class="p">,</span> 
+                         <span class="n">cmap</span><span class="o">=</span><span class="sh">'</span><span class="s">viridis</span><span class="sh">'</span><span class="p">,</span> <span class="n">s</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">alpha</span><span class="o">=</span><span class="mf">0.5</span><span class="p">)</span>
+    <span class="n">ax2</span><span class="p">.</span><span class="nf">set_xlabel</span><span class="p">(</span><span class="sh">'</span><span class="s">PC1</span><span class="sh">'</span><span class="p">)</span>
+    <span class="n">ax2</span><span class="p">.</span><span class="nf">set_ylabel</span><span class="p">(</span><span class="sh">'</span><span class="s">PC2</span><span class="sh">'</span><span class="p">)</span>
+    <span class="n">ax2</span><span class="p">.</span><span class="nf">set_title</span><span class="p">(</span><span class="sh">'</span><span class="s">PCA Projection</span><span class="sh">'</span><span class="p">)</span>
+    <span class="n">plt</span><span class="p">.</span><span class="nf">colorbar</span><span class="p">(</span><span class="n">scatter</span><span class="p">,</span> <span class="n">ax</span><span class="o">=</span><span class="n">ax2</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="sh">'</span><span class="s">Vegetation signal</span><span class="sh">'</span><span class="p">)</span>
+    
+    <span class="c1"># Reconstruction error
+</span>    <span class="n">X_reconstructed</span> <span class="o">=</span> <span class="n">pca</span><span class="p">.</span><span class="nf">inverse_transform</span><span class="p">(</span><span class="n">Z</span><span class="p">)</span>
+    <span class="n">reconstruction_error</span> <span class="o">=</span> <span class="n">np</span><span class="p">.</span><span class="nf">mean</span><span class="p">((</span><span class="n">X</span> <span class="o">-</span> <span class="n">X_reconstructed</span><span class="p">)</span><span class="o">**</span><span class="mi">2</span><span class="p">)</span>
+    <span class="nf">print</span><span class="p">(</span><span class="sa">f</span><span class="sh">"</span><span class="s">Reconstruction error (3 PCs): </span><span class="si">{</span><span class="n">reconstruction_error</span><span class="si">:</span><span class="p">.</span><span class="mi">6</span><span class="n">f</span><span class="si">}</span><span class="sh">"</span><span class="p">)</span>
+    
+    <span class="n">plt</span><span class="p">.</span><span class="nf">tight_layout</span><span class="p">()</span>
+    <span class="n">plt</span><span class="p">.</span><span class="nf">savefig</span><span class="p">(</span><span class="sh">'</span><span class="s">pca_analysis.webp</span><span class="sh">'</span><span class="p">,</span> <span class="n">dpi</span><span class="o">=</span><span class="mi">150</span><span class="p">)</span>
+    <span class="nf">print</span><span class="p">(</span><span class="sh">"</span><span class="s">Saved pca_analysis.webp</span><span class="sh">"</span><span class="p">)</span>
+</code></pre></div></div>
+
+<p><strong>Runtime:</strong> &lt;1 second for 1000 pixels × 50 bands on laptop</p>
+
+<p><strong>Memory:</strong> ~400 KB for this dataset</p>
+
+<hr />
+
+<h3 id="tier-2-professional-path-go-further">Tier 2: Professional Path (Go Further)</h3>
+
+<p><strong>Scikit-learn with t-SNE and UMAP:</strong></p>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kn">from</span> <span class="n">sklearn.decomposition</span> <span class="kn">import</span> <span class="n">PCA</span>
+<span class="kn">from</span> <span class="n">sklearn.manifold</span> <span class="kn">import</span> <span class="n">TSNE</span>
+<span class="kn">from</span> <span class="n">umap</span> <span class="kn">import</span> <span class="n">UMAP</span>
+<span class="kn">import</span> <span class="n">numpy</span> <span class="k">as</span> <span class="n">np</span>
+<span class="kn">import</span> <span class="n">matplotlib.pyplot</span> <span class="k">as</span> <span class="n">plt</span>
+
+<span class="c1"># Load larger hyperspectral image (e.g., 100k pixels, 224 bands)
+# X_large shape: (100000, 224)
+</span>
+<span class="c1"># PCA for visualization
+</span><span class="n">pca</span> <span class="o">=</span> <span class="nc">PCA</span><span class="p">(</span><span class="n">n_components</span><span class="o">=</span><span class="mi">3</span><span class="p">)</span>
+<span class="n">X_pca</span> <span class="o">=</span> <span class="n">pca</span><span class="p">.</span><span class="nf">fit_transform</span><span class="p">(</span><span class="n">X_large</span><span class="p">)</span>
+
+<span class="nf">print</span><span class="p">(</span><span class="sa">f</span><span class="sh">"</span><span class="s">PCA variance explained: </span><span class="si">{</span><span class="n">pca</span><span class="p">.</span><span class="n">explained_variance_ratio_</span><span class="p">[</span><span class="si">:</span><span class="mi">3</span><span class="p">]</span><span class="si">}</span><span class="sh">"</span><span class="p">)</span>
+<span class="nf">print</span><span class="p">(</span><span class="sa">f</span><span class="sh">"</span><span class="s">Cumulative: </span><span class="si">{</span><span class="n">np</span><span class="p">.</span><span class="nb">sum</span><span class="p">(</span><span class="n">pca</span><span class="p">.</span><span class="n">explained_variance_ratio_</span><span class="p">[</span><span class="si">:</span><span class="mi">3</span><span class="p">])</span><span class="si">:</span><span class="p">.</span><span class="mi">1</span><span class="o">%</span><span class="si">}</span><span class="sh">"</span><span class="p">)</span>
+
+<span class="c1"># t-SNE (subsample for speed)
+</span><span class="n">n_sample</span> <span class="o">=</span> <span class="mi">5000</span>
+<span class="n">idx</span> <span class="o">=</span> <span class="n">np</span><span class="p">.</span><span class="n">random</span><span class="p">.</span><span class="nf">choice</span><span class="p">(</span><span class="nf">len</span><span class="p">(</span><span class="n">X_large</span><span class="p">),</span> <span class="n">n_sample</span><span class="p">,</span> <span class="n">replace</span><span class="o">=</span><span class="bp">False</span><span class="p">)</span>
+<span class="n">X_sample</span> <span class="o">=</span> <span class="n">X_large</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span>
+
+<span class="n">tsne</span> <span class="o">=</span> <span class="nc">TSNE</span><span class="p">(</span><span class="n">n_components</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">perplexity</span><span class="o">=</span><span class="mi">30</span><span class="p">,</span> <span class="n">random_state</span><span class="o">=</span><span class="mi">42</span><span class="p">,</span> 
+            <span class="n">n_jobs</span><span class="o">=-</span><span class="mi">1</span><span class="p">)</span>  <span class="c1"># Use all cores
+</span><span class="n">X_tsne</span> <span class="o">=</span> <span class="n">tsne</span><span class="p">.</span><span class="nf">fit_transform</span><span class="p">(</span><span class="n">X_sample</span><span class="p">)</span>
+
+<span class="c1"># UMAP (faster, scales better)
+</span><span class="n">umap</span> <span class="o">=</span> <span class="nc">UMAP</span><span class="p">(</span><span class="n">n_components</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">n_neighbors</span><span class="o">=</span><span class="mi">15</span><span class="p">,</span> <span class="n">min_dist</span><span class="o">=</span><span class="mf">0.1</span><span class="p">,</span> 
+            <span class="n">random_state</span><span class="o">=</span><span class="mi">42</span><span class="p">)</span>
+<span class="n">X_umap</span> <span class="o">=</span> <span class="n">umap</span><span class="p">.</span><span class="nf">fit_transform</span><span class="p">(</span><span class="n">X_sample</span><span class="p">)</span>
+
+<span class="c1"># Visualize all three
+</span><span class="n">fig</span><span class="p">,</span> <span class="n">axes</span> <span class="o">=</span> <span class="n">plt</span><span class="p">.</span><span class="nf">subplots</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">15</span><span class="p">,</span> <span class="mi">4</span><span class="p">))</span>
+
+<span class="c1"># PCA
+</span><span class="n">axes</span><span class="p">[</span><span class="mi">0</span><span class="p">].</span><span class="nf">scatter</span><span class="p">(</span><span class="n">X_pca</span><span class="p">[</span><span class="n">idx</span><span class="p">,</span> <span class="mi">0</span><span class="p">],</span> <span class="n">X_pca</span><span class="p">[</span><span class="n">idx</span><span class="p">,</span> <span class="mi">1</span><span class="p">],</span> <span class="n">s</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">alpha</span><span class="o">=</span><span class="mf">0.5</span><span class="p">)</span>
+<span class="n">axes</span><span class="p">[</span><span class="mi">0</span><span class="p">].</span><span class="nf">set_title</span><span class="p">(</span><span class="sh">'</span><span class="s">PCA</span><span class="sh">'</span><span class="p">)</span>
+<span class="n">axes</span><span class="p">[</span><span class="mi">0</span><span class="p">].</span><span class="nf">set_xlabel</span><span class="p">(</span><span class="sh">'</span><span class="s">PC1</span><span class="sh">'</span><span class="p">)</span>
+<span class="n">axes</span><span class="p">[</span><span class="mi">0</span><span class="p">].</span><span class="nf">set_ylabel</span><span class="p">(</span><span class="sh">'</span><span class="s">PC2</span><span class="sh">'</span><span class="p">)</span>
+
+<span class="c1"># t-SNE
+</span><span class="n">axes</span><span class="p">[</span><span class="mi">1</span><span class="p">].</span><span class="nf">scatter</span><span class="p">(</span><span class="n">X_tsne</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">],</span> <span class="n">X_tsne</span><span class="p">[:,</span> <span class="mi">1</span><span class="p">],</span> <span class="n">s</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">alpha</span><span class="o">=</span><span class="mf">0.5</span><span class="p">)</span>
+<span class="n">axes</span><span class="p">[</span><span class="mi">1</span><span class="p">].</span><span class="nf">set_title</span><span class="p">(</span><span class="sh">'</span><span class="s">t-SNE</span><span class="sh">'</span><span class="p">)</span>
+<span class="n">axes</span><span class="p">[</span><span class="mi">1</span><span class="p">].</span><span class="nf">set_xlabel</span><span class="p">(</span><span class="sh">'</span><span class="s">Component 1</span><span class="sh">'</span><span class="p">)</span>
+<span class="n">axes</span><span class="p">[</span><span class="mi">1</span><span class="p">].</span><span class="nf">set_ylabel</span><span class="p">(</span><span class="sh">'</span><span class="s">Component 2</span><span class="sh">'</span><span class="p">)</span>
+
+<span class="c1"># UMAP
+</span><span class="n">axes</span><span class="p">[</span><span class="mi">2</span><span class="p">].</span><span class="nf">scatter</span><span class="p">(</span><span class="n">X_umap</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">],</span> <span class="n">X_umap</span><span class="p">[:,</span> <span class="mi">1</span><span class="p">],</span> <span class="n">s</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">alpha</span><span class="o">=</span><span class="mf">0.5</span><span class="p">)</span>
+<span class="n">axes</span><span class="p">[</span><span class="mi">2</span><span class="p">].</span><span class="nf">set_title</span><span class="p">(</span><span class="sh">'</span><span class="s">UMAP</span><span class="sh">'</span><span class="p">)</span>
+<span class="n">axes</span><span class="p">[</span><span class="mi">2</span><span class="p">].</span><span class="nf">set_xlabel</span><span class="p">(</span><span class="sh">'</span><span class="s">Component 1</span><span class="sh">'</span><span class="p">)</span>
+<span class="n">axes</span><span class="p">[</span><span class="mi">2</span><span class="p">].</span><span class="nf">set_ylabel</span><span class="p">(</span><span class="sh">'</span><span class="s">Component 2</span><span class="sh">'</span><span class="p">)</span>
+
+<span class="n">plt</span><span class="p">.</span><span class="nf">tight_layout</span><span class="p">()</span>
+<span class="n">plt</span><span class="p">.</span><span class="nf">savefig</span><span class="p">(</span><span class="sh">'</span><span class="s">dimensionality_reduction_comparison.webp</span><span class="sh">'</span><span class="p">,</span> <span class="n">dpi</span><span class="o">=</span><span class="mi">150</span><span class="p">)</span>
+</code></pre></div></div>
+
+<p><strong>Runtime:</strong></p>
+<ul>
+  <li>PCA: 5-10 seconds (100k × 224)</li>
+  <li>t-SNE: 30-60 seconds (5k subsample)</li>
+  <li>UMAP: 10-20 seconds (5k subsample)</li>
+</ul>
+
+<p><strong>GPU acceleration:</strong> RAPIDS cuML for massive datasets</p>
+
+<hr />
+
+<h2 id="6-interpretation">6. Interpretation</h2>
+
+<h3 id="real-application-aviris-hyperspectral">Real Application: AVIRIS Hyperspectral</h3>
+
+<p><strong>AVIRIS (Airborne Visible/Infrared Imaging Spectrometer):</strong></p>
+
+<p>224 contiguous spectral bands (400-2500 nm)</p>
+
+<p>Spatial resolution: 4-20m depending on altitude</p>
+
+<p><strong>Data volume:</strong></p>
+
+<p>Single flight line: 512 pixels × 10,000 lines × 224 bands = 1.15 GB</p>
+
+<p><strong>PCA compression:</strong></p>
+
+<p>First 10 PCs: Retain 99%+ variance</p>
+
+<p>Reduces 224 bands → 10 features</p>
+
+<p><strong>Interpretation of components:</strong></p>
+
+<p>PC1 (50-60% variance): Overall albedo (brightness)</p>
+<ul>
+  <li>High: Bright surfaces (snow, concrete, sand)</li>
+  <li>Low: Dark surfaces (water, shadows, asphalt)</li>
+</ul>
+
+<p>PC2 (15-25% variance): Vegetation vs soil</p>
+<ul>
+  <li>High: Vegetation (high NIR, low red)</li>
+  <li>Low: Soil (low NIR, moderate red)</li>
+</ul>
+
+<p>PC3 (5-10% variance): Soil moisture / mineralogy</p>
+<ul>
+  <li>High: Dry surfaces (high SWIR)</li>
+  <li>Low: Wet surfaces (low SWIR absorption)</li>
+</ul>
+
+<p>PC4-10 (1-5% each): Subtle spectral features</p>
+<ul>
+  <li>Specific absorption bands</li>
+  <li>Atmospheric effects</li>
+  <li>Sensor noise</li>
+</ul>
+
+<p><strong>Applications:</strong></p>
+
+<p>Mineral mapping: PC3-PC5 reveal absorption features</p>
+
+<p>Vegetation stress: Subtle shifts in PC2-PC3</p>
+
+<p>Change detection: Temporal PCA differences</p>
+
+<h3 id="feature-engineering-for-classification">Feature Engineering for Classification</h3>
+
+<p><strong>Curse of dimensionality:</strong></p>
+
+<p>With 224 features, need huge training set.</p>
+
+<p>Rule of thumb: 10 samples per feature.</p>
+
+<p>224 features → Need 2,240 samples per class!</p>
+
+<p><strong>Solution: PCA preprocessing</strong></p>
+
+<p>Reduce 224 → 20 PCs (99% variance)</p>
+
+<p>Now need only 200 samples per class.</p>
+
+<p>Classifier trains faster, generalizes better.</p>
+
+<p><strong>Workflow:</strong></p>
+
+<ol>
+  <li>Fit PCA on unlabeled data</li>
+  <li>Transform training data</li>
+  <li>Train classifier on PCs</li>
+  <li>Transform test data</li>
+  <li>Predict</li>
+</ol>
+
+<p><strong>Performance:</strong></p>
+
+<p>Full 224 bands: 87% accuracy, 45 sec training<br />
+20 PCs: 86% accuracy, 3 sec training</p>
+
+<p>Minimal accuracy loss, huge speed gain.</p>
+
+<hr />
+
+<h2 id="7-what-could-go-wrong">7. What Could Go Wrong?</h2>
+
+<h3 id="interpreting-pca-components">Interpreting PCA Components</h3>
+
+<p><strong>Problem:</strong></p>
+
+<p>PCs are linear combinations of all features.</p>
+
+<p>Difficult to interpret physically.</p>
+
+<p><strong>Example:</strong></p>
+
+<p>PC1 = 0.42×Blue + 0.45×Green + 0.48×Red + 0.35×NIR + …</p>
+
+<p>What does this mean physically?</p>
+
+<p><strong>Solution:</strong></p>
+
+<ul>
+  <li>Examine loadings (coefficients)</li>
+  <li>Plot PC vs wavelength (spectral signature)</li>
+  <li>Use domain knowledge</li>
+  <li>Consider sparse PCA (fewer non-zero loadings)</li>
+</ul>
+
+<h3 id="outliers-dominate">Outliers Dominate</h3>
+
+<p><strong>Problem:</strong></p>
+
+<p>PCA sensitive to outliers (uses variance).</p>
+
+<p>Single extreme point can skew PC1.</p>
+
+<p><strong>Example:</strong></p>
+
+<p>999 forest pixels: NIR = 0.4-0.6<br />
+1 cloud pixel: NIR = 0.95</p>
+
+<p>PC1 dominated by cloud direction.</p>
+
+<p><strong>Solution:</strong></p>
+
+<ul>
+  <li>Remove outliers before PCA</li>
+  <li>Robust PCA (uses median, not mean)</li>
+  <li>Normalize features (standard scaling)</li>
+</ul>
+
+<h3 id="t-sne-pitfalls">t-SNE Pitfalls</h3>
+
+<p><strong>Problem 1: Perplexity matters</strong></p>
+
+<p>Perplexity = 5: Too local (fragmented clusters)<br />
+Perplexity = 50: Too global (merged clusters)</p>
+
+<p>Must experiment.</p>
+
+<p><strong>Problem 2: Different runs, different results</strong></p>
+
+<p>Stochastic optimization → different embeddings.</p>
+
+<p>Set random seed for reproducibility.</p>
+
+<p><strong>Problem 3: Distances meaningless</strong></p>
+
+<p>Cluster A and B appear close in t-SNE.</p>
+
+<p>Does NOT mean actually similar!</p>
+
+<p>Only within-cluster structure reliable.</p>
+
+<p><strong>Problem 4: Computational cost</strong></p>
+
+<p>$O(n^2)$ scales poorly.</p>
+
+<p>1M pixels: Intractable on CPU.</p>
+
+<p><strong>Solution:</strong></p>
+
+<ul>
+  <li>Use UMAP instead (faster)</li>
+  <li>Subsample large datasets</li>
+  <li>Use approximations (Barnes-Hut)</li>
+</ul>
+
+<h3 id="choosing-number-of-components">Choosing Number of Components</h3>
+
+<p><strong>Problem:</strong></p>
+
+<p>How many PCs to retain? No universal rule.</p>
+
+<p><strong>Options:</strong></p>
+
+<ol>
+  <li><strong>Scree plot elbow:</strong> Where eigenvalues flatten</li>
+  <li><strong>Variance threshold:</strong> e.g., 95% cumulative</li>
+  <li><strong>Cross-validation:</strong> Best downstream performance</li>
+  <li><strong>Kaiser rule:</strong> Keep PCs with $\lambda &gt; 1$</li>
+</ol>
+
+<p><strong>Example:</strong></p>
+
+<p>PC1-3: 85% variance (elbow visible)<br />
+PC1-10: 95% variance (threshold met)<br />
+PC1-5: Best classification accuracy (CV result)</p>
+
+<p>Different criteria, different answers. Use domain knowledge.</p>
+
+<hr />
+
+<h2 id="8-extension-kernel-pca">8. Extension: Kernel PCA</h2>
+
+<p><strong>Linear PCA limitation:</strong></p>
+
+<p>Only finds linear patterns.</p>
+
+<p><strong>Example:</strong></p>
+
+<p>Data in concentric circles (nonlinear).</p>
+
+<p>PCA fails to separate.</p>
+
+<p><strong>Kernel PCA solution:</strong></p>
+
+<p>Map data to high-dimensional space (kernel trick).</p>
+
+<p>Apply PCA in that space.</p>
+
+<p>Project back to 2D.</p>
+
+<p><strong>Common kernels:</strong></p>
+
+<p>RBF (Radial Basis Function):</p>
+
+\[k(\mathbf{x}_i, \mathbf{x}_j) = \exp\left(-\frac{\|\mathbf{x}_i - \mathbf{x}_j\|^2}{2\sigma^2}\right)\]
+
+<p>Polynomial:</p>
+
+\[k(\mathbf{x}_i, \mathbf{x}_j) = (\mathbf{x}_i^T\mathbf{x}_j + c)^d\]
+
+<p><strong>Trade-off:</strong></p>
+
+<p>More expressive (captures nonlinearity)<br />
+More expensive (kernel matrix $n \times n$)<br />
+Harder to interpret</p>
+
+<hr />
+
+<h2 id="9-math-refresher-eigenvalues-and-eigenvectors">9. Math Refresher: Eigenvalues and Eigenvectors</h2>
+
+<h3 id="definition">Definition</h3>
+
+<p>For square matrix $\mathbf{A}$:</p>
+
+\[\mathbf{A}\mathbf{v} = \lambda\mathbf{v}\]
+
+<p>$\mathbf{v}$ = eigenvector (direction)<br />
+$\lambda$ = eigenvalue (scaling factor)</p>
+
+<p><strong>Interpretation:</strong></p>
+
+<p>Matrix multiplication just scales $\mathbf{v}$, doesn’t change direction.</p>
+
+<h3 id="finding-eigenvalues">Finding Eigenvalues</h3>
+
+<p><strong>Characteristic equation:</strong></p>
+
+\[\det(\mathbf{A} - \lambda\mathbf{I}) = 0\]
+
+<p><strong>Example (2×2):</strong></p>
+
+\[\mathbf{A} = \begin{bmatrix} 4 &amp; 1 \\ 1 &amp; 3 \end{bmatrix}\]
+
+\[\det\begin{bmatrix} 4-\lambda &amp; 1 \\ 1 &amp; 3-\lambda \end{bmatrix} = (4-\lambda)(3-\lambda) - 1 = 0\]
+
+\[\lambda^2 - 7\lambda + 11 = 0\]
+
+\[\lambda_1 \approx 4.79, \quad \lambda_2 \approx 2.21\]
+
+<h3 id="properties">Properties</h3>
+
+<p><strong>Symmetric matrices</strong> (like covariance):</p>
+<ul>
+  <li>Real eigenvalues</li>
+  <li>Orthogonal eigenvectors</li>
+  <li>$\mathbf{v}_i^T\mathbf{v}_j = 0$ for $i \neq j$</li>
+</ul>
+
+<p><strong>Trace:</strong> $\text{trace}(\mathbf{A}) = \sum \lambda_i$</p>
+
+<p><strong>Determinant:</strong> $\det(\mathbf{A}) = \prod \lambda_i$</p>
+
+<hr />
+
+<h2 id="summary">Summary</h2>
+
+<ul>
+  <li>PCA finds orthogonal directions maximizing variance via eigendecomposition of covariance matrix C = X^T X</li>
+  <li>Principal components are eigenvectors w_i with variance explained equal to eigenvalues λ_i sorted descending</li>
+  <li>Dimensionality reduction projects high-D data onto first k components Z = XW_k retaining 90-99% variance</li>
+  <li>t-SNE preserves local neighborhoods via nonlinear embedding optimizing probability distributions between high/low dimensions</li>
+  <li>UMAP provides faster scalable alternative with O(n log n) complexity preserving both local and global structure</li>
+  <li>Hyperspectral AVIRIS 224 bands compress to 10 PCs retaining 99% variance enabling visualization and classification</li>
+  <li>Feature compression via PCA reduces training requirements from 2240 to 200 samples improving generalization</li>
+  <li>Outliers dominate PCA via variance maximization requiring robust preprocessing or median-based alternatives</li>
+  <li>t-SNE stochastic with perplexity hyperparameter controlling local vs global structure requiring experimentation</li>
+  <li>Professional implementation uses scikit-learn PCA with UMAP for visualization and classification preprocessing workflows</li>
+</ul>
+
+<hr />
+
+      </div>
+
+      
+
+
+
+      
+
+  
+  
+  
+  
+
+
+
+      <!-- essay-footer-notes.html — References / endnotes section.
+     Hidden by default; assets/js/essay/core.js shows it and populates
+     #essay-endnotes-list from [data-cite] elements in the content.
+
+     In posts, create citation markers with:
+       <cite data-cite="Author, Title, URL">1</cite>
+     The JS collects these and renders a numbered reference list here. -->
+
+<footer class="essay-endnotes" id="essay-endnotes" aria-label="References" hidden>
+  <div class="essay-endnotes-inner">
+    <h2 class="essay-endnotes-heading">References</h2>
+    <ol class="essay-endnotes-list" id="essay-endnotes-list">
+      <!-- Populated at runtime by assets/js/essay/core.js buildEndnotes() -->
+    </ol>
+  </div>
+</footer>
+
+
+      
+
+      
+
+      
+
+
+
+
+
+
+
+
+
+
+
+
+
+<aside class="related-posts" aria-label="Related articles">
+  <h2 class="related-posts-heading">Related</h2>
+  <div class="related-posts-grid">
+    
+    <a href="/essay/hyperspectral-imaging-wyvern/" class="related-post-card">
+      
+      <div class="related-post-img" style="background-image:url('/assets/images/wyvern_dragonette.webp')"></div>
+      
+      <div class="related-post-body">
+        
+        <span class="related-post-tag">Monitoring</span>
+        
+        <h3 class="related-post-title">What Light Reveals</h3>
+        <time class="related-post-date" datetime="2025-03-10">10 Mar 2025</time>
+      </div>
+    </a>
+    
+  </div>
+</aside>
+
+
+
+    </article>
+  </main>
+
+  <aside
+    class="essay-sidenotes"
+    id="essay-sidenotes"
+    aria-label="Margin notes"
+  ></aside>
+
+</div>
+
+</div>
+
+<footer>
+  <div class="footer-inner">
+
+    <!-- Col 1: Brand -->
+    <div class="footer-brand">
+      <div class="footer-brand-logo">
+        
+        <img loading="lazy" src="/assets/images/logo.webp" alt="WaywardHouse" width="28" height="28">
+        
+        WaywardHouse<span>.</span>
+      </div>
+      
+      
+      <p class="footer-brand-desc">Understanding how place, economy, and environment interact — through analysis, modelling, and open tools.</p>
+      
+
+      <div class="footer-social">
+        
+        
+        
+        <a href="/feed.xml" class="social-icon" target="_blank" rel="noopener noreferrer" aria-label="RSS feed">
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M4 11a9 9 0 0 1 9 9"/>
+            <path d="M4 4a16 16 0 0 1 16 16"/>
+            <circle cx="5" cy="19" r="1"/>
+          </svg>
+        </a>
+      </div>
+    </div>
+
+    <!-- Col 2: Topics (configurable via footer_topics, falls back to auto-categories) -->
+    <nav aria-labelledby="footer-topics">
+      <h3 class="footer-col-title" id="footer-topics">Reading</h3>
+      <ul class="footer-links">
+        
+          
+          <li><a href="/topics/">Essays</a></li>
+          
+          <li><a href="/series/">Modelling</a></li>
+          
+          <li><a href="/archive/">Archive</a></li>
+          
+          <li><a href="/start-here/">Start Here</a></li>
+          
+        
+      </ul>
+    </nav>
+
+    <!-- Col 3: Secondary navigation -->
+    
+    <nav aria-labelledby="footer-company">
+      <h3 class="footer-col-title" id="footer-company">Site</h3>
+      <ul class="footer-links">
+        
+        <li><a href="/start-here/">Start Here</a></li>
+        
+        <li><a href="/about/">About</a></li>
+        
+        <li><a href="/contact/">Contact</a></li>
+        
+      </ul>
+    </nav>
+    
+
+    <!-- Col 4: Resources -->
+    <nav aria-labelledby="footer-resources">
+      <h3 class="footer-col-title" id="footer-resources">Resources</h3>
+      <ul class="footer-links">
+        <li><a href="/archive/">Archive</a></li>
+        <li><a href="/feed.xml">RSS Feed</a></li>
+        <li><a href="/topics/">All Topics</a></li>
+      </ul>
+    </nav>
+
+  </div><!-- /.footer-inner -->
+
+  <div class="footer-bottom">
+    <span class="footer-copy">
+      &copy; 2026 WaywardHouse.
+    </span>
+    <div class="footer-legal">
+      <a href="/privacy/">Privacy Policy</a>
+      <a href="/terms/">Terms of Service</a>
+    </div>
+  </div>
+
+</footer>
+
+
+<!-- Alpine.js bundle -->
+<script type="module" src="/assets/dist/main.js"></script>
+
+<!-- Visualization runtime — detects and loads CDN libraries dynamically -->
+<script type="module" src="/assets/js/core.js"></script>
+
+<!-- Search overlay — event-driven: nav button $dispatches 'search:open' -->
+<div
+  x-data="search"
+  x-init="init()"
+  @search:open.window="open()"
+>
+  <div
+    class="search-overlay"
+    x-show="isOpen"
+    x-transition:enter="transition ease-out duration-150"
+    x-transition:enter-start="opacity-0"
+    x-transition:enter-end="opacity-100"
+    x-transition:leave="transition ease-in duration-100"
+    x-transition:leave-start="opacity-100"
+    x-transition:leave-end="opacity-0"
+    @click.self="close()"
+    style="display: none;"
+    role="dialog"
+    aria-modal="true"
+    aria-label="Search"
+  >
+    <div class="search-panel">
+      <div class="search-input-wrap">
+        <svg class="search-icon" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <circle cx="11" cy="11" r="8"/>
+          <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+        </svg>
+        <input
+          class="search-input"
+          type="search"
+          placeholder="Search posts…"
+          x-model="query"
+          x-ref="input"
+          @input.debounce.300ms="runSearch()"
+          @keydown.escape="close()"
+          autocomplete="off"
+          spellcheck="false"
+          aria-label="Search query"
+        >
+        <kbd class="search-esc" aria-hidden="true">ESC</kbd>
+      </div>
+
+      <div class="search-results" x-show="query.trim().length > 0">
+        <div class="search-status" x-show="loading" aria-live="polite">Searching…</div>
+        <div class="search-status" x-show="!loading && results.length === 0" aria-live="polite">
+          No results for "<span x-text="query"></span>"
+        </div>
+        <ul class="search-result-list" x-show="!loading && results.length > 0" role="list">
+          <template x-for="result in results" :key="result.url">
+            <li>
+              <a :href="result.url" class="search-result-item" @click="close()">
+                <div class="search-result-title" x-text="result.meta?.title || result.url"></div>
+                <div class="search-result-excerpt" x-html="result.excerpt"></div>
+              </a>
+            </li>
+          </template>
+        </ul>
+      </div>
+    </div>
+  </div>
+</div>
+
+</body>
+</html>
