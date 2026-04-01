@@ -1,0 +1,1420 @@
+<!DOCTYPE html>
+
+<html lang="en" data-brand="wayward" data-theme="light">
+<head>
+  <meta charset="utf-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Avalanche Terrain Analysis — WaywardHouse</title>
+<meta name="description" content="Which slopes are dangerous? Where should backcountry routes go? Avalanche terrain analysis combines slope angle, aspect, elevation, and terrain shape to identify avalanche-prone areas. This model derives slope thresholds, implements...">
+
+<!-- Dark mode flash prevention — runs synchronously before first paint -->
+<script>
+  (function () {
+    var defaultDark = 'light' === 'dark';
+    var s = localStorage.getItem('theme');
+    var dark = s !== null ? s === 'dark' : defaultDark;
+    document.documentElement.dataset.theme = dark ? 'dark' : 'light';
+  })();
+</script>
+
+<!-- Preconnect to CDN domains used by the viz runtime -->
+<link rel="preconnect" href="https://cdn.jsdelivr.net">
+<link rel="preconnect" href="https://unpkg.com">
+<link rel="preconnect" href="https://esm.sh">
+<link rel="preconnect" href="https://api.mapbox.com">
+<link rel="preconnect" href="https://events.mapbox.com">
+
+
+<script>window.MAPBOX_TOKEN = 'pk.eyJ1IjoiYnJlYWRlZGNvZCIsImEiOiJjbW0xa25qc2EwMmtwMnJwejJlNndqdnoxIn0._7I9PwXuFLrOQINVZ84y1w';</script>
+
+
+<!-- Fonts -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:ital,wght@0,300;0,400;0,600;0,700;0,800;0,900;1,700;1,800&family=Barlow:wght@300;400&family=IBM+Plex+Mono:ital,wght@0,300;0,400;0,500;1,300&family=Literata:ital,opsz,wght@0,7..72,300;0,7..72,400;0,7..72,500;1,7..72,300;1,7..72,400&display=swap" rel="stylesheet">
+
+<!-- Theme stylesheet (Vite build output) -->
+<link rel="stylesheet" href="/assets/dist/main.css">
+
+<!-- Brand token overrides — loaded after main.css so variables cascade correctly -->
+
+<link rel="stylesheet" href="/assets/css/brand-wayward.css">
+
+
+
+<!-- Syntax highlighting (Rouge — light + dark) -->
+<link rel="stylesheet" href="/assets/css/syntax.css">
+
+<!-- Begin Jekyll SEO tag v2.8.0 -->
+<title>Avalanche Terrain Analysis | WaywardHouse</title>
+<meta name="generator" content="Jekyll v4.4.1" />
+<meta property="og:title" content="Avalanche Terrain Analysis" />
+<meta property="og:locale" content="en" />
+<meta name="description" content="Which slopes are dangerous? Where should backcountry routes go? Avalanche terrain analysis combines slope angle, aspect, elevation, and terrain shape to identify avalanche-prone areas. This model derives slope thresholds, implements terrain classification systems (ATES), and shows how to map runout zones using DEM analysis." />
+<meta property="og:description" content="Which slopes are dangerous? Where should backcountry routes go? Avalanche terrain analysis combines slope angle, aspect, elevation, and terrain shape to identify avalanche-prone areas. This model derives slope thresholds, implements terrain classification systems (ATES), and shows how to map runout zones using DEM analysis." />
+<link rel="canonical" href="https://wayward.house/model/avalanche-terrain-analysis/" />
+<meta property="og:url" content="https://wayward.house/model/avalanche-terrain-analysis/" />
+<meta property="og:site_name" content="WaywardHouse" />
+<meta property="og:image" content="https://wayward.house/assets/images/avalanche.webp" />
+<meta property="og:type" content="article" />
+<meta property="article:published_time" content="2026-02-27T00:00:00-07:00" />
+<meta name="twitter:card" content="summary_large_image" />
+<meta property="twitter:image" content="https://wayward.house/assets/images/avalanche.webp" />
+<meta property="twitter:title" content="Avalanche Terrain Analysis" />
+<meta name="twitter:site" content="@" />
+<script type="application/ld+json">
+{"@context":"https://schema.org","@type":"BlogPosting","dateModified":"2026-03-17T21:00:54-06:00","datePublished":"2026-02-27T00:00:00-07:00","description":"Which slopes are dangerous? Where should backcountry routes go? Avalanche terrain analysis combines slope angle, aspect, elevation, and terrain shape to identify avalanche-prone areas. This model derives slope thresholds, implements terrain classification systems (ATES), and shows how to map runout zones using DEM analysis.","headline":"Avalanche Terrain Analysis","image":"https://wayward.house/assets/images/avalanche.webp","mainEntityOfPage":{"@type":"WebPage","@id":"https://wayward.house/model/avalanche-terrain-analysis/"},"publisher":{"@type":"Organization","logo":{"@type":"ImageObject","url":"https://wayward.house/assets/images/logo.webp"}},"url":"https://wayward.house/model/avalanche-terrain-analysis/"}</script>
+<!-- End Jekyll SEO tag -->
+
+
+
+<!-- Cloudflare Web Analytics -->
+<script defer src="https://static.cloudflareinsights.com/beacon.min.js"
+  data-cf-beacon='{"token": "62c47d78bf9d4c80972d4e6242d79ff8"}'></script>
+
+
+</head>
+<body class="
+  model-template
+   tag-modelling
+   tag-hash-math
+  
+   tag-hash-viz
+  
+  
+  
+  
+  
+  
+">
+
+<a href="#main-content" class="skip-link">Skip to content</a>
+
+<header class="nav" x-data="{ open: false }">
+  <div class="nav-inner">
+
+    <!-- Logo -->
+    <a href="/" class="nav-logo">
+      
+      <img loading="lazy" src="/assets/images/logo.webp" alt="WaywardHouse" width="32" height="32">
+      
+      WaywardHouse<span>.</span>
+    </a>
+
+    <!-- Desktop nav links -->
+    <ul class="nav-links" role="list">
+      
+      <li>
+        <a href="/topics/">Essays</a>
+      </li>
+      
+      <li>
+        <a href="/series/">Modelling</a>
+      </li>
+      
+      <li>
+        <a href="/about/">About</a>
+      </li>
+      
+    </ul>
+
+    <!-- Actions -->
+    <div class="nav-actions">
+
+      <!-- Search button -->
+      <button
+        class="search-toggle"
+        type="button"
+        aria-label="Search (⌘K)"
+        title="Search (⌘K)"
+        @click="$dispatch('search:open')"
+      >
+        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <circle cx="11" cy="11" r="8"/>
+          <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+        </svg>
+      </button>
+
+      <!-- Dark mode toggle -->
+      <button
+        class="theme-toggle"
+        x-data="darkMode"
+        x-init="init()"
+        @click="toggle()"
+        :aria-label="dark ? 'Switch to light mode' : 'Switch to dark mode'"
+        type="button"
+      >
+        <!-- Sun icon (shown in light mode) -->
+        <svg class="icon-sun" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">
+          <circle cx="12" cy="12" r="5"/>
+          <line x1="12" y1="1" x2="12" y2="3"/>
+          <line x1="12" y1="21" x2="12" y2="23"/>
+          <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/>
+          <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/>
+          <line x1="1" y1="12" x2="3" y2="12"/>
+          <line x1="21" y1="12" x2="23" y2="12"/>
+          <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/>
+          <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>
+        </svg>
+        <!-- Moon icon (shown in dark mode) -->
+        <svg class="icon-moon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">
+          <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+        </svg>
+      </button>
+
+      <!-- Hamburger (mobile only) -->
+      <button
+        class="mobile-nav-toggle"
+        @click="open = !open"
+        :aria-expanded="open"
+        :aria-label="open ? 'Close menu' : 'Open menu'"
+        type="button"
+      >
+        <svg x-show="!open" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <line x1="3" y1="6" x2="21" y2="6"/>
+          <line x1="3" y1="12" x2="21" y2="12"/>
+          <line x1="3" y1="18" x2="21" y2="18"/>
+        </svg>
+        <svg x-show="open" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <line x1="18" y1="6" x2="6" y2="18"/>
+          <line x1="6" y1="6" x2="18" y2="18"/>
+        </svg>
+      </button>
+
+    </div><!-- /.nav-actions -->
+  </div><!-- /.nav-inner -->
+
+  <!-- Mobile drawer -->
+  <div
+    class="mobile-nav"
+    x-show="open"
+    x-transition:enter="transition ease-out duration-200"
+    x-transition:enter-start="opacity-0 -translate-y-1"
+    x-transition:enter-end="opacity-100 translate-y-0"
+    x-transition:leave="transition ease-in duration-150"
+    x-transition:leave-start="opacity-100 translate-y-0"
+    x-transition:leave-end="opacity-0 -translate-y-1"
+    @click.outside="open = false"
+    @keydown.escape.window="open = false"
+  >
+    <ul role="list">
+      
+      <li>
+        <a href="/topics/" @click="open = false">Essays</a>
+      </li>
+      
+      <li>
+        <a href="/series/" @click="open = false">Modelling</a>
+      </li>
+      
+      <li>
+        <a href="/about/" @click="open = false">About</a>
+      </li>
+      
+    </ul>
+  </div><!-- /.mobile-nav -->
+
+</header>
+
+
+<div id="main-content">
+  <!-- Essay stylesheet and runtime — self-contained -->
+<link rel="stylesheet" href="/assets/css/essay.css">
+<script type="module" src="/assets/js/essay/core.js"></script>
+
+<div class="essay-layout" id="essay-layout">
+
+  <!-- essay-toc.html — Sticky table of contents (left column).
+     The <ol> is empty on load; assets/js/essay/core.js populates it
+     from h2/h3 elements found in #essay-content after the page renders. -->
+
+<nav class="essay-toc" id="essay-toc" aria-label="Table of contents">
+  <div class="essay-toc-inner">
+    <p class="essay-toc-heading" aria-hidden="true">Contents</p>
+    <ol class="essay-toc-list" id="essay-toc-list">
+      <!-- Populated at runtime by assets/js/essay/core.js buildToc() -->
+    </ol>
+  </div>
+</nav>
+
+
+  <main class="essay-main" id="essay-main" role="main">
+    <article class="essay-article">
+
+      <!-- essay-hero.html — Header for computational essay template.
+     Displays feature image, tag label, title, excerpt, and post metadata. -->
+
+<header class="essay-hero">
+  
+  <figure class="essay-hero-figure">
+    <img
+      src="/assets/images/avalanche.webp"
+      alt="Avalanche Terrain Analysis"
+      class="essay-hero-img"
+      loading="eager"
+    >
+    
+  </figure>
+  
+
+  <div class="essay-hero-body">
+
+    
+    
+    
+    
+    
+    <nav class="essay-breadcrumb" aria-label="Series position">
+      
+      <a href="/series/4/" class="essay-breadcrumb-link">Computational geography cryosphere</a>
+      
+      
+      <span class="essay-breadcrumb-sep" aria-hidden="true">›</span>
+      <span class="essay-breadcrumb-cluster">Snow Physics & modelling</span>
+      
+      
+      <span class="essay-breadcrumb-sep" aria-hidden="true">›</span>
+      <span class="essay-breadcrumb-pos">Model 4</span>
+      
+    </nav>
+    
+
+    <div class="essay-hero-labels">
+      
+      <a href="/topics/modelling/" class="essay-tag-label">modelling</a>
+      
+      
+      <span class="difficulty-badge difficulty-badge--4">Level 4</span>
+      
+    </div>
+
+    <h1 class="essay-title">Avalanche Terrain Analysis</h1>
+
+    
+    <p class="essay-excerpt">Which slopes are dangerous? Where should backcountry routes go? Avalanche terrain analysis combines slope angle, aspect, elevation, and terrain shape to identify avalanche-prone areas. This model derives slope thresholds, implements terrain classification systems (ATES), and shows how to map runout zones using DEM analysis.
+</p>
+    
+
+    
+    <p class="essay-prereqs"><span class="essay-prereqs-label">Prerequisites:</span> slope analysis, terrain classification, hazard modelling, probability</p>
+    
+
+    <div class="essay-meta">
+      
+      <div class="essay-meta-secondary">
+        <time class="essay-date" datetime="2026-02-27">27 Feb 2026</time>
+        
+        
+        <span class="essay-sep" aria-hidden="true">·</span>
+        <span class="essay-updated">Updated <time datetime="2026-03-17">17 Mar 2026</time></span>
+        
+        <span class="essay-sep" aria-hidden="true">·</span>
+        <span class="essay-reading-time">14 min read</span>
+      </div>
+    </div>
+  </div>
+</header>
+
+
+      
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<nav class="series-nav" aria-label="Series navigation">
+
+  <div class="series-nav-header">
+    <span class="series-nav-label">P</span>
+    <span class="series-nav-title">Snow Physics & modelling</span>
+  </div>
+
+  <ol class="series-nav-list">
+    
+    <li class="series-nav-item">
+      
+      <a href="/model/snowpack-energy-balance/" class="series-nav-link">
+        <span class="series-nav-number">1</span>
+        Snowpack Energy Balance
+      </a>
+      
+    </li>
+    
+    <li class="series-nav-item">
+      
+      <a href="/model/snow-accumulation-melt-modeling/" class="series-nav-link">
+        <span class="series-nav-number">2</span>
+        Snow Accumulation and Melt modelling
+      </a>
+      
+    </li>
+    
+    <li class="series-nav-item">
+      
+      <a href="/model/swe-estimation-methods/" class="series-nav-link">
+        <span class="series-nav-number">3</span>
+        Snow Water Equivalent Estimation
+      </a>
+      
+    </li>
+    
+    <li class="series-nav-item series-nav-item--current">
+      
+      <span class="series-nav-link series-nav-link--current" aria-current="page">
+        <span class="series-nav-number">4</span>
+        Avalanche Terrain Analysis
+      </span>
+      
+    </li>
+    
+  </ol>
+
+  
+  <div class="series-nav-footer">
+    <a href="/series/4/" class="series-nav-all">
+      All 10 in this series &rarr;
+    </a>
+  </div>
+  
+
+</nav>
+
+
+
+
+      <div class="essay-content gh-content" id="essay-content">
+        <p>On 1 February 2003, seven experienced backcountry skiers died in the Revelstoke area of British Columbia when an avalanche released on a slope of approximately 38°. They were skilled, equipped, and had assessed the conditions carefully. But they were in avalanche terrain — a slope in the critical 30–45° angle range, with a recent wind slab loaded from the prevailing southwest, above a convex rollover that concentrated stress — and the snowpack failed. Their deaths, and those of the approximately 15 people killed by avalanches in Canada in an average year, share a common geography: they happen in terrain that can be identified on a map long before anyone enters the field.</p>
+
+<p>Avalanche terrain analysis is the systematic application of terrain parameters — slope angle, aspect, elevation, shape, and the presence of anchors like trees and rocks — to identify which parts of a mountain are likely to produce, channel, or be reached by avalanche runout. Unlike snowpack assessment, which changes day to day and requires specialist training to interpret, terrain is fixed. A GIS analysis of a DEM can identify all slopes between 30° and 45° facing a given aspect range, trace the runout zones below them using flow routing algorithms, and produce a hazard map that remains valid for decades. This model builds that analysis, derives the slope thresholds from snow mechanics, and implements the ATES (Avalanche Terrain Exposure Scale) classification used across North America.</p>
+
+<h2 id="1-the-question">1. The Question</h2>
+
+<p>Is this slope safe to ski, or will it avalanche?</p>
+
+<p><strong>Avalanche terrain analysis</strong> identifies hazardous areas based on:</p>
+
+<p><strong>Terrain factors (unchanging):</strong></p>
+<ul>
+  <li>Slope angle (30-45° = avalanche terrain)</li>
+  <li>Aspect (wind loading, solar exposure)</li>
+  <li>Elevation (snowpack depth/stability varies)</li>
+  <li>Terrain shape (convex vs. concave)</li>
+  <li>Anchors (trees, rocks that hold snow)</li>
+</ul>
+
+<p><strong>Snowpack factors (time-varying):</strong></p>
+<ul>
+  <li>Recent snowfall (loading)</li>
+  <li>Wind (slab formation)</li>
+  <li>Temperature (weak layer formation)</li>
+  <li>Layer structure (buried weak layers)</li>
+</ul>
+
+<p><strong>Human factors:</strong></p>
+<ul>
+  <li>Route choice</li>
+  <li>Group management</li>
+  <li>Decision-making</li>
+</ul>
+
+<p>The mathematical question: Given a DEM and snowpack conditions, how do we classify terrain by avalanche risk and predict where avalanches might run?</p>
+
+<hr />
+
+<h2 id="2-the-conceptual-model">2. The Conceptual Model</h2>
+
+<h3 id="critical-slope-angles">Critical Slope Angles</h3>
+
+<p><strong>Avalanche release zones:</strong></p>
+
+\[\theta_{\text{start}} = 30-45°\]
+
+<p><strong>Why this range?</strong></p>
+
+<p><strong>Below 30°:</strong> Snow doesn’t slide (friction too high)<br />
+<strong>30-35°:</strong> Common for wet loose avalanches<br />
+<strong>35-40°:</strong> Peak slab avalanche frequency<br />
+<strong>40-45°:</strong> Still avalanche, but less snow accumulates (sloughs off)<br />
+<strong>Above 50°:</strong> Too steep to hold deep snowpack</p>
+
+<p><strong>Most dangerous:</strong> 38° (statistically most fatal avalanches)</p>
+
+<h3 id="avalanche-types">Avalanche Types</h3>
+
+<p><strong>1. Loose Snow Avalanche (Sluff)</strong></p>
+<ul>
+  <li>Point release, fan-shaped</li>
+  <li>Surface snow only</li>
+  <li>Low danger unless terrain trap</li>
+</ul>
+
+<p><strong>2. Slab Avalanche</strong></p>
+<ul>
+  <li>Cohesive layer breaks as unit</li>
+  <li>Wide fracture line</li>
+  <li><strong>Most deadly</strong> (accounts for 90% of fatalities)</li>
+  <li>Requires weak layer beneath slab</li>
+</ul>
+
+<p><strong>3. Wet Avalanche</strong></p>
+<ul>
+  <li>Warm temperatures or rain</li>
+  <li>Full-depth release (to ground)</li>
+  <li>Heavy, destructive</li>
+</ul>
+
+<h3 id="ates-classification">ATES Classification</h3>
+
+<p><strong>Avalanche Terrain Exposure Scale:</strong></p>
+
+<p><strong>Simple:</strong></p>
+<ul>
+  <li>Primarily &lt; 30° slopes</li>
+  <li>Some avalanche terrain nearby</li>
+  <li>Multiple route options</li>
+  <li><strong>Risk:</strong> Low</li>
+</ul>
+
+<p><strong>Challenging:</strong></p>
+<ul>
+  <li>30-35° slopes common</li>
+  <li>Exposure to avalanche paths</li>
+  <li>Limited route options</li>
+  <li><strong>Risk:</strong> Moderate</li>
+</ul>
+
+<p><strong>Complex:</strong></p>
+<ul>
+  <li>Multiple 35-45° slopes</li>
+  <li>Overhead hazard (terrain traps below steep slopes)</li>
+  <li>Few safe zones</li>
+  <li><strong>Risk:</strong> High</li>
+</ul>
+
+<hr />
+
+<h2 id="3-building-the-mathematical-model">3. Building the Mathematical Model</h2>
+
+<h3 id="slope-angle-from-dem">Slope Angle from DEM</h3>
+
+<p><strong>Gradient magnitude (from Model 8):</strong></p>
+
+\[|\nabla z| = \sqrt{\left(\frac{\partial z}{\partial x}\right)^2 + \left(\frac{\partial z}{\partial y}\right)^2}\]
+
+<p><strong>Slope angle:</strong></p>
+
+\[\theta = \arctan(|\nabla z|)\]
+
+<p><strong>In degrees:</strong></p>
+
+\[\theta = \arctan(|\nabla z|) \times \frac{180}{\pi}\]
+
+<p><strong>Finite difference (3×3 window):</strong></p>
+
+\[\frac{\partial z}{\partial x} \approx \frac{(z_{i,j+1} - z_{i,j-1})}{2\Delta x}\]
+
+\[\frac{\partial z}{\partial y} \approx \frac{(z_{i+1,j} - z_{i-1,j})}{2\Delta y}\]
+
+<h3 id="avalanche-hazard-classification">Avalanche Hazard Classification</h3>
+
+<p><strong>Based on slope angle:</strong></p>
+
+\[\text{Hazard} = \begin{cases}
+\text{Non-avalanche} &amp; \theta &lt; 30° \\
+\text{Low hazard} &amp; 30° \leq \theta &lt; 35° \\
+\text{Moderate hazard} &amp; 35° \leq \theta &lt; 40° \\
+\text{High hazard} &amp; 40° \leq \theta &lt; 45° \\
+\text{Extreme steep} &amp; \theta \geq 45°
+\end{cases}\]
+
+<h3 id="alpha-angle-runout">Alpha Angle (Runout)</h3>
+
+<p><strong>Maximum runout distance:</strong></p>
+
+<p><strong>Alpha angle</strong> from avalanche start to stop:</p>
+
+\[\alpha = \arctan\left(\frac{z_{\text{start}} - z_{\text{stop}}}{d_{\text{horizontal}}}\right)\]
+
+<p><strong>Empirical:</strong></p>
+<ul>
+  <li>Small avalanches: $\alpha \approx 28-30°$</li>
+  <li>Medium avalanches: $\alpha \approx 25-27°$</li>
+  <li>Large avalanches: $\alpha \approx 18-22°$</li>
+</ul>
+
+<p><strong>Runout zone:</strong> All terrain downslope from start zone where $\alpha &gt; \alpha_{\text{threshold}}$</p>
+
+<p><strong>Example:</strong> Avalanche starts at 3000m elevation</p>
+<ul>
+  <li>Alpha = 25°</li>
+  <li>Stop when: $\arctan(\Delta z / d) = 25°$</li>
+  <li>If horizontal distance 1000m: $\Delta z = 1000 \times \tan(25°) = 466$ m</li>
+  <li>Stops at: 3000 - 466 = <strong>2534m elevation</strong></li>
+</ul>
+
+<h3 id="terrain-traps">Terrain Traps</h3>
+
+<p><strong>Features that increase consequence:</strong></p>
+
+<p><strong>Gullies/Couloirs:</strong></p>
+<ul>
+  <li>Funneling effect (deep debris)</li>
+  <li>Burial depth increases</li>
+  <li>Hard to escape</li>
+</ul>
+
+<p><strong>Cliffs:</strong></p>
+<ul>
+  <li>Trauma risk</li>
+  <li>Carried over cliff by avalanche</li>
+</ul>
+
+<p><strong>Trees (dense):</strong></p>
+<ul>
+  <li>Trauma from impact</li>
+  <li>Difficult rescue</li>
+</ul>
+
+<p><strong>Flat areas below steep slopes:</strong></p>
+<ul>
+  <li>Appears safe but runout zone</li>
+  <li>“Terrain trap”</li>
+</ul>
+
+<p><strong>Risk multiplication:</strong></p>
+
+\[R_{\text{total}} = P_{\text{avalanche}} \times C_{\text{terrain trap}}\]
+
+<p>Where $C &gt; 1$ for terrain traps (amplifies consequence).</p>
+
+<hr />
+
+<h2 id="4-worked-example-by-hand">4. Worked Example by Hand</h2>
+
+<p><strong>Problem:</strong> Classify avalanche terrain for ski route planning.</p>
+
+<p><strong>DEM elevations (meters, 30m cell size):</strong></p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>      j=0   j=1   j=2   j=3   j=4
+i=0  2900  2880  2850  2810  2760
+i=1  2920  2900  2870  2820  2770
+i=2  2940  2920  2890  2840  2790
+i=3  2960  2940  2910  2860  2810
+</code></pre></div></div>
+
+<p>Calculate slope angle at cell (1,1).</p>
+
+<h3 id="solution">Solution</h3>
+
+<p><strong>Step 1: Finite differences</strong></p>
+
+<p>At (1,1):</p>
+
+\[\frac{\partial z}{\partial x} \approx \frac{z[1,2] - z[1,0]}{2 \times 30} = \frac{2870 - 2920}{60} = \frac{-50}{60} = -0.833\]
+
+\[\frac{\partial z}{\partial y} \approx \frac{z[2,1] - z[0,1]}{2 \times 30} = \frac{2920 - 2880}{60} = \frac{40}{60} = 0.667\]
+
+<p><strong>Step 2: Gradient magnitude</strong></p>
+
+\[|\nabla z| = \sqrt{(-0.833)^2 + (0.667)^2} = \sqrt{0.694 + 0.445} = \sqrt{1.139} = 1.067\]
+
+<p><strong>Step 3: Slope angle</strong></p>
+
+\[\theta = \arctan(1.067) = 46.9° \times \frac{180}{\pi} = 46.9°\]
+
+<p><strong>Wait, that’s too high. Recalculate:</strong></p>
+
+\[\theta = \arctan(1.067) \text{ radians} = 0.818 \text{ rad}\]
+
+\[\theta = 0.818 \times \frac{180}{\pi} = 46.9°\]
+
+<p>Actually this is correct! The slope is <strong>46.9°</strong> - <strong>extremely steep, minimal snow accumulation</strong>.</p>
+
+<p><strong>Step 4: Classification</strong></p>
+
+<p>$\theta = 46.9° &gt; 45°$ → <strong>Extreme steep</strong></p>
+
+<p><strong>Interpretation:</strong> This slope is:</p>
+<ul>
+  <li>Too steep for most slab avalanches (snow sloughs off)</li>
+  <li>Potential loose snow avalanches</li>
+  <li><strong>Not</strong> prime avalanche terrain (not enough snow accumulates)</li>
+  <li>But dangerous for climbing/skiing (rockfall, sluffs)</li>
+</ul>
+
+<p><strong>Step 5: Calculate for (2,2) as well</strong></p>
+
+\[\frac{\partial z}{\partial x} = \frac{2840 - 2940}{60} = -1.667\]
+
+\[\frac{\partial z}{\partial y} = \frac{2910 - 2870}{60} = 0.667\]
+
+\[|\nabla z| = \sqrt{2.778 + 0.445} = 1.796\]
+
+\[\theta = \arctan(1.796) = 60.9°\]
+
+<p><strong>Extremely steep cliff!</strong></p>
+
+<hr />
+
+<h2 id="5-computational-implementation">5. Computational Implementation</h2>
+
+<p>Below is an interactive avalanche terrain classifier.</p>
+
+<div class="viz-container" id="ava-terrain-viz">
+  <div class="controls">
+    <label>
+      Terrain complexity:
+      <select id="terrain-type">
+        <option value="simple">Simple (rolling terrain)</option>
+        <option value="moderate" selected="">Moderate (varied slopes)</option>
+        <option value="complex">Complex (steep alpine)</option>
+      </select>
+    </label>
+    <label>
+      Show hazard zones only:
+      <input type="checkbox" id="show-hazard-only" />
+    </label>
+    <label>
+      Show aspect:
+      <input type="checkbox" id="show-aspect" />
+    </label>
+    <div class="ava-info">
+      <p><strong>Hazard distribution:</strong></p>
+      <p>Non-avalanche: <span id="pct-safe">--</span>%</p>
+      <p>Avalanche terrain: <span id="pct-hazard">--</span>%</p>
+      <p>Extreme steep: <span id="pct-extreme">--</span>%</p>
+    </div>
+  </div>
+  <div id="ava-terrain-canvas-container">
+    <canvas id="ava-terrain-canvas" width="700" height="350" style="border: 1px solid #ddd;"></canvas>
+  </div>
+  <div class="legend">
+    <p><strong>Colors:</strong> 
+      <span style="color: #2E7D32">■ Safe (&lt;30°)</span>
+      <span style="color: #F57F17">■ Low (30-35°)</span>
+      <span style="color: #E64A19">■ Moderate (35-40°)</span>
+      <span style="color: #B71C1C">■ High (40-45°)</span>
+      <span style="color: #4A148C">■ Extreme (&gt;45°)</span>
+    </p>
+  </div>
+</div>
+
+<script type="module">
+(function() {
+  const canvas = document.getElementById('ava-terrain-canvas');
+  const ctx = canvas.getContext('2d');
+  
+  let terrainType = 'moderate';
+  let showHazardOnly = false;
+  let showAspect = false;
+  
+  const size = 50;
+  const cellSize = 7;
+  
+  function generateTerrain(type) {
+    const dem = [];
+    
+    for (let i = 0; i < size; i++) {
+      const row = [];
+      for (let j = 0; j < size; j++) {
+        let elev;
+        
+        if (type === 'simple') {
+          // Gentle rolling terrain
+          elev = 2500 - i * 5 + Math.sin(j / 8) * 50;
+        } else if (type === 'moderate') {
+          // Ridge with gullies
+          const ridgeEffect = Math.abs(j - size/2) < 10 ? 200 : 0;
+          elev = 2800 - i * 10 + ridgeEffect + Math.sin(j / 5) * 80;
+        } else {
+          // Complex alpine
+          const peakDist = Math.sqrt((i - size/3)**2 + (j - size/2)**2);
+          elev = 3000 - peakDist * 8 + Math.cos(i / 3) * 100;
+        }
+        
+        row.push(elev);
+      }
+      dem.push(row);
+    }
+    
+    return dem;
+  }
+  
+  function calculateSlope(dem, i, j) {
+    if (i === 0 || i === size-1 || j === 0 || j === size-1) {
+      return 0; // Edge cells
+    }
+    
+    const dzdx = (dem[i][j+1] - dem[i][j-1]) / (2 * cellSize);
+    const dzdy = (dem[i+1][j] - dem[i-1][j]) / (2 * cellSize);
+    
+    const gradient = Math.sqrt(dzdx**2 + dzdy**2);
+    const slopeDeg = Math.atan(gradient) * 180 / Math.PI;
+    
+    return slopeDeg;
+  }
+  
+  function calculateAspect(dem, i, j) {
+    if (i === 0 || i === size-1 || j === 0 || j === size-1) {
+      return 0;
+    }
+    
+    const dzdx = (dem[i][j+1] - dem[i][j-1]) / (2 * cellSize);
+    const dzdy = (dem[i+1][j] - dem[i-1][j]) / (2 * cellSize);
+    
+    let aspect = Math.atan2(dzdy, -dzdx) * 180 / Math.PI;
+    if (aspect < 0) aspect += 360;
+    
+    return aspect;
+  }
+  
+  function classifyHazard(slope) {
+    if (slope < 30) return 0;
+    if (slope < 35) return 1;
+    if (slope < 40) return 2;
+    if (slope < 45) return 3;
+    return 4;
+  }
+  
+  function getHazardColor(hazard) {
+    const colors = [
+      '#2E7D32', // Safe
+      '#F57F17', // Low
+      '#E64A19', // Moderate
+      '#B71C1C', // High
+      '#4A148C'  // Extreme
+    ];
+    return colors[hazard];
+  }
+  
+  function getAspectColor(aspect) {
+    // North = blue, South = red, East/West = yellow/green
+    const hue = aspect;
+    return `hsl(${hue}, 70%, 50%)`;
+  }
+  
+  function render() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    
+    const dem = generateTerrain(terrainType);
+    
+    let counts = [0, 0, 0, 0, 0];
+    
+    // Left panel: Slope/Hazard
+    for (let i = 0; i < size; i++) {
+      for (let j = 0; j < size; j++) {
+        const slope = calculateSlope(dem, i, j);
+        const hazard = classifyHazard(slope);
+        
+        counts[hazard]++;
+        
+        if (showHazardOnly && hazard === 0) {
+          ctx.fillStyle = '#EEEEEE';
+        } else {
+          ctx.fillStyle = getHazardColor(hazard);
+        }
+        
+        ctx.fillRect(10 + j * cellSize, 10 + i * cellSize, cellSize, cellSize);
+      }
+    }
+    
+    // Right panel: Aspect (if enabled)
+    if (showAspect) {
+      for (let i = 0; i < size; i++) {
+        for (let j = 0; j < size; j++) {
+          const aspect = calculateAspect(dem, i, j);
+          const slope = calculateSlope(dem, i, j);
+          
+          if (slope >= 30) {
+            ctx.fillStyle = getAspectColor(aspect);
+          } else {
+            ctx.fillStyle = '#BDBDBD';
+          }
+          
+          ctx.fillRect(10 + size * cellSize + 20 + j * cellSize, 
+                      10 + i * cellSize, cellSize, cellSize);
+        }
+      }
+      
+      // Label
+      ctx.fillStyle = '#2C3E50';
+      ctx.font = 'bold 12px sans-serif';
+      ctx.fillText('Slope Hazard', 15, size * cellSize + 30);
+      ctx.fillText('Aspect (>30°)', 10 + size * cellSize + 25, size * cellSize + 30);
+    } else {
+      ctx.fillStyle = '#2C3E50';
+      ctx.font = 'bold 12px sans-serif';
+      ctx.fillText('Avalanche Terrain Classification', 15, size * cellSize + 30);
+    }
+    
+    // Statistics
+    const total = counts.reduce((a, b) => a + b, 0);
+    const pctSafe = (counts[0] / total * 100).toFixed(1);
+    const pctHazard = ((counts[1] + counts[2] + counts[3]) / total * 100).toFixed(1);
+    const pctExtreme = (counts[4] / total * 100).toFixed(1);
+    
+    document.getElementById('pct-safe').textContent = pctSafe;
+    document.getElementById('pct-hazard').textContent = pctHazard;
+    document.getElementById('pct-extreme').textContent = pctExtreme;
+  }
+  
+  document.getElementById('terrain-type').addEventListener('change', (e) => {
+    terrainType = e.target.value;
+    render();
+  });
+  
+  document.getElementById('show-hazard-only').addEventListener('change', (e) => {
+    showHazardOnly = e.target.checked;
+    render();
+  });
+  
+  document.getElementById('show-aspect').addEventListener('change', (e) => {
+    showAspect = e.target.checked;
+    render();
+  });
+  
+  render();
+})();
+</script>
+
+<p><strong>Try this:</strong></p>
+<ul>
+  <li><strong>Simple terrain:</strong> Mostly green (safe slopes)</li>
+  <li><strong>Moderate terrain:</strong> Mix of safe and hazard zones</li>
+  <li><strong>Complex alpine:</strong> More red/purple (steep avalanche terrain)</li>
+  <li><strong>Show hazard only:</strong> Gray out safe terrain, highlight danger zones</li>
+  <li><strong>Show aspect:</strong> Right panel shows slope direction (N=blue, S=red, E=yellow)</li>
+  <li><strong>Color code:</strong> Green=safe, Yellow/Orange/Red=avalanche terrain, Purple=extreme</li>
+  <li>Notice: Most avalanche terrain clusters in gullies and ridge flanks!</li>
+</ul>
+
+<p><strong>Key insight:</strong> Terrain classification enables route planning—stay in green zones, minimize time in red zones, avoid terrain traps!</p>
+
+<hr />
+
+<h2 id="6-interpretation">6. Interpretation</h2>
+
+<h3 id="route-planning">Route Planning</h3>
+
+<p><strong>Decision matrix:</strong></p>
+
+<table>
+  <thead>
+    <tr>
+      <th>Terrain</th>
+      <th>Hazard Level</th>
+      <th>Action</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>Simple (&lt;30°)</td>
+      <td>Low</td>
+      <td>Safe travel</td>
+    </tr>
+    <tr>
+      <td>Challenging (30-35°)</td>
+      <td>Moderate</td>
+      <td>Assess snowpack, spacing</td>
+    </tr>
+    <tr>
+      <td>Complex (35-45°)</td>
+      <td>High</td>
+      <td>Expert only, stability tests</td>
+    </tr>
+    <tr>
+      <td>Extreme (&gt;45°)</td>
+      <td>Variable</td>
+      <td>Sluff risk, limited accumulation</td>
+    </tr>
+  </tbody>
+</table>
+
+<p><strong>Spacing:</strong></p>
+<ul>
+  <li>Simple: Group together</li>
+  <li>Challenging: 50m spacing</li>
+  <li>Complex: One at a time, safe zones</li>
+</ul>
+
+<h3 id="aspect-considerations">Aspect Considerations</h3>
+
+<p><strong>North aspects (0-45°, 315-360°):</strong></p>
+<ul>
+  <li>Cold, persistent weak layers</li>
+  <li>Longer avalanche season</li>
+  <li><strong>Higher danger</strong> in cold climates</li>
+</ul>
+
+<p><strong>South aspects (135-225°):</strong></p>
+<ul>
+  <li>Warm, quicker stabilization</li>
+  <li>Wet avalanches in spring</li>
+  <li><strong>Lower danger</strong> in winter, <strong>higher</strong> in spring</li>
+</ul>
+
+<p><strong>East/West (45-135°, 225-315°):</strong></p>
+<ul>
+  <li>Moderate</li>
+  <li>Wind effects important</li>
+</ul>
+
+<p><strong>Lee slopes (downwind):</strong></p>
+<ul>
+  <li>Wind-loaded slabs</li>
+  <li><strong>Very dangerous</strong></li>
+</ul>
+
+<h3 id="avalanche-bulletin-integration">Avalanche Bulletin Integration</h3>
+
+<p><strong>Danger scale:</strong></p>
+<ol>
+  <li>Low</li>
+  <li>Moderate</li>
+  <li>Considerable</li>
+  <li>High</li>
+  <li>Extreme</li>
+</ol>
+
+<p><strong>Terrain selection by danger:</strong></p>
+
+<table>
+  <thead>
+    <tr>
+      <th>Danger</th>
+      <th>Terrain</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>Low</td>
+      <td>All terrain OK (with normal caution)</td>
+    </tr>
+    <tr>
+      <td>Moderate</td>
+      <td>Avoid wind-loaded slopes &gt;35°</td>
+    </tr>
+    <tr>
+      <td>Considerable</td>
+      <td>Simple terrain only</td>
+    </tr>
+    <tr>
+      <td>High</td>
+      <td>Avoid all avalanche terrain</td>
+    </tr>
+    <tr>
+      <td>Extreme</td>
+      <td>Stay home</td>
+    </tr>
+  </tbody>
+</table>
+
+<hr />
+
+<h2 id="7-what-could-go-wrong">7. What Could Go Wrong?</h2>
+
+<h3 id="dem-resolution-issues">DEM Resolution Issues</h3>
+
+<p><strong>Coarse DEM (30m):</strong></p>
+<ul>
+  <li>Misses small gullies (terrain traps)</li>
+  <li>Smooths cliffs</li>
+  <li>Underestimates slope on convex features</li>
+</ul>
+
+<p><strong>Example:</strong> 30m DEM shows 35° slope, reality is 42° rollover.</p>
+
+<p><strong>Solution:</strong> Use highest resolution DEM (1-3m LiDAR ideal).</p>
+
+<h3 id="wind-effects-not-captured">Wind Effects Not Captured</h3>
+
+<p><strong>Terrain alone insufficient:</strong></p>
+
+<p>Wind loads lee slopes with thick slabs.</p>
+
+<p><strong>Example:</strong></p>
+<ul>
+  <li>West aspect, 38° slope</li>
+  <li>Westerly winds → <strong>not</strong> wind-loaded (windward)</li>
+  <li><strong>Lower danger</strong> than expected from slope alone</li>
+</ul>
+
+<p><strong>vs:</strong></p>
+
+<ul>
+  <li>East aspect, 38° slope</li>
+  <li>Westerly winds → <strong>heavily</strong> wind-loaded (leeward)</li>
+  <li><strong>Higher danger</strong> than expected</li>
+</ul>
+
+<p><strong>Solution:</strong> Wind models, weather data, field observation.</p>
+
+<h3 id="human-factor">Human Factor</h3>
+
+<p><strong>Most avalanche fatalities:</strong></p>
+
+<p>Victim or group member triggered avalanche (90%+).</p>
+
+<p><strong>Terrain selection just first step.</strong></p>
+
+<p><strong>Also need:</strong></p>
+<ul>
+  <li>Snowpack assessment</li>
+  <li>Decision-making skills</li>
+  <li>Communication</li>
+  <li>Rescue skills</li>
+</ul>
+
+<p><strong>Terrain analysis ≠ safety guarantee.</strong></p>
+
+<h3 id="false-sense-of-security">False Sense of Security</h3>
+
+<p><strong>Green zones below steep slopes = terrain traps.</strong></p>
+
+<p><strong>Example:</strong></p>
+<ul>
+  <li>Flat bench at 2500m (10° slope, “safe”)</li>
+  <li>Above: 600m vertical of 38° terrain</li>
+  <li>Runout zone extends to bench</li>
+  <li><strong>Extremely dangerous</strong> despite being “safe” slope angle</li>
+</ul>
+
+<p><strong>Solution:</strong> Alpha angle runout modelling.</p>
+
+<hr />
+
+<h2 id="8-extension-avalancheca-terrain-ratings">8. Extension: Avalanche.ca Terrain Ratings</h2>
+
+<p><strong>Canadian system:</strong></p>
+
+<p><strong>Simple (Green):</strong></p>
+<ul>
+  <li>Exposure to low-angle or primarily forested terrain</li>
+  <li>Some forest openings may involve steeper terrain</li>
+  <li>Many options for route finding with overhead hazard minimal</li>
+  <li>Avalanche terrain is avoidable</li>
+</ul>
+
+<p><strong>Challenging (Blue):</strong></p>
+<ul>
+  <li>Exposure to well-defined avalanche paths, starting zones, or terrain traps</li>
+  <li>Options exist to reduce or eliminate exposure with careful route finding</li>
+  <li>Requires knowledge of avalanche terrain and winter travel skills</li>
+</ul>
+
+<p><strong>Complex (Black):</strong></p>
+<ul>
+  <li>Exposure to multiple overlapping avalanche paths or large expanses of steep, open terrain</li>
+  <li>Multiple avalanche starting zones and terrain traps below</li>
+  <li>Minimal options to reduce exposure</li>
+  <li>Requires extensive avalanche knowledge and winter travel skills</li>
+</ul>
+
+<p><strong>Implementation:</strong> Requires expert judgment + terrain analysis.</p>
+
+<hr />
+
+<h2 id="9-math-refresher-slope-stability">9. Math Refresher: Slope Stability</h2>
+
+<h3 id="mohr-coulomb-failure">Mohr-Coulomb Failure</h3>
+
+<p><strong>Shear stress vs. shear strength:</strong></p>
+
+\[\tau = c + \sigma \tan\phi\]
+
+<p>Where:</p>
+<ul>
+  <li>$\tau$ = shear strength</li>
+  <li>$c$ = cohesion</li>
+  <li>$\sigma$ = normal stress</li>
+  <li>$\phi$ = internal friction angle</li>
+</ul>
+
+<p><strong>On a slope:</strong></p>
+
+<p><strong>Driving stress (downslope):</strong></p>
+
+\[\tau_d = \rho g h \sin\theta\]
+
+<p><strong>Resisting stress:</strong></p>
+
+\[\tau_r = c + \rho g h \cos\theta \tan\phi\]
+
+<p><strong>Failure when:</strong> $\tau_d &gt; \tau_r$</p>
+
+<p><strong>Factor of safety:</strong></p>
+
+\[FS = \frac{\tau_r}{\tau_d} = \frac{c + \rho g h \cos\theta \tan\phi}{\rho g h \sin\theta}\]
+
+<p><strong>Stable:</strong> $FS &gt; 1$<br />
+<strong>Failure:</strong> $FS &lt; 1$</p>
+
+<h3 id="critical-slope-angle">Critical Slope Angle</h3>
+
+<p><strong>For cohesionless material ($c = 0$):</strong></p>
+
+\[FS = \frac{\tan\phi}{\tan\theta}\]
+
+<p><strong>Failure when:</strong> $\theta &gt; \phi$</p>
+
+<p><strong>Dry snow:</strong> $\phi \approx 30-40°$ → slopes &gt;40° unstable<br />
+<strong>Wet snow:</strong> $\phi \approx 20-30°$ → slopes &gt;30° unstable</p>
+
+<p><strong>This explains</strong> why avalanches occur on 30-45° slopes!</p>
+
+<hr />
+
+<h2 id="summary">Summary</h2>
+
+<ul>
+  <li><strong>Avalanche terrain:</strong> 30-45° slopes most dangerous (slab avalanches)</li>
+  <li><strong>ATES classification:</strong> Simple/Challenging/Complex based on exposure and options</li>
+  <li><strong>Slope angle from DEM:</strong> Calculate gradient, convert to degrees via arctan</li>
+  <li><strong>Aspect matters:</strong> North (cold, persistent), South (warm, wet avalanches)</li>
+  <li><strong>Alpha angle:</strong> Predicts runout distance (typically 18-30° from start to stop)</li>
+  <li><strong>Terrain traps:</strong> Gullies, cliffs, trees amplify consequences</li>
+  <li><strong>Route selection:</strong> Minimize time in hazard zones, use safe travel protocols</li>
+  <li><strong>Limitations:</strong> DEM resolution, wind effects, human factors all critical</li>
+  <li><strong>Applications:</strong> Backcountry skiing, snowmobiling, forecasting, infrastructure</li>
+  <li><strong>Multi-factor:</strong> Terrain + snowpack + weather + human = avalanche risk</li>
+  <li>Foundation for avalanche safety and terrain-based decision making</li>
+</ul>
+
+<hr />
+
+      </div>
+
+      
+
+
+
+      
+
+  
+  
+  
+  
+
+
+
+      <!-- essay-footer-notes.html — References / endnotes section.
+     Hidden by default; assets/js/essay/core.js shows it and populates
+     #essay-endnotes-list from [data-cite] elements in the content.
+
+     In posts, create citation markers with:
+       <cite data-cite="Author, Title, URL">1</cite>
+     The JS collects these and renders a numbered reference list here. -->
+
+<footer class="essay-endnotes" id="essay-endnotes" aria-label="References" hidden>
+  <div class="essay-endnotes-inner">
+    <h2 class="essay-endnotes-heading">References</h2>
+    <ol class="essay-endnotes-list" id="essay-endnotes-list">
+      <!-- Populated at runtime by assets/js/essay/core.js buildEndnotes() -->
+    </ol>
+  </div>
+</footer>
+
+
+      
+
+      
+
+      
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    </article>
+  </main>
+
+  <aside
+    class="essay-sidenotes"
+    id="essay-sidenotes"
+    aria-label="Margin notes"
+  ></aside>
+
+</div>
+
+</div>
+
+<footer>
+  <div class="footer-inner">
+
+    <!-- Col 1: Brand -->
+    <div class="footer-brand">
+      <div class="footer-brand-logo">
+        
+        <img loading="lazy" src="/assets/images/logo.webp" alt="WaywardHouse" width="28" height="28">
+        
+        WaywardHouse<span>.</span>
+      </div>
+      
+      
+      <p class="footer-brand-desc">Understanding how place, economy, and environment interact — through analysis, modelling, and open tools.</p>
+      
+
+      <div class="footer-social">
+        
+        
+        
+        <a href="/feed.xml" class="social-icon" target="_blank" rel="noopener noreferrer" aria-label="RSS feed">
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M4 11a9 9 0 0 1 9 9"/>
+            <path d="M4 4a16 16 0 0 1 16 16"/>
+            <circle cx="5" cy="19" r="1"/>
+          </svg>
+        </a>
+      </div>
+    </div>
+
+    <!-- Col 2: Topics (configurable via footer_topics, falls back to auto-categories) -->
+    <nav aria-labelledby="footer-topics">
+      <h3 class="footer-col-title" id="footer-topics">Reading</h3>
+      <ul class="footer-links">
+        
+          
+          <li><a href="/topics/">Essays</a></li>
+          
+          <li><a href="/series/">Modelling</a></li>
+          
+          <li><a href="/archive/">Archive</a></li>
+          
+          <li><a href="/start-here/">Start Here</a></li>
+          
+        
+      </ul>
+    </nav>
+
+    <!-- Col 3: Secondary navigation -->
+    
+    <nav aria-labelledby="footer-company">
+      <h3 class="footer-col-title" id="footer-company">Site</h3>
+      <ul class="footer-links">
+        
+        <li><a href="/start-here/">Start Here</a></li>
+        
+        <li><a href="/about/">About</a></li>
+        
+        <li><a href="/contact/">Contact</a></li>
+        
+      </ul>
+    </nav>
+    
+
+    <!-- Col 4: Resources -->
+    <nav aria-labelledby="footer-resources">
+      <h3 class="footer-col-title" id="footer-resources">Resources</h3>
+      <ul class="footer-links">
+        <li><a href="/archive/">Archive</a></li>
+        <li><a href="/feed.xml">RSS Feed</a></li>
+        <li><a href="/topics/">All Topics</a></li>
+      </ul>
+    </nav>
+
+  </div><!-- /.footer-inner -->
+
+  <div class="footer-bottom">
+    <span class="footer-copy">
+      &copy; 2026 WaywardHouse.
+    </span>
+    <div class="footer-legal">
+      <a href="/privacy/">Privacy Policy</a>
+      <a href="/terms/">Terms of Service</a>
+    </div>
+  </div>
+
+</footer>
+
+
+<!-- Alpine.js bundle -->
+<script type="module" src="/assets/dist/main.js"></script>
+
+<!-- Visualization runtime — detects and loads CDN libraries dynamically -->
+<script type="module" src="/assets/js/core.js"></script>
+
+<!-- Search overlay — event-driven: nav button $dispatches 'search:open' -->
+<div
+  x-data="search"
+  x-init="init()"
+  @search:open.window="open()"
+>
+  <div
+    class="search-overlay"
+    x-show="isOpen"
+    x-transition:enter="transition ease-out duration-150"
+    x-transition:enter-start="opacity-0"
+    x-transition:enter-end="opacity-100"
+    x-transition:leave="transition ease-in duration-100"
+    x-transition:leave-start="opacity-100"
+    x-transition:leave-end="opacity-0"
+    @click.self="close()"
+    style="display: none;"
+    role="dialog"
+    aria-modal="true"
+    aria-label="Search"
+  >
+    <div class="search-panel">
+      <div class="search-input-wrap">
+        <svg class="search-icon" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <circle cx="11" cy="11" r="8"/>
+          <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+        </svg>
+        <input
+          class="search-input"
+          type="search"
+          placeholder="Search posts…"
+          x-model="query"
+          x-ref="input"
+          @input.debounce.300ms="runSearch()"
+          @keydown.escape="close()"
+          autocomplete="off"
+          spellcheck="false"
+          aria-label="Search query"
+        >
+        <kbd class="search-esc" aria-hidden="true">ESC</kbd>
+      </div>
+
+      <div class="search-results" x-show="query.trim().length > 0">
+        <div class="search-status" x-show="loading" aria-live="polite">Searching…</div>
+        <div class="search-status" x-show="!loading && results.length === 0" aria-live="polite">
+          No results for "<span x-text="query"></span>"
+        </div>
+        <ul class="search-result-list" x-show="!loading && results.length > 0" role="list">
+          <template x-for="result in results" :key="result.url">
+            <li>
+              <a :href="result.url" class="search-result-item" @click="close()">
+                <div class="search-result-title" x-text="result.meta?.title || result.url"></div>
+                <div class="search-result-excerpt" x-html="result.excerpt"></div>
+              </a>
+            </li>
+          </template>
+        </ul>
+      </div>
+    </div>
+  </div>
+</div>
+
+</body>
+</html>

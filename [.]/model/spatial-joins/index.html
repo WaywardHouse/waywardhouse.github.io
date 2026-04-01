@@ -1,0 +1,1478 @@
+<!DOCTYPE html>
+
+<html lang="en" data-brand="wayward" data-theme="light">
+<head>
+  <meta charset="utf-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Spatial Joins and Proximity Queries — WaywardHouse</title>
+<meta name="description" content="Which census tract contains each address? What's the nearest fire station to each school? Spatial joins link datasets by location rather than shared IDs. This model derives spatial join algorithms,...">
+
+<!-- Dark mode flash prevention — runs synchronously before first paint -->
+<script>
+  (function () {
+    var defaultDark = 'light' === 'dark';
+    var s = localStorage.getItem('theme');
+    var dark = s !== null ? s === 'dark' : defaultDark;
+    document.documentElement.dataset.theme = dark ? 'dark' : 'light';
+  })();
+</script>
+
+<!-- Preconnect to CDN domains used by the viz runtime -->
+<link rel="preconnect" href="https://cdn.jsdelivr.net">
+<link rel="preconnect" href="https://unpkg.com">
+<link rel="preconnect" href="https://esm.sh">
+<link rel="preconnect" href="https://api.mapbox.com">
+<link rel="preconnect" href="https://events.mapbox.com">
+
+
+<script>window.MAPBOX_TOKEN = 'pk.eyJ1IjoiYnJlYWRlZGNvZCIsImEiOiJjbW0xa25qc2EwMmtwMnJwejJlNndqdnoxIn0._7I9PwXuFLrOQINVZ84y1w';</script>
+
+
+<!-- Fonts -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:ital,wght@0,300;0,400;0,600;0,700;0,800;0,900;1,700;1,800&family=Barlow:wght@300;400&family=IBM+Plex+Mono:ital,wght@0,300;0,400;0,500;1,300&family=Literata:ital,opsz,wght@0,7..72,300;0,7..72,400;0,7..72,500;1,7..72,300;1,7..72,400&display=swap" rel="stylesheet">
+
+<!-- Theme stylesheet (Vite build output) -->
+<link rel="stylesheet" href="/assets/dist/main.css">
+
+<!-- Brand token overrides — loaded after main.css so variables cascade correctly -->
+
+<link rel="stylesheet" href="/assets/css/brand-wayward.css">
+
+
+
+<!-- Syntax highlighting (Rouge — light + dark) -->
+<link rel="stylesheet" href="/assets/css/syntax.css">
+
+<!-- Begin Jekyll SEO tag v2.8.0 -->
+<title>Spatial Joins and Proximity Queries | WaywardHouse</title>
+<meta name="generator" content="Jekyll v4.4.1" />
+<meta property="og:title" content="Spatial Joins and Proximity Queries" />
+<meta property="og:locale" content="en" />
+<meta name="description" content="Which census tract contains each address? What’s the nearest fire station to each school? Spatial joins link datasets by location rather than shared IDs. This model derives spatial join algorithms, introduces spatial indexing with R-trees and k-d trees, and implements nearest-neighbor queries efficiently." />
+<meta property="og:description" content="Which census tract contains each address? What’s the nearest fire station to each school? Spatial joins link datasets by location rather than shared IDs. This model derives spatial join algorithms, introduces spatial indexing with R-trees and k-d trees, and implements nearest-neighbor queries efficiently." />
+<link rel="canonical" href="https://wayward.house/model/spatial-joins/" />
+<meta property="og:url" content="https://wayward.house/model/spatial-joins/" />
+<meta property="og:site_name" content="WaywardHouse" />
+<meta property="og:image" content="https://wayward.house/assets/images/spatial-join.webp" />
+<meta property="og:type" content="article" />
+<meta property="article:published_time" content="2026-02-27T00:00:00-07:00" />
+<meta name="twitter:card" content="summary_large_image" />
+<meta property="twitter:image" content="https://wayward.house/assets/images/spatial-join.webp" />
+<meta property="twitter:title" content="Spatial Joins and Proximity Queries" />
+<meta name="twitter:site" content="@" />
+<script type="application/ld+json">
+{"@context":"https://schema.org","@type":"BlogPosting","dateModified":"2026-03-17T21:00:54-06:00","datePublished":"2026-02-27T00:00:00-07:00","description":"Which census tract contains each address? What’s the nearest fire station to each school? Spatial joins link datasets by location rather than shared IDs. This model derives spatial join algorithms, introduces spatial indexing with R-trees and k-d trees, and implements nearest-neighbor queries efficiently.","headline":"Spatial Joins and Proximity Queries","image":"https://wayward.house/assets/images/spatial-join.webp","mainEntityOfPage":{"@type":"WebPage","@id":"https://wayward.house/model/spatial-joins/"},"publisher":{"@type":"Organization","logo":{"@type":"ImageObject","url":"https://wayward.house/assets/images/logo.webp"}},"url":"https://wayward.house/model/spatial-joins/"}</script>
+<!-- End Jekyll SEO tag -->
+
+
+
+<!-- Cloudflare Web Analytics -->
+<script defer src="https://static.cloudflareinsights.com/beacon.min.js"
+  data-cf-beacon='{"token": "62c47d78bf9d4c80972d4e6242d79ff8"}'></script>
+
+
+</head>
+<body class="
+  model-template
+   tag-modelling
+   tag-hash-math
+  
+   tag-hash-viz
+  
+  
+  
+  
+  
+  
+">
+
+<a href="#main-content" class="skip-link">Skip to content</a>
+
+<header class="nav" x-data="{ open: false }">
+  <div class="nav-inner">
+
+    <!-- Logo -->
+    <a href="/" class="nav-logo">
+      
+      <img loading="lazy" src="/assets/images/logo.webp" alt="WaywardHouse" width="32" height="32">
+      
+      WaywardHouse<span>.</span>
+    </a>
+
+    <!-- Desktop nav links -->
+    <ul class="nav-links" role="list">
+      
+      <li>
+        <a href="/topics/">Essays</a>
+      </li>
+      
+      <li>
+        <a href="/series/">Modelling</a>
+      </li>
+      
+      <li>
+        <a href="/about/">About</a>
+      </li>
+      
+    </ul>
+
+    <!-- Actions -->
+    <div class="nav-actions">
+
+      <!-- Search button -->
+      <button
+        class="search-toggle"
+        type="button"
+        aria-label="Search (⌘K)"
+        title="Search (⌘K)"
+        @click="$dispatch('search:open')"
+      >
+        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <circle cx="11" cy="11" r="8"/>
+          <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+        </svg>
+      </button>
+
+      <!-- Dark mode toggle -->
+      <button
+        class="theme-toggle"
+        x-data="darkMode"
+        x-init="init()"
+        @click="toggle()"
+        :aria-label="dark ? 'Switch to light mode' : 'Switch to dark mode'"
+        type="button"
+      >
+        <!-- Sun icon (shown in light mode) -->
+        <svg class="icon-sun" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">
+          <circle cx="12" cy="12" r="5"/>
+          <line x1="12" y1="1" x2="12" y2="3"/>
+          <line x1="12" y1="21" x2="12" y2="23"/>
+          <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/>
+          <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/>
+          <line x1="1" y1="12" x2="3" y2="12"/>
+          <line x1="21" y1="12" x2="23" y2="12"/>
+          <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/>
+          <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>
+        </svg>
+        <!-- Moon icon (shown in dark mode) -->
+        <svg class="icon-moon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">
+          <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+        </svg>
+      </button>
+
+      <!-- Hamburger (mobile only) -->
+      <button
+        class="mobile-nav-toggle"
+        @click="open = !open"
+        :aria-expanded="open"
+        :aria-label="open ? 'Close menu' : 'Open menu'"
+        type="button"
+      >
+        <svg x-show="!open" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <line x1="3" y1="6" x2="21" y2="6"/>
+          <line x1="3" y1="12" x2="21" y2="12"/>
+          <line x1="3" y1="18" x2="21" y2="18"/>
+        </svg>
+        <svg x-show="open" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <line x1="18" y1="6" x2="6" y2="18"/>
+          <line x1="6" y1="6" x2="18" y2="18"/>
+        </svg>
+      </button>
+
+    </div><!-- /.nav-actions -->
+  </div><!-- /.nav-inner -->
+
+  <!-- Mobile drawer -->
+  <div
+    class="mobile-nav"
+    x-show="open"
+    x-transition:enter="transition ease-out duration-200"
+    x-transition:enter-start="opacity-0 -translate-y-1"
+    x-transition:enter-end="opacity-100 translate-y-0"
+    x-transition:leave="transition ease-in duration-150"
+    x-transition:leave-start="opacity-100 translate-y-0"
+    x-transition:leave-end="opacity-0 -translate-y-1"
+    @click.outside="open = false"
+    @keydown.escape.window="open = false"
+  >
+    <ul role="list">
+      
+      <li>
+        <a href="/topics/" @click="open = false">Essays</a>
+      </li>
+      
+      <li>
+        <a href="/series/" @click="open = false">Modelling</a>
+      </li>
+      
+      <li>
+        <a href="/about/" @click="open = false">About</a>
+      </li>
+      
+    </ul>
+  </div><!-- /.mobile-nav -->
+
+</header>
+
+
+<div id="main-content">
+  <!-- Essay stylesheet and runtime — self-contained -->
+<link rel="stylesheet" href="/assets/css/essay.css">
+<script type="module" src="/assets/js/essay/core.js"></script>
+
+<div class="essay-layout" id="essay-layout">
+
+  <!-- essay-toc.html — Sticky table of contents (left column).
+     The <ol> is empty on load; assets/js/essay/core.js populates it
+     from h2/h3 elements found in #essay-content after the page renders. -->
+
+<nav class="essay-toc" id="essay-toc" aria-label="Table of contents">
+  <div class="essay-toc-inner">
+    <p class="essay-toc-heading" aria-hidden="true">Contents</p>
+    <ol class="essay-toc-list" id="essay-toc-list">
+      <!-- Populated at runtime by assets/js/essay/core.js buildToc() -->
+    </ol>
+  </div>
+</nav>
+
+
+  <main class="essay-main" id="essay-main" role="main">
+    <article class="essay-article">
+
+      <!-- essay-hero.html — Header for computational essay template.
+     Displays feature image, tag label, title, excerpt, and post metadata. -->
+
+<header class="essay-hero">
+  
+  <figure class="essay-hero-figure">
+    <img
+      src="/assets/images/spatial-join.webp"
+      alt="Spatial Joins and Proximity Queries"
+      class="essay-hero-img"
+      loading="eager"
+    >
+    
+  </figure>
+  
+
+  <div class="essay-hero-body">
+
+    
+    
+    
+    
+    
+    <nav class="essay-breadcrumb" aria-label="Series position">
+      
+      <a href="/series/3/" class="essay-breadcrumb-link">Computational geography spatial</a>
+      
+      
+      <span class="essay-breadcrumb-sep" aria-hidden="true">›</span>
+      <span class="essay-breadcrumb-cluster">Vector Operations</span>
+      
+      
+      <span class="essay-breadcrumb-sep" aria-hidden="true">›</span>
+      <span class="essay-breadcrumb-pos">Model 4</span>
+      
+    </nav>
+    
+
+    <div class="essay-hero-labels">
+      
+      <a href="/topics/modelling/" class="essay-tag-label">modelling</a>
+      
+      
+      <span class="difficulty-badge difficulty-badge--3">Level 3</span>
+      
+    </div>
+
+    <h1 class="essay-title">Spatial Joins and Proximity Queries</h1>
+
+    
+    <p class="essay-excerpt">Which census tract contains each address? What's the nearest fire station to each school? Spatial joins link datasets by location rather than shared IDs. This model derives spatial join algorithms, introduces spatial indexing with R-trees and k-d trees, and implements nearest-neighbor queries efficiently.
+</p>
+    
+
+    
+    <p class="essay-prereqs"><span class="essay-prereqs-label">Prerequisites:</span> spatial indexing, nearest neighbor, k d trees, distance queries</p>
+    
+
+    <div class="essay-meta">
+      
+      <div class="essay-meta-secondary">
+        <time class="essay-date" datetime="2026-02-27">27 Feb 2026</time>
+        
+        
+        <span class="essay-sep" aria-hidden="true">·</span>
+        <span class="essay-updated">Updated <time datetime="2026-03-17">17 Mar 2026</time></span>
+        
+        <span class="essay-sep" aria-hidden="true">·</span>
+        <span class="essay-reading-time">17 min read</span>
+      </div>
+    </div>
+  </div>
+</header>
+
+
+      
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<nav class="series-nav" aria-label="Series navigation">
+
+  <div class="series-nav-header">
+    <span class="series-nav-label">L</span>
+    <span class="series-nav-title">Vector Operations</span>
+  </div>
+
+  <ol class="series-nav-list">
+    
+    <li class="series-nav-item">
+      
+      <a href="/model/buffer-operations/" class="series-nav-link">
+        <span class="series-nav-number">2</span>
+        Buffer Operations and Distance Fields
+      </a>
+      
+    </li>
+    
+    <li class="series-nav-item">
+      
+      <a href="/model/polygon-overlay-operations/" class="series-nav-link">
+        <span class="series-nav-number">3</span>
+        Polygon Overlay and Clipping
+      </a>
+      
+    </li>
+    
+    <li class="series-nav-item series-nav-item--current">
+      
+      <span class="series-nav-link series-nav-link--current" aria-current="page">
+        <span class="series-nav-number">4</span>
+        Spatial Joins and Proximity Queries
+      </span>
+      
+    </li>
+    
+  </ol>
+
+  
+  <div class="series-nav-footer">
+    <a href="/series/3/" class="series-nav-all">
+      All 13 in this series &rarr;
+    </a>
+  </div>
+  
+
+</nav>
+
+
+
+
+      <div class="essay-content gh-content" id="essay-content">
+        <p>When epidemiologists investigated the outbreak of cholera in London’s Soho district in 1854, the key analytical step was linking two datasets that had no shared identifier: the locations of cholera deaths and the locations of water pumps. John Snow’s famous dot map accomplished this visually — placing dots where people died and observing their spatial clustering around the Broad Street pump. A modern GIS would do it computationally, joining each death location to the nearest pump (a nearest-neighbour spatial join) and computing summary statistics by pump service area. Snow’s map is celebrated as the birth of epidemiology; the underlying operation is a spatial join.</p>
+
+<p>A spatial join links records from two datasets based on their geographic relationship rather than a shared attribute. Traditional database joins match on a key — customer ID, parcel number, census tract code. Spatial joins match on location: this point is within that polygon, this address is within 500 metres of that facility, this census tract shares a boundary with those neighbouring tracts. The spatial predicates (contains, intersects, within, nearest) map to different geometric tests, each with different computational cost. Naive implementations test every pair of features — O(n²) for n features on each side — which becomes unworkable for large datasets. Spatial indexing structures, particularly R-trees and k-d trees, reduce this to O(n log n) by allowing fast elimination of features that cannot possibly match. This model derives the geometric tests, builds the most common spatial join types, and introduces spatial indexing.</p>
+
+<h2 id="1-the-question">1. The Question</h2>
+
+<p>Which hospital is closest to each emergency call location?</p>
+
+<p>Traditional database joins use <strong>attribute matching:</strong></p>
+
+<div class="language-sql highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">SELECT</span> <span class="o">*</span> <span class="k">FROM</span> <span class="n">customers</span>
+<span class="k">JOIN</span> <span class="n">orders</span> <span class="k">ON</span> <span class="n">customers</span><span class="p">.</span><span class="n">id</span> <span class="o">=</span> <span class="n">orders</span><span class="p">.</span><span class="n">customer_id</span>
+</code></pre></div></div>
+
+<p><strong>Spatial joins use location:</strong></p>
+
+<div class="language-sql highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">SELECT</span> <span class="o">*</span> <span class="k">FROM</span> <span class="n">addresses</span>
+<span class="k">JOIN</span> <span class="n">census_tracts</span> <span class="k">ON</span> <span class="n">ST_Contains</span><span class="p">(</span><span class="n">census_tracts</span><span class="p">.</span><span class="n">geom</span><span class="p">,</span> <span class="n">addresses</span><span class="p">.</span><span class="n">point</span><span class="p">)</span>
+</code></pre></div></div>
+
+<p><strong>Key operations:</strong></p>
+<ul>
+  <li><strong>Contains:</strong> Which polygon contains each point?</li>
+  <li><strong>Intersects:</strong> Which features overlap?</li>
+  <li><strong>Within distance:</strong> Which features are near each other?</li>
+  <li><strong>Nearest neighbor:</strong> What’s the closest feature?</li>
+</ul>
+
+<p>The mathematical question: How do we efficiently find spatial relationships between thousands or millions of features?</p>
+
+<p><strong>The challenge:</strong> Naive approach tests every pair → $O(n \times m)$ complexity → too slow!</p>
+
+<hr />
+
+<h2 id="2-the-conceptual-model">2. The Conceptual Model</h2>
+
+<h3 id="types-of-spatial-joins">Types of Spatial Joins</h3>
+
+<p><strong>1. Point-in-Polygon Join</strong></p>
+
+<p>Assign each point to its containing polygon.</p>
+
+<p><strong>Example:</strong> Geocode addresses to census tracts</p>
+<ul>
+  <li>Input A: 100,000 address points</li>
+  <li>Input B: 5,000 census tract polygons</li>
+  <li>Output: Each address tagged with its tract ID</li>
+</ul>
+
+<p><strong>2. Intersection Join</strong></p>
+
+<p>Find all pairs of features that overlap.</p>
+
+<p><strong>Example:</strong> Parcels affected by flood zones</p>
+<ul>
+  <li>Input A: 50,000 property parcels</li>
+  <li>Input B: 200 flood zone polygons</li>
+  <li>Output: Parcels that intersect any flood zone</li>
+</ul>
+
+<p><strong>3. Distance Join</strong></p>
+
+<p>Find all pairs within distance threshold.</p>
+
+<p><strong>Example:</strong> Homes within 1km of schools</p>
+<ul>
+  <li>Input A: 200,000 homes</li>
+  <li>Input B: 500 schools</li>
+  <li>Output: Home-school pairs where distance ≤ 1000m</li>
+</ul>
+
+<p><strong>4. Nearest Neighbor Join</strong></p>
+
+<p>For each feature in A, find closest feature in B.</p>
+
+<p><strong>Example:</strong> Nearest hospital to each emergency call</p>
+<ul>
+  <li>Input A: 10,000 emergency calls</li>
+  <li>Input B: 50 hospitals</li>
+  <li>Output: Each call assigned to nearest hospital</li>
+</ul>
+
+<hr />
+
+<h2 id="3-building-the-mathematical-model">3. Building the Mathematical Model</h2>
+
+<h3 id="naive-algorithm-too-slow">Naive Algorithm (Too Slow)</h3>
+
+<p><strong>Point-in-polygon join:</strong></p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>for each point in A:
+    for each polygon in B:
+        if pointInPolygon(point, polygon):
+            assign point to polygon
+            break
+</code></pre></div></div>
+
+<table>
+  <tbody>
+    <tr>
+      <td><strong>Complexity:</strong> $O(n \times m)$ where $n =</td>
+      <td>A</td>
+      <td>$, $m =</td>
+      <td>B</td>
+      <td>$</td>
+    </tr>
+  </tbody>
+</table>
+
+<p><strong>Example:</strong> 100,000 points × 5,000 polygons = 500 million tests!</p>
+
+<p><strong>At 1 microsecond per test:</strong> 500 seconds = 8.3 minutes</p>
+
+<p><strong>Problem:</strong> Unacceptably slow for large datasets.</p>
+
+<h3 id="spatial-indexing-r-tree">Spatial Indexing: R-tree</h3>
+
+<p><strong>Idea:</strong> Organize spatial data into hierarchical bounding boxes.</p>
+
+<p><strong>R-tree structure:</strong></p>
+<ul>
+  <li>Each node: Minimum Bounding Rectangle (MBR) containing child nodes</li>
+  <li>Leaf nodes: Actual geometries</li>
+  <li>Internal nodes: MBRs that bound groups of features</li>
+</ul>
+
+<p><strong>Minimum Bounding Rectangle (MBR):</strong></p>
+
+<p>For geometry with vertices $(x_i, y_i)$:</p>
+
+\[\text{MBR} = [\min(x_i), \min(y_i), \max(x_i), \max(y_i)]\]
+
+<p>Or: $(x_{\min}, y_{\min}, x_{\max}, y_{\max})$</p>
+
+<p><strong>MBR intersection test (fast):</strong></p>
+
+<p>Two MBRs $R_1 = (x_{\min}^1, y_{\min}^1, x_{\max}^1, y_{\max}^1)$ and $R_2 = (x_{\min}^2, y_{\min}^2, x_{\max}^2, y_{\max}^2)$ intersect if:</p>
+
+\[x_{\min}^1 \leq x_{\max}^2 \text{ AND } x_{\max}^1 \geq x_{\min}^2\]
+
+\[y_{\min}^1 \leq y_{\max}^2 \text{ AND } y_{\max}^1 \geq y_{\min}^2\]
+
+<p><strong>Four comparisons</strong> vs. expensive polygon-polygon intersection.</p>
+
+<p><strong>Join algorithm with R-tree:</strong></p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>1. Build R-tree index for dataset B
+2. for each feature a in A:
+3.     query R-tree with a's MBR
+4.     for each candidate b returned:
+5.         if actualIntersection(a, b):
+6.             output (a, b)
+</code></pre></div></div>
+
+<p><strong>Complexity:</strong> $O(n \log m)$ average case (much better!)</p>
+
+<p><strong>Speedup:</strong> 100,000 × log₂(5000) ≈ 1.2 million tests vs. 500 million → <strong>400× faster</strong></p>
+
+<h3 id="k-d-tree-for-nearest-neighbor">K-d Tree for Nearest Neighbor</h3>
+
+<p><strong>Problem:</strong> Find nearest point in set B to query point $q$.</p>
+
+<p><strong>K-d tree:</strong> Binary tree that partitions k-dimensional space.</p>
+
+<p><strong>For 2D (k=2):</strong></p>
+<ul>
+  <li>Root level: split by x-coordinate (median)</li>
+  <li>Level 1: split by y-coordinate</li>
+  <li>Level 2: split by x-coordinate</li>
+  <li>Alternates…</li>
+</ul>
+
+<p><strong>Construction:</strong></p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>function buildKDTree(points, depth):
+    if points is empty: return null
+    
+    axis = depth mod 2  # 0 = x, 1 = y
+    median = selectMedian(points, axis)
+    
+    node.point = median
+    node.left = buildKDTree(points &lt; median, depth+1)
+    node.right = buildKDTree(points &gt; median, depth+1)
+    
+    return node
+</code></pre></div></div>
+
+<p><strong>Nearest neighbor search:</strong></p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>function nearestNeighbor(tree, query):
+    best = null
+    bestDist = infinity
+    
+    function search(node, depth):
+        if node is null: return
+        
+        dist = distance(query, node.point)
+        if dist &lt; bestDist:
+            best = node.point
+            bestDist = dist
+        
+        axis = depth mod 2
+        diff = query[axis] - node.point[axis]
+        
+        # Search near side first
+        if diff &lt; 0:
+            search(node.left, depth+1)
+            if abs(diff) &lt; bestDist:
+                search(node.right, depth+1)
+        else:
+            search(node.right, depth+1)
+            if abs(diff) &lt; bestDist:
+                search(node.left, depth+1)
+    
+    search(tree, 0)
+    return best
+</code></pre></div></div>
+
+<p><strong>Complexity:</strong> $O(\log n)$ average case → huge speedup for large datasets!</p>
+
+<p><strong>Example:</strong> Finding nearest hospital among 1 million hospitals:</p>
+<ul>
+  <li>Linear scan: 1 million distance calculations</li>
+  <li>K-d tree: ~20 distance calculations (log₂(1,000,000) ≈ 20)</li>
+  <li><strong>50,000× faster!</strong></li>
+</ul>
+
+<hr />
+
+<h2 id="4-worked-example-by-hand">4. Worked Example by Hand</h2>
+
+<p><strong>Problem:</strong> Find which census tract contains each address.</p>
+
+<p><strong>Addresses (points):</strong></p>
+<ul>
+  <li>A1: (2, 3)</li>
+  <li>A2: (7, 8)</li>
+  <li>A3: (5, 2)</li>
+</ul>
+
+<p><strong>Census tracts (polygons):</strong></p>
+<ul>
+  <li>T1: Square from (0,0) to (5,5)</li>
+  <li>T2: Square from (5,0) to (10,5)</li>
+  <li>T3: Square from (0,5) to (5,10)</li>
+  <li>T4: Square from (5,5) to (10,10)</li>
+</ul>
+
+<h3 id="solution">Solution</h3>
+
+<p><strong>Step 1: Build spatial index (manually)</strong></p>
+
+<p>MBRs for tracts:</p>
+<ul>
+  <li>T1: [0, 0, 5, 5]</li>
+  <li>T2: [5, 0, 10, 5]</li>
+  <li>T3: [0, 5, 5, 10]</li>
+  <li>T4: [5, 5, 10, 10]</li>
+</ul>
+
+<p><strong>Step 2: Test each address</strong></p>
+
+<p><strong>A1 = (2, 3):</strong></p>
+
+<p>Candidates (MBR test):</p>
+<ul>
+  <li>T1: 0 ≤ 2 ≤ 5 and 0 ≤ 3 ≤ 5 → <strong>Yes</strong></li>
+  <li>T2: 5 ≤ 2 ≤ 10? No (fails x test)</li>
+  <li>T3: 0 ≤ 2 ≤ 5 and 5 ≤ 3 ≤ 10? No (fails y test)</li>
+  <li>T4: No</li>
+</ul>
+
+<p>Point-in-polygon test for T1:</p>
+<ul>
+  <li>(2,3) inside square [0,0,5,5]? <strong>Yes</strong></li>
+</ul>
+
+<p><strong>Result:</strong> A1 → T1</p>
+
+<p><strong>A2 = (7, 8):</strong></p>
+
+<p>Candidates:</p>
+<ul>
+  <li>T1: No (x &gt; 5)</li>
+  <li>T2: No (y &gt; 5)</li>
+  <li>T3: No (x &gt; 5)</li>
+  <li>T4: 5 ≤ 7 ≤ 10 and 5 ≤ 8 ≤ 10 → <strong>Yes</strong></li>
+</ul>
+
+<p>Point-in-polygon for T4: <strong>Yes</strong></p>
+
+<p><strong>Result:</strong> A2 → T4</p>
+
+<p><strong>A3 = (5, 2):</strong></p>
+
+<p>Candidates:</p>
+<ul>
+  <li>T1: 0 ≤ 5 ≤ 5 and 0 ≤ 2 ≤ 5 → <strong>Yes</strong></li>
+  <li>T2: 5 ≤ 5 ≤ 10 and 0 ≤ 2 ≤ 5 → <strong>Yes</strong></li>
+</ul>
+
+<p><strong>Edge case!</strong> Point is exactly on boundary between T1 and T2.</p>
+
+<p>Point-in-polygon tests:</p>
+<ul>
+  <li>T1: (5,2) on right edge → convention: <strong>Not inside</strong> (use &lt; not ≤)</li>
+  <li>T2: (5,2) on left edge → convention: <strong>Inside</strong> (use ≤)</li>
+</ul>
+
+<p><strong>Result:</strong> A3 → T2</p>
+
+<p><strong>Final join results:</strong></p>
+<ul>
+  <li>A1 (2,3) → T1</li>
+  <li>A2 (7,8) → T4</li>
+  <li>A3 (5,2) → T2</li>
+</ul>
+
+<hr />
+
+<h2 id="5-computational-implementation">5. Computational Implementation</h2>
+
+<p>Below is an interactive spatial join demonstration.</p>
+
+<div class="viz-container" id="join-viz">
+  <div class="controls">
+    <label>
+      Join type:
+      <select id="join-type">
+        <option value="point-in-polygon" selected="">Point-in-Polygon</option>
+        <option value="nearest-neighbor">Nearest Neighbor</option>
+        <option value="within-distance">Within Distance</option>
+      </select>
+    </label>
+    <label>
+      Distance threshold (for distance join):
+      <input type="range" id="dist-threshold" min="20" max="150" step="10" value="80" />
+      <span id="dist-value">80</span> px
+    </label>
+    <label>
+      Show spatial index:
+      <input type="checkbox" id="show-index" />
+    </label>
+    <div class="join-info">
+      <p><strong>Query features:</strong> <span id="query-count">--</span></p>
+      <p><strong>Target features:</strong> <span id="target-count">--</span></p>
+      <p><strong>Join results:</strong> <span id="result-count">--</span></p>
+      <p><strong>Tests performed:</strong> <span id="test-count">--</span></p>
+    </div>
+  </div>
+  <div id="join-canvas-container">
+    <canvas id="join-canvas" width="600" height="500" style="border: 1px solid #ddd;"></canvas>
+  </div>
+</div>
+
+<script type="module">
+(function() {
+  const canvas = document.getElementById('join-canvas');
+  const ctx = canvas.getContext('2d');
+  
+  let joinType = 'point-in-polygon';
+  let distThreshold = 80;
+  let showIndex = false;
+  
+  // Generate random points
+  const points = [];
+  for (let i = 0; i < 20; i++) {
+    points.push({
+      x: 50 + Math.random() * 500,
+      y: 50 + Math.random() * 400,
+      id: i
+    });
+  }
+  
+  // Define grid of polygons
+  const polygons = [];
+  for (let row = 0; row < 2; row++) {
+    for (let col = 0; col < 3; col++) {
+      const x = 100 + col * 150;
+      const y = 100 + row * 200;
+      polygons.push({
+        vertices: [
+          {x: x, y: y},
+          {x: x + 120, y: y},
+          {x: x + 120, y: y + 150},
+          {x: x, y: y + 150}
+        ],
+        id: row * 3 + col,
+        mbr: {
+          xmin: x,
+          ymin: y,
+          xmax: x + 120,
+          ymax: y + 150
+        }
+      });
+    }
+  }
+  
+  function pointInPolygon(point, polygon) {
+    let count = 0;
+    const vertices = polygon.vertices;
+    
+    for (let i = 0; i < vertices.length; i++) {
+      const v1 = vertices[i];
+      const v2 = vertices[(i + 1) % vertices.length];
+      
+      if ((v1.y <= point.y && point.y < v2.y) ||
+          (v2.y <= point.y && point.y < v1.y)) {
+        const x_intersect = v1.x + (point.y - v1.y) * (v2.x - v1.x) / (v2.y - v1.y);
+        if (x_intersect > point.x) {
+          count++;
+        }
+      }
+    }
+    
+    return (count % 2 === 1);
+  }
+  
+  function mbrContains(mbr, point) {
+    return point.x >= mbr.xmin && point.x <= mbr.xmax &&
+           point.y >= mbr.ymin && point.y <= mbr.ymax;
+  }
+  
+  function distance(p1, p2) {
+    return Math.sqrt((p2.x - p1.x) ** 2 + (p2.y - p1.y) ** 2);
+  }
+  
+  function performJoin() {
+    const results = [];
+    let testCount = 0;
+    
+    if (joinType === 'point-in-polygon') {
+      // Point-in-polygon join with spatial index
+      for (let point of points) {
+        // First filter with MBR
+        const candidates = polygons.filter(poly => {
+          testCount++;
+          return mbrContains(poly.mbr, point);
+        });
+        
+        // Then test actual containment
+        for (let poly of candidates) {
+          testCount++;
+          if (pointInPolygon(point, poly)) {
+            results.push({point, poly});
+            break; // Point can only be in one polygon
+          }
+        }
+      }
+    } else if (joinType === 'nearest-neighbor') {
+      // Nearest polygon to each point
+      for (let point of points) {
+        let nearest = null;
+        let minDist = Infinity;
+        
+        for (let poly of polygons) {
+          testCount++;
+          // Distance to polygon center (simplified)
+          const cx = (poly.mbr.xmin + poly.mbr.xmax) / 2;
+          const cy = (poly.mbr.ymin + poly.mbr.ymax) / 2;
+          const dist = distance(point, {x: cx, y: cy});
+          
+          if (dist < minDist) {
+            minDist = dist;
+            nearest = poly;
+          }
+        }
+        
+        if (nearest) {
+          results.push({point, poly: nearest, distance: minDist});
+        }
+      }
+    } else if (joinType === 'within-distance') {
+      // All point-polygon pairs within threshold
+      for (let point of points) {
+        for (let poly of polygons) {
+          testCount++;
+          const cx = (poly.mbr.xmin + poly.mbr.xmax) / 2;
+          const cy = (poly.mbr.ymin + poly.mbr.ymax) / 2;
+          const dist = distance(point, {x: cx, y: cy});
+          
+          if (dist <= distThreshold) {
+            results.push({point, poly, distance: dist});
+          }
+        }
+      }
+    }
+    
+    return {results, testCount};
+  }
+  
+  function render() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    
+    const {results, testCount} = performJoin();
+    
+    // Draw MBRs if requested
+    if (showIndex) {
+      ctx.strokeStyle = '#BDC3C7';
+      ctx.lineWidth = 1;
+      ctx.setLineDash([3, 3]);
+      for (let poly of polygons) {
+        ctx.strokeRect(
+          poly.mbr.xmin, poly.mbr.ymin,
+          poly.mbr.xmax - poly.mbr.xmin,
+          poly.mbr.ymax - poly.mbr.ymin
+        );
+      }
+      ctx.setLineDash([]);
+    }
+    
+    // Draw polygons
+    ctx.strokeStyle = '#34495E';
+    ctx.fillStyle = 'rgba(149, 165, 166, 0.2)';
+    ctx.lineWidth = 2;
+    
+    for (let poly of polygons) {
+      ctx.beginPath();
+      ctx.moveTo(poly.vertices[0].x, poly.vertices[0].y);
+      for (let i = 1; i < poly.vertices.length; i++) {
+        ctx.lineTo(poly.vertices[i].x, poly.vertices[i].y);
+      }
+      ctx.closePath();
+      ctx.fill();
+      ctx.stroke();
+      
+      // Label
+      const cx = (poly.mbr.xmin + poly.mbr.xmax) / 2;
+      const cy = (poly.mbr.ymin + poly.mbr.ymax) / 2;
+      ctx.fillStyle = '#7F8C8D';
+      ctx.font = '12px monospace';
+      ctx.textAlign = 'center';
+      ctx.fillText(`P${poly.id}`, cx, cy);
+    }
+    
+    // Draw join results
+    if (joinType === 'point-in-polygon') {
+      // Highlight matching polygons
+      for (let result of results) {
+        ctx.fillStyle = 'rgba(46, 204, 113, 0.3)';
+        ctx.beginPath();
+        ctx.moveTo(result.poly.vertices[0].x, result.poly.vertices[0].y);
+        for (let v of result.poly.vertices) {
+          ctx.lineTo(v.x, v.y);
+        }
+        ctx.closePath();
+        ctx.fill();
+      }
+    } else if (joinType === 'nearest-neighbor') {
+      // Draw lines to nearest
+      ctx.strokeStyle = '#3498DB';
+      ctx.lineWidth = 1;
+      for (let result of results) {
+        const cx = (result.poly.mbr.xmin + result.poly.mbr.xmax) / 2;
+        const cy = (result.poly.mbr.ymin + result.poly.mbr.ymax) / 2;
+        ctx.beginPath();
+        ctx.moveTo(result.point.x, result.point.y);
+        ctx.lineTo(cx, cy);
+        ctx.stroke();
+      }
+    } else if (joinType === 'within-distance') {
+      // Draw circles showing threshold
+      ctx.strokeStyle = 'rgba(155, 89, 182, 0.3)';
+      ctx.lineWidth = 1;
+      for (let point of points) {
+        ctx.beginPath();
+        ctx.arc(point.x, point.y, distThreshold, 0, 2 * Math.PI);
+        ctx.stroke();
+      }
+      
+      // Draw connections
+      ctx.strokeStyle = '#9B59B6';
+      for (let result of results) {
+        const cx = (result.poly.mbr.xmin + result.poly.mbr.xmax) / 2;
+        const cy = (result.poly.mbr.ymin + result.poly.mbr.ymax) / 2;
+        ctx.beginPath();
+        ctx.moveTo(result.point.x, result.point.y);
+        ctx.lineTo(cx, cy);
+        ctx.stroke();
+      }
+    }
+    
+    // Draw points
+    for (let point of points) {
+      const matched = results.some(r => r.point === point);
+      ctx.fillStyle = matched ? '#E74C3C' : '#3498DB';
+      ctx.beginPath();
+      ctx.arc(point.x, point.y, 5, 0, 2 * Math.PI);
+      ctx.fill();
+      
+      ctx.strokeStyle = '#FFF';
+      ctx.lineWidth = 2;
+      ctx.stroke();
+    }
+    
+    // Update stats
+    document.getElementById('query-count').textContent = points.length;
+    document.getElementById('target-count').textContent = polygons.length;
+    document.getElementById('result-count').textContent = results.length;
+    document.getElementById('test-count').textContent = testCount;
+  }
+  
+  document.getElementById('join-type').addEventListener('change', (e) => {
+    joinType = e.target.value;
+    render();
+  });
+  
+  document.getElementById('dist-threshold').addEventListener('input', (e) => {
+    distThreshold = parseFloat(e.target.value);
+    document.getElementById('dist-value').textContent = distThreshold;
+    render();
+  });
+  
+  document.getElementById('show-index').addEventListener('change', (e) => {
+    showIndex = e.target.checked;
+    render();
+  });
+  
+  render();
+})();
+</script>
+
+<p><strong>Try this:</strong></p>
+<ul>
+  <li><strong>Point-in-polygon:</strong> Green polygons contain red points</li>
+  <li><strong>Nearest neighbor:</strong> Blue lines connect each point to nearest polygon</li>
+  <li><strong>Within distance:</strong> Purple circles show search radius, lines show matches</li>
+  <li><strong>Show spatial index:</strong> See MBR bounding boxes (dashed)</li>
+  <li><strong>Adjust distance:</strong> Watch connections appear/disappear</li>
+  <li>Notice: Test count stays low because spatial index filters candidates</li>
+</ul>
+
+<p><strong>Key insight:</strong> Spatial indexing makes spatial joins practical—without it, large datasets would be impossibly slow.</p>
+
+<hr />
+
+<h2 id="6-interpretation">6. Interpretation</h2>
+
+<h3 id="real-world-performance">Real-World Performance</h3>
+
+<p><strong>Without spatial index:</strong></p>
+<ul>
+  <li>1 million addresses × 50,000 census tracts = 50 billion tests</li>
+  <li>At 1 μs per test: 50,000 seconds = 13.9 hours</li>
+</ul>
+
+<p><strong>With R-tree index:</strong></p>
+<ul>
+  <li>1 million addresses × log₂(50,000) ≈ 16 million tests</li>
+  <li>At 1 μs per test: 16 seconds</li>
+</ul>
+
+<p><strong>Speedup: 3,000×</strong></p>
+
+<p><strong>This is why GIS software creates spatial indexes automatically.</strong></p>
+
+<h3 id="geocoding">Geocoding</h3>
+
+<p><strong>Address geocoding</strong> = spatial join:</p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>1. Standardize address: "123 Main St" → structured fields
+2. Fuzzy match to street centerline database
+3. Interpolate position along street segment
+4. Join to census geography to get tract/block
+</code></pre></div></div>
+
+<p><strong>Spatial join:</strong> Point (geocoded address) → Polygon (census unit)</p>
+
+<h3 id="service-area-analysis">Service Area Analysis</h3>
+
+<p><strong>Problem:</strong> Assign customers to service territories.</p>
+
+<p><strong>Solution:</strong> Nearest facility join</p>
+<ul>
+  <li>Customers = points</li>
+  <li>Facilities = points (stores, fire stations, hospitals)</li>
+  <li>Join type: Nearest neighbor</li>
+</ul>
+
+<p><strong>Result:</strong> Voronoi diagram (each customer assigned to nearest facility)</p>
+
+<h3 id="demographic-enrichment">Demographic Enrichment</h3>
+
+<p><strong>Add demographic data to customer records:</strong></p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>customers (lat, lon, name, ...)
+JOIN census_tracts (polygon, population, income, ...)
+WHERE ST_Contains(census_tracts.polygon, customers.point)
+
+Result: customers enriched with (population, income, ...)
+</code></pre></div></div>
+
+<p><strong>Business intelligence:</strong> Targeted marketing based on neighborhood demographics.</p>
+
+<hr />
+
+<h2 id="7-what-could-go-wrong">7. What Could Go Wrong?</h2>
+
+<h3 id="boundary-effects">Boundary Effects</h3>
+
+<p><strong>Point exactly on polygon boundary:</strong></p>
+
+<p>May be assigned to either polygon (undefined).</p>
+
+<p><strong>Solution:</strong> Convention (use &lt; or ≤ consistently) or assign to nearest centroid.</p>
+
+<p><strong>Multiple polygons contain point:</strong></p>
+
+<p>Overlapping polygons (e.g., political vs. statistical boundaries).</p>
+
+<p><strong>Solution:</strong></p>
+<ul>
+  <li>Return all matches (one-to-many join)</li>
+  <li>Or prioritize by attribute (e.g., smallest polygon)</li>
+</ul>
+
+<h3 id="performance-degradation">Performance Degradation</h3>
+
+<p><strong>Clustered data:</strong></p>
+
+<p>If all features are in one spatial region, R-tree becomes unbalanced.</p>
+
+<p><strong>Example:</strong> All points in one city, but index covers entire country.</p>
+
+<p><strong>Solution:</strong> Adjust R-tree parameters (min/max entries per node).</p>
+
+<p><strong>High join selectivity:</strong></p>
+
+<p>If every point matches many polygons (within-distance with large threshold).</p>
+
+<p><strong>Result:</strong> Index provides little filtering → back to $O(n \times m)$ performance.</p>
+
+<h3 id="coordinate-system-mismatch">Coordinate System Mismatch</h3>
+
+<p><strong>Features in different projections:</strong></p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>Points in WGS84 (lat/lon)
+Polygons in UTM Zone 10 (meters)
+</code></pre></div></div>
+
+<p><strong>Spatial operations fail</strong> (comparing apples to oranges).</p>
+
+<p><strong>Solution:</strong> Reproject to common coordinate system before joining.</p>
+
+<h3 id="topology-errors">Topology Errors</h3>
+
+<p><strong>Invalid polygons:</strong></p>
+<ul>
+  <li>Self-intersecting boundaries</li>
+  <li>Holes not properly encoded</li>
+  <li>Duplicate vertices</li>
+</ul>
+
+<p><strong>Result:</strong> Point-in-polygon tests give wrong results.</p>
+
+<p><strong>Solution:</strong> Validate and repair geometries before join.</p>
+
+<hr />
+
+<h2 id="8-extension-spatial-databases">8. Extension: Spatial Databases</h2>
+
+<p><strong>PostGIS</strong> extends PostgreSQL with spatial types and operations:</p>
+
+<div class="language-sql highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1">-- Create spatial index</span>
+<span class="k">CREATE</span> <span class="k">INDEX</span> <span class="n">parcels_geom_idx</span> 
+<span class="k">ON</span> <span class="n">parcels</span> <span class="k">USING</span> <span class="n">GIST</span> <span class="p">(</span><span class="n">geom</span><span class="p">);</span>
+
+<span class="c1">-- Point-in-polygon join</span>
+<span class="k">SELECT</span> <span class="n">p</span><span class="p">.</span><span class="n">address</span><span class="p">,</span> <span class="k">c</span><span class="p">.</span><span class="n">name</span>
+<span class="k">FROM</span> <span class="n">parcels</span> <span class="n">p</span>
+<span class="k">JOIN</span> <span class="n">census_tracts</span> <span class="k">c</span> <span class="k">ON</span> <span class="n">ST_Contains</span><span class="p">(</span><span class="k">c</span><span class="p">.</span><span class="n">geom</span><span class="p">,</span> <span class="n">p</span><span class="p">.</span><span class="n">geom</span><span class="p">);</span>
+
+<span class="c1">-- Within distance join</span>
+<span class="k">SELECT</span> <span class="n">h</span><span class="p">.</span><span class="n">id</span><span class="p">,</span> <span class="n">s</span><span class="p">.</span><span class="n">name</span>
+<span class="k">FROM</span> <span class="n">homes</span> <span class="n">h</span>
+<span class="k">JOIN</span> <span class="n">schools</span> <span class="n">s</span> <span class="k">ON</span> <span class="n">ST_DWithin</span><span class="p">(</span><span class="n">h</span><span class="p">.</span><span class="n">geom</span><span class="p">,</span> <span class="n">s</span><span class="p">.</span><span class="n">geom</span><span class="p">,</span> <span class="mi">1000</span><span class="p">);</span>
+
+<span class="c1">-- Nearest neighbor (PostgreSQL 9.5+)</span>
+<span class="k">SELECT</span> <span class="k">DISTINCT</span> <span class="k">ON</span> <span class="p">(</span><span class="n">h</span><span class="p">.</span><span class="n">id</span><span class="p">)</span>
+    <span class="n">h</span><span class="p">.</span><span class="n">id</span><span class="p">,</span> <span class="n">s</span><span class="p">.</span><span class="n">name</span><span class="p">,</span> <span class="n">ST_Distance</span><span class="p">(</span><span class="n">h</span><span class="p">.</span><span class="n">geom</span><span class="p">,</span> <span class="n">s</span><span class="p">.</span><span class="n">geom</span><span class="p">)</span> <span class="k">as</span> <span class="n">dist</span>
+<span class="k">FROM</span> <span class="n">homes</span> <span class="n">h</span>
+<span class="k">CROSS</span> <span class="k">JOIN</span> <span class="k">LATERAL</span> <span class="p">(</span>
+    <span class="k">SELECT</span> <span class="o">*</span> <span class="k">FROM</span> <span class="n">schools</span> <span class="n">s</span>
+    <span class="k">ORDER</span> <span class="k">BY</span> <span class="n">h</span><span class="p">.</span><span class="n">geom</span> <span class="o">&lt;-&gt;</span> <span class="n">s</span><span class="p">.</span><span class="n">geom</span>
+    <span class="k">LIMIT</span> <span class="mi">1</span>
+<span class="p">)</span> <span class="n">s</span><span class="p">;</span>
+</code></pre></div></div>
+
+<p><strong>GIST index</strong> = R-tree implementation in PostgreSQL.</p>
+
+<p><strong>Performance:</strong> Handles millions of features efficiently.</p>
+
+<hr />
+
+<h2 id="9-math-refresher-spatial-indexing">9. Math Refresher: Spatial Indexing</h2>
+
+<h3 id="bounding-box-intersection">Bounding Box Intersection</h3>
+
+<p><strong>Two rectangles intersect if they overlap in both dimensions.</strong></p>
+
+<p>Rectangle 1: $[x_1^{\min}, x_1^{\max}] \times [y_1^{\min}, y_1^{\max}]$<br />
+Rectangle 2: $[x_2^{\min}, x_2^{\max}] \times [y_2^{\min}, y_2^{\max}]$</p>
+
+<p><strong>X-overlap:</strong></p>
+
+\[x_1^{\max} \geq x_2^{\min} \text{ AND } x_1^{\min} \leq x_2^{\max}\]
+
+<p><strong>Y-overlap:</strong></p>
+
+\[y_1^{\max} \geq y_2^{\min} \text{ AND } y_1^{\min} \leq y_2^{\max}\]
+
+<p><strong>Intersect:</strong> Both overlap</p>
+
+<p><strong>Disjoint:</strong> Either doesn’t overlap</p>
+
+<h3 id="binary-search-trees">Binary Search Trees</h3>
+
+<p><strong>Property:</strong> For each node with value $v$:</p>
+<ul>
+  <li>Left subtree: all values &lt; $v$</li>
+  <li>Right subtree: all values ≥ $v$</li>
+</ul>
+
+<p><strong>Search complexity:</strong> $O(\log n)$ for balanced tree</p>
+
+<p><strong>K-d tree extends this to k dimensions:</strong></p>
+<ul>
+  <li>Each level splits on one dimension</li>
+  <li>Alternates dimensions: x, y, x, y, …</li>
+</ul>
+
+<p><strong>Median selection ensures balance.</strong></p>
+
+<h3 id="voronoi-diagrams">Voronoi Diagrams</h3>
+
+<p><strong>Definition:</strong> Partition of space into regions, each containing all points closest to one site.</p>
+
+<p><strong>Voronoi cell for site $s_i$:</strong></p>
+
+\[V(s_i) = \{p : d(p, s_i) \leq d(p, s_j) \text{ for all } j \neq i\}\]
+
+<p><strong>Construction:</strong> Nearest neighbor join creates Voronoi assignment.</p>
+
+<p><strong>Applications:</strong></p>
+<ul>
+  <li>Service territories</li>
+  <li>Catchment areas</li>
+  <li>Thiessen polygons (rainfall interpolation)</li>
+</ul>
+
+<hr />
+
+<h2 id="summary">Summary</h2>
+
+<ul>
+  <li><strong>Spatial joins</strong> link datasets by location, not by attribute matching</li>
+  <li><strong>Types:</strong> Point-in-polygon, intersection, within distance, nearest neighbor</li>
+  <li><strong>Naive algorithm</strong> ($O(n \times m)$) too slow for large datasets</li>
+  <li><strong>R-tree spatial index</strong> filters candidates using MBR tests → $O(n \log m)$</li>
+  <li><strong>K-d tree</strong> enables efficient nearest neighbor search → $O(\log n)$</li>
+  <li><strong>Applications:</strong> Geocoding, service area analysis, demographic enrichment</li>
+  <li><strong>Challenges:</strong> Boundary effects, coordinate system mismatch, topology errors</li>
+  <li><strong>Spatial databases</strong> (PostGIS) handle millions of features efficiently</li>
+  <li>Bounding box tests much faster than full geometry operations</li>
+</ul>
+
+      </div>
+
+      
+
+
+
+      
+
+  
+  
+  
+  
+
+
+
+      <!-- essay-footer-notes.html — References / endnotes section.
+     Hidden by default; assets/js/essay/core.js shows it and populates
+     #essay-endnotes-list from [data-cite] elements in the content.
+
+     In posts, create citation markers with:
+       <cite data-cite="Author, Title, URL">1</cite>
+     The JS collects these and renders a numbered reference list here. -->
+
+<footer class="essay-endnotes" id="essay-endnotes" aria-label="References" hidden>
+  <div class="essay-endnotes-inner">
+    <h2 class="essay-endnotes-heading">References</h2>
+    <ol class="essay-endnotes-list" id="essay-endnotes-list">
+      <!-- Populated at runtime by assets/js/essay/core.js buildEndnotes() -->
+    </ol>
+  </div>
+</footer>
+
+
+      
+
+      
+
+      
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    </article>
+  </main>
+
+  <aside
+    class="essay-sidenotes"
+    id="essay-sidenotes"
+    aria-label="Margin notes"
+  ></aside>
+
+</div>
+
+</div>
+
+<footer>
+  <div class="footer-inner">
+
+    <!-- Col 1: Brand -->
+    <div class="footer-brand">
+      <div class="footer-brand-logo">
+        
+        <img loading="lazy" src="/assets/images/logo.webp" alt="WaywardHouse" width="28" height="28">
+        
+        WaywardHouse<span>.</span>
+      </div>
+      
+      
+      <p class="footer-brand-desc">Understanding how place, economy, and environment interact — through analysis, modelling, and open tools.</p>
+      
+
+      <div class="footer-social">
+        
+        
+        
+        <a href="/feed.xml" class="social-icon" target="_blank" rel="noopener noreferrer" aria-label="RSS feed">
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M4 11a9 9 0 0 1 9 9"/>
+            <path d="M4 4a16 16 0 0 1 16 16"/>
+            <circle cx="5" cy="19" r="1"/>
+          </svg>
+        </a>
+      </div>
+    </div>
+
+    <!-- Col 2: Topics (configurable via footer_topics, falls back to auto-categories) -->
+    <nav aria-labelledby="footer-topics">
+      <h3 class="footer-col-title" id="footer-topics">Reading</h3>
+      <ul class="footer-links">
+        
+          
+          <li><a href="/topics/">Essays</a></li>
+          
+          <li><a href="/series/">Modelling</a></li>
+          
+          <li><a href="/archive/">Archive</a></li>
+          
+          <li><a href="/start-here/">Start Here</a></li>
+          
+        
+      </ul>
+    </nav>
+
+    <!-- Col 3: Secondary navigation -->
+    
+    <nav aria-labelledby="footer-company">
+      <h3 class="footer-col-title" id="footer-company">Site</h3>
+      <ul class="footer-links">
+        
+        <li><a href="/start-here/">Start Here</a></li>
+        
+        <li><a href="/about/">About</a></li>
+        
+        <li><a href="/contact/">Contact</a></li>
+        
+      </ul>
+    </nav>
+    
+
+    <!-- Col 4: Resources -->
+    <nav aria-labelledby="footer-resources">
+      <h3 class="footer-col-title" id="footer-resources">Resources</h3>
+      <ul class="footer-links">
+        <li><a href="/archive/">Archive</a></li>
+        <li><a href="/feed.xml">RSS Feed</a></li>
+        <li><a href="/topics/">All Topics</a></li>
+      </ul>
+    </nav>
+
+  </div><!-- /.footer-inner -->
+
+  <div class="footer-bottom">
+    <span class="footer-copy">
+      &copy; 2026 WaywardHouse.
+    </span>
+    <div class="footer-legal">
+      <a href="/privacy/">Privacy Policy</a>
+      <a href="/terms/">Terms of Service</a>
+    </div>
+  </div>
+
+</footer>
+
+
+<!-- Alpine.js bundle -->
+<script type="module" src="/assets/dist/main.js"></script>
+
+<!-- Visualization runtime — detects and loads CDN libraries dynamically -->
+<script type="module" src="/assets/js/core.js"></script>
+
+<!-- Search overlay — event-driven: nav button $dispatches 'search:open' -->
+<div
+  x-data="search"
+  x-init="init()"
+  @search:open.window="open()"
+>
+  <div
+    class="search-overlay"
+    x-show="isOpen"
+    x-transition:enter="transition ease-out duration-150"
+    x-transition:enter-start="opacity-0"
+    x-transition:enter-end="opacity-100"
+    x-transition:leave="transition ease-in duration-100"
+    x-transition:leave-start="opacity-100"
+    x-transition:leave-end="opacity-0"
+    @click.self="close()"
+    style="display: none;"
+    role="dialog"
+    aria-modal="true"
+    aria-label="Search"
+  >
+    <div class="search-panel">
+      <div class="search-input-wrap">
+        <svg class="search-icon" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <circle cx="11" cy="11" r="8"/>
+          <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+        </svg>
+        <input
+          class="search-input"
+          type="search"
+          placeholder="Search posts…"
+          x-model="query"
+          x-ref="input"
+          @input.debounce.300ms="runSearch()"
+          @keydown.escape="close()"
+          autocomplete="off"
+          spellcheck="false"
+          aria-label="Search query"
+        >
+        <kbd class="search-esc" aria-hidden="true">ESC</kbd>
+      </div>
+
+      <div class="search-results" x-show="query.trim().length > 0">
+        <div class="search-status" x-show="loading" aria-live="polite">Searching…</div>
+        <div class="search-status" x-show="!loading && results.length === 0" aria-live="polite">
+          No results for "<span x-text="query"></span>"
+        </div>
+        <ul class="search-result-list" x-show="!loading && results.length > 0" role="list">
+          <template x-for="result in results" :key="result.url">
+            <li>
+              <a :href="result.url" class="search-result-item" @click="close()">
+                <div class="search-result-title" x-text="result.meta?.title || result.url"></div>
+                <div class="search-result-excerpt" x-html="result.excerpt"></div>
+              </a>
+            </li>
+          </template>
+        </ul>
+      </div>
+    </div>
+  </div>
+</div>
+
+</body>
+</html>

@@ -1,0 +1,1378 @@
+<!DOCTYPE html>
+
+<html lang="en" data-brand="wayward" data-theme="light">
+<head>
+  <meta charset="utf-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Raster Resampling and Interpolation — WaywardHouse</title>
+<meta name="description" content="What happens when you zoom in on satellite imagery? How do you convert a 30m DEM to 10m resolution? Resampling changes raster resolution, while interpolation estimates values at unmeasured locations....">
+
+<!-- Dark mode flash prevention — runs synchronously before first paint -->
+<script>
+  (function () {
+    var defaultDark = 'light' === 'dark';
+    var s = localStorage.getItem('theme');
+    var dark = s !== null ? s === 'dark' : defaultDark;
+    document.documentElement.dataset.theme = dark ? 'dark' : 'light';
+  })();
+</script>
+
+<!-- Preconnect to CDN domains used by the viz runtime -->
+<link rel="preconnect" href="https://cdn.jsdelivr.net">
+<link rel="preconnect" href="https://unpkg.com">
+<link rel="preconnect" href="https://esm.sh">
+<link rel="preconnect" href="https://api.mapbox.com">
+<link rel="preconnect" href="https://events.mapbox.com">
+
+
+<script>window.MAPBOX_TOKEN = 'pk.eyJ1IjoiYnJlYWRlZGNvZCIsImEiOiJjbW0xa25qc2EwMmtwMnJwejJlNndqdnoxIn0._7I9PwXuFLrOQINVZ84y1w';</script>
+
+
+<!-- Fonts -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:ital,wght@0,300;0,400;0,600;0,700;0,800;0,900;1,700;1,800&family=Barlow:wght@300;400&family=IBM+Plex+Mono:ital,wght@0,300;0,400;0,500;1,300&family=Literata:ital,opsz,wght@0,7..72,300;0,7..72,400;0,7..72,500;1,7..72,300;1,7..72,400&display=swap" rel="stylesheet">
+
+<!-- Theme stylesheet (Vite build output) -->
+<link rel="stylesheet" href="/assets/dist/main.css">
+
+<!-- Brand token overrides — loaded after main.css so variables cascade correctly -->
+
+<link rel="stylesheet" href="/assets/css/brand-wayward.css">
+
+
+
+<!-- Syntax highlighting (Rouge — light + dark) -->
+<link rel="stylesheet" href="/assets/css/syntax.css">
+
+<!-- Begin Jekyll SEO tag v2.8.0 -->
+<title>Raster Resampling and Interpolation | WaywardHouse</title>
+<meta name="generator" content="Jekyll v4.4.1" />
+<meta property="og:title" content="Raster Resampling and Interpolation" />
+<meta property="og:locale" content="en" />
+<meta name="description" content="What happens when you zoom in on satellite imagery? How do you convert a 30m DEM to 10m resolution? Resampling changes raster resolution, while interpolation estimates values at unmeasured locations. This model derives nearest neighbor, bilinear, and bicubic methods, showing when each is appropriate." />
+<meta property="og:description" content="What happens when you zoom in on satellite imagery? How do you convert a 30m DEM to 10m resolution? Resampling changes raster resolution, while interpolation estimates values at unmeasured locations. This model derives nearest neighbor, bilinear, and bicubic methods, showing when each is appropriate." />
+<link rel="canonical" href="https://wayward.house/model/raster-resampling-interpolation/" />
+<meta property="og:url" content="https://wayward.house/model/raster-resampling-interpolation/" />
+<meta property="og:site_name" content="WaywardHouse" />
+<meta property="og:image" content="https://wayward.house/assets/images/raster-resampling.webp" />
+<meta property="og:type" content="article" />
+<meta property="article:published_time" content="2026-02-27T00:00:00-07:00" />
+<meta name="twitter:card" content="summary_large_image" />
+<meta property="twitter:image" content="https://wayward.house/assets/images/raster-resampling.webp" />
+<meta property="twitter:title" content="Raster Resampling and Interpolation" />
+<meta name="twitter:site" content="@" />
+<script type="application/ld+json">
+{"@context":"https://schema.org","@type":"BlogPosting","dateModified":"2026-03-17T21:00:54-06:00","datePublished":"2026-02-27T00:00:00-07:00","description":"What happens when you zoom in on satellite imagery? How do you convert a 30m DEM to 10m resolution? Resampling changes raster resolution, while interpolation estimates values at unmeasured locations. This model derives nearest neighbor, bilinear, and bicubic methods, showing when each is appropriate.","headline":"Raster Resampling and Interpolation","image":"https://wayward.house/assets/images/raster-resampling.webp","mainEntityOfPage":{"@type":"WebPage","@id":"https://wayward.house/model/raster-resampling-interpolation/"},"publisher":{"@type":"Organization","logo":{"@type":"ImageObject","url":"https://wayward.house/assets/images/logo.webp"}},"url":"https://wayward.house/model/raster-resampling-interpolation/"}</script>
+<!-- End Jekyll SEO tag -->
+
+
+
+<!-- Cloudflare Web Analytics -->
+<script defer src="https://static.cloudflareinsights.com/beacon.min.js"
+  data-cf-beacon='{"token": "62c47d78bf9d4c80972d4e6242d79ff8"}'></script>
+
+
+</head>
+<body class="
+  model-template
+   tag-modelling
+   tag-hash-math
+  
+   tag-hash-viz
+  
+  
+  
+  
+  
+  
+">
+
+<a href="#main-content" class="skip-link">Skip to content</a>
+
+<header class="nav" x-data="{ open: false }">
+  <div class="nav-inner">
+
+    <!-- Logo -->
+    <a href="/" class="nav-logo">
+      
+      <img loading="lazy" src="/assets/images/logo.webp" alt="WaywardHouse" width="32" height="32">
+      
+      WaywardHouse<span>.</span>
+    </a>
+
+    <!-- Desktop nav links -->
+    <ul class="nav-links" role="list">
+      
+      <li>
+        <a href="/topics/">Essays</a>
+      </li>
+      
+      <li>
+        <a href="/series/">Modelling</a>
+      </li>
+      
+      <li>
+        <a href="/about/">About</a>
+      </li>
+      
+    </ul>
+
+    <!-- Actions -->
+    <div class="nav-actions">
+
+      <!-- Search button -->
+      <button
+        class="search-toggle"
+        type="button"
+        aria-label="Search (⌘K)"
+        title="Search (⌘K)"
+        @click="$dispatch('search:open')"
+      >
+        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <circle cx="11" cy="11" r="8"/>
+          <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+        </svg>
+      </button>
+
+      <!-- Dark mode toggle -->
+      <button
+        class="theme-toggle"
+        x-data="darkMode"
+        x-init="init()"
+        @click="toggle()"
+        :aria-label="dark ? 'Switch to light mode' : 'Switch to dark mode'"
+        type="button"
+      >
+        <!-- Sun icon (shown in light mode) -->
+        <svg class="icon-sun" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">
+          <circle cx="12" cy="12" r="5"/>
+          <line x1="12" y1="1" x2="12" y2="3"/>
+          <line x1="12" y1="21" x2="12" y2="23"/>
+          <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/>
+          <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/>
+          <line x1="1" y1="12" x2="3" y2="12"/>
+          <line x1="21" y1="12" x2="23" y2="12"/>
+          <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/>
+          <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>
+        </svg>
+        <!-- Moon icon (shown in dark mode) -->
+        <svg class="icon-moon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">
+          <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+        </svg>
+      </button>
+
+      <!-- Hamburger (mobile only) -->
+      <button
+        class="mobile-nav-toggle"
+        @click="open = !open"
+        :aria-expanded="open"
+        :aria-label="open ? 'Close menu' : 'Open menu'"
+        type="button"
+      >
+        <svg x-show="!open" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <line x1="3" y1="6" x2="21" y2="6"/>
+          <line x1="3" y1="12" x2="21" y2="12"/>
+          <line x1="3" y1="18" x2="21" y2="18"/>
+        </svg>
+        <svg x-show="open" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <line x1="18" y1="6" x2="6" y2="18"/>
+          <line x1="6" y1="6" x2="18" y2="18"/>
+        </svg>
+      </button>
+
+    </div><!-- /.nav-actions -->
+  </div><!-- /.nav-inner -->
+
+  <!-- Mobile drawer -->
+  <div
+    class="mobile-nav"
+    x-show="open"
+    x-transition:enter="transition ease-out duration-200"
+    x-transition:enter-start="opacity-0 -translate-y-1"
+    x-transition:enter-end="opacity-100 translate-y-0"
+    x-transition:leave="transition ease-in duration-150"
+    x-transition:leave-start="opacity-100 translate-y-0"
+    x-transition:leave-end="opacity-0 -translate-y-1"
+    @click.outside="open = false"
+    @keydown.escape.window="open = false"
+  >
+    <ul role="list">
+      
+      <li>
+        <a href="/topics/" @click="open = false">Essays</a>
+      </li>
+      
+      <li>
+        <a href="/series/" @click="open = false">Modelling</a>
+      </li>
+      
+      <li>
+        <a href="/about/" @click="open = false">About</a>
+      </li>
+      
+    </ul>
+  </div><!-- /.mobile-nav -->
+
+</header>
+
+
+<div id="main-content">
+  <!-- Essay stylesheet and runtime — self-contained -->
+<link rel="stylesheet" href="/assets/css/essay.css">
+<script type="module" src="/assets/js/essay/core.js"></script>
+
+<div class="essay-layout" id="essay-layout">
+
+  <!-- essay-toc.html — Sticky table of contents (left column).
+     The <ol> is empty on load; assets/js/essay/core.js populates it
+     from h2/h3 elements found in #essay-content after the page renders. -->
+
+<nav class="essay-toc" id="essay-toc" aria-label="Table of contents">
+  <div class="essay-toc-inner">
+    <p class="essay-toc-heading" aria-hidden="true">Contents</p>
+    <ol class="essay-toc-list" id="essay-toc-list">
+      <!-- Populated at runtime by assets/js/essay/core.js buildToc() -->
+    </ol>
+  </div>
+</nav>
+
+
+  <main class="essay-main" id="essay-main" role="main">
+    <article class="essay-article">
+
+      <!-- essay-hero.html — Header for computational essay template.
+     Displays feature image, tag label, title, excerpt, and post metadata. -->
+
+<header class="essay-hero">
+  
+  <figure class="essay-hero-figure">
+    <img
+      src="/assets/images/raster-resampling.webp"
+      alt="Raster Resampling and Interpolation"
+      class="essay-hero-img"
+      loading="eager"
+    >
+    
+  </figure>
+  
+
+  <div class="essay-hero-body">
+
+    
+    
+    
+    
+    
+    <nav class="essay-breadcrumb" aria-label="Series position">
+      
+      <a href="/series/3/" class="essay-breadcrumb-link">Computational geography spatial</a>
+      
+      
+      <span class="essay-breadcrumb-sep" aria-hidden="true">›</span>
+      <span class="essay-breadcrumb-cluster">Raster Foundations</span>
+      
+      
+      <span class="essay-breadcrumb-sep" aria-hidden="true">›</span>
+      <span class="essay-breadcrumb-pos">Model 5</span>
+      
+    </nav>
+    
+
+    <div class="essay-hero-labels">
+      
+      <a href="/topics/modelling/" class="essay-tag-label">modelling</a>
+      
+      
+      <span class="difficulty-badge difficulty-badge--3">Level 3</span>
+      
+    </div>
+
+    <h1 class="essay-title">Raster Resampling and Interpolation</h1>
+
+    
+    <p class="essay-excerpt">What happens when you zoom in on satellite imagery? How do you convert a 30m DEM to 10m resolution? Resampling changes raster resolution, while interpolation estimates values at unmeasured locations. This model derives nearest neighbor, bilinear, and bicubic methods, showing when each is appropriate.
+</p>
+    
+
+    
+    <p class="essay-prereqs"><span class="essay-prereqs-label">Prerequisites:</span> interpolation, nearest neighbor, bilinear, bicubic, weighted averaging</p>
+    
+
+    <div class="essay-meta">
+      
+      <div class="essay-meta-secondary">
+        <time class="essay-date" datetime="2026-02-27">27 Feb 2026</time>
+        
+        
+        <span class="essay-sep" aria-hidden="true">·</span>
+        <span class="essay-updated">Updated <time datetime="2026-03-17">17 Mar 2026</time></span>
+        
+        <span class="essay-sep" aria-hidden="true">·</span>
+        <span class="essay-reading-time">16 min read</span>
+      </div>
+    </div>
+  </div>
+</header>
+
+
+      
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<nav class="series-nav" aria-label="Series navigation">
+
+  <div class="series-nav-header">
+    <span class="series-nav-label">K</span>
+    <span class="series-nav-title">Raster Foundations</span>
+  </div>
+
+  <ol class="series-nav-list">
+    
+    <li class="series-nav-item">
+      
+      <a href="/model/point-in-polygon-testing/" class="series-nav-link">
+        <span class="series-nav-number">1</span>
+        Point-in-Polygon Testing
+      </a>
+      
+    </li>
+    
+    <li class="series-nav-item series-nav-item--current">
+      
+      <span class="series-nav-link series-nav-link--current" aria-current="page">
+        <span class="series-nav-number">5</span>
+        Raster Resampling and Interpolation
+      </span>
+      
+    </li>
+    
+    <li class="series-nav-item">
+      
+      <a href="/model/map-algebra-focal-operations/" class="series-nav-link">
+        <span class="series-nav-number">6</span>
+        Map Algebra and Focal Operations
+      </a>
+      
+    </li>
+    
+    <li class="series-nav-item">
+      
+      <a href="/model/raster-classification/" class="series-nav-link">
+        <span class="series-nav-number">7</span>
+        Raster Classification and Reclassification
+      </a>
+      
+    </li>
+    
+  </ol>
+
+  
+  <div class="series-nav-footer">
+    <a href="/series/3/" class="series-nav-all">
+      All 13 in this series &rarr;
+    </a>
+  </div>
+  
+
+</nav>
+
+
+
+
+      <div class="essay-content gh-content" id="essay-content">
+        <p>When the European Space Agency launched Sentinel-2 in 2015, it offered something Landsat users had never had: 10-metre resolution imagery in the visible and near-infrared bands, freely available every five days at any point on Earth. Research groups that had built workflows around Landsat’s 30-metre pixels immediately faced a practical problem: their existing DEMs, land-cover maps, and ancillary datasets were at 30 metres. To combine them with Sentinel-2 data, someone had to resample something — either the Sentinel image to a coarser grid or the existing datasets to a finer one. The choice of resampling method matters more than most users realise: nearest-neighbour resampling is fast and preserves discrete class boundaries, but produces blocky artefacts in continuous data; bilinear interpolation is smooth but blurs edges and can create fractional class values from categorical data.</p>
+
+<p>Resampling — changing the grid spacing of a raster — is one of the most common operations in spatial data processing, and it is unavoidable whenever data from different sources must be combined in a common grid. It is also a more mathematically interesting problem than it appears. Estimating the value at a new grid position from surrounding known values is an interpolation problem; the method chosen controls how smooth or sharp the result is, whether edges are preserved or blurred, and how well the output honours the values at original sample points. Nearest-neighbour, bilinear, and bicubic methods represent a progression of polynomial order with corresponding trade-offs in smoothness, accuracy, and computational cost. This model derives each method from first principles and shows when each is appropriate.</p>
+
+<h2 id="1-the-question">1. The Question</h2>
+
+<p>How do you convert a 30-meter resolution satellite image to 10-meter resolution?</p>
+
+<p><strong>Resampling</strong> changes the grid spacing of raster data:</p>
+<ul>
+  <li><strong>Upsampling (zoom in):</strong> Fewer pixels → more pixels (decrease cell size)</li>
+  <li><strong>Downsampling (zoom out):</strong> More pixels → fewer pixels (increase cell size)</li>
+  <li><strong>Reprojection:</strong> Change coordinate system (requires resampling)</li>
+</ul>
+
+<p><strong>Interpolation</strong> estimates values between measured points:</p>
+<ul>
+  <li><strong>DEM creation:</strong> Points from LiDAR → continuous elevation surface</li>
+  <li><strong>Climate mapping:</strong> Weather stations → temperature grid</li>
+  <li><strong>Missing data:</strong> Cloud gaps in satellite imagery → fill with neighbors</li>
+</ul>
+
+<p>The mathematical question: Given values at known grid positions, how do we estimate values at new positions?</p>
+
+<p><strong>Trade-offs:</strong></p>
+<ul>
+  <li><strong>Speed vs. quality:</strong> Fast methods produce blocky results</li>
+  <li><strong>Smoothness vs. fidelity:</strong> Smooth methods may blur sharp features</li>
+  <li><strong>Artifacts:</strong> Poor methods create visual or analytical problems</li>
+</ul>
+
+<hr />
+
+<h2 id="2-the-conceptual-model">2. The Conceptual Model</h2>
+
+<h3 id="the-resampling-problem">The Resampling Problem</h3>
+
+<p><strong>Input raster:</strong> Grid with cell size $\Delta x_1$, values $z_{i,j}$</p>
+
+<p><strong>Output raster:</strong> New grid with cell size $\Delta x_2$</p>
+
+<p><strong>Challenge:</strong> Output pixel centers don’t align with input pixels.</p>
+
+<p><strong>Example:</strong> Convert 30m DEM to 10m DEM</p>
+<ul>
+  <li>Input: 100×100 grid (30m cells)</li>
+  <li>Output: 300×300 grid (10m cells)</li>
+  <li>Must estimate elevation at 90,000 new positions from 10,000 known values</li>
+</ul>
+
+<h3 id="three-classical-methods">Three Classical Methods</h3>
+
+<p><strong>1. Nearest Neighbor</strong></p>
+
+<p>Use value from closest input pixel.</p>
+
+\[z_{\text{new}}(x, y) = z_{i,j} \text{ where } (i,j) = \text{nearest to } (x,y)\]
+
+<p><strong>Pros:</strong> Fast, preserves original values (good for categorical data)<br />
+<strong>Cons:</strong> Blocky appearance, discontinuous</p>
+
+<p><strong>2. Bilinear Interpolation</strong></p>
+
+<p>Weighted average of 4 nearest pixels.</p>
+
+\[z(x, y) = (1-u)(1-v)z_{0,0} + u(1-v)z_{1,0} + (1-u)vz_{0,1} + uvz_{1,1}\]
+
+<p>Where $u, v$ are fractional positions within cell.</p>
+
+<p><strong>Pros:</strong> Smooth, continuous<br />
+<strong>Cons:</strong> Blurs edges, creates new values not in original data</p>
+
+<p><strong>3. Bicubic Interpolation</strong></p>
+
+<p>Weighted average of 16 nearest pixels using cubic polynomials.</p>
+
+<p><strong>Pros:</strong> Very smooth, preserves gradients<br />
+<strong>Cons:</strong> Slower, can overshoot (create values outside original range)</p>
+
+<hr />
+
+<h2 id="3-building-the-mathematical-model">3. Building the Mathematical Model</h2>
+
+<h3 id="grid-coordinates">Grid Coordinates</h3>
+
+<p><strong>Input pixel $(i, j)$ with value $z_{i,j}$</strong></p>
+
+<p><strong>Pixel center in world coordinates:</strong></p>
+
+<p>\(x = x_0 + i \cdot \Delta x\)
+\(y = y_0 - j \cdot \Delta y\)</p>
+
+<p>(Note: $y$ decreases with row index—image convention)</p>
+
+<p><strong>Query point</strong> $(x_q, y_q)$: Where do we want to estimate $z$?</p>
+
+<p><strong>Find containing cell:</strong></p>
+
+<p>\(i_q = \lfloor (x_q - x_0) / \Delta x \rfloor\)
+\(j_q = \lfloor (y_q - y_0) / \Delta y \rfloor\)</p>
+
+<p><strong>Fractional position within cell:</strong></p>
+
+<p>\(u = \frac{x_q - x_0}{\Delta x} - i_q\)
+\(v = \frac{y_q - y_0}{\Delta y} - j_q\)</p>
+
+<p>Where $0 \leq u, v &lt; 1$.</p>
+
+<h3 id="nearest-neighbor">Nearest Neighbor</h3>
+
+<p><strong>Algorithm:</strong></p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>i_nearest = round((xq - x0) / dx)
+j_nearest = round((yq - y0) / dy)
+z_interp = z[i_nearest, j_nearest]
+</code></pre></div></div>
+
+<p><strong>Equivalent:</strong> Round $u, v$ to 0 or 1.</p>
+
+<p><strong>Decision boundary:</strong> Each output pixel assigned to nearest input pixel.</p>
+
+<p><strong>Result:</strong> Piecewise constant (stair-step appearance).</p>
+
+<h3 id="bilinear-interpolation">Bilinear Interpolation</h3>
+
+<p><strong>Four corners of cell:</strong></p>
+
+<ul>
+  <li>$z_{0,0} = z[i_q, j_q]$ (bottom-left)</li>
+  <li>$z_{1,0} = z[i_q+1, j_q]$ (bottom-right)</li>
+  <li>$z_{0,1} = z[i_q, j_q+1]$ (top-left)</li>
+  <li>$z_{1,1} = z[i_q+1, j_q+1]$ (top-right)</li>
+</ul>
+
+<p><strong>Linear interpolation in x:</strong></p>
+
+<p>\(z_0 = (1-u)z_{0,0} + u z_{1,0}\) (bottom edge)
+\(z_1 = (1-u)z_{0,1} + u z_{1,1}\) (top edge)</p>
+
+<p><strong>Linear interpolation in y:</strong></p>
+
+\[z(u, v) = (1-v)z_0 + v z_1\]
+
+<p><strong>Expanded form:</strong></p>
+
+\[z = (1-u)(1-v)z_{0,0} + u(1-v)z_{1,0} + (1-u)v z_{0,1} + uv z_{1,1}\]
+
+<p><strong>Weights sum to 1:</strong></p>
+
+<p>$(1-u)(1-v) + u(1-v) + (1-u)v + uv = 1$ ✓</p>
+
+<p><strong>Properties:</strong></p>
+<ul>
+  <li>Continuous (no jumps)</li>
+  <li>$C^0$ continuous (values match, derivatives don’t)</li>
+  <li>Exact at grid points: $z(0,0) = z_{0,0}$, etc.</li>
+</ul>
+
+<h3 id="bicubic-interpolation">Bicubic Interpolation</h3>
+
+<p><strong>Uses 16 pixels</strong> (4×4 neighborhood centered on query point).</p>
+
+<p><strong>Cubic convolution kernel:</strong></p>
+
+\[w(x) = \begin{cases}
+(a+2)|x|^3 - (a+3)|x|^2 + 1 &amp; \text{if } |x| \leq 1 \\
+a|x|^3 - 5a|x|^2 + 8a|x| - 4a &amp; \text{if } 1 &lt; |x| &lt; 2 \\
+0 &amp; \text{if } |x| \geq 2
+\end{cases}\]
+
+<p>Where $a = -0.5$ (standard choice) or $a = -0.75$ (sharper).</p>
+
+<p><strong>Interpolation:</strong></p>
+
+\[z(u, v) = \sum_{m=0}^{3} \sum_{n=0}^{3} z_{m-1, n-1} \cdot w(m - u) \cdot w(n - v)\]
+
+<p><strong>Properties:</strong></p>
+<ul>
+  <li>$C^1$ continuous (smooth derivatives)</li>
+  <li>Preserves local shape better than bilinear</li>
+  <li>Can overshoot (produce values &lt; min or &gt; max of neighbors)</li>
+</ul>
+
+<hr />
+
+<h2 id="4-worked-example-by-hand">4. Worked Example by Hand</h2>
+
+<p><strong>Problem:</strong> Resample this 2×2 elevation grid to find elevation at $(1.3, 0.7)$ using bilinear interpolation.</p>
+
+<p><strong>Input grid (1m cells):</strong></p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>       x=0   x=1   x=2
+y=0    100   110
+y=1    105   120
+</code></pre></div></div>
+
+<p>Grid origin at $(0, 0)$, cell size = 1m.</p>
+
+<p><strong>Query point:</strong> $(x_q, y_q) = (1.3, 0.7)$</p>
+
+<h3 id="solution">Solution</h3>
+
+<p><strong>Step 1: Find containing cell</strong></p>
+
+<p>\(i_q = \lfloor 1.3 / 1 \rfloor = 1\)
+\(j_q = \lfloor 0.7 / 1 \rfloor = 0\)</p>
+
+<p>Cell corners at: $(1,0)$, $(2,0)$, $(1,1)$, $(2,1)$</p>
+
+<p><strong>Step 2: Fractional position</strong></p>
+
+<p>\(u = 1.3 - 1 = 0.3\)
+\(v = 0.7 - 0 = 0.7\)</p>
+
+<p><strong>Step 3: Get corner values</strong></p>
+
+<ul>
+  <li>$z_{0,0} = z[1,0] = 110$ (bottom-left of cell)</li>
+  <li>$z_{1,0} = z[2,0] = ?$ (missing—assume 115 for example)</li>
+  <li>$z_{0,1} = z[1,1] = 120$ (top-left)</li>
+  <li>$z_{1,1} = z[2,1] = ?$ (assume 125)</li>
+</ul>
+
+<p>Actually, our grid only goes to $x=1$. Let me recalculate with correct bounds.</p>
+
+<p><strong>Corrected:</strong> Query $(1.3, 0.7)$ is outside grid. Let’s use $(0.3, 0.7)$ instead.</p>
+
+<p><strong>Step 1 (corrected):</strong></p>
+
+<p>\(i_q = \lfloor 0.3 / 1 \rfloor = 0\)
+\(j_q = \lfloor 0.7 / 1 \rfloor = 0\)</p>
+
+<p><strong>Step 2:</strong></p>
+
+<p>\(u = 0.3 - 0 = 0.3\)
+\(v = 0.7 - 0 = 0.7\)</p>
+
+<p><strong>Step 3: Corner values</strong></p>
+
+<ul>
+  <li>$z_{0,0} = z[0,0] = 100$</li>
+  <li>$z_{1,0} = z[1,0] = 110$</li>
+  <li>$z_{0,1} = z[0,1] = 105$</li>
+  <li>$z_{1,1} = z[1,1] = 120$</li>
+</ul>
+
+<p><strong>Step 4: Bilinear formula</strong></p>
+
+<p>\(z = (1-0.3)(1-0.7) \cdot 100 + (0.3)(1-0.7) \cdot 110\)
+\(\quad + (1-0.3)(0.7) \cdot 105 + (0.3)(0.7) \cdot 120\)</p>
+
+<p>\(= 0.7 \times 0.3 \times 100 + 0.3 \times 0.3 \times 110\)
+\(\quad + 0.7 \times 0.7 \times 105 + 0.3 \times 0.7 \times 120\)</p>
+
+\[= 21 + 9.9 + 51.45 + 25.2 = 107.55 \text{ m}\]
+
+<p><strong>Verification:</strong></p>
+<ul>
+  <li>Nearest to $(0,1)$ at 105m (weight 0.49)</li>
+  <li>Also weighted toward 110 and 120</li>
+  <li>Result 107.55 is reasonable weighted average</li>
+</ul>
+
+<hr />
+
+<h2 id="5-computational-implementation">5. Computational Implementation</h2>
+
+<p>Below is an interactive resampling demonstration.</p>
+
+<div class="viz-container" id="resample-viz">
+  <div class="controls">
+    <label>
+      Method:
+      <select id="interp-method">
+        <option value="nearest">Nearest Neighbor</option>
+        <option value="bilinear" selected="">Bilinear</option>
+        <option value="bicubic">Bicubic</option>
+      </select>
+    </label>
+    <label>
+      Output resolution:
+      <input type="range" id="resolution-slider" min="5" max="30" step="5" value="10" />
+      <span id="resolution-value">10</span>×
+    </label>
+    <label>
+      Show input grid:
+      <input type="checkbox" id="show-input" checked="" />
+    </label>
+    <div class="resample-info">
+      <p><strong>Input cells:</strong> 5×5 = 25</p>
+      <p><strong>Output cells:</strong> <span id="output-cells">--</span></p>
+      <p><strong>Sampling ratio:</strong> <span id="sample-ratio">--</span>×</p>
+    </div>
+  </div>
+  <div id="resample-canvas-container">
+    <canvas id="resample-canvas" width="600" height="300" style="border: 1px solid #ddd;"></canvas>
+  </div>
+</div>
+
+<script type="module">
+(function() {
+  const canvas = document.getElementById('resample-canvas');
+  const ctx = canvas.getContext('2d');
+  
+  let method = 'bilinear';
+  let outputRes = 10;
+  let showInput = true;
+  
+  // Create simple 5x5 input grid with elevation pattern
+  const inputSize = 5;
+  const inputData = [];
+  for (let j = 0; j < inputSize; j++) {
+    const row = [];
+    for (let i = 0; i < inputSize; i++) {
+      // Create smooth elevation pattern
+      const cx = 2, cy = 2;
+      const dist = Math.sqrt((i - cx) ** 2 + (j - cy) ** 2);
+      const elev = 100 + 50 * Math.exp(-dist / 2);
+      row.push(elev);
+    }
+    inputData.push(row);
+  }
+  
+  function nearestNeighbor(data, x, y) {
+    const i = Math.round(x);
+    const j = Math.round(y);
+    if (i < 0 || i >= data[0].length || j < 0 || j >= data.length) {
+      return 100; // Default
+    }
+    return data[j][i];
+  }
+  
+  function bilinear(data, x, y) {
+    const i = Math.floor(x);
+    const j = Math.floor(y);
+    const u = x - i;
+    const v = y - j;
+    
+    if (i < 0 || i >= data[0].length - 1 || j < 0 || j >= data.length - 1) {
+      return nearestNeighbor(data, x, y);
+    }
+    
+    const z00 = data[j][i];
+    const z10 = data[j][i + 1];
+    const z01 = data[j + 1][i];
+    const z11 = data[j + 1][i + 1];
+    
+    return (1 - u) * (1 - v) * z00 +
+           u * (1 - v) * z10 +
+           (1 - u) * v * z01 +
+           u * v * z11;
+  }
+  
+  function cubicKernel(x, a = -0.5) {
+    const ax = Math.abs(x);
+    if (ax <= 1) {
+      return (a + 2) * ax ** 3 - (a + 3) * ax ** 2 + 1;
+    } else if (ax < 2) {
+      return a * ax ** 3 - 5 * a * ax ** 2 + 8 * a * ax - 4 * a;
+    }
+    return 0;
+  }
+  
+  function bicubic(data, x, y) {
+    const i = Math.floor(x);
+    const j = Math.floor(y);
+    const u = x - i;
+    const v = y - j;
+    
+    let sum = 0;
+    for (let m = 0; m < 4; m++) {
+      for (let n = 0; n < 4; n++) {
+        const ii = i + m - 1;
+        const jj = j + n - 1;
+        
+        if (ii >= 0 && ii < data[0].length && jj >= 0 && jj < data.length) {
+          const w = cubicKernel(m - u) * cubicKernel(n - v);
+          sum += data[jj][ii] * w;
+        }
+      }
+    }
+    
+    return sum;
+  }
+  
+  function resample(data, method, outputSize) {
+    const inputHeight = data.length;
+    const inputWidth = data[0].length;
+    const scaleX = (inputWidth - 1) / (outputSize - 1);
+    const scaleY = (inputHeight - 1) / (outputSize - 1);
+    
+    const output = [];
+    for (let j = 0; j < outputSize; j++) {
+      const row = [];
+      for (let i = 0; i < outputSize; i++) {
+        const x = i * scaleX;
+        const y = j * scaleY;
+        
+        let value;
+        if (method === 'nearest') {
+          value = nearestNeighbor(data, x, y);
+        } else if (method === 'bilinear') {
+          value = bilinear(data, x, y);
+        } else {
+          value = bicubic(data, x, y);
+        }
+        
+        row.push(value);
+      }
+      output.push(row);
+    }
+    
+    return output;
+  }
+  
+  function drawRaster(data, x, y, width, height, label) {
+    const cellWidth = width / data[0].length;
+    const cellHeight = height / data.length;
+    
+    // Find min/max for color scale
+    let min = Infinity, max = -Infinity;
+    for (let row of data) {
+      for (let val of row) {
+        min = Math.min(min, val);
+        max = Math.max(max, val);
+      }
+    }
+    
+    // Draw cells
+    for (let j = 0; j < data.length; j++) {
+      for (let i = 0; i < data[0].length; i++) {
+        const value = data[j][i];
+        const normalized = (value - min) / (max - min);
+        
+        // Color scale: blue (low) to red (high)
+        const r = Math.floor(255 * normalized);
+        const g = Math.floor(100 * (1 - Math.abs(normalized - 0.5) * 2));
+        const b = Math.floor(255 * (1 - normalized));
+        
+        ctx.fillStyle = `rgb(${r}, ${g}, ${b})`;
+        ctx.fillRect(
+          x + i * cellWidth,
+          y + j * cellHeight,
+          cellWidth,
+          cellHeight
+        );
+      }
+    }
+    
+    // Draw grid if input
+    if (showInput && label === 'Input') {
+      ctx.strokeStyle = '#FFF';
+      ctx.lineWidth = 1;
+      for (let i = 0; i <= data[0].length; i++) {
+        ctx.beginPath();
+        ctx.moveTo(x + i * cellWidth, y);
+        ctx.lineTo(x + i * cellWidth, y + height);
+        ctx.stroke();
+      }
+      for (let j = 0; j <= data.length; j++) {
+        ctx.beginPath();
+        ctx.moveTo(x, y + j * cellHeight);
+        ctx.lineTo(x + width, y + j * cellHeight);
+        ctx.stroke();
+      }
+    }
+    
+    // Label
+    ctx.fillStyle = '#2C3E50';
+    ctx.font = 'bold 14px sans-serif';
+    ctx.fillText(label, x + 5, y + 20);
+  }
+  
+  function render() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    
+    const outputData = resample(inputData, method, outputRes);
+    
+    // Draw input
+    drawRaster(inputData, 20, 20, 250, 250, 'Input (5×5)');
+    
+    // Draw output
+    drawRaster(outputData, 320, 20, 250, 250, `Output (${outputRes}×${outputRes})`);
+    
+    // Update stats
+    document.getElementById('output-cells').textContent = outputRes * outputRes;
+    document.getElementById('sample-ratio').textContent = 
+      ((outputRes * outputRes) / 25).toFixed(1);
+  }
+  
+  document.getElementById('interp-method').addEventListener('change', (e) => {
+    method = e.target.value;
+    render();
+  });
+  
+  document.getElementById('resolution-slider').addEventListener('input', (e) => {
+    outputRes = parseInt(e.target.value);
+    document.getElementById('resolution-value').textContent = outputRes;
+    render();
+  });
+  
+  document.getElementById('show-input').addEventListener('change', (e) => {
+    showInput = e.target.checked;
+    render();
+  });
+  
+  render();
+})();
+</script>
+
+<p><strong>Try this:</strong></p>
+<ul>
+  <li><strong>Nearest neighbor:</strong> Blocky, stair-step appearance (preserves exact values)</li>
+  <li><strong>Bilinear:</strong> Smooth, continuous (but blurs the peak)</li>
+  <li><strong>Bicubic:</strong> Very smooth (may overshoot slightly)</li>
+  <li><strong>Increase resolution:</strong> More output pixels reveal interpolation differences</li>
+  <li><strong>Color scale:</strong> Blue = low elevation, Red = high elevation</li>
+  <li>Notice: Nearest neighbor preserves sharp gradients, bilinear smooths them</li>
+</ul>
+
+<p><strong>Key insight:</strong> Method choice depends on data type—categorical (land cover) needs nearest neighbor, continuous (elevation) benefits from bilinear/bicubic.</p>
+
+<hr />
+
+<h2 id="6-interpretation">6. Interpretation</h2>
+
+<h3 id="when-to-use-each-method">When to Use Each Method</h3>
+
+<p><strong>Nearest Neighbor:</strong></p>
+<ul>
+  <li><strong>Categorical data:</strong> Land cover, soil types, zoning codes</li>
+  <li><strong>Preserving exact values:</strong> Don’t want interpolated values (e.g., “class 2.3”)</li>
+  <li><strong>Speed critical:</strong> Fastest method</li>
+  <li><strong>Example:</strong> Reproject land cover map—don’t create new land cover classes</li>
+</ul>
+
+<p><strong>Bilinear:</strong></p>
+<ul>
+  <li><strong>Continuous data:</strong> Elevation, temperature, NDVI</li>
+  <li><strong>General purpose:</strong> Good balance of speed and quality</li>
+  <li><strong>Moderate smoothing acceptable:</strong> Slight blur is OK</li>
+  <li><strong>Example:</strong> Resize satellite imagery for display</li>
+</ul>
+
+<p><strong>Bicubic:</strong></p>
+<ul>
+  <li><strong>High-quality visualization:</strong> Print maps, publications</li>
+  <li><strong>Preserving gradients:</strong> Slope/aspect calculation from DEM</li>
+  <li><strong>Smooth interpolation needed:</strong> Climate surfaces, bathymetry</li>
+  <li><strong>Example:</strong> Upsample DEM for detailed terrain visualization</li>
+</ul>
+
+<h3 id="aliasing-in-downsampling">Aliasing in Downsampling</h3>
+
+<p><strong>Problem:</strong> Downsampling without filtering causes <strong>aliasing</strong> (high-frequency artifacts).</p>
+
+<p><strong>Example:</strong> 100m DEM → 1000m DEM by sampling every 10th pixel</p>
+<ul>
+  <li>Misses peaks/valleys between sampled points</li>
+  <li>Creates artificial patterns</li>
+</ul>
+
+<p><strong>Solution:</strong> <strong>Average</strong> all input pixels that fall within output pixel (anti-aliasing filter).</p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>For each output pixel:
+    Find all input pixels within its extent
+    z_output = mean(z_input)
+</code></pre></div></div>
+
+<p>This is <strong>area-weighted averaging</strong>, not interpolation.</p>
+
+<h3 id="reprojection">Reprojection</h3>
+
+<p><strong>Changing coordinate systems</strong> requires resampling:</p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>1. Create output grid in new projection
+2. For each output pixel:
+    a. Transform pixel center to input projection
+    b. Interpolate value from input grid
+    c. Assign to output pixel
+</code></pre></div></div>
+
+<p><strong>Challenge:</strong> Output pixel may correspond to irregular shape in input space.</p>
+
+<p><strong>Common practice:</strong> Use bilinear for most data, nearest neighbor for categorical.</p>
+
+<hr />
+
+<h2 id="7-what-could-go-wrong">7. What Could Go Wrong?</h2>
+
+<h3 id="overshoot-in-bicubic">Overshoot in Bicubic</h3>
+
+<p><strong>Bicubic can create values outside input range.</strong></p>
+
+<p><strong>Example:</strong></p>
+<ul>
+  <li>Input range: [0, 255] (8-bit image)</li>
+  <li>Bicubic output: Values like -5 or 270</li>
+</ul>
+
+<p><strong>Problem:</strong> Invalid for physical quantities (negative reflectance, temperatures &gt; known max)</p>
+
+<p><strong>Solution:</strong> Clamp output to valid range: <code class="language-plaintext highlighter-rouge">value = max(min_valid, min(max_valid, value))</code></p>
+
+<h3 id="edge-effects">Edge Effects</h3>
+
+<p><strong>Near grid boundaries:</strong> Insufficient neighbors for bilinear/bicubic.</p>
+
+<p><strong>Options:</strong></p>
+<ol>
+  <li><strong>Fallback to nearest neighbor</strong> at edges</li>
+  <li><strong>Pad with replicated edge values</strong></li>
+  <li><strong>Assume zeros</strong> beyond boundary</li>
+  <li><strong>Reflect</strong> boundary (mirror)</li>
+</ol>
+
+<p><strong>Choice depends on data semantics.</strong></p>
+
+<h3 id="assuming-regular-grid">Assuming Regular Grid</h3>
+
+<p><strong>Many interpolation methods assume:</strong></p>
+<ul>
+  <li>Rectangular grid</li>
+  <li>Uniform spacing</li>
+  <li>Aligned with axes</li>
+</ul>
+
+<p><strong>Real data may be:</strong></p>
+<ul>
+  <li>Irregular point clouds (LiDAR)</li>
+  <li>Rotated grids</li>
+  <li>Variable resolution</li>
+</ul>
+
+<p><strong>Solution:</strong> Use <strong>scattered data interpolation</strong> (IDW, kriging) or triangulation.</p>
+
+<h3 id="excessive-smoothing">Excessive Smoothing</h3>
+
+<p><strong>Bilinear/bicubic blur sharp features.</strong></p>
+
+<p><strong>Problem for:</strong></p>
+<ul>
+  <li>Coastlines (land/water boundary)</li>
+  <li>Faults (abrupt elevation change)</li>
+  <li>Roads (linear features)</li>
+</ul>
+
+<p><strong>Solution:</strong></p>
+<ul>
+  <li>Use nearest neighbor for boundaries</li>
+  <li>Edge-preserving filters</li>
+  <li>Or accept smoothing as necessary artifact</li>
+</ul>
+
+<hr />
+
+<h2 id="8-extension-advanced-interpolation">8. Extension: Advanced Interpolation</h2>
+
+<h3 id="inverse-distance-weighting-idw">Inverse Distance Weighting (IDW)</h3>
+
+<p><strong>For irregular point data:</strong></p>
+
+\[z(x, y) = \frac{\sum_i w_i z_i}{\sum_i w_i}\]
+
+<p>Where:</p>
+
+\[w_i = \frac{1}{d_i^p}\]
+
+<p>$d_i$ = distance from $(x,y)$ to point $i$<br />
+$p$ = power parameter (typically 2)</p>
+
+<p><strong>Nearby points</strong> have more influence (high weight).</p>
+
+<h3 id="kriging">Kriging</h3>
+
+<p><strong>Geostatistical interpolation</strong> using spatial covariance.</p>
+
+<p><strong>Steps:</strong></p>
+<ol>
+  <li>Fit <strong>variogram</strong> (model of spatial correlation vs. distance)</li>
+  <li>Solve system of equations for weights</li>
+  <li>Compute weighted sum (optimal in least-squares sense)</li>
+</ol>
+
+<p><strong>Advantage:</strong> Provides uncertainty estimates.</p>
+
+<p><strong>Disadvantage:</strong> Computationally expensive, requires expertise.</p>
+
+<h3 id="thin-plate-splines">Thin Plate Splines</h3>
+
+<p><strong>Minimizes bending energy</strong> (creates smoothest surface).</p>
+
+<p><strong>Used for:</strong></p>
+<ul>
+  <li>Climate data interpolation</li>
+  <li>Surface fitting with constraints</li>
+  <li>Morphing between shapes</li>
+</ul>
+
+<p><strong>Disadvantage:</strong> Global method (slow for large datasets).</p>
+
+<hr />
+
+<h2 id="9-math-refresher-linear-interpolation">9. Math Refresher: Linear Interpolation</h2>
+
+<h3 id="1d-case">1D Case</h3>
+
+<p><strong>Points:</strong> $(x_0, y_0)$ and $(x_1, y_1)$</p>
+
+<p><strong>Interpolate at $x$:</strong></p>
+
+\[y = y_0 + \frac{x - x_0}{x_1 - x_0}(y_1 - y_0)\]
+
+<p><strong>Equivalent form:</strong></p>
+
+\[y = (1 - t) y_0 + t y_1\]
+
+<p>Where $t = \frac{x - x_0}{x_1 - x_0}$ is normalized position.</p>
+
+<p><strong>Properties:</strong></p>
+<ul>
+  <li>Linear in $x$</li>
+  <li>Exact at endpoints: $y(x_0) = y_0$, $y(x_1) = y_1$</li>
+  <li>$t = 0$ → $y = y_0$; $t = 1$ → $y = y_1$</li>
+</ul>
+
+<h3 id="2d-extension-bilinear">2D Extension (Bilinear)</h3>
+
+<p><strong>Apply linear interpolation twice:</strong></p>
+
+<ol>
+  <li>Interpolate along x at $y_0$: get $f(x, y_0)$</li>
+  <li>Interpolate along x at $y_1$: get $f(x, y_1)$</li>
+  <li>Interpolate between these along y: get $f(x, y)$</li>
+</ol>
+
+<p><strong>Result:</strong> Bilinear = product of two linear interpolations.</p>
+
+<p><strong>Not</strong> the same as 2D linear (plane through 3 points)—bilinear is a <strong>hyperbolic paraboloid</strong> (saddle shape).</p>
+
+<hr />
+
+<h2 id="summary">Summary</h2>
+
+<ul>
+  <li><strong>Resampling</strong> changes grid resolution (upsampling or downsampling)</li>
+  <li><strong>Interpolation</strong> estimates values at new positions from known values</li>
+  <li><strong>Nearest neighbor:</strong> Fast, preserves values, blocky (use for categorical data)</li>
+  <li><strong>Bilinear:</strong> Smooth, continuous, general-purpose (use for continuous data)</li>
+  <li><strong>Bicubic:</strong> Very smooth, preserves gradients, can overshoot (use for high-quality)</li>
+  <li><strong>Downsampling needs filtering</strong> to avoid aliasing (average, don’t just sample)</li>
+  <li><strong>Reprojection</strong> requires resampling (transform coordinates, then interpolate)</li>
+  <li><strong>Challenges:</strong> Edge effects, overshoot, excessive smoothing</li>
+  <li><strong>Advanced methods:</strong> IDW, kriging, splines for irregular data</li>
+  <li>Interpolation is weighted averaging where weights depend on distance/position</li>
+</ul>
+
+      </div>
+
+      
+
+
+
+      
+
+  
+  
+  
+  
+
+
+
+      <!-- essay-footer-notes.html — References / endnotes section.
+     Hidden by default; assets/js/essay/core.js shows it and populates
+     #essay-endnotes-list from [data-cite] elements in the content.
+
+     In posts, create citation markers with:
+       <cite data-cite="Author, Title, URL">1</cite>
+     The JS collects these and renders a numbered reference list here. -->
+
+<footer class="essay-endnotes" id="essay-endnotes" aria-label="References" hidden>
+  <div class="essay-endnotes-inner">
+    <h2 class="essay-endnotes-heading">References</h2>
+    <ol class="essay-endnotes-list" id="essay-endnotes-list">
+      <!-- Populated at runtime by assets/js/essay/core.js buildEndnotes() -->
+    </ol>
+  </div>
+</footer>
+
+
+      
+
+      
+
+      
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    </article>
+  </main>
+
+  <aside
+    class="essay-sidenotes"
+    id="essay-sidenotes"
+    aria-label="Margin notes"
+  ></aside>
+
+</div>
+
+</div>
+
+<footer>
+  <div class="footer-inner">
+
+    <!-- Col 1: Brand -->
+    <div class="footer-brand">
+      <div class="footer-brand-logo">
+        
+        <img loading="lazy" src="/assets/images/logo.webp" alt="WaywardHouse" width="28" height="28">
+        
+        WaywardHouse<span>.</span>
+      </div>
+      
+      
+      <p class="footer-brand-desc">Understanding how place, economy, and environment interact — through analysis, modelling, and open tools.</p>
+      
+
+      <div class="footer-social">
+        
+        
+        
+        <a href="/feed.xml" class="social-icon" target="_blank" rel="noopener noreferrer" aria-label="RSS feed">
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M4 11a9 9 0 0 1 9 9"/>
+            <path d="M4 4a16 16 0 0 1 16 16"/>
+            <circle cx="5" cy="19" r="1"/>
+          </svg>
+        </a>
+      </div>
+    </div>
+
+    <!-- Col 2: Topics (configurable via footer_topics, falls back to auto-categories) -->
+    <nav aria-labelledby="footer-topics">
+      <h3 class="footer-col-title" id="footer-topics">Reading</h3>
+      <ul class="footer-links">
+        
+          
+          <li><a href="/topics/">Essays</a></li>
+          
+          <li><a href="/series/">Modelling</a></li>
+          
+          <li><a href="/archive/">Archive</a></li>
+          
+          <li><a href="/start-here/">Start Here</a></li>
+          
+        
+      </ul>
+    </nav>
+
+    <!-- Col 3: Secondary navigation -->
+    
+    <nav aria-labelledby="footer-company">
+      <h3 class="footer-col-title" id="footer-company">Site</h3>
+      <ul class="footer-links">
+        
+        <li><a href="/start-here/">Start Here</a></li>
+        
+        <li><a href="/about/">About</a></li>
+        
+        <li><a href="/contact/">Contact</a></li>
+        
+      </ul>
+    </nav>
+    
+
+    <!-- Col 4: Resources -->
+    <nav aria-labelledby="footer-resources">
+      <h3 class="footer-col-title" id="footer-resources">Resources</h3>
+      <ul class="footer-links">
+        <li><a href="/archive/">Archive</a></li>
+        <li><a href="/feed.xml">RSS Feed</a></li>
+        <li><a href="/topics/">All Topics</a></li>
+      </ul>
+    </nav>
+
+  </div><!-- /.footer-inner -->
+
+  <div class="footer-bottom">
+    <span class="footer-copy">
+      &copy; 2026 WaywardHouse.
+    </span>
+    <div class="footer-legal">
+      <a href="/privacy/">Privacy Policy</a>
+      <a href="/terms/">Terms of Service</a>
+    </div>
+  </div>
+
+</footer>
+
+
+<!-- Alpine.js bundle -->
+<script type="module" src="/assets/dist/main.js"></script>
+
+<!-- Visualization runtime — detects and loads CDN libraries dynamically -->
+<script type="module" src="/assets/js/core.js"></script>
+
+<!-- Search overlay — event-driven: nav button $dispatches 'search:open' -->
+<div
+  x-data="search"
+  x-init="init()"
+  @search:open.window="open()"
+>
+  <div
+    class="search-overlay"
+    x-show="isOpen"
+    x-transition:enter="transition ease-out duration-150"
+    x-transition:enter-start="opacity-0"
+    x-transition:enter-end="opacity-100"
+    x-transition:leave="transition ease-in duration-100"
+    x-transition:leave-start="opacity-100"
+    x-transition:leave-end="opacity-0"
+    @click.self="close()"
+    style="display: none;"
+    role="dialog"
+    aria-modal="true"
+    aria-label="Search"
+  >
+    <div class="search-panel">
+      <div class="search-input-wrap">
+        <svg class="search-icon" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <circle cx="11" cy="11" r="8"/>
+          <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+        </svg>
+        <input
+          class="search-input"
+          type="search"
+          placeholder="Search posts…"
+          x-model="query"
+          x-ref="input"
+          @input.debounce.300ms="runSearch()"
+          @keydown.escape="close()"
+          autocomplete="off"
+          spellcheck="false"
+          aria-label="Search query"
+        >
+        <kbd class="search-esc" aria-hidden="true">ESC</kbd>
+      </div>
+
+      <div class="search-results" x-show="query.trim().length > 0">
+        <div class="search-status" x-show="loading" aria-live="polite">Searching…</div>
+        <div class="search-status" x-show="!loading && results.length === 0" aria-live="polite">
+          No results for "<span x-text="query"></span>"
+        </div>
+        <ul class="search-result-list" x-show="!loading && results.length > 0" role="list">
+          <template x-for="result in results" :key="result.url">
+            <li>
+              <a :href="result.url" class="search-result-item" @click="close()">
+                <div class="search-result-title" x-text="result.meta?.title || result.url"></div>
+                <div class="search-result-excerpt" x-html="result.excerpt"></div>
+              </a>
+            </li>
+          </template>
+        </ul>
+      </div>
+    </div>
+  </div>
+</div>
+
+</body>
+</html>

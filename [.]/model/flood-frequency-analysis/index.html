@@ -1,0 +1,1249 @@
+<!DOCTYPE html>
+
+<html lang="en" data-brand="wayward" data-theme="light">
+<head>
+  <meta charset="utf-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Flood Frequency Analysis — WaywardHouse</title>
+<meta name="description" content="How large will the 100-year flood be? Flood frequency analysis fits probability distributions to annual peak flows enabling estimation of design floods and floodplain mapping via Log-Pearson Type III and...">
+
+<!-- Dark mode flash prevention — runs synchronously before first paint -->
+<script>
+  (function () {
+    var defaultDark = 'light' === 'dark';
+    var s = localStorage.getItem('theme');
+    var dark = s !== null ? s === 'dark' : defaultDark;
+    document.documentElement.dataset.theme = dark ? 'dark' : 'light';
+  })();
+</script>
+
+<!-- Preconnect to CDN domains used by the viz runtime -->
+<link rel="preconnect" href="https://cdn.jsdelivr.net">
+<link rel="preconnect" href="https://unpkg.com">
+<link rel="preconnect" href="https://esm.sh">
+<link rel="preconnect" href="https://api.mapbox.com">
+<link rel="preconnect" href="https://events.mapbox.com">
+
+
+<script>window.MAPBOX_TOKEN = 'pk.eyJ1IjoiYnJlYWRlZGNvZCIsImEiOiJjbW0xa25qc2EwMmtwMnJwejJlNndqdnoxIn0._7I9PwXuFLrOQINVZ84y1w';</script>
+
+
+<!-- Fonts -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:ital,wght@0,300;0,400;0,600;0,700;0,800;0,900;1,700;1,800&family=Barlow:wght@300;400&family=IBM+Plex+Mono:ital,wght@0,300;0,400;0,500;1,300&family=Literata:ital,opsz,wght@0,7..72,300;0,7..72,400;0,7..72,500;1,7..72,300;1,7..72,400&display=swap" rel="stylesheet">
+
+<!-- Theme stylesheet (Vite build output) -->
+<link rel="stylesheet" href="/assets/dist/main.css">
+
+<!-- Brand token overrides — loaded after main.css so variables cascade correctly -->
+
+<link rel="stylesheet" href="/assets/css/brand-wayward.css">
+
+
+
+<!-- Syntax highlighting (Rouge — light + dark) -->
+<link rel="stylesheet" href="/assets/css/syntax.css">
+
+<!-- Begin Jekyll SEO tag v2.8.0 -->
+<title>Flood Frequency Analysis | WaywardHouse</title>
+<meta name="generator" content="Jekyll v4.4.1" />
+<meta property="og:title" content="Flood Frequency Analysis" />
+<meta property="og:locale" content="en" />
+<meta name="description" content="How large will the 100-year flood be? Flood frequency analysis fits probability distributions to annual peak flows enabling estimation of design floods and floodplain mapping via Log-Pearson Type III and regional regression methods. This model derives frequency factors, implements LP3 fitting, demonstrates flood quantile calculations, and extends to ungauged basins via regional equations." />
+<meta property="og:description" content="How large will the 100-year flood be? Flood frequency analysis fits probability distributions to annual peak flows enabling estimation of design floods and floodplain mapping via Log-Pearson Type III and regional regression methods. This model derives frequency factors, implements LP3 fitting, demonstrates flood quantile calculations, and extends to ungauged basins via regional equations." />
+<link rel="canonical" href="https://wayward.house/model/flood-frequency-analysis/" />
+<meta property="og:url" content="https://wayward.house/model/flood-frequency-analysis/" />
+<meta property="og:site_name" content="WaywardHouse" />
+<meta property="og:image" content="https://wayward.house/assets/images/cryosphere-and-hydrology.webp" />
+<meta property="og:type" content="article" />
+<meta property="article:published_time" content="2026-02-27T00:00:00-07:00" />
+<meta name="twitter:card" content="summary_large_image" />
+<meta property="twitter:image" content="https://wayward.house/assets/images/cryosphere-and-hydrology.webp" />
+<meta property="twitter:title" content="Flood Frequency Analysis" />
+<meta name="twitter:site" content="@" />
+<script type="application/ld+json">
+{"@context":"https://schema.org","@type":"BlogPosting","dateModified":"2026-03-17T21:00:54-06:00","datePublished":"2026-02-27T00:00:00-07:00","description":"How large will the 100-year flood be? Flood frequency analysis fits probability distributions to annual peak flows enabling estimation of design floods and floodplain mapping via Log-Pearson Type III and regional regression methods. This model derives frequency factors, implements LP3 fitting, demonstrates flood quantile calculations, and extends to ungauged basins via regional equations.","headline":"Flood Frequency Analysis","image":"https://wayward.house/assets/images/cryosphere-and-hydrology.webp","mainEntityOfPage":{"@type":"WebPage","@id":"https://wayward.house/model/flood-frequency-analysis/"},"publisher":{"@type":"Organization","logo":{"@type":"ImageObject","url":"https://wayward.house/assets/images/logo.webp"}},"url":"https://wayward.house/model/flood-frequency-analysis/"}</script>
+<!-- End Jekyll SEO tag -->
+
+
+
+<!-- Cloudflare Web Analytics -->
+<script defer src="https://static.cloudflareinsights.com/beacon.min.js"
+  data-cf-beacon='{"token": "62c47d78bf9d4c80972d4e6242d79ff8"}'></script>
+
+
+</head>
+<body class="
+  model-template
+   tag-modelling
+   tag-hash-math
+  
+   tag-hash-viz
+  
+  
+  
+  
+  
+  
+">
+
+<a href="#main-content" class="skip-link">Skip to content</a>
+
+<header class="nav" x-data="{ open: false }">
+  <div class="nav-inner">
+
+    <!-- Logo -->
+    <a href="/" class="nav-logo">
+      
+      <img loading="lazy" src="/assets/images/logo.webp" alt="WaywardHouse" width="32" height="32">
+      
+      WaywardHouse<span>.</span>
+    </a>
+
+    <!-- Desktop nav links -->
+    <ul class="nav-links" role="list">
+      
+      <li>
+        <a href="/topics/">Essays</a>
+      </li>
+      
+      <li>
+        <a href="/series/">Modelling</a>
+      </li>
+      
+      <li>
+        <a href="/about/">About</a>
+      </li>
+      
+    </ul>
+
+    <!-- Actions -->
+    <div class="nav-actions">
+
+      <!-- Search button -->
+      <button
+        class="search-toggle"
+        type="button"
+        aria-label="Search (⌘K)"
+        title="Search (⌘K)"
+        @click="$dispatch('search:open')"
+      >
+        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <circle cx="11" cy="11" r="8"/>
+          <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+        </svg>
+      </button>
+
+      <!-- Dark mode toggle -->
+      <button
+        class="theme-toggle"
+        x-data="darkMode"
+        x-init="init()"
+        @click="toggle()"
+        :aria-label="dark ? 'Switch to light mode' : 'Switch to dark mode'"
+        type="button"
+      >
+        <!-- Sun icon (shown in light mode) -->
+        <svg class="icon-sun" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">
+          <circle cx="12" cy="12" r="5"/>
+          <line x1="12" y1="1" x2="12" y2="3"/>
+          <line x1="12" y1="21" x2="12" y2="23"/>
+          <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/>
+          <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/>
+          <line x1="1" y1="12" x2="3" y2="12"/>
+          <line x1="21" y1="12" x2="23" y2="12"/>
+          <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/>
+          <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>
+        </svg>
+        <!-- Moon icon (shown in dark mode) -->
+        <svg class="icon-moon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">
+          <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+        </svg>
+      </button>
+
+      <!-- Hamburger (mobile only) -->
+      <button
+        class="mobile-nav-toggle"
+        @click="open = !open"
+        :aria-expanded="open"
+        :aria-label="open ? 'Close menu' : 'Open menu'"
+        type="button"
+      >
+        <svg x-show="!open" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <line x1="3" y1="6" x2="21" y2="6"/>
+          <line x1="3" y1="12" x2="21" y2="12"/>
+          <line x1="3" y1="18" x2="21" y2="18"/>
+        </svg>
+        <svg x-show="open" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <line x1="18" y1="6" x2="6" y2="18"/>
+          <line x1="6" y1="6" x2="18" y2="18"/>
+        </svg>
+      </button>
+
+    </div><!-- /.nav-actions -->
+  </div><!-- /.nav-inner -->
+
+  <!-- Mobile drawer -->
+  <div
+    class="mobile-nav"
+    x-show="open"
+    x-transition:enter="transition ease-out duration-200"
+    x-transition:enter-start="opacity-0 -translate-y-1"
+    x-transition:enter-end="opacity-100 translate-y-0"
+    x-transition:leave="transition ease-in duration-150"
+    x-transition:leave-start="opacity-100 translate-y-0"
+    x-transition:leave-end="opacity-0 -translate-y-1"
+    @click.outside="open = false"
+    @keydown.escape.window="open = false"
+  >
+    <ul role="list">
+      
+      <li>
+        <a href="/topics/" @click="open = false">Essays</a>
+      </li>
+      
+      <li>
+        <a href="/series/" @click="open = false">Modelling</a>
+      </li>
+      
+      <li>
+        <a href="/about/" @click="open = false">About</a>
+      </li>
+      
+    </ul>
+  </div><!-- /.mobile-nav -->
+
+</header>
+
+
+<div id="main-content">
+  <!-- Essay stylesheet and runtime — self-contained -->
+<link rel="stylesheet" href="/assets/css/essay.css">
+<script type="module" src="/assets/js/essay/core.js"></script>
+
+<div class="essay-layout" id="essay-layout">
+
+  <!-- essay-toc.html — Sticky table of contents (left column).
+     The <ol> is empty on load; assets/js/essay/core.js populates it
+     from h2/h3 elements found in #essay-content after the page renders. -->
+
+<nav class="essay-toc" id="essay-toc" aria-label="Table of contents">
+  <div class="essay-toc-inner">
+    <p class="essay-toc-heading" aria-hidden="true">Contents</p>
+    <ol class="essay-toc-list" id="essay-toc-list">
+      <!-- Populated at runtime by assets/js/essay/core.js buildToc() -->
+    </ol>
+  </div>
+</nav>
+
+
+  <main class="essay-main" id="essay-main" role="main">
+    <article class="essay-article">
+
+      <!-- essay-hero.html — Header for computational essay template.
+     Displays feature image, tag label, title, excerpt, and post metadata. -->
+
+<header class="essay-hero">
+  
+  <figure class="essay-hero-figure">
+    <img
+      src="/assets/images/cryosphere-and-hydrology.webp"
+      alt="Flood Frequency Analysis"
+      class="essay-hero-img"
+      loading="eager"
+    >
+    
+  </figure>
+  
+
+  <div class="essay-hero-body">
+
+    
+    
+    
+    
+    
+    <nav class="essay-breadcrumb" aria-label="Series position">
+      
+      <a href="/series/6/" class="essay-breadcrumb-link">Computational geography atmospheric hazards</a>
+      
+      
+      <span class="essay-breadcrumb-sep" aria-hidden="true">›</span>
+      <span class="essay-breadcrumb-cluster">Flood Hydrology</span>
+      
+      
+      <span class="essay-breadcrumb-sep" aria-hidden="true">›</span>
+      <span class="essay-breadcrumb-pos">Model 10</span>
+      
+    </nav>
+    
+
+    <div class="essay-hero-labels">
+      
+      <a href="/topics/modelling/" class="essay-tag-label">modelling</a>
+      
+      
+      <span class="difficulty-badge difficulty-badge--4">Level 4</span>
+      
+    </div>
+
+    <h1 class="essay-title">Flood Frequency Analysis</h1>
+
+    
+    <p class="essay-excerpt">How large will the 100-year flood be? Flood frequency analysis fits probability distributions to annual peak flows enabling estimation of design floods and floodplain mapping via Log-Pearson Type III and regional regression methods. This model derives frequency factors, implements LP3 fitting, demonstrates flood quantile calculations, and extends to ungauged basins via regional equations.
+</p>
+    
+
+    
+    <p class="essay-prereqs"><span class="essay-prereqs-label">Prerequisites:</span> log pearson iii, flood quantiles, confidence intervals, regional frequency</p>
+    
+
+    <div class="essay-meta">
+      
+      <div class="essay-meta-secondary">
+        <time class="essay-date" datetime="2026-02-27">27 Feb 2026</time>
+        
+        
+        <span class="essay-sep" aria-hidden="true">·</span>
+        <span class="essay-updated">Updated <time datetime="2026-03-17">17 Mar 2026</time></span>
+        
+        <span class="essay-sep" aria-hidden="true">·</span>
+        <span class="essay-reading-time">11 min read</span>
+      </div>
+    </div>
+  </div>
+</header>
+
+
+      
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<nav class="series-nav" aria-label="Series navigation">
+
+  <div class="series-nav-header">
+    <span class="series-nav-label">Y</span>
+    <span class="series-nav-title">Flood Hydrology</span>
+  </div>
+
+  <ol class="series-nav-list">
+    
+    <li class="series-nav-item">
+      
+      <a href="/model/rainfall-intensity-duration/" class="series-nav-link">
+        <span class="series-nav-number">9</span>
+        Rainfall Intensity-Duration-Frequency
+      </a>
+      
+    </li>
+    
+    <li class="series-nav-item series-nav-item--current">
+      
+      <span class="series-nav-link series-nav-link--current" aria-current="page">
+        <span class="series-nav-number">10</span>
+        Flood Frequency Analysis
+      </span>
+      
+    </li>
+    
+    <li class="series-nav-item">
+      
+      <a href="/model/urban-flood-modeling/" class="series-nav-link">
+        <span class="series-nav-number">11</span>
+        Urban Flood modelling and Green Infrastructure
+      </a>
+      
+    </li>
+    
+  </ol>
+
+  
+  <div class="series-nav-footer">
+    <a href="/series/6/" class="series-nav-all">
+      All 11 in this series &rarr;
+    </a>
+  </div>
+  
+
+</nav>
+
+
+
+
+      <div class="essay-content gh-content" id="essay-content">
+        <p>On 6 August 1979, the Machhu-2 dam on the Machhu River in Gujarat, India failed after extreme monsoon rainfall. The wall of water that swept through Morbi killed somewhere between 1,800 and 25,000 people — the death toll was suppressed by the Indian government for decades. Engineers later estimated the peak inflow had been roughly 25 times the design capacity, a flow the dam’s designers had never imagined. The designers had done the right analysis; they had simply worked from records too short to reveal what the river was capable of.</p>
+
+<p>The term “100-year flood” is one of the most misunderstood phrases in civil engineering. It does not mean a flood that occurs once per century. It means a flood with a 1% annual probability of being exceeded — and in any 30-year mortgage period, there is a 26% chance your property experiences at least one such event. Extend that to a bridge designed for a 75-year service life and the exceedance probability climbs above 50%. Engineers need a precise language for rare events: one that connects a probability statement to an actual discharge volume that a spillway, bridge opening, or levee must accommodate.</p>
+
+<p>Flood frequency analysis provides that language. It takes the historical record of annual peak flows — often 40 to 80 years of gauge data — and fits a probability distribution to it. From the fitted distribution, engineers can read off the discharge corresponding to any return period they need: the 10-year flood for a culvert, the 100-year flood for a floodplain map, the 500-year flood for a dam spillway. The method is probabilistic, not deterministic — it cannot predict when the next big flood will come, only how big it is likely to be when it does.</p>
+
+<h2 id="1-the-question">1. The Question</h2>
+
+<p>What is the 100-year flood discharge for this river?</p>
+
+<p><strong>Design flood problem:</strong></p>
+
+<p>Every structure near water needs design flood estimate.</p>
+
+<p><strong>Bridge:</strong> How high to build?<br />
+<strong>Dam:</strong> What spillway capacity?<br />
+<strong>Floodplain map:</strong> Where is 100-year boundary?<br />
+<strong>Insurance:</strong> What’s the premium?</p>
+
+<p><strong>Flood frequency analysis provides answer:</strong></p>
+
+<p>Statistical method estimating flood magnitude for given return period.</p>
+
+<p><strong>Based on:</strong> Historical streamflow records</p>
+
+<p><strong>Annual peak series:</strong></p>
+
+<p>Each year, record maximum instantaneous discharge.</p>
+
+<p><strong>Example - Allegheny River:</strong></p>
+<ul>
+  <li>1950: 4,200 cms</li>
+  <li>1951: 2,800 cms</li>
+  <li>1952: 5,600 cms (major flood)</li>
+  <li>…</li>
+  <li>2025: 3,100 cms</li>
+</ul>
+
+<p><strong>Fit probability distribution</strong> to these peaks.</p>
+
+<p><strong>Extrapolate</strong> to estimate rare events (100-year, 500-year).</p>
+
+<p><strong>Applications:</strong></p>
+<ul>
+  <li>Floodplain mapping (FEMA flood insurance rate maps)</li>
+  <li>Bridge design (scour protection)</li>
+  <li>Dam spillway sizing</li>
+  <li>Levee height determination</li>
+  <li>Building elevation requirements (freeboard)</li>
+  <li>Emergency management planning</li>
+</ul>
+
+<p><strong>Return period interpretation:</strong></p>
+
+<p><strong>100-year flood:</strong> 1% annual exceedance probability (AEP)</p>
+
+<p><strong>Not:</strong> “Occurs once per 100 years”</p>
+
+<p><strong>Rather:</strong> “1% chance each year, regardless of past floods”</p>
+
+<p><strong>Misconception:</strong> “We just had 100-year flood, safe for 100 years”</p>
+
+<p><strong>Wrong!</strong> Each year independent.</p>
+
+<hr />
+
+<h2 id="2-the-conceptual-model">2. The Conceptual Model</h2>
+
+<h3 id="log-pearson-type-iii-distribution">Log-Pearson Type III Distribution</h3>
+
+<p><strong>USGS standard method</strong> (Bulletin 17C, 2017)</p>
+
+<p><strong>Why logarithms?</strong></p>
+
+<p>Flood peaks positively skewed (long right tail).</p>
+
+<p>Logarithmic transformation normalizes distribution.</p>
+
+<p><strong>Transform to log-space:</strong></p>
+
+\[Y = \log_{10}(Q)\]
+
+<p><strong>Pearson Type III distribution:</strong></p>
+
+<p>Three-parameter distribution flexible for skewed data.</p>
+
+\[f(y) = \frac{\lambda^\alpha}{\Gamma(\alpha)}(y-\beta)^{\alpha-1}e^{-\lambda(y-\beta)}\]
+
+<p>Where:</p>
+<ul>
+  <li>$\alpha$ = shape parameter (related to skewness)</li>
+  <li>$\beta$ = location parameter (related to mean)</li>
+  <li>$\lambda$ = scale parameter (related to std dev)</li>
+  <li>$\Gamma(\alpha)$ = gamma function</li>
+</ul>
+
+<p><strong>Method of moments:</strong></p>
+
+<p>Parameters estimated from sample statistics:</p>
+
+<p><strong>Mean:</strong> $\bar{y} = \frac{1}{n}\sum y_i$</p>
+
+<p><strong>Standard deviation:</strong> $s_y = \sqrt{\frac{1}{n-1}\sum(y_i - \bar{y})^2}$</p>
+
+<p><strong>Skew coefficient:</strong> $G = \frac{n\sum(y_i - \bar{y})^3}{(n-1)(n-2)s_y^3}$</p>
+
+<p><strong>Flood quantile formula:</strong></p>
+
+\[y_T = \bar{y} + K_T \times s_y\]
+
+<p>Where $K_T$ = frequency factor (function of skew $G$ and return period $T$)</p>
+
+<p><strong>Back-transform:</strong></p>
+
+\[Q_T = 10^{y_T}\]
+
+<h3 id="frequency-factor-tables">Frequency Factor Tables</h3>
+
+<p><strong>$K_T$ values</strong> tabulated by USGS (Bulletin 17C, Appendix 3)</p>
+
+<p><strong>Example values</strong> for selected skew and return periods:</p>
+
+<table>
+  <thead>
+    <tr>
+      <th>G</th>
+      <th>T=10</th>
+      <th>T=25</th>
+      <th>T=50</th>
+      <th>T=100</th>
+      <th>T=500</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>-0.4</td>
+      <td>1.32</td>
+      <td>1.87</td>
+      <td>2.23</td>
+      <td>2.56</td>
+      <td>3.27</td>
+    </tr>
+    <tr>
+      <td>0.0</td>
+      <td>1.28</td>
+      <td>1.75</td>
+      <td>2.05</td>
+      <td>2.33</td>
+      <td>2.88</td>
+    </tr>
+    <tr>
+      <td>+0.4</td>
+      <td>1.22</td>
+      <td>1.61</td>
+      <td>1.85</td>
+      <td>2.08</td>
+      <td>2.49</td>
+    </tr>
+    <tr>
+      <td>+1.0</td>
+      <td>1.10</td>
+      <td>1.34</td>
+      <td>1.49</td>
+      <td>1.62</td>
+      <td>1.88</td>
+    </tr>
+  </tbody>
+</table>
+
+<p><strong>Pattern:</strong> Higher positive skew → lower $K_T$ for same return period</p>
+
+<p><strong>Interpretation:</strong> Positively skewed distributions have heavier upper tail already captured in mean/std dev</p>
+
+<h3 id="regional-skew">Regional Skew</h3>
+
+<p><strong>Problem:</strong> Sample skew unstable (requires long records)</p>
+
+<p><strong>Solution:</strong> Generalized skew from regional analysis</p>
+
+<p><strong>Weighted skew:</strong></p>
+
+\[G_w = \frac{MSE_G \times G + MSE_r \times G_r}{MSE_G + MSE_r}\]
+
+<p>Where:</p>
+<ul>
+  <li>$G$ = station skew</li>
+  <li>$G_r$ = regional skew (from USGS maps)</li>
+  <li>$MSE$ = mean square error (weighting factor)</li>
+</ul>
+
+<p><strong>Typical:</strong> Regional skew map provides $G_r \approx 0$ to $+0.5$ depending on location</p>
+
+<hr />
+
+<h2 id="3-building-the-mathematical-model">3. Building the Mathematical Model</h2>
+
+<h3 id="step-by-step-lp3-analysis">Step-by-Step LP3 Analysis</h3>
+
+<p><strong>Step 1: Assemble annual peak data</strong></p>
+
+<p>Minimum 10 years, prefer 30+</p>
+
+<p><strong>Step 2: Check for outliers</strong></p>
+
+<p><strong>High outliers:</strong> Peaks unusually large (different flood mechanism?)</p>
+
+<p><strong>Low outliers:</strong> Peaks unusually small (dam operation, drought?)</p>
+
+<p><strong>Grubbs-Beck test:</strong> Statistical outlier detection</p>
+
+<p>Retain outliers if physically plausible.</p>
+
+<p><strong>Step 3: Transform to logarithms</strong></p>
+
+\[y_i = \log_{10}(Q_i)\]
+
+<p><strong>Step 4: Calculate sample statistics</strong></p>
+
+\[\bar{y} = \frac{1}{n}\sum_{i=1}^n y_i\]
+
+\[s_y = \sqrt{\frac{1}{n-1}\sum_{i=1}^n (y_i - \bar{y})^2}\]
+
+\[G = \frac{n}{(n-1)(n-2)s_y^3}\sum_{i=1}^n (y_i - \bar{y})^3\]
+
+<p><strong>Step 5: Apply weighted skew</strong> (combine station and regional)</p>
+
+<p><strong>Step 6: Select frequency factors</strong> from tables</p>
+
+<p><strong>Step 7: Calculate flood quantiles</strong></p>
+
+\[y_T = \bar{y} + K_T(G_w, T) \times s_y\]
+
+\[Q_T = 10^{y_T}\]
+
+<p><strong>Step 8: Estimate confidence intervals</strong></p>
+
+\[SE(y_T) = s_y \sqrt{\frac{1 + K_T^2/2}{n}}\]
+
+<p>95% CI: $y_T \pm 1.96 \times SE(y_T)$</p>
+
+<h3 id="plotting-position">Plotting Position</h3>
+
+<p><strong>Empirical probability</strong> for observed peaks:</p>
+
+\[P_i = \frac{i}{n+1}\]
+
+<p>Where $i$ = rank (1 = largest)</p>
+
+<p><strong>Return period:</strong></p>
+
+\[T_i = \frac{1}{P_i}\]
+
+<p><strong>Plot</strong> observed $(T_i, Q_i)$ vs fitted curve $Q_T$</p>
+
+<p><strong>Visual check</strong> of distribution fit</p>
+
+<hr />
+
+<h2 id="4-worked-example-by-hand">4. Worked Example by Hand</h2>
+
+<p><strong>Problem:</strong> Estimate design floods for bridge design.</p>
+
+<p><strong>River:</strong> Tributary with 15 years of annual peak data</p>
+
+<p><strong>Annual peaks (m³/s):</strong></p>
+
+<table>
+  <thead>
+    <tr>
+      <th>Year</th>
+      <th>Peak Q</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>2011</td>
+      <td>450</td>
+    </tr>
+    <tr>
+      <td>2012</td>
+      <td>580</td>
+    </tr>
+    <tr>
+      <td>2013</td>
+      <td>720</td>
+    </tr>
+    <tr>
+      <td>2014</td>
+      <td>390</td>
+    </tr>
+    <tr>
+      <td>2015</td>
+      <td>510</td>
+    </tr>
+    <tr>
+      <td>2016</td>
+      <td>680</td>
+    </tr>
+    <tr>
+      <td>2017</td>
+      <td>820</td>
+    </tr>
+    <tr>
+      <td>2018</td>
+      <td>470</td>
+    </tr>
+    <tr>
+      <td>2019</td>
+      <td>540</td>
+    </tr>
+    <tr>
+      <td>2020</td>
+      <td>610</td>
+    </tr>
+    <tr>
+      <td>2021</td>
+      <td>380</td>
+    </tr>
+    <tr>
+      <td>2022</td>
+      <td>650</td>
+    </tr>
+    <tr>
+      <td>2023</td>
+      <td>490</td>
+    </tr>
+    <tr>
+      <td>2024</td>
+      <td>560</td>
+    </tr>
+    <tr>
+      <td>2025</td>
+      <td>530</td>
+    </tr>
+  </tbody>
+</table>
+
+<p><strong>Regional skew:</strong> $G_r = +0.2$ (from USGS map)</p>
+
+<p>Calculate 10-year, 50-year, and 100-year floods.</p>
+
+<h3 id="solution">Solution</h3>
+
+<p><strong>Step 1: Transform to logarithms</strong></p>
+
+\[y_i = \log_{10}(Q_i)\]
+
+<table>
+  <thead>
+    <tr>
+      <th>Year</th>
+      <th>Q</th>
+      <th>log₁₀(Q)</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>2011</td>
+      <td>450</td>
+      <td>2.653</td>
+    </tr>
+    <tr>
+      <td>2012</td>
+      <td>580</td>
+      <td>2.763</td>
+    </tr>
+    <tr>
+      <td>2013</td>
+      <td>720</td>
+      <td>2.857</td>
+    </tr>
+    <tr>
+      <td>…</td>
+      <td>…</td>
+      <td>…</td>
+    </tr>
+  </tbody>
+</table>
+
+<p><strong>Step 2: Calculate mean</strong></p>
+
+\[\bar{y} = \frac{1}{15}(2.653 + 2.763 + ... + 2.724) = \frac{40.897}{15} = 2.726\]
+
+<p><strong>Step 3: Calculate standard deviation</strong></p>
+
+\[s_y = \sqrt{\frac{1}{14}\sum(y_i - 2.726)^2}\]
+
+<p>Example deviation: $(2.653 - 2.726)^2 = 0.00533$</p>
+
+<p>Sum of squared deviations = 0.2156</p>
+
+\[s_y = \sqrt{\frac{0.2156}{14}} = \sqrt{0.0154} = 0.124\]
+
+<p><strong>Step 4: Calculate station skew</strong></p>
+
+\[G = \frac{15}{14 \times 13 \times 0.124^3}\sum(y_i - 2.726)^3\]
+
+<p>Example cubed deviation: $(2.653 - 2.726)^3 = -0.000389$</p>
+
+<p>Sum of cubed deviations = +0.000821</p>
+
+\[G = \frac{15 \times 0.000821}{182 \times 0.00191} = \frac{0.0123}{0.348} = +0.035\]
+
+<p><strong>Low skew</strong> (nearly symmetric)</p>
+
+<p><strong>Step 5: Weighted skew</strong></p>
+
+<p>Assume $MSE_G = 0.30$ (typical for $n=15$), $MSE_r = 0.25$</p>
+
+\[G_w = \frac{0.30 \times 0.035 + 0.25 \times 0.2}{0.30 + 0.25} = \frac{0.0105 + 0.050}{0.55} = 0.110\]
+
+<p><strong>Use $G_w = 0.11$ for frequency factors</strong></p>
+
+<p><strong>Step 6: Frequency factors</strong> (interpolated from tables)</p>
+
+<p>For $G = 0.11$:</p>
+<ul>
+  <li>$K_{10} = 1.27$</li>
+  <li>$K_{50} = 2.01$</li>
+  <li>$K_{100} = 2.29$</li>
+</ul>
+
+<p><strong>Step 7: Calculate flood quantiles</strong></p>
+
+<p><strong>10-year flood:</strong></p>
+
+\[y_{10} = 2.726 + 1.27 \times 0.124 = 2.726 + 0.157 = 2.883\]
+
+\[Q_{10} = 10^{2.883} = 764 \text{ m}^3\text{/s}\]
+
+<p><strong>50-year flood:</strong></p>
+
+\[y_{50} = 2.726 + 2.01 \times 0.124 = 2.726 + 0.249 = 2.975\]
+
+\[Q_{50} = 10^{2.975} = 944 \text{ m}^3\text{/s}\]
+
+<p><strong>100-year flood:</strong></p>
+
+\[y_{100} = 2.726 + 2.29 \times 0.124 = 2.726 + 0.284 = 3.010\]
+
+\[Q_{100} = 10^{3.010} = 1023 \text{ m}^3\text{/s}\]
+
+<p><strong>Step 8: Confidence intervals</strong> (95%)</p>
+
+\[SE(y_{100}) = 0.124 \sqrt{\frac{1 + 2.29^2/2}{15}} = 0.124 \sqrt{\frac{3.62}{15}} = 0.124 \times 0.491 = 0.061\]
+
+\[y_{100} \pm 1.96 \times 0.061 = 3.010 \pm 0.120\]
+
+<p>Range: $y = 2.890$ to $3.130$</p>
+
+\[Q_{100} = 10^{2.890} \text{ to } 10^{3.130} = 776 \text{ to } 1349 \text{ m}^3\text{/s}\]
+
+<p><strong>Wide uncertainty:</strong> 776-1349 cms (±28%)</p>
+
+<p><strong>Step 9: Design recommendation</strong></p>
+
+<p><strong>Bridge design:</strong> Use upper confidence limit for safety</p>
+
+<p><strong>Design Q₁₀₀ = 1350 m³/s</strong></p>
+
+<hr />
+
+<h2 id="5-computational-implementation">5. Computational Implementation</h2>
+
+<p>Below is interactive flood frequency analyzer.</p>
+
+<div class="viz-container" id="flood-freq-viz">
+  <div class="controls">
+    <label>
+      Record length (years):
+      <input type="range" id="record-length" min="10" max="100" step="5" value="30" />
+      <span id="length-val">30</span>
+    </label>
+    <label>
+      Skew coefficient:
+      <input type="range" id="skew" min="-0.5" max="1.5" step="0.1" value="0.2" />
+      <span id="skew-val">0.2</span>
+    </label>
+    <label>
+      Mean flow (log cms):
+      <input type="range" id="mean-log" min="2.0" max="3.5" step="0.1" value="2.7" />
+      <span id="mean-val">2.7</span>
+    </label>
+    <div class="flood-info">
+      <p><strong>Q₁₀:</strong> <span id="q10">--</span> m³/s</p>
+      <p><strong>Q₅₀:</strong> <span id="q50">--</span> m³/s</p>
+      <p><strong>Q₁₀₀:</strong> <span id="q100">--</span> m³/s</p>
+      <p><strong>CI width (Q₁₀₀):</strong> ±<span id="ci-width">--</span>%</p>
+    </div>
+  </div>
+  <div id="flood-canvas" style="height: 400px;"></div>
+</div>
+
+<script type="module">
+await new Promise(r => {
+  const c = () => typeof echarts !== 'undefined' ? r() : setTimeout(c, 50);
+  c();
+});
+
+(function() {
+  const chart = echarts.init(document.getElementById('flood-canvas'));
+  let recordLength = 30, skew = 0.3, meanLog = 2.7;
+  const stdLog = 0.15;
+
+  // K_T table: rows = return period T, cols = skew G
+  // Source: USGS Bulletin 17C, Appendix 3
+  const T_VALS = [2, 5, 10, 25, 50, 100, 200];
+  const G_VALS = [-0.5, 0.0, 0.5, 1.0, 1.5];
+  const K_TABLE = [
+  //  G: -0.5   0.0   0.5   1.0   1.5
+       [0.03,  0.00, -0.05,-0.16,-0.29], // T=2
+       [0.84,  0.84,  0.83,  0.76,  0.69], // T=5
+       [1.34,  1.28,  1.16,  1.00,  0.82], // T=10
+       [1.91,  1.75,  1.52,  1.25,  0.97], // T=25
+       [2.28,  2.05,  1.77,  1.45,  1.13], // T=50
+       [2.63,  2.33,  1.99,  1.62,  1.27], // T=100
+       [2.97,  2.58,  2.18,  1.76,  1.38], // T=200
+  ];
+
+  // Bilinear interpolation in (log T, G) space
+  function getK(G, T) {
+    const Gc = Math.max(G_VALS[0], Math.min(G_VALS[G_VALS.length-1], G));
+    const Tc = Math.max(T_VALS[0], Math.min(T_VALS[T_VALS.length-1], T));
+    const logT = Math.log(Tc);
+
+    // Find G bracket
+    let gi = G_VALS.length - 2;
+    for (let i = 0; i < G_VALS.length - 1; i++) {
+      if (Gc <= G_VALS[i+1]) { gi = i; break; }
+    }
+    const gFrac = (Gc - G_VALS[gi]) / (G_VALS[gi+1] - G_VALS[gi]);
+
+    // Find T bracket (log space)
+    let ti = T_VALS.length - 2;
+    for (let i = 0; i < T_VALS.length - 1; i++) {
+      if (Tc <= T_VALS[i+1]) { ti = i; break; }
+    }
+    const logT1 = Math.log(T_VALS[ti]);
+    const logT2 = Math.log(T_VALS[ti+1]);
+    const tFrac = (logT - logT1) / (logT2 - logT1);
+
+    // Bilinear interpolation
+    const k00 = K_TABLE[ti][gi];
+    const k01 = K_TABLE[ti][gi+1];
+    const k10 = K_TABLE[ti+1][gi];
+    const k11 = K_TABLE[ti+1][gi+1];
+    return (k00*(1-tFrac)*(1-gFrac) + k10*tFrac*(1-gFrac) +
+            k01*(1-tFrac)*gFrac    + k11*tFrac*gFrac);
+  }
+
+  function render() {
+    const k10  = getK(skew, 10);
+    const k50  = getK(skew, 50);
+    const k100 = getK(skew, 100);
+
+    const q10  = Math.pow(10, meanLog + k10  * stdLog);
+    const q50  = Math.pow(10, meanLog + k50  * stdLog);
+    const q100 = Math.pow(10, meanLog + k100 * stdLog);
+    const se100 = stdLog * Math.sqrt((1 + k100*k100/2) / recordLength);
+    const ciWidth = Math.round((1.96 * se100 / (meanLog + k100*stdLog)) * 100);
+
+    document.getElementById('q10').textContent  = q10.toFixed(0);
+    document.getElementById('q50').textContent  = q50.toFixed(0);
+    document.getElementById('q100').textContent = q100.toFixed(0);
+    document.getElementById('ci-width').textContent = ciWidth;
+
+    const pts = [], upper = [], lower = [];
+    for (let t = 2; t <= 200; t *= 1.08) {
+      const k  = getK(skew, t);
+      const y  = meanLog + k * stdLog;
+      const se = stdLog * Math.sqrt((1 + k*k/2) / recordLength);
+      pts.push([t, Math.pow(10, y)]);
+      upper.push([t, Math.pow(10, y + 1.96*se)]);
+      lower.push([t, Math.pow(10, y - 1.96*se)]);
+    }
+
+    chart.setOption({
+      backgroundColor: 'transparent',
+      title: {
+        text: 'Flood Frequency Curve — Log-Pearson Type III',
+        left: 'center',
+        textStyle: {color: 'var(--text)', fontSize: 14, fontWeight: 'normal'},
+      },
+      tooltip: {trigger: 'axis', formatter: p => `T = ${p[0].data[0].toFixed(1)} yr<br>Q = ${p[0].data[1].toFixed(0)} m³/s`},
+      legend: {bottom: 0, textStyle: {color: 'var(--text-2)'}},
+      grid: {left: 70, right: 30, top: 55, bottom: 50},
+      xAxis: {
+        type: 'log',
+        name: 'Return period (years)',
+        nameLocation: 'middle',
+        nameGap: 30,
+        nameTextStyle: {color: 'var(--text-2)'},
+        min: 2, max: 200,
+        axisLabel: {color: 'var(--text-2)'},
+      },
+      yAxis: {
+        type: 'log',
+        name: 'Discharge (m³/s)',
+        nameLocation: 'middle',
+        nameGap: 55,
+        nameTextStyle: {color: 'var(--text-2)'},
+        axisLabel: {color: 'var(--text-2)'},
+      },
+      series: [
+        {name: 'Fitted curve', type: 'line', showSymbol: false, data: pts,
+          lineStyle: {color: '#4e8ac4', width: 2.5}},
+        {name: '95% CI', type: 'line', showSymbol: false, data: upper,
+          lineStyle: {color: '#4e8ac4', width: 1, type: 'dashed'}, itemStyle: {color: '#4e8ac4'}},
+        {name: '95% CI (lower)', type: 'line', showSymbol: false, data: lower,
+          lineStyle: {color: '#4e8ac4', width: 1, type: 'dashed'}, legend: {show: false},
+          itemStyle: {color: '#4e8ac4'}},
+      ]
+    });
+  }
+
+  ['record-length', 'skew', 'mean-log'].forEach(id => {
+    document.getElementById(id).addEventListener('input', e => {
+      const v = +e.target.value;
+      if (id === 'record-length') { recordLength = v; document.getElementById('length-val').textContent = v; }
+      else if (id === 'skew')     { skew = v;         document.getElementById('skew-val').textContent  = v; }
+      else                        { meanLog = v;       document.getElementById('mean-val').textContent  = v; }
+      render();
+    });
+  });
+
+  render();
+})();
+</script>
+
+<hr />
+
+<h2 id="6-summary">6. Summary</h2>
+
+<p>Flood frequency analysis estimates design floods via Log-Pearson Type III distribution fitted to annual peak streamflow data transforming to logarithmic space for skewed distributions. Frequency factors K_T derived from skew coefficient and return period enabling quantile calculation via y_T = mean + K_T × std_dev. USGS Bulletin 17C standard method incorporating regional skew weighting and outlier detection improving estimates. Confidence intervals widen significantly for rare events with ±20-40% typical for 100-year estimates from 30-year records. Applications span bridge design, dam spillways, floodplain mapping, and flood insurance requiring return periods from 10 to 10,000 years depending on consequence of failure.</p>
+
+<hr />
+
+      </div>
+
+      
+
+
+
+      
+
+  
+  
+  
+  
+
+
+
+      <!-- essay-footer-notes.html — References / endnotes section.
+     Hidden by default; assets/js/essay/core.js shows it and populates
+     #essay-endnotes-list from [data-cite] elements in the content.
+
+     In posts, create citation markers with:
+       <cite data-cite="Author, Title, URL">1</cite>
+     The JS collects these and renders a numbered reference list here. -->
+
+<footer class="essay-endnotes" id="essay-endnotes" aria-label="References" hidden>
+  <div class="essay-endnotes-inner">
+    <h2 class="essay-endnotes-heading">References</h2>
+    <ol class="essay-endnotes-list" id="essay-endnotes-list">
+      <!-- Populated at runtime by assets/js/essay/core.js buildEndnotes() -->
+    </ol>
+  </div>
+</footer>
+
+
+      
+
+      
+
+      
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    </article>
+  </main>
+
+  <aside
+    class="essay-sidenotes"
+    id="essay-sidenotes"
+    aria-label="Margin notes"
+  ></aside>
+
+</div>
+
+</div>
+
+<footer>
+  <div class="footer-inner">
+
+    <!-- Col 1: Brand -->
+    <div class="footer-brand">
+      <div class="footer-brand-logo">
+        
+        <img loading="lazy" src="/assets/images/logo.webp" alt="WaywardHouse" width="28" height="28">
+        
+        WaywardHouse<span>.</span>
+      </div>
+      
+      
+      <p class="footer-brand-desc">Understanding how place, economy, and environment interact — through analysis, modelling, and open tools.</p>
+      
+
+      <div class="footer-social">
+        
+        
+        
+        <a href="/feed.xml" class="social-icon" target="_blank" rel="noopener noreferrer" aria-label="RSS feed">
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M4 11a9 9 0 0 1 9 9"/>
+            <path d="M4 4a16 16 0 0 1 16 16"/>
+            <circle cx="5" cy="19" r="1"/>
+          </svg>
+        </a>
+      </div>
+    </div>
+
+    <!-- Col 2: Topics (configurable via footer_topics, falls back to auto-categories) -->
+    <nav aria-labelledby="footer-topics">
+      <h3 class="footer-col-title" id="footer-topics">Reading</h3>
+      <ul class="footer-links">
+        
+          
+          <li><a href="/topics/">Essays</a></li>
+          
+          <li><a href="/series/">Modelling</a></li>
+          
+          <li><a href="/archive/">Archive</a></li>
+          
+          <li><a href="/start-here/">Start Here</a></li>
+          
+        
+      </ul>
+    </nav>
+
+    <!-- Col 3: Secondary navigation -->
+    
+    <nav aria-labelledby="footer-company">
+      <h3 class="footer-col-title" id="footer-company">Site</h3>
+      <ul class="footer-links">
+        
+        <li><a href="/start-here/">Start Here</a></li>
+        
+        <li><a href="/about/">About</a></li>
+        
+        <li><a href="/contact/">Contact</a></li>
+        
+      </ul>
+    </nav>
+    
+
+    <!-- Col 4: Resources -->
+    <nav aria-labelledby="footer-resources">
+      <h3 class="footer-col-title" id="footer-resources">Resources</h3>
+      <ul class="footer-links">
+        <li><a href="/archive/">Archive</a></li>
+        <li><a href="/feed.xml">RSS Feed</a></li>
+        <li><a href="/topics/">All Topics</a></li>
+      </ul>
+    </nav>
+
+  </div><!-- /.footer-inner -->
+
+  <div class="footer-bottom">
+    <span class="footer-copy">
+      &copy; 2026 WaywardHouse.
+    </span>
+    <div class="footer-legal">
+      <a href="/privacy/">Privacy Policy</a>
+      <a href="/terms/">Terms of Service</a>
+    </div>
+  </div>
+
+</footer>
+
+
+<!-- Alpine.js bundle -->
+<script type="module" src="/assets/dist/main.js"></script>
+
+<!-- Visualization runtime — detects and loads CDN libraries dynamically -->
+<script type="module" src="/assets/js/core.js"></script>
+
+<!-- Search overlay — event-driven: nav button $dispatches 'search:open' -->
+<div
+  x-data="search"
+  x-init="init()"
+  @search:open.window="open()"
+>
+  <div
+    class="search-overlay"
+    x-show="isOpen"
+    x-transition:enter="transition ease-out duration-150"
+    x-transition:enter-start="opacity-0"
+    x-transition:enter-end="opacity-100"
+    x-transition:leave="transition ease-in duration-100"
+    x-transition:leave-start="opacity-100"
+    x-transition:leave-end="opacity-0"
+    @click.self="close()"
+    style="display: none;"
+    role="dialog"
+    aria-modal="true"
+    aria-label="Search"
+  >
+    <div class="search-panel">
+      <div class="search-input-wrap">
+        <svg class="search-icon" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <circle cx="11" cy="11" r="8"/>
+          <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+        </svg>
+        <input
+          class="search-input"
+          type="search"
+          placeholder="Search posts…"
+          x-model="query"
+          x-ref="input"
+          @input.debounce.300ms="runSearch()"
+          @keydown.escape="close()"
+          autocomplete="off"
+          spellcheck="false"
+          aria-label="Search query"
+        >
+        <kbd class="search-esc" aria-hidden="true">ESC</kbd>
+      </div>
+
+      <div class="search-results" x-show="query.trim().length > 0">
+        <div class="search-status" x-show="loading" aria-live="polite">Searching…</div>
+        <div class="search-status" x-show="!loading && results.length === 0" aria-live="polite">
+          No results for "<span x-text="query"></span>"
+        </div>
+        <ul class="search-result-list" x-show="!loading && results.length > 0" role="list">
+          <template x-for="result in results" :key="result.url">
+            <li>
+              <a :href="result.url" class="search-result-item" @click="close()">
+                <div class="search-result-title" x-text="result.meta?.title || result.url"></div>
+                <div class="search-result-excerpt" x-html="result.excerpt"></div>
+              </a>
+            </li>
+          </template>
+        </ul>
+      </div>
+    </div>
+  </div>
+</div>
+
+</body>
+</html>

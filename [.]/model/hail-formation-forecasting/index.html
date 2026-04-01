@@ -1,0 +1,1341 @@
+<!DOCTYPE html>
+
+<html lang="en" data-brand="wayward" data-theme="light">
+<head>
+  <meta charset="utf-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Hail Formation and Forecasting — WaywardHouse</title>
+<meta name="description" content="How large will the hail be and where will it fall? Hailstone growth depends on updraft strength, temperature profile, and liquid water content. This model derives terminal velocity equations, implements...">
+
+<!-- Dark mode flash prevention — runs synchronously before first paint -->
+<script>
+  (function () {
+    var defaultDark = 'light' === 'dark';
+    var s = localStorage.getItem('theme');
+    var dark = s !== null ? s === 'dark' : defaultDark;
+    document.documentElement.dataset.theme = dark ? 'dark' : 'light';
+  })();
+</script>
+
+<!-- Preconnect to CDN domains used by the viz runtime -->
+<link rel="preconnect" href="https://cdn.jsdelivr.net">
+<link rel="preconnect" href="https://unpkg.com">
+<link rel="preconnect" href="https://esm.sh">
+<link rel="preconnect" href="https://api.mapbox.com">
+<link rel="preconnect" href="https://events.mapbox.com">
+
+
+<script>window.MAPBOX_TOKEN = 'pk.eyJ1IjoiYnJlYWRlZGNvZCIsImEiOiJjbW0xa25qc2EwMmtwMnJwejJlNndqdnoxIn0._7I9PwXuFLrOQINVZ84y1w';</script>
+
+
+<!-- Fonts -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:ital,wght@0,300;0,400;0,600;0,700;0,800;0,900;1,700;1,800&family=Barlow:wght@300;400&family=IBM+Plex+Mono:ital,wght@0,300;0,400;0,500;1,300&family=Literata:ital,opsz,wght@0,7..72,300;0,7..72,400;0,7..72,500;1,7..72,300;1,7..72,400&display=swap" rel="stylesheet">
+
+<!-- Theme stylesheet (Vite build output) -->
+<link rel="stylesheet" href="/assets/dist/main.css">
+
+<!-- Brand token overrides — loaded after main.css so variables cascade correctly -->
+
+<link rel="stylesheet" href="/assets/css/brand-wayward.css">
+
+
+
+<!-- Syntax highlighting (Rouge — light + dark) -->
+<link rel="stylesheet" href="/assets/css/syntax.css">
+
+<!-- Begin Jekyll SEO tag v2.8.0 -->
+<title>Hail Formation and Forecasting | WaywardHouse</title>
+<meta name="generator" content="Jekyll v4.4.1" />
+<meta property="og:title" content="Hail Formation and Forecasting" />
+<meta property="og:locale" content="en" />
+<meta name="description" content="How large will the hail be and where will it fall? Hailstone growth depends on updraft strength, temperature profile, and liquid water content. This model derives terminal velocity equations, implements accretion models, demonstrates wet vs dry growth regimes, and forecasts maximum hail size from storm parameters." />
+<meta property="og:description" content="How large will the hail be and where will it fall? Hailstone growth depends on updraft strength, temperature profile, and liquid water content. This model derives terminal velocity equations, implements accretion models, demonstrates wet vs dry growth regimes, and forecasts maximum hail size from storm parameters." />
+<link rel="canonical" href="https://wayward.house/model/hail-formation-forecasting/" />
+<meta property="og:url" content="https://wayward.house/model/hail-formation-forecasting/" />
+<meta property="og:site_name" content="WaywardHouse" />
+<meta property="og:image" content="https://wayward.house/assets/images/atmospheric-and-hazards.webp" />
+<meta property="og:type" content="article" />
+<meta property="article:published_time" content="2026-02-27T00:00:00-07:00" />
+<meta name="twitter:card" content="summary_large_image" />
+<meta property="twitter:image" content="https://wayward.house/assets/images/atmospheric-and-hazards.webp" />
+<meta property="twitter:title" content="Hail Formation and Forecasting" />
+<meta name="twitter:site" content="@" />
+<script type="application/ld+json">
+{"@context":"https://schema.org","@type":"BlogPosting","dateModified":"2026-03-17T21:37:31-06:00","datePublished":"2026-02-27T00:00:00-07:00","description":"How large will the hail be and where will it fall? Hailstone growth depends on updraft strength, temperature profile, and liquid water content. This model derives terminal velocity equations, implements accretion models, demonstrates wet vs dry growth regimes, and forecasts maximum hail size from storm parameters.","headline":"Hail Formation and Forecasting","image":"https://wayward.house/assets/images/atmospheric-and-hazards.webp","mainEntityOfPage":{"@type":"WebPage","@id":"https://wayward.house/model/hail-formation-forecasting/"},"publisher":{"@type":"Organization","logo":{"@type":"ImageObject","url":"https://wayward.house/assets/images/logo.webp"}},"url":"https://wayward.house/model/hail-formation-forecasting/"}</script>
+<!-- End Jekyll SEO tag -->
+
+
+
+<!-- Cloudflare Web Analytics -->
+<script defer src="https://static.cloudflareinsights.com/beacon.min.js"
+  data-cf-beacon='{"token": "62c47d78bf9d4c80972d4e6242d79ff8"}'></script>
+
+
+</head>
+<body class="
+  model-template
+   tag-modelling
+   tag-hash-math
+  
+   tag-hash-viz
+  
+  
+  
+  
+  
+  
+">
+
+<a href="#main-content" class="skip-link">Skip to content</a>
+
+<header class="nav" x-data="{ open: false }">
+  <div class="nav-inner">
+
+    <!-- Logo -->
+    <a href="/" class="nav-logo">
+      
+      <img loading="lazy" src="/assets/images/logo.webp" alt="WaywardHouse" width="32" height="32">
+      
+      WaywardHouse<span>.</span>
+    </a>
+
+    <!-- Desktop nav links -->
+    <ul class="nav-links" role="list">
+      
+      <li>
+        <a href="/topics/">Essays</a>
+      </li>
+      
+      <li>
+        <a href="/series/">Modelling</a>
+      </li>
+      
+      <li>
+        <a href="/about/">About</a>
+      </li>
+      
+    </ul>
+
+    <!-- Actions -->
+    <div class="nav-actions">
+
+      <!-- Search button -->
+      <button
+        class="search-toggle"
+        type="button"
+        aria-label="Search (⌘K)"
+        title="Search (⌘K)"
+        @click="$dispatch('search:open')"
+      >
+        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <circle cx="11" cy="11" r="8"/>
+          <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+        </svg>
+      </button>
+
+      <!-- Dark mode toggle -->
+      <button
+        class="theme-toggle"
+        x-data="darkMode"
+        x-init="init()"
+        @click="toggle()"
+        :aria-label="dark ? 'Switch to light mode' : 'Switch to dark mode'"
+        type="button"
+      >
+        <!-- Sun icon (shown in light mode) -->
+        <svg class="icon-sun" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">
+          <circle cx="12" cy="12" r="5"/>
+          <line x1="12" y1="1" x2="12" y2="3"/>
+          <line x1="12" y1="21" x2="12" y2="23"/>
+          <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/>
+          <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/>
+          <line x1="1" y1="12" x2="3" y2="12"/>
+          <line x1="21" y1="12" x2="23" y2="12"/>
+          <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/>
+          <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>
+        </svg>
+        <!-- Moon icon (shown in dark mode) -->
+        <svg class="icon-moon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">
+          <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+        </svg>
+      </button>
+
+      <!-- Hamburger (mobile only) -->
+      <button
+        class="mobile-nav-toggle"
+        @click="open = !open"
+        :aria-expanded="open"
+        :aria-label="open ? 'Close menu' : 'Open menu'"
+        type="button"
+      >
+        <svg x-show="!open" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <line x1="3" y1="6" x2="21" y2="6"/>
+          <line x1="3" y1="12" x2="21" y2="12"/>
+          <line x1="3" y1="18" x2="21" y2="18"/>
+        </svg>
+        <svg x-show="open" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <line x1="18" y1="6" x2="6" y2="18"/>
+          <line x1="6" y1="6" x2="18" y2="18"/>
+        </svg>
+      </button>
+
+    </div><!-- /.nav-actions -->
+  </div><!-- /.nav-inner -->
+
+  <!-- Mobile drawer -->
+  <div
+    class="mobile-nav"
+    x-show="open"
+    x-transition:enter="transition ease-out duration-200"
+    x-transition:enter-start="opacity-0 -translate-y-1"
+    x-transition:enter-end="opacity-100 translate-y-0"
+    x-transition:leave="transition ease-in duration-150"
+    x-transition:leave-start="opacity-100 translate-y-0"
+    x-transition:leave-end="opacity-0 -translate-y-1"
+    @click.outside="open = false"
+    @keydown.escape.window="open = false"
+  >
+    <ul role="list">
+      
+      <li>
+        <a href="/topics/" @click="open = false">Essays</a>
+      </li>
+      
+      <li>
+        <a href="/series/" @click="open = false">Modelling</a>
+      </li>
+      
+      <li>
+        <a href="/about/" @click="open = false">About</a>
+      </li>
+      
+    </ul>
+  </div><!-- /.mobile-nav -->
+
+</header>
+
+
+<div id="main-content">
+  <!-- Essay stylesheet and runtime — self-contained -->
+<link rel="stylesheet" href="/assets/css/essay.css">
+<script type="module" src="/assets/js/essay/core.js"></script>
+
+<div class="essay-layout" id="essay-layout">
+
+  <!-- essay-toc.html — Sticky table of contents (left column).
+     The <ol> is empty on load; assets/js/essay/core.js populates it
+     from h2/h3 elements found in #essay-content after the page renders. -->
+
+<nav class="essay-toc" id="essay-toc" aria-label="Table of contents">
+  <div class="essay-toc-inner">
+    <p class="essay-toc-heading" aria-hidden="true">Contents</p>
+    <ol class="essay-toc-list" id="essay-toc-list">
+      <!-- Populated at runtime by assets/js/essay/core.js buildToc() -->
+    </ol>
+  </div>
+</nav>
+
+
+  <main class="essay-main" id="essay-main" role="main">
+    <article class="essay-article">
+
+      <!-- essay-hero.html — Header for computational essay template.
+     Displays feature image, tag label, title, excerpt, and post metadata. -->
+
+<header class="essay-hero">
+  
+  <figure class="essay-hero-figure">
+    <img
+      src="/assets/images/atmospheric-and-hazards.webp"
+      alt="Hail Formation and Forecasting"
+      class="essay-hero-img"
+      loading="eager"
+    >
+    
+  </figure>
+  
+
+  <div class="essay-hero-body">
+
+    
+    
+    
+    
+    
+    <nav class="essay-breadcrumb" aria-label="Series position">
+      
+      <a href="/series/6/" class="essay-breadcrumb-link">Computational geography atmospheric hazards</a>
+      
+      
+      <span class="essay-breadcrumb-sep" aria-hidden="true">›</span>
+      <span class="essay-breadcrumb-cluster">Severe Weather</span>
+      
+      
+      <span class="essay-breadcrumb-sep" aria-hidden="true">›</span>
+      <span class="essay-breadcrumb-pos">Model 6</span>
+      
+    </nav>
+    
+
+    <div class="essay-hero-labels">
+      
+      <a href="/topics/modelling/" class="essay-tag-label">modelling</a>
+      
+      
+      <span class="difficulty-badge difficulty-badge--4">Level 4</span>
+      
+    </div>
+
+    <h1 class="essay-title">Hail Formation and Forecasting</h1>
+
+    
+    <p class="essay-excerpt">How large will the hail be and where will it fall? Hailstone growth depends on updraft strength, temperature profile, and liquid water content. This model derives terminal velocity equations, implements accretion models, demonstrates wet vs dry growth regimes, and forecasts maximum hail size from storm parameters.
+</p>
+    
+
+    
+    <p class="essay-prereqs"><span class="essay-prereqs-label">Prerequisites:</span> terminal velocity, accretion rate, wet growth, hail size prediction</p>
+    
+
+    <div class="essay-meta">
+      
+      <div class="essay-meta-secondary">
+        <time class="essay-date" datetime="2026-02-27">27 Feb 2026</time>
+        
+        
+        <span class="essay-sep" aria-hidden="true">·</span>
+        <span class="essay-updated">Updated <time datetime="2026-03-17">17 Mar 2026</time></span>
+        
+        <span class="essay-sep" aria-hidden="true">·</span>
+        <span class="essay-reading-time">13 min read</span>
+      </div>
+    </div>
+  </div>
+</header>
+
+
+      
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<nav class="series-nav" aria-label="Series navigation">
+
+  <div class="series-nav-header">
+    <span class="series-nav-label">W</span>
+    <span class="series-nav-title">Severe Weather</span>
+  </div>
+
+  <ol class="series-nav-list">
+    
+    <li class="series-nav-item">
+      
+      <a href="/model/thunderstorm-dynamics/" class="series-nav-link">
+        <span class="series-nav-number">4</span>
+        Thunderstorm Dynamics and Severe Weather
+      </a>
+      
+    </li>
+    
+    <li class="series-nav-item">
+      
+      <a href="/model/tornado-formation-intensity/" class="series-nav-link">
+        <span class="series-nav-number">5</span>
+        Tornado Formation and Intensity
+      </a>
+      
+    </li>
+    
+    <li class="series-nav-item series-nav-item--current">
+      
+      <span class="series-nav-link series-nav-link--current" aria-current="page">
+        <span class="series-nav-number">6</span>
+        Hail Formation and Forecasting
+      </span>
+      
+    </li>
+    
+  </ol>
+
+  
+  <div class="series-nav-footer">
+    <a href="/series/6/" class="series-nav-all">
+      All 11 in this series &rarr;
+    </a>
+  </div>
+  
+
+</nav>
+
+
+
+
+      <div class="essay-content gh-content" id="essay-content">
+        <p>On 20 June 2020, a supercell thunderstorm tracked across the Red Deer area of Alberta and produced hailstones up to 71 mm in diameter — golf ball size — that fell for more than 20 minutes. The resulting crop damage across Lacombe and Red Deer counties reached an estimated $82 million. Insurance adjusters were in fields within days; helicopter flights measured crop loss extent using NDVI imagery. Alberta is among the most hail-prone regions in North America: the area southeast of Calgary and along the foothills sees 7–9 significant hail days per year, driven by the combination of extreme CAPE values from Gulf moisture and strong wind shear from the Rocky Mountain jet stream. The Insurance Bureau of Canada estimates hail causes an average of $1 billion in insured losses in Alberta annually.</p>
+
+<p>Hail grows inside the powerful updrafts of supercell thunderstorms. A hailstone begins as a small ice nucleus, is lofted into the cloud by the updraft, accretes supercooled water droplets and ice crystals as it rises and falls through different thermal zones, and eventually grows too heavy for the updraft to support. The maximum size it reaches is controlled by the updraft velocity (stronger updraft → more time aloft → larger hail), the liquid water content of the cloud, and the vertical temperature profile that determines the wet-growth and dry-growth regimes. The relationship between updraft velocity and hail size is not linear — it scales roughly as the cube root of the updraft kinetic energy — which means that forecasting giant hail requires accurate prediction of updraft intensity, which in turn requires accurate assessment of CAPE and shear. This model derives the terminal velocity and accretion physics, implements a hail growth trajectory model, and shows how storm parameters translate to maximum expected hail size.</p>
+
+<h2 id="1-the-question">1. The Question</h2>
+
+<p>Will this supercell produce baseball-sized hail?</p>
+
+<p><strong>Hail definition:</strong></p>
+
+<p>Ice particles ≥5 mm diameter (pea-sized or larger).</p>
+
+<p><strong>Damage thresholds:</strong></p>
+
+<p><strong>Pea (6 mm):</strong> Minimal crop damage<br />
+<strong>Quarter (25 mm, 1 inch):</strong> <strong>Severe criteria</strong>, car dents<br />
+<strong>Golf ball (44 mm, 1.75 inch):</strong> Car windshields broken<br />
+<strong>Baseball (70 mm, 2.75 inch):</strong> Roof damage, vehicle totaled<br />
+<strong>Softball (114 mm, 4.5 inch):</strong> Structural damage</p>
+
+<p><strong>Record:</strong> 8 inch (203 mm), Vivian SD 2010</p>
+
+<p><strong>Annual losses (USA):</strong> ~$1-2 billion</p>
+
+<p><strong>Applications:</strong></p>
+<ul>
+  <li>Agriculture (crop insurance)</li>
+  <li>Aviation safety</li>
+  <li>Severe weather warnings</li>
+  <li>Building/vehicle damage assessment</li>
+  <li>Climate studies</li>
+</ul>
+
+<hr />
+
+<h2 id="2-the-conceptual-model">2. The Conceptual Model</h2>
+
+<h3 id="terminal-velocity">Terminal Velocity</h3>
+
+<p><strong>Balance drag and gravity:</strong></p>
+
+\[F_d = F_g\]
+
+\[\frac{1}{2} \rho_a C_d A v_t^2 = m g\]
+
+<p>Where:</p>
+<ul>
+  <li>$\rho_a$ = air density (kg/m³)</li>
+  <li>$C_d$ = drag coefficient (~0.6 for sphere)</li>
+  <li>$A$ = cross-sectional area (m²)</li>
+  <li>$v_t$ = terminal velocity (m/s)</li>
+  <li>$m$ = mass (kg)</li>
+  <li>$g$ = 9.81 m/s²</li>
+</ul>
+
+<p><strong>For sphere:</strong></p>
+
+\[A = \pi r^2, \quad m = \frac{4}{3}\pi r^3 \rho_h\]
+
+<p><strong>Solving:</strong></p>
+
+\[v_t = \sqrt{\frac{8 r g \rho_h}{3 C_d \rho_a}}\]
+
+<p><strong>Hail (ice density $\rho_h = 900$ kg/m³):</strong></p>
+
+<p>\(v_t \approx 9 \sqrt{r}\) (m/s, $r$ in meters)</p>
+
+<p><strong>Example:</strong> 5 cm diameter (r = 0.025 m)</p>
+
+\[v_t = 9 \sqrt{0.025} = 9 \times 0.158 = 1.42 \times 9 \approx 14 \text{ m/s}\]
+
+<p><strong>Updraft must exceed 14 m/s</strong> to suspend this hailstone!</p>
+
+<h3 id="growth-regimes">Growth Regimes</h3>
+
+<p><strong>Dry growth:</strong></p>
+
+<p>Temperature &lt; -40°C or low liquid water content.</p>
+
+<p>Collected droplets freeze instantly.</p>
+
+<p><strong>Opaque ice</strong> (trapped air bubbles).</p>
+
+<p><strong>Wet growth:</strong></p>
+
+<p>Warmer temperature (-10 to 0°C) or high liquid water content.</p>
+
+<p>Droplets form liquid layer before freezing.</p>
+
+<p><strong>Clear ice</strong> (no air, denser).</p>
+
+<p><strong>Transition:</strong></p>
+
+<p>Depends on accretion rate vs heat removal rate.</p>
+
+<p><strong>Spongy hail:</strong></p>
+
+<p>Alternating dry/wet layers (trajectories through different cloud zones).</p>
+
+<h3 id="accretion-rate">Accretion Rate</h3>
+
+<p><strong>Mass growth:</strong></p>
+
+\[\frac{dm}{dt} = E \cdot A \cdot W \cdot v\]
+
+<p>Where:</p>
+<ul>
+  <li>$E$ = collection efficiency (~0.8)</li>
+  <li>$A$ = cross-sectional area</li>
+  <li>$W$ = liquid water content (g/m³)</li>
+  <li>$v$ = relative velocity (terminal fall + updraft)</li>
+</ul>
+
+<p><strong>For suspended hailstone</strong> ($v \approx$ updraft speed):</p>
+
+\[\frac{dm}{dt} = 0.8 \cdot \pi r^2 \cdot W \cdot w\]
+
+<p><strong>Typical:</strong> $W = 1-5$ g/m³, $w = 20-50$ m/s</p>
+
+<p><strong>Example:</strong> $r = 0.02$ m, $W = 3$ g/m³, $w = 30$ m/s</p>
+
+\[\frac{dm}{dt} = 0.8 \times 3.14 \times 0.02^2 \times 3 \times 30 = 0.091 \text{ g/s}\]
+
+<p><strong>Residence time in updraft:</strong> 5 minutes = 300 s</p>
+
+\[\Delta m = 0.091 \times 300 = 27.3 \text{ g}\]
+
+<p><strong>Final mass:</strong> ~50-100 g (golf ball to baseball)</p>
+
+<hr />
+
+<h2 id="3-building-the-mathematical-model">3. Building the Mathematical Model</h2>
+
+<h3 id="maximum-hail-size">Maximum Hail Size</h3>
+
+<p><strong>Balance condition:</strong></p>
+
+<p>Hailstone suspended when $v_t = w$ (updraft).</p>
+
+<p><strong>From terminal velocity:</strong></p>
+
+\[r_{max} = \frac{w^2}{81 g}\]
+
+<p>(Using $v_t = 9\sqrt{r}$, solved for $r$)</p>
+
+<p><strong>Simplified:</strong></p>
+
+<p>\(r_{max} = \frac{w^2}{800}\) (m, $w$ in m/s)</p>
+
+<p><strong>Example:</strong> $w = 40$ m/s</p>
+
+\[r_{max} = \frac{1600}{800} = 2 \text{ cm} = 20 \text{ mm diameter}\]
+
+<p><strong>Quarter-sized hail</strong> (severe threshold)</p>
+
+<p><strong>For softball (57 mm radius):</strong></p>
+
+\[w = \sqrt{800 \times 0.057} = \sqrt{45.6} = 67.5 \text{ m/s}\]
+
+<p><strong>Extreme updrafts required!</strong></p>
+
+<h3 id="mesh-maximum-expected-size-of-hail">MESH (Maximum Expected Size of Hail)</h3>
+
+<p><strong>Radar-based estimate:</strong></p>
+
+<p>Uses vertically integrated reflectivity.</p>
+
+\[MESH = 2.54 \times W^{0.5}\]
+
+<p>Where $W$ = integrated reflectivity (g/m²).</p>
+
+<p><strong>Severe Hail Index (SHI):</strong></p>
+
+\[SHI = 0.1 \int_{H_0}^{H_{-20}} (Z - Z_0) \, dh\]
+
+<p>Where integration from freezing level to -20°C level.</p>
+
+<p><strong>MESH from SHI:</strong></p>
+
+\[MESH = 2.54 \times SHI^{0.5}\]
+
+<p><strong>MESH = 25 mm:</strong> Severe hail likely<br />
+<strong>MESH = 50 mm:</strong> Very large hail<br />
+<strong>MESH &gt; 75 mm:</strong> Giant hail (baseball+)</p>
+
+<h3 id="hail-swath">Hail Swath</h3>
+
+<p><strong>Falling trajectory:</strong></p>
+
+<p>Hail falls from updraft maximum.</p>
+
+<p><strong>Lateral displacement:</strong></p>
+
+\[\Delta x = \frac{v_t}{w} \times H \times \frac{U}{w}\]
+
+<p>Where:</p>
+<ul>
+  <li>$H$ = fall distance</li>
+  <li>$U$ = storm-relative wind</li>
+</ul>
+
+<p><strong>Typical:</strong> 5-20 km downwind of updraft maximum</p>
+
+<p><strong>Swath width:</strong> 1-10 km (updraft width + spread)</p>
+
+<hr />
+
+<h2 id="4-worked-example-by-hand">4. Worked Example by Hand</h2>
+
+<p><strong>Problem:</strong> Predict maximum hail size and swath location.</p>
+
+<p><strong>Storm parameters:</strong></p>
+<ul>
+  <li>Maximum updraft: 45 m/s</li>
+  <li>Updraft top: 12 km</li>
+  <li>Freezing level: 4 km</li>
+  <li>Storm motion: 240° at 15 m/s</li>
+  <li>Environmental wind at 6 km: 270° at 20 m/s</li>
+</ul>
+
+<p><strong>Radar:</strong></p>
+<ul>
+  <li>Peak reflectivity: 65 dBZ</li>
+  <li>Reflectivity top: 14 km</li>
+  <li>SHI: 150</li>
+</ul>
+
+<p>Calculate maximum hail size and impact location relative to updraft.</p>
+
+<h3 id="solution">Solution</h3>
+
+<p><strong>Step 1: Maximum suspended hail</strong></p>
+
+\[r_{max} = \frac{w^2}{800} = \frac{45^2}{800} = \frac{2025}{800} = 2.53 \text{ cm}\]
+
+<p><strong>Diameter:</strong> 5.06 cm = <strong>2 inch (golf ball)</strong></p>
+
+<p><strong>Step 2: MESH from radar</strong></p>
+
+\[MESH = 2.54 \times 150^{0.5} = 2.54 \times 12.25 = 31.1 \text{ mm}\]
+
+<p><strong>1.25 inch</strong> (between quarter and golf ball)</p>
+
+<p><strong>Slightly lower than maximum</strong> (radar underestimates largest stones)</p>
+
+<p><strong>Step 3: Terminal velocity for 2-inch hail</strong></p>
+
+\[v_t = 9 \sqrt{0.0253} = 9 \times 0.159 = 14.3 \text{ m/s}\]
+
+<p><strong>Step 4: Fall time</strong></p>
+
+<p>From updraft top (12 km) to ground:</p>
+
+<p>Assume average updraft weakens: 30 m/s upper, 20 m/s lower</p>
+
+<p><strong>Ascent slowed but falls eventually.</strong></p>
+
+<p>Fall distance after release: 12 - 4 = 8 km (below freezing)</p>
+
+<p>Fall time:</p>
+
+\[t = \frac{8000}{14.3} = 560 \text{ seconds} \approx 9 \text{ minutes}\]
+
+<p><strong>Step 5: Storm-relative wind</strong></p>
+
+<p>At 6 km: 270° at 20 m/s<br />
+Storm: 240° at 15 m/s</p>
+
+<p><strong>Relative:</strong> ~15 m/s from west (simplified)</p>
+
+<p><strong>Step 6: Lateral displacement</strong></p>
+
+\[\Delta x = 15 \times 560 = 8400 \text{ m} = 8.4 \text{ km}\]
+
+<p><strong>Hail falls 8-9 km east</strong> of updraft maximum</p>
+
+<p><strong>Step 7: Impact assessment</strong></p>
+
+<p>Golf ball hail expected:</p>
+<ul>
+  <li>Car windshields broken</li>
+  <li>Roof damage possible</li>
+  <li>Crop total loss</li>
+</ul>
+
+<p><strong>Swath:</strong> 8-10 km east of storm core, width 2-3 km</p>
+
+<p><strong>Warning:</strong> Large hail imminent, take shelter</p>
+
+<hr />
+
+<h2 id="5-computational-implementation">5. Computational Implementation</h2>
+
+<p>Below is an interactive hail growth simulator.</p>
+
+<div class="viz-container" id="hail-viz">
+  <div class="controls">
+    <label>
+      Max updraft (m/s):
+      <input type="range" id="updraft" min="15" max="70" step="5" value="40" />
+      <span id="updraft-val">40</span>
+    </label>
+    <label>
+      Liquid water content (g/m³):
+      <input type="range" id="lwc" min="1" max="6" step="0.5" value="3" />
+      <span id="lwc-val">3</span>
+    </label>
+    <label>
+      Updraft residence time (min):
+      <input type="range" id="residence" min="2" max="10" step="1" value="5" />
+      <span id="res-val">5</span>
+    </label>
+    <div class="hail-info">
+      <p><strong>Max hail diameter:</strong> <span id="max-diameter">--</span> mm</p>
+      <p><strong>Hail category:</strong> <span id="category">--</span></p>
+      <p><strong>Terminal velocity:</strong> <span id="terminal-vel">--</span> m/s</p>
+      <p><strong>Damage potential:</strong> <span id="damage">--</span></p>
+    </div>
+  </div>
+  <div id="hail-canvas-container">
+    <canvas id="hail-canvas" width="700" height="400" style="border: 1px solid #ddd;"></canvas>
+  </div>
+</div>
+
+<script type="module">
+await new Promise(resolve => {
+  const checkECharts = () => {
+    if (typeof echarts !== 'undefined') resolve();
+    else setTimeout(checkECharts, 50);
+  };
+  checkECharts();
+});
+
+(function() {
+  const chart = echarts.init(document.getElementById('hail-canvas'));
+  
+  let updraft = 40;
+  let lwc = 3;
+  let residence = 5;
+  
+  function getHailCategory(diameter) {
+    if (diameter >= 114) return {name: 'Softball', damage: 'Extreme - Structural', color: '#8B0000'};
+    if (diameter >= 70) return {name: 'Baseball', damage: 'Severe - Roof/vehicle total', color: '#B71C1C'};
+    if (diameter >= 44) return {name: 'Golf ball', damage: 'Major - Windshields broken', color: '#E64A19'};
+    if (diameter >= 25) return {name: 'Quarter', damage: 'Significant - Car dents', color: '#F57F17'};
+    if (diameter >= 13) return {name: 'Dime', damage: 'Moderate - Crop/vegetation', color: '#FFA726'};
+    if (diameter >= 6) return {name: 'Pea', damage: 'Minor - Minimal', color: '#FFB74D'};
+    return {name: 'Sub-severe', damage: 'Negligible', color: '#66BB6A'};
+  }
+  
+  function simulateGrowth() {
+    const data = [];
+    const dt = 10; // seconds
+    const totalTime = residence * 60; // convert to seconds
+    
+    let mass = 0.001; // g (start with small embryo)
+    
+    for (let t = 0; t <= totalTime; t += dt) {
+      const radius = Math.pow(3 * mass / (4 * Math.PI * 0.9), 1/3) * 100; // cm, ice density 0.9 g/cm³
+      
+      // Collection efficiency
+      const E = 0.8;
+      
+      // Relative velocity (updraft speed - terminal velocity)
+      const vt = 9 * Math.sqrt(radius / 100); // terminal vel in m/s
+      const relVel = Math.max(5, updraft - vt);
+      
+      // Accretion rate
+      const dmdt = E * Math.PI * Math.pow(radius / 100, 2) * lwc * relVel; // g/s
+      
+      mass += dmdt * dt;
+      
+      const diameter = radius * 2 * 10; // mm
+      data.push([t / 60, diameter]);
+    }
+    
+    return data;
+  }
+  
+  function render() {
+    const growthData = simulateGrowth();
+    const finalDiameter = growthData[growthData.length - 1][1];
+    
+    // Max size from updraft capacity
+    const rMax = updraft * updraft / 800; // meters
+    const dMax = rMax * 2000; // mm
+    
+    const category = getHailCategory(finalDiameter);
+    
+    // Terminal velocity
+    const vt = 9 * Math.sqrt(finalDiameter / 2000);
+    
+    document.getElementById('max-diameter').textContent = Math.min(finalDiameter, dMax).toFixed(0);
+    document.getElementById('category').textContent = category.name;
+    document.getElementById('category').style.color = category.color;
+    document.getElementById('terminal-vel').textContent = vt.toFixed(1);
+    document.getElementById('damage').textContent = category.damage;
+    
+    const series = [
+      {
+        name: 'Hail Growth',
+        type: 'line',
+        data: growthData,
+        lineStyle: {color: category.color, width: 3},
+        areaStyle: {
+          color: {
+            type: 'linear',
+            x: 0, y: 0, x2: 0, y2: 1,
+            colorStops: [
+              {offset: 0, color: category.color + 'AA'},
+              {offset: 1, color: category.color + '22'}
+            ]
+          }
+        }
+      },
+      {
+        name: 'Severe Threshold (25mm)',
+        type: 'line',
+        data: [[0, 25], [residence, 25]],
+        lineStyle: {color: '#FF9800', width: 2, type: 'dashed'}
+      }
+    ];
+    
+    const option = {
+      title: {
+        text: `Hailstone Growth (${category.name})`,
+        left: 'center'
+      },
+      tooltip: {
+        trigger: 'axis',
+        axisPointer: {type: 'cross'},
+        formatter: (params) => {
+          if (params[0]) {
+            return `Time: ${params[0].value[0].toFixed(1)} min<br/>Diameter: ${params[0].value[1].toFixed(0)} mm`;
+          }
+        }
+      },
+      legend: {
+        data: series.map(s => s.name),
+        top: 30
+      },
+      grid: {
+        left: 80,
+        right: 40,
+        top: 80,
+        bottom: 60
+      },
+      xAxis: {
+        type: 'value',
+        name: 'Time in Updraft (minutes)',
+        nameLocation: 'middle',
+        nameGap: 30,
+        min: 0,
+        max: residence
+      },
+      yAxis: {
+        type: 'value',
+        name: 'Hail Diameter (mm)',
+        nameLocation: 'middle',
+        nameGap: 50,
+        min: 0
+      },
+      series: series
+    };
+    
+    chart.setOption(option, true);
+  }
+  
+  document.getElementById('updraft').addEventListener('input', (e) => {
+    updraft = parseFloat(e.target.value);
+    document.getElementById('updraft-val').textContent = updraft;
+    render();
+  });
+  
+  document.getElementById('lwc').addEventListener('input', (e) => {
+    lwc = parseFloat(e.target.value);
+    document.getElementById('lwc-val').textContent = lwc;
+    render();
+  });
+  
+  document.getElementById('residence').addEventListener('input', (e) => {
+    residence = parseFloat(e.target.value);
+    document.getElementById('res-val').textContent = residence;
+    render();
+  });
+  
+  render();
+  
+  window.addEventListener('resize', () => chart.resize());
+})();
+</script>
+
+<p><strong>Observations:</strong></p>
+<ul>
+  <li>Hail growth accelerates (larger stones collect more droplets)</li>
+  <li>Updraft strength limits maximum size</li>
+  <li>High liquid water content accelerates growth</li>
+  <li>Longer residence time produces larger hail</li>
+  <li>Terminal velocity increases with square root of diameter</li>
+  <li>Severe threshold (25mm) reached in strong updrafts</li>
+</ul>
+
+<p><strong>Key insights:</strong></p>
+<ul>
+  <li>Extreme updrafts (&gt;60 m/s) required for softball hail</li>
+  <li>Growth rate nonlinear (larger stones grow faster)</li>
+  <li>Minutes in updraft sufficient for destructive hail</li>
+  <li>Terminal velocity determines suspension requirement</li>
+</ul>
+
+<hr />
+
+<h2 id="6-interpretation">6. Interpretation</h2>
+
+<h3 id="crop-damage-assessment">Crop Damage Assessment</h3>
+
+<p><strong>Hail impact on agriculture:</strong></p>
+
+<p><strong>Pea-sized (6-13 mm):</strong></p>
+<ul>
+  <li>Leaf damage, some defoliation</li>
+  <li>10-30% yield loss</li>
+</ul>
+
+<p><strong>Dime-quarter (13-25 mm):</strong></p>
+<ul>
+  <li>Stem breakage, severe defoliation</li>
+  <li>30-60% loss</li>
+</ul>
+
+<p><strong>Golf ball+ (&gt;44 mm):</strong></p>
+<ul>
+  <li>Total crop destruction</li>
+  <li>80-100% loss</li>
+</ul>
+
+<p><strong>Economic:</strong></p>
+
+<p>2017 Colorado hailstorm: $2.2 billion crop damage (corn, wheat)</p>
+
+<p><strong>Insurance:</strong></p>
+
+<p>Crop insurance covers hail explicitly (common peril).</p>
+
+<p>Payouts based on damage assessment (percentage loss).</p>
+
+<h3 id="hail-suppression">Hail Suppression</h3>
+
+<p><strong>Cloud seeding:</strong></p>
+
+<p>Inject silver iodide or other nuclei.</p>
+
+<p><strong>Theory:</strong> Increase ice particles → compete for water → smaller hail</p>
+
+<p><strong>Evidence:</strong> Mixed/inconclusive</p>
+
+<p>Alberta Hail Project (1956-1985): 15-20% reduction claimed</p>
+
+<p>Recent studies: No significant effect detected</p>
+
+<p><strong>Operational:</strong> Some programs continue (insurance-funded)</p>
+
+<h3 id="vehicleproperty-damage">Vehicle/Property Damage</h3>
+
+<p><strong>Hail damage costs (USA):</strong></p>
+
+<p>$1-2 billion annually</p>
+
+<p><strong>Golf ball hail:</strong></p>
+<ul>
+  <li>Car windshields: $300-800 replacement</li>
+  <li>Body damage: $1,000-5,000 repair</li>
+  <li>Total vehicle loss: Possible with repeated impacts</li>
+</ul>
+
+<p><strong>Roof damage:</strong></p>
+<ul>
+  <li>Asphalt shingles: Severe damage &gt;44 mm</li>
+  <li>Metal roofs: Denting &gt;25 mm</li>
+  <li>Solar panels: Crack/break risk</li>
+</ul>
+
+<p><strong>Building codes:</strong></p>
+
+<p>Some regions require hail-resistant roofing (impact-rated).</p>
+
+<hr />
+
+<h2 id="7-what-could-go-wrong">7. What Could Go Wrong?</h2>
+
+<h3 id="giant-hail-not-detected">Giant Hail Not Detected</h3>
+
+<p><strong>Radar MESH underestimates</strong> largest stones.</p>
+
+<p><strong>Reasons:</strong></p>
+<ul>
+  <li>Hail concentration in small area</li>
+  <li>Beam averaging</li>
+  <li>Attenuation</li>
+</ul>
+
+<p><strong>Example - 2010 Vivian SD:</strong></p>
+
+<p>8-inch hailstone (record), but radar MESH ~75 mm (3 inches)</p>
+
+<p><strong>4× underestimate!</strong></p>
+
+<p><strong>Solution:</strong> Spotter reports, damage surveys verify</p>
+
+<h3 id="wet-hail-misidentified">Wet Hail Misidentified</h3>
+
+<p><strong>Wet growth hail</strong> (clear ice) has higher density.</p>
+
+<p><strong>Radar reflectivity similar</strong> to smaller dry hail.</p>
+
+<p><strong>Can be more damaging</strong> (heavier, denser) than radar suggests.</p>
+
+<h3 id="hail-rain-confusion">Hail-Rain Confusion</h3>
+
+<p><strong>Large raindrops</strong> can produce moderate reflectivity.</p>
+
+<p><strong>Without dual-pol:</strong> Hard to distinguish</p>
+
+<p><strong>Dual-polarization:</strong> ZDR, ρHV differentiate</p>
+
+<p><strong>ZDR:</strong></p>
+<ul>
+  <li>Rain: +2 to +4 dB (oblate drops)</li>
+  <li>Hail: 0 to -2 dB (tumbling, irregular)</li>
+</ul>
+
+<p><strong>ρHV:</strong></p>
+<ul>
+  <li>Rain: &gt;0.98</li>
+  <li>Hail: 0.90-0.95 (mixed shapes)</li>
+</ul>
+
+<h3 id="hail-melting">Hail Melting</h3>
+
+<p><strong>Long fall distance</strong> (high cloud tops) → melting</p>
+
+<p><strong>Surface reports:</strong> Rain, but hail aloft</p>
+
+<p><strong>Melting level critical:</strong></p>
+
+<p>Low (2-3 km): Hail reaches surface<br />
+High (4+ km): Melts before impact</p>
+
+<p><strong>Wet-bulb zero height</strong> better predictor than simple 0°C level</p>
+
+<hr />
+
+<h2 id="8-extension-hail-climatology">8. Extension: Hail Climatology</h2>
+
+<p><strong>Geographic distribution:</strong></p>
+
+<p><strong>Hail Alley (USA):</strong> Wyoming, Colorado, Nebraska</p>
+
+<p><strong>Argentina Pampas:</strong> World’s highest hail frequency</p>
+
+<p><strong>Northern India:</strong> Large hail events</p>
+
+<p><strong>Factors:</strong></p>
+<ul>
+  <li>High terrain (orographic lift)</li>
+  <li>Strong CAPE</li>
+  <li>Dry air aloft (promotes supercells)</li>
+</ul>
+
+<p><strong>Seasonal:</strong></p>
+
+<p>Spring-early summer peak (transitional seasons, strong shear + instability)</p>
+
+<p><strong>Trends:</strong></p>
+
+<p>Some evidence of:</p>
+<ul>
+  <li>Fewer hail days</li>
+  <li>But more extreme events (larger stones)</li>
+  <li>Difficult to detect trends (sparse observations)</li>
+</ul>
+
+<p><strong>Satellite potential:</strong></p>
+
+<p>GOES-16 Overshooting Top detection correlates with large hail</p>
+
+<hr />
+
+<h2 id="9-math-refresher-drag-force">9. Math Refresher: Drag Force</h2>
+
+<h3 id="stokes-vs-newton-drag">Stokes vs Newton Drag</h3>
+
+<p><strong>Stokes (laminar, small Re):</strong></p>
+
+\[F_d = 6 \pi \mu r v\]
+
+<p><strong>Newton (turbulent, large Re):</strong></p>
+
+\[F_d = \frac{1}{2} \rho C_d A v^2\]
+
+<p><strong>Reynolds number:</strong></p>
+
+\[Re = \frac{\rho v D}{\mu}\]
+
+<p><strong>Hail:</strong> Re ~ 10⁴-10⁵ → Newton drag applies</p>
+
+<p><strong>Sphere drag coefficient:</strong></p>
+
+<p>$C_d \approx 0.4-0.6$ (depends on surface roughness)</p>
+
+<hr />
+
+<h2 id="summary">Summary</h2>
+
+<ul>
+  <li>Hail growth requires strong updrafts exceeding terminal velocity of growing stones</li>
+  <li>Maximum hail size scales with updraft velocity squared via r_max = w²/800 formula</li>
+  <li>Terminal velocity increases as square root of radius for ice spheres</li>
+  <li>Wet growth produces clear dense ice while dry growth creates opaque spongy hail</li>
+  <li>MESH radar product estimates hail size from integrated reflectivity</li>
+  <li>Severe hail threshold 25mm (1 inch) causes significant crop and property damage</li>
+  <li>Golf ball hail (44mm) breaks windshields requiring 35+ m/s updrafts</li>
+  <li>Record 8-inch hail required extreme updrafts exceeding 70 m/s</li>
+  <li>Dual-polarization radar improves hail detection via ZDR and correlation coefficient</li>
+  <li>Annual agricultural and property losses exceed $1-2 billion in USA alone</li>
+</ul>
+
+<hr />
+
+      </div>
+
+      
+
+
+
+      
+
+  
+  
+  
+  
+
+
+
+      <!-- essay-footer-notes.html — References / endnotes section.
+     Hidden by default; assets/js/essay/core.js shows it and populates
+     #essay-endnotes-list from [data-cite] elements in the content.
+
+     In posts, create citation markers with:
+       <cite data-cite="Author, Title, URL">1</cite>
+     The JS collects these and renders a numbered reference list here. -->
+
+<footer class="essay-endnotes" id="essay-endnotes" aria-label="References" hidden>
+  <div class="essay-endnotes-inner">
+    <h2 class="essay-endnotes-heading">References</h2>
+    <ol class="essay-endnotes-list" id="essay-endnotes-list">
+      <!-- Populated at runtime by assets/js/essay/core.js buildEndnotes() -->
+    </ol>
+  </div>
+</footer>
+
+
+      
+
+      
+
+      
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    </article>
+  </main>
+
+  <aside
+    class="essay-sidenotes"
+    id="essay-sidenotes"
+    aria-label="Margin notes"
+  ></aside>
+
+</div>
+
+</div>
+
+<footer>
+  <div class="footer-inner">
+
+    <!-- Col 1: Brand -->
+    <div class="footer-brand">
+      <div class="footer-brand-logo">
+        
+        <img loading="lazy" src="/assets/images/logo.webp" alt="WaywardHouse" width="28" height="28">
+        
+        WaywardHouse<span>.</span>
+      </div>
+      
+      
+      <p class="footer-brand-desc">Understanding how place, economy, and environment interact — through analysis, modelling, and open tools.</p>
+      
+
+      <div class="footer-social">
+        
+        
+        
+        <a href="/feed.xml" class="social-icon" target="_blank" rel="noopener noreferrer" aria-label="RSS feed">
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M4 11a9 9 0 0 1 9 9"/>
+            <path d="M4 4a16 16 0 0 1 16 16"/>
+            <circle cx="5" cy="19" r="1"/>
+          </svg>
+        </a>
+      </div>
+    </div>
+
+    <!-- Col 2: Topics (configurable via footer_topics, falls back to auto-categories) -->
+    <nav aria-labelledby="footer-topics">
+      <h3 class="footer-col-title" id="footer-topics">Reading</h3>
+      <ul class="footer-links">
+        
+          
+          <li><a href="/topics/">Essays</a></li>
+          
+          <li><a href="/series/">Modelling</a></li>
+          
+          <li><a href="/archive/">Archive</a></li>
+          
+          <li><a href="/start-here/">Start Here</a></li>
+          
+        
+      </ul>
+    </nav>
+
+    <!-- Col 3: Secondary navigation -->
+    
+    <nav aria-labelledby="footer-company">
+      <h3 class="footer-col-title" id="footer-company">Site</h3>
+      <ul class="footer-links">
+        
+        <li><a href="/start-here/">Start Here</a></li>
+        
+        <li><a href="/about/">About</a></li>
+        
+        <li><a href="/contact/">Contact</a></li>
+        
+      </ul>
+    </nav>
+    
+
+    <!-- Col 4: Resources -->
+    <nav aria-labelledby="footer-resources">
+      <h3 class="footer-col-title" id="footer-resources">Resources</h3>
+      <ul class="footer-links">
+        <li><a href="/archive/">Archive</a></li>
+        <li><a href="/feed.xml">RSS Feed</a></li>
+        <li><a href="/topics/">All Topics</a></li>
+      </ul>
+    </nav>
+
+  </div><!-- /.footer-inner -->
+
+  <div class="footer-bottom">
+    <span class="footer-copy">
+      &copy; 2026 WaywardHouse.
+    </span>
+    <div class="footer-legal">
+      <a href="/privacy/">Privacy Policy</a>
+      <a href="/terms/">Terms of Service</a>
+    </div>
+  </div>
+
+</footer>
+
+
+<!-- Alpine.js bundle -->
+<script type="module" src="/assets/dist/main.js"></script>
+
+<!-- Visualization runtime — detects and loads CDN libraries dynamically -->
+<script type="module" src="/assets/js/core.js"></script>
+
+<!-- Search overlay — event-driven: nav button $dispatches 'search:open' -->
+<div
+  x-data="search"
+  x-init="init()"
+  @search:open.window="open()"
+>
+  <div
+    class="search-overlay"
+    x-show="isOpen"
+    x-transition:enter="transition ease-out duration-150"
+    x-transition:enter-start="opacity-0"
+    x-transition:enter-end="opacity-100"
+    x-transition:leave="transition ease-in duration-100"
+    x-transition:leave-start="opacity-100"
+    x-transition:leave-end="opacity-0"
+    @click.self="close()"
+    style="display: none;"
+    role="dialog"
+    aria-modal="true"
+    aria-label="Search"
+  >
+    <div class="search-panel">
+      <div class="search-input-wrap">
+        <svg class="search-icon" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <circle cx="11" cy="11" r="8"/>
+          <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+        </svg>
+        <input
+          class="search-input"
+          type="search"
+          placeholder="Search posts…"
+          x-model="query"
+          x-ref="input"
+          @input.debounce.300ms="runSearch()"
+          @keydown.escape="close()"
+          autocomplete="off"
+          spellcheck="false"
+          aria-label="Search query"
+        >
+        <kbd class="search-esc" aria-hidden="true">ESC</kbd>
+      </div>
+
+      <div class="search-results" x-show="query.trim().length > 0">
+        <div class="search-status" x-show="loading" aria-live="polite">Searching…</div>
+        <div class="search-status" x-show="!loading && results.length === 0" aria-live="polite">
+          No results for "<span x-text="query"></span>"
+        </div>
+        <ul class="search-result-list" x-show="!loading && results.length > 0" role="list">
+          <template x-for="result in results" :key="result.url">
+            <li>
+              <a :href="result.url" class="search-result-item" @click="close()">
+                <div class="search-result-title" x-text="result.meta?.title || result.url"></div>
+                <div class="search-result-excerpt" x-html="result.excerpt"></div>
+              </a>
+            </li>
+          </template>
+        </ul>
+      </div>
+    </div>
+  </div>
+</div>
+
+</body>
+</html>

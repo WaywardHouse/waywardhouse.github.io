@@ -1,0 +1,1483 @@
+<!DOCTYPE html>
+
+<html lang="en" data-brand="wayward" data-theme="light">
+<head>
+  <meta charset="utf-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Snow Water Equivalent Estimation — WaywardHouse</title>
+<meta name="description" content="How do we measure snow water equivalent across mountain basins? Ground observations (SNOTEL, snow courses) provide point measurements. Remote sensing (passive microwave, LiDAR) enables spatial coverage. This model derives microwave...">
+
+<!-- Dark mode flash prevention — runs synchronously before first paint -->
+<script>
+  (function () {
+    var defaultDark = 'light' === 'dark';
+    var s = localStorage.getItem('theme');
+    var dark = s !== null ? s === 'dark' : defaultDark;
+    document.documentElement.dataset.theme = dark ? 'dark' : 'light';
+  })();
+</script>
+
+<!-- Preconnect to CDN domains used by the viz runtime -->
+<link rel="preconnect" href="https://cdn.jsdelivr.net">
+<link rel="preconnect" href="https://unpkg.com">
+<link rel="preconnect" href="https://esm.sh">
+<link rel="preconnect" href="https://api.mapbox.com">
+<link rel="preconnect" href="https://events.mapbox.com">
+
+
+<script>window.MAPBOX_TOKEN = 'pk.eyJ1IjoiYnJlYWRlZGNvZCIsImEiOiJjbW0xa25qc2EwMmtwMnJwejJlNndqdnoxIn0._7I9PwXuFLrOQINVZ84y1w';</script>
+
+
+<!-- Fonts -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:ital,wght@0,300;0,400;0,600;0,700;0,800;0,900;1,700;1,800&family=Barlow:wght@300;400&family=IBM+Plex+Mono:ital,wght@0,300;0,400;0,500;1,300&family=Literata:ital,opsz,wght@0,7..72,300;0,7..72,400;0,7..72,500;1,7..72,300;1,7..72,400&display=swap" rel="stylesheet">
+
+<!-- Theme stylesheet (Vite build output) -->
+<link rel="stylesheet" href="/assets/dist/main.css">
+
+<!-- Brand token overrides — loaded after main.css so variables cascade correctly -->
+
+<link rel="stylesheet" href="/assets/css/brand-wayward.css">
+
+
+
+<!-- Syntax highlighting (Rouge — light + dark) -->
+<link rel="stylesheet" href="/assets/css/syntax.css">
+
+<!-- Begin Jekyll SEO tag v2.8.0 -->
+<title>Snow Water Equivalent Estimation | WaywardHouse</title>
+<meta name="generator" content="Jekyll v4.4.1" />
+<meta property="og:title" content="Snow Water Equivalent Estimation" />
+<meta property="og:locale" content="en" />
+<meta name="description" content="How do we measure snow water equivalent across mountain basins? Ground observations (SNOTEL, snow courses) provide point measurements. Remote sensing (passive microwave, LiDAR) enables spatial coverage. This model derives microwave emission theory, implements snow depth-to-SWE conversion, and combines multi-sensor observations to map snowpack water content." />
+<meta property="og:description" content="How do we measure snow water equivalent across mountain basins? Ground observations (SNOTEL, snow courses) provide point measurements. Remote sensing (passive microwave, LiDAR) enables spatial coverage. This model derives microwave emission theory, implements snow depth-to-SWE conversion, and combines multi-sensor observations to map snowpack water content." />
+<link rel="canonical" href="https://wayward.house/model/swe-estimation-methods/" />
+<meta property="og:url" content="https://wayward.house/model/swe-estimation-methods/" />
+<meta property="og:site_name" content="WaywardHouse" />
+<meta property="og:image" content="https://wayward.house/assets/images/swe.webp" />
+<meta property="og:type" content="article" />
+<meta property="article:published_time" content="2026-02-27T00:00:00-07:00" />
+<meta name="twitter:card" content="summary_large_image" />
+<meta property="twitter:image" content="https://wayward.house/assets/images/swe.webp" />
+<meta property="twitter:title" content="Snow Water Equivalent Estimation" />
+<meta name="twitter:site" content="@" />
+<script type="application/ld+json">
+{"@context":"https://schema.org","@type":"BlogPosting","dateModified":"2026-03-17T21:00:54-06:00","datePublished":"2026-02-27T00:00:00-07:00","description":"How do we measure snow water equivalent across mountain basins? Ground observations (SNOTEL, snow courses) provide point measurements. Remote sensing (passive microwave, LiDAR) enables spatial coverage. This model derives microwave emission theory, implements snow depth-to-SWE conversion, and combines multi-sensor observations to map snowpack water content.","headline":"Snow Water Equivalent Estimation","image":"https://wayward.house/assets/images/swe.webp","mainEntityOfPage":{"@type":"WebPage","@id":"https://wayward.house/model/swe-estimation-methods/"},"publisher":{"@type":"Organization","logo":{"@type":"ImageObject","url":"https://wayward.house/assets/images/logo.webp"}},"url":"https://wayward.house/model/swe-estimation-methods/"}</script>
+<!-- End Jekyll SEO tag -->
+
+
+
+<!-- Cloudflare Web Analytics -->
+<script defer src="https://static.cloudflareinsights.com/beacon.min.js"
+  data-cf-beacon='{"token": "62c47d78bf9d4c80972d4e6242d79ff8"}'></script>
+
+
+</head>
+<body class="
+  model-template
+   tag-modelling
+   tag-hash-math
+  
+   tag-hash-viz
+  
+  
+  
+  
+  
+  
+">
+
+<a href="#main-content" class="skip-link">Skip to content</a>
+
+<header class="nav" x-data="{ open: false }">
+  <div class="nav-inner">
+
+    <!-- Logo -->
+    <a href="/" class="nav-logo">
+      
+      <img loading="lazy" src="/assets/images/logo.webp" alt="WaywardHouse" width="32" height="32">
+      
+      WaywardHouse<span>.</span>
+    </a>
+
+    <!-- Desktop nav links -->
+    <ul class="nav-links" role="list">
+      
+      <li>
+        <a href="/topics/">Essays</a>
+      </li>
+      
+      <li>
+        <a href="/series/">Modelling</a>
+      </li>
+      
+      <li>
+        <a href="/about/">About</a>
+      </li>
+      
+    </ul>
+
+    <!-- Actions -->
+    <div class="nav-actions">
+
+      <!-- Search button -->
+      <button
+        class="search-toggle"
+        type="button"
+        aria-label="Search (⌘K)"
+        title="Search (⌘K)"
+        @click="$dispatch('search:open')"
+      >
+        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <circle cx="11" cy="11" r="8"/>
+          <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+        </svg>
+      </button>
+
+      <!-- Dark mode toggle -->
+      <button
+        class="theme-toggle"
+        x-data="darkMode"
+        x-init="init()"
+        @click="toggle()"
+        :aria-label="dark ? 'Switch to light mode' : 'Switch to dark mode'"
+        type="button"
+      >
+        <!-- Sun icon (shown in light mode) -->
+        <svg class="icon-sun" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">
+          <circle cx="12" cy="12" r="5"/>
+          <line x1="12" y1="1" x2="12" y2="3"/>
+          <line x1="12" y1="21" x2="12" y2="23"/>
+          <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/>
+          <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/>
+          <line x1="1" y1="12" x2="3" y2="12"/>
+          <line x1="21" y1="12" x2="23" y2="12"/>
+          <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/>
+          <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>
+        </svg>
+        <!-- Moon icon (shown in dark mode) -->
+        <svg class="icon-moon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">
+          <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+        </svg>
+      </button>
+
+      <!-- Hamburger (mobile only) -->
+      <button
+        class="mobile-nav-toggle"
+        @click="open = !open"
+        :aria-expanded="open"
+        :aria-label="open ? 'Close menu' : 'Open menu'"
+        type="button"
+      >
+        <svg x-show="!open" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <line x1="3" y1="6" x2="21" y2="6"/>
+          <line x1="3" y1="12" x2="21" y2="12"/>
+          <line x1="3" y1="18" x2="21" y2="18"/>
+        </svg>
+        <svg x-show="open" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <line x1="18" y1="6" x2="6" y2="18"/>
+          <line x1="6" y1="6" x2="18" y2="18"/>
+        </svg>
+      </button>
+
+    </div><!-- /.nav-actions -->
+  </div><!-- /.nav-inner -->
+
+  <!-- Mobile drawer -->
+  <div
+    class="mobile-nav"
+    x-show="open"
+    x-transition:enter="transition ease-out duration-200"
+    x-transition:enter-start="opacity-0 -translate-y-1"
+    x-transition:enter-end="opacity-100 translate-y-0"
+    x-transition:leave="transition ease-in duration-150"
+    x-transition:leave-start="opacity-100 translate-y-0"
+    x-transition:leave-end="opacity-0 -translate-y-1"
+    @click.outside="open = false"
+    @keydown.escape.window="open = false"
+  >
+    <ul role="list">
+      
+      <li>
+        <a href="/topics/" @click="open = false">Essays</a>
+      </li>
+      
+      <li>
+        <a href="/series/" @click="open = false">Modelling</a>
+      </li>
+      
+      <li>
+        <a href="/about/" @click="open = false">About</a>
+      </li>
+      
+    </ul>
+  </div><!-- /.mobile-nav -->
+
+</header>
+
+
+<div id="main-content">
+  <!-- Essay stylesheet and runtime — self-contained -->
+<link rel="stylesheet" href="/assets/css/essay.css">
+<script type="module" src="/assets/js/essay/core.js"></script>
+
+<div class="essay-layout" id="essay-layout">
+
+  <!-- essay-toc.html — Sticky table of contents (left column).
+     The <ol> is empty on load; assets/js/essay/core.js populates it
+     from h2/h3 elements found in #essay-content after the page renders. -->
+
+<nav class="essay-toc" id="essay-toc" aria-label="Table of contents">
+  <div class="essay-toc-inner">
+    <p class="essay-toc-heading" aria-hidden="true">Contents</p>
+    <ol class="essay-toc-list" id="essay-toc-list">
+      <!-- Populated at runtime by assets/js/essay/core.js buildToc() -->
+    </ol>
+  </div>
+</nav>
+
+
+  <main class="essay-main" id="essay-main" role="main">
+    <article class="essay-article">
+
+      <!-- essay-hero.html — Header for computational essay template.
+     Displays feature image, tag label, title, excerpt, and post metadata. -->
+
+<header class="essay-hero">
+  
+  <figure class="essay-hero-figure">
+    <img
+      src="/assets/images/swe.webp"
+      alt="Snow Water Equivalent Estimation"
+      class="essay-hero-img"
+      loading="eager"
+    >
+    
+  </figure>
+  
+
+  <div class="essay-hero-body">
+
+    
+    
+    
+    
+    
+    <nav class="essay-breadcrumb" aria-label="Series position">
+      
+      <a href="/series/4/" class="essay-breadcrumb-link">Computational geography cryosphere</a>
+      
+      
+      <span class="essay-breadcrumb-sep" aria-hidden="true">›</span>
+      <span class="essay-breadcrumb-cluster">Snow Physics & modelling</span>
+      
+      
+      <span class="essay-breadcrumb-sep" aria-hidden="true">›</span>
+      <span class="essay-breadcrumb-pos">Model 3</span>
+      
+    </nav>
+    
+
+    <div class="essay-hero-labels">
+      
+      <a href="/topics/modelling/" class="essay-tag-label">modelling</a>
+      
+      
+      <span class="difficulty-badge difficulty-badge--3">Level 3</span>
+      
+    </div>
+
+    <h1 class="essay-title">Snow Water Equivalent Estimation</h1>
+
+    
+    <p class="essay-excerpt">How do we measure snow water equivalent across mountain basins? Ground observations (SNOTEL, snow courses) provide point measurements. Remote sensing (passive microwave, LiDAR) enables spatial coverage. This model derives microwave emission theory, implements snow depth-to-SWE conversion, and combines multi-sensor observations to map snowpack water content.
+</p>
+    
+
+    
+    <p class="essay-prereqs"><span class="essay-prereqs-label">Prerequisites:</span> microwave radiometry, snow depth density, sensor integration, uncertainty propagation</p>
+    
+
+    <div class="essay-meta">
+      
+      <div class="essay-meta-secondary">
+        <time class="essay-date" datetime="2026-02-27">27 Feb 2026</time>
+        
+        
+        <span class="essay-sep" aria-hidden="true">·</span>
+        <span class="essay-updated">Updated <time datetime="2026-03-17">17 Mar 2026</time></span>
+        
+        <span class="essay-sep" aria-hidden="true">·</span>
+        <span class="essay-reading-time">13 min read</span>
+      </div>
+    </div>
+  </div>
+</header>
+
+
+      
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<nav class="series-nav" aria-label="Series navigation">
+
+  <div class="series-nav-header">
+    <span class="series-nav-label">P</span>
+    <span class="series-nav-title">Snow Physics & modelling</span>
+  </div>
+
+  <ol class="series-nav-list">
+    
+    <li class="series-nav-item">
+      
+      <a href="/model/snowpack-energy-balance/" class="series-nav-link">
+        <span class="series-nav-number">1</span>
+        Snowpack Energy Balance
+      </a>
+      
+    </li>
+    
+    <li class="series-nav-item">
+      
+      <a href="/model/snow-accumulation-melt-modeling/" class="series-nav-link">
+        <span class="series-nav-number">2</span>
+        Snow Accumulation and Melt modelling
+      </a>
+      
+    </li>
+    
+    <li class="series-nav-item series-nav-item--current">
+      
+      <span class="series-nav-link series-nav-link--current" aria-current="page">
+        <span class="series-nav-number">3</span>
+        Snow Water Equivalent Estimation
+      </span>
+      
+    </li>
+    
+    <li class="series-nav-item">
+      
+      <a href="/model/avalanche-terrain-analysis/" class="series-nav-link">
+        <span class="series-nav-number">4</span>
+        Avalanche Terrain Analysis
+      </a>
+      
+    </li>
+    
+  </ol>
+
+  
+  <div class="series-nav-footer">
+    <a href="/series/4/" class="series-nav-all">
+      All 10 in this series &rarr;
+    </a>
+  </div>
+  
+
+</nav>
+
+
+
+
+      <div class="essay-content gh-content" id="essay-content">
+        <p>Every April, hydrologists across western North America wait for the same number: the 1 April SWE — the Snow Water Equivalent at a network of automated monitoring stations, taken on the date that historically provides the best predictor of spring and summer streamflow. Water utilities, irrigation districts, hydropower operators, and municipal planners use that number to plan reservoir releases, irrigation allocations, and flood risk preparations for the coming months. A high 1 April SWE means a full growing season and good late-summer flows for salmon. A low one means water restrictions, reduced hydropower, and stress for irrigators who planted crops in anticipation of normal allocation.</p>
+
+<p>The challenge is that a mountain snowpack is not uniformly distributed. Elevation, aspect, wind exposure, and forest cover create enormous spatial variability — a north-facing bowl at 2,000 metres might hold three metres of snow while an adjacent south-facing ridge at the same elevation holds less than one. A handful of SNOTEL stations scattered across a basin captures this variability poorly. Satellite remote sensing offers spatial coverage but has its own limitations: passive microwave retrievals saturate at deep snowpacks; optical sensors cannot see through clouds and are blind beneath forest canopy; airborne LiDAR provides excellent snow depth maps but at high cost and limited frequency. SWE estimation across a large basin is therefore a data fusion problem — combining point observations, remote sensing, terrain analysis, and interpolation into a spatial estimate with quantified uncertainty. This model derives the measurement physics of each approach and the statistical methods used to combine them.</p>
+
+<h2 id="1-the-question">1. The Question</h2>
+
+<p>What’s the total water stored in snow across a 1000 km² mountain basin?</p>
+
+<p><strong>Three measurement approaches:</strong></p>
+
+<p><strong>1. Ground observations (point data):</strong></p>
+<ul>
+  <li>SNOTEL stations (automated)</li>
+  <li>Manual snow courses (monthly surveys)</li>
+  <li>Snow pillows (weight measurement)</li>
+</ul>
+
+<p><strong>2. Remote sensing (spatial coverage):</strong></p>
+<ul>
+  <li>Passive microwave (AMSR-E, SSMIS)</li>
+  <li>Active microwave (SAR)</li>
+  <li>LiDAR (airborne snow depth)</li>
+  <li>Optical (MODIS snow cover extent)</li>
+</ul>
+
+<p><strong>3. Model-data fusion:</strong></p>
+<ul>
+  <li>Combine observations with snow models</li>
+  <li>Assimilation techniques</li>
+  <li>Produce gridded SWE estimates</li>
+</ul>
+
+<p>The mathematical question: How do we convert different measurements (microwave brightness temperature, snow depth, weight) into SWE, and how do we scale from points to basins?</p>
+
+<hr />
+
+<h2 id="2-the-conceptual-model">2. The Conceptual Model</h2>
+
+<h3 id="swe-from-snow-depth">SWE From Snow Depth</h3>
+
+<p><strong>Fundamental relationship:</strong></p>
+
+\[\text{SWE} = \rho_{\text{snow}} \times d\]
+
+<p>Where:</p>
+<ul>
+  <li>$\rho_{\text{snow}}$ = bulk snow density (kg/m³)</li>
+  <li>$d$ = snow depth (m)</li>
+</ul>
+
+<p><strong>Challenge:</strong> Density varies (100-500 kg/m³) → must estimate.</p>
+
+<p><strong>Typical approach:</strong></p>
+
+\[\rho_{\text{snow}} = \rho_0 + k_1 \text{DOY} + k_2 d\]
+
+<p>Where:</p>
+<ul>
+  <li>DOY = day of year (snow gets denser over time)</li>
+  <li>Coefficients calibrated regionally</li>
+</ul>
+
+<p><strong>Example (Colorado Rockies):</strong></p>
+
+\[\rho = 250 + 0.5 \times \text{DOY} + 10 \times d\]
+
+<p>For March 15 (DOY 74), depth 1.5m:</p>
+
+\[\rho = 250 + 0.5(74) + 10(1.5) = 302 \text{ kg/m}^3\]
+
+\[\text{SWE} = 0.302 \times 1.5 = 0.453 \text{ m} = 453 \text{ mm}\]
+
+<h3 id="microwave-emission-theory">Microwave Emission Theory</h3>
+
+<p><strong>Snow emits microwave radiation</strong> based on:</p>
+<ul>
+  <li>Temperature</li>
+  <li>Depth</li>
+  <li>Grain size</li>
+  <li>Liquid water content</li>
+</ul>
+
+<p><strong>Brightness temperature:</strong></p>
+
+\[T_B = T_{\text{snow}} \times (1 - e^{-\tau}) + T_{\text{ground}} \times e^{-\tau}\]
+
+<p>Where:</p>
+<ul>
+  <li>$T_B$ = brightness temperature measured by satellite (K)</li>
+  <li>$\tau$ = optical depth (function of SWE)</li>
+  <li>$T_{\text{snow}}$ = physical temperature of snow (K)</li>
+  <li>$T_{\text{ground}}$ = ground temperature (K)</li>
+</ul>
+
+<p><strong>Optical depth depends on SWE:</strong></p>
+
+\[\tau = \beta \times \text{SWE}\]
+
+<p>Where $\beta$ = scattering coefficient (~0.002-0.005 m²/kg at 37 GHz).</p>
+
+<p><strong>Key insight:</strong> Deep snow → more scattering → lower $T_B$</p>
+
+<h3 id="multi-frequency-approach">Multi-Frequency Approach</h3>
+
+<p><strong>Use two frequencies:</strong></p>
+<ul>
+  <li>19 GHz (penetrates deep, insensitive to grain size)</li>
+  <li>37 GHz (scattered by snow grains)</li>
+</ul>
+
+<p><strong>Spectral gradient:</strong></p>
+
+\[\Delta T_B = T_B(19\text{ GHz}) - T_B(37\text{ GHz})\]
+
+<p><strong>Empirical SWE retrieval:</strong></p>
+
+\[\text{SWE} = a \times \Delta T_B\]
+
+<p>Where $a \approx 3$ mm/K (calibration coefficient).</p>
+
+<p><strong>Positive $\Delta T_B$:</strong> Snow present (37 GHz scattered more)<br />
+<strong>Near zero:</strong> Little/no snow</p>
+
+<hr />
+
+<h2 id="3-building-the-mathematical-model">3. Building the Mathematical Model</h2>
+
+<h3 id="snotel-snow-pillow">SNOTEL Snow Pillow</h3>
+
+<p><strong>Measures weight</strong> of snowpack:</p>
+
+\[W = \rho_{\text{snow}} \times d \times A \times g\]
+
+<p>Where:</p>
+<ul>
+  <li>$W$ = weight (N)</li>
+  <li>$A$ = pillow area (m²)</li>
+  <li>$g$ = 9.81 m/s²</li>
+</ul>
+
+<p><strong>SWE directly:</strong></p>
+
+\[\text{SWE} = \frac{W}{A \times \rho_w \times g}\]
+
+<p><strong>Advantage:</strong> Direct measurement (no density assumption)</p>
+
+<p><strong>Disadvantage:</strong> Point measurement, expensive infrastructure</p>
+
+<h3 id="manual-snow-course">Manual Snow Course</h3>
+
+<p><strong>Federal sampler:</strong></p>
+<ul>
+  <li>Aluminum tube pushed through snowpack</li>
+  <li>Extract core</li>
+  <li>Weigh core</li>
+</ul>
+
+<p><strong>SWE calculation:</strong></p>
+
+\[\text{SWE} = \frac{m_{\text{sample}}}{A_{\text{tube}} \times \rho_w}\]
+
+<p>Where:</p>
+<ul>
+  <li>$m_{\text{sample}}$ = mass of snow in tube (kg)</li>
+  <li>$A_{\text{tube}}$ = tube cross-section area (m²)</li>
+</ul>
+
+<p><strong>Typical:</strong> 10-12 sampling points along transect, average for site SWE.</p>
+
+<p><strong>Uncertainty:</strong> ±5-10% from sampling variability.</p>
+
+<h3 id="passive-microwave-algorithm">Passive Microwave Algorithm</h3>
+
+<p><strong>Chang et al. (1987) algorithm:</strong></p>
+
+<p><strong>For dry snow:</strong></p>
+
+\[\text{SWE} = c_1 \times (T_B^{19V} - T_B^{37V}) \times f_{\text{forest}}\]
+
+<p>Where:</p>
+<ul>
+  <li>$c_1$ = 1.59 mm/K</li>
+  <li>$T_B^{19V}$ = 19 GHz vertical polarization (K)</li>
+  <li>$T_B^{37V}$ = 37 GHz vertical polarization (K)</li>
+  <li>$f_{\text{forest}}$ = forest correction factor</li>
+</ul>
+
+<p><strong>Forest correction:</strong></p>
+
+\[f_{\text{forest}} = 1 - 0.8 \times f_c\]
+
+<p>Where $f_c$ = forest cover fraction (0-1).</p>
+
+<p><strong>Limitations:</strong></p>
+<ul>
+  <li>Saturates at ~150mm SWE (deep snow)</li>
+  <li>Fails with wet snow (liquid water absorbs microwaves)</li>
+  <li>Coarse resolution (25 km pixels)</li>
+</ul>
+
+<h3 id="lidar-snow-depth">LiDAR Snow Depth</h3>
+
+<p><strong>Airborne laser scanning:</strong></p>
+
+<p><strong>Snow-on flight:</strong> Measure surface elevation $z_{\text{snow}}$</p>
+
+<p><strong>Snow-off flight:</strong> Measure bare ground elevation $z_{\text{ground}}$</p>
+
+<p><strong>Snow depth:</strong></p>
+
+\[d = z_{\text{snow}} - z_{\text{ground}}\]
+
+<p><strong>Convert to SWE:</strong></p>
+
+\[\text{SWE} = \rho(x,y) \times d(x,y)\]
+
+<p><strong>Density from:</strong></p>
+<ul>
+  <li>Regional relationships</li>
+  <li>Interpolated from SNOTEL</li>
+  <li>modelled</li>
+</ul>
+
+<p><strong>Resolution:</strong> 1-3 meters (excellent for terrain effects)</p>
+
+<p><strong>Cost:</strong> Expensive (aircraft), limited temporal coverage</p>
+
+<hr />
+
+<h2 id="4-worked-example-by-hand">4. Worked Example by Hand</h2>
+
+<p><strong>Problem:</strong> Estimate basin-average SWE from multiple sources.</p>
+
+<p><strong>Data:</strong></p>
+
+<p><strong>SNOTEL stations (3 sites):</strong></p>
+<ul>
+  <li>Low elevation (2000m): SWE = 300 mm</li>
+  <li>Mid elevation (2500m): SWE = 450 mm</li>
+  <li>High elevation (3000m): SWE = 600 mm</li>
+</ul>
+
+<p><strong>Passive microwave (basin average):</strong></p>
+<ul>
+  <li>$\Delta T_B = 50$ K</li>
+  <li>SWE = $1.59 \times 50 = 79.5$ mm (underestimate due to saturation)</li>
+</ul>
+
+<p><strong>LiDAR (sample area, 2500m elevation):</strong></p>
+<ul>
+  <li>Average depth: 1.8 m</li>
+  <li>Estimated density: 300 kg/m³</li>
+  <li>SWE = $0.300 \times 1.8 = 540$ mm</li>
+</ul>
+
+<p><strong>Basin characteristics:</strong></p>
+<ul>
+  <li>Area: 500 km²</li>
+  <li>Elevation range: 1800-3200 m</li>
+  <li>Forest cover: 40%</li>
+</ul>
+
+<h3 id="solution">Solution</h3>
+
+<p><strong>Step 1: Elevation-based interpolation</strong></p>
+
+<p>Assume linear SWE-elevation relationship:</p>
+
+<p>From SNOTEL:</p>
+<ul>
+  <li>2000m → 300mm</li>
+  <li>2500m → 450mm</li>
+  <li>3000m → 600mm</li>
+</ul>
+
+<p><strong>Gradient:</strong> $\frac{600 - 300}{3000 - 2000} = 0.30$ mm/m</p>
+
+<p><strong>SWE(z):</strong></p>
+
+\[\text{SWE}(z) = 300 + 0.30(z - 2000)\]
+
+<p><strong>Step 2: Basin hypsometry</strong></p>
+
+<p>Assume elevation distribution:</p>
+<ul>
+  <li>1800-2200m: 20% of area</li>
+  <li>2200-2600m: 40% of area</li>
+  <li>2600-3000m: 30% of area</li>
+  <li>3000-3200m: 10% of area</li>
+</ul>
+
+<p><strong>Average SWE per band:</strong></p>
+
+<p>Band 1 (2000m): SWE = 300mm → 20% × 300 = 60 mm<br />
+Band 2 (2400m): SWE = 420mm → 40% × 420 = 168 mm<br />
+Band 3 (2800m): SWE = 540mm → 30% × 540 = 162 mm<br />
+Band 4 (3100m): SWE = 630mm → 10% × 630 = 63 mm</p>
+
+<p><strong>Basin average:</strong> 60 + 168 + 162 + 63 = <strong>453 mm</strong></p>
+
+<p><strong>Step 3: Validate with LiDAR</strong></p>
+
+<p>LiDAR at 2500m: 540mm<br />
+Predicted at 2500m: 450mm</p>
+
+<p><strong>Difference:</strong> 90mm (20% higher)</p>
+
+<p><strong>Possible reasons:</strong></p>
+<ul>
+  <li>Local accumulation pattern</li>
+  <li>Density uncertainty</li>
+  <li>Measurement error</li>
+</ul>
+
+<p><strong>Step 4: Final estimate</strong></p>
+
+<p><strong>Best estimate:</strong> 453mm (from elevation interpolation)</p>
+
+<p><strong>Uncertainty:</strong> ±15% (±68mm)</p>
+
+<p><strong>Total water volume:</strong></p>
+
+\[V = \text{SWE} \times A = 0.453 \text{ m} \times 500 \times 10^6 \text{ m}^2 = 226.5 \times 10^6 \text{ m}^3\]
+
+<p><strong>= 226,500 acre-feet</strong> or <strong>279 million cubic meters</strong></p>
+
+<hr />
+
+<h2 id="5-computational-implementation">5. Computational Implementation</h2>
+
+<p>Below is an interactive SWE estimation tool combining multiple sensors.</p>
+
+<div class="viz-container" id="swe-est-viz">
+  <div class="controls">
+    <label>
+      SNOTEL low (mm):
+      <input type="range" id="snotel-low" min="100" max="500" step="50" value="300" />
+      <span id="low-val">300</span>
+    </label>
+    <label>
+      SNOTEL mid (mm):
+      <input type="range" id="snotel-mid" min="200" max="700" step="50" value="450" />
+      <span id="mid-val">450</span>
+    </label>
+    <label>
+      SNOTEL high (mm):
+      <input type="range" id="snotel-high" min="300" max="900" step="50" value="600" />
+      <span id="high-val">600</span>
+    </label>
+    <label>
+      Microwave ΔTB (K):
+      <input type="range" id="delta-tb" min="0" max="100" step="5" value="50" />
+      <span id="tb-val">50</span>
+    </label>
+    <div class="swe-est-info">
+      <p><strong>Basin avg SWE:</strong> <span id="basin-swe">--</span> mm</p>
+      <p><strong>Total volume:</strong> <span id="total-volume">--</span> million m³</p>
+      <p><strong>Uncertainty:</strong> <span id="uncertainty">--</span>%</p>
+    </div>
+  </div>
+  <div id="swe-est-canvas-container">
+    <canvas id="swe-est-canvas" width="700" height="400" style="border: 1px solid #ddd;"></canvas>
+  </div>
+</div>
+
+<script type="module">
+await new Promise(resolve => {
+  const checkECharts = () => {
+    if (typeof echarts !== 'undefined') resolve();
+    else setTimeout(checkECharts, 50);
+  };
+  checkECharts();
+});
+
+(function() {
+  const chart = echarts.init(document.getElementById('swe-est-canvas'));
+  
+  let sweHigh = 600;
+  let sweMid = 450;
+  let sweLow = 300;
+  let deltaTB = 50;
+  
+  const basinArea = 500; // km²
+  
+  function calculateSWE() {
+    // Elevation bands and their fractions
+    const bands = [
+      {elev: 2000, fraction: 0.20, name: 'Low (2000m)'},
+      {elev: 2400, fraction: 0.40, name: 'Mid (2400m)'},
+      {elev: 2800, fraction: 0.30, name: 'High (2800m)'},
+      {elev: 3100, fraction: 0.10, name: 'V.High (3100m)'}
+    ];
+    
+    // Linear interpolation from SNOTEL
+    const gradient = (sweHigh - sweLow) / 1000; // per meter
+    
+    const bandSWE = bands.map(b => {
+      const swe = sweLow + gradient * (b.elev - 2000);
+      return {
+        ...b,
+        swe: swe,
+        contribution: swe * b.fraction
+      };
+    });
+    
+    const basinAvg = bandSWE.reduce((sum, b) => sum + b.contribution, 0);
+    
+    // Microwave estimate
+    const mwSWE = 1.59 * deltaTB;
+    
+    // Calculate uncertainty (simplified)
+    const uncertainty = 15; // percent
+    
+    // Total volume
+    const volume = basinAvg * basinArea * 1e6 / 1e6; // million m³
+    
+    return {bandSWE, basinAvg, mwSWE, uncertainty, volume};
+  }
+  
+  function render() {
+    const result = calculateSWE();
+    
+    // Update display
+    document.getElementById('basin-swe').textContent = result.basinAvg.toFixed(0);
+    document.getElementById('total-volume').textContent = result.volume.toFixed(1);
+    document.getElementById('uncertainty').textContent = result.uncertainty;
+    
+    // Chart data
+    const elevData = [];
+    for (let elev = 2000; elev <= 3200; elev += 100) {
+      const gradient = (sweHigh - sweLow) / 1000;
+      const swe = sweLow + gradient * (elev - 2000);
+      elevData.push([elev, swe]);
+    }
+    
+    const series = [
+      {
+        name: 'SWE vs Elevation',
+        type: 'line',
+        data: elevData,
+        lineStyle: {color: '#1976D2', width: 3},
+        smooth: true,
+        areaStyle: {color: 'rgba(25, 118, 210, 0.2)'}
+      },
+      {
+        name: 'SNOTEL Observations',
+        type: 'scatter',
+        data: [
+          [2000, sweLow],
+          [2500, sweMid],
+          [3000, sweHigh]
+        ],
+        symbolSize: 12,
+        itemStyle: {color: '#D32F2F'}
+      },
+      {
+        name: 'Microwave Estimate',
+        type: 'line',
+        data: [[2000, result.mwSWE], [3200, result.mwSWE]],
+        lineStyle: {color: '#F57C00', width: 2, type: 'dashed'},
+        showSymbol: false
+      },
+      {
+        name: 'Elevation Bands',
+        type: 'bar',
+        data: result.bandSWE.map(b => [b.elev, b.swe]),
+        itemStyle: {color: '#4CAF50', opacity: 0.5},
+        barWidth: 200,
+        z: -1
+      }
+    ];
+    
+    const option = {
+      title: {
+        text: 'SWE Estimation - Multi-Sensor Integration',
+        left: 'center'
+      },
+      tooltip: {
+        trigger: 'axis',
+        axisPointer: {type: 'cross'}
+      },
+      legend: {
+        data: series.map(s => s.name),
+        top: 30
+      },
+      grid: {
+        left: 80,
+        right: 40,
+        top: 80,
+        bottom: 60
+      },
+      xAxis: {
+        type: 'value',
+        name: 'Elevation (m)',
+        nameLocation: 'middle',
+        nameGap: 30,
+        min: 1800,
+        max: 3200
+      },
+      yAxis: {
+        type: 'value',
+        name: 'SWE (mm)',
+        nameLocation: 'middle',
+        nameGap: 50,
+        min: 0
+      },
+      series: series
+    };
+    
+    chart.setOption(option, true);
+  }
+  
+  document.getElementById('snotel-low').addEventListener('input', (e) => {
+    sweLow = parseFloat(e.target.value);
+    document.getElementById('low-val').textContent = sweLow;
+    render();
+  });
+  
+  document.getElementById('snotel-mid').addEventListener('input', (e) => {
+    sweMid = parseFloat(e.target.value);
+    document.getElementById('mid-val').textContent = sweMid;
+    render();
+  });
+  
+  document.getElementById('snotel-high').addEventListener('input', (e) => {
+    sweHigh = parseFloat(e.target.value);
+    document.getElementById('high-val').textContent = sweHigh;
+    render();
+  });
+  
+  document.getElementById('delta-tb').addEventListener('input', (e) => {
+    deltaTB = parseFloat(e.target.value);
+    document.getElementById('tb-val').textContent = deltaTB;
+    render();
+  });
+  
+  render();
+  
+  window.addEventListener('resize', () => chart.resize());
+})();
+</script>
+
+<p><strong>Try this:</strong></p>
+<ul>
+  <li><strong>Red dots:</strong> SNOTEL station measurements</li>
+  <li><strong>Blue line:</strong> Interpolated SWE-elevation relationship</li>
+  <li><strong>Green bars:</strong> Elevation band SWE values</li>
+  <li><strong>Orange dashed:</strong> Microwave satellite estimate (underestimates deep snow)</li>
+  <li><strong>Adjust SNOTEL values:</strong> See gradient change</li>
+  <li><strong>Microwave ΔTB:</strong> Higher = more snow detected (saturates ~150mm)</li>
+  <li>Notice: Microwave underestimates in deep snow (saturation issue)</li>
+  <li>Basin average combines elevation bands weighted by area</li>
+</ul>
+
+<p><strong>Key insight:</strong> Multiple sensors needed—ground stations for accuracy, satellites for coverage, models to bridge gaps!</p>
+
+<hr />
+
+<h2 id="6-interpretation">6. Interpretation</h2>
+
+<h3 id="snotel-network">SNOTEL Network</h3>
+
+<p><strong>Automated stations:</strong></p>
+<ul>
+  <li>Snow pillow (SWE)</li>
+  <li>Snow depth (ultrasonic)</li>
+  <li>Precipitation</li>
+  <li>Air temperature</li>
+</ul>
+
+<p><strong>US Western mountains:</strong> ~800 sites</p>
+
+<p><strong>Real-time data</strong> at https://www.nrcs.usda.gov/wps/portal/wcc/home/</p>
+
+<p><strong>Uses:</strong></p>
+<ul>
+  <li>Water supply forecasting</li>
+  <li>Avalanche prediction</li>
+  <li>Climate monitoring</li>
+  <li>Model validation</li>
+</ul>
+
+<h3 id="nasa-snowex-campaign">NASA SnowEx Campaign</h3>
+
+<p><strong>Multi-sensor airborne campaign:</strong></p>
+
+<p><strong>Sensors:</strong></p>
+<ul>
+  <li>Passive microwave radiometer</li>
+  <li>Active microwave (SAR, scatterometer)</li>
+  <li>LiDAR snow depth</li>
+  <li>Ground-penetrating radar (snow stratigraphy)</li>
+</ul>
+
+<p><strong>Goals:</strong></p>
+<ul>
+  <li>Improve satellite algorithms</li>
+  <li>Understand uncertainty sources</li>
+  <li>Develop next-generation products</li>
+</ul>
+
+<p><strong>Findings:</strong></p>
+<ul>
+  <li>Forest significantly attenuates microwave signal</li>
+  <li>Snow grain size affects scattering</li>
+  <li>Wet snow problematic for all microwave sensors</li>
+</ul>
+
+<h3 id="swot-satellite-mission">SWOT Satellite Mission</h3>
+
+<p><strong>Surface Water and Ocean Topography (2022 launch):</strong></p>
+
+<p><strong>Ka-band radar interferometry:</strong></p>
+<ul>
+  <li>Measures water surface elevation</li>
+  <li>Rivers, lakes, reservoirs</li>
+</ul>
+
+<p><strong>Snow applications:</strong></p>
+<ul>
+  <li>Seasonal water storage changes in reservoirs</li>
+  <li>Flood wave propagation</li>
+  <li>Groundwater-surface water exchange</li>
+</ul>
+
+<p><strong>Complements</strong> SWE observations for total water budget.</p>
+
+<hr />
+
+<h2 id="7-what-could-go-wrong">7. What Could Go Wrong?</h2>
+
+<h3 id="microwave-saturation">Microwave Saturation</h3>
+
+<p><strong>Deep snow (&gt;150mm SWE):</strong></p>
+
+<p>Microwave signal saturates → underestimate.</p>
+
+<p><strong>Example:</strong></p>
+<ul>
+  <li>True SWE: 800mm</li>
+  <li>Microwave estimate: 120mm</li>
+  <li><strong>Error: -85%!</strong></li>
+</ul>
+
+<p><strong>Worse in:</strong> Maritime climates (deep, wet snow)</p>
+
+<p><strong>Solution:</strong></p>
+<ul>
+  <li>Combine with model</li>
+  <li>Use passive + active microwave</li>
+  <li>Assimilation techniques</li>
+</ul>
+
+<h3 id="wet-snow">Wet Snow</h3>
+
+<p><strong>Liquid water absorbs microwaves.</strong></p>
+
+<p><strong>Result:</strong> Brightness temperature increases (appears as less snow).</p>
+
+<p><strong>Example:</strong></p>
+<ul>
+  <li>Dry snow: SWE = 300mm, ΔTB = 40K</li>
+  <li>After melt onset: Same SWE, ΔTB = 10K</li>
+  <li><strong>Appears as:</strong> SWE decreased to 80mm (false!)</li>
+</ul>
+
+<p><strong>Solution:</strong> Freeze/thaw detection, temperature thresholding.</p>
+
+<h3 id="forest-masking">Forest Masking</h3>
+
+<p><strong>Dense canopy:</strong></p>
+<ul>
+  <li>Intercepts snow (different properties)</li>
+  <li>Emits radiation (masks snow signal)</li>
+  <li>Attenuates satellite view</li>
+</ul>
+
+<p><strong>Correction factors</strong> crude, uncertain.</p>
+
+<p><strong>Better:</strong> Higher frequency (e.g., 89 GHz) penetrates better, or use model.</p>
+
+<h3 id="point-to-grid-scaling">Point-to-Grid Scaling</h3>
+
+<p><strong>SNOTEL = point measurement</strong> (10m footprint)</p>
+
+<p><strong>Basin = 100s-1000s km²</strong></p>
+
+<p><strong>Representativeness issues:</strong></p>
+<ul>
+  <li>SNOTEL in clearings (higher SWE than forest)</li>
+  <li>Elevation bias (stations at accessible locations)</li>
+  <li>Aspect not captured</li>
+</ul>
+
+<p><strong>Solution:</strong> Distributed modelling with data assimilation.</p>
+
+<hr />
+
+<h2 id="8-extension-data-assimilation">8. Extension: Data Assimilation</h2>
+
+<p><strong>Combine model with observations optimally.</strong></p>
+
+<p><strong>Ensemble Kalman Filter (EnKF):</strong></p>
+
+<p><strong>Steps:</strong></p>
+<ol>
+  <li>Run snow model ensemble (100s of realizations with perturbed forcing)</li>
+  <li>Forecast SWE at observation time</li>
+  <li>Compare forecast to observations</li>
+  <li>Update ensemble using Kalman gain:</li>
+</ol>
+
+\[\mathbf{K} = \mathbf{P}^f \mathbf{H}^T (\mathbf{H}\mathbf{P}^f\mathbf{H}^T + \mathbf{R})^{-1}\]
+
+<p>Where:</p>
+<ul>
+  <li>$\mathbf{K}$ = Kalman gain</li>
+  <li>$\mathbf{P}^f$ = forecast error covariance</li>
+  <li>$\mathbf{H}$ = observation operator</li>
+  <li>$\mathbf{R}$ = observation error covariance</li>
+</ul>
+
+<p><strong>Analysis:</strong></p>
+
+\[\mathbf{x}^a = \mathbf{x}^f + \mathbf{K}(\mathbf{y} - \mathbf{H}\mathbf{x}^f)\]
+
+<p><strong>Result:</strong> Gridded SWE estimate that:</p>
+<ul>
+  <li>Respects physics (model)</li>
+  <li>Matches observations (data)</li>
+  <li>Quantifies uncertainty (ensemble spread)</li>
+</ul>
+
+<p><strong>Operational:</strong> NOAA National Water Model, NASA SWE reconstruction</p>
+
+<hr />
+
+<h2 id="9-math-refresher-electromagnetic-spectrum">9. Math Refresher: Electromagnetic Spectrum</h2>
+
+<h3 id="microwave-region">Microwave Region</h3>
+
+<p><strong>Frequency ranges:</strong></p>
+
+<table>
+  <thead>
+    <tr>
+      <th>Band</th>
+      <th>Frequency</th>
+      <th>Wavelength</th>
+      <th>Use</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>L</td>
+      <td>1-2 GHz</td>
+      <td>15-30 cm</td>
+      <td>Soil moisture</td>
+    </tr>
+    <tr>
+      <td>C</td>
+      <td>4-8 GHz</td>
+      <td>3.75-7.5 cm</td>
+      <td>Soil moisture, ice</td>
+    </tr>
+    <tr>
+      <td>X</td>
+      <td>8-12 GHz</td>
+      <td>2.5-3.75 cm</td>
+      <td>SAR imaging</td>
+    </tr>
+    <tr>
+      <td>Ku</td>
+      <td>12-18 GHz</td>
+      <td>1.67-2.5 cm</td>
+      <td>Precipitation</td>
+    </tr>
+    <tr>
+      <td>K</td>
+      <td>18-27 GHz</td>
+      <td>1.11-1.67 cm</td>
+      <td>Snow, water vapor</td>
+    </tr>
+    <tr>
+      <td>Ka</td>
+      <td>27-40 GHz</td>
+      <td>0.75-1.11 cm</td>
+      <td>Clouds, rain</td>
+    </tr>
+  </tbody>
+</table>
+
+<p><strong>Snow remote sensing:</strong> 19 GHz and 37 GHz most common</p>
+
+<p><strong>Why microwave?</strong></p>
+<ul>
+  <li>Penetrates clouds (all-weather)</li>
+  <li>Sensitive to snow (grain scattering)</li>
+  <li>Day/night capable (active radiation)</li>
+</ul>
+
+<h3 id="plancks-law">Planck’s Law</h3>
+
+<p><strong>Blackbody emission:</strong></p>
+
+\[B_\nu(T) = \frac{2h\nu^3}{c^2} \frac{1}{e^{h\nu/kT} - 1}\]
+
+<p>Where:</p>
+<ul>
+  <li>$B_\nu$ = spectral radiance (W/(m²·sr·Hz))</li>
+  <li>$h$ = Planck constant</li>
+  <li>$\nu$ = frequency</li>
+  <li>$k$ = Boltzmann constant</li>
+  <li>$T$ = temperature (K)</li>
+</ul>
+
+<p><strong>Rayleigh-Jeans approximation (microwave regime):</strong></p>
+
+\[B_\nu(T) \approx \frac{2\nu^2 kT}{c^2}\]
+
+<p><strong>Brightness temperature:</strong> Temperature of blackbody that would produce observed radiance.</p>
+
+<hr />
+
+<h2 id="summary">Summary</h2>
+
+<ul>
+  <li><strong>SWE estimation</strong> requires converting diverse measurements to water equivalent</li>
+  <li><strong>Ground observations:</strong> SNOTEL (snow pillows), manual snow courses, direct SWE measurement</li>
+  <li><strong>Passive microwave:</strong> Uses brightness temperature difference (19-37 GHz) to infer SWE</li>
+  <li><strong>Microwave limitations:</strong> Saturates at ~150mm, fails with wet snow, forest attenuation</li>
+  <li><strong>LiDAR:</strong> Accurate snow depth from airborne laser, requires density assumption</li>
+  <li><strong>Scaling challenge:</strong> Point measurements to basin averages via elevation relationships</li>
+  <li><strong>Multi-sensor fusion:</strong> Combines strengths of different platforms</li>
+  <li><strong>Data assimilation:</strong> Optimal combination of models and observations (EnKF)</li>
+  <li><strong>Operational products:</strong> SNOTEL network, AMSR-E/AMSR2, NASA SnowEx</li>
+  <li><strong>Uncertainty:</strong> Typically ±15-25% for basin averages</li>
+  <li>Critical for water resources management and flood forecasting</li>
+</ul>
+
+<hr />
+
+      </div>
+
+      
+
+
+
+      
+
+  
+  
+  
+  
+
+
+
+      <!-- essay-footer-notes.html — References / endnotes section.
+     Hidden by default; assets/js/essay/core.js shows it and populates
+     #essay-endnotes-list from [data-cite] elements in the content.
+
+     In posts, create citation markers with:
+       <cite data-cite="Author, Title, URL">1</cite>
+     The JS collects these and renders a numbered reference list here. -->
+
+<footer class="essay-endnotes" id="essay-endnotes" aria-label="References" hidden>
+  <div class="essay-endnotes-inner">
+    <h2 class="essay-endnotes-heading">References</h2>
+    <ol class="essay-endnotes-list" id="essay-endnotes-list">
+      <!-- Populated at runtime by assets/js/essay/core.js buildEndnotes() -->
+    </ol>
+  </div>
+</footer>
+
+
+      
+
+      
+
+      
+
+
+
+
+
+
+
+
+
+
+
+
+
+<aside class="related-posts" aria-label="Related articles">
+  <h2 class="related-posts-heading">Related</h2>
+  <div class="related-posts-grid">
+    
+    <a href="/essay/hyperspectral-imaging-wyvern/" class="related-post-card">
+      
+      <div class="related-post-img" style="background-image:url('/assets/images/wyvern_dragonette.webp')"></div>
+      
+      <div class="related-post-body">
+        
+        <span class="related-post-tag">Monitoring</span>
+        
+        <h3 class="related-post-title">What Light Reveals</h3>
+        <time class="related-post-date" datetime="2025-03-10">10 Mar 2025</time>
+      </div>
+    </a>
+    
+  </div>
+</aside>
+
+
+
+    </article>
+  </main>
+
+  <aside
+    class="essay-sidenotes"
+    id="essay-sidenotes"
+    aria-label="Margin notes"
+  ></aside>
+
+</div>
+
+</div>
+
+<footer>
+  <div class="footer-inner">
+
+    <!-- Col 1: Brand -->
+    <div class="footer-brand">
+      <div class="footer-brand-logo">
+        
+        <img loading="lazy" src="/assets/images/logo.webp" alt="WaywardHouse" width="28" height="28">
+        
+        WaywardHouse<span>.</span>
+      </div>
+      
+      
+      <p class="footer-brand-desc">Understanding how place, economy, and environment interact — through analysis, modelling, and open tools.</p>
+      
+
+      <div class="footer-social">
+        
+        
+        
+        <a href="/feed.xml" class="social-icon" target="_blank" rel="noopener noreferrer" aria-label="RSS feed">
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M4 11a9 9 0 0 1 9 9"/>
+            <path d="M4 4a16 16 0 0 1 16 16"/>
+            <circle cx="5" cy="19" r="1"/>
+          </svg>
+        </a>
+      </div>
+    </div>
+
+    <!-- Col 2: Topics (configurable via footer_topics, falls back to auto-categories) -->
+    <nav aria-labelledby="footer-topics">
+      <h3 class="footer-col-title" id="footer-topics">Reading</h3>
+      <ul class="footer-links">
+        
+          
+          <li><a href="/topics/">Essays</a></li>
+          
+          <li><a href="/series/">Modelling</a></li>
+          
+          <li><a href="/archive/">Archive</a></li>
+          
+          <li><a href="/start-here/">Start Here</a></li>
+          
+        
+      </ul>
+    </nav>
+
+    <!-- Col 3: Secondary navigation -->
+    
+    <nav aria-labelledby="footer-company">
+      <h3 class="footer-col-title" id="footer-company">Site</h3>
+      <ul class="footer-links">
+        
+        <li><a href="/start-here/">Start Here</a></li>
+        
+        <li><a href="/about/">About</a></li>
+        
+        <li><a href="/contact/">Contact</a></li>
+        
+      </ul>
+    </nav>
+    
+
+    <!-- Col 4: Resources -->
+    <nav aria-labelledby="footer-resources">
+      <h3 class="footer-col-title" id="footer-resources">Resources</h3>
+      <ul class="footer-links">
+        <li><a href="/archive/">Archive</a></li>
+        <li><a href="/feed.xml">RSS Feed</a></li>
+        <li><a href="/topics/">All Topics</a></li>
+      </ul>
+    </nav>
+
+  </div><!-- /.footer-inner -->
+
+  <div class="footer-bottom">
+    <span class="footer-copy">
+      &copy; 2026 WaywardHouse.
+    </span>
+    <div class="footer-legal">
+      <a href="/privacy/">Privacy Policy</a>
+      <a href="/terms/">Terms of Service</a>
+    </div>
+  </div>
+
+</footer>
+
+
+<!-- Alpine.js bundle -->
+<script type="module" src="/assets/dist/main.js"></script>
+
+<!-- Visualization runtime — detects and loads CDN libraries dynamically -->
+<script type="module" src="/assets/js/core.js"></script>
+
+<!-- Search overlay — event-driven: nav button $dispatches 'search:open' -->
+<div
+  x-data="search"
+  x-init="init()"
+  @search:open.window="open()"
+>
+  <div
+    class="search-overlay"
+    x-show="isOpen"
+    x-transition:enter="transition ease-out duration-150"
+    x-transition:enter-start="opacity-0"
+    x-transition:enter-end="opacity-100"
+    x-transition:leave="transition ease-in duration-100"
+    x-transition:leave-start="opacity-100"
+    x-transition:leave-end="opacity-0"
+    @click.self="close()"
+    style="display: none;"
+    role="dialog"
+    aria-modal="true"
+    aria-label="Search"
+  >
+    <div class="search-panel">
+      <div class="search-input-wrap">
+        <svg class="search-icon" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <circle cx="11" cy="11" r="8"/>
+          <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+        </svg>
+        <input
+          class="search-input"
+          type="search"
+          placeholder="Search posts…"
+          x-model="query"
+          x-ref="input"
+          @input.debounce.300ms="runSearch()"
+          @keydown.escape="close()"
+          autocomplete="off"
+          spellcheck="false"
+          aria-label="Search query"
+        >
+        <kbd class="search-esc" aria-hidden="true">ESC</kbd>
+      </div>
+
+      <div class="search-results" x-show="query.trim().length > 0">
+        <div class="search-status" x-show="loading" aria-live="polite">Searching…</div>
+        <div class="search-status" x-show="!loading && results.length === 0" aria-live="polite">
+          No results for "<span x-text="query"></span>"
+        </div>
+        <ul class="search-result-list" x-show="!loading && results.length > 0" role="list">
+          <template x-for="result in results" :key="result.url">
+            <li>
+              <a :href="result.url" class="search-result-item" @click="close()">
+                <div class="search-result-title" x-text="result.meta?.title || result.url"></div>
+                <div class="search-result-excerpt" x-html="result.excerpt"></div>
+              </a>
+            </li>
+          </template>
+        </ul>
+      </div>
+    </div>
+  </div>
+</div>
+
+</body>
+</html>

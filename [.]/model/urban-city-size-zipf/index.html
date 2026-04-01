@@ -1,0 +1,896 @@
+<!DOCTYPE html>
+
+<html lang="en" data-brand="wayward" data-theme="light">
+<head>
+  <meta charset="utf-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Zipf's Law and the City Size Distribution — WaywardHouse</title>
+<meta name="description" content="In almost every country, if you rank cities by population and plot rank against size on a log-log scale, you get a straight line. This is Zipf's Law — one...">
+
+<!-- Dark mode flash prevention — runs synchronously before first paint -->
+<script>
+  (function () {
+    var defaultDark = 'light' === 'dark';
+    var s = localStorage.getItem('theme');
+    var dark = s !== null ? s === 'dark' : defaultDark;
+    document.documentElement.dataset.theme = dark ? 'dark' : 'light';
+  })();
+</script>
+
+<!-- Preconnect to CDN domains used by the viz runtime -->
+<link rel="preconnect" href="https://cdn.jsdelivr.net">
+<link rel="preconnect" href="https://unpkg.com">
+<link rel="preconnect" href="https://esm.sh">
+<link rel="preconnect" href="https://api.mapbox.com">
+<link rel="preconnect" href="https://events.mapbox.com">
+
+
+<script>window.MAPBOX_TOKEN = 'pk.eyJ1IjoiYnJlYWRlZGNvZCIsImEiOiJjbW0xa25qc2EwMmtwMnJwejJlNndqdnoxIn0._7I9PwXuFLrOQINVZ84y1w';</script>
+
+
+<!-- Fonts -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:ital,wght@0,300;0,400;0,600;0,700;0,800;0,900;1,700;1,800&family=Barlow:wght@300;400&family=IBM+Plex+Mono:ital,wght@0,300;0,400;0,500;1,300&family=Literata:ital,opsz,wght@0,7..72,300;0,7..72,400;0,7..72,500;1,7..72,300;1,7..72,400&display=swap" rel="stylesheet">
+
+<!-- Theme stylesheet (Vite build output) -->
+<link rel="stylesheet" href="/assets/dist/main.css">
+
+<!-- Brand token overrides — loaded after main.css so variables cascade correctly -->
+
+<link rel="stylesheet" href="/assets/css/brand-wayward.css">
+
+
+
+<!-- Syntax highlighting (Rouge — light + dark) -->
+<link rel="stylesheet" href="/assets/css/syntax.css">
+
+<!-- Begin Jekyll SEO tag v2.8.0 -->
+<title>Zipf’s Law and the City Size Distribution | WaywardHouse</title>
+<meta name="generator" content="Jekyll v4.4.1" />
+<meta property="og:title" content="Zipf’s Law and the City Size Distribution" />
+<meta property="og:locale" content="en" />
+<meta name="description" content="In almost every country, if you rank cities by population and plot rank against size on a log-log scale, you get a straight line. This is Zipf’s Law — one of the most robust regularities in all of social science. This essay derives it from first principles, fits it to Canadian data, and asks why Alberta’s Edmonton-Calgary pair makes Canada an unusual case." />
+<meta property="og:description" content="In almost every country, if you rank cities by population and plot rank against size on a log-log scale, you get a straight line. This is Zipf’s Law — one of the most robust regularities in all of social science. This essay derives it from first principles, fits it to Canadian data, and asks why Alberta’s Edmonton-Calgary pair makes Canada an unusual case." />
+<link rel="canonical" href="https://wayward.house/model/urban-city-size-zipf/" />
+<meta property="og:url" content="https://wayward.house/model/urban-city-size-zipf/" />
+<meta property="og:site_name" content="WaywardHouse" />
+<meta property="og:image" content="https://wayward.house/assets/images/urban-economics.webp" />
+<meta property="og:type" content="article" />
+<meta property="article:published_time" content="2026-03-10T00:00:00-06:00" />
+<meta name="twitter:card" content="summary_large_image" />
+<meta property="twitter:image" content="https://wayward.house/assets/images/urban-economics.webp" />
+<meta property="twitter:title" content="Zipf’s Law and the City Size Distribution" />
+<meta name="twitter:site" content="@" />
+<script type="application/ld+json">
+{"@context":"https://schema.org","@type":"BlogPosting","dateModified":"2026-03-17T16:54:02-06:00","datePublished":"2026-03-10T00:00:00-06:00","description":"In almost every country, if you rank cities by population and plot rank against size on a log-log scale, you get a straight line. This is Zipf’s Law — one of the most robust regularities in all of social science. This essay derives it from first principles, fits it to Canadian data, and asks why Alberta’s Edmonton-Calgary pair makes Canada an unusual case.","headline":"Zipf’s Law and the City Size Distribution","image":"https://wayward.house/assets/images/urban-economics.webp","mainEntityOfPage":{"@type":"WebPage","@id":"https://wayward.house/model/urban-city-size-zipf/"},"publisher":{"@type":"Organization","logo":{"@type":"ImageObject","url":"https://wayward.house/assets/images/logo.webp"}},"url":"https://wayward.house/model/urban-city-size-zipf/"}</script>
+<!-- End Jekyll SEO tag -->
+
+
+
+<!-- Cloudflare Web Analytics -->
+<script defer src="https://static.cloudflareinsights.com/beacon.min.js"
+  data-cf-beacon='{"token": "62c47d78bf9d4c80972d4e6242d79ff8"}'></script>
+
+
+</head>
+<body class="
+  model-template
+   tag-modelling
+   tag-hash-math
+  
+   tag-hash-viz
+  
+  
+  
+  
+  
+  
+">
+
+<a href="#main-content" class="skip-link">Skip to content</a>
+
+<header class="nav" x-data="{ open: false }">
+  <div class="nav-inner">
+
+    <!-- Logo -->
+    <a href="/" class="nav-logo">
+      
+      <img loading="lazy" src="/assets/images/logo.webp" alt="WaywardHouse" width="32" height="32">
+      
+      WaywardHouse<span>.</span>
+    </a>
+
+    <!-- Desktop nav links -->
+    <ul class="nav-links" role="list">
+      
+      <li>
+        <a href="/topics/">Essays</a>
+      </li>
+      
+      <li>
+        <a href="/series/">Modelling</a>
+      </li>
+      
+      <li>
+        <a href="/about/">About</a>
+      </li>
+      
+    </ul>
+
+    <!-- Actions -->
+    <div class="nav-actions">
+
+      <!-- Search button -->
+      <button
+        class="search-toggle"
+        type="button"
+        aria-label="Search (⌘K)"
+        title="Search (⌘K)"
+        @click="$dispatch('search:open')"
+      >
+        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <circle cx="11" cy="11" r="8"/>
+          <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+        </svg>
+      </button>
+
+      <!-- Dark mode toggle -->
+      <button
+        class="theme-toggle"
+        x-data="darkMode"
+        x-init="init()"
+        @click="toggle()"
+        :aria-label="dark ? 'Switch to light mode' : 'Switch to dark mode'"
+        type="button"
+      >
+        <!-- Sun icon (shown in light mode) -->
+        <svg class="icon-sun" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">
+          <circle cx="12" cy="12" r="5"/>
+          <line x1="12" y1="1" x2="12" y2="3"/>
+          <line x1="12" y1="21" x2="12" y2="23"/>
+          <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/>
+          <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/>
+          <line x1="1" y1="12" x2="3" y2="12"/>
+          <line x1="21" y1="12" x2="23" y2="12"/>
+          <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/>
+          <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>
+        </svg>
+        <!-- Moon icon (shown in dark mode) -->
+        <svg class="icon-moon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">
+          <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+        </svg>
+      </button>
+
+      <!-- Hamburger (mobile only) -->
+      <button
+        class="mobile-nav-toggle"
+        @click="open = !open"
+        :aria-expanded="open"
+        :aria-label="open ? 'Close menu' : 'Open menu'"
+        type="button"
+      >
+        <svg x-show="!open" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <line x1="3" y1="6" x2="21" y2="6"/>
+          <line x1="3" y1="12" x2="21" y2="12"/>
+          <line x1="3" y1="18" x2="21" y2="18"/>
+        </svg>
+        <svg x-show="open" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <line x1="18" y1="6" x2="6" y2="18"/>
+          <line x1="6" y1="6" x2="18" y2="18"/>
+        </svg>
+      </button>
+
+    </div><!-- /.nav-actions -->
+  </div><!-- /.nav-inner -->
+
+  <!-- Mobile drawer -->
+  <div
+    class="mobile-nav"
+    x-show="open"
+    x-transition:enter="transition ease-out duration-200"
+    x-transition:enter-start="opacity-0 -translate-y-1"
+    x-transition:enter-end="opacity-100 translate-y-0"
+    x-transition:leave="transition ease-in duration-150"
+    x-transition:leave-start="opacity-100 translate-y-0"
+    x-transition:leave-end="opacity-0 -translate-y-1"
+    @click.outside="open = false"
+    @keydown.escape.window="open = false"
+  >
+    <ul role="list">
+      
+      <li>
+        <a href="/topics/" @click="open = false">Essays</a>
+      </li>
+      
+      <li>
+        <a href="/series/" @click="open = false">Modelling</a>
+      </li>
+      
+      <li>
+        <a href="/about/" @click="open = false">About</a>
+      </li>
+      
+    </ul>
+  </div><!-- /.mobile-nav -->
+
+</header>
+
+
+<div id="main-content">
+  <!-- Essay stylesheet and runtime — self-contained -->
+<link rel="stylesheet" href="/assets/css/essay.css">
+<script type="module" src="/assets/js/essay/core.js"></script>
+
+<div class="essay-layout" id="essay-layout">
+
+  <!-- essay-toc.html — Sticky table of contents (left column).
+     The <ol> is empty on load; assets/js/essay/core.js populates it
+     from h2/h3 elements found in #essay-content after the page renders. -->
+
+<nav class="essay-toc" id="essay-toc" aria-label="Table of contents">
+  <div class="essay-toc-inner">
+    <p class="essay-toc-heading" aria-hidden="true">Contents</p>
+    <ol class="essay-toc-list" id="essay-toc-list">
+      <!-- Populated at runtime by assets/js/essay/core.js buildToc() -->
+    </ol>
+  </div>
+</nav>
+
+
+  <main class="essay-main" id="essay-main" role="main">
+    <article class="essay-article">
+
+      <!-- essay-hero.html — Header for computational essay template.
+     Displays feature image, tag label, title, excerpt, and post metadata. -->
+
+<header class="essay-hero">
+  
+  <figure class="essay-hero-figure">
+    <img
+      src="/assets/images/urban-economics.webp"
+      alt="Zipf's Law and the City Size Distribution"
+      class="essay-hero-img"
+      loading="eager"
+    >
+    
+  </figure>
+  
+
+  <div class="essay-hero-body">
+
+    
+    
+    
+    
+    
+    <nav class="essay-breadcrumb" aria-label="Series position">
+      
+      <a href="/series/7/" class="essay-breadcrumb-link">Economic Systems</a>
+      
+      
+      <span class="essay-breadcrumb-sep" aria-hidden="true">›</span>
+      <span class="essay-breadcrumb-cluster">Urban Economic Systems</span>
+      
+      
+      <span class="essay-breadcrumb-sep" aria-hidden="true">›</span>
+      <span class="essay-breadcrumb-pos">Model 13</span>
+      
+    </nav>
+    
+
+    <div class="essay-hero-labels">
+      
+      <a href="/topics/modelling/" class="essay-tag-label">modelling</a>
+      
+      
+      <span class="difficulty-badge difficulty-badge--3">Level 3</span>
+      
+    </div>
+
+    <h1 class="essay-title">Zipf's Law and the City Size Distribution</h1>
+
+    
+    <p class="essay-excerpt">In almost every country, if you rank cities by population and plot rank against size on a log-log scale, you get a straight line. This is Zipf's Law — one of the most robust regularities in all of social science. This essay derives it from first principles, fits it to Canadian data, and asks why Alberta's Edmonton-Calgary pair makes Canada an unusual case.</p>
+    
+
+    
+    <p class="essay-prereqs"><span class="essay-prereqs-label">Prerequisites:</span> Power laws, Rank size rule, Log log regression, Gibrat's Law</p>
+    
+
+    <div class="essay-meta">
+      
+      <div class="essay-meta-secondary">
+        <time class="essay-date" datetime="2026-03-10">10 Mar 2026</time>
+        
+        
+        <span class="essay-sep" aria-hidden="true">·</span>
+        <span class="essay-updated">Updated <time datetime="2026-03-17">17 Mar 2026</time></span>
+        
+        <span class="essay-sep" aria-hidden="true">·</span>
+        <span class="essay-reading-time">10 min read</span>
+      </div>
+    </div>
+  </div>
+</header>
+
+
+      
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<nav class="series-nav" aria-label="Series navigation">
+
+  <div class="series-nav-header">
+    <span class="series-nav-label">UE</span>
+    <span class="series-nav-title">Urban Economic Systems</span>
+  </div>
+
+  <ol class="series-nav-list">
+    
+    <li class="series-nav-item">
+      
+      <a href="/model/urban-bid-rent-model/" class="series-nav-link">
+        <span class="series-nav-number">11</span>
+        The Bid-Rent Model
+      </a>
+      
+    </li>
+    
+    <li class="series-nav-item">
+      
+      <a href="/model/urban-agglomeration-economies/" class="series-nav-link">
+        <span class="series-nav-number">12</span>
+        Agglomeration Economies
+      </a>
+      
+    </li>
+    
+    <li class="series-nav-item series-nav-item--current">
+      
+      <span class="series-nav-link series-nav-link--current" aria-current="page">
+        <span class="series-nav-number">13</span>
+        Zipf's Law and the City Size Distribution
+      </span>
+      
+    </li>
+    
+    <li class="series-nav-item">
+      
+      <a href="/model/urban-economic-base/" class="series-nav-link">
+        <span class="series-nav-number">14</span>
+        The Urban Economic Base
+      </a>
+      
+    </li>
+    
+    <li class="series-nav-item">
+      
+      <a href="/model/urban-integrated-system/" class="series-nav-link">
+        <span class="series-nav-number">15</span>
+        The Integrated Urban System
+      </a>
+      
+    </li>
+    
+  </ol>
+
+  
+  <div class="series-nav-footer">
+    <a href="/series/7/" class="series-nav-all">
+      All 33 in this series &rarr;
+    </a>
+  </div>
+  
+
+</nav>
+
+
+
+
+      <div class="essay-content gh-content" id="essay-content">
+        <p>Open a table of world city populations and sort it by rank. Take any country with more than twenty substantial cities. Plot rank on the horizontal axis and population on the vertical axis, both on logarithmic scales. In almost every case, the points fall along a straight line with a slope of approximately $-1$. The second city has half the population of the first. The tenth has a tenth. The hundredth has a hundredth.</p>
+
+<p>This is Zipf’s Law, named after the linguist George Kingsley Zipf who observed it in word frequency distributions in 1949. It had already been noticed in city sizes by Auerbach in 1913 and was formalised as the “rank-size rule” by Zipf himself. The regularity is remarkable not because it holds perfectly — it does not — but because it holds approximately across countries with wildly different histories, geographies, political systems, and levels of development. Something deep in the process of city growth must be producing this pattern.</p>
+
+<hr />
+
+<h2 id="1-zipfs-law-the-basic-statement">1. Zipf’s Law: The Basic Statement</h2>
+
+<p>Let cities be ranked 1, 2, 3, … by population in descending order. Let $P_r$ denote the population of the city at rank $r$ and $P_1$ the population of the largest city. Zipf’s Law states:</p>
+
+\[P_r = \frac{P_1}{r}\]
+
+<p>Or in power-law form, for the generalised rank-size rule:</p>
+
+\[P_r = A \cdot r^{-\alpha}\]
+
+<p>where $A$ is a scaling constant and $\alpha$ is the <strong>Pareto exponent</strong>. Zipf’s Law is the special case $\alpha = 1$.</p>
+
+<p>Taking logs of both sides:</p>
+
+\[\ln P_r = \ln A - \alpha \ln r\]
+
+<p>This is a linear equation in $(\ln r, \ln P_r)$ space with slope $-\alpha$. Estimating $\alpha$ is therefore a matter of ordinary least squares regression on log-transformed data. If the estimated slope is close to $-1$, the city system follows Zipf’s Law.</p>
+
+<hr />
+
+<h2 id="2-derivation-gibrats-law-implies-zipf">2. Derivation: Gibrat’s Law Implies Zipf</h2>
+
+<p>Why would cities follow a power law? The most elegant answer comes from <strong>Gibrat’s Law of Proportionate Effect</strong>, proposed by Robert Gibrat in 1931.</p>
+
+<p>Gibrat’s Law states that the growth rate of a city in any period is independent of its current size:</p>
+
+\[\frac{\Delta P_t}{P_t} = \varepsilon_t\]
+
+<p>where $\varepsilon_t$ is a random shock drawn independently of $P_t$. This is a multiplicative random walk: each period, the city’s population is multiplied by $(1 + \varepsilon_t)$.</p>
+
+<p>Taking logs: $\ln P_t = \ln P_0 + \sum_{s=1}^{t} \ln(1 + \varepsilon_s) \approx \ln P_0 + \sum_{s=1}^{t} \varepsilon_s$</p>
+
+<p>By the central limit theorem, the sum of independent random variables converges to a normal distribution. So $\ln P_t$ is approximately normally distributed — meaning city population follows a <strong>log-normal</strong> distribution. This is close to a power law for the upper tail, and in the limit (as the variance of shocks accumulates over long time periods), the upper tail of the log-normal converges to a Pareto distribution with $\alpha \approx 1$.</p>
+
+<p>More formally: if city growth follows a multiplicative random walk with a reflecting lower boundary (cities do not shrink below some minimum viable size), the stationary distribution is exactly Pareto, and the rank-size rule holds with $\alpha = 1$.</p>
+
+<p>This provides the theoretical foundation. Cities grow randomly, but the statistical regularity that emerges — Zipf’s Law — is a consequence of the central limit theorem applied to multiplicative processes, not of any intentional design.</p>
+
+<hr />
+
+<h2 id="3-log-log-regression">3. Log-Log Regression</h2>
+
+<p>To test whether a city system follows Zipf’s Law, we estimate:</p>
+
+\[\ln P_r = \beta_0 + \beta_1 \ln r + u_r\]
+
+<p>Under Zipf’s Law, $\hat{\beta}_1 \approx -1$. A coefficient more negative than $-1$ (say, $-1.5$) implies a more unequal distribution — a primate city system where the largest city is disproportionately large. A coefficient less negative than $-1$ (say, $-0.7$) implies a more even distribution, with cities of similar sizes.</p>
+
+<p>The log-linearisation also makes it straightforward to interpret deviations: cities that lie <em>above</em> the fitted line are larger than Zipf’s Law predicts for their rank; cities that lie <em>below</em> it are smaller.</p>
+
+<hr />
+
+<h2 id="4-canadas-city-size-distribution">4. Canada’s City Size Distribution</h2>
+
+<p>Canada’s urban system has some distinctive features that make it an interesting test case for Zipf’s Law.</p>
+
+<p>The country has a small number of very large cities (Toronto at ~6.5 million, Montreal at ~4.3 million, Vancouver at ~2.7 million) and a long tail of medium and small cities. The top three are geographically dispersed: Toronto in the industrial heartland, Montreal in Quebec, Vancouver on the Pacific coast. This reflects regional political economy as much as pure market dynamics.</p>
+
+<p>Below the top three, the distribution is remarkably even. Calgary and Edmonton both have roughly 1.3–1.4 million people — nearly tied for fourth and fifth. Winnipeg, Ottawa, and Quebec City cluster between 800,000 and 1.1 million. The Canadian city size distribution fits Zipf’s Law reasonably well for ranks 1–3 but shows a more compressed middle than a pure Pareto distribution would predict.</p>
+
+<div data-viz="echarts" data-options="{
+  &quot;title&quot;: {&quot;text&quot;: &quot;Rank-Size Distribution: Top 30 Canadian CMAs&quot;, &quot;left&quot;: &quot;center&quot;, &quot;subtext&quot;: &quot;Log-log scale — slope ≈ −1 is Zipf Law&quot;},
+  &quot;tooltip&quot;: {
+    &quot;trigger&quot;: &quot;item&quot;,
+    &quot;formatter&quot;: &quot;{b}&lt;br/&gt;Rank: {c[0]}&lt;br/&gt;Population: {c[1]} thousand&quot;
+  },
+  &quot;xAxis&quot;: {
+    &quot;type&quot;: &quot;log&quot;,
+    &quot;name&quot;: &quot;Rank (log scale)&quot;,
+    &quot;nameLocation&quot;: &quot;middle&quot;,
+    &quot;nameGap&quot;: 35,
+    &quot;min&quot;: 1,
+    &quot;max&quot;: 35
+  },
+  &quot;yAxis&quot;: {
+    &quot;type&quot;: &quot;log&quot;,
+    &quot;name&quot;: &quot;Population (thousands, log scale)&quot;,
+    &quot;nameLocation&quot;: &quot;middle&quot;,
+    &quot;nameGap&quot;: 55,
+    &quot;min&quot;: 80,
+    &quot;max&quot;: 8000
+  },
+  &quot;series&quot;: [
+    {
+      &quot;name&quot;: &quot;Canadian CMAs&quot;,
+      &quot;type&quot;: &quot;scatter&quot;,
+      &quot;symbolSize&quot;: 9,
+      &quot;data&quot;: [
+        {&quot;name&quot;: &quot;Toronto&quot;, &quot;value&quot;: [1, 6418]},
+        {&quot;name&quot;: &quot;Montreal&quot;, &quot;value&quot;: [2, 4314]},
+        {&quot;name&quot;: &quot;Vancouver&quot;, &quot;value&quot;: [3, 2737]},
+        {&quot;name&quot;: &quot;Calgary&quot;, &quot;value&quot;: [4, 1392]},
+        {&quot;name&quot;: &quot;Edmonton&quot;, &quot;value&quot;: [5, 1361]},
+        {&quot;name&quot;: &quot;Ottawa&quot;, &quot;value&quot;: [6, 1072]},
+        {&quot;name&quot;: &quot;Winnipeg&quot;, &quot;value&quot;: [7, 866]},
+        {&quot;name&quot;: &quot;Quebec City&quot;, &quot;value&quot;: [8, 839]},
+        {&quot;name&quot;: &quot;Hamilton&quot;, &quot;value&quot;: [9, 785]},
+        {&quot;name&quot;: &quot;Kitchener&quot;, &quot;value&quot;: [10, 590]},
+        {&quot;name&quot;: &quot;London&quot;, &quot;value&quot;: [11, 542]},
+        {&quot;name&quot;: &quot;Halifax&quot;, &quot;value&quot;: [12, 480]},
+        {&quot;name&quot;: &quot;Oshawa&quot;, &quot;value&quot;: [13, 415]},
+        {&quot;name&quot;: &quot;Victoria&quot;, &quot;value&quot;: [14, 408]},
+        {&quot;name&quot;: &quot;Windsor&quot;, &quot;value&quot;: [15, 336]},
+        {&quot;name&quot;: &quot;Saskatoon&quot;, &quot;value&quot;: [16, 330]},
+        {&quot;name&quot;: &quot;Regina&quot;, &quot;value&quot;: [17, 256]},
+        {&quot;name&quot;: &quot;Sherbrooke&quot;, &quot;value&quot;: [18, 230]},
+        {&quot;name&quot;: &quot;St. Johns&quot;, &quot;value&quot;: [19, 214]},
+        {&quot;name&quot;: &quot;Barrie&quot;, &quot;value&quot;: [20, 210]},
+        {&quot;name&quot;: &quot;Kelowna&quot;, &quot;value&quot;: [21, 205]},
+        {&quot;name&quot;: &quot;Abbotsford&quot;, &quot;value&quot;: [22, 196]},
+        {&quot;name&quot;: &quot;Sudbury&quot;, &quot;value&quot;: [23, 174]},
+        {&quot;name&quot;: &quot;Lethbridge&quot;, &quot;value&quot;: [24, 118]},
+        {&quot;name&quot;: &quot;Moncton&quot;, &quot;value&quot;: [25, 160]},
+        {&quot;name&quot;: &quot;Kingston&quot;, &quot;value&quot;: [26, 172]},
+        {&quot;name&quot;: &quot;Saguenay&quot;, &quot;value&quot;: [27, 162]},
+        {&quot;name&quot;: &quot;Trois-Rivières&quot;, &quot;value&quot;: [28, 157]},
+        {&quot;name&quot;: &quot;Guelph&quot;, &quot;value&quot;: [29, 153]},
+        {&quot;name&quot;: &quot;Brantford&quot;, &quot;value&quot;: [30, 134]}
+      ],
+      &quot;itemStyle&quot;: {&quot;color&quot;: &quot;#5c8ee0&quot;},
+      &quot;label&quot;: {&quot;show&quot;: false}
+    },
+    {
+      &quot;name&quot;: &quot;Zipf Prediction&quot;,
+      &quot;type&quot;: &quot;line&quot;,
+      &quot;smooth&quot;: true,
+      &quot;data&quot;: [[1,6418],[2,3209],[3,2139],[5,1284],[10,642],[15,428],[20,321],[30,214]],
+      &quot;lineStyle&quot;: {&quot;type&quot;: &quot;dashed&quot;, &quot;color&quot;: &quot;#e05c5c&quot;, &quot;width&quot;: 2},
+      &quot;itemStyle&quot;: {&quot;color&quot;: &quot;#e05c5c&quot;},
+      &quot;symbol&quot;: &quot;none&quot;
+    }
+  ]
+}"></div>
+
+<p>The dashed line shows the Zipf prediction anchored to Toronto’s population. Several features stand out. Toronto fits almost perfectly by construction. Montreal is slightly smaller than predicted. Vancouver is slightly larger. Calgary and Edmonton — almost equal in size — together approximate what Zipf predicts for a single fourth-ranked city. Below the top five, the distribution compresses relative to the Zipf prediction: Canadian medium cities are more equal in size than a pure power law implies.</p>
+
+<div data-viz="echarts" data-options="{
+  &quot;title&quot;: {&quot;text&quot;: &quot;Actual vs Zipf-Predicted Population: Top 10 Canadian CMAs&quot;, &quot;left&quot;: &quot;center&quot;},
+  &quot;tooltip&quot;: {&quot;trigger&quot;: &quot;axis&quot;, &quot;axisPointer&quot;: {&quot;type&quot;: &quot;shadow&quot;}},
+  &quot;legend&quot;: {&quot;data&quot;: [&quot;Actual&quot;, &quot;Zipf Prediction&quot;], &quot;bottom&quot;: 0},
+  &quot;xAxis&quot;: {
+    &quot;type&quot;: &quot;category&quot;,
+    &quot;data&quot;: [&quot;Toronto&quot;, &quot;Montreal&quot;, &quot;Vancouver&quot;, &quot;Calgary&quot;, &quot;Edmonton&quot;, &quot;Ottawa&quot;, &quot;Winnipeg&quot;, &quot;Quebec City&quot;, &quot;Hamilton&quot;, &quot;Kitchener&quot;],
+    &quot;axisLabel&quot;: {&quot;rotate&quot;: 30, &quot;fontSize&quot;: 11}
+  },
+  &quot;yAxis&quot;: {
+    &quot;type&quot;: &quot;value&quot;,
+    &quot;name&quot;: &quot;Population (thousands)&quot;,
+    &quot;nameLocation&quot;: &quot;middle&quot;,
+    &quot;nameGap&quot;: 55,
+    &quot;min&quot;: 0,
+    &quot;max&quot;: 7000
+  },
+  &quot;series&quot;: [
+    {
+      &quot;name&quot;: &quot;Actual&quot;,
+      &quot;type&quot;: &quot;bar&quot;,
+      &quot;data&quot;: [6418, 4314, 2737, 1392, 1361, 1072, 866, 839, 785, 590],
+      &quot;itemStyle&quot;: {&quot;color&quot;: &quot;#5c8ee0&quot;}
+    },
+    {
+      &quot;name&quot;: &quot;Zipf Prediction&quot;,
+      &quot;type&quot;: &quot;bar&quot;,
+      &quot;data&quot;: [6418, 3209, 2139, 1605, 1284, 1070, 917, 802, 713, 642],
+      &quot;itemStyle&quot;: {&quot;color&quot;: &quot;#e05c5c&quot;, &quot;opacity&quot;: 0.7}
+    }
+  ]
+}"></div>
+
+<p>Montreal exceeds its Zipf prediction — it is the historical metropolis of Canada and retains a primate-city character in Quebec. Calgary and Edmonton together are roughly what Zipf predicts for the fourth-ranked city. Hamilton and Kitchener are substantially larger than predicted — reflecting their absorption into the Toronto metropolitan orbit.</p>
+
+<hr />
+
+<h2 id="5-why-does-canada-deviate-regional-political-economy">5. Why Does Canada Deviate? Regional Political Economy</h2>
+
+<p>Pure Zipf’s Law emerges from random multiplicative growth without institutional constraints. Canada’s city system has been heavily shaped by institutions: federal bilingualism policies that reinforced Montreal, the National Policy that concentrated manufacturing in the Windsor-Quebec City corridor, natural resource booms that built Edmonton and Calgary, and interprovincial migration patterns that differ from the US.</p>
+
+<p>The most notable deviation is the Alberta urban near-parity. Edmonton and Calgary are almost exactly the same size — highly unusual in a province of this scale. In most jurisdictions, economic geography produces a dominant regional city: Houston dominates Texas; Phoenix dominates Arizona; Perth dominates Western Australia. Alberta’s energy economy created two cities with complementary functions — Calgary as the corporate headquarters and financial centre, Edmonton as the government capital and refining hub — that grew in parallel rather than in competition. This near-parity is what urban economists call an <strong>urban system without a primate city</strong>.</p>
+
+<p>The primate city concept, formalised by Mark Jefferson in 1939, describes a city system where the largest city is disproportionately large relative to the rank-size prediction. Countries with primate city systems (France/Paris, Argentina/Buenos Aires, Thailand/Bangkok) tend to have highly centralised political systems and historically agrarian hinterlands. Canada’s federal structure and regional power bases have prevented a single dominant city from emerging, keeping the distribution closer to Zipf’s prediction even though the underlying growth process is not purely random.</p>
+
+<hr />
+
+<h2 id="6-gibrats-law-in-practice">6. Gibrat’s Law in Practice</h2>
+
+<p>Empirical tests of Gibrat’s Law for Canadian cities generally find support over long periods. Large cities and small cities have similar average growth rates. But there is substantial variation. Cities with favourable resource endowments (Fort McMurray, Saskatoon) can grow explosively over short windows. Cities losing their industrial base (Windsor, Sudbury) can stagnate or decline.</p>
+
+<p>Over sufficiently long periods — decades rather than years — these idiosyncratic shocks wash out and the distribution returns to something close to Zipf. The law is a statement about the long-run statistical tendency of multiplicative random growth, not about the growth trajectory of any individual city.</p>
+
+<hr />
+
+<h2 id="7-policy-implications">7. Policy Implications</h2>
+
+<p>Zipf’s Law has a somewhat fatalistic implication: the structure of the urban system is determined by deep statistical regularities, not by individual policy choices. No policy is going to make Lethbridge the size of Calgary. But the distribution is not immutable. Policy can shift the growth rate of particular cities, bend the rank-size relationship at specific points, or alter the slope of the Pareto exponent.</p>
+
+<p>Canadian urban policy has generally not aimed to flatten the distribution. Immigration settlement patterns reinforce the dominance of Toronto and Vancouver. Federal transfers partly offset regional disparities but do not redistribute economic activity. Provincial capital status protects Edmonton and Ottawa from being purely subordinate to Calgary and Toronto respectively.</p>
+
+<p>Understanding where a city sits relative to the Zipf prediction — above the line (larger than expected) or below it (smaller than expected) — helps diagnose whether a city is likely to grow toward its predicted size or whether structural factors have pushed it off the trajectory that market forces alone would produce.</p>
+
+<hr />
+
+<h2 id="references">References</h2>
+
+<p>Auerbach, Felix. 1913. “Das Gesetz der Bevölkerungskonzentration.” <em>Petermanns Geographische Mitteilungen</em> 59: 74–76. <a href="https://archive.org/details/Auerbach1913">https://archive.org/details/Auerbach1913</a></p>
+
+<p>Gabaix, Xavier. 1999. “Zipf’s Law for Cities: An Explanation.” <em>Quarterly Journal of Economics</em> 114 (3): 739–767. <a href="https://doi.org/10.1162/003355399556133">https://doi.org/10.1162/003355399556133</a></p>
+
+<p>Gibrat, Robert. 1931. <em>Les Inégalités Économiques</em>. Paris: Librairie du Recueil Sirey. (no public URL available)</p>
+
+<p>Jefferson, Mark. 1939. “The Law of the Primate City.” <em>Geographical Review</em> 29 (2): 226–232. (no public URL available; indexed at <a href="https://www.semanticscholar.org/paper/The-Law-of-the-Primate-City-Jefferson/189e023c7e53ad4e9a321ca7076d2f2b995f722d">https://www.semanticscholar.org/paper/The-Law-of-the-Primate-City-Jefferson/189e023c7e53ad4e9a321ca7076d2f2b995f722d</a>)</p>
+
+<p>Statistics Canada. 2022. “Population and Dwelling Count Highlight Tables, 2021 Census of Population.” <a href="https://www12.statcan.gc.ca/census-recensement/2021/dp-pd/hlt-fst/pd-pl/List-cma-tca.cfm?Lang=Eng&amp;T=1601&amp;S=86&amp;O=A">https://www12.statcan.gc.ca/census-recensement/2021/dp-pd/hlt-fst/pd-pl/List-cma-tca.cfm?Lang=Eng&amp;T=1601&amp;S=86&amp;O=A</a></p>
+
+<p>Zipf, George Kingsley. 1949. <em>Human Behavior and the Principle of Least Effort: An Introduction to Human Ecology</em>. Cambridge, MA: Addison-Wesley Press. (no public URL available)</p>
+
+      </div>
+
+      
+
+
+
+      
+
+  
+  
+  
+  
+
+
+
+      <!-- essay-footer-notes.html — References / endnotes section.
+     Hidden by default; assets/js/essay/core.js shows it and populates
+     #essay-endnotes-list from [data-cite] elements in the content.
+
+     In posts, create citation markers with:
+       <cite data-cite="Author, Title, URL">1</cite>
+     The JS collects these and renders a numbered reference list here. -->
+
+<footer class="essay-endnotes" id="essay-endnotes" aria-label="References" hidden>
+  <div class="essay-endnotes-inner">
+    <h2 class="essay-endnotes-heading">References</h2>
+    <ol class="essay-endnotes-list" id="essay-endnotes-list">
+      <!-- Populated at runtime by assets/js/essay/core.js buildEndnotes() -->
+    </ol>
+  </div>
+</footer>
+
+
+      
+
+      
+
+      
+
+
+
+
+
+
+
+
+
+
+
+
+
+<aside class="related-posts" aria-label="Related articles">
+  <h2 class="related-posts-heading">Related</h2>
+  <div class="related-posts-grid">
+    
+    <a href="/essay/storm-country-calgary-extreme-weather/" class="related-post-card">
+      
+      <div class="related-post-img" style="background-image:url('/assets/images/storm-country.webp')"></div>
+      
+      <div class="related-post-body">
+        
+        <span class="related-post-tag">Physical Geography</span>
+        
+        <h3 class="related-post-title">Storm Country</h3>
+        <time class="related-post-date" datetime="2026-03-20">20 Mar 2026</time>
+      </div>
+    </a>
+    
+    <a href="/essay/ideology-of-extraction/" class="related-post-card">
+      
+      <div class="related-post-img" style="background-image:url('/assets/images/historical-economic-patterns.webp')"></div>
+      
+      <div class="related-post-body">
+        
+        <span class="related-post-tag">Historical Geography</span>
+        
+        <h3 class="related-post-title">The Ideology of Extraction</h3>
+        <time class="related-post-date" datetime="2026-03-12">12 Mar 2026</time>
+      </div>
+    </a>
+    
+    <a href="/essay/calgary-hidden-nature/" class="related-post-card">
+      
+      <div class="related-post-img" style="background-image:url('/assets/images/calgary-greenspace.jpg')"></div>
+      
+      <div class="related-post-body">
+        
+        <span class="related-post-tag">Urban Geography</span>
+        
+        <h3 class="related-post-title">Hidden in Plain Sight</h3>
+        <time class="related-post-date" datetime="2026-03-17">17 Mar 2026</time>
+      </div>
+    </a>
+    
+  </div>
+</aside>
+
+
+
+    </article>
+  </main>
+
+  <aside
+    class="essay-sidenotes"
+    id="essay-sidenotes"
+    aria-label="Margin notes"
+  ></aside>
+
+</div>
+
+</div>
+
+<footer>
+  <div class="footer-inner">
+
+    <!-- Col 1: Brand -->
+    <div class="footer-brand">
+      <div class="footer-brand-logo">
+        
+        <img loading="lazy" src="/assets/images/logo.webp" alt="WaywardHouse" width="28" height="28">
+        
+        WaywardHouse<span>.</span>
+      </div>
+      
+      
+      <p class="footer-brand-desc">Understanding how place, economy, and environment interact — through analysis, modelling, and open tools.</p>
+      
+
+      <div class="footer-social">
+        
+        
+        
+        <a href="/feed.xml" class="social-icon" target="_blank" rel="noopener noreferrer" aria-label="RSS feed">
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M4 11a9 9 0 0 1 9 9"/>
+            <path d="M4 4a16 16 0 0 1 16 16"/>
+            <circle cx="5" cy="19" r="1"/>
+          </svg>
+        </a>
+      </div>
+    </div>
+
+    <!-- Col 2: Topics (configurable via footer_topics, falls back to auto-categories) -->
+    <nav aria-labelledby="footer-topics">
+      <h3 class="footer-col-title" id="footer-topics">Reading</h3>
+      <ul class="footer-links">
+        
+          
+          <li><a href="/topics/">Essays</a></li>
+          
+          <li><a href="/series/">Modelling</a></li>
+          
+          <li><a href="/archive/">Archive</a></li>
+          
+          <li><a href="/start-here/">Start Here</a></li>
+          
+        
+      </ul>
+    </nav>
+
+    <!-- Col 3: Secondary navigation -->
+    
+    <nav aria-labelledby="footer-company">
+      <h3 class="footer-col-title" id="footer-company">Site</h3>
+      <ul class="footer-links">
+        
+        <li><a href="/start-here/">Start Here</a></li>
+        
+        <li><a href="/about/">About</a></li>
+        
+        <li><a href="/contact/">Contact</a></li>
+        
+      </ul>
+    </nav>
+    
+
+    <!-- Col 4: Resources -->
+    <nav aria-labelledby="footer-resources">
+      <h3 class="footer-col-title" id="footer-resources">Resources</h3>
+      <ul class="footer-links">
+        <li><a href="/archive/">Archive</a></li>
+        <li><a href="/feed.xml">RSS Feed</a></li>
+        <li><a href="/topics/">All Topics</a></li>
+      </ul>
+    </nav>
+
+  </div><!-- /.footer-inner -->
+
+  <div class="footer-bottom">
+    <span class="footer-copy">
+      &copy; 2026 WaywardHouse.
+    </span>
+    <div class="footer-legal">
+      <a href="/privacy/">Privacy Policy</a>
+      <a href="/terms/">Terms of Service</a>
+    </div>
+  </div>
+
+</footer>
+
+
+<!-- Alpine.js bundle -->
+<script type="module" src="/assets/dist/main.js"></script>
+
+<!-- Visualization runtime — detects and loads CDN libraries dynamically -->
+<script type="module" src="/assets/js/core.js"></script>
+
+<!-- Search overlay — event-driven: nav button $dispatches 'search:open' -->
+<div
+  x-data="search"
+  x-init="init()"
+  @search:open.window="open()"
+>
+  <div
+    class="search-overlay"
+    x-show="isOpen"
+    x-transition:enter="transition ease-out duration-150"
+    x-transition:enter-start="opacity-0"
+    x-transition:enter-end="opacity-100"
+    x-transition:leave="transition ease-in duration-100"
+    x-transition:leave-start="opacity-100"
+    x-transition:leave-end="opacity-0"
+    @click.self="close()"
+    style="display: none;"
+    role="dialog"
+    aria-modal="true"
+    aria-label="Search"
+  >
+    <div class="search-panel">
+      <div class="search-input-wrap">
+        <svg class="search-icon" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <circle cx="11" cy="11" r="8"/>
+          <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+        </svg>
+        <input
+          class="search-input"
+          type="search"
+          placeholder="Search posts…"
+          x-model="query"
+          x-ref="input"
+          @input.debounce.300ms="runSearch()"
+          @keydown.escape="close()"
+          autocomplete="off"
+          spellcheck="false"
+          aria-label="Search query"
+        >
+        <kbd class="search-esc" aria-hidden="true">ESC</kbd>
+      </div>
+
+      <div class="search-results" x-show="query.trim().length > 0">
+        <div class="search-status" x-show="loading" aria-live="polite">Searching…</div>
+        <div class="search-status" x-show="!loading && results.length === 0" aria-live="polite">
+          No results for "<span x-text="query"></span>"
+        </div>
+        <ul class="search-result-list" x-show="!loading && results.length > 0" role="list">
+          <template x-for="result in results" :key="result.url">
+            <li>
+              <a :href="result.url" class="search-result-item" @click="close()">
+                <div class="search-result-title" x-text="result.meta?.title || result.url"></div>
+                <div class="search-result-excerpt" x-html="result.excerpt"></div>
+              </a>
+            </li>
+          </template>
+        </ul>
+      </div>
+    </div>
+  </div>
+</div>
+
+</body>
+</html>

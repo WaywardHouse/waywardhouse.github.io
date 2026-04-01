@@ -1,0 +1,1036 @@
+<!DOCTYPE html>
+
+<html lang="en" data-brand="wayward" data-theme="light">
+<head>
+  <meta charset="utf-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Light Attenuation in a Canopy — WaywardHouse</title>
+<meta name="description" content="Sunlight entering a forest canopy dims as it passes through leaves. Each layer absorbs a fraction of the light reaching it. This is exponential decay, but in space rather than...">
+
+<!-- Dark mode flash prevention — runs synchronously before first paint -->
+<script>
+  (function () {
+    var defaultDark = 'light' === 'dark';
+    var s = localStorage.getItem('theme');
+    var dark = s !== null ? s === 'dark' : defaultDark;
+    document.documentElement.dataset.theme = dark ? 'dark' : 'light';
+  })();
+</script>
+
+<!-- Preconnect to CDN domains used by the viz runtime -->
+<link rel="preconnect" href="https://cdn.jsdelivr.net">
+<link rel="preconnect" href="https://unpkg.com">
+<link rel="preconnect" href="https://esm.sh">
+<link rel="preconnect" href="https://api.mapbox.com">
+<link rel="preconnect" href="https://events.mapbox.com">
+
+
+<script>window.MAPBOX_TOKEN = 'pk.eyJ1IjoiYnJlYWRlZGNvZCIsImEiOiJjbW0xa25qc2EwMmtwMnJwejJlNndqdnoxIn0._7I9PwXuFLrOQINVZ84y1w';</script>
+
+
+<!-- Fonts -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:ital,wght@0,300;0,400;0,600;0,700;0,800;0,900;1,700;1,800&family=Barlow:wght@300;400&family=IBM+Plex+Mono:ital,wght@0,300;0,400;0,500;1,300&family=Literata:ital,opsz,wght@0,7..72,300;0,7..72,400;0,7..72,500;1,7..72,300;1,7..72,400&display=swap" rel="stylesheet">
+
+<!-- Theme stylesheet (Vite build output) -->
+<link rel="stylesheet" href="/assets/dist/main.css">
+
+<!-- Brand token overrides — loaded after main.css so variables cascade correctly -->
+
+<link rel="stylesheet" href="/assets/css/brand-wayward.css">
+
+
+
+<!-- Syntax highlighting (Rouge — light + dark) -->
+<link rel="stylesheet" href="/assets/css/syntax.css">
+
+<!-- Begin Jekyll SEO tag v2.8.0 -->
+<title>Light Attenuation in a Canopy | WaywardHouse</title>
+<meta name="generator" content="Jekyll v4.4.1" />
+<meta property="og:title" content="Light Attenuation in a Canopy" />
+<meta property="og:locale" content="en" />
+<meta name="description" content="Sunlight entering a forest canopy dims as it passes through leaves. Each layer absorbs a fraction of the light reaching it. This is exponential decay, but in space rather than time. We’ll derive Beer’s Law and explore how leaf area index controls the vertical light profile." />
+<meta property="og:description" content="Sunlight entering a forest canopy dims as it passes through leaves. Each layer absorbs a fraction of the light reaching it. This is exponential decay, but in space rather than time. We’ll derive Beer’s Law and explore how leaf area index controls the vertical light profile." />
+<link rel="canonical" href="https://wayward.house/model/light-attenuation-in-canopy/" />
+<meta property="og:url" content="https://wayward.house/model/light-attenuation-in-canopy/" />
+<meta property="og:site_name" content="WaywardHouse" />
+<meta property="og:image" content="https://wayward.house/assets/images/remote-sensing.webp" />
+<meta property="og:type" content="article" />
+<meta property="article:published_time" content="2026-02-26T00:00:00-07:00" />
+<meta name="twitter:card" content="summary_large_image" />
+<meta property="twitter:image" content="https://wayward.house/assets/images/remote-sensing.webp" />
+<meta property="twitter:title" content="Light Attenuation in a Canopy" />
+<meta name="twitter:site" content="@" />
+<script type="application/ld+json">
+{"@context":"https://schema.org","@type":"BlogPosting","dateModified":"2026-03-17T20:42:46-06:00","datePublished":"2026-02-26T00:00:00-07:00","description":"Sunlight entering a forest canopy dims as it passes through leaves. Each layer absorbs a fraction of the light reaching it. This is exponential decay, but in space rather than time. We’ll derive Beer’s Law and explore how leaf area index controls the vertical light profile.","headline":"Light Attenuation in a Canopy","image":"https://wayward.house/assets/images/remote-sensing.webp","mainEntityOfPage":{"@type":"WebPage","@id":"https://wayward.house/model/light-attenuation-in-canopy/"},"publisher":{"@type":"Organization","logo":{"@type":"ImageObject","url":"https://wayward.house/assets/images/logo.webp"}},"url":"https://wayward.house/model/light-attenuation-in-canopy/"}</script>
+<!-- End Jekyll SEO tag -->
+
+
+
+<!-- Cloudflare Web Analytics -->
+<script defer src="https://static.cloudflareinsights.com/beacon.min.js"
+  data-cf-beacon='{"token": "62c47d78bf9d4c80972d4e6242d79ff8"}'></script>
+
+
+</head>
+<body class="
+  model-template
+   tag-modelling
+   tag-hash-math
+  
+   tag-hash-viz
+  
+  
+  
+  
+  
+  
+">
+
+<a href="#main-content" class="skip-link">Skip to content</a>
+
+<header class="nav" x-data="{ open: false }">
+  <div class="nav-inner">
+
+    <!-- Logo -->
+    <a href="/" class="nav-logo">
+      
+      <img loading="lazy" src="/assets/images/logo.webp" alt="WaywardHouse" width="32" height="32">
+      
+      WaywardHouse<span>.</span>
+    </a>
+
+    <!-- Desktop nav links -->
+    <ul class="nav-links" role="list">
+      
+      <li>
+        <a href="/topics/">Essays</a>
+      </li>
+      
+      <li>
+        <a href="/series/">Modelling</a>
+      </li>
+      
+      <li>
+        <a href="/about/">About</a>
+      </li>
+      
+    </ul>
+
+    <!-- Actions -->
+    <div class="nav-actions">
+
+      <!-- Search button -->
+      <button
+        class="search-toggle"
+        type="button"
+        aria-label="Search (⌘K)"
+        title="Search (⌘K)"
+        @click="$dispatch('search:open')"
+      >
+        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <circle cx="11" cy="11" r="8"/>
+          <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+        </svg>
+      </button>
+
+      <!-- Dark mode toggle -->
+      <button
+        class="theme-toggle"
+        x-data="darkMode"
+        x-init="init()"
+        @click="toggle()"
+        :aria-label="dark ? 'Switch to light mode' : 'Switch to dark mode'"
+        type="button"
+      >
+        <!-- Sun icon (shown in light mode) -->
+        <svg class="icon-sun" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">
+          <circle cx="12" cy="12" r="5"/>
+          <line x1="12" y1="1" x2="12" y2="3"/>
+          <line x1="12" y1="21" x2="12" y2="23"/>
+          <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/>
+          <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/>
+          <line x1="1" y1="12" x2="3" y2="12"/>
+          <line x1="21" y1="12" x2="23" y2="12"/>
+          <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/>
+          <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>
+        </svg>
+        <!-- Moon icon (shown in dark mode) -->
+        <svg class="icon-moon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">
+          <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+        </svg>
+      </button>
+
+      <!-- Hamburger (mobile only) -->
+      <button
+        class="mobile-nav-toggle"
+        @click="open = !open"
+        :aria-expanded="open"
+        :aria-label="open ? 'Close menu' : 'Open menu'"
+        type="button"
+      >
+        <svg x-show="!open" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <line x1="3" y1="6" x2="21" y2="6"/>
+          <line x1="3" y1="12" x2="21" y2="12"/>
+          <line x1="3" y1="18" x2="21" y2="18"/>
+        </svg>
+        <svg x-show="open" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <line x1="18" y1="6" x2="6" y2="18"/>
+          <line x1="6" y1="6" x2="18" y2="18"/>
+        </svg>
+      </button>
+
+    </div><!-- /.nav-actions -->
+  </div><!-- /.nav-inner -->
+
+  <!-- Mobile drawer -->
+  <div
+    class="mobile-nav"
+    x-show="open"
+    x-transition:enter="transition ease-out duration-200"
+    x-transition:enter-start="opacity-0 -translate-y-1"
+    x-transition:enter-end="opacity-100 translate-y-0"
+    x-transition:leave="transition ease-in duration-150"
+    x-transition:leave-start="opacity-100 translate-y-0"
+    x-transition:leave-end="opacity-0 -translate-y-1"
+    @click.outside="open = false"
+    @keydown.escape.window="open = false"
+  >
+    <ul role="list">
+      
+      <li>
+        <a href="/topics/" @click="open = false">Essays</a>
+      </li>
+      
+      <li>
+        <a href="/series/" @click="open = false">Modelling</a>
+      </li>
+      
+      <li>
+        <a href="/about/" @click="open = false">About</a>
+      </li>
+      
+    </ul>
+  </div><!-- /.mobile-nav -->
+
+</header>
+
+
+<div id="main-content">
+  <!-- Essay stylesheet and runtime — self-contained -->
+<link rel="stylesheet" href="/assets/css/essay.css">
+<script type="module" src="/assets/js/essay/core.js"></script>
+
+<div class="essay-layout" id="essay-layout">
+
+  <!-- essay-toc.html — Sticky table of contents (left column).
+     The <ol> is empty on load; assets/js/essay/core.js populates it
+     from h2/h3 elements found in #essay-content after the page renders. -->
+
+<nav class="essay-toc" id="essay-toc" aria-label="Table of contents">
+  <div class="essay-toc-inner">
+    <p class="essay-toc-heading" aria-hidden="true">Contents</p>
+    <ol class="essay-toc-list" id="essay-toc-list">
+      <!-- Populated at runtime by assets/js/essay/core.js buildToc() -->
+    </ol>
+  </div>
+</nav>
+
+
+  <main class="essay-main" id="essay-main" role="main">
+    <article class="essay-article">
+
+      <!-- essay-hero.html — Header for computational essay template.
+     Displays feature image, tag label, title, excerpt, and post metadata. -->
+
+<header class="essay-hero">
+  
+  <figure class="essay-hero-figure">
+    <img
+      src="/assets/images/remote-sensing.webp"
+      alt="Light Attenuation in a Canopy"
+      class="essay-hero-img"
+      loading="eager"
+    >
+    
+  </figure>
+  
+
+  <div class="essay-hero-body">
+
+    
+    
+    
+    
+    
+    <nav class="essay-breadcrumb" aria-label="Series position">
+      
+      <a href="/series/1/" class="essay-breadcrumb-link">Computational geography foundations</a>
+      
+      
+      <span class="essay-breadcrumb-sep" aria-hidden="true">›</span>
+      <span class="essay-breadcrumb-cluster">Energy and Attenuation</span>
+      
+      
+      <span class="essay-breadcrumb-sep" aria-hidden="true">›</span>
+      <span class="essay-breadcrumb-pos">Model 5</span>
+      
+    </nav>
+    
+
+    <div class="essay-hero-labels">
+      
+      <a href="/topics/modelling/" class="essay-tag-label">modelling</a>
+      
+      
+      <span class="difficulty-badge difficulty-badge--3">Level 3</span>
+      
+    </div>
+
+    <h1 class="essay-title">Light Attenuation in a Canopy</h1>
+
+    
+    <p class="essay-excerpt">Sunlight entering a forest canopy dims as it passes through leaves. Each layer absorbs a fraction of the light reaching it. This is exponential decay, but in space rather than time. We'll derive Beer's Law and explore how leaf area index controls the vertical light profile.
+</p>
+    
+
+    
+    <p class="essay-prereqs"><span class="essay-prereqs-label">Prerequisites:</span> differential equations, exponential decay, vertical gradients</p>
+    
+
+    <div class="essay-meta">
+      
+      <div class="essay-meta-secondary">
+        <time class="essay-date" datetime="2026-02-26">26 Feb 2026</time>
+        
+        
+        <span class="essay-sep" aria-hidden="true">·</span>
+        <span class="essay-updated">Updated <time datetime="2026-03-17">17 Mar 2026</time></span>
+        
+        <span class="essay-sep" aria-hidden="true">·</span>
+        <span class="essay-reading-time">10 min read</span>
+      </div>
+    </div>
+  </div>
+</header>
+
+
+      
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<nav class="series-nav" aria-label="Series navigation">
+
+  <div class="series-nav-header">
+    <span class="series-nav-label">B</span>
+    <span class="series-nav-title">Energy and Attenuation</span>
+  </div>
+
+  <ol class="series-nav-list">
+    
+    <li class="series-nav-item series-nav-item--current">
+      
+      <span class="series-nav-link series-nav-link--current" aria-current="page">
+        <span class="series-nav-number">5</span>
+        Light Attenuation in a Canopy
+      </span>
+      
+    </li>
+    
+    <li class="series-nav-item">
+      
+      <a href="/model/spectral-mixing-and-sensor-response/" class="series-nav-link">
+        <span class="series-nav-number">6</span>
+        Spectral Mixing and Sensor Response
+      </a>
+      
+    </li>
+    
+    <li class="series-nav-item">
+      
+      <a href="/model/solar-geometry-and-projection/" class="series-nav-link">
+        <span class="series-nav-number">7</span>
+        Solar Geometry and Projection
+      </a>
+      
+    </li>
+    
+  </ol>
+
+  
+  <div class="series-nav-footer">
+    <a href="/series/1/" class="series-nav-all">
+      All 12 in this series &rarr;
+    </a>
+  </div>
+  
+
+</nav>
+
+
+
+
+      <div class="essay-content gh-content" id="essay-content">
+        <p>Walk into an old-growth Douglas fir forest in British Columbia and the light drops immediately — not gradually but in steps, as you pass beneath successive tiers of canopy. Instruments record what the eye perceives: PAR (photosynthetically active radiation) that might be 1,500 µmol/m²/s in full sun drops to 600 at the first canopy layer, 150 beneath the next, and sometimes below 10 at the forest floor. That is less than 1% of full sunlight — enough for shade-tolerant ferns and mosses but insufficient for most tree seedlings. The vertical light gradient is not incidental to how a forest works; it is the primary structure that determines species composition, carbon allocation, and the competitive dynamics between trees.</p>
+
+<p>The mathematics describing this gradient is Beer’s Law — an exponential attenuation equation that appears in an remarkable number of contexts: light through water, X-rays through tissue, radar through soil, sound through atmosphere. In each case, an absorbing medium removes a constant fraction of the signal passing through each layer. The cumulative effect is exponential decay. Deriving Beer’s Law from first principles, and understanding how leaf area index controls the shape of the light profile, is the foundation for canopy radiative transfer models used in everything from carbon cycle accounting to satellite image interpretation.</p>
+
+<h2 id="1-the-question">1. The Question</h2>
+
+<p>How does light intensity change as you descend through a forest canopy?</p>
+
+<p>Stand at the top of a rainforest and measure light intensity: 100% of incoming solar radiation. Drop down 10 meters into the canopy: maybe 60% remains. Another 10 meters: 35%. At the forest floor: perhaps 2%.</p>
+
+<p><strong>Why does this happen?</strong> Each leaf intercepts and absorbs some fraction of the light hitting it. The cumulative effect of many layers creates an exponential decline.</p>
+
+<p>The mathematical question: Can we predict light intensity at any height, given the density of leaves above?</p>
+
+<hr />
+
+<h2 id="2-the-conceptual-model">2. The Conceptual Model</h2>
+
+<h3 id="light-as-a-vertical-cascade">Light as a Vertical Cascade</h3>
+
+<p>Imagine sunlight as a stream of photons raining down from above. As the stream passes through each infinitesimal layer of leaves:</p>
+<ul>
+  <li>Some photons are absorbed (photosynthesis, heat)</li>
+  <li>Some are scattered (reflected, transmitted through gaps)</li>
+  <li>The remainder continues downward</li>
+</ul>
+
+<p>The <strong>rate of loss</strong> is proportional to:</p>
+<ol>
+  <li>The light intensity at that height (more light → more absorption)</li>
+  <li>The leaf density at that height (more leaves → more interception)</li>
+</ol>
+
+<p>This is exactly the structure of exponential decay — but in the <strong>vertical dimension</strong> rather than time.</p>
+
+<h3 id="leaf-area-index-lai">Leaf Area Index (LAI)</h3>
+
+<p><strong>Leaf Area Index</strong> is the total one-sided leaf area per unit ground area.</p>
+
+<p><strong>Units:</strong> $\text{m}^2$ (leaf) / $\text{m}^2$ (ground) = dimensionless</p>
+
+<p><strong>Example:</strong> An LAI of 5 means there are 5 square meters of leaf area above every square meter of ground.</p>
+
+<p>For a canopy of height $H$ with uniform leaf density:</p>
+
+\[\text{LAI} = \text{leaf area density} \times H\]
+
+<hr />
+
+<h2 id="3-building-the-mathematical-model">3. Building the Mathematical Model</h2>
+
+<h3 id="deriving-beers-law">Deriving Beer’s Law</h3>
+
+<p>Let:</p>
+<ul>
+  <li>$I(z)$ = light intensity at height $z$ (units: W/m² or μmol photons/m²/s)</li>
+  <li>$z$ = height above ground (m)</li>
+  <li>$k$ = extinction coefficient (dimensionless)</li>
+  <li>$L(z)$ = cumulative leaf area index above height $z$</li>
+</ul>
+
+<p>The rate of light loss with decreasing height:</p>
+
+\[\frac{dI}{dz} = -k \cdot I(z)\]
+
+<p><strong>Negative sign:</strong> Light decreases as $z$ decreases (moving down through the canopy).</p>
+
+<p><strong>This is identical in form to radioactive decay</strong> — but the independent variable is height, not time.</p>
+
+<h3 id="solving-the-differential-equation">Solving the Differential Equation</h3>
+
+<p>Separation of variables:</p>
+
+\[\frac{1}{I} \frac{dI}{dz} = -k\]
+
+<p>Integrate:</p>
+
+\[\int \frac{1}{I} dI = \int -k \, dz\]
+
+\[\ln I = -kz + C\]
+
+<p>Exponentiate:</p>
+
+\[I(z) = e^{-kz + C} = e^C \cdot e^{-kz}\]
+
+<p>At the top of the canopy ($z = H$), let $I(H) = I_0$ (incoming radiation):</p>
+
+\[I_0 = e^C \cdot e^{-kH}\]
+
+\[e^C = I_0 e^{kH}\]
+
+<p>Substitute back:</p>
+
+\[I(z) = I_0 e^{kH} \cdot e^{-kz} = I_0 e^{-k(z - H)}\]
+
+<p>Or, measuring from the top of the canopy with $z’ = H - z$ (depth into canopy):</p>
+
+\[I(z') = I_0 e^{-kz'}\]
+
+<p><strong>This is Beer’s Law</strong> (also called the Beer-Lambert Law or Beer-Bouguer Law).</p>
+
+<h3 id="relating-to-cumulative-lai">Relating to Cumulative LAI</h3>
+
+<p>If leaf area density is uniform, the cumulative LAI from the top to depth $z’$ is:</p>
+
+\[L = \text{LAI}_{\text{total}} \times \frac{z'}{H}\]
+
+<p>Then:</p>
+
+\[I = I_0 e^{-kL}\]
+
+<p>This form is more commonly used in ecology: light depends on cumulative leaf area, not just height.</p>
+
+<hr />
+
+<h2 id="4-worked-example-by-hand">4. Worked Example by Hand</h2>
+
+<p><strong>Problem:</strong> A forest canopy has total LAI = 6, extinction coefficient $k = 0.5$, and incoming light $I_0 = 1000$ μmol/m²/s.</p>
+
+<p>(a) What is the light intensity at the forest floor (where cumulative LAI = 6)?<br />
+(b) At what cumulative LAI is light reduced to 10% of incoming?<br />
+(c) What fraction of light penetrates the canopy?</p>
+
+<h3 id="solution">Solution</h3>
+
+<p><strong>(a) Light at forest floor</strong></p>
+
+\[I = I_0 e^{-kL} = 1000 \cdot e^{-0.5 \times 6} = 1000 \cdot e^{-3}\]
+
+\[e^{-3} \approx 0.0498\]
+
+\[I \approx 1000 \times 0.0498 = 49.8 \text{ μmol/m²/s}\]
+
+<p>About <strong>5%</strong> of incoming light reaches the forest floor.</p>
+
+<p><strong>(b) Depth where $I = 0.1 I_0$</strong></p>
+
+<p>$$0.1 I_0 = I_0 e^{-kL}$$</p>
+
+<p>$$0.1 = e^{-0.5L}$$</p>
+
+<p>Take natural log:</p>
+
+\[\ln(0.1) = -0.5L\]
+
+\[-2.303 = -0.5L\]
+
+\[L = \frac{2.303}{0.5} = 4.61\]
+
+<p>Light drops to 10% at cumulative LAI of <strong>4.6</strong> (about 77% of the way through the canopy).</p>
+
+<p><strong>(c) Fraction penetrating</strong></p>
+
+<p>From part (a): $I_{\text{floor}} / I_0 = 0.0498 \approx 5\%$</p>
+
+<p><strong>5% penetrates</strong> to the ground.</p>
+
+<hr />
+
+<h2 id="5-computational-implementation">5. Computational Implementation</h2>
+
+<p>Below is an interactive model showing vertical light profiles.</p>
+
+<div class="viz-container" id="light-attenuation-viz">
+  <div class="controls">
+    <label>
+      Total LAI:
+      <input type="range" id="lai-slider" min="1" max="10" step="0.5" value="6" />
+      <span id="lai-value">6.0</span>
+    </label>
+    <label>
+      Extinction coefficient (k):
+      <input type="range" id="k-slider" min="0.2" max="1.0" step="0.05" value="0.5" />
+      <span id="k-value">0.50</span>
+    </label>
+    <label>
+      Incoming light (I₀):
+      <input type="range" id="i0-slider" min="500" max="2000" step="100" value="1000" />
+      <span id="i0-value">1000</span> μmol/m²/s
+    </label>
+  </div>
+  <div id="light-profile-chart" style="width: 100%; height: 500px;"></div>
+  <div class="info-panel">
+    <p id="floor-light"></p>
+    <p><strong>Biological context:</strong> Shade-tolerant species can photosynthesize at 1-2% of full sun. Sun-adapted species typically need &gt;10%.</p>
+  </div>
+</div>
+
+<script type="module">
+while (!window.echarts) await new Promise(r => setTimeout(r, 50));
+
+const chart = window.echarts.init(document.getElementById('light-profile-chart'));
+
+let LAI = 6;
+let k = 0.5;
+let I0 = 1000;
+
+function updateChart() {
+  const profileData = [];
+  const nSteps = 100;
+
+  for (let i = 0; i <= nSteps; i++) {
+    const L = (LAI / nSteps) * i;
+    const I = I0 * Math.exp(-k * L);
+    const relativeHeight = 1 - (i / nSteps);
+    profileData.push([I, relativeHeight]);
+  }
+
+  const floorLight = I0 * Math.exp(-k * LAI);
+  const floorPercent = (floorLight / I0 * 100).toFixed(1);
+
+  document.getElementById('floor-light').innerHTML =
+    `<strong>Forest floor light:</strong> ${floorLight.toFixed(1)} μmol/m²/s (${floorPercent}% of incoming)`;
+
+  const option = {
+    title: {
+      text: `Vertical Light Profile: LAI = ${LAI}, k = ${k.toFixed(2)}`,
+      left: 'center'
+    },
+    tooltip: {
+      trigger: 'axis',
+      formatter: params => {
+        const relHeight = params[0].value[1];
+        const light = params[0].value[0];
+        const percent = (light / I0 * 100).toFixed(1);
+        return `Relative height: ${(relHeight * 100).toFixed(0)}%<br/>Light: ${light.toFixed(1)} μmol/m²/s (${percent}%)`;
+      }
+    },
+    grid: { left: 80, right: 40, top: 60, bottom: 60 },
+    xAxis: {
+      type: 'value',
+      name: 'Light Intensity (μmol/m²/s)',
+      nameLocation: 'middle',
+      nameGap: 30,
+      min: 0,
+      max: Math.max(I0 * 1.1, 100)
+    },
+    yAxis: {
+      type: 'value',
+      name: 'Relative Height (1 = top, 0 = floor)',
+      nameLocation: 'middle',
+      nameGap: 60,
+      min: 0,
+      max: 1,
+      axisLabel: { formatter: '{value}' }
+    },
+    series: [{
+      data: profileData,
+      type: 'line',
+      smooth: true,
+      lineStyle: { color: '#F0177A', width: 3 },
+      areaStyle: {
+        color: new window.echarts.graphic.LinearGradient(0, 0, 1, 0, [
+          { offset: 0, color: 'rgba(240, 23, 122, 0.3)' },
+          { offset: 1, color: 'rgba(240, 23, 122, 0.05)' }
+        ])
+      },
+      showSymbol: false
+    }]
+  };
+
+  chart.setOption(option);
+}
+
+document.getElementById('lai-slider').addEventListener('input', e => {
+  LAI = parseFloat(e.target.value);
+  document.getElementById('lai-value').textContent = LAI.toFixed(1);
+  updateChart();
+});
+
+document.getElementById('k-slider').addEventListener('input', e => {
+  k = parseFloat(e.target.value);
+  document.getElementById('k-value').textContent = k.toFixed(2);
+  updateChart();
+});
+
+document.getElementById('i0-slider').addEventListener('input', e => {
+  I0 = parseFloat(e.target.value);
+  document.getElementById('i0-value').textContent = I0;
+  updateChart();
+});
+
+updateChart();
+window.addEventListener('resize', () => chart.resize());
+</script>
+
+<p><strong>Try this:</strong></p>
+<ul>
+  <li>Increase LAI to 10 (dense tropical forest). Floor light drops below 1%.</li>
+  <li>Decrease k to 0.3 (sparse leaves, less absorption per unit LAI). More light penetrates.</li>
+  <li>Increase k to 0.8 (dense clumped leaves). Light drops off faster.</li>
+  <li>Set LAI = 2 (savanna woodland). Significant light reaches the understory.</li>
+</ul>
+
+<hr />
+
+<h2 id="6-interpretation">6. Interpretation</h2>
+
+<h3 id="what-the-extinction-coefficient-means">What the Extinction Coefficient Means</h3>
+
+<p>The extinction coefficient $k$ depends on:</p>
+<ol>
+  <li><strong>Leaf angle distribution</strong> — horizontal leaves ($k \approx 1$) block more light than vertical leaves ($k \approx 0.3$)</li>
+  <li><strong>Leaf optical properties</strong> — dark leaves absorb more than shiny leaves</li>
+  <li><strong>Canopy clumping</strong> — clumped foliage increases $k$ (gaps let light through, but dense clumps block heavily)</li>
+</ol>
+
+<p><strong>Typical values:</strong></p>
+<ul>
+  <li>Grasslands, crops: $k \approx 0.4$–$0.5$</li>
+  <li>Temperate deciduous forests: $k \approx 0.5$–$0.6$</li>
+  <li>Tropical rainforests: $k \approx 0.6$–$0.8$</li>
+  <li>Conifer forests: $k \approx 0.4$–$0.5$ (needle geometry)</li>
+</ul>
+
+<h3 id="understorey-adaptation">Understorey Adaptation</h3>
+
+<p>Plants adapted to deep shade (ferns, mosses, shade-tolerant tree seedlings) can photosynthesize efficiently at 1–5% of full sun. They have:</p>
+<ul>
+  <li>High chlorophyll concentration</li>
+  <li>Larger, thinner leaves (more light capture per unit mass)</li>
+  <li>Lower light compensation point</li>
+</ul>
+
+<p>This allows stratification: tall sun-adapted trees above, shade-tolerant species below.</p>
+
+<h3 id="seasonal-variation">Seasonal Variation</h3>
+
+<p>In temperate deciduous forests, LAI varies dramatically:</p>
+<ul>
+  <li><strong>Summer:</strong> LAI = 5–6, floor light 2–5%</li>
+  <li><strong>Spring (pre-leaf-out):</strong> LAI = 0, floor light 100%</li>
+</ul>
+
+<p>This creates a spring <strong>ephemeral</strong> window: wildflowers bloom before the canopy closes.</p>
+
+<hr />
+
+<h2 id="7-what-could-go-wrong">7. What Could Go Wrong?</h2>
+
+<h3 id="assuming-uniform-leaf-distribution">Assuming Uniform Leaf Distribution</h3>
+
+<p>Real canopies are <strong>clumped</strong> — leaves cluster around branches, creating gaps. Beer’s Law assumes a random, homogeneous distribution.</p>
+
+<p><strong>Correction:</strong> Use an effective LAI or apply a clumping factor to $k$.</p>
+
+<h3 id="ignoring-scattering-and-reflection">Ignoring Scattering and Reflection</h3>
+
+<p>Beer’s Law treats light as purely absorbed. In reality:</p>
+<ul>
+  <li>Some light is <strong>scattered</strong> by leaves (diffuse radiation)</li>
+  <li>Some is <strong>reflected</strong> from leaf surfaces</li>
+  <li>Some is <strong>transmitted</strong> through leaves (especially green light)</li>
+</ul>
+
+<p>A more complete model tracks <strong>direct</strong> vs. <strong>diffuse</strong> radiation separately.</p>
+
+<h3 id="neglecting-sun-angle">Neglecting Sun Angle</h3>
+
+<p>The derivation assumes vertical light rays. In reality, the sun’s angle changes throughout the day.</p>
+
+<p>When sunlight is oblique, the effective path length through the canopy increases, so light attenuation is stronger.</p>
+
+<p><strong>Correction:</strong> Replace $k$ with $k / \cos(\theta)$, where $\theta$ is the solar zenith angle.</p>
+
+<h3 id="confusing-lai-with-leaf-density">Confusing LAI with Leaf Density</h3>
+
+<p>LAI is <strong>cumulative</strong> (total leaf area above you). Leaf area <strong>density</strong> is LAI per unit height (m² leaf / m² ground / m height).</p>
+
+<hr />
+
+<h2 id="8-extension-from-vertical-to-horizontal">8. Extension: From Vertical to Horizontal</h2>
+
+<p>Beer’s Law applies to <strong>any</strong> direction where absorbing material is distributed.</p>
+
+<p><strong>Examples:</strong></p>
+<ul>
+  <li><strong>Atmosphere:</strong> Pressure decreases exponentially with altitude</li>
+  <li><strong>Ocean:</strong> Light attenuates exponentially with depth (coastal waters: ~10 m penetration; open ocean: ~100 m)</li>
+  <li><strong>Soil:</strong> Water infiltration follows exponential profiles in some cases</li>
+  <li><strong>Beer (yes, the beverage):</strong> Light absorption through a liquid — the original application by August Beer (1852)</li>
+</ul>
+
+<p>The mathematical structure is always the same:</p>
+
+\[\frac{dI}{dx} = -\alpha I\]
+
+<p>where $\alpha$ is the attenuation coefficient and $x$ is the distance through the medium.</p>
+
+<hr />
+
+<h2 id="9-math-refresher-derivatives-in-space-vs-time">9. Math Refresher: Derivatives in Space vs. Time</h2>
+
+<p>In Model 3, we saw:</p>
+
+\[\frac{dN}{dt} = rN \quad \Rightarrow \quad N(t) = N_0 e^{rt}\]
+
+<p>Here, the independent variable was <strong>time</strong>.</p>
+
+<p>In this model:</p>
+
+\[\frac{dI}{dz} = -kI \quad \Rightarrow \quad I(z) = I_0 e^{-kz}\]
+
+<p>The independent variable is <strong>height</strong> (or depth).</p>
+
+<p><strong>The mathematics is identical.</strong> Differential equations don’t care whether you’re moving through time or space. The structure of the equation determines the solution.</p>
+
+<p>This insight — that spatial and temporal processes can obey the same equations — is foundational to <strong>mathematical physics</strong> and <strong>physical geography</strong>.</p>
+
+<hr />
+
+<h2 id="summary">Summary</h2>
+
+<ul>
+  <li>Light intensity in a canopy follows Beer’s Law: $I = I_0 e^{-kL}$</li>
+  <li>$k$ is the extinction coefficient (depends on leaf angle, clumping, optical properties)</li>
+  <li>$L$ is cumulative leaf area index above the point of interest</li>
+  <li>This is exponential decay in the <strong>vertical dimension</strong></li>
+  <li>Typical forest floor light: 1–5% of incoming radiation</li>
+  <li>The math is identical to radioactive decay — but in space, not time</li>
+  <li>Real canopies are clumped, scattered, and vary with sun angle</li>
+</ul>
+
+
+      </div>
+
+      
+
+
+
+      
+
+  
+  
+  
+  
+
+
+
+      <!-- essay-footer-notes.html — References / endnotes section.
+     Hidden by default; assets/js/essay/core.js shows it and populates
+     #essay-endnotes-list from [data-cite] elements in the content.
+
+     In posts, create citation markers with:
+       <cite data-cite="Author, Title, URL">1</cite>
+     The JS collects these and renders a numbered reference list here. -->
+
+<footer class="essay-endnotes" id="essay-endnotes" aria-label="References" hidden>
+  <div class="essay-endnotes-inner">
+    <h2 class="essay-endnotes-heading">References</h2>
+    <ol class="essay-endnotes-list" id="essay-endnotes-list">
+      <!-- Populated at runtime by assets/js/essay/core.js buildEndnotes() -->
+    </ol>
+  </div>
+</footer>
+
+
+      
+
+      
+
+      
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    </article>
+  </main>
+
+  <aside
+    class="essay-sidenotes"
+    id="essay-sidenotes"
+    aria-label="Margin notes"
+  ></aside>
+
+</div>
+
+</div>
+
+<footer>
+  <div class="footer-inner">
+
+    <!-- Col 1: Brand -->
+    <div class="footer-brand">
+      <div class="footer-brand-logo">
+        
+        <img loading="lazy" src="/assets/images/logo.webp" alt="WaywardHouse" width="28" height="28">
+        
+        WaywardHouse<span>.</span>
+      </div>
+      
+      
+      <p class="footer-brand-desc">Understanding how place, economy, and environment interact — through analysis, modelling, and open tools.</p>
+      
+
+      <div class="footer-social">
+        
+        
+        
+        <a href="/feed.xml" class="social-icon" target="_blank" rel="noopener noreferrer" aria-label="RSS feed">
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M4 11a9 9 0 0 1 9 9"/>
+            <path d="M4 4a16 16 0 0 1 16 16"/>
+            <circle cx="5" cy="19" r="1"/>
+          </svg>
+        </a>
+      </div>
+    </div>
+
+    <!-- Col 2: Topics (configurable via footer_topics, falls back to auto-categories) -->
+    <nav aria-labelledby="footer-topics">
+      <h3 class="footer-col-title" id="footer-topics">Reading</h3>
+      <ul class="footer-links">
+        
+          
+          <li><a href="/topics/">Essays</a></li>
+          
+          <li><a href="/series/">Modelling</a></li>
+          
+          <li><a href="/archive/">Archive</a></li>
+          
+          <li><a href="/start-here/">Start Here</a></li>
+          
+        
+      </ul>
+    </nav>
+
+    <!-- Col 3: Secondary navigation -->
+    
+    <nav aria-labelledby="footer-company">
+      <h3 class="footer-col-title" id="footer-company">Site</h3>
+      <ul class="footer-links">
+        
+        <li><a href="/start-here/">Start Here</a></li>
+        
+        <li><a href="/about/">About</a></li>
+        
+        <li><a href="/contact/">Contact</a></li>
+        
+      </ul>
+    </nav>
+    
+
+    <!-- Col 4: Resources -->
+    <nav aria-labelledby="footer-resources">
+      <h3 class="footer-col-title" id="footer-resources">Resources</h3>
+      <ul class="footer-links">
+        <li><a href="/archive/">Archive</a></li>
+        <li><a href="/feed.xml">RSS Feed</a></li>
+        <li><a href="/topics/">All Topics</a></li>
+      </ul>
+    </nav>
+
+  </div><!-- /.footer-inner -->
+
+  <div class="footer-bottom">
+    <span class="footer-copy">
+      &copy; 2026 WaywardHouse.
+    </span>
+    <div class="footer-legal">
+      <a href="/privacy/">Privacy Policy</a>
+      <a href="/terms/">Terms of Service</a>
+    </div>
+  </div>
+
+</footer>
+
+
+<!-- Alpine.js bundle -->
+<script type="module" src="/assets/dist/main.js"></script>
+
+<!-- Visualization runtime — detects and loads CDN libraries dynamically -->
+<script type="module" src="/assets/js/core.js"></script>
+
+<!-- Search overlay — event-driven: nav button $dispatches 'search:open' -->
+<div
+  x-data="search"
+  x-init="init()"
+  @search:open.window="open()"
+>
+  <div
+    class="search-overlay"
+    x-show="isOpen"
+    x-transition:enter="transition ease-out duration-150"
+    x-transition:enter-start="opacity-0"
+    x-transition:enter-end="opacity-100"
+    x-transition:leave="transition ease-in duration-100"
+    x-transition:leave-start="opacity-100"
+    x-transition:leave-end="opacity-0"
+    @click.self="close()"
+    style="display: none;"
+    role="dialog"
+    aria-modal="true"
+    aria-label="Search"
+  >
+    <div class="search-panel">
+      <div class="search-input-wrap">
+        <svg class="search-icon" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <circle cx="11" cy="11" r="8"/>
+          <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+        </svg>
+        <input
+          class="search-input"
+          type="search"
+          placeholder="Search posts…"
+          x-model="query"
+          x-ref="input"
+          @input.debounce.300ms="runSearch()"
+          @keydown.escape="close()"
+          autocomplete="off"
+          spellcheck="false"
+          aria-label="Search query"
+        >
+        <kbd class="search-esc" aria-hidden="true">ESC</kbd>
+      </div>
+
+      <div class="search-results" x-show="query.trim().length > 0">
+        <div class="search-status" x-show="loading" aria-live="polite">Searching…</div>
+        <div class="search-status" x-show="!loading && results.length === 0" aria-live="polite">
+          No results for "<span x-text="query"></span>"
+        </div>
+        <ul class="search-result-list" x-show="!loading && results.length > 0" role="list">
+          <template x-for="result in results" :key="result.url">
+            <li>
+              <a :href="result.url" class="search-result-item" @click="close()">
+                <div class="search-result-title" x-text="result.meta?.title || result.url"></div>
+                <div class="search-result-excerpt" x-html="result.excerpt"></div>
+              </a>
+            </li>
+          </template>
+        </ul>
+      </div>
+    </div>
+  </div>
+</div>
+
+</body>
+</html>
