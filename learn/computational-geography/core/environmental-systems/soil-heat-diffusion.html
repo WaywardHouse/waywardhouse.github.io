@@ -1,0 +1,1041 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
+
+<meta charset="utf-8">
+<meta name="generator" content="quarto-1.9.36">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+
+<meta name="dcterms.date" content="2026-02-26">
+<meta name="description" content="Surface temperature oscillates daily (day/night) and seasonally (summer/winter). These temperature waves propagate downward into the soil, getting weaker and more delayed with depth. This model derives the heat diffusion equation and solves it for sinusoidal forcing to find damping depth and phase lag.">
+
+<title>Soil Heat Diffusion – Computational Geography</title>
+<style>
+/* Default styles provided by pandoc.
+** See https://pandoc.org/MANUAL.html#variables-for-html for config info.
+*/
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: min(4vw, 1.5em);}
+div.column{flex: auto; overflow-x: auto;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+  width: 0.8em;
+  margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
+  vertical-align: middle;
+}
+</style>
+
+
+<script src="../site_libs/clipboard/clipboard.min.js"></script>
+<script src="../site_libs/quarto-html/tabby.min.js"></script>
+<script src="../site_libs/quarto-html/popper.min.js"></script>
+<script src="../site_libs/quarto-html/tippy.umd.min.js"></script>
+<script src="../site_libs/quarto-html/anchor.min.js"></script>
+<link href="../site_libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="../site_libs/quarto-html/light-border.css" rel="stylesheet">
+<link href="../site_libs/quarto-html/quarto-html-640605f58ae58ee79329c070719e555b.min.css" rel="stylesheet" append-hash="true" data-mode="light">
+<link href="../site_libs/quarto-html/quarto-syntax-highlighting-845c23b38eaddc0f92fda52bfe77a8c8.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<script>
+  (function () {
+    var s = localStorage.getItem('theme');
+    var dark = s !== null ? s === 'dark' : false;
+    document.documentElement.dataset.theme = dark ? 'dark' : 'light';
+    document.documentElement.dataset.brand = 'wayward';
+  })();
+</script>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:ital,wght@0,300;0,400;0,600;0,700;0,800;0,900;1,700;1,800&amp;family=Barlow:wght@300;400;500;600&amp;family=IBM+Plex+Mono:ital,wght@0,300;0,400;0,500;1,300&amp;family=Literata:ital,opsz,wght@0,7..72,300;0,7..72,400;0,7..72,500;1,7..72,300;1,7..72,400&amp;display=swap" rel="stylesheet">
+
+  <script>window.backupDefine = window.define; window.define = undefined;</script><script src="https://cdn.jsdelivr.net/npm/katex@latest/dist/katex.min.js"></script>
+  <script>document.addEventListener("DOMContentLoaded", function () {
+ var mathElements = document.getElementsByClassName("math");
+ var macros = [];
+ for (var i = 0; i < mathElements.length; i++) {
+  var texText = mathElements[i].firstChild;
+  if (mathElements[i].tagName == "SPAN") {
+   katex.render(texText.data, mathElements[i], {
+    displayMode: mathElements[i].classList.contains('display'),
+    throwOnError: false,
+    macros: macros,
+    fleqn: false
+   });
+}}});
+  </script>
+  <script>window.define = window.backupDefine; window.backupDefine = undefined;</script><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@latest/dist/katex.min.css">
+
+<script type="text/javascript">
+const typesetMath = (el) => {
+  if (window.MathJax) {
+    // MathJax Typeset
+    window.MathJax.typeset([el]);
+  } else if (window.katex) {
+    // KaTeX Render
+    var mathElements = el.getElementsByClassName("math");
+    var macros = [];
+    for (var i = 0; i < mathElements.length; i++) {
+      var texText = mathElements[i].firstChild;
+      if (mathElements[i].tagName == "SPAN" && texText && texText.data) {
+        window.katex.render(texText.data, mathElements[i], {
+          displayMode: mathElements[i].classList.contains('display'),
+          throwOnError: false,
+          macros: macros,
+          fleqn: false
+        });
+      }
+    }
+  }
+}
+window.Quarto = {
+  typesetMath
+};
+</script>
+
+<link rel="stylesheet" href="../assets/css/quarto-wayward.css">
+</head>
+
+<body class="reading-body tag-hash-math tag-hash-viz">
+
+
+<header id="title-block-header">
+<h1 class="title"><span class="chapter-title">Soil Heat Diffusion</span></h1>
+<p class="subtitle">Temperature waves propagating into the ground — diurnal and seasonal cycles</p>
+
+<p class="date">2026-02-26</p>
+</header>
+
+<nav id="TOC" role="doc-toc">
+    <h2 id="toc-title">Table of contents</h2>
+   
+  <ul>
+  <li><a href="#before-you-start" id="toc-before-you-start">Before You Start</a></li>
+  <li><a href="#the-question" id="toc-the-question">1. The Question</a></li>
+  <li><a href="#the-conceptual-model" id="toc-the-conceptual-model">2. The Conceptual Model</a>
+  <ul>
+  <li><a href="#heat-diffusion" id="toc-heat-diffusion">Heat Diffusion</a></li>
+  <li><a href="#temperature-waves" id="toc-temperature-waves">Temperature Waves</a></li>
+  </ul></li>
+  <li><a href="#building-the-mathematical-model" id="toc-building-the-mathematical-model">3. Building the Mathematical Model</a>
+  <ul>
+  <li><a href="#the-heat-diffusion-equation" id="toc-the-heat-diffusion-equation">The Heat Diffusion Equation</a></li>
+  <li><a href="#thermal-diffusivity" id="toc-thermal-diffusivity">Thermal Diffusivity</a></li>
+  <li><a href="#solution-for-periodic-forcing" id="toc-solution-for-periodic-forcing">Solution for Periodic Forcing</a></li>
+  <li><a href="#damping-depth" id="toc-damping-depth">Damping Depth</a></li>
+  <li><a href="#phase-lag" id="toc-phase-lag">Phase Lag</a></li>
+  </ul></li>
+  <li><a href="#worked-example-by-hand" id="toc-worked-example-by-hand">4. Worked Example by Hand</a>
+  <ul>
+  <li><a href="#solution" id="toc-solution">Solution</a></li>
+  </ul></li>
+  <li><a href="#computational-implementation" id="toc-computational-implementation">5. Computational Implementation</a></li>
+  <li><a href="#interpretation" id="toc-interpretation">6. Interpretation</a>
+  <ul>
+  <li><a href="#why-basements-stay-cool-in-summer" id="toc-why-basements-stay-cool-in-summer">Why Basements Stay Cool in Summer</a></li>
+  <li><a href="#permafrost-and-active-layer" id="toc-permafrost-and-active-layer">Permafrost and Active Layer</a></li>
+  <li><a href="#thermal-inertia-and-climate" id="toc-thermal-inertia-and-climate">Thermal Inertia and Climate</a></li>
+  <li><a href="#frost-penetration" id="toc-frost-penetration">Frost Penetration</a></li>
+  </ul></li>
+  <li><a href="#what-could-go-wrong" id="toc-what-could-go-wrong">7. What Could Go Wrong?</a>
+  <ul>
+  <li><a href="#assuming-homogeneous-soil" id="toc-assuming-homogeneous-soil">Assuming Homogeneous Soil</a></li>
+  <li><a href="#ignoring-latent-heat-effects" id="toc-ignoring-latent-heat-effects">Ignoring Latent Heat Effects</a></li>
+  <li><a href="#neglecting-water-movement" id="toc-neglecting-water-movement">Neglecting Water Movement</a></li>
+  <li><a href="#forgetting-time-scale" id="toc-forgetting-time-scale">Forgetting Time Scale</a></li>
+  </ul></li>
+  <li><a href="#extension-annual-cycle-and-superposition" id="toc-extension-annual-cycle-and-superposition">8. Extension: Annual Cycle and Superposition</a></li>
+  <li><a href="#math-refresher-the-heat-equation" id="toc-math-refresher-the-heat-equation">9. Math Refresher: The Heat Equation</a>
+  <ul>
+  <li><a href="#derivation-from-energy-conservation" id="toc-derivation-from-energy-conservation">Derivation from Energy Conservation</a></li>
+  <li><a href="#connection-to-other-diffusion-processes" id="toc-connection-to-other-diffusion-processes">Connection to Other Diffusion Processes</a></li>
+  </ul></li>
+  <li><a href="#summary" id="toc-summary">Summary</a></li>
+  </ul>
+</nav>
+<h2 id="before-you-start" class="anchored">Before You Start</h2>
+<p><strong>You should know</strong><br>
+That soil can store heat, that temperature often changes with depth, and that heat tends to move from warmer places toward cooler ones.</p>
+<p><strong>You will learn</strong><br>
+How heat diffuses into soil, why subsurface temperatures lag behind surface temperatures, and how diffusion equations describe that process.</p>
+<p><strong>Why this matters</strong><br>
+Soil temperature affects seeds, roots, microbes, permafrost, and snowmelt timing. This is one of the cleanest examples of a physical process becoming a computational model.</p>
+<p><strong>If this gets hard, focus on…</strong><br>
+Hold onto the physical idea first: heat spreads out over time, and deeper soil responds more slowly than the surface.</p>
+<p>Wine cellars stay cool in summer and frost-free in winter not by accident but by physics. At depths of 8–10 metres in most climates, the soil temperature barely varies across the year, hovering near the mean annual air temperature. The seasonal oscillation that sends surface temperatures swinging between −20°C and +30°C has been almost completely damped out by the time it propagates 10 metres into the ground. The same principle governs the depth of permafrost in the Arctic, the temperature of groundwater in shallow aquifers, the design of underground data centres, and the calibration of soil respiration models that depend on temperature.</p>
+<p>The mathematics describing this behaviour is the heat diffusion equation — a partial differential equation that relates the rate of temperature change at a point to the curvature of the temperature profile around it. It is one of the most important PDEs in physics, with applications from heat treatment of metals to the cooling of planetary bodies. For soil, the key result is that a sinusoidal temperature oscillation at the surface propagates downward as a damped, phase-lagged wave: the amplitude decreases exponentially with depth and the timing of the peak is progressively delayed. The damping depth — the depth at which the amplitude has fallen to 1/e of the surface value — depends only on thermal diffusivity and the period of the oscillation. This model derives that result and shows what controls it.</p>
+<h2 id="the-question" class="anchored">1. The Question</h2>
+<p>Why does soil temperature lag behind air temperature, and why is the lag greater at depth?</p>
+<p>Plant a thermometer at the surface and another at 1 meter depth. Watch them for 24 hours: - <strong>Surface:</strong> Temperature swings wildly (10°C at night, 30°C at noon) - <strong>1 m depth:</strong> Temperature barely changes (stays near 20°C all day)</p>
+<p>The same pattern occurs seasonally: - <strong>Surface:</strong> Cold in winter, hot in summer - <strong>10 m depth:</strong> Constant year-round (permafrost boundary, wine cellars, geothermal)</p>
+<p>The mathematical question: How do temperature oscillations at the surface propagate downward into the soil? How far do they penetrate, and how much are they delayed?</p>
+<hr>
+<h2 id="the-conceptual-model" class="anchored">2. The Conceptual Model</h2>
+<h3 id="heat-diffusion" class="anchored">Heat Diffusion</h3>
+<p>Heat flows from warm to cool regions. In soil, this happens by <strong>conduction</strong> — molecular-scale energy transfer through collisions.</p>
+<p><strong>Fick’s law analogy (from diffusion):</strong><br>
+Heat flux is proportional to the temperature gradient:</p>
+<p><span class="math display">q = -k \frac{\partial T}{\partial z}</span></p>
+<p>Where: - <span class="math inline">q</span> = heat flux (W/m²), positive downward - <span class="math inline">k</span> = thermal conductivity (W/m/K) - <span class="math inline">\frac{\partial T}{\partial z}</span> = temperature gradient (K/m)</p>
+<p>The negative sign means heat flows from hot to cold (down the gradient).</p>
+<h3 id="temperature-waves" class="anchored">Temperature Waves</h3>
+<p>The surface temperature oscillates:</p>
+<p><span class="math display">T_{\text{surface}}(t) = T_{\text{mean}} + A \sin(\omega t)</span></p>
+<p>Where: - <span class="math inline">T_{\text{mean}}</span> = average temperature - <span class="math inline">A</span> = amplitude of oscillation - <span class="math inline">\omega = 2\pi / P</span> = angular frequency (rad/s) - <span class="math inline">P</span> = period (86400 s for daily, ~31.5×10⁶ s for annual)</p>
+<p>This oscillation propagates downward as a <strong>damped, delayed wave</strong>.</p>
+<p><strong>Damping:</strong> Amplitude decreases exponentially with depth<br>
+<strong>Delay:</strong> Peak temperature occurs later at greater depths</p>
+<hr>
+<h2 id="building-the-mathematical-model" class="anchored">3. Building the Mathematical Model</h2>
+<h3 id="the-heat-diffusion-equation" class="anchored">The Heat Diffusion Equation</h3>
+<p><strong>Conservation of energy</strong> in a thin soil layer:</p>
+<p><span class="math display">\rho c \frac{\partial T}{\partial t} = \frac{\partial}{\partial z}\left(k \frac{\partial T}{\partial z}\right)</span></p>
+<p>Where: - <span class="math inline">\rho</span> = soil density (kg/m³) - <span class="math inline">c</span> = specific heat capacity (J/kg/K) - <span class="math inline">k</span> = thermal conductivity (W/m/K)</p>
+<p>For <strong>constant properties</strong> (homogeneous soil):</p>
+<p><span class="math display">\frac{\partial T}{\partial t} = \alpha \frac{\partial^2 T}{\partial z^2}</span></p>
+<p>Where <span class="math inline">\alpha = k / (\rho c)</span> is the <strong>thermal diffusivity</strong> (m²/s).</p>
+<p><strong>Physical interpretation:</strong> - Left side: Rate of temperature change - Right side: Curvature of temperature profile (how “bent” the profile is)</p>
+<p>If the profile is concave up (<span class="math inline">\partial^2 T/\partial z^2 &gt; 0</span>), temperature increases. If concave down, temperature decreases.</p>
+<h3 id="thermal-diffusivity" class="anchored">Thermal Diffusivity</h3>
+<p><span class="math display">\alpha = \frac{k}{\rho c}</span></p>
+<p><strong>Typical values:</strong></p>
+<table class="caption-top">
+<thead>
+<tr class="header">
+<th>Material</th>
+<th><span class="math inline">\alpha</span> (m²/s)</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>Dry sand</td>
+<td>0.3 × 10⁻⁶</td>
+</tr>
+<tr class="even">
+<td>Moist sand</td>
+<td>0.6 × 10⁻⁶</td>
+</tr>
+<tr class="odd">
+<td>Clay (dry)</td>
+<td>0.25 × 10⁻⁶</td>
+</tr>
+<tr class="even">
+<td>Clay (wet)</td>
+<td>0.5 × 10⁻⁶</td>
+</tr>
+<tr class="odd">
+<td>Peat</td>
+<td>0.1 × 10⁻⁶</td>
+</tr>
+<tr class="even">
+<td>Rock</td>
+<td>1.0 × 10⁻⁶</td>
+</tr>
+<tr class="odd">
+<td>Water</td>
+<td>1.4 × 10⁻⁶</td>
+</tr>
+<tr class="even">
+<td>Air</td>
+<td>20 × 10⁻⁶</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Key insight:</strong> Moist soil has higher diffusivity than dry soil (water conducts heat better than air).</p>
+<h3 id="solution-for-periodic-forcing" class="anchored">Solution for Periodic Forcing</h3>
+<p><strong>Boundary condition</strong> (surface oscillates):</p>
+<p><span class="math display">T(z=0, t) = T_m + A_0 \sin(\omega t)</span></p>
+<p><strong>Deep boundary</strong> (constant temperature):</p>
+<p><span class="math display">T(z \to \infty, t) = T_m</span></p>
+<p><strong>Solution</strong> (for <span class="math inline">z &gt; 0</span>):</p>
+<p><span class="math display">T(z,t) = T_m + A_0 e^{-z/d} \sin\left(\omega t - \frac{z}{d}\right)</span></p>
+<p>Where <span class="math inline">d</span> is the <strong>damping depth</strong> (or e-folding depth):</p>
+<p><span class="math display">d = \sqrt{\frac{2\alpha}{\omega}}</span></p>
+<p><strong>Two key features:</strong> 1. <strong>Amplitude decays exponentially:</strong> <span class="math inline">A(z) = A_0 e^{-z/d}</span> 2. <strong>Phase lags linearly:</strong> Phase lag = <span class="math inline">z/d</span> radians</p>
+<h3 id="damping-depth" class="anchored">Damping Depth</h3>
+<p>The damping depth is where amplitude drops to $1/e %$ of surface value.</p>
+<p><strong>Daily cycle</strong> (<span class="math inline">P = 86400</span> s, <span class="math inline">\omega = 7.27 \times 10^{-5}</span> rad/s):</p>
+<p>For typical soil (<span class="math inline">\alpha = 0.5 \times 10^{-6}</span> m²/s):</p>
+<p><span class="math display">d_{\text{daily}} = \sqrt{\frac{2 \times 0.5 \times 10^{-6}}{7.27 \times 10^{-5}}} = 0.12 \text{ m}</span></p>
+<p><strong>At depth <span class="math inline">d = 12</span> cm, daily temperature swing is 37% of surface swing.</strong></p>
+<p><strong>Annual cycle</strong> (<span class="math inline">P = 365.25 \times 86400</span> s, <span class="math inline">\omega = 1.99 \times 10^{-7}</span> rad/s):</p>
+<p><span class="math display">d_{\text{annual}} = \sqrt{\frac{2 \times 0.5 \times 10^{-6}}{1.99 \times 10^{-7}}} = 2.2 \text{ m}</span></p>
+<p><strong>Scaling rule:</strong></p>
+<p><span class="math display">\frac{d_{\text{annual}}}{d_{\text{daily}}} = \sqrt{\frac{P_{\text{annual}}}{P_{\text{daily}}}} = \sqrt{365.25} \approx 19</span></p>
+<p>Annual waves penetrate <strong>~19 times deeper</strong> than daily waves.</p>
+<h3 id="phase-lag" class="anchored">Phase Lag</h3>
+<p><strong>Time delay</strong> for temperature peak to reach depth <span class="math inline">z</span>:</p>
+<p><span class="math display">\Delta t = \frac{z}{d} \times \frac{P}{2\pi}</span></p>
+<p><strong>Example:</strong> Daily cycle, <span class="math inline">z = 0.5</span> m, <span class="math inline">d = 0.12</span> m:</p>
+<p><span class="math display">\Delta t = \frac{0.5}{0.12} \times \frac{86400}{2\pi} = 4.17 \times 13750 = 57,300 \text{ s} \approx 16 \text{ hours}</span></p>
+<p><strong>Surface peaks at noon → 0.5 m depth peaks at 4 AM the next day.</strong></p>
+<hr>
+<h2 id="worked-example-by-hand" class="anchored">4. Worked Example by Hand</h2>
+<p><strong>Problem:</strong> A soil has thermal diffusivity <span class="math inline">\alpha = 0.4 \times 10^{-6}</span> m²/s. Surface temperature oscillates daily with mean 15°C and amplitude 10°C.</p>
+<ol type="a">
+<li>What is the damping depth for the daily cycle?<br>
+</li>
+<li>What is the temperature amplitude at 20 cm depth?<br>
+</li>
+<li>When does the temperature peak at 20 cm if the surface peaks at noon?</li>
+</ol>
+<h3 id="solution" class="anchored">Solution</h3>
+<p><strong>(a) Damping depth</strong></p>
+<p>Daily period: <span class="math inline">P = 86400</span> s</p>
+<p><span class="math display">\omega = \frac{2\pi}{P} = \frac{2\pi}{86400} = 7.27 \times 10^{-5} \text{ rad/s}</span></p>
+<p><span class="math display">d = \sqrt{\frac{2\alpha}{\omega}} = \sqrt{\frac{2 \times 0.4 \times 10^{-6}}{7.27 \times 10^{-5}}}</span></p>
+<p><span class="math display">= \sqrt{\frac{0.8 \times 10^{-6}}{7.27 \times 10^{-5}}} = \sqrt{1.1 \times 10^{-2}} = 0.105 \text{ m} = 10.5 \text{ cm}</span></p>
+<p><strong>(b) Amplitude at 20 cm</strong></p>
+<p><span class="math display">A(z) = A_0 e^{-z/d} = 10 \times e^{-0.20/0.105}</span></p>
+<p><span class="math display">= 10 \times e^{-1.90} = 10 \times 0.150 = 1.5°\text{C}</span></p>
+<p><strong>Temperature swing at 20 cm depth is ±1.5°C (compared to ±10°C at surface).</strong></p>
+<p><strong>(c) Phase lag</strong></p>
+<p><span class="math display">\phi = \frac{z}{d} = \frac{0.20}{0.105} = 1.90 \text{ radians}</span></p>
+<p>Convert to time:</p>
+<p><span class="math display">\Delta t = \phi \times \frac{P}{2\pi} = 1.90 \times \frac{86400}{2\pi} = 1.90 \times 13750 = 26,125 \text{ s} \approx 7.3 \text{ hours}</span></p>
+<p><strong>Surface peaks at noon (12:00) → 20 cm depth peaks at 19:18 (7:18 PM).</strong></p>
+<hr>
+<h2 id="computational-implementation" class="anchored">5. Computational Implementation</h2>
+<p>Below is an interactive soil temperature profile simulator.</p>
+<div id="soil-temp-viz" class="viz-container">
+<div class="controls">
+<pre><code>&lt;label&gt;
+  Soil type:
+  &lt;select id="soil-type"&gt;
+    &lt;option value="dry-sand"&gt;Dry Sand (α=0.3)&lt;/option&gt;
+    &lt;option value="moist-sand" selected&gt;Moist Sand (α=0.6)&lt;/option&gt;
+    &lt;option value="clay"&gt;Clay (α=0.4)&lt;/option&gt;
+    &lt;option value="peat"&gt;Peat (α=0.1)&lt;/option&gt;
+  &lt;/select&gt;
+&lt;/label&gt;
+&lt;label&gt;
+  Surface temperature amplitude (°C):
+  &lt;input type="range" id="amplitude-slider" min="5" max="20" step="1" value="10"&gt;
+  &lt;span id="amplitude-value"&gt;10&lt;/span&gt; °C
+&lt;/label&gt;
+&lt;label&gt;
+  Mean temperature (°C):
+  &lt;input type="range" id="mean-temp-slider" min="5" max="25" step="1" value="15"&gt;
+  &lt;span id="mean-temp-value"&gt;15&lt;/span&gt; °C
+&lt;/label&gt;
+&lt;label&gt;
+  Time of day (hours):
+  &lt;input type="range" id="time-slider" min="0" max="24" step="0.5" value="12"&gt;
+  &lt;span id="time-value"&gt;12.0&lt;/span&gt; h
+&lt;/label&gt;
+&lt;div class="button-group"&gt;
+  &lt;button id="animate-toggle"&gt;Animate Daily Cycle&lt;/button&gt;
+&lt;/div&gt;</code></pre>
+</div>
+<div class="soil-info">
+<pre><code>&lt;p&gt;&lt;strong&gt;Damping depth:&lt;/strong&gt; &lt;span id="damping-depth"&gt;&lt;/span&gt; cm&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;Temperature at 50 cm:&lt;/strong&gt; &lt;span id="temp-50cm"&gt;&lt;/span&gt; °C&lt;/p&gt;</code></pre>
+</div>
+<div id="soil-temp-chart" style="width: 100%; height: 500px;">
+
+</div>
+</div>
+<script type="module">
+await new Promise(resolve => {
+  const checkECharts = () => {
+    if (typeof echarts !== 'undefined') resolve();
+    else setTimeout(checkECharts, 50);
+  };
+  checkECharts();
+});
+
+(function() {
+  const chart = echarts.init(document.getElementById('soil-temp-chart'));
+  
+  const soils = {
+    'dry-sand': { alpha: 0.3e-6, name: 'Dry Sand' },
+    'moist-sand': { alpha: 0.6e-6, name: 'Moist Sand' },
+    'clay': { alpha: 0.4e-6, name: 'Clay' },
+    'peat': { alpha: 0.1e-6, name: 'Peat' }
+  };
+  
+  let soilType = 'moist-sand';
+  let amplitude = 10;
+  let meanTemp = 15;
+  let timeOfDay = 12;
+  let animating = false;
+  let animationInterval = null;
+  
+  const P = 86400; // seconds (daily period)
+  const omega = 2 * Math.PI / P;
+  
+  function dampingDepth(alpha) {
+    return Math.sqrt(2 * alpha / omega);
+  }
+  
+  function soilTemperature(z, t, alpha, Tm, A0) {
+    const d = dampingDepth(alpha);
+    const tSeconds = t * 3600; // convert hours to seconds
+    const phase = omega * tSeconds - z / d;
+    return Tm + A0 * Math.exp(-z / d) * Math.sin(phase);
+  }
+  
+  function updateChart() {
+    const alpha = soils[soilType].alpha;
+    const d = dampingDepth(alpha);
+    
+    // Generate temperature profile
+    const depths = [];
+    const temps = [];
+    
+    for (let z = 0; z <= 2; z += 0.02) {
+      depths.push(z);
+      temps.push(soilTemperature(z, timeOfDay, alpha, meanTemp, amplitude));
+    }
+    
+    // Temperature at 50 cm
+    const temp50 = soilTemperature(0.5, timeOfDay, alpha, meanTemp, amplitude);
+    
+    document.getElementById('damping-depth').textContent = (d * 100).toFixed(1);
+    document.getElementById('temp-50cm').textContent = temp50.toFixed(1);
+    
+    const option = {
+      title: {
+        text: `Soil Temperature Profile (${timeOfDay.toFixed(1)} hours)`,
+        left: 'center'
+      },
+      tooltip: {
+        trigger: 'axis',
+        axisPointer: { type: 'cross' }
+      },
+      grid: {
+        left: 80,
+        right: 40,
+        top: 60,
+        bottom: 60
+      },
+      xAxis: {
+        type: 'value',
+        name: 'Temperature (°C)',
+        nameLocation: 'middle',
+        nameGap: 30,
+        min: meanTemp - amplitude - 2,
+        max: meanTemp + amplitude + 2
+      },
+      yAxis: {
+        type: 'value',
+        name: 'Depth (m)',
+        nameLocation: 'middle',
+        nameGap: 50,
+        inverse: true,
+        min: 0,
+        max: 2
+      },
+      series: [
+        {
+          type: 'line',
+          data: temps.map((t, i) => [t, depths[i]]),
+          lineStyle: {
+            color: '#E74C3C',
+            width: 3
+          },
+          showSymbol: false,
+          markLine: {
+            silent: true,
+            symbol: 'none',
+            data: [
+              {
+                xAxis: meanTemp,
+                lineStyle: { type: 'dashed', color: '#95A5A6' },
+                label: { formatter: 'Mean', position: 'end' }
+              }
+            ]
+          },
+          markPoint: {
+            data: [
+              {
+                coord: [soilTemperature(0, timeOfDay, alpha, meanTemp, amplitude), 0],
+                symbol: 'circle',
+                symbolSize: 10,
+                itemStyle: { color: '#F39C12' },
+                label: { show: true, formatter: 'Surface', position: 'right' }
+              },
+              {
+                coord: [temp50, 0.5],
+                symbol: 'circle',
+                symbolSize: 8,
+                itemStyle: { color: '#3498DB' },
+                label: { show: true, formatter: '50 cm', position: 'right' }
+              }
+            ]
+          }
+        }
+      ]
+    };
+    
+    chart.setOption(option);
+  }
+  
+  document.getElementById('soil-type').addEventListener('change', (e) => {
+    soilType = e.target.value;
+    updateChart();
+  });
+  
+  document.getElementById('amplitude-slider').addEventListener('input', (e) => {
+    amplitude = parseFloat(e.target.value);
+    document.getElementById('amplitude-value').textContent = amplitude;
+    updateChart();
+  });
+  
+  document.getElementById('mean-temp-slider').addEventListener('input', (e) => {
+    meanTemp = parseFloat(e.target.value);
+    document.getElementById('mean-temp-value').textContent = meanTemp;
+    updateChart();
+  });
+  
+  document.getElementById('time-slider').addEventListener('input', (e) => {
+    timeOfDay = parseFloat(e.target.value);
+    document.getElementById('time-value').textContent = timeOfDay.toFixed(1);
+    updateChart();
+  });
+  
+  document.getElementById('animate-toggle').addEventListener('click', (e) => {
+    if (animating) {
+      clearInterval(animationInterval);
+      e.target.textContent = 'Animate Daily Cycle';
+      animating = false;
+    } else {
+      animationInterval = setInterval(() => {
+        timeOfDay = (timeOfDay + 0.25) % 24;
+        document.getElementById('time-slider').value = timeOfDay;
+        document.getElementById('time-value').textContent = timeOfDay.toFixed(1);
+        updateChart();
+      }, 100);
+      e.target.textContent = 'Stop Animation';
+      animating = true;
+    }
+  });
+  
+  updateChart();
+  
+  window.addEventListener('resize', () => chart.resize());
+})();
+</script>
+<p><strong>Try this:</strong> - <strong>Animate the daily cycle:</strong> Watch the temperature wave propagate downward - <strong>Switch to peat:</strong> Low diffusivity → shallow damping depth → surface insulation - <strong>Switch to moist sand:</strong> Higher diffusivity → deeper penetration - <strong>Observe phase lag:</strong> Surface peaks at noon, but 50 cm peaks hours later - <strong>Notice damping:</strong> Temperature swing decreases rapidly with depth</p>
+<p><strong>Key insight:</strong> The ground acts as a <strong>low-pass filter</strong> — high-frequency oscillations (daily) are filtered out quickly, while low-frequency (annual) penetrate deep.</p>
+<hr>
+<h2 id="interpretation" class="anchored">6. Interpretation</h2>
+<h3 id="why-basements-stay-cool-in-summer" class="anchored">Why Basements Stay Cool in Summer</h3>
+<p>At 2–3 meters depth, <strong>daily temperature oscillations are negligible</strong> (amplitude &lt; 1% of surface).</p>
+<p><strong>Annual oscillations</strong> still penetrate: - Summer surface temperature: 30°C - 3 m depth: Lags by ~3 months → peaks in fall - Result: Basement cool in summer, relatively warm in winter</p>
+<h3 id="permafrost-and-active-layer" class="anchored">Permafrost and Active Layer</h3>
+<p>In Arctic regions, soil can be: - <strong>Active layer</strong> (top ~0.5–2 m): Thaws in summer, freezes in winter - <strong>Permafrost</strong> (below): Permanently frozen</p>
+<p><strong>Active layer thickness</strong> is approximately where annual temperature wave amplitude drops below the freezing point.</p>
+<p>Climate warming → deeper summer thaw → thicker active layer → permafrost degradation.</p>
+<h3 id="thermal-inertia-and-climate" class="anchored">Thermal Inertia and Climate</h3>
+<p><strong>Ocean</strong> has very high thermal inertia (high <span class="math inline">c</span>, high <span class="math inline">\rho</span>): - Slow to warm in spring - Slow to cool in fall - Moderates coastal climates</p>
+<p><strong>Desert soil</strong> (dry) has low thermal inertia: - Heats quickly during day - Cools quickly at night - Large diurnal temperature range</p>
+<h3 id="frost-penetration" class="anchored">Frost Penetration</h3>
+<p><strong>Frost depth</strong> in winter depends on: - Duration of freezing temperatures (how long the “cold wave” lasts) - Soil thermal properties - Snow cover (insulation)</p>
+<p><strong>Simplified estimate:</strong> Frost penetrates to depth where soil temperature stays above 0°C.</p>
+<hr>
+<h2 id="what-could-go-wrong" class="anchored">7. What Could Go Wrong?</h2>
+<h3 id="assuming-homogeneous-soil" class="anchored">Assuming Homogeneous Soil</h3>
+<p>Real soil has <strong>layers</strong> with different thermal properties: - Organic litter (low diffusivity) - Topsoil (medium) - Subsoil (higher) - Rock (high)</p>
+<p><strong>Boundary conditions</strong> at each interface complicate the solution.</p>
+<h3 id="ignoring-latent-heat-effects" class="anchored">Ignoring Latent Heat Effects</h3>
+<p>When soil freezes, <strong>latent heat of fusion</strong> is released:</p>
+<p><span class="math display">L_f = 3.34 \times 10^5 \text{ J/kg}</span></p>
+<p>This slows the freezing front (energy must be extracted before temperature drops further).</p>
+<p><strong>Phase change</strong> creates a <strong>nonlinear problem</strong> — <span class="math inline">\alpha</span> changes abruptly at the freezing front.</p>
+<h3 id="neglecting-water-movement" class="anchored">Neglecting Water Movement</h3>
+<p>Moisture moves in soil (evaporation, drainage, capillary rise). Water carries heat (<strong>advection</strong>).</p>
+<p><strong>Our model assumes no water movement</strong> — pure conduction only.</p>
+<p>In reality, evaporation at the surface <strong>cools</strong> the soil (latent heat), and infiltrating rainfall <strong>heats or cools</strong> deeper layers.</p>
+<h3 id="forgetting-time-scale" class="anchored">Forgetting Time Scale</h3>
+<p>The solution assumes <strong>sinusoidal forcing has been running for many periods</strong> (steady periodic state).</p>
+<p>After a <strong>sudden change</strong> (e.g., tillage, snow removal), soil takes time to adjust (transient response, not covered by our periodic solution).</p>
+<hr>
+<h2 id="extension-annual-cycle-and-superposition" class="anchored">8. Extension: Annual Cycle and Superposition</h2>
+<p><strong>Real soil temperature</strong> is a superposition of multiple cycles:</p>
+<p><span class="math display">T(z,t) = T_m + A_d e^{-z/d_d} \sin(\omega_d t - z/d_d) + A_a e^{-z/d_a} \sin(\omega_a t - z/d_a)</span></p>
+<p>Where subscript <span class="math inline">d</span> = daily, <span class="math inline">a</span> = annual.</p>
+<p><strong>Daily component:</strong> Damping depth ~10 cm, negligible below 50 cm<br>
+<strong>Annual component:</strong> Damping depth ~2 m, significant to 10 m</p>
+<p><strong>Superposition works</strong> because the heat equation is <strong>linear</strong>.</p>
+<hr>
+<h2 id="math-refresher-the-heat-equation" class="anchored">9. Math Refresher: The Heat Equation</h2>
+<h3 id="derivation-from-energy-conservation" class="anchored">Derivation from Energy Conservation</h3>
+<p>Consider a thin layer of soil from depth <span class="math inline">z</span> to <span class="math inline">z + \Delta z</span>.</p>
+<p><strong>Energy in:</strong><br>
+Heat flux entering from above: <span class="math inline">q(z)</span></p>
+<p><strong>Energy out:</strong><br>
+Heat flux leaving through bottom: <span class="math inline">q(z + \Delta z)</span></p>
+<p><strong>Storage:</strong><br>
+Energy stored in the layer: <span class="math inline">\rho c \Delta z \frac{\partial T}{\partial t}</span></p>
+<p><strong>Balance:</strong></p>
+<p><span class="math display">q(z) - q(z + \Delta z) = \rho c \Delta z \frac{\partial T}{\partial t}</span></p>
+<p>Divide by <span class="math inline">\Delta z</span> and take limit <span class="math inline">\Delta z \to 0</span>:</p>
+<p><span class="math display">-\frac{\partial q}{\partial z} = \rho c \frac{\partial T}{\partial t}</span></p>
+<p>Substitute Fourier’s law <span class="math inline">q = -k \frac{\partial T}{\partial z}</span>:</p>
+<p><span class="math display">\frac{\partial}{\partial z}\left(k \frac{\partial T}{\partial z}\right) = \rho c \frac{\partial T}{\partial t}</span></p>
+<p>For constant <span class="math inline">k</span>:</p>
+<p><span class="math display">\frac{\partial T}{\partial t} = \alpha \frac{\partial^2 T}{\partial z^2}</span></p>
+<p>This is the <strong>diffusion equation</strong> (or heat equation).</p>
+<h3 id="connection-to-other-diffusion-processes" class="anchored">Connection to Other Diffusion Processes</h3>
+<p>Same equation governs: - <strong>Moisture diffusion</strong> in soil - <strong>Chemical diffusion</strong> in fluids - <strong>Pollutant spreading</strong> in groundwater - <strong>Population spread</strong> in ecology</p>
+<p><strong>Universal form:</strong></p>
+<p><span class="math display">\frac{\partial \phi}{\partial t} = D \frac{\partial^2 \phi}{\partial z^2}</span></p>
+<p>Where <span class="math inline">\phi</span> is the diffusing quantity and <span class="math inline">D</span> is the diffusion coefficient.</p>
+<hr>
+<h2 id="summary" class="anchored">Summary</h2>
+<ul>
+<li><strong>Heat diffusion equation:</strong> <span class="math inline">\frac{\partial T}{\partial t} = \alpha \frac{\partial^2 T}{\partial z^2}</span></li>
+<li><strong>Thermal diffusivity:</strong> <span class="math inline">\alpha = k / (\rho c)</span>, typical values 0.1–1.0 × 10⁻⁶ m²/s</li>
+<li><strong>Damping depth:</strong> <span class="math inline">d = \sqrt{2\alpha / \omega}</span>, where <span class="math inline">\omega = 2\pi / P</span></li>
+<li><strong>Daily cycle:</strong> Damping depth ~10 cm (temperature swing reduced to 37% at this depth)</li>
+<li><strong>Annual cycle:</strong> Damping depth ~2 m (penetrates ~19× deeper than daily)</li>
+<li><strong>Phase lag:</strong> Temperature peak delayed by time <span class="math inline">\Delta t = (z/d) \times (P/2\pi)</span></li>
+<li>Temperature amplitude decays exponentially: <span class="math inline">A(z) = A_0 e^{-z/d}</span></li>
+<li>Moist soil has higher diffusivity than dry soil</li>
+</ul>
+
+
+<footer class="wayward-footer">
+  <div class="wayward-footer__inner">
+    <div class="wayward-footer__brand">
+      <div class="wayward-footer__logo">WaywardHouse<span>.</span></div>
+      <p>Understanding how place, economy, and environment interact through analysis, modelling, and open tools.</p>
+    </div>
+
+    <nav class="wayward-footer__group" aria-labelledby="footer-reading">
+      <h2 id="footer-reading" class="anchored">Reading</h2>
+      <a href="../articles/">Articles</a>
+      <a href="../learn/">Learn</a>
+      <a href="../archive.html">Archive</a>
+      <a href="../start-here.html">Start Here</a>
+    </nav>
+
+    <nav class="wayward-footer__group" aria-labelledby="footer-site">
+      <h2 id="footer-site" class="anchored">Site</h2>
+      <a href="../start-here.html">Start Here</a>
+      <a href="../about.html">About</a>
+      <a href="../contact.html">Contact</a>
+    </nav>
+
+    <nav class="wayward-footer__group" aria-labelledby="footer-resources">
+      <h2 id="footer-resources" class="anchored">Resources</h2>
+      <a href="../topics/">All Topics</a>
+      <a href="../privacy.html">Privacy Policy</a>
+      <a href="../terms.html">Terms of Use</a>
+    </nav>
+  </div>
+</footer>
+
+<script type="module" src="../assets/dist/main.js"></script>
+<script type="module" src="../assets/js/core.js"></script>
+<script id="quarto-html-after-body" type="application/javascript">
+  window.document.addEventListener("DOMContentLoaded", function (event) {
+    const tabsets =  window.document.querySelectorAll(".panel-tabset-tabby")
+    tabsets.forEach(function(tabset) {
+      const tabby = new Tabby('#' + tabset.id);
+    });
+    const icon = "";
+    const anchorJS = new window.AnchorJS();
+    anchorJS.options = {
+      placement: 'right',
+      icon: icon
+    };
+    anchorJS.add('.anchored');
+    const isCodeAnnotation = (el) => {
+      for (const clz of el.classList) {
+        if (clz.startsWith('code-annotation-')) {                     
+          return true;
+        }
+      }
+      return false;
+    }
+    const onCopySuccess = function(e) {
+      // button target
+      const button = e.trigger;
+      // don't keep focus
+      button.blur();
+      // flash "checked"
+      button.classList.add('code-copy-button-checked');
+      var currentTitle = button.getAttribute("title");
+      button.setAttribute("title", "Copied!");
+      let tooltip;
+      if (window.bootstrap) {
+        button.setAttribute("data-bs-toggle", "tooltip");
+        button.setAttribute("data-bs-placement", "left");
+        button.setAttribute("data-bs-title", "Copied!");
+        tooltip = new bootstrap.Tooltip(button, 
+          { trigger: "manual", 
+            customClass: "code-copy-button-tooltip",
+            offset: [0, -8]});
+        tooltip.show();    
+      }
+      setTimeout(function() {
+        if (tooltip) {
+          tooltip.hide();
+          button.removeAttribute("data-bs-title");
+          button.removeAttribute("data-bs-toggle");
+          button.removeAttribute("data-bs-placement");
+        }
+        button.setAttribute("title", currentTitle);
+        button.classList.remove('code-copy-button-checked');
+      }, 1000);
+      // clear code selection
+      e.clearSelection();
+    }
+    const getTextToCopy = function(trigger) {
+      const outerScaffold = trigger.parentElement.cloneNode(true);
+      const codeEl = outerScaffold.querySelector('code');
+      for (const childEl of codeEl.children) {
+        if (isCodeAnnotation(childEl)) {
+          childEl.remove();
+        }
+      }
+      return codeEl.innerText;
+    }
+    const clipboard = new window.ClipboardJS('.code-copy-button:not([data-in-quarto-modal])', {
+      text: getTextToCopy
+    });
+    clipboard.on('success', onCopySuccess);
+    if (window.document.getElementById('quarto-embedded-source-code-modal')) {
+      const clipboardModal = new window.ClipboardJS('.code-copy-button[data-in-quarto-modal]', {
+        text: getTextToCopy,
+        container: window.document.getElementById('quarto-embedded-source-code-modal')
+      });
+      clipboardModal.on('success', onCopySuccess);
+    }
+      var localhostRegex = new RegExp(/^(?:http|https):\/\/localhost\:?[0-9]*\//);
+      var mailtoRegex = new RegExp(/^mailto:/);
+        var filterRegex = new RegExp('/' + window.location.host + '/');
+      var isInternal = (href) => {
+          return filterRegex.test(href) || localhostRegex.test(href) || mailtoRegex.test(href);
+      }
+      // Inspect non-navigation links and adorn them if external
+     var links = window.document.querySelectorAll('a[href]:not(.nav-link):not(.navbar-brand):not(.toc-action):not(.sidebar-link):not(.sidebar-item-toggle):not(.pagination-link):not(.no-external):not([aria-hidden]):not(.dropdown-item):not(.quarto-navigation-tool):not(.about-link)');
+      for (var i=0; i<links.length; i++) {
+        const link = links[i];
+        if (!isInternal(link.href)) {
+          // undo the damage that might have been done by quarto-nav.js in the case of
+          // links that we want to consider external
+          if (link.dataset.originalHref !== undefined) {
+            link.href = link.dataset.originalHref;
+          }
+        }
+      }
+    function tippyHover(el, contentFn, onTriggerFn, onUntriggerFn) {
+      const config = {
+        allowHTML: true,
+        maxWidth: 500,
+        delay: 100,
+        arrow: false,
+        appendTo: function(el) {
+            return el.parentElement;
+        },
+        interactive: true,
+        interactiveBorder: 10,
+        theme: 'light-border',
+        placement: 'bottom-start',
+      };
+      if (contentFn) {
+        config.content = contentFn;
+      }
+      if (onTriggerFn) {
+        config.onTrigger = onTriggerFn;
+      }
+      if (onUntriggerFn) {
+        config.onUntrigger = onUntriggerFn;
+      }
+      window.tippy(el, config); 
+    }
+    const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+    for (var i=0; i<noterefs.length; i++) {
+      const ref = noterefs[i];
+      tippyHover(ref, function() {
+        // use id or data attribute instead here
+        let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+        try { href = new URL(href).hash; } catch {}
+        const id = href.replace(/^#\/?/, "");
+        const note = window.document.getElementById(id);
+        if (note) {
+          return note.innerHTML;
+        } else {
+          return "";
+        }
+      });
+    }
+    const xrefs = window.document.querySelectorAll('a.quarto-xref');
+    const processXRef = (id, note) => {
+      // Strip column container classes
+      const stripColumnClz = (el) => {
+        el.classList.remove("page-full", "page-columns");
+        if (el.children) {
+          for (const child of el.children) {
+            stripColumnClz(child);
+          }
+        }
+      }
+      stripColumnClz(note)
+      if (id === null || id.startsWith('sec-')) {
+        // Special case sections, only their first couple elements
+        const container = document.createElement("div");
+        if (note.children && note.children.length > 2) {
+          container.appendChild(note.children[0].cloneNode(true));
+          for (let i = 1; i < note.children.length; i++) {
+            const child = note.children[i];
+            if (child.tagName === "P" && child.innerText === "") {
+              continue;
+            } else {
+              container.appendChild(child.cloneNode(true));
+              break;
+            }
+          }
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(container);
+          }
+          return container.innerHTML
+        } else {
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(note);
+          }
+          return note.innerHTML;
+        }
+      } else {
+        // Remove any anchor links if they are present
+        const anchorLink = note.querySelector('a.anchorjs-link');
+        if (anchorLink) {
+          anchorLink.remove();
+        }
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(note);
+        }
+        if (note.classList.contains("callout")) {
+          return note.outerHTML;
+        } else {
+          return note.innerHTML;
+        }
+      }
+    }
+    for (var i=0; i<xrefs.length; i++) {
+      const xref = xrefs[i];
+      tippyHover(xref, undefined, function(instance) {
+        instance.disable();
+        let url = xref.getAttribute('href');
+        let hash = undefined; 
+        if (url.startsWith('#')) {
+          hash = url;
+        } else {
+          try { hash = new URL(url).hash; } catch {}
+        }
+        if (hash) {
+          const id = hash.replace(/^#\/?/, "");
+          const note = window.document.getElementById(id);
+          if (note !== null) {
+            try {
+              const html = processXRef(id, note.cloneNode(true));
+              instance.setContent(html);
+            } finally {
+              instance.enable();
+              instance.show();
+            }
+          } else {
+            // See if we can fetch this
+            fetch(url.split('#')[0])
+            .then(res => res.text())
+            .then(html => {
+              const parser = new DOMParser();
+              const htmlDoc = parser.parseFromString(html, "text/html");
+              const note = htmlDoc.getElementById(id);
+              if (note !== null) {
+                const html = processXRef(id, note);
+                instance.setContent(html);
+              } 
+            }).finally(() => {
+              instance.enable();
+              instance.show();
+            });
+          }
+        } else {
+          // See if we can fetch a full url (with no hash to target)
+          // This is a special case and we should probably do some content thinning / targeting
+          fetch(url)
+          .then(res => res.text())
+          .then(html => {
+            const parser = new DOMParser();
+            const htmlDoc = parser.parseFromString(html, "text/html");
+            const note = htmlDoc.querySelector('main.content');
+            if (note !== null) {
+              // This should only happen for chapter cross references
+              // (since there is no id in the URL)
+              // remove the first header
+              if (note.children.length > 0 && note.children[0].tagName === "HEADER") {
+                note.children[0].remove();
+              }
+              const html = processXRef(null, note);
+              instance.setContent(html);
+            } 
+          }).finally(() => {
+            instance.enable();
+            instance.show();
+          });
+        }
+      }, function(instance) {
+      });
+    }
+        let selectedAnnoteEl;
+        const selectorForAnnotation = ( cell, annotation) => {
+          let cellAttr = 'data-code-cell="' + cell + '"';
+          let lineAttr = 'data-code-annotation="' +  annotation + '"';
+          const selector = 'span[' + cellAttr + '][' + lineAttr + ']';
+          return selector;
+        }
+        const selectCodeLines = (annoteEl) => {
+          const doc = window.document;
+          const targetCell = annoteEl.getAttribute("data-target-cell");
+          const targetAnnotation = annoteEl.getAttribute("data-target-annotation");
+          const annoteSpan = window.document.querySelector(selectorForAnnotation(targetCell, targetAnnotation));
+          const lines = annoteSpan.getAttribute("data-code-lines").split(",");
+          const lineIds = lines.map((line) => {
+            return targetCell + "-" + line;
+          })
+          let top = null;
+          let height = null;
+          let parent = null;
+          if (lineIds.length > 0) {
+              //compute the position of the single el (top and bottom and make a div)
+              const el = window.document.getElementById(lineIds[0]);
+              top = el.offsetTop;
+              height = el.offsetHeight;
+              parent = el.parentElement.parentElement;
+            if (lineIds.length > 1) {
+              const lastEl = window.document.getElementById(lineIds[lineIds.length - 1]);
+              const bottom = lastEl.offsetTop + lastEl.offsetHeight;
+              height = bottom - top;
+            }
+            if (top !== null && height !== null && parent !== null) {
+              // cook up a div (if necessary) and position it 
+              let div = window.document.getElementById("code-annotation-line-highlight");
+              if (div === null) {
+                div = window.document.createElement("div");
+                div.setAttribute("id", "code-annotation-line-highlight");
+                div.style.position = 'absolute';
+                parent.appendChild(div);
+              }
+              div.style.top = top - 2 + "px";
+              div.style.height = height + 4 + "px";
+              div.style.left = 0;
+              let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
+              if (gutterDiv === null) {
+                gutterDiv = window.document.createElement("div");
+                gutterDiv.setAttribute("id", "code-annotation-line-highlight-gutter");
+                gutterDiv.style.position = 'absolute';
+                const codeCell = window.document.getElementById(targetCell);
+                const gutter = codeCell.querySelector('.code-annotation-gutter');
+                gutter.appendChild(gutterDiv);
+              }
+              gutterDiv.style.top = top - 2 + "px";
+              gutterDiv.style.height = height + 4 + "px";
+            }
+            selectedAnnoteEl = annoteEl;
+          }
+        };
+        const unselectCodeLines = () => {
+          const elementsIds = ["code-annotation-line-highlight", "code-annotation-line-highlight-gutter"];
+          elementsIds.forEach((elId) => {
+            const div = window.document.getElementById(elId);
+            if (div) {
+              div.remove();
+            }
+          });
+          selectedAnnoteEl = undefined;
+        };
+          // Handle positioning of the toggle
+      window.addEventListener(
+        "resize",
+        throttle(() => {
+          elRect = undefined;
+          if (selectedAnnoteEl) {
+            selectCodeLines(selectedAnnoteEl);
+          }
+        }, 10)
+      );
+      function throttle(fn, ms) {
+      let throttle = false;
+      let timer;
+        return (...args) => {
+          if(!throttle) { // first call gets through
+              fn.apply(this, args);
+              throttle = true;
+          } else { // all the others get throttled
+              if(timer) clearTimeout(timer); // cancel #2
+              timer = setTimeout(() => {
+                fn.apply(this, args);
+                timer = throttle = false;
+              }, ms);
+          }
+        };
+      }
+        // Attach click handler to the DT
+        const annoteDls = window.document.querySelectorAll('dt[data-target-cell]');
+        for (const annoteDlNode of annoteDls) {
+          annoteDlNode.addEventListener('click', (event) => {
+            const clickedEl = event.target;
+            if (clickedEl !== selectedAnnoteEl) {
+              unselectCodeLines();
+              const activeEl = window.document.querySelector('dt[data-target-cell].code-annotation-active');
+              if (activeEl) {
+                activeEl.classList.remove('code-annotation-active');
+              }
+              selectCodeLines(clickedEl);
+              clickedEl.classList.add('code-annotation-active');
+            } else {
+              // Unselect the line
+              unselectCodeLines();
+              clickedEl.classList.remove('code-annotation-active');
+            }
+          });
+        }
+    const findCites = (el) => {
+      const parentEl = el.parentElement;
+      if (parentEl) {
+        const cites = parentEl.dataset.cites;
+        if (cites) {
+          return {
+            el,
+            cites: cites.split(' ')
+          };
+        } else {
+          return findCites(el.parentElement)
+        }
+      } else {
+        return undefined;
+      }
+    };
+    var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+    for (var i=0; i<bibliorefs.length; i++) {
+      const ref = bibliorefs[i];
+      const citeInfo = findCites(ref);
+      if (citeInfo) {
+        tippyHover(citeInfo.el, function() {
+          var popup = window.document.createElement('div');
+          citeInfo.cites.forEach(function(cite) {
+            var citeDiv = window.document.createElement('div');
+            citeDiv.classList.add('hanging-indent');
+            citeDiv.classList.add('csl-entry');
+            var biblioDiv = window.document.getElementById('ref-' + cite);
+            if (biblioDiv) {
+              citeDiv.innerHTML = biblioDiv.innerHTML;
+            }
+            popup.appendChild(citeDiv);
+          });
+          return popup.innerHTML;
+        });
+      }
+    }
+  });
+  </script>
+
+
+
+
+</body></html>
