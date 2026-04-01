@@ -1,0 +1,1266 @@
+<!DOCTYPE html>
+
+<html lang="en" data-brand="wayward" data-theme="light">
+<head>
+  <meta charset="utf-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Soil Heat Diffusion — WaywardHouse</title>
+<meta name="description" content="Surface temperature oscillates daily (day/night) and seasonally (summer/winter). These temperature waves propagate downward into the soil, getting weaker and more delayed with depth. This model derives the heat diffusion equation...">
+
+<!-- Dark mode flash prevention — runs synchronously before first paint -->
+<script>
+  (function () {
+    var defaultDark = 'light' === 'dark';
+    var s = localStorage.getItem('theme');
+    var dark = s !== null ? s === 'dark' : defaultDark;
+    document.documentElement.dataset.theme = dark ? 'dark' : 'light';
+  })();
+</script>
+
+<!-- Preconnect to CDN domains used by the viz runtime -->
+<link rel="preconnect" href="https://cdn.jsdelivr.net">
+<link rel="preconnect" href="https://unpkg.com">
+<link rel="preconnect" href="https://esm.sh">
+<link rel="preconnect" href="https://api.mapbox.com">
+<link rel="preconnect" href="https://events.mapbox.com">
+
+
+<script>window.MAPBOX_TOKEN = 'pk.eyJ1IjoiYnJlYWRlZGNvZCIsImEiOiJjbW0xa25qc2EwMmtwMnJwejJlNndqdnoxIn0._7I9PwXuFLrOQINVZ84y1w';</script>
+
+
+<!-- Fonts -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:ital,wght@0,300;0,400;0,600;0,700;0,800;0,900;1,700;1,800&family=Barlow:wght@300;400&family=IBM+Plex+Mono:ital,wght@0,300;0,400;0,500;1,300&family=Literata:ital,opsz,wght@0,7..72,300;0,7..72,400;0,7..72,500;1,7..72,300;1,7..72,400&display=swap" rel="stylesheet">
+
+<!-- Theme stylesheet (Vite build output) -->
+<link rel="stylesheet" href="/assets/dist/main.css">
+
+<!-- Brand token overrides — loaded after main.css so variables cascade correctly -->
+
+<link rel="stylesheet" href="/assets/css/brand-wayward.css">
+
+
+
+<!-- Syntax highlighting (Rouge — light + dark) -->
+<link rel="stylesheet" href="/assets/css/syntax.css">
+
+<!-- Begin Jekyll SEO tag v2.8.0 -->
+<title>Soil Heat Diffusion | WaywardHouse</title>
+<meta name="generator" content="Jekyll v4.4.1" />
+<meta property="og:title" content="Soil Heat Diffusion" />
+<meta property="og:locale" content="en" />
+<meta name="description" content="Surface temperature oscillates daily (day/night) and seasonally (summer/winter). These temperature waves propagate downward into the soil, getting weaker and more delayed with depth. This model derives the heat diffusion equation and solves it for sinusoidal forcing to find damping depth and phase lag." />
+<meta property="og:description" content="Surface temperature oscillates daily (day/night) and seasonally (summer/winter). These temperature waves propagate downward into the soil, getting weaker and more delayed with depth. This model derives the heat diffusion equation and solves it for sinusoidal forcing to find damping depth and phase lag." />
+<link rel="canonical" href="https://wayward.house/model/soil-heat-diffusion/" />
+<meta property="og:url" content="https://wayward.house/model/soil-heat-diffusion/" />
+<meta property="og:site_name" content="WaywardHouse" />
+<meta property="og:image" content="https://wayward.house/assets/images/soil-heat-diffusion.webp" />
+<meta property="og:type" content="article" />
+<meta property="article:published_time" content="2026-02-26T00:00:00-07:00" />
+<meta name="twitter:card" content="summary_large_image" />
+<meta property="twitter:image" content="https://wayward.house/assets/images/soil-heat-diffusion.webp" />
+<meta property="twitter:title" content="Soil Heat Diffusion" />
+<meta name="twitter:site" content="@" />
+<script type="application/ld+json">
+{"@context":"https://schema.org","@type":"BlogPosting","dateModified":"2026-03-17T21:00:54-06:00","datePublished":"2026-02-26T00:00:00-07:00","description":"Surface temperature oscillates daily (day/night) and seasonally (summer/winter). These temperature waves propagate downward into the soil, getting weaker and more delayed with depth. This model derives the heat diffusion equation and solves it for sinusoidal forcing to find damping depth and phase lag.","headline":"Soil Heat Diffusion","image":"https://wayward.house/assets/images/soil-heat-diffusion.webp","mainEntityOfPage":{"@type":"WebPage","@id":"https://wayward.house/model/soil-heat-diffusion/"},"publisher":{"@type":"Organization","logo":{"@type":"ImageObject","url":"https://wayward.house/assets/images/logo.webp"}},"url":"https://wayward.house/model/soil-heat-diffusion/"}</script>
+<!-- End Jekyll SEO tag -->
+
+
+
+<!-- Cloudflare Web Analytics -->
+<script defer src="https://static.cloudflareinsights.com/beacon.min.js"
+  data-cf-beacon='{"token": "62c47d78bf9d4c80972d4e6242d79ff8"}'></script>
+
+
+</head>
+<body class="
+  model-template
+   tag-modelling
+   tag-hash-math
+  
+   tag-hash-viz
+  
+  
+  
+  
+  
+  
+">
+
+<a href="#main-content" class="skip-link">Skip to content</a>
+
+<header class="nav" x-data="{ open: false }">
+  <div class="nav-inner">
+
+    <!-- Logo -->
+    <a href="/" class="nav-logo">
+      
+      <img loading="lazy" src="/assets/images/logo.webp" alt="WaywardHouse" width="32" height="32">
+      
+      WaywardHouse<span>.</span>
+    </a>
+
+    <!-- Desktop nav links -->
+    <ul class="nav-links" role="list">
+      
+      <li>
+        <a href="/topics/">Essays</a>
+      </li>
+      
+      <li>
+        <a href="/series/">Modelling</a>
+      </li>
+      
+      <li>
+        <a href="/about/">About</a>
+      </li>
+      
+    </ul>
+
+    <!-- Actions -->
+    <div class="nav-actions">
+
+      <!-- Search button -->
+      <button
+        class="search-toggle"
+        type="button"
+        aria-label="Search (⌘K)"
+        title="Search (⌘K)"
+        @click="$dispatch('search:open')"
+      >
+        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <circle cx="11" cy="11" r="8"/>
+          <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+        </svg>
+      </button>
+
+      <!-- Dark mode toggle -->
+      <button
+        class="theme-toggle"
+        x-data="darkMode"
+        x-init="init()"
+        @click="toggle()"
+        :aria-label="dark ? 'Switch to light mode' : 'Switch to dark mode'"
+        type="button"
+      >
+        <!-- Sun icon (shown in light mode) -->
+        <svg class="icon-sun" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">
+          <circle cx="12" cy="12" r="5"/>
+          <line x1="12" y1="1" x2="12" y2="3"/>
+          <line x1="12" y1="21" x2="12" y2="23"/>
+          <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/>
+          <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/>
+          <line x1="1" y1="12" x2="3" y2="12"/>
+          <line x1="21" y1="12" x2="23" y2="12"/>
+          <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/>
+          <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>
+        </svg>
+        <!-- Moon icon (shown in dark mode) -->
+        <svg class="icon-moon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">
+          <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+        </svg>
+      </button>
+
+      <!-- Hamburger (mobile only) -->
+      <button
+        class="mobile-nav-toggle"
+        @click="open = !open"
+        :aria-expanded="open"
+        :aria-label="open ? 'Close menu' : 'Open menu'"
+        type="button"
+      >
+        <svg x-show="!open" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <line x1="3" y1="6" x2="21" y2="6"/>
+          <line x1="3" y1="12" x2="21" y2="12"/>
+          <line x1="3" y1="18" x2="21" y2="18"/>
+        </svg>
+        <svg x-show="open" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <line x1="18" y1="6" x2="6" y2="18"/>
+          <line x1="6" y1="6" x2="18" y2="18"/>
+        </svg>
+      </button>
+
+    </div><!-- /.nav-actions -->
+  </div><!-- /.nav-inner -->
+
+  <!-- Mobile drawer -->
+  <div
+    class="mobile-nav"
+    x-show="open"
+    x-transition:enter="transition ease-out duration-200"
+    x-transition:enter-start="opacity-0 -translate-y-1"
+    x-transition:enter-end="opacity-100 translate-y-0"
+    x-transition:leave="transition ease-in duration-150"
+    x-transition:leave-start="opacity-100 translate-y-0"
+    x-transition:leave-end="opacity-0 -translate-y-1"
+    @click.outside="open = false"
+    @keydown.escape.window="open = false"
+  >
+    <ul role="list">
+      
+      <li>
+        <a href="/topics/" @click="open = false">Essays</a>
+      </li>
+      
+      <li>
+        <a href="/series/" @click="open = false">Modelling</a>
+      </li>
+      
+      <li>
+        <a href="/about/" @click="open = false">About</a>
+      </li>
+      
+    </ul>
+  </div><!-- /.mobile-nav -->
+
+</header>
+
+
+<div id="main-content">
+  <!-- Essay stylesheet and runtime — self-contained -->
+<link rel="stylesheet" href="/assets/css/essay.css">
+<script type="module" src="/assets/js/essay/core.js"></script>
+
+<div class="essay-layout" id="essay-layout">
+
+  <!-- essay-toc.html — Sticky table of contents (left column).
+     The <ol> is empty on load; assets/js/essay/core.js populates it
+     from h2/h3 elements found in #essay-content after the page renders. -->
+
+<nav class="essay-toc" id="essay-toc" aria-label="Table of contents">
+  <div class="essay-toc-inner">
+    <p class="essay-toc-heading" aria-hidden="true">Contents</p>
+    <ol class="essay-toc-list" id="essay-toc-list">
+      <!-- Populated at runtime by assets/js/essay/core.js buildToc() -->
+    </ol>
+  </div>
+</nav>
+
+
+  <main class="essay-main" id="essay-main" role="main">
+    <article class="essay-article">
+
+      <!-- essay-hero.html — Header for computational essay template.
+     Displays feature image, tag label, title, excerpt, and post metadata. -->
+
+<header class="essay-hero">
+  
+  <figure class="essay-hero-figure">
+    <img
+      src="/assets/images/soil-heat-diffusion.webp"
+      alt="Soil Heat Diffusion"
+      class="essay-hero-img"
+      loading="eager"
+    >
+    
+  </figure>
+  
+
+  <div class="essay-hero-body">
+
+    
+    
+    
+    
+    
+    <nav class="essay-breadcrumb" aria-label="Series position">
+      
+      <a href="/series/2/" class="essay-breadcrumb-link">Computational geography environmental</a>
+      
+      
+      <span class="essay-breadcrumb-sep" aria-hidden="true">›</span>
+      <span class="essay-breadcrumb-cluster">Surface Energy Balance</span>
+      
+      
+      <span class="essay-breadcrumb-sep" aria-hidden="true">›</span>
+      <span class="essay-breadcrumb-pos">Model 7</span>
+      
+    </nav>
+    
+
+    <div class="essay-hero-labels">
+      
+      <a href="/topics/modelling/" class="essay-tag-label">modelling</a>
+      
+      
+      <span class="difficulty-badge difficulty-badge--4">Level 4</span>
+      
+    </div>
+
+    <h1 class="essay-title">Soil Heat Diffusion</h1>
+
+    
+    <p class="essay-excerpt">Surface temperature oscillates daily (day/night) and seasonally (summer/winter). These temperature waves propagate downward into the soil, getting weaker and more delayed with depth. This model derives the heat diffusion equation and solves it for sinusoidal forcing to find damping depth and phase lag.
+</p>
+    
+
+    
+    <p class="essay-prereqs"><span class="essay-prereqs-label">Prerequisites:</span> heat equation, diffusion, damping depth, phase lag, fourier analysis</p>
+    
+
+    <div class="essay-meta">
+      
+      <div class="essay-meta-secondary">
+        <time class="essay-date" datetime="2026-02-26">26 Feb 2026</time>
+        
+        
+        <span class="essay-sep" aria-hidden="true">·</span>
+        <span class="essay-updated">Updated <time datetime="2026-03-17">17 Mar 2026</time></span>
+        
+        <span class="essay-sep" aria-hidden="true">·</span>
+        <span class="essay-reading-time">13 min read</span>
+      </div>
+    </div>
+  </div>
+</header>
+
+
+      
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<nav class="series-nav" aria-label="Series navigation">
+
+  <div class="series-nav-header">
+    <span class="series-nav-label">G</span>
+    <span class="series-nav-title">Surface Energy Balance</span>
+  </div>
+
+  <ol class="series-nav-list">
+    
+    <li class="series-nav-item">
+      
+      <a href="/model/net-radiation-and-albedo/" class="series-nav-link">
+        <span class="series-nav-number">5</span>
+        Net Radiation and Albedo
+      </a>
+      
+    </li>
+    
+    <li class="series-nav-item">
+      
+      <a href="/model/sensible-and-latent-heat-fluxes/" class="series-nav-link">
+        <span class="series-nav-number">6</span>
+        Sensible and Latent Heat Fluxes
+      </a>
+      
+    </li>
+    
+    <li class="series-nav-item series-nav-item--current">
+      
+      <span class="series-nav-link series-nav-link--current" aria-current="page">
+        <span class="series-nav-number">7</span>
+        Soil Heat Diffusion
+      </span>
+      
+    </li>
+    
+  </ol>
+
+  
+  <div class="series-nav-footer">
+    <a href="/series/2/" class="series-nav-all">
+      All 16 in this series &rarr;
+    </a>
+  </div>
+  
+
+</nav>
+
+
+
+
+      <div class="essay-content gh-content" id="essay-content">
+        <p>Wine cellars stay cool in summer and frost-free in winter not by accident but by physics. At depths of 8–10 metres in most climates, the soil temperature barely varies across the year, hovering near the mean annual air temperature. The seasonal oscillation that sends surface temperatures swinging between −20°C and +30°C has been almost completely damped out by the time it propagates 10 metres into the ground. The same principle governs the depth of permafrost in the Arctic, the temperature of groundwater in shallow aquifers, the design of underground data centres, and the calibration of soil respiration models that depend on temperature.</p>
+
+<p>The mathematics describing this behaviour is the heat diffusion equation — a partial differential equation that relates the rate of temperature change at a point to the curvature of the temperature profile around it. It is one of the most important PDEs in physics, with applications from heat treatment of metals to the cooling of planetary bodies. For soil, the key result is that a sinusoidal temperature oscillation at the surface propagates downward as a damped, phase-lagged wave: the amplitude decreases exponentially with depth and the timing of the peak is progressively delayed. The damping depth — the depth at which the amplitude has fallen to 1/e of the surface value — depends only on thermal diffusivity and the period of the oscillation. This model derives that result and shows what controls it.</p>
+
+<h2 id="1-the-question">1. The Question</h2>
+
+<p>Why does soil temperature lag behind air temperature, and why is the lag greater at depth?</p>
+
+<p>Plant a thermometer at the surface and another at 1 meter depth. Watch them for 24 hours:</p>
+<ul>
+  <li><strong>Surface:</strong> Temperature swings wildly (10°C at night, 30°C at noon)</li>
+  <li><strong>1 m depth:</strong> Temperature barely changes (stays near 20°C all day)</li>
+</ul>
+
+<p>The same pattern occurs seasonally:</p>
+<ul>
+  <li><strong>Surface:</strong> Cold in winter, hot in summer</li>
+  <li><strong>10 m depth:</strong> Constant year-round (permafrost boundary, wine cellars, geothermal)</li>
+</ul>
+
+<p>The mathematical question: How do temperature oscillations at the surface propagate downward into the soil? How far do they penetrate, and how much are they delayed?</p>
+
+<hr />
+
+<h2 id="2-the-conceptual-model">2. The Conceptual Model</h2>
+
+<h3 id="heat-diffusion">Heat Diffusion</h3>
+
+<p>Heat flows from warm to cool regions. In soil, this happens by <strong>conduction</strong> — molecular-scale energy transfer through collisions.</p>
+
+<p><strong>Fick’s law analogy (from diffusion):</strong><br />
+Heat flux is proportional to the temperature gradient:</p>
+
+\[q = -k \frac{\partial T}{\partial z}\]
+
+<p>Where:</p>
+<ul>
+  <li>$q$ = heat flux (W/m²), positive downward</li>
+  <li>$k$ = thermal conductivity (W/m/K)</li>
+  <li>$\frac{\partial T}{\partial z}$ = temperature gradient (K/m)</li>
+</ul>
+
+<p>The negative sign means heat flows from hot to cold (down the gradient).</p>
+
+<h3 id="temperature-waves">Temperature Waves</h3>
+
+<p>The surface temperature oscillates:</p>
+
+\[T_{\text{surface}}(t) = T_{\text{mean}} + A \sin(\omega t)\]
+
+<p>Where:</p>
+<ul>
+  <li>$T_{\text{mean}}$ = average temperature</li>
+  <li>$A$ = amplitude of oscillation</li>
+  <li>$\omega = 2\pi / P$ = angular frequency (rad/s)</li>
+  <li>$P$ = period (86400 s for daily, ~31.5×10⁶ s for annual)</li>
+</ul>
+
+<p>This oscillation propagates downward as a <strong>damped, delayed wave</strong>.</p>
+
+<p><strong>Damping:</strong> Amplitude decreases exponentially with depth<br />
+<strong>Delay:</strong> Peak temperature occurs later at greater depths</p>
+
+<hr />
+
+<h2 id="3-building-the-mathematical-model">3. Building the Mathematical Model</h2>
+
+<h3 id="the-heat-diffusion-equation">The Heat Diffusion Equation</h3>
+
+<p><strong>Conservation of energy</strong> in a thin soil layer:</p>
+
+\[\rho c \frac{\partial T}{\partial t} = \frac{\partial}{\partial z}\left(k \frac{\partial T}{\partial z}\right)\]
+
+<p>Where:</p>
+<ul>
+  <li>$\rho$ = soil density (kg/m³)</li>
+  <li>$c$ = specific heat capacity (J/kg/K)</li>
+  <li>$k$ = thermal conductivity (W/m/K)</li>
+</ul>
+
+<p>For <strong>constant properties</strong> (homogeneous soil):</p>
+
+\[\frac{\partial T}{\partial t} = \alpha \frac{\partial^2 T}{\partial z^2}\]
+
+<p>Where $\alpha = k / (\rho c)$ is the <strong>thermal diffusivity</strong> (m²/s).</p>
+
+<p><strong>Physical interpretation:</strong></p>
+<ul>
+  <li>Left side: Rate of temperature change</li>
+  <li>Right side: Curvature of temperature profile (how “bent” the profile is)</li>
+</ul>
+
+<p>If the profile is concave up ($\partial^2 T/\partial z^2 &gt; 0$), temperature increases. If concave down, temperature decreases.</p>
+
+<h3 id="thermal-diffusivity">Thermal Diffusivity</h3>
+
+\[\alpha = \frac{k}{\rho c}\]
+
+<p><strong>Typical values:</strong></p>
+
+<table>
+  <thead>
+    <tr>
+      <th>Material</th>
+      <th>$\alpha$ (m²/s)</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>Dry sand</td>
+      <td>0.3 × 10⁻⁶</td>
+    </tr>
+    <tr>
+      <td>Moist sand</td>
+      <td>0.6 × 10⁻⁶</td>
+    </tr>
+    <tr>
+      <td>Clay (dry)</td>
+      <td>0.25 × 10⁻⁶</td>
+    </tr>
+    <tr>
+      <td>Clay (wet)</td>
+      <td>0.5 × 10⁻⁶</td>
+    </tr>
+    <tr>
+      <td>Peat</td>
+      <td>0.1 × 10⁻⁶</td>
+    </tr>
+    <tr>
+      <td>Rock</td>
+      <td>1.0 × 10⁻⁶</td>
+    </tr>
+    <tr>
+      <td>Water</td>
+      <td>1.4 × 10⁻⁶</td>
+    </tr>
+    <tr>
+      <td>Air</td>
+      <td>20 × 10⁻⁶</td>
+    </tr>
+  </tbody>
+</table>
+
+<p><strong>Key insight:</strong> Moist soil has higher diffusivity than dry soil (water conducts heat better than air).</p>
+
+<h3 id="solution-for-periodic-forcing">Solution for Periodic Forcing</h3>
+
+<p><strong>Boundary condition</strong> (surface oscillates):</p>
+
+\[T(z=0, t) = T_m + A_0 \sin(\omega t)\]
+
+<p><strong>Deep boundary</strong> (constant temperature):</p>
+
+\[T(z \to \infty, t) = T_m\]
+
+<p><strong>Solution</strong> (for $z &gt; 0$):</p>
+
+\[T(z,t) = T_m + A_0 e^{-z/d} \sin\left(\omega t - \frac{z}{d}\right)\]
+
+<p>Where $d$ is the <strong>damping depth</strong> (or e-folding depth):</p>
+
+\[d = \sqrt{\frac{2\alpha}{\omega}}\]
+
+<p><strong>Two key features:</strong></p>
+<ol>
+  <li><strong>Amplitude decays exponentially:</strong> $A(z) = A_0 e^{-z/d}$</li>
+  <li><strong>Phase lags linearly:</strong> Phase lag = $z/d$ radians</li>
+</ol>
+
+<h3 id="damping-depth">Damping Depth</h3>
+
+<p>The damping depth is where amplitude drops to $1/e \approx 37\%$ of surface value.</p>
+
+<p><strong>Daily cycle</strong> ($P = 86400$ s, $\omega = 7.27 \times 10^{-5}$ rad/s):</p>
+
+<p>For typical soil ($\alpha = 0.5 \times 10^{-6}$ m²/s):</p>
+
+\[d_{\text{daily}} = \sqrt{\frac{2 \times 0.5 \times 10^{-6}}{7.27 \times 10^{-5}}} = 0.12 \text{ m}\]
+
+<p><strong>At depth $d = 12$ cm, daily temperature swing is 37% of surface swing.</strong></p>
+
+<p><strong>Annual cycle</strong> ($P = 365.25 \times 86400$ s, $\omega = 1.99 \times 10^{-7}$ rad/s):</p>
+
+\[d_{\text{annual}} = \sqrt{\frac{2 \times 0.5 \times 10^{-6}}{1.99 \times 10^{-7}}} = 2.2 \text{ m}\]
+
+<p><strong>Scaling rule:</strong></p>
+
+\[\frac{d_{\text{annual}}}{d_{\text{daily}}} = \sqrt{\frac{P_{\text{annual}}}{P_{\text{daily}}}} = \sqrt{365.25} \approx 19\]
+
+<p>Annual waves penetrate <strong>~19 times deeper</strong> than daily waves.</p>
+
+<h3 id="phase-lag">Phase Lag</h3>
+
+<p><strong>Time delay</strong> for temperature peak to reach depth $z$:</p>
+
+\[\Delta t = \frac{z}{d} \times \frac{P}{2\pi}\]
+
+<p><strong>Example:</strong> Daily cycle, $z = 0.5$ m, $d = 0.12$ m:</p>
+
+\[\Delta t = \frac{0.5}{0.12} \times \frac{86400}{2\pi} = 4.17 \times 13750 = 57,300 \text{ s} \approx 16 \text{ hours}\]
+
+<p><strong>Surface peaks at noon → 0.5 m depth peaks at 4 AM the next day.</strong></p>
+
+<hr />
+
+<h2 id="4-worked-example-by-hand">4. Worked Example by Hand</h2>
+
+<p><strong>Problem:</strong> A soil has thermal diffusivity $\alpha = 0.4 \times 10^{-6}$ m²/s. Surface temperature oscillates daily with mean 15°C and amplitude 10°C.</p>
+
+<p>(a) What is the damping depth for the daily cycle?<br />
+(b) What is the temperature amplitude at 20 cm depth?<br />
+(c) When does the temperature peak at 20 cm if the surface peaks at noon?</p>
+
+<h3 id="solution">Solution</h3>
+
+<p><strong>(a) Damping depth</strong></p>
+
+<p>Daily period: $P = 86400$ s</p>
+
+\[\omega = \frac{2\pi}{P} = \frac{2\pi}{86400} = 7.27 \times 10^{-5} \text{ rad/s}\]
+
+\[d = \sqrt{\frac{2\alpha}{\omega}} = \sqrt{\frac{2 \times 0.4 \times 10^{-6}}{7.27 \times 10^{-5}}}\]
+
+\[= \sqrt{\frac{0.8 \times 10^{-6}}{7.27 \times 10^{-5}}} = \sqrt{1.1 \times 10^{-2}} = 0.105 \text{ m} = 10.5 \text{ cm}\]
+
+<p><strong>(b) Amplitude at 20 cm</strong></p>
+
+\[A(z) = A_0 e^{-z/d} = 10 \times e^{-0.20/0.105}\]
+
+\[= 10 \times e^{-1.90} = 10 \times 0.150 = 1.5°\text{C}\]
+
+<p><strong>Temperature swing at 20 cm depth is ±1.5°C (compared to ±10°C at surface).</strong></p>
+
+<p><strong>(c) Phase lag</strong></p>
+
+\[\phi = \frac{z}{d} = \frac{0.20}{0.105} = 1.90 \text{ radians}\]
+
+<p>Convert to time:</p>
+
+\[\Delta t = \phi \times \frac{P}{2\pi} = 1.90 \times \frac{86400}{2\pi} = 1.90 \times 13750 = 26,125 \text{ s} \approx 7.3 \text{ hours}\]
+
+<p><strong>Surface peaks at noon (12:00) → 20 cm depth peaks at 19:18 (7:18 PM).</strong></p>
+
+<hr />
+
+<h2 id="5-computational-implementation">5. Computational Implementation</h2>
+
+<p>Below is an interactive soil temperature profile simulator.</p>
+
+<div class="viz-container" id="soil-temp-viz">
+  <div class="controls">
+    <label>
+      Soil type:
+      <select id="soil-type">
+        <option value="dry-sand">Dry Sand (α=0.3)</option>
+        <option value="moist-sand" selected="">Moist Sand (α=0.6)</option>
+        <option value="clay">Clay (α=0.4)</option>
+        <option value="peat">Peat (α=0.1)</option>
+      </select>
+    </label>
+    <label>
+      Surface temperature amplitude (°C):
+      <input type="range" id="amplitude-slider" min="5" max="20" step="1" value="10" />
+      <span id="amplitude-value">10</span> °C
+    </label>
+    <label>
+      Mean temperature (°C):
+      <input type="range" id="mean-temp-slider" min="5" max="25" step="1" value="15" />
+      <span id="mean-temp-value">15</span> °C
+    </label>
+    <label>
+      Time of day (hours):
+      <input type="range" id="time-slider" min="0" max="24" step="0.5" value="12" />
+      <span id="time-value">12.0</span> h
+    </label>
+    <div class="button-group">
+      <button id="animate-toggle">Animate Daily Cycle</button>
+    </div>
+  </div>
+  <div class="soil-info">
+    <p><strong>Damping depth:</strong> <span id="damping-depth"></span> cm</p>
+    <p><strong>Temperature at 50 cm:</strong> <span id="temp-50cm"></span> °C</p>
+  </div>
+  <div id="soil-temp-chart" style="width: 100%; height: 500px;"></div>
+</div>
+
+<script type="module">
+await new Promise(resolve => {
+  const checkECharts = () => {
+    if (typeof echarts !== 'undefined') resolve();
+    else setTimeout(checkECharts, 50);
+  };
+  checkECharts();
+});
+
+(function() {
+  const chart = echarts.init(document.getElementById('soil-temp-chart'));
+  
+  const soils = {
+    'dry-sand': { alpha: 0.3e-6, name: 'Dry Sand' },
+    'moist-sand': { alpha: 0.6e-6, name: 'Moist Sand' },
+    'clay': { alpha: 0.4e-6, name: 'Clay' },
+    'peat': { alpha: 0.1e-6, name: 'Peat' }
+  };
+  
+  let soilType = 'moist-sand';
+  let amplitude = 10;
+  let meanTemp = 15;
+  let timeOfDay = 12;
+  let animating = false;
+  let animationInterval = null;
+  
+  const P = 86400; // seconds (daily period)
+  const omega = 2 * Math.PI / P;
+  
+  function dampingDepth(alpha) {
+    return Math.sqrt(2 * alpha / omega);
+  }
+  
+  function soilTemperature(z, t, alpha, Tm, A0) {
+    const d = dampingDepth(alpha);
+    const tSeconds = t * 3600; // convert hours to seconds
+    const phase = omega * tSeconds - z / d;
+    return Tm + A0 * Math.exp(-z / d) * Math.sin(phase);
+  }
+  
+  function updateChart() {
+    const alpha = soils[soilType].alpha;
+    const d = dampingDepth(alpha);
+    
+    // Generate temperature profile
+    const depths = [];
+    const temps = [];
+    
+    for (let z = 0; z <= 2; z += 0.02) {
+      depths.push(z);
+      temps.push(soilTemperature(z, timeOfDay, alpha, meanTemp, amplitude));
+    }
+    
+    // Temperature at 50 cm
+    const temp50 = soilTemperature(0.5, timeOfDay, alpha, meanTemp, amplitude);
+    
+    document.getElementById('damping-depth').textContent = (d * 100).toFixed(1);
+    document.getElementById('temp-50cm').textContent = temp50.toFixed(1);
+    
+    const option = {
+      title: {
+        text: `Soil Temperature Profile (${timeOfDay.toFixed(1)} hours)`,
+        left: 'center'
+      },
+      tooltip: {
+        trigger: 'axis',
+        axisPointer: { type: 'cross' }
+      },
+      grid: {
+        left: 80,
+        right: 40,
+        top: 60,
+        bottom: 60
+      },
+      xAxis: {
+        type: 'value',
+        name: 'Temperature (°C)',
+        nameLocation: 'middle',
+        nameGap: 30,
+        min: meanTemp - amplitude - 2,
+        max: meanTemp + amplitude + 2
+      },
+      yAxis: {
+        type: 'value',
+        name: 'Depth (m)',
+        nameLocation: 'middle',
+        nameGap: 50,
+        inverse: true,
+        min: 0,
+        max: 2
+      },
+      series: [
+        {
+          type: 'line',
+          data: temps.map((t, i) => [t, depths[i]]),
+          lineStyle: {
+            color: '#E74C3C',
+            width: 3
+          },
+          showSymbol: false,
+          markLine: {
+            silent: true,
+            symbol: 'none',
+            data: [
+              {
+                xAxis: meanTemp,
+                lineStyle: { type: 'dashed', color: '#95A5A6' },
+                label: { formatter: 'Mean', position: 'end' }
+              }
+            ]
+          },
+          markPoint: {
+            data: [
+              {
+                coord: [soilTemperature(0, timeOfDay, alpha, meanTemp, amplitude), 0],
+                symbol: 'circle',
+                symbolSize: 10,
+                itemStyle: { color: '#F39C12' },
+                label: { show: true, formatter: 'Surface', position: 'right' }
+              },
+              {
+                coord: [temp50, 0.5],
+                symbol: 'circle',
+                symbolSize: 8,
+                itemStyle: { color: '#3498DB' },
+                label: { show: true, formatter: '50 cm', position: 'right' }
+              }
+            ]
+          }
+        }
+      ]
+    };
+    
+    chart.setOption(option);
+  }
+  
+  document.getElementById('soil-type').addEventListener('change', (e) => {
+    soilType = e.target.value;
+    updateChart();
+  });
+  
+  document.getElementById('amplitude-slider').addEventListener('input', (e) => {
+    amplitude = parseFloat(e.target.value);
+    document.getElementById('amplitude-value').textContent = amplitude;
+    updateChart();
+  });
+  
+  document.getElementById('mean-temp-slider').addEventListener('input', (e) => {
+    meanTemp = parseFloat(e.target.value);
+    document.getElementById('mean-temp-value').textContent = meanTemp;
+    updateChart();
+  });
+  
+  document.getElementById('time-slider').addEventListener('input', (e) => {
+    timeOfDay = parseFloat(e.target.value);
+    document.getElementById('time-value').textContent = timeOfDay.toFixed(1);
+    updateChart();
+  });
+  
+  document.getElementById('animate-toggle').addEventListener('click', (e) => {
+    if (animating) {
+      clearInterval(animationInterval);
+      e.target.textContent = 'Animate Daily Cycle';
+      animating = false;
+    } else {
+      animationInterval = setInterval(() => {
+        timeOfDay = (timeOfDay + 0.25) % 24;
+        document.getElementById('time-slider').value = timeOfDay;
+        document.getElementById('time-value').textContent = timeOfDay.toFixed(1);
+        updateChart();
+      }, 100);
+      e.target.textContent = 'Stop Animation';
+      animating = true;
+    }
+  });
+  
+  updateChart();
+  
+  window.addEventListener('resize', () => chart.resize());
+})();
+</script>
+
+<p><strong>Try this:</strong></p>
+<ul>
+  <li><strong>Animate the daily cycle:</strong> Watch the temperature wave propagate downward</li>
+  <li><strong>Switch to peat:</strong> Low diffusivity → shallow damping depth → surface insulation</li>
+  <li><strong>Switch to moist sand:</strong> Higher diffusivity → deeper penetration</li>
+  <li><strong>Observe phase lag:</strong> Surface peaks at noon, but 50 cm peaks hours later</li>
+  <li><strong>Notice damping:</strong> Temperature swing decreases rapidly with depth</li>
+</ul>
+
+<p><strong>Key insight:</strong> The ground acts as a <strong>low-pass filter</strong> — high-frequency oscillations (daily) are filtered out quickly, while low-frequency (annual) penetrate deep.</p>
+
+<hr />
+
+<h2 id="6-interpretation">6. Interpretation</h2>
+
+<h3 id="why-basements-stay-cool-in-summer">Why Basements Stay Cool in Summer</h3>
+
+<p>At 2–3 meters depth, <strong>daily temperature oscillations are negligible</strong> (amplitude &lt; 1% of surface).</p>
+
+<p><strong>Annual oscillations</strong> still penetrate:</p>
+<ul>
+  <li>Summer surface temperature: 30°C</li>
+  <li>3 m depth: Lags by ~3 months → peaks in fall</li>
+  <li>Result: Basement cool in summer, relatively warm in winter</li>
+</ul>
+
+<h3 id="permafrost-and-active-layer">Permafrost and Active Layer</h3>
+
+<p>In Arctic regions, soil can be:</p>
+<ul>
+  <li><strong>Active layer</strong> (top ~0.5–2 m): Thaws in summer, freezes in winter</li>
+  <li><strong>Permafrost</strong> (below): Permanently frozen</li>
+</ul>
+
+<p><strong>Active layer thickness</strong> is approximately where annual temperature wave amplitude drops below the freezing point.</p>
+
+<p>Climate warming → deeper summer thaw → thicker active layer → permafrost degradation.</p>
+
+<h3 id="thermal-inertia-and-climate">Thermal Inertia and Climate</h3>
+
+<p><strong>Ocean</strong> has very high thermal inertia (high $c$, high $\rho$):</p>
+<ul>
+  <li>Slow to warm in spring</li>
+  <li>Slow to cool in fall</li>
+  <li>Moderates coastal climates</li>
+</ul>
+
+<p><strong>Desert soil</strong> (dry) has low thermal inertia:</p>
+<ul>
+  <li>Heats quickly during day</li>
+  <li>Cools quickly at night</li>
+  <li>Large diurnal temperature range</li>
+</ul>
+
+<h3 id="frost-penetration">Frost Penetration</h3>
+
+<p><strong>Frost depth</strong> in winter depends on:</p>
+<ul>
+  <li>Duration of freezing temperatures (how long the “cold wave” lasts)</li>
+  <li>Soil thermal properties</li>
+  <li>Snow cover (insulation)</li>
+</ul>
+
+<p><strong>Simplified estimate:</strong> Frost penetrates to depth where soil temperature stays above 0°C.</p>
+
+<hr />
+
+<h2 id="7-what-could-go-wrong">7. What Could Go Wrong?</h2>
+
+<h3 id="assuming-homogeneous-soil">Assuming Homogeneous Soil</h3>
+
+<p>Real soil has <strong>layers</strong> with different thermal properties:</p>
+<ul>
+  <li>Organic litter (low diffusivity)</li>
+  <li>Topsoil (medium)</li>
+  <li>Subsoil (higher)</li>
+  <li>Rock (high)</li>
+</ul>
+
+<p><strong>Boundary conditions</strong> at each interface complicate the solution.</p>
+
+<h3 id="ignoring-latent-heat-effects">Ignoring Latent Heat Effects</h3>
+
+<p>When soil freezes, <strong>latent heat of fusion</strong> is released:</p>
+
+\[L_f = 3.34 \times 10^5 \text{ J/kg}\]
+
+<p>This slows the freezing front (energy must be extracted before temperature drops further).</p>
+
+<p><strong>Phase change</strong> creates a <strong>nonlinear problem</strong> — $\alpha$ changes abruptly at the freezing front.</p>
+
+<h3 id="neglecting-water-movement">Neglecting Water Movement</h3>
+
+<p>Moisture moves in soil (evaporation, drainage, capillary rise). Water carries heat (<strong>advection</strong>).</p>
+
+<p><strong>Our model assumes no water movement</strong> — pure conduction only.</p>
+
+<p>In reality, evaporation at the surface <strong>cools</strong> the soil (latent heat), and infiltrating rainfall <strong>heats or cools</strong> deeper layers.</p>
+
+<h3 id="forgetting-time-scale">Forgetting Time Scale</h3>
+
+<p>The solution assumes <strong>sinusoidal forcing has been running for many periods</strong> (steady periodic state).</p>
+
+<p>After a <strong>sudden change</strong> (e.g., tillage, snow removal), soil takes time to adjust (transient response, not covered by our periodic solution).</p>
+
+<hr />
+
+<h2 id="8-extension-annual-cycle-and-superposition">8. Extension: Annual Cycle and Superposition</h2>
+
+<p><strong>Real soil temperature</strong> is a superposition of multiple cycles:</p>
+
+\[T(z,t) = T_m + A_d e^{-z/d_d} \sin(\omega_d t - z/d_d) + A_a e^{-z/d_a} \sin(\omega_a t - z/d_a)\]
+
+<p>Where subscript $d$ = daily, $a$ = annual.</p>
+
+<p><strong>Daily component:</strong> Damping depth ~10 cm, negligible below 50 cm<br />
+<strong>Annual component:</strong> Damping depth ~2 m, significant to 10 m</p>
+
+<p><strong>Superposition works</strong> because the heat equation is <strong>linear</strong>.</p>
+
+<hr />
+
+<h2 id="9-math-refresher-the-heat-equation">9. Math Refresher: The Heat Equation</h2>
+
+<h3 id="derivation-from-energy-conservation">Derivation from Energy Conservation</h3>
+
+<p>Consider a thin layer of soil from depth $z$ to $z + \Delta z$.</p>
+
+<p><strong>Energy in:</strong><br />
+Heat flux entering from above: $q(z)$</p>
+
+<p><strong>Energy out:</strong><br />
+Heat flux leaving through bottom: $q(z + \Delta z)$</p>
+
+<p><strong>Storage:</strong><br />
+Energy stored in the layer: $\rho c \Delta z \frac{\partial T}{\partial t}$</p>
+
+<p><strong>Balance:</strong></p>
+
+\[q(z) - q(z + \Delta z) = \rho c \Delta z \frac{\partial T}{\partial t}\]
+
+<p>Divide by $\Delta z$ and take limit $\Delta z \to 0$:</p>
+
+\[-\frac{\partial q}{\partial z} = \rho c \frac{\partial T}{\partial t}\]
+
+<p>Substitute Fourier’s law $q = -k \frac{\partial T}{\partial z}$:</p>
+
+\[\frac{\partial}{\partial z}\left(k \frac{\partial T}{\partial z}\right) = \rho c \frac{\partial T}{\partial t}\]
+
+<p>For constant $k$:</p>
+
+\[\frac{\partial T}{\partial t} = \alpha \frac{\partial^2 T}{\partial z^2}\]
+
+<p>This is the <strong>diffusion equation</strong> (or heat equation).</p>
+
+<h3 id="connection-to-other-diffusion-processes">Connection to Other Diffusion Processes</h3>
+
+<p>Same equation governs:</p>
+<ul>
+  <li><strong>Moisture diffusion</strong> in soil</li>
+  <li><strong>Chemical diffusion</strong> in fluids</li>
+  <li><strong>Pollutant spreading</strong> in groundwater</li>
+  <li><strong>Population spread</strong> in ecology</li>
+</ul>
+
+<p><strong>Universal form:</strong></p>
+
+\[\frac{\partial \phi}{\partial t} = D \frac{\partial^2 \phi}{\partial z^2}\]
+
+<p>Where $\phi$ is the diffusing quantity and $D$ is the diffusion coefficient.</p>
+
+<hr />
+
+<h2 id="summary">Summary</h2>
+
+<ul>
+  <li><strong>Heat diffusion equation:</strong> $\frac{\partial T}{\partial t} = \alpha \frac{\partial^2 T}{\partial z^2}$</li>
+  <li><strong>Thermal diffusivity:</strong> $\alpha = k / (\rho c)$, typical values 0.1–1.0 × 10⁻⁶ m²/s</li>
+  <li><strong>Damping depth:</strong> $d = \sqrt{2\alpha / \omega}$, where $\omega = 2\pi / P$</li>
+  <li><strong>Daily cycle:</strong> Damping depth ~10 cm (temperature swing reduced to 37% at this depth)</li>
+  <li><strong>Annual cycle:</strong> Damping depth ~2 m (penetrates ~19× deeper than daily)</li>
+  <li><strong>Phase lag:</strong> Temperature peak delayed by time $\Delta t = (z/d) \times (P/2\pi)$</li>
+  <li>Temperature amplitude decays exponentially: $A(z) = A_0 e^{-z/d}$</li>
+  <li>Moist soil has higher diffusivity than dry soil</li>
+</ul>
+
+      </div>
+
+      
+
+
+
+      
+
+  
+  
+  
+  
+
+
+
+      <!-- essay-footer-notes.html — References / endnotes section.
+     Hidden by default; assets/js/essay/core.js shows it and populates
+     #essay-endnotes-list from [data-cite] elements in the content.
+
+     In posts, create citation markers with:
+       <cite data-cite="Author, Title, URL">1</cite>
+     The JS collects these and renders a numbered reference list here. -->
+
+<footer class="essay-endnotes" id="essay-endnotes" aria-label="References" hidden>
+  <div class="essay-endnotes-inner">
+    <h2 class="essay-endnotes-heading">References</h2>
+    <ol class="essay-endnotes-list" id="essay-endnotes-list">
+      <!-- Populated at runtime by assets/js/essay/core.js buildEndnotes() -->
+    </ol>
+  </div>
+</footer>
+
+
+      
+
+      
+
+      
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    </article>
+  </main>
+
+  <aside
+    class="essay-sidenotes"
+    id="essay-sidenotes"
+    aria-label="Margin notes"
+  ></aside>
+
+</div>
+
+</div>
+
+<footer>
+  <div class="footer-inner">
+
+    <!-- Col 1: Brand -->
+    <div class="footer-brand">
+      <div class="footer-brand-logo">
+        
+        <img loading="lazy" src="/assets/images/logo.webp" alt="WaywardHouse" width="28" height="28">
+        
+        WaywardHouse<span>.</span>
+      </div>
+      
+      
+      <p class="footer-brand-desc">Understanding how place, economy, and environment interact — through analysis, modelling, and open tools.</p>
+      
+
+      <div class="footer-social">
+        
+        
+        
+        <a href="/feed.xml" class="social-icon" target="_blank" rel="noopener noreferrer" aria-label="RSS feed">
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M4 11a9 9 0 0 1 9 9"/>
+            <path d="M4 4a16 16 0 0 1 16 16"/>
+            <circle cx="5" cy="19" r="1"/>
+          </svg>
+        </a>
+      </div>
+    </div>
+
+    <!-- Col 2: Topics (configurable via footer_topics, falls back to auto-categories) -->
+    <nav aria-labelledby="footer-topics">
+      <h3 class="footer-col-title" id="footer-topics">Reading</h3>
+      <ul class="footer-links">
+        
+          
+          <li><a href="/topics/">Essays</a></li>
+          
+          <li><a href="/series/">Modelling</a></li>
+          
+          <li><a href="/archive/">Archive</a></li>
+          
+          <li><a href="/start-here/">Start Here</a></li>
+          
+        
+      </ul>
+    </nav>
+
+    <!-- Col 3: Secondary navigation -->
+    
+    <nav aria-labelledby="footer-company">
+      <h3 class="footer-col-title" id="footer-company">Site</h3>
+      <ul class="footer-links">
+        
+        <li><a href="/start-here/">Start Here</a></li>
+        
+        <li><a href="/about/">About</a></li>
+        
+        <li><a href="/contact/">Contact</a></li>
+        
+      </ul>
+    </nav>
+    
+
+    <!-- Col 4: Resources -->
+    <nav aria-labelledby="footer-resources">
+      <h3 class="footer-col-title" id="footer-resources">Resources</h3>
+      <ul class="footer-links">
+        <li><a href="/archive/">Archive</a></li>
+        <li><a href="/feed.xml">RSS Feed</a></li>
+        <li><a href="/topics/">All Topics</a></li>
+      </ul>
+    </nav>
+
+  </div><!-- /.footer-inner -->
+
+  <div class="footer-bottom">
+    <span class="footer-copy">
+      &copy; 2026 WaywardHouse.
+    </span>
+    <div class="footer-legal">
+      <a href="/privacy/">Privacy Policy</a>
+      <a href="/terms/">Terms of Service</a>
+    </div>
+  </div>
+
+</footer>
+
+
+<!-- Alpine.js bundle -->
+<script type="module" src="/assets/dist/main.js"></script>
+
+<!-- Visualization runtime — detects and loads CDN libraries dynamically -->
+<script type="module" src="/assets/js/core.js"></script>
+
+<!-- Search overlay — event-driven: nav button $dispatches 'search:open' -->
+<div
+  x-data="search"
+  x-init="init()"
+  @search:open.window="open()"
+>
+  <div
+    class="search-overlay"
+    x-show="isOpen"
+    x-transition:enter="transition ease-out duration-150"
+    x-transition:enter-start="opacity-0"
+    x-transition:enter-end="opacity-100"
+    x-transition:leave="transition ease-in duration-100"
+    x-transition:leave-start="opacity-100"
+    x-transition:leave-end="opacity-0"
+    @click.self="close()"
+    style="display: none;"
+    role="dialog"
+    aria-modal="true"
+    aria-label="Search"
+  >
+    <div class="search-panel">
+      <div class="search-input-wrap">
+        <svg class="search-icon" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <circle cx="11" cy="11" r="8"/>
+          <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+        </svg>
+        <input
+          class="search-input"
+          type="search"
+          placeholder="Search posts…"
+          x-model="query"
+          x-ref="input"
+          @input.debounce.300ms="runSearch()"
+          @keydown.escape="close()"
+          autocomplete="off"
+          spellcheck="false"
+          aria-label="Search query"
+        >
+        <kbd class="search-esc" aria-hidden="true">ESC</kbd>
+      </div>
+
+      <div class="search-results" x-show="query.trim().length > 0">
+        <div class="search-status" x-show="loading" aria-live="polite">Searching…</div>
+        <div class="search-status" x-show="!loading && results.length === 0" aria-live="polite">
+          No results for "<span x-text="query"></span>"
+        </div>
+        <ul class="search-result-list" x-show="!loading && results.length > 0" role="list">
+          <template x-for="result in results" :key="result.url">
+            <li>
+              <a :href="result.url" class="search-result-item" @click="close()">
+                <div class="search-result-title" x-text="result.meta?.title || result.url"></div>
+                <div class="search-result-excerpt" x-html="result.excerpt"></div>
+              </a>
+            </li>
+          </template>
+        </ul>
+      </div>
+    </div>
+  </div>
+</div>
+
+</body>
+</html>

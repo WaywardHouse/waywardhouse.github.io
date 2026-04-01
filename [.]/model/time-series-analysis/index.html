@@ -1,0 +1,1546 @@
+<!DOCTYPE html>
+
+<html lang="en" data-brand="wayward" data-theme="light">
+<head>
+  <meta charset="utf-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Time Series Analysis of Satellite Data — WaywardHouse</title>
+<meta name="description" content="When does vegetation green-up each spring? Is there a long-term trend in productivity? How does drought affect growing seasons? Time series analysis of satellite data decomposes observations into trend, seasonality,...">
+
+<!-- Dark mode flash prevention — runs synchronously before first paint -->
+<script>
+  (function () {
+    var defaultDark = 'light' === 'dark';
+    var s = localStorage.getItem('theme');
+    var dark = s !== null ? s === 'dark' : defaultDark;
+    document.documentElement.dataset.theme = dark ? 'dark' : 'light';
+  })();
+</script>
+
+<!-- Preconnect to CDN domains used by the viz runtime -->
+<link rel="preconnect" href="https://cdn.jsdelivr.net">
+<link rel="preconnect" href="https://unpkg.com">
+<link rel="preconnect" href="https://esm.sh">
+<link rel="preconnect" href="https://api.mapbox.com">
+<link rel="preconnect" href="https://events.mapbox.com">
+
+
+<script>window.MAPBOX_TOKEN = 'pk.eyJ1IjoiYnJlYWRlZGNvZCIsImEiOiJjbW0xa25qc2EwMmtwMnJwejJlNndqdnoxIn0._7I9PwXuFLrOQINVZ84y1w';</script>
+
+
+<!-- Fonts -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:ital,wght@0,300;0,400;0,600;0,700;0,800;0,900;1,700;1,800&family=Barlow:wght@300;400&family=IBM+Plex+Mono:ital,wght@0,300;0,400;0,500;1,300&family=Literata:ital,opsz,wght@0,7..72,300;0,7..72,400;0,7..72,500;1,7..72,300;1,7..72,400&display=swap" rel="stylesheet">
+
+<!-- Theme stylesheet (Vite build output) -->
+<link rel="stylesheet" href="/assets/dist/main.css">
+
+<!-- Brand token overrides — loaded after main.css so variables cascade correctly -->
+
+<link rel="stylesheet" href="/assets/css/brand-wayward.css">
+
+
+
+<!-- Syntax highlighting (Rouge — light + dark) -->
+<link rel="stylesheet" href="/assets/css/syntax.css">
+
+<!-- Begin Jekyll SEO tag v2.8.0 -->
+<title>Time Series Analysis of Satellite Data | WaywardHouse</title>
+<meta name="generator" content="Jekyll v4.4.1" />
+<meta property="og:title" content="Time Series Analysis of Satellite Data" />
+<meta property="og:locale" content="en" />
+<meta name="description" content="When does vegetation green-up each spring? Is there a long-term trend in productivity? How does drought affect growing seasons? Time series analysis of satellite data decomposes observations into trend, seasonality, and noise, enabling phenology extraction, anomaly detection, and climate change assessment. This model derives harmonic analysis, implements smoothing filters, and extracts phenological metrics." />
+<meta property="og:description" content="When does vegetation green-up each spring? Is there a long-term trend in productivity? How does drought affect growing seasons? Time series analysis of satellite data decomposes observations into trend, seasonality, and noise, enabling phenology extraction, anomaly detection, and climate change assessment. This model derives harmonic analysis, implements smoothing filters, and extracts phenological metrics." />
+<link rel="canonical" href="https://wayward.house/model/time-series-analysis/" />
+<meta property="og:url" content="https://wayward.house/model/time-series-analysis/" />
+<meta property="og:site_name" content="WaywardHouse" />
+<meta property="og:image" content="https://wayward.house/assets/images/time-series-satellite.webp" />
+<meta property="og:type" content="article" />
+<meta property="article:published_time" content="2026-02-27T00:00:00-07:00" />
+<meta name="twitter:card" content="summary_large_image" />
+<meta property="twitter:image" content="https://wayward.house/assets/images/time-series-satellite.webp" />
+<meta property="twitter:title" content="Time Series Analysis of Satellite Data" />
+<meta name="twitter:site" content="@" />
+<script type="application/ld+json">
+{"@context":"https://schema.org","@type":"BlogPosting","dateModified":"2026-03-17T21:00:54-06:00","datePublished":"2026-02-27T00:00:00-07:00","description":"When does vegetation green-up each spring? Is there a long-term trend in productivity? How does drought affect growing seasons? Time series analysis of satellite data decomposes observations into trend, seasonality, and noise, enabling phenology extraction, anomaly detection, and climate change assessment. This model derives harmonic analysis, implements smoothing filters, and extracts phenological metrics.","headline":"Time Series Analysis of Satellite Data","image":"https://wayward.house/assets/images/time-series-satellite.webp","mainEntityOfPage":{"@type":"WebPage","@id":"https://wayward.house/model/time-series-analysis/"},"publisher":{"@type":"Organization","logo":{"@type":"ImageObject","url":"https://wayward.house/assets/images/logo.webp"}},"url":"https://wayward.house/model/time-series-analysis/"}</script>
+<!-- End Jekyll SEO tag -->
+
+
+
+<!-- Cloudflare Web Analytics -->
+<script defer src="https://static.cloudflareinsights.com/beacon.min.js"
+  data-cf-beacon='{"token": "62c47d78bf9d4c80972d4e6242d79ff8"}'></script>
+
+
+</head>
+<body class="
+  model-template
+   tag-modelling
+   tag-hash-math
+  
+   tag-hash-viz
+  
+  
+  
+  
+  
+  
+">
+
+<a href="#main-content" class="skip-link">Skip to content</a>
+
+<header class="nav" x-data="{ open: false }">
+  <div class="nav-inner">
+
+    <!-- Logo -->
+    <a href="/" class="nav-logo">
+      
+      <img loading="lazy" src="/assets/images/logo.webp" alt="WaywardHouse" width="32" height="32">
+      
+      WaywardHouse<span>.</span>
+    </a>
+
+    <!-- Desktop nav links -->
+    <ul class="nav-links" role="list">
+      
+      <li>
+        <a href="/topics/">Essays</a>
+      </li>
+      
+      <li>
+        <a href="/series/">Modelling</a>
+      </li>
+      
+      <li>
+        <a href="/about/">About</a>
+      </li>
+      
+    </ul>
+
+    <!-- Actions -->
+    <div class="nav-actions">
+
+      <!-- Search button -->
+      <button
+        class="search-toggle"
+        type="button"
+        aria-label="Search (⌘K)"
+        title="Search (⌘K)"
+        @click="$dispatch('search:open')"
+      >
+        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <circle cx="11" cy="11" r="8"/>
+          <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+        </svg>
+      </button>
+
+      <!-- Dark mode toggle -->
+      <button
+        class="theme-toggle"
+        x-data="darkMode"
+        x-init="init()"
+        @click="toggle()"
+        :aria-label="dark ? 'Switch to light mode' : 'Switch to dark mode'"
+        type="button"
+      >
+        <!-- Sun icon (shown in light mode) -->
+        <svg class="icon-sun" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">
+          <circle cx="12" cy="12" r="5"/>
+          <line x1="12" y1="1" x2="12" y2="3"/>
+          <line x1="12" y1="21" x2="12" y2="23"/>
+          <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/>
+          <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/>
+          <line x1="1" y1="12" x2="3" y2="12"/>
+          <line x1="21" y1="12" x2="23" y2="12"/>
+          <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/>
+          <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>
+        </svg>
+        <!-- Moon icon (shown in dark mode) -->
+        <svg class="icon-moon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">
+          <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+        </svg>
+      </button>
+
+      <!-- Hamburger (mobile only) -->
+      <button
+        class="mobile-nav-toggle"
+        @click="open = !open"
+        :aria-expanded="open"
+        :aria-label="open ? 'Close menu' : 'Open menu'"
+        type="button"
+      >
+        <svg x-show="!open" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <line x1="3" y1="6" x2="21" y2="6"/>
+          <line x1="3" y1="12" x2="21" y2="12"/>
+          <line x1="3" y1="18" x2="21" y2="18"/>
+        </svg>
+        <svg x-show="open" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <line x1="18" y1="6" x2="6" y2="18"/>
+          <line x1="6" y1="6" x2="18" y2="18"/>
+        </svg>
+      </button>
+
+    </div><!-- /.nav-actions -->
+  </div><!-- /.nav-inner -->
+
+  <!-- Mobile drawer -->
+  <div
+    class="mobile-nav"
+    x-show="open"
+    x-transition:enter="transition ease-out duration-200"
+    x-transition:enter-start="opacity-0 -translate-y-1"
+    x-transition:enter-end="opacity-100 translate-y-0"
+    x-transition:leave="transition ease-in duration-150"
+    x-transition:leave-start="opacity-100 translate-y-0"
+    x-transition:leave-end="opacity-0 -translate-y-1"
+    @click.outside="open = false"
+    @keydown.escape.window="open = false"
+  >
+    <ul role="list">
+      
+      <li>
+        <a href="/topics/" @click="open = false">Essays</a>
+      </li>
+      
+      <li>
+        <a href="/series/" @click="open = false">Modelling</a>
+      </li>
+      
+      <li>
+        <a href="/about/" @click="open = false">About</a>
+      </li>
+      
+    </ul>
+  </div><!-- /.mobile-nav -->
+
+</header>
+
+
+<div id="main-content">
+  <!-- Essay stylesheet and runtime — self-contained -->
+<link rel="stylesheet" href="/assets/css/essay.css">
+<script type="module" src="/assets/js/essay/core.js"></script>
+
+<div class="essay-layout" id="essay-layout">
+
+  <!-- essay-toc.html — Sticky table of contents (left column).
+     The <ol> is empty on load; assets/js/essay/core.js populates it
+     from h2/h3 elements found in #essay-content after the page renders. -->
+
+<nav class="essay-toc" id="essay-toc" aria-label="Table of contents">
+  <div class="essay-toc-inner">
+    <p class="essay-toc-heading" aria-hidden="true">Contents</p>
+    <ol class="essay-toc-list" id="essay-toc-list">
+      <!-- Populated at runtime by assets/js/essay/core.js buildToc() -->
+    </ol>
+  </div>
+</nav>
+
+
+  <main class="essay-main" id="essay-main" role="main">
+    <article class="essay-article">
+
+      <!-- essay-hero.html — Header for computational essay template.
+     Displays feature image, tag label, title, excerpt, and post metadata. -->
+
+<header class="essay-hero">
+  
+  <figure class="essay-hero-figure">
+    <img
+      src="/assets/images/time-series-satellite.webp"
+      alt="Time Series Analysis of Satellite Data"
+      class="essay-hero-img"
+      loading="eager"
+    >
+    
+  </figure>
+  
+
+  <div class="essay-hero-body">
+
+    
+    
+    
+    
+    
+    <nav class="essay-breadcrumb" aria-label="Series position">
+      
+      <a href="/series/3/" class="essay-breadcrumb-link">Computational geography spatial</a>
+      
+      
+      <span class="essay-breadcrumb-sep" aria-hidden="true">›</span>
+      <span class="essay-breadcrumb-cluster">Remote Sensing Applications</span>
+      
+      
+      <span class="essay-breadcrumb-sep" aria-hidden="true">›</span>
+      <span class="essay-breadcrumb-pos">Model 13</span>
+      
+    </nav>
+    
+
+    <div class="essay-hero-labels">
+      
+      <a href="/topics/modelling/" class="essay-tag-label">modelling</a>
+      
+      
+      <span class="difficulty-badge difficulty-badge--4">Level 4</span>
+      
+    </div>
+
+    <h1 class="essay-title">Time Series Analysis of Satellite Data</h1>
+
+    
+    <p class="essay-excerpt">When does vegetation green-up each spring? Is there a long-term trend in productivity? How does drought affect growing seasons? Time series analysis of satellite data decomposes observations into trend, seasonality, and noise, enabling phenology extraction, anomaly detection, and climate change assessment. This model derives harmonic analysis, implements smoothing filters, and extracts phenological metrics.
+</p>
+    
+
+    
+    <p class="essay-prereqs"><span class="essay-prereqs-label">Prerequisites:</span> time series decomposition, fourier analysis, trend detection, smoothing</p>
+    
+
+    <div class="essay-meta">
+      
+      <div class="essay-meta-secondary">
+        <time class="essay-date" datetime="2026-02-27">27 Feb 2026</time>
+        
+        
+        <span class="essay-sep" aria-hidden="true">·</span>
+        <span class="essay-updated">Updated <time datetime="2026-03-17">17 Mar 2026</time></span>
+        
+        <span class="essay-sep" aria-hidden="true">·</span>
+        <span class="essay-reading-time">15 min read</span>
+      </div>
+    </div>
+  </div>
+</header>
+
+
+      
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<nav class="series-nav" aria-label="Series navigation">
+
+  <div class="series-nav-header">
+    <span class="series-nav-label">N</span>
+    <span class="series-nav-title">Remote Sensing Applications</span>
+  </div>
+
+  <ol class="series-nav-list">
+    
+    <li class="series-nav-item">
+      
+      <a href="/model/supervised-image-classification/" class="series-nav-link">
+        <span class="series-nav-number">11</span>
+        Supervised Image Classification
+      </a>
+      
+    </li>
+    
+    <li class="series-nav-item">
+      
+      <a href="/model/change-detection/" class="series-nav-link">
+        <span class="series-nav-number">12</span>
+        Change Detection in Satellite Imagery
+      </a>
+      
+    </li>
+    
+    <li class="series-nav-item series-nav-item--current">
+      
+      <span class="series-nav-link series-nav-link--current" aria-current="page">
+        <span class="series-nav-number">13</span>
+        Time Series Analysis of Satellite Data
+      </span>
+      
+    </li>
+    
+  </ol>
+
+  
+  <div class="series-nav-footer">
+    <a href="/series/3/" class="series-nav-all">
+      All 13 in this series &rarr;
+    </a>
+  </div>
+  
+
+</nav>
+
+
+
+
+      <div class="essay-content gh-content" id="essay-content">
+        <p>Landsat 5, launched in 1984 and operational until 2013, accumulated 29 years of continuous Earth observation — 2.5 million scenes, one every 16 days at 30-metre resolution. For any specific location, that record is a time series: a sequence of NDVI or reflectance values sampled through almost three decades of seasons, droughts, fires, floods, and land-use changes. This is a remarkable scientific resource. It means that for a forest stand in Saskatchewan, or a wetland on the Mackenzie Delta, or a cropping district in southern Alberta, we can reconstruct the detailed seasonal and interannual trajectory of vegetation greenness since the mid-1980s. Embedded in that trajectory are signals of browning during the 2002 drought, accelerated green-up as spring arrives earlier, and the distinctive dip-and-recovery signature of a bark beetle outbreak.</p>
+
+<p>Time series analysis of satellite data extracts those signals from what is otherwise a noisy record of spectral reflectance. The key decomposition separates a time series into trend (long-term directional change), seasonality (annual cycle), and residual (anomalies and noise). The seasonal component — the dominant signal for most vegetated surfaces — can be modelled as a sum of sinusoids fitted by Fourier decomposition, enabling precise extraction of phenological metrics: the date of green-up, the peak NDVI, the date of senescence, and the integrated annual productivity. The trend component, once seasonality is removed, reveals whether long-term vegetation conditions are improving or declining. This model derives the decomposition framework, implements harmonic regression, and extracts phenological metrics from MODIS time series data.</p>
+
+<h2 id="1-the-question">1. The Question</h2>
+
+<p>How has the growing season changed over the past 20 years?</p>
+
+<p><strong>Time series analysis</strong> examines sequences of observations through time:</p>
+
+<p><strong>Satellite time series:</strong></p>
+<ul>
+  <li>MODIS: 500m, 16-day composites, 2000-present</li>
+  <li>Landsat: 30m, 16-day revisit, 1984-present</li>
+  <li>Sentinel-2: 10m, 5-day revisit, 2015-present</li>
+</ul>
+
+<p><strong>Applications:</strong></p>
+<ul>
+  <li><strong>Phenology:</strong> Timing of green-up, peak, senescence</li>
+  <li><strong>Productivity trends:</strong> Is vegetation increasing or decreasing?</li>
+  <li><strong>Drought detection:</strong> NDVI anomalies below normal</li>
+  <li><strong>Crop monitoring:</strong> Within-season growth patterns</li>
+  <li><strong>Climate change:</strong> Lengthening/shortening growing seasons</li>
+  <li><strong>Forest health:</strong> Detecting gradual decline vs. abrupt disturbance</li>
+</ul>
+
+<p>The mathematical question: Given a noisy time series of NDVI values, how do we separate:</p>
+<ol>
+  <li><strong>Trend:</strong> Long-term change</li>
+  <li><strong>Seasonality:</strong> Repeating annual cycle</li>
+  <li><strong>Noise:</strong> Random variation and clouds</li>
+</ol>
+
+<hr />
+
+<h2 id="2-the-conceptual-model">2. The Conceptual Model</h2>
+
+<h3 id="time-series-components">Time Series Components</h3>
+
+<p><strong>Additive model:</strong></p>
+
+\[y(t) = T(t) + S(t) + \varepsilon(t)\]
+
+<p>Where:</p>
+<ul>
+  <li>$y(t)$ = observed value at time $t$</li>
+  <li>$T(t)$ = trend component</li>
+  <li>$S(t)$ = seasonal component</li>
+  <li>$\varepsilon(t)$ = noise/residual</li>
+</ul>
+
+<p><strong>Example - NDVI time series:</strong></p>
+<ul>
+  <li><strong>Trend:</strong> Gradual greening (+0.001 NDVI/year)</li>
+  <li><strong>Seasonal:</strong> Spring green-up, summer peak, autumn senescence</li>
+  <li><strong>Noise:</strong> Clouds, atmospheric effects, sensor variations</li>
+</ul>
+
+<h3 id="phenological-metrics">Phenological Metrics</h3>
+
+<p><strong>Key dates in annual cycle:</strong></p>
+
+<ol>
+  <li><strong>Start of Season (SOS):</strong> When NDVI crosses threshold (spring green-up)</li>
+  <li><strong>Peak of Season (POS):</strong> Maximum NDVI (summer)</li>
+  <li><strong>End of Season (EOS):</strong> When NDVI falls below threshold (senescence)</li>
+  <li><strong>Growing Season Length (GSL):</strong> EOS - SOS</li>
+</ol>
+
+<p><strong>Amplitude:</strong> Difference between peak and minimum NDVI</p>
+
+<p><strong>Integrated NDVI:</strong> Area under curve (proportional to productivity)</p>
+
+<h3 id="harmonic-analysis">Harmonic Analysis</h3>
+
+<p><strong>Model seasonal cycle with sine/cosine:</strong></p>
+
+\[S(t) = A \sin(2\pi t / P + \phi)\]
+
+<p>Where:</p>
+<ul>
+  <li>$A$ = amplitude</li>
+  <li>$P$ = period (365 days)</li>
+  <li>$\phi$ = phase (timing of peak)</li>
+</ul>
+
+<p><strong>Multiple harmonics</strong> capture complex seasonal patterns:</p>
+
+\[S(t) = \sum_{k=1}^{n} \left[a_k \cos(2\pi k t / P) + b_k \sin(2\pi k t / P)\right]\]
+
+<p><strong>k=1:</strong> Annual cycle<br />
+<strong>k=2:</strong> Bi-annual (two peaks per year)<br />
+<strong>k=3:</strong> Tri-annual, etc.</p>
+
+<hr />
+
+<h2 id="3-building-the-mathematical-model">3. Building the Mathematical Model</h2>
+
+<h3 id="moving-average-smoothing">Moving Average Smoothing</h3>
+
+<p><strong>Simple moving average (window size $w$):</strong></p>
+
+\[\hat{y}_t = \frac{1}{w} \sum_{i=t-w/2}^{t+w/2} y_i\]
+
+<p><strong>Reduces noise</strong> but blurs edges.</p>
+
+<p><strong>Typical:</strong> $w = 3$ (adjacent observations)</p>
+
+<h3 id="savitzky-golay-filter">Savitzky-Golay Filter</h3>
+
+<p><strong>Fits polynomial</strong> to local window, evaluates at center.</p>
+
+<p><strong>Preserves peaks better</strong> than moving average.</p>
+
+<p><strong>Algorithm:</strong> For each point, fit polynomial of degree $d$ to $w$ neighbors, use fitted value.</p>
+
+<p><strong>Typical:</strong> $w = 5$, $d = 2$ (quadratic)</p>
+
+<h3 id="trend-extraction">Trend Extraction</h3>
+
+<p><strong>Linear trend:</strong></p>
+
+\[T(t) = \beta_0 + \beta_1 t\]
+
+<p><strong>Fit via least squares:</strong></p>
+
+\[\beta_1 = \frac{\sum (t_i - \bar{t})(y_i - \bar{y})}{\sum (t_i - \bar{t})^2}\]
+
+\[\beta_0 = \bar{y} - \beta_1 \bar{t}\]
+
+<p><strong>Interpretation:</strong></p>
+<ul>
+  <li>$\beta_1 &gt; 0$: Increasing trend (greening)</li>
+  <li>$\beta_1 &lt; 0$: Decreasing trend (browning)</li>
+  <li>$\beta_1 = 0$: No trend</li>
+</ul>
+
+<p><strong>Mann-Kendall test:</strong> Non-parametric trend significance test.</p>
+
+<h3 id="harmonic-regression">Harmonic Regression</h3>
+
+<p><strong>Fit annual cycle:</strong></p>
+
+\[y(t) = \beta_0 + a_1\cos(\omega t) + b_1\sin(\omega t) + \varepsilon(t)\]
+
+<p>Where $\omega = 2\pi / 365$ (radians/day).</p>
+
+<p><strong>Amplitude:</strong></p>
+
+\[A = \sqrt{a_1^2 + b_1^2}\]
+
+<p><strong>Phase (peak timing):</strong></p>
+
+\[\phi = \arctan(b_1 / a_1)\]
+
+<p><strong>Day of year for peak:</strong></p>
+
+\[\text{DOY}_{\text{peak}} = \phi \times \frac{365}{2\pi}\]
+
+<p><strong>Add trend:</strong></p>
+
+\[y(t) = \beta_0 + \beta_1 t + a_1\cos(\omega t) + b_1\sin(\omega t)\]
+
+<h3 id="phenology-extraction">Phenology Extraction</h3>
+
+<p><strong>Threshold method:</strong></p>
+
+<p><strong>Start of Season:</strong> First day when $\text{NDVI} &gt; T_{\text{green}}$</p>
+
+<p><strong>End of Season:</strong> Last day when $\text{NDVI} &gt; T_{\text{green}}$</p>
+
+<p><strong>Typical threshold:</strong> $T_{\text{green}} = 0.3$ or $T_{\text{green}} = \text{NDVI}<em>{\min} + 0.2(\text{NDVI}</em>{\max} - \text{NDVI}_{\min})$</p>
+
+<p><strong>Derivative method:</strong></p>
+
+<p><strong>SOS:</strong> Maximum rate of increase</p>
+
+\[\frac{d\text{NDVI}}{dt} = \max\]
+
+<p><strong>EOS:</strong> Maximum rate of decrease</p>
+
+\[\frac{d\text{NDVI}}{dt} = \min\]
+
+<hr />
+
+<h2 id="4-worked-example-by-hand">4. Worked Example by Hand</h2>
+
+<p><strong>Problem:</strong> Extract phenology from simplified annual NDVI time series.</p>
+
+<p><strong>Monthly NDVI values (2023):</strong></p>
+
+<table>
+  <thead>
+    <tr>
+      <th>Month</th>
+      <th>DOY</th>
+      <th>NDVI</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>Jan</td>
+      <td>15</td>
+      <td>0.25</td>
+    </tr>
+    <tr>
+      <td>Feb</td>
+      <td>45</td>
+      <td>0.28</td>
+    </tr>
+    <tr>
+      <td>Mar</td>
+      <td>75</td>
+      <td>0.35</td>
+    </tr>
+    <tr>
+      <td>Apr</td>
+      <td>105</td>
+      <td>0.50</td>
+    </tr>
+    <tr>
+      <td>May</td>
+      <td>135</td>
+      <td>0.68</td>
+    </tr>
+    <tr>
+      <td>Jun</td>
+      <td>165</td>
+      <td>0.75</td>
+    </tr>
+    <tr>
+      <td>Jul</td>
+      <td>195</td>
+      <td>0.72</td>
+    </tr>
+    <tr>
+      <td>Aug</td>
+      <td>225</td>
+      <td>0.65</td>
+    </tr>
+    <tr>
+      <td>Sep</td>
+      <td>255</td>
+      <td>0.50</td>
+    </tr>
+    <tr>
+      <td>Oct</td>
+      <td>285</td>
+      <td>0.35</td>
+    </tr>
+    <tr>
+      <td>Nov</td>
+      <td>315</td>
+      <td>0.28</td>
+    </tr>
+    <tr>
+      <td>Dec</td>
+      <td>345</td>
+      <td>0.25</td>
+    </tr>
+  </tbody>
+</table>
+
+<p>Find: SOS, POS, EOS, GSL using threshold $T = 0.4$</p>
+
+<h3 id="solution">Solution</h3>
+
+<p><strong>Step 1: Find Start of Season</strong></p>
+
+<p>First month when NDVI &gt; 0.4:</p>
+<ul>
+  <li>Jan: 0.25 &lt; 0.4</li>
+  <li>Feb: 0.28 &lt; 0.4</li>
+  <li>Mar: 0.35 &lt; 0.4</li>
+  <li>Apr: 0.50 &gt; 0.4 ✓</li>
+</ul>
+
+<p><strong>SOS ≈ DOY 105 (mid-April)</strong></p>
+
+<p><strong>Step 2: Find Peak of Season</strong></p>
+
+<p>Maximum NDVI:</p>
+<ul>
+  <li>Max = 0.75 in June</li>
+</ul>
+
+<p><strong>POS = DOY 165 (mid-June)</strong></p>
+
+<p><strong>Step 3: Find End of Season</strong></p>
+
+<p>Last month when NDVI &gt; 0.4:</p>
+<ul>
+  <li>Sep: 0.50 &gt; 0.4 ✓</li>
+  <li>Oct: 0.35 &lt; 0.4</li>
+</ul>
+
+<p><strong>EOS ≈ DOY 255 (mid-September)</strong></p>
+
+<p><strong>Step 4: Growing Season Length</strong></p>
+
+\[\text{GSL} = \text{EOS} - \text{SOS} = 255 - 105 = 150 \text{ days}\]
+
+<p><strong>Step 5: Integrated NDVI (productivity)</strong></p>
+
+<p><strong>Trapezoidal integration</strong> (approximate area under curve):</p>
+
+\[\int \text{NDVI} \, dt \approx \sum_{i=1}^{n-1} \frac{\text{NDVI}_i + \text{NDVI}_{i+1}}{2} \times \Delta t\]
+
+\[\approx \frac{0.25+0.28}{2}\times30 + \frac{0.28+0.35}{2}\times30 + \cdots\]
+
+\[\approx 30 \times (0.265 + 0.315 + 0.425 + 0.590 + 0.715 + 0.735 + 0.685 + 0.575 + 0.425 + 0.315 + 0.265)\]
+
+\[\approx 30 \times 5.31 = 159.3 \text{ NDVI-days}\]
+
+<p><strong>Summary:</strong></p>
+<ul>
+  <li>SOS: DOY 105</li>
+  <li>POS: DOY 165</li>
+  <li>EOS: DOY 255</li>
+  <li>GSL: 150 days</li>
+  <li>Integrated NDVI: ~159 (productivity proxy)</li>
+</ul>
+
+<hr />
+
+<h2 id="5-computational-implementation">5. Computational Implementation</h2>
+
+<p>Below is an interactive time series analyzer.</p>
+
+<div class="viz-container" id="timeseries-viz">
+  <div class="controls">
+    <label>
+      Location type:
+      <select id="location-type">
+        <option value="temperate" selected="">Temperate Forest</option>
+        <option value="grassland">Grassland</option>
+        <option value="tropical">Tropical (Evergreen)</option>
+        <option value="cropland">Cropland (Double-crop)</option>
+      </select>
+    </label>
+    <label>
+      Show components:
+      <input type="checkbox" id="show-trend" checked="" /> Trend
+      <input type="checkbox" id="show-seasonal" checked="" /> Seasonal
+      <input type="checkbox" id="show-smoothed" /> Smoothed
+    </label>
+    <label>
+      Phenology threshold:
+      <input type="range" id="pheno-threshold" min="0.2" max="0.6" step="0.05" value="0.4" />
+      <span id="pheno-threshold-val">0.40</span>
+    </label>
+    <div class="timeseries-info">
+      <p><strong>Start of Season:</strong> <span id="sos-doy">--</span></p>
+      <p><strong>Peak of Season:</strong> <span id="pos-doy">--</span></p>
+      <p><strong>End of Season:</strong> <span id="eos-doy">--</span></p>
+      <p><strong>Growing Season Length:</strong> <span id="gsl-days">--</span> days</p>
+      <p><strong>Trend:</strong> <span id="trend-value">--</span> NDVI/year</p>
+    </div>
+  </div>
+  <div id="timeseries-canvas-container">
+    <canvas id="timeseries-canvas" width="700" height="400" style="border: 1px solid #ddd;"></canvas>
+  </div>
+</div>
+
+<script type="module">
+await new Promise(resolve => {
+  const checkECharts = () => {
+    if (typeof echarts !== 'undefined') resolve();
+    else setTimeout(checkECharts, 50);
+  };
+  checkECharts();
+});
+
+(function() {
+  const chart = echarts.init(document.getElementById('timeseries-canvas'));
+  
+  let locationType = 'temperate';
+  let showTrend = true;
+  let showSeasonal = true;
+  let showSmoothed = false;
+  let phenoThreshold = 0.4;
+  
+  function generateTimeSeries(type, years = 3) {
+    const data = [];
+    const doy = [];
+    
+    for (let year = 0; year < years; year++) {
+      for (let day = 1; day <= 365; day += 16) { // 16-day composites
+        const t = year * 365 + day;
+        const yearFrac = (day / 365);
+        
+        let seasonal, trend, noise, amplitude, phase;
+        
+        if (type === 'temperate') {
+          // Single peak, strong seasonality
+          amplitude = 0.35;
+          phase = 0.4; // Peak in summer
+          trend = 0.0005 * t / 365; // Slight greening
+          seasonal = amplitude * Math.sin(2 * Math.PI * yearFrac + phase);
+          noise = (Math.random() - 0.5) * 0.05;
+          
+        } else if (type === 'grassland') {
+          // Single peak, moderate amplitude
+          amplitude = 0.25;
+          phase = 0.3;
+          trend = -0.0002 * t / 365; // Slight browning
+          seasonal = amplitude * Math.sin(2 * Math.PI * yearFrac + phase);
+          noise = (Math.random() - 0.5) * 0.08;
+          
+        } else if (type === 'tropical') {
+          // Evergreen, minimal seasonality
+          amplitude = 0.08;
+          phase = 0;
+          trend = 0;
+          seasonal = amplitude * Math.sin(2 * Math.PI * yearFrac + phase);
+          noise = (Math.random() - 0.5) * 0.03;
+          
+        } else { // cropland
+          // Double-crop, two peaks per year
+          amplitude = 0.30;
+          phase = 0.2;
+          trend = 0.0003 * t / 365;
+          seasonal = amplitude * (Math.sin(2 * Math.PI * yearFrac + phase) + 
+                                  0.5 * Math.sin(4 * Math.PI * yearFrac + 0.5));
+          noise = (Math.random() - 0.5) * 0.06;
+        }
+        
+        const baseline = 0.45;
+        const ndvi = baseline + trend + seasonal + noise;
+        
+        data.push({
+          t: t,
+          doy: day,
+          year: year,
+          ndvi: Math.max(0, Math.min(1, ndvi)),
+          trend: baseline + trend,
+          seasonal: seasonal,
+          noise: noise
+        });
+        doy.push(day);
+      }
+    }
+    
+    return data;
+  }
+  
+  function extractPhenology(data, threshold) {
+    // Use last complete year
+    const lastYear = Math.max(...data.map(d => d.year));
+    const yearData = data.filter(d => d.year === lastYear);
+    
+    if (yearData.length === 0) return null;
+    
+    // Find SOS (first crossing above threshold)
+    let sos = null;
+    for (let i = 0; i < yearData.length; i++) {
+      if (yearData[i].ndvi > threshold) {
+        sos = yearData[i].doy;
+        break;
+      }
+    }
+    
+    // Find POS (maximum NDVI)
+    let maxNDVI = -Infinity;
+    let pos = null;
+    for (let d of yearData) {
+      if (d.ndvi > maxNDVI) {
+        maxNDVI = d.ndvi;
+        pos = d.doy;
+      }
+    }
+    
+    // Find EOS (last crossing above threshold)
+    let eos = null;
+    for (let i = yearData.length - 1; i >= 0; i--) {
+      if (yearData[i].ndvi > threshold) {
+        eos = yearData[i].doy;
+        break;
+      }
+    }
+    
+    const gsl = (sos && eos) ? (eos - sos) : null;
+    
+    return {sos, pos, eos, gsl};
+  }
+  
+  function computeTrend(data) {
+    const n = data.length;
+    const meanT = data.reduce((s, d) => s + d.t, 0) / n;
+    const meanY = data.reduce((s, d) => s + d.ndvi, 0) / n;
+    
+    let num = 0, den = 0;
+    for (let d of data) {
+      num += (d.t - meanT) * (d.ndvi - meanY);
+      den += (d.t - meanT) ** 2;
+    }
+    
+    const slope = num / den;
+    // Convert to NDVI/year
+    const slopePerYear = slope * 365;
+    
+    return slopePerYear;
+  }
+  
+  function movingAverage(data, window = 3) {
+    const smoothed = [];
+    const half = Math.floor(window / 2);
+    
+    for (let i = 0; i < data.length; i++) {
+      let sum = 0, count = 0;
+      for (let j = Math.max(0, i - half); j <= Math.min(data.length - 1, i + half); j++) {
+        sum += data[j].ndvi;
+        count++;
+      }
+      smoothed.push(sum / count);
+    }
+    
+    return smoothed;
+  }
+  
+  function render() {
+    const data = generateTimeSeries(locationType, 3);
+    const smoothed = movingAverage(data, 3);
+    
+    const pheno = extractPhenology(data, phenoThreshold);
+    const trendSlope = computeTrend(data);
+    
+    // Update display
+    document.getElementById('sos-doy').textContent = pheno.sos || '--';
+    document.getElementById('pos-doy').textContent = pheno.pos || '--';
+    document.getElementById('eos-doy').textContent = pheno.eos || '--';
+    document.getElementById('gsl-days').textContent = pheno.gsl || '--';
+    document.getElementById('trend-value').textContent = trendSlope.toFixed(4);
+    
+    // Prepare series
+    const series = [];
+    
+    // Observed NDVI
+    series.push({
+      name: 'Observed NDVI',
+      type: 'scatter',
+      data: data.map(d => [d.t, d.ndvi]),
+      symbolSize: 4,
+      itemStyle: {color: '#95A5A6'}
+    });
+    
+    if (showSmoothed) {
+      series.push({
+        name: 'Smoothed',
+        type: 'line',
+        data: data.map((d, i) => [d.t, smoothed[i]]),
+        lineStyle: {color: '#3498DB', width: 2},
+        showSymbol: false
+      });
+    }
+    
+    if (showTrend) {
+      series.push({
+        name: 'Trend',
+        type: 'line',
+        data: data.map(d => [d.t, d.trend]),
+        lineStyle: {color: '#E74C3C', width: 2, type: 'dashed'},
+        showSymbol: false
+      });
+    }
+    
+    if (showSeasonal) {
+      series.push({
+        name: 'Seasonal Component',
+        type: 'line',
+        data: data.map(d => [d.t, d.trend + d.seasonal]),
+        lineStyle: {color: '#2ECC71', width: 2},
+        showSymbol: false
+      });
+    }
+    
+    // Threshold line
+    series.push({
+      name: 'Phenology Threshold',
+      type: 'line',
+      data: [[0, phenoThreshold], [data[data.length-1].t, phenoThreshold]],
+      lineStyle: {color: '#F39C12', width: 1, type: 'dotted'},
+      showSymbol: false
+    });
+    
+    // Mark phenology points (last year)
+    if (pheno.sos) {
+      const lastYear = Math.max(...data.map(d => d.year));
+      const sosPoint = data.find(d => d.year === lastYear && d.doy >= pheno.sos);
+      const posPoint = data.find(d => d.year === lastYear && d.doy >= pheno.pos);
+      const eosPoint = data.find(d => d.year === lastYear && d.doy >= pheno.eos);
+      
+      if (sosPoint) {
+        series.push({
+          name: 'SOS',
+          type: 'scatter',
+          data: [[sosPoint.t, sosPoint.ndvi]],
+          symbolSize: 10,
+          itemStyle: {color: '#27AE60'},
+          label: {show: true, formatter: 'SOS', position: 'top'}
+        });
+      }
+      
+      if (posPoint) {
+        series.push({
+          name: 'POS',
+          type: 'scatter',
+          data: [[posPoint.t, posPoint.ndvi]],
+          symbolSize: 10,
+          itemStyle: {color: '#8E44AD'},
+          label: {show: true, formatter: 'POS', position: 'top'}
+        });
+      }
+      
+      if (eosPoint) {
+        series.push({
+          name: 'EOS',
+          type: 'scatter',
+          data: [[eosPoint.t, eosPoint.ndvi]],
+          symbolSize: 10,
+          itemStyle: {color: '#E67E22'},
+          label: {show: true, formatter: 'EOS', position: 'top'}
+        });
+      }
+    }
+    
+    const option = {
+      title: {
+        text: `NDVI Time Series (${locationType})`,
+        left: 'center'
+      },
+      tooltip: {
+        trigger: 'axis',
+        axisPointer: {type: 'cross'}
+      },
+      legend: {
+        data: series.map(s => s.name),
+        top: 30,
+        type: 'scroll'
+      },
+      grid: {
+        left: 80,
+        right: 40,
+        top: 80,
+        bottom: 60
+      },
+      xAxis: {
+        type: 'value',
+        name: 'Days from start',
+        nameLocation: 'middle',
+        nameGap: 30
+      },
+      yAxis: {
+        type: 'value',
+        name: 'NDVI',
+        nameLocation: 'middle',
+        nameGap: 50,
+        min: 0,
+        max: 1
+      },
+      series: series
+    };
+    
+    chart.setOption(option, true);
+  }
+  
+  document.getElementById('location-type').addEventListener('change', (e) => {
+    locationType = e.target.value;
+    render();
+  });
+  
+  document.getElementById('show-trend').addEventListener('change', (e) => {
+    showTrend = e.target.checked;
+    render();
+  });
+  
+  document.getElementById('show-seasonal').addEventListener('change', (e) => {
+    showSeasonal = e.target.checked;
+    render();
+  });
+  
+  document.getElementById('show-smoothed').addEventListener('change', (e) => {
+    showSmoothed = e.target.checked;
+    render();
+  });
+  
+  document.getElementById('pheno-threshold').addEventListener('input', (e) => {
+    phenoThreshold = parseFloat(e.target.value);
+    document.getElementById('pheno-threshold-val').textContent = phenoThreshold.toFixed(2);
+    render();
+  });
+  
+  render();
+  
+  window.addEventListener('resize', () => chart.resize());
+})();
+</script>
+
+<p><strong>Try this:</strong></p>
+<ul>
+  <li><strong>Temperate forest:</strong> Strong seasonal cycle, single peak</li>
+  <li><strong>Grassland:</strong> Similar but smaller amplitude</li>
+  <li><strong>Tropical evergreen:</strong> Minimal seasonality (always green)</li>
+  <li><strong>Cropland:</strong> Double-crop pattern (two peaks per year!)</li>
+  <li><strong>Show trend:</strong> Red dashed line (long-term change)</li>
+  <li><strong>Show seasonal:</strong> Green line (trend + seasonality)</li>
+  <li><strong>Show smoothed:</strong> Blue line (noise reduced)</li>
+  <li><strong>Adjust threshold:</strong> Changes SOS/EOS detection</li>
+  <li><strong>Phenology markers:</strong> Green (SOS), Purple (POS), Orange (EOS)</li>
+</ul>
+
+<p><strong>Key insight:</strong> Time series decomposition separates long-term trends from seasonal cycles, enabling climate change detection and phenology monitoring!</p>
+
+<hr />
+
+<h2 id="6-interpretation">6. Interpretation</h2>
+
+<h3 id="climate-change-signals">Climate Change Signals</h3>
+
+<p><strong>Global greening trend:</strong></p>
+<ul>
+  <li>NDVI increased ~0.001-0.002/year (1982-2015)</li>
+  <li>Reasons: CO₂ fertilization, warmer temperatures, longer growing seasons</li>
+  <li>Arctic: Strongest greening (shrub expansion)</li>
+</ul>
+
+<p><strong>Growing season extension:</strong></p>
+<ul>
+  <li>SOS earlier (1-2 weeks in 40 years)</li>
+  <li>EOS later (1 week)</li>
+  <li>Net: +10-20 days GSL in northern latitudes</li>
+</ul>
+
+<h3 id="drought-monitoring">Drought Monitoring</h3>
+
+<p><strong>NDVI anomaly:</strong></p>
+
+\[A(t) = \text{NDVI}(t) - \text{NDVI}_{\text{climatology}}(t)\]
+
+<p>Where climatology = long-term average for that time of year.</p>
+
+<p><strong>Negative anomaly</strong> = drought stress</p>
+
+<p><strong>Example:</strong> 2012 US drought</p>
+<ul>
+  <li>NDVI anomaly &lt; -0.15 across Corn Belt</li>
+  <li>Early warning of crop failure</li>
+</ul>
+
+<h3 id="agricultural-phenology">Agricultural Phenology</h3>
+
+<p><strong>Crop calendars from satellites:</strong></p>
+<ul>
+  <li>SOS = planting date</li>
+  <li>POS = peak vegetative growth</li>
+  <li>EOS = harvest date</li>
+</ul>
+
+<p><strong>Applications:</strong></p>
+<ul>
+  <li>Yield forecasting (early prediction)</li>
+  <li>Insurance claims (verify timing)</li>
+  <li>Double-cropping detection</li>
+</ul>
+
+<hr />
+
+<h2 id="7-what-could-go-wrong">7. What Could Go Wrong?</h2>
+
+<h3 id="cloud-contamination">Cloud Contamination</h3>
+
+<p><strong>Clouds reduce NDVI</strong> (appear as low values).</p>
+
+<p><strong>Spurious phenology:</strong></p>
+<ul>
+  <li>Cloudy spring → delayed SOS (false)</li>
+  <li>Need cloud masking</li>
+</ul>
+
+<p><strong>Solutions:</strong></p>
+<ul>
+  <li>Composite images (maximum NDVI in period)</li>
+  <li>Cloud screening (quality flags)</li>
+  <li>Gap-filling interpolation</li>
+</ul>
+
+<h3 id="missing-data">Missing Data</h3>
+
+<p><strong>Landsat:</strong> 16-day repeat but clouds may leave gaps.</p>
+
+<p><strong>Irregular time series</strong> → difficult to analyze.</p>
+
+<p><strong>Solutions:</strong></p>
+<ul>
+  <li>Interpolation (linear, spline)</li>
+  <li>Harmonic fitting (smooth through gaps)</li>
+  <li>Data fusion (combine Landsat + Sentinel)</li>
+</ul>
+
+<h3 id="sensor-drift">Sensor Drift</h3>
+
+<p><strong>Long-term sensors</strong> (AVHRR, MODIS) degrade over time.</p>
+
+<p><strong>Calibration drift</strong> → false trend.</p>
+
+<p><strong>Solution:</strong></p>
+<ul>
+  <li>Cross-calibration between sensors</li>
+  <li>Atmospheric correction updates</li>
+  <li>Use surface reflectance products</li>
+</ul>
+
+<h3 id="mixed-land-cover">Mixed Land Cover</h3>
+
+<p><strong>Pixel contains multiple types</strong> (e.g., 50% forest, 50% grass).</p>
+
+<p><strong>Phenology represents blend</strong> → hard to interpret.</p>
+
+<p><strong>Solution:</strong></p>
+<ul>
+  <li>Use finer resolution</li>
+  <li>Classify first, then analyze per class</li>
+  <li>Sub-pixel unmixing</li>
+</ul>
+
+<hr />
+
+<h2 id="8-extension-timesat">8. Extension: TIMESAT</h2>
+
+<p><strong>Software package</strong> for time series processing.</p>
+
+<p><strong>Functions:</strong></p>
+<ul>
+  <li>Gap-filling (interpolation)</li>
+  <li>Smoothing (Savitzky-Golay, asymmetric Gaussian)</li>
+  <li>Phenology extraction (multiple methods)</li>
+  <li>Visualization</li>
+</ul>
+
+<p><strong>Three fitting methods:</strong></p>
+<ol>
+  <li><strong>Asymmetric Gaussian:</strong> Separate rise/fall curves</li>
+  <li><strong>Double logistic:</strong> S-curves for green-up/senescence</li>
+  <li><strong>Savitzky-Golay filter:</strong> Polynomial smoothing</li>
+</ol>
+
+<p><strong>Outputs:</strong></p>
+<ul>
+  <li>Start/end of season</li>
+  <li>Length of season</li>
+  <li>Base/peak/amplitude</li>
+  <li>Small/large integrals (productivity metrics)</li>
+</ul>
+
+<p><strong>Widely used</strong> in operational phenology monitoring.</p>
+
+<hr />
+
+<h2 id="9-math-refresher-fourier-series">9. Math Refresher: Fourier Series</h2>
+
+<h3 id="periodic-function-decomposition">Periodic Function Decomposition</h3>
+
+<p><strong>Any periodic function</strong> with period $P$ can be represented as:</p>
+
+\[f(t) = a_0 + \sum_{k=1}^{\infty} \left[a_k\cos(k\omega t) + b_k\sin(k\omega t)\right]\]
+
+<p>Where $\omega = 2\pi / P$ (fundamental frequency).</p>
+
+<p><strong>Coefficients:</strong></p>
+
+\[a_0 = \frac{1}{P}\int_0^P f(t)\,dt\]
+
+\[a_k = \frac{2}{P}\int_0^P f(t)\cos(k\omega t)\,dt\]
+
+\[b_k = \frac{2}{P}\int_0^P f(t)\sin(k\omega t)\,dt\]
+
+<h3 id="application-to-ndvi">Application to NDVI</h3>
+
+<p><strong>For annual cycle ($P = 365$ days):</strong></p>
+
+<p><strong>First harmonic (k=1):</strong> Annual component</p>
+
+<p><strong>Second harmonic (k=2):</strong> Bi-annual (captures double-cropping)</p>
+
+<p><strong>Typically:</strong> 1-3 harmonics sufficient for most vegetation.</p>
+
+<p><strong>Amplitude of harmonic k:</strong></p>
+
+\[A_k = \sqrt{a_k^2 + b_k^2}\]
+
+<p><strong>Phase (timing of peak):</strong></p>
+
+\[\phi_k = \arctan(b_k / a_k)\]
+
+<hr />
+
+<h2 id="summary">Summary</h2>
+
+<ul>
+  <li><strong>Time series analysis</strong> decomposes observations into trend, seasonality, and noise</li>
+  <li><strong>Phenological metrics:</strong> Start of season (SOS), peak (POS), end (EOS), growing season length (GSL)</li>
+  <li><strong>Harmonic analysis:</strong> Models seasonality using sine/cosine functions</li>
+  <li><strong>Trend extraction:</strong> Linear regression to detect long-term change</li>
+  <li><strong>Smoothing filters:</strong> Moving average or Savitzky-Golay to reduce noise</li>
+  <li><strong>Applications:</strong> Climate change detection, drought monitoring, crop calendars, forest health</li>
+  <li><strong>Challenges:</strong> Clouds, missing data, sensor drift, mixed pixels</li>
+  <li><strong>TIMESAT:</strong> Standard software for operational phenology extraction</li>
+  <li><strong>Global observations:</strong> Growing season lengthening, Arctic greening, NDVI anomalies indicate drought</li>
+  <li>Critical for understanding vegetation dynamics and climate change impacts</li>
+</ul>
+
+<hr />
+
+      </div>
+
+      
+
+
+
+      
+
+  
+  
+  
+  
+
+
+
+      <!-- essay-footer-notes.html — References / endnotes section.
+     Hidden by default; assets/js/essay/core.js shows it and populates
+     #essay-endnotes-list from [data-cite] elements in the content.
+
+     In posts, create citation markers with:
+       <cite data-cite="Author, Title, URL">1</cite>
+     The JS collects these and renders a numbered reference list here. -->
+
+<footer class="essay-endnotes" id="essay-endnotes" aria-label="References" hidden>
+  <div class="essay-endnotes-inner">
+    <h2 class="essay-endnotes-heading">References</h2>
+    <ol class="essay-endnotes-list" id="essay-endnotes-list">
+      <!-- Populated at runtime by assets/js/essay/core.js buildEndnotes() -->
+    </ol>
+  </div>
+</footer>
+
+
+      
+
+      
+
+      
+
+
+
+
+
+
+
+
+
+
+
+
+
+<aside class="related-posts" aria-label="Related articles">
+  <h2 class="related-posts-heading">Related</h2>
+  <div class="related-posts-grid">
+    
+    <a href="/essay/hyperspectral-imaging-wyvern/" class="related-post-card">
+      
+      <div class="related-post-img" style="background-image:url('/assets/images/wyvern_dragonette.webp')"></div>
+      
+      <div class="related-post-body">
+        
+        <span class="related-post-tag">Monitoring</span>
+        
+        <h3 class="related-post-title">What Light Reveals</h3>
+        <time class="related-post-date" datetime="2025-03-10">10 Mar 2025</time>
+      </div>
+    </a>
+    
+  </div>
+</aside>
+
+
+
+    </article>
+  </main>
+
+  <aside
+    class="essay-sidenotes"
+    id="essay-sidenotes"
+    aria-label="Margin notes"
+  ></aside>
+
+</div>
+
+</div>
+
+<footer>
+  <div class="footer-inner">
+
+    <!-- Col 1: Brand -->
+    <div class="footer-brand">
+      <div class="footer-brand-logo">
+        
+        <img loading="lazy" src="/assets/images/logo.webp" alt="WaywardHouse" width="28" height="28">
+        
+        WaywardHouse<span>.</span>
+      </div>
+      
+      
+      <p class="footer-brand-desc">Understanding how place, economy, and environment interact — through analysis, modelling, and open tools.</p>
+      
+
+      <div class="footer-social">
+        
+        
+        
+        <a href="/feed.xml" class="social-icon" target="_blank" rel="noopener noreferrer" aria-label="RSS feed">
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M4 11a9 9 0 0 1 9 9"/>
+            <path d="M4 4a16 16 0 0 1 16 16"/>
+            <circle cx="5" cy="19" r="1"/>
+          </svg>
+        </a>
+      </div>
+    </div>
+
+    <!-- Col 2: Topics (configurable via footer_topics, falls back to auto-categories) -->
+    <nav aria-labelledby="footer-topics">
+      <h3 class="footer-col-title" id="footer-topics">Reading</h3>
+      <ul class="footer-links">
+        
+          
+          <li><a href="/topics/">Essays</a></li>
+          
+          <li><a href="/series/">Modelling</a></li>
+          
+          <li><a href="/archive/">Archive</a></li>
+          
+          <li><a href="/start-here/">Start Here</a></li>
+          
+        
+      </ul>
+    </nav>
+
+    <!-- Col 3: Secondary navigation -->
+    
+    <nav aria-labelledby="footer-company">
+      <h3 class="footer-col-title" id="footer-company">Site</h3>
+      <ul class="footer-links">
+        
+        <li><a href="/start-here/">Start Here</a></li>
+        
+        <li><a href="/about/">About</a></li>
+        
+        <li><a href="/contact/">Contact</a></li>
+        
+      </ul>
+    </nav>
+    
+
+    <!-- Col 4: Resources -->
+    <nav aria-labelledby="footer-resources">
+      <h3 class="footer-col-title" id="footer-resources">Resources</h3>
+      <ul class="footer-links">
+        <li><a href="/archive/">Archive</a></li>
+        <li><a href="/feed.xml">RSS Feed</a></li>
+        <li><a href="/topics/">All Topics</a></li>
+      </ul>
+    </nav>
+
+  </div><!-- /.footer-inner -->
+
+  <div class="footer-bottom">
+    <span class="footer-copy">
+      &copy; 2026 WaywardHouse.
+    </span>
+    <div class="footer-legal">
+      <a href="/privacy/">Privacy Policy</a>
+      <a href="/terms/">Terms of Service</a>
+    </div>
+  </div>
+
+</footer>
+
+
+<!-- Alpine.js bundle -->
+<script type="module" src="/assets/dist/main.js"></script>
+
+<!-- Visualization runtime — detects and loads CDN libraries dynamically -->
+<script type="module" src="/assets/js/core.js"></script>
+
+<!-- Search overlay — event-driven: nav button $dispatches 'search:open' -->
+<div
+  x-data="search"
+  x-init="init()"
+  @search:open.window="open()"
+>
+  <div
+    class="search-overlay"
+    x-show="isOpen"
+    x-transition:enter="transition ease-out duration-150"
+    x-transition:enter-start="opacity-0"
+    x-transition:enter-end="opacity-100"
+    x-transition:leave="transition ease-in duration-100"
+    x-transition:leave-start="opacity-100"
+    x-transition:leave-end="opacity-0"
+    @click.self="close()"
+    style="display: none;"
+    role="dialog"
+    aria-modal="true"
+    aria-label="Search"
+  >
+    <div class="search-panel">
+      <div class="search-input-wrap">
+        <svg class="search-icon" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <circle cx="11" cy="11" r="8"/>
+          <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+        </svg>
+        <input
+          class="search-input"
+          type="search"
+          placeholder="Search posts…"
+          x-model="query"
+          x-ref="input"
+          @input.debounce.300ms="runSearch()"
+          @keydown.escape="close()"
+          autocomplete="off"
+          spellcheck="false"
+          aria-label="Search query"
+        >
+        <kbd class="search-esc" aria-hidden="true">ESC</kbd>
+      </div>
+
+      <div class="search-results" x-show="query.trim().length > 0">
+        <div class="search-status" x-show="loading" aria-live="polite">Searching…</div>
+        <div class="search-status" x-show="!loading && results.length === 0" aria-live="polite">
+          No results for "<span x-text="query"></span>"
+        </div>
+        <ul class="search-result-list" x-show="!loading && results.length > 0" role="list">
+          <template x-for="result in results" :key="result.url">
+            <li>
+              <a :href="result.url" class="search-result-item" @click="close()">
+                <div class="search-result-title" x-text="result.meta?.title || result.url"></div>
+                <div class="search-result-excerpt" x-html="result.excerpt"></div>
+              </a>
+            </li>
+          </template>
+        </ul>
+      </div>
+    </div>
+  </div>
+</div>
+
+</body>
+</html>

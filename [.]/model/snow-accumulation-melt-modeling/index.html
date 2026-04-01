@@ -1,0 +1,1508 @@
+<!DOCTYPE html>
+
+<html lang="en" data-brand="wayward" data-theme="light">
+<head>
+  <meta charset="utf-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Snow Accumulation and Melt modelling — WaywardHouse</title>
+<meta name="description" content="How much water is stored in the snowpack? When will melt begin? What's the peak runoff timing? Snow accumulation and melt models track snowpack mass balance through the season—accounting for...">
+
+<!-- Dark mode flash prevention — runs synchronously before first paint -->
+<script>
+  (function () {
+    var defaultDark = 'light' === 'dark';
+    var s = localStorage.getItem('theme');
+    var dark = s !== null ? s === 'dark' : defaultDark;
+    document.documentElement.dataset.theme = dark ? 'dark' : 'light';
+  })();
+</script>
+
+<!-- Preconnect to CDN domains used by the viz runtime -->
+<link rel="preconnect" href="https://cdn.jsdelivr.net">
+<link rel="preconnect" href="https://unpkg.com">
+<link rel="preconnect" href="https://esm.sh">
+<link rel="preconnect" href="https://api.mapbox.com">
+<link rel="preconnect" href="https://events.mapbox.com">
+
+
+<script>window.MAPBOX_TOKEN = 'pk.eyJ1IjoiYnJlYWRlZGNvZCIsImEiOiJjbW0xa25qc2EwMmtwMnJwejJlNndqdnoxIn0._7I9PwXuFLrOQINVZ84y1w';</script>
+
+
+<!-- Fonts -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:ital,wght@0,300;0,400;0,600;0,700;0,800;0,900;1,700;1,800&family=Barlow:wght@300;400&family=IBM+Plex+Mono:ital,wght@0,300;0,400;0,500;1,300&family=Literata:ital,opsz,wght@0,7..72,300;0,7..72,400;0,7..72,500;1,7..72,300;1,7..72,400&display=swap" rel="stylesheet">
+
+<!-- Theme stylesheet (Vite build output) -->
+<link rel="stylesheet" href="/assets/dist/main.css">
+
+<!-- Brand token overrides — loaded after main.css so variables cascade correctly -->
+
+<link rel="stylesheet" href="/assets/css/brand-wayward.css">
+
+
+
+<!-- Syntax highlighting (Rouge — light + dark) -->
+<link rel="stylesheet" href="/assets/css/syntax.css">
+
+<!-- Begin Jekyll SEO tag v2.8.0 -->
+<title>Snow Accumulation and Melt modelling | WaywardHouse</title>
+<meta name="generator" content="Jekyll v4.4.1" />
+<meta property="og:title" content="Snow Accumulation and Melt modelling" />
+<meta property="og:locale" content="en" />
+<meta name="description" content="How much water is stored in the snowpack? When will melt begin? What’s the peak runoff timing? Snow accumulation and melt models track snowpack mass balance through the season—accounting for precipitation, sublimation, and melt. This model derives degree-day models, implements energy balance approaches, and introduces Snow Water Equivalent (SWE) as the key hydrological variable." />
+<meta property="og:description" content="How much water is stored in the snowpack? When will melt begin? What’s the peak runoff timing? Snow accumulation and melt models track snowpack mass balance through the season—accounting for precipitation, sublimation, and melt. This model derives degree-day models, implements energy balance approaches, and introduces Snow Water Equivalent (SWE) as the key hydrological variable." />
+<link rel="canonical" href="https://wayward.house/model/snow-accumulation-melt-modeling/" />
+<meta property="og:url" content="https://wayward.house/model/snow-accumulation-melt-modeling/" />
+<meta property="og:site_name" content="WaywardHouse" />
+<meta property="og:image" content="https://wayward.house/assets/images/cryosphere-and-hydrology.webp" />
+<meta property="og:type" content="article" />
+<meta property="article:published_time" content="2026-02-27T00:00:00-07:00" />
+<meta name="twitter:card" content="summary_large_image" />
+<meta property="twitter:image" content="https://wayward.house/assets/images/cryosphere-and-hydrology.webp" />
+<meta property="twitter:title" content="Snow Accumulation and Melt modelling" />
+<meta name="twitter:site" content="@" />
+<script type="application/ld+json">
+{"@context":"https://schema.org","@type":"BlogPosting","dateModified":"2026-03-17T21:00:54-06:00","datePublished":"2026-02-27T00:00:00-07:00","description":"How much water is stored in the snowpack? When will melt begin? What’s the peak runoff timing? Snow accumulation and melt models track snowpack mass balance through the season—accounting for precipitation, sublimation, and melt. This model derives degree-day models, implements energy balance approaches, and introduces Snow Water Equivalent (SWE) as the key hydrological variable.","headline":"Snow Accumulation and Melt modelling","image":"https://wayward.house/assets/images/cryosphere-and-hydrology.webp","mainEntityOfPage":{"@type":"WebPage","@id":"https://wayward.house/model/snow-accumulation-melt-modeling/"},"publisher":{"@type":"Organization","logo":{"@type":"ImageObject","url":"https://wayward.house/assets/images/logo.webp"}},"url":"https://wayward.house/model/snow-accumulation-melt-modeling/"}</script>
+<!-- End Jekyll SEO tag -->
+
+
+
+<!-- Cloudflare Web Analytics -->
+<script defer src="https://static.cloudflareinsights.com/beacon.min.js"
+  data-cf-beacon='{"token": "62c47d78bf9d4c80972d4e6242d79ff8"}'></script>
+
+
+</head>
+<body class="
+  model-template
+   tag-modelling
+   tag-hash-math
+  
+   tag-hash-viz
+  
+  
+  
+  
+  
+  
+">
+
+<a href="#main-content" class="skip-link">Skip to content</a>
+
+<header class="nav" x-data="{ open: false }">
+  <div class="nav-inner">
+
+    <!-- Logo -->
+    <a href="/" class="nav-logo">
+      
+      <img loading="lazy" src="/assets/images/logo.webp" alt="WaywardHouse" width="32" height="32">
+      
+      WaywardHouse<span>.</span>
+    </a>
+
+    <!-- Desktop nav links -->
+    <ul class="nav-links" role="list">
+      
+      <li>
+        <a href="/topics/">Essays</a>
+      </li>
+      
+      <li>
+        <a href="/series/">Modelling</a>
+      </li>
+      
+      <li>
+        <a href="/about/">About</a>
+      </li>
+      
+    </ul>
+
+    <!-- Actions -->
+    <div class="nav-actions">
+
+      <!-- Search button -->
+      <button
+        class="search-toggle"
+        type="button"
+        aria-label="Search (⌘K)"
+        title="Search (⌘K)"
+        @click="$dispatch('search:open')"
+      >
+        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <circle cx="11" cy="11" r="8"/>
+          <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+        </svg>
+      </button>
+
+      <!-- Dark mode toggle -->
+      <button
+        class="theme-toggle"
+        x-data="darkMode"
+        x-init="init()"
+        @click="toggle()"
+        :aria-label="dark ? 'Switch to light mode' : 'Switch to dark mode'"
+        type="button"
+      >
+        <!-- Sun icon (shown in light mode) -->
+        <svg class="icon-sun" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">
+          <circle cx="12" cy="12" r="5"/>
+          <line x1="12" y1="1" x2="12" y2="3"/>
+          <line x1="12" y1="21" x2="12" y2="23"/>
+          <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/>
+          <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/>
+          <line x1="1" y1="12" x2="3" y2="12"/>
+          <line x1="21" y1="12" x2="23" y2="12"/>
+          <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/>
+          <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>
+        </svg>
+        <!-- Moon icon (shown in dark mode) -->
+        <svg class="icon-moon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">
+          <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+        </svg>
+      </button>
+
+      <!-- Hamburger (mobile only) -->
+      <button
+        class="mobile-nav-toggle"
+        @click="open = !open"
+        :aria-expanded="open"
+        :aria-label="open ? 'Close menu' : 'Open menu'"
+        type="button"
+      >
+        <svg x-show="!open" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <line x1="3" y1="6" x2="21" y2="6"/>
+          <line x1="3" y1="12" x2="21" y2="12"/>
+          <line x1="3" y1="18" x2="21" y2="18"/>
+        </svg>
+        <svg x-show="open" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <line x1="18" y1="6" x2="6" y2="18"/>
+          <line x1="6" y1="6" x2="18" y2="18"/>
+        </svg>
+      </button>
+
+    </div><!-- /.nav-actions -->
+  </div><!-- /.nav-inner -->
+
+  <!-- Mobile drawer -->
+  <div
+    class="mobile-nav"
+    x-show="open"
+    x-transition:enter="transition ease-out duration-200"
+    x-transition:enter-start="opacity-0 -translate-y-1"
+    x-transition:enter-end="opacity-100 translate-y-0"
+    x-transition:leave="transition ease-in duration-150"
+    x-transition:leave-start="opacity-100 translate-y-0"
+    x-transition:leave-end="opacity-0 -translate-y-1"
+    @click.outside="open = false"
+    @keydown.escape.window="open = false"
+  >
+    <ul role="list">
+      
+      <li>
+        <a href="/topics/" @click="open = false">Essays</a>
+      </li>
+      
+      <li>
+        <a href="/series/" @click="open = false">Modelling</a>
+      </li>
+      
+      <li>
+        <a href="/about/" @click="open = false">About</a>
+      </li>
+      
+    </ul>
+  </div><!-- /.mobile-nav -->
+
+</header>
+
+
+<div id="main-content">
+  <!-- Essay stylesheet and runtime — self-contained -->
+<link rel="stylesheet" href="/assets/css/essay.css">
+<script type="module" src="/assets/js/essay/core.js"></script>
+
+<div class="essay-layout" id="essay-layout">
+
+  <!-- essay-toc.html — Sticky table of contents (left column).
+     The <ol> is empty on load; assets/js/essay/core.js populates it
+     from h2/h3 elements found in #essay-content after the page renders. -->
+
+<nav class="essay-toc" id="essay-toc" aria-label="Table of contents">
+  <div class="essay-toc-inner">
+    <p class="essay-toc-heading" aria-hidden="true">Contents</p>
+    <ol class="essay-toc-list" id="essay-toc-list">
+      <!-- Populated at runtime by assets/js/essay/core.js buildToc() -->
+    </ol>
+  </div>
+</nav>
+
+
+  <main class="essay-main" id="essay-main" role="main">
+    <article class="essay-article">
+
+      <!-- essay-hero.html — Header for computational essay template.
+     Displays feature image, tag label, title, excerpt, and post metadata. -->
+
+<header class="essay-hero">
+  
+  <figure class="essay-hero-figure">
+    <img
+      src="/assets/images/cryosphere-and-hydrology.webp"
+      alt="Snow Accumulation and Melt modelling"
+      class="essay-hero-img"
+      loading="eager"
+    >
+    
+  </figure>
+  
+
+  <div class="essay-hero-body">
+
+    
+    
+    
+    
+    
+    <nav class="essay-breadcrumb" aria-label="Series position">
+      
+      <a href="/series/4/" class="essay-breadcrumb-link">Computational geography cryosphere</a>
+      
+      
+      <span class="essay-breadcrumb-sep" aria-hidden="true">›</span>
+      <span class="essay-breadcrumb-cluster">Snow Physics & modelling</span>
+      
+      
+      <span class="essay-breadcrumb-sep" aria-hidden="true">›</span>
+      <span class="essay-breadcrumb-pos">Model 2</span>
+      
+    </nav>
+    
+
+    <div class="essay-hero-labels">
+      
+      <a href="/topics/modelling/" class="essay-tag-label">modelling</a>
+      
+      
+      <span class="difficulty-badge difficulty-badge--3">Level 3</span>
+      
+    </div>
+
+    <h1 class="essay-title">Snow Accumulation and Melt modelling</h1>
+
+    
+    <p class="essay-excerpt">How much water is stored in the snowpack? When will melt begin? What's the peak runoff timing? Snow accumulation and melt models track snowpack mass balance through the season—accounting for precipitation, sublimation, and melt. This model derives degree-day models, implements energy balance approaches, and introduces Snow Water Equivalent (SWE) as the key hydrological variable.
+</p>
+    
+
+    
+    <p class="essay-prereqs"><span class="essay-prereqs-label">Prerequisites:</span> mass balance, degree day integration, temporal modelling, water equivalent</p>
+    
+
+    <div class="essay-meta">
+      
+      <div class="essay-meta-secondary">
+        <time class="essay-date" datetime="2026-02-27">27 Feb 2026</time>
+        
+        
+        <span class="essay-sep" aria-hidden="true">·</span>
+        <span class="essay-updated">Updated <time datetime="2026-03-17">17 Mar 2026</time></span>
+        
+        <span class="essay-sep" aria-hidden="true">·</span>
+        <span class="essay-reading-time">14 min read</span>
+      </div>
+    </div>
+  </div>
+</header>
+
+
+      
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<nav class="series-nav" aria-label="Series navigation">
+
+  <div class="series-nav-header">
+    <span class="series-nav-label">P</span>
+    <span class="series-nav-title">Snow Physics & modelling</span>
+  </div>
+
+  <ol class="series-nav-list">
+    
+    <li class="series-nav-item">
+      
+      <a href="/model/snowpack-energy-balance/" class="series-nav-link">
+        <span class="series-nav-number">1</span>
+        Snowpack Energy Balance
+      </a>
+      
+    </li>
+    
+    <li class="series-nav-item series-nav-item--current">
+      
+      <span class="series-nav-link series-nav-link--current" aria-current="page">
+        <span class="series-nav-number">2</span>
+        Snow Accumulation and Melt modelling
+      </span>
+      
+    </li>
+    
+    <li class="series-nav-item">
+      
+      <a href="/model/swe-estimation-methods/" class="series-nav-link">
+        <span class="series-nav-number">3</span>
+        Snow Water Equivalent Estimation
+      </a>
+      
+    </li>
+    
+    <li class="series-nav-item">
+      
+      <a href="/model/avalanche-terrain-analysis/" class="series-nav-link">
+        <span class="series-nav-number">4</span>
+        Avalanche Terrain Analysis
+      </a>
+      
+    </li>
+    
+  </ol>
+
+  
+  <div class="series-nav-footer">
+    <a href="/series/4/" class="series-nav-all">
+      All 10 in this series &rarr;
+    </a>
+  </div>
+  
+
+</nav>
+
+
+
+
+      <div class="essay-content gh-content" id="essay-content">
+        <p>The mountain snowpack of western North America is the water tower that supplies irrigation for California’s Central Valley, municipal water for Denver, Phoenix, and Salt Lake City, and hydropower for the entire Pacific Northwest. In an average year, the Colorado River basin snowpack holds roughly 15 km³ of water — more than the capacity of Lake Mead. The timing and magnitude of spring runoff from that snowpack determines whether reservoirs fill, whether irrigation water is available in August, and whether summer low flows in rivers remain high enough for salmon. Getting that forecast right is worth billions of dollars annually.</p>
+
+<p>Snow accumulation and melt modelling traces the evolution of the snowpack from the first snowfall of autumn through peak accumulation in late winter to the eventual complete melt in spring. The key variable is Snow Water Equivalent (SWE): the depth of water that would result if the entire snowpack melted instantaneously. SWE is what the hydrologist actually cares about — not snow depth, which varies with density, but the water mass stored. This model builds two levels of melt prediction: the simple degree-day approach, which accumulates temperature above freezing and applies a melt factor, and the energy balance approach that accounts for radiation and turbulent heat exchange. Both are in operational use; understanding why the simple approach works so well, and where it fails, is as important as knowing the equations.</p>
+
+<h2 id="1-the-question">1. The Question</h2>
+
+<p>How much water will this snowpack release during spring melt?</p>
+
+<p><strong>Snow Water Equivalent (SWE)</strong> is the key variable:</p>
+
+\[\text{SWE} = \rho_{\text{snow}} \times d_{\text{snow}} / \rho_{\text{water}}\]
+
+<p>Where:</p>
+<ul>
+  <li>$\rho_{\text{snow}}$ = snow density (kg/m³)</li>
+  <li>$d_{\text{snow}}$ = snow depth (m)</li>
+  <li>$\rho_{\text{water}}$ = 1000 kg/m³</li>
+</ul>
+
+<p><strong>Example:</strong> 1 meter of snow at density 300 kg/m³:</p>
+
+\[\text{SWE} = \frac{300 \times 1.0}{1000} = 0.30 \text{ m} = 300 \text{ mm}\]
+
+<p><strong>This means:</strong> If all snow melted instantly → 300 mm of water runoff!</p>
+
+<p><strong>Applications:</strong></p>
+<ul>
+  <li><strong>Water supply forecasting:</strong> How much water in reservoir?</li>
+  <li><strong>Flood prediction:</strong> Peak flow timing and magnitude</li>
+  <li><strong>Irrigation planning:</strong> Allocate water to farmers</li>
+  <li><strong>Hydropower:</strong> Generation scheduling</li>
+  <li><strong>Climate monitoring:</strong> Trends in snow storage</li>
+</ul>
+
+<p>The mathematical question: Given daily weather (precipitation, temperature), how do we model the evolution of SWE from fall through spring melt?</p>
+
+<hr />
+
+<h2 id="2-the-conceptual-model">2. The Conceptual Model</h2>
+
+<h3 id="mass-balance-equation">Mass Balance Equation</h3>
+
+<p><strong>Change in SWE over time:</strong></p>
+
+\[\frac{dS}{dt} = P_{\text{snow}} - M - E\]
+
+<p>Where:</p>
+<ul>
+  <li>$S$ = SWE (mm or kg/m²)</li>
+  <li>$P_{\text{snow}}$ = snowfall (mm/day)</li>
+  <li>$M$ = melt (mm/day)</li>
+  <li>$E$ = sublimation/evaporation (mm/day)</li>
+</ul>
+
+<p><strong>Accumulation season (winter):</strong></p>
+<ul>
+  <li>$P_{\text{snow}} &gt; 0$, $M = 0$ → SWE increases</li>
+  <li>Peak SWE typically late March-April (mid-latitudes)</li>
+</ul>
+
+<p><strong>Melt season (spring):</strong></p>
+<ul>
+  <li>$P_{\text{snow}} = 0$, $M &gt; 0$ → SWE decreases</li>
+  <li>SWE → 0 by May-June (lower elevations)</li>
+</ul>
+
+<h3 id="rain-vs-snow-partitioning">Rain vs. Snow Partitioning</h3>
+
+<p><strong>Temperature threshold:</strong></p>
+
+\[P_{\text{snow}} = \begin{cases}
+P &amp; \text{if } T_{\text{air}} \leq T_{\text{threshold}} \\
+0 &amp; \text{if } T_{\text{air}} &gt; T_{\text{threshold}}
+\end{cases}\]
+
+<p><strong>Simple:</strong> $T_{\text{threshold}} = 0°C$</p>
+
+<p><strong>Refined:</strong> Transition zone (-1°C to +3°C):</p>
+
+\[f_{\text{snow}} = 1 - \frac{T_{\text{air}} - T_{\min}}{T_{\max} - T_{\min}}\]
+
+<p>Where $f_{\text{snow}}$ = fraction falling as snow (0-1).</p>
+
+<p><strong>Mixed precipitation:</strong> Common near 0°C.</p>
+
+<h3 id="seasonal-cycle">Seasonal Cycle</h3>
+
+<p><strong>Typical mid-latitude mountain:</strong></p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>Oct-Nov: First snowfall, shallow snowpack
+Dec-Feb: Accumulation, cold temperatures, little melt
+Mar: Peak SWE (maximum water storage)
+Apr: Melt onset, SWE decreases
+May: Rapid melt, major runoff
+Jun: Snowpack depleted (lower elevations)
+</code></pre></div></div>
+
+<p><strong>High elevations:</strong> Snow persists year-round (permanent snowfields).</p>
+
+<hr />
+
+<h2 id="3-building-the-mathematical-model">3. Building the Mathematical Model</h2>
+
+<h3 id="degree-day-melt-model">Degree-Day Melt Model</h3>
+
+<p><strong>Empirical relationship:</strong></p>
+
+\[M = \begin{cases}
+a(T_{\text{air}} - T_{\text{melt}}) &amp; \text{if } T_{\text{air}} &gt; T_{\text{melt}} \\
+0 &amp; \text{otherwise}
+\end{cases}\]
+
+<p>Where:</p>
+<ul>
+  <li>$M$ = melt rate (mm/day)</li>
+  <li>$a$ = degree-day factor (mm/(°C·day))</li>
+  <li>$T_{\text{melt}}$ = melt threshold (typically 0°C)</li>
+</ul>
+
+<p><strong>Typical values:</strong></p>
+<ul>
+  <li>$a = 3$ mm/(°C·day) for open sites</li>
+  <li>$a = 2$ mm/(°C·day) for forest</li>
+  <li>$a = 4-6$ mm/(°C·day) for glaciers</li>
+</ul>
+
+<p><strong>Daily time step:</strong></p>
+
+\[M_{\text{today}} = a \times \max(0, T_{\text{mean}} - 0)\]
+
+<h3 id="positive-degree-days-pdd">Positive Degree Days (PDD)</h3>
+
+<p><strong>Cumulative measure:</strong></p>
+
+\[\text{PDD} = \sum_{t=1}^{n} \max(0, T_{\text{mean},t})\]
+
+<p><strong>Total melt over period:</strong></p>
+
+\[M_{\text{total}} = a \times \text{PDD}\]
+
+<p><strong>Example:</strong> Spring with temperatures 2, 4, 6, 8°C over 4 days:</p>
+
+\[\text{PDD} = 2 + 4 + 6 + 8 = 20 \text{ °C-days}\]
+
+\[M_{\text{total}} = 3 \times 20 = 60 \text{ mm}\]
+
+<h3 id="enhanced-degree-day-model">Enhanced Degree-Day Model</h3>
+
+<p><strong>Add radiation term:</strong></p>
+
+\[M = a_T(T - T_{\text{melt}}) + a_R(1 - \alpha)Q_{\text{SW}}\]
+
+<p>Where:</p>
+<ul>
+  <li>$a_R$ = radiation factor (mm·m²/(W·day))</li>
+  <li>$\alpha$ = albedo</li>
+  <li>$Q_{\text{SW}}$ = incoming shortwave (W/m²)</li>
+</ul>
+
+<p><strong>Accounts for:</strong> Sunny warm days melt more than cloudy warm days.</p>
+
+<h3 id="energy-balance-approach">Energy Balance Approach</h3>
+
+<p><strong>From Model 42, net energy determines melt:</strong></p>
+
+\[M = \frac{Q_{\text{net}}}{L_f \rho_w}\]
+
+<p><strong>Requires:</strong></p>
+<ul>
+  <li>Solar radiation</li>
+  <li>Longwave radiation</li>
+  <li>Air temperature</li>
+  <li>Wind speed</li>
+  <li>Humidity</li>
+</ul>
+
+<p><strong>Advantages:</strong> Physical basis, accurate<br />
+<strong>Disadvantages:</strong> Data intensive, complex</p>
+
+<p><strong>Operational use:</strong> SNOTEL sites, research basins</p>
+
+<h3 id="snow-density-evolution">Snow Density Evolution</h3>
+
+<p><strong>Fresh snow:</strong> $\rho \approx 50-100$ kg/m³</p>
+
+<p><strong>Aged snow:</strong> $\rho \approx 200-400$ kg/m³</p>
+
+<p><strong>Late season:</strong> $\rho \approx 400-500$ kg/m³</p>
+
+<p><strong>Compaction over time:</strong></p>
+
+\[\frac{d\rho}{dt} = c_1 \rho + c_2\]
+
+<p>Where $c_1, c_2$ are empirical constants.</p>
+
+<p><strong>Temperature-dependent:</strong></p>
+
+\[\rho(t) = \rho_0 + (\rho_{\max} - \rho_0)(1 - e^{-kt})\]
+
+<p><strong>Typical:</strong> $\rho_{\max} = 500$ kg/m³, $k = 0.01$ day⁻¹</p>
+
+<hr />
+
+<h2 id="4-worked-example-by-hand">4. Worked Example by Hand</h2>
+
+<p><strong>Problem:</strong> Model SWE evolution for November-May given daily temperature and precipitation.</p>
+
+<p><strong>Data (simplified monthly averages):</strong></p>
+
+<table>
+  <thead>
+    <tr>
+      <th>Month</th>
+      <th>Precip (mm)</th>
+      <th>Temp (°C)</th>
+      <th>Days</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>Nov</td>
+      <td>50</td>
+      <td>-2</td>
+      <td>30</td>
+    </tr>
+    <tr>
+      <td>Dec</td>
+      <td>80</td>
+      <td>-5</td>
+      <td>31</td>
+    </tr>
+    <tr>
+      <td>Jan</td>
+      <td>100</td>
+      <td>-8</td>
+      <td>31</td>
+    </tr>
+    <tr>
+      <td>Feb</td>
+      <td>90</td>
+      <td>-6</td>
+      <td>28</td>
+    </tr>
+    <tr>
+      <td>Mar</td>
+      <td>70</td>
+      <td>-1</td>
+      <td>31</td>
+    </tr>
+    <tr>
+      <td>Apr</td>
+      <td>40</td>
+      <td>+4</td>
+      <td>30</td>
+    </tr>
+    <tr>
+      <td>May</td>
+      <td>30</td>
+      <td>+10</td>
+      <td>31</td>
+    </tr>
+  </tbody>
+</table>
+
+<p><strong>Assumptions:</strong></p>
+<ul>
+  <li>All precipitation falls as snow when T &lt; 0°C</li>
+  <li>Degree-day factor: $a = 3$ mm/(°C·day)</li>
+  <li>No sublimation</li>
+</ul>
+
+<h3 id="solution">Solution</h3>
+
+<p><strong>November:</strong></p>
+<ul>
+  <li>$T_{\text{mean}} = -2°C &lt; 0$ → No melt</li>
+  <li>Snowfall: 50 mm SWE</li>
+  <li><strong>SWE = 0 + 50 = 50 mm</strong></li>
+</ul>
+
+<p><strong>December:</strong></p>
+<ul>
+  <li>$T_{\text{mean}} = -5°C$ → No melt</li>
+  <li>Snowfall: 80 mm</li>
+  <li><strong>SWE = 50 + 80 = 130 mm</strong></li>
+</ul>
+
+<p><strong>January:</strong></p>
+<ul>
+  <li>$T_{\text{mean}} = -8°C$ → No melt</li>
+  <li>Snowfall: 100 mm</li>
+  <li><strong>SWE = 130 + 100 = 230 mm</strong></li>
+</ul>
+
+<p><strong>February:</strong></p>
+<ul>
+  <li>$T_{\text{mean}} = -6°C$ → No melt</li>
+  <li>Snowfall: 90 mm</li>
+  <li><strong>SWE = 230 + 90 = 320 mm</strong></li>
+</ul>
+
+<p><strong>March:</strong></p>
+<ul>
+  <li>$T_{\text{mean}} = -1°C$ → No melt</li>
+  <li>Snowfall: 70 mm</li>
+  <li><strong>SWE = 320 + 70 = 390 mm</strong> ← <strong>Peak SWE</strong></li>
+</ul>
+
+<p><strong>April:</strong></p>
+<ul>
+  <li>$T_{\text{mean}} = +4°C$ → Melt!</li>
+  <li>Melt: $M = 3 \times 4 \times 30 = 360$ mm</li>
+  <li>Precip: 40 mm (rain, T &gt; 0)</li>
+  <li><strong>SWE = 390 - 360 = 30 mm</strong></li>
+</ul>
+
+<p><strong>May:</strong></p>
+<ul>
+  <li>$T_{\text{mean}} = +10°C$ → Strong melt</li>
+  <li>Melt: $M = 3 \times 10 \times 31 = 930$ mm</li>
+  <li>Available SWE: 30 mm</li>
+  <li><strong>SWE depleted:</strong> 30 mm melts, 900 mm “potential melt” unused</li>
+  <li><strong>SWE = 0 mm</strong> (snow gone by mid-May)</li>
+</ul>
+
+<p><strong>Summary:</strong></p>
+<ul>
+  <li>Peak SWE: 390 mm (end of March)</li>
+  <li>Melt onset: April</li>
+  <li>Snow-free: Mid-May</li>
+  <li>Total melt: 390 mm water released</li>
+</ul>
+
+<p><strong>Runoff timing:</strong> Major pulse in April-May as snowpack melts.</p>
+
+<hr />
+
+<h2 id="5-computational-implementation">5. Computational Implementation</h2>
+
+<p>Below is an interactive snow accumulation/melt simulator.</p>
+
+<div class="viz-container" id="snow-sim-viz">
+  <div class="controls">
+    <label>
+      Degree-day factor (mm/°C/day):
+      <input type="range" id="ddf" min="1" max="6" step="0.5" value="3" />
+      <span id="ddf-val">3.0</span>
+    </label>
+    <label>
+      Elevation (m):
+      <input type="range" id="elevation" min="1000" max="3000" step="200" value="2000" />
+      <span id="elev-val">2000</span>
+    </label>
+    <label>
+      Winter precipitation (%):
+      <input type="range" id="winter-precip" min="50" max="150" step="10" value="100" />
+      <span id="precip-val">100</span>%
+    </label>
+    <label>
+      Show components:
+      <input type="checkbox" id="show-precip" checked="" /> Precipitation
+      <input type="checkbox" id="show-melt" checked="" /> Melt
+    </label>
+  </div>
+  <div id="snow-sim-canvas-container">
+    <canvas id="snow-sim-canvas" width="700" height="400" style="border: 1px solid #ddd;"></canvas>
+  </div>
+  <div class="snow-sim-info">
+    <p><strong>Peak SWE:</strong> <span id="peak-swe">--</span> mm</p>
+    <p><strong>Peak date:</strong> <span id="peak-date">--</span></p>
+    <p><strong>Snow-free date:</strong> <span id="snow-free">--</span></p>
+    <p><strong>Total melt:</strong> <span id="total-melt">--</span> mm</p>
+  </div>
+</div>
+
+<script type="module">
+await new Promise(resolve => {
+  const checkECharts = () => {
+    if (typeof echarts !== 'undefined') resolve();
+    else setTimeout(checkECharts, 50);
+  };
+  checkECharts();
+});
+
+(function() {
+  const chart = echarts.init(document.getElementById('snow-sim-canvas'));
+  
+  let ddf = 3.0;
+  let elevation = 2000;
+  let precipScale = 1.0;
+  let showPrecip = true;
+  let showMelt = true;
+  
+  function generateWeatherData(elev, precip) {
+    // Temperature lapse rate: -6.5°C per 1000m
+    const baseTempOffset = (elev - 1500) / 1000 * (-6.5);
+    
+    // Monthly climate (Oct-Sep)
+    const months = [
+      {name: 'Oct', days: 31, baseTemp: 8, basePrecip: 40},
+      {name: 'Nov', days: 30, baseTemp: 2, basePrecip: 60},
+      {name: 'Dec', days: 31, baseTemp: -3, basePrecip: 90},
+      {name: 'Jan', days: 31, baseTemp: -6, basePrecip: 100},
+      {name: 'Feb', days: 28, baseTemp: -4, basePrecip: 90},
+      {name: 'Mar', days: 31, baseTemp: 0, basePrecip: 70},
+      {name: 'Apr', days: 30, baseTemp: 5, basePrecip: 50},
+      {name: 'May', days: 31, baseTemp: 10, basePrecip: 40},
+      {name: 'Jun', days: 30, baseTemp: 15, basePrecip: 30},
+      {name: 'Jul', days: 31, baseTemp: 18, basePrecip: 20},
+      {name: 'Aug', days: 31, baseTemp: 17, basePrecip: 25},
+      {name: 'Sep', days: 30, baseTemp: 12, basePrecip: 35}
+    ];
+    
+    const daily = [];
+    let doy = 0;
+    
+    for (let month of months) {
+      const temp = month.baseTemp + baseTempOffset;
+      const precipPerDay = (month.basePrecip * precip) / month.days;
+      
+      for (let day = 0; day < month.days; day++) {
+        // Add daily variation
+        const tempVar = (Math.random() - 0.5) * 6;
+        const precipVar = Math.random() < 0.3 ? precipPerDay * 2 : precipPerDay * 0.5;
+        
+        daily.push({
+          doy: doy,
+          month: month.name,
+          temp: temp + tempVar,
+          precip: precipVar
+        });
+        
+        doy++;
+      }
+    }
+    
+    return daily;
+  }
+  
+  function simulateSWE(weather, degreeDay) {
+    let swe = 0;
+    const results = [];
+    let peakSWE = 0;
+    let peakDate = '';
+    let snowFreeDate = '';
+    let totalMelt = 0;
+    
+    for (let i = 0; i < weather.length; i++) {
+      const day = weather[i];
+      
+      // Precipitation
+      let snowfall = 0;
+      if (day.temp <= 0) {
+        snowfall = day.precip;
+      }
+      
+      // Melt
+      let melt = 0;
+      if (day.temp > 0 && swe > 0) {
+        melt = degreeDay * day.temp;
+        melt = Math.min(melt, swe); // Can't melt more than available
+        totalMelt += melt;
+      }
+      
+      // Update SWE
+      swe = swe + snowfall - melt;
+      
+      // Track peak
+      if (swe > peakSWE) {
+        peakSWE = swe;
+        peakDate = `${day.month} ${day.doy % 30 + 1}`;
+      }
+      
+      // Track snow-free
+      if (swe === 0 && peakSWE > 0 && !snowFreeDate && i > 180) {
+        snowFreeDate = `${day.month} ${day.doy % 30 + 1}`;
+      }
+      
+      results.push({
+        doy: day.doy,
+        month: day.month,
+        swe: swe,
+        snowfall: snowfall,
+        melt: melt,
+        temp: day.temp
+      });
+    }
+    
+    return {results, peakSWE, peakDate, snowFreeDate, totalMelt};
+  }
+  
+  function render() {
+    const weather = generateWeatherData(elevation, precipScale);
+    const {results, peakSWE, peakDate, snowFreeDate, totalMelt} = simulateSWE(weather, ddf);
+    
+    // Update stats
+    document.getElementById('peak-swe').textContent = peakSWE.toFixed(0);
+    document.getElementById('peak-date').textContent = peakDate;
+    document.getElementById('snow-free').textContent = snowFreeDate || 'Snow persists';
+    document.getElementById('total-melt').textContent = totalMelt.toFixed(0);
+    
+    // Prepare series
+    const series = [];
+    
+    // SWE
+    series.push({
+      name: 'SWE',
+      type: 'line',
+      data: results.map(d => [d.doy, d.swe]),
+      areaStyle: {color: 'rgba(224, 242, 254, 0.8)'},
+      lineStyle: {color: '#1976D2', width: 2},
+      smooth: true
+    });
+    
+    if (showPrecip) {
+      series.push({
+        name: 'Snowfall',
+        type: 'bar',
+        data: results.map(d => [d.doy, d.snowfall]),
+        itemStyle: {color: '#90CAF9'},
+        barWidth: 2,
+        yAxisIndex: 1
+      });
+    }
+    
+    if (showMelt) {
+      series.push({
+        name: 'Melt',
+        type: 'bar',
+        data: results.map(d => [d.doy, -d.melt]),
+        itemStyle: {color: '#FFAB91'},
+        barWidth: 2,
+        yAxisIndex: 1
+      });
+    }
+    
+    // Temperature (right axis)
+    series.push({
+      name: 'Temperature',
+      type: 'line',
+      data: results.map(d => [d.doy, d.temp]),
+      lineStyle: {color: '#F44336', width: 1, type: 'dashed'},
+      yAxisIndex: 2,
+      showSymbol: false
+    });
+    
+    const option = {
+      title: {
+        text: 'Snow Accumulation & Melt Simulation',
+        left: 'center'
+      },
+      tooltip: {
+        trigger: 'axis',
+        axisPointer: {type: 'cross'}
+      },
+      legend: {
+        data: series.map(s => s.name),
+        top: 30
+      },
+      grid: {
+        left: 80,
+        right: 80,
+        top: 80,
+        bottom: 60
+      },
+      xAxis: {
+        type: 'value',
+        name: 'Day of Water Year (Oct 1 = 0)',
+        nameLocation: 'middle',
+        nameGap: 30,
+        min: 0,
+        max: 365
+      },
+      yAxis: [
+        {
+          type: 'value',
+          name: 'SWE (mm)',
+          nameLocation: 'middle',
+          nameGap: 50,
+          min: 0
+        },
+        {
+          type: 'value',
+          name: 'Precip/Melt (mm/day)',
+          nameLocation: 'middle',
+          nameGap: 50,
+          position: 'left',
+          offset: 60
+        },
+        {
+          type: 'value',
+          name: 'Temperature (°C)',
+          nameLocation: 'middle',
+          nameGap: 50,
+          position: 'right'
+        }
+      ],
+      series: series
+    };
+    
+    chart.setOption(option, true);
+  }
+  
+  document.getElementById('ddf').addEventListener('input', (e) => {
+    ddf = parseFloat(e.target.value);
+    document.getElementById('ddf-val').textContent = ddf.toFixed(1);
+    render();
+  });
+  
+  document.getElementById('elevation').addEventListener('input', (e) => {
+    elevation = parseFloat(e.target.value);
+    document.getElementById('elev-val').textContent = elevation;
+    render();
+  });
+  
+  document.getElementById('winter-precip').addEventListener('input', (e) => {
+    precipScale = parseFloat(e.target.value) / 100;
+    document.getElementById('precip-val').textContent = e.target.value;
+    render();
+  });
+  
+  document.getElementById('show-precip').addEventListener('change', (e) => {
+    showPrecip = e.target.checked;
+    render();
+  });
+  
+  document.getElementById('show-melt').addEventListener('change', (e) => {
+    showMelt = e.target.checked;
+    render();
+  });
+  
+  render();
+  
+  window.addEventListener('resize', () => chart.resize());
+})();
+</script>
+
+<p><strong>Try this:</strong></p>
+<ul>
+  <li><strong>Higher elevation:</strong> Colder temps, later melt, more peak SWE</li>
+  <li><strong>Lower elevation:</strong> Earlier melt, less accumulation</li>
+  <li><strong>Higher DDF:</strong> Faster melt (more sensitive to temperature)</li>
+  <li><strong>More precipitation:</strong> Higher peak SWE, more water stored</li>
+  <li><strong>Blue area:</strong> SWE accumulation through season</li>
+  <li><strong>Light blue bars:</strong> Snowfall events</li>
+  <li><strong>Orange bars (downward):</strong> Daily melt</li>
+  <li><strong>Red dashed line:</strong> Temperature (when &gt; 0°C, melt occurs)</li>
+  <li>Notice: Peak SWE in March/April, rapid melt in May!</li>
+</ul>
+
+<p><strong>Key insight:</strong> Snowpack is a natural reservoir—stores winter precipitation, releases during spring melt when plants need water!</p>
+
+<hr />
+
+<h2 id="6-interpretation">6. Interpretation</h2>
+
+<h3 id="water-supply-forecasting">Water Supply Forecasting</h3>
+
+<p><strong>April 1 SWE</strong> predicts summer streamflow:</p>
+
+\[Q_{\text{summer}} = \alpha \times \text{SWE}_{\text{Apr1}} + \beta \times P_{\text{Apr-Jul}}\]
+
+<p>Where:</p>
+<ul>
+  <li>$Q$ = seasonal flow volume</li>
+  <li>$\alpha$ = coefficient (~0.6-0.8)</li>
+  <li>$P$ = spring/summer precipitation</li>
+</ul>
+
+<p><strong>Regression model</strong> calibrated to basin.</p>
+
+<p><strong>Example:</strong> Sierra Nevada</p>
+<ul>
+  <li>SWE = 800 mm on April 1</li>
+  <li>Predicted runoff: ~500 mm (60-70% efficiency)</li>
+</ul>
+
+<p><strong>Water allocation</strong> based on this forecast.</p>
+
+<h3 id="flood-forecasting">Flood Forecasting</h3>
+
+<p><strong>Peak flow timing:</strong></p>
+
+<p>Snowmelt contribution:</p>
+
+\[Q_{\text{melt}}(t) = \frac{M(t) \times A}{86400}\]
+
+<p>Where:</p>
+<ul>
+  <li>$Q$ = discharge (m³/s)</li>
+  <li>$M$ = melt rate (mm/day)</li>
+  <li>$A$ = basin area (m²)</li>
+  <li>86400 = seconds/day</li>
+</ul>
+
+<p><strong>Combined:</strong> Rain + snowmelt = compounded runoff.</p>
+
+<p><strong>Example:</strong> 100 km² basin, 50 mm/day melt:</p>
+
+\[Q = \frac{50 \times 10^{-3} \times 100 \times 10^6}{86400} = 57.9 \text{ m}^3\text{/s}\]
+
+<p><strong>Plus rain:</strong> Could exceed channel capacity → flooding.</p>
+
+<h3 id="climate-change-impacts">Climate Change Impacts</h3>
+
+<p><strong>Observed trends:</strong></p>
+<ul>
+  <li>Earlier snowmelt (1-2 weeks)</li>
+  <li>Lower peak SWE (20-30% reduction in some regions)</li>
+  <li>Shorter snow-covered season</li>
+  <li>More rain vs. snow (elevation threshold rising)</li>
+</ul>
+
+<p><strong>Implications:</strong></p>
+<ul>
+  <li>Earlier peak flows (March vs. April)</li>
+  <li>Less summer baseflow (less storage)</li>
+  <li>Increased winter flooding</li>
+  <li>Reduced water availability for irrigation</li>
+</ul>
+
+<h3 id="drought-detection">Drought Detection</h3>
+
+<p><strong>SWE anomaly:</strong></p>
+
+\[A = \frac{\text{SWE}_{\text{current}} - \text{SWE}_{\text{climatology}}}{\sigma_{\text{climatology}}}\]
+
+<p><strong>Drought:</strong> $A &lt; -1.5$ (SWE far below normal)</p>
+
+<p><strong>Example:</strong> 2015 California drought</p>
+<ul>
+  <li>April 1 SWE: 5% of normal (95% deficit!)</li>
+  <li>Severe water shortages</li>
+</ul>
+
+<hr />
+
+<h2 id="7-what-could-go-wrong">7. What Could Go Wrong?</h2>
+
+<h3 id="temperature-only-models">Temperature-Only Models</h3>
+
+<p><strong>Degree-day limitation:</strong> Ignores radiation, wind, humidity.</p>
+
+<p><strong>Fails when:</strong></p>
+<ul>
+  <li>Clear cold nights: Strong radiation cooling, no melt despite positive Tmean</li>
+  <li>Cloudy warm days: Less solar, slower melt than predicted</li>
+  <li>Shaded vs. sunny slopes: Same temperature, different melt</li>
+</ul>
+
+<p><strong>Solution:</strong> Enhanced degree-day with radiation term, or full energy balance.</p>
+
+<h3 id="rain-snow-threshold">Rain-Snow Threshold</h3>
+
+<p><strong>Fixed 0°C threshold</strong> misses:</p>
+<ul>
+  <li>Mixed precipitation zone (-1 to +3°C)</li>
+  <li>Humidity effects (wet bulb vs. dry bulb temp)</li>
+  <li>Elevation gradients in precipitation phase</li>
+</ul>
+
+<p><strong>Better:</strong> Logistic transition function or wet-bulb temperature.</p>
+
+<h3 id="sublimation-ignored">Sublimation Ignored</h3>
+
+<p><strong>Dry, windy conditions:</strong> Significant mass loss without melt.</p>
+
+<p><strong>Example:</strong> High plains, winter Chinook winds</p>
+<ul>
+  <li>Sublimation: 1-2 mm/day</li>
+  <li>Over season: 50-100 mm loss</li>
+</ul>
+
+<p><strong>Should include:</strong> Sublimation in mass balance (especially arid regions).</p>
+
+<h3 id="spatial-variability">Spatial Variability</h3>
+
+<p><strong>Point model vs. distributed:</strong></p>
+
+<p>Within-basin variation:</p>
+<ul>
+  <li>North vs. south slopes (radiation)</li>
+  <li>Elevation bands (temperature)</li>
+  <li>Forest vs. clearing (radiation, wind)</li>
+</ul>
+
+<p><strong>Solution:</strong> Divide basin into elevation zones or grid cells, model each separately.</p>
+
+<hr />
+
+<h2 id="8-extension-utah-energy-balance-ueb-model">8. Extension: Utah Energy Balance (UEB) Model</h2>
+
+<p><strong>Physically-based multi-layer model:</strong></p>
+
+<p><strong>Layers:</strong></p>
+<ol>
+  <li>Surface layer (energy exchange)</li>
+  <li>Upper layer (recent snow)</li>
+  <li>Lower layer (old snow)</li>
+</ol>
+
+<p><strong>Each layer tracks:</strong></p>
+<ul>
+  <li>Temperature</li>
+  <li>Density</li>
+  <li>Liquid water content</li>
+  <li>Ice content</li>
+</ul>
+
+<p><strong>Energy balance at surface:</strong></p>
+<ul>
+  <li>Shortwave radiation (with penetration)</li>
+  <li>Longwave radiation</li>
+  <li>Sensible heat</li>
+  <li>Latent heat</li>
+  <li>Ground heat</li>
+  <li>Advected heat (rain)</li>
+</ul>
+
+<p><strong>Internal processes:</strong></p>
+<ul>
+  <li>Percolation (liquid water movement)</li>
+  <li>Refreezing (cold content)</li>
+  <li>Compaction (density change)</li>
+</ul>
+
+<p><strong>Output:</strong></p>
+<ul>
+  <li>SWE evolution</li>
+  <li>Runoff timing and magnitude</li>
+  <li>Internal energy state</li>
+</ul>
+
+<p><strong>Used:</strong> Research, detailed forecasting, calibrated basins.</p>
+
+<hr />
+
+<h2 id="9-math-refresher-integration--accumulation">9. Math Refresher: Integration &amp; Accumulation</h2>
+
+<h3 id="definite-integral">Definite Integral</h3>
+
+<p><strong>Accumulation over time:</strong></p>
+
+\[S(t) = S_0 + \int_{t_0}^{t} \left(\frac{dS}{dt}\right) dt\]
+
+<p><strong>For SWE:</strong></p>
+
+\[S(t) = S_0 + \int_{t_0}^{t} (P_{\text{snow}} - M - E) \, dt\]
+
+<p><strong>Discrete (daily time steps):</strong></p>
+
+\[S_{t+1} = S_t + (P_{\text{snow},t} - M_t - E_t) \Delta t\]
+
+<p>Where $\Delta t = 1$ day.</p>
+
+<h3 id="numerical-integration">Numerical Integration</h3>
+
+<p><strong>Trapezoidal rule:</strong></p>
+
+\[\int_a^b f(x) \, dx \approx \sum_{i=1}^{n} \frac{f(x_{i-1}) + f(x_i)}{2} \Delta x\]
+
+<p><strong>For total melt:</strong></p>
+
+\[M_{\text{total}} = \sum_{i=1}^{n} M_i \times 1 \text{ day}\]
+
+<p><strong>Example:</strong> Daily melt: 0, 0, 5, 10, 15, 20 mm</p>
+
+\[M_{\text{total}} = 0 + 0 + 5 + 10 + 15 + 20 = 50 \text{ mm}\]
+
+<hr />
+
+<h2 id="summary">Summary</h2>
+
+<ul>
+  <li><strong>Snow Water Equivalent (SWE)</strong> quantifies water stored in snowpack</li>
+  <li><strong>Mass balance:</strong> SWE change = snowfall - melt - sublimation</li>
+  <li><strong>Degree-day models:</strong> Empirical melt based on temperature ($M = a(T - T_{melt})$)</li>
+  <li><strong>Typical DDF:</strong> 2-6 mm/(°C·day) depending on exposure and cover</li>
+  <li><strong>Seasonal cycle:</strong> Accumulation (Oct-Mar), peak SWE (Apr), melt (Apr-Jun)</li>
+  <li><strong>Rain-snow threshold:</strong> Temperature determines precipitation phase (~0°C)</li>
+  <li><strong>Applications:</strong> Water supply forecasting, flood prediction, drought monitoring</li>
+  <li><strong>Climate change:</strong> Earlier melt, lower peak SWE, more rain vs. snow</li>
+  <li><strong>Advanced models:</strong> Energy balance (UEB, SNOBAL) for detailed physics</li>
+  <li><strong>Spatial variation:</strong> Elevation, aspect, canopy coverage affect accumulation and melt</li>
+  <li>Foundation for understanding mountain water resources and seasonal streamflow</li>
+</ul>
+
+      </div>
+
+      
+
+
+
+      
+
+  
+  
+  
+  
+
+
+
+      <!-- essay-footer-notes.html — References / endnotes section.
+     Hidden by default; assets/js/essay/core.js shows it and populates
+     #essay-endnotes-list from [data-cite] elements in the content.
+
+     In posts, create citation markers with:
+       <cite data-cite="Author, Title, URL">1</cite>
+     The JS collects these and renders a numbered reference list here. -->
+
+<footer class="essay-endnotes" id="essay-endnotes" aria-label="References" hidden>
+  <div class="essay-endnotes-inner">
+    <h2 class="essay-endnotes-heading">References</h2>
+    <ol class="essay-endnotes-list" id="essay-endnotes-list">
+      <!-- Populated at runtime by assets/js/essay/core.js buildEndnotes() -->
+    </ol>
+  </div>
+</footer>
+
+
+      
+
+      
+
+      
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    </article>
+  </main>
+
+  <aside
+    class="essay-sidenotes"
+    id="essay-sidenotes"
+    aria-label="Margin notes"
+  ></aside>
+
+</div>
+
+</div>
+
+<footer>
+  <div class="footer-inner">
+
+    <!-- Col 1: Brand -->
+    <div class="footer-brand">
+      <div class="footer-brand-logo">
+        
+        <img loading="lazy" src="/assets/images/logo.webp" alt="WaywardHouse" width="28" height="28">
+        
+        WaywardHouse<span>.</span>
+      </div>
+      
+      
+      <p class="footer-brand-desc">Understanding how place, economy, and environment interact — through analysis, modelling, and open tools.</p>
+      
+
+      <div class="footer-social">
+        
+        
+        
+        <a href="/feed.xml" class="social-icon" target="_blank" rel="noopener noreferrer" aria-label="RSS feed">
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M4 11a9 9 0 0 1 9 9"/>
+            <path d="M4 4a16 16 0 0 1 16 16"/>
+            <circle cx="5" cy="19" r="1"/>
+          </svg>
+        </a>
+      </div>
+    </div>
+
+    <!-- Col 2: Topics (configurable via footer_topics, falls back to auto-categories) -->
+    <nav aria-labelledby="footer-topics">
+      <h3 class="footer-col-title" id="footer-topics">Reading</h3>
+      <ul class="footer-links">
+        
+          
+          <li><a href="/topics/">Essays</a></li>
+          
+          <li><a href="/series/">Modelling</a></li>
+          
+          <li><a href="/archive/">Archive</a></li>
+          
+          <li><a href="/start-here/">Start Here</a></li>
+          
+        
+      </ul>
+    </nav>
+
+    <!-- Col 3: Secondary navigation -->
+    
+    <nav aria-labelledby="footer-company">
+      <h3 class="footer-col-title" id="footer-company">Site</h3>
+      <ul class="footer-links">
+        
+        <li><a href="/start-here/">Start Here</a></li>
+        
+        <li><a href="/about/">About</a></li>
+        
+        <li><a href="/contact/">Contact</a></li>
+        
+      </ul>
+    </nav>
+    
+
+    <!-- Col 4: Resources -->
+    <nav aria-labelledby="footer-resources">
+      <h3 class="footer-col-title" id="footer-resources">Resources</h3>
+      <ul class="footer-links">
+        <li><a href="/archive/">Archive</a></li>
+        <li><a href="/feed.xml">RSS Feed</a></li>
+        <li><a href="/topics/">All Topics</a></li>
+      </ul>
+    </nav>
+
+  </div><!-- /.footer-inner -->
+
+  <div class="footer-bottom">
+    <span class="footer-copy">
+      &copy; 2026 WaywardHouse.
+    </span>
+    <div class="footer-legal">
+      <a href="/privacy/">Privacy Policy</a>
+      <a href="/terms/">Terms of Service</a>
+    </div>
+  </div>
+
+</footer>
+
+
+<!-- Alpine.js bundle -->
+<script type="module" src="/assets/dist/main.js"></script>
+
+<!-- Visualization runtime — detects and loads CDN libraries dynamically -->
+<script type="module" src="/assets/js/core.js"></script>
+
+<!-- Search overlay — event-driven: nav button $dispatches 'search:open' -->
+<div
+  x-data="search"
+  x-init="init()"
+  @search:open.window="open()"
+>
+  <div
+    class="search-overlay"
+    x-show="isOpen"
+    x-transition:enter="transition ease-out duration-150"
+    x-transition:enter-start="opacity-0"
+    x-transition:enter-end="opacity-100"
+    x-transition:leave="transition ease-in duration-100"
+    x-transition:leave-start="opacity-100"
+    x-transition:leave-end="opacity-0"
+    @click.self="close()"
+    style="display: none;"
+    role="dialog"
+    aria-modal="true"
+    aria-label="Search"
+  >
+    <div class="search-panel">
+      <div class="search-input-wrap">
+        <svg class="search-icon" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <circle cx="11" cy="11" r="8"/>
+          <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+        </svg>
+        <input
+          class="search-input"
+          type="search"
+          placeholder="Search posts…"
+          x-model="query"
+          x-ref="input"
+          @input.debounce.300ms="runSearch()"
+          @keydown.escape="close()"
+          autocomplete="off"
+          spellcheck="false"
+          aria-label="Search query"
+        >
+        <kbd class="search-esc" aria-hidden="true">ESC</kbd>
+      </div>
+
+      <div class="search-results" x-show="query.trim().length > 0">
+        <div class="search-status" x-show="loading" aria-live="polite">Searching…</div>
+        <div class="search-status" x-show="!loading && results.length === 0" aria-live="polite">
+          No results for "<span x-text="query"></span>"
+        </div>
+        <ul class="search-result-list" x-show="!loading && results.length > 0" role="list">
+          <template x-for="result in results" :key="result.url">
+            <li>
+              <a :href="result.url" class="search-result-item" @click="close()">
+                <div class="search-result-title" x-text="result.meta?.title || result.url"></div>
+                <div class="search-result-excerpt" x-html="result.excerpt"></div>
+              </a>
+            </li>
+          </template>
+        </ul>
+      </div>
+    </div>
+  </div>
+</div>
+
+</body>
+</html>

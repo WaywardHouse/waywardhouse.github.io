@@ -1,0 +1,1027 @@
+<!DOCTYPE html>
+
+<html lang="en" data-brand="wayward" data-theme="light">
+<head>
+  <meta charset="utf-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Land Use Change modelling — WaywardHouse</title>
+<meta name="description" content="Cities grow by converting surrounding land — farmland, forest, grassland — cell by cell. The probability that any given cell converts in any given year depends on its neighbourhood, its...">
+
+<!-- Dark mode flash prevention — runs synchronously before first paint -->
+<script>
+  (function () {
+    var defaultDark = 'light' === 'dark';
+    var s = localStorage.getItem('theme');
+    var dark = s !== null ? s === 'dark' : defaultDark;
+    document.documentElement.dataset.theme = dark ? 'dark' : 'light';
+  })();
+</script>
+
+<!-- Preconnect to CDN domains used by the viz runtime -->
+<link rel="preconnect" href="https://cdn.jsdelivr.net">
+<link rel="preconnect" href="https://unpkg.com">
+<link rel="preconnect" href="https://esm.sh">
+<link rel="preconnect" href="https://api.mapbox.com">
+<link rel="preconnect" href="https://events.mapbox.com">
+
+
+<script>window.MAPBOX_TOKEN = 'pk.eyJ1IjoiYnJlYWRlZGNvZCIsImEiOiJjbW0xa25qc2EwMmtwMnJwejJlNndqdnoxIn0._7I9PwXuFLrOQINVZ84y1w';</script>
+
+
+<!-- Fonts -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:ital,wght@0,300;0,400;0,600;0,700;0,800;0,900;1,700;1,800&family=Barlow:wght@300;400&family=IBM+Plex+Mono:ital,wght@0,300;0,400;0,500;1,300&family=Literata:ital,opsz,wght@0,7..72,300;0,7..72,400;0,7..72,500;1,7..72,300;1,7..72,400&display=swap" rel="stylesheet">
+
+<!-- Theme stylesheet (Vite build output) -->
+<link rel="stylesheet" href="/assets/dist/main.css">
+
+<!-- Brand token overrides — loaded after main.css so variables cascade correctly -->
+
+<link rel="stylesheet" href="/assets/css/brand-wayward.css">
+
+
+
+<!-- Syntax highlighting (Rouge — light + dark) -->
+<link rel="stylesheet" href="/assets/css/syntax.css">
+
+<!-- Begin Jekyll SEO tag v2.8.0 -->
+<title>Land Use Change modelling | WaywardHouse</title>
+<meta name="generator" content="Jekyll v4.4.1" />
+<meta property="og:title" content="Land Use Change modelling" />
+<meta property="og:locale" content="en" />
+<meta name="description" content="Cities grow by converting surrounding land — farmland, forest, grassland — cell by cell. The probability that any given cell converts in any given year depends on its neighbourhood, its physical suitability, its accessibility to roads and centres, and planning constraints. Cellular automata encode this rule structure into a spatially explicit simulation. This essay derives the logistic regression transition probability, defines the neighbourhood effect function, implements a basic CA urban growth model, and builds scenario projections validated against historical satellite data." />
+<meta property="og:description" content="Cities grow by converting surrounding land — farmland, forest, grassland — cell by cell. The probability that any given cell converts in any given year depends on its neighbourhood, its physical suitability, its accessibility to roads and centres, and planning constraints. Cellular automata encode this rule structure into a spatially explicit simulation. This essay derives the logistic regression transition probability, defines the neighbourhood effect function, implements a basic CA urban growth model, and builds scenario projections validated against historical satellite data." />
+<link rel="canonical" href="https://wayward.house/model/land-use-change-modeling/" />
+<meta property="og:url" content="https://wayward.house/model/land-use-change-modeling/" />
+<meta property="og:site_name" content="WaywardHouse" />
+<meta property="og:image" content="https://wayward.house/assets/images/change-detection.webp" />
+<meta property="og:type" content="article" />
+<meta property="article:published_time" content="2026-03-05T00:00:00-07:00" />
+<meta name="twitter:card" content="summary_large_image" />
+<meta property="twitter:image" content="https://wayward.house/assets/images/change-detection.webp" />
+<meta property="twitter:title" content="Land Use Change modelling" />
+<meta name="twitter:site" content="@" />
+<script type="application/ld+json">
+{"@context":"https://schema.org","@type":"BlogPosting","dateModified":"2026-03-17T16:54:02-06:00","datePublished":"2026-03-05T00:00:00-07:00","description":"Cities grow by converting surrounding land — farmland, forest, grassland — cell by cell. The probability that any given cell converts in any given year depends on its neighbourhood, its physical suitability, its accessibility to roads and centres, and planning constraints. Cellular automata encode this rule structure into a spatially explicit simulation. This essay derives the logistic regression transition probability, defines the neighbourhood effect function, implements a basic CA urban growth model, and builds scenario projections validated against historical satellite data.","headline":"Land Use Change modelling","image":"https://wayward.house/assets/images/change-detection.webp","mainEntityOfPage":{"@type":"WebPage","@id":"https://wayward.house/model/land-use-change-modeling/"},"publisher":{"@type":"Organization","logo":{"@type":"ImageObject","url":"https://wayward.house/assets/images/logo.webp"}},"url":"https://wayward.house/model/land-use-change-modeling/"}</script>
+<!-- End Jekyll SEO tag -->
+
+
+
+<!-- Cloudflare Web Analytics -->
+<script defer src="https://static.cloudflareinsights.com/beacon.min.js"
+  data-cf-beacon='{"token": "62c47d78bf9d4c80972d4e6242d79ff8"}'></script>
+
+
+</head>
+<body class="
+  model-template
+   tag-modelling
+   tag-hash-math
+  
+   tag-hash-viz
+  
+  
+  
+  
+  
+  
+">
+
+<a href="#main-content" class="skip-link">Skip to content</a>
+
+<header class="nav" x-data="{ open: false }">
+  <div class="nav-inner">
+
+    <!-- Logo -->
+    <a href="/" class="nav-logo">
+      
+      <img loading="lazy" src="/assets/images/logo.webp" alt="WaywardHouse" width="32" height="32">
+      
+      WaywardHouse<span>.</span>
+    </a>
+
+    <!-- Desktop nav links -->
+    <ul class="nav-links" role="list">
+      
+      <li>
+        <a href="/topics/">Essays</a>
+      </li>
+      
+      <li>
+        <a href="/series/">Modelling</a>
+      </li>
+      
+      <li>
+        <a href="/about/">About</a>
+      </li>
+      
+    </ul>
+
+    <!-- Actions -->
+    <div class="nav-actions">
+
+      <!-- Search button -->
+      <button
+        class="search-toggle"
+        type="button"
+        aria-label="Search (⌘K)"
+        title="Search (⌘K)"
+        @click="$dispatch('search:open')"
+      >
+        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <circle cx="11" cy="11" r="8"/>
+          <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+        </svg>
+      </button>
+
+      <!-- Dark mode toggle -->
+      <button
+        class="theme-toggle"
+        x-data="darkMode"
+        x-init="init()"
+        @click="toggle()"
+        :aria-label="dark ? 'Switch to light mode' : 'Switch to dark mode'"
+        type="button"
+      >
+        <!-- Sun icon (shown in light mode) -->
+        <svg class="icon-sun" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">
+          <circle cx="12" cy="12" r="5"/>
+          <line x1="12" y1="1" x2="12" y2="3"/>
+          <line x1="12" y1="21" x2="12" y2="23"/>
+          <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/>
+          <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/>
+          <line x1="1" y1="12" x2="3" y2="12"/>
+          <line x1="21" y1="12" x2="23" y2="12"/>
+          <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/>
+          <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>
+        </svg>
+        <!-- Moon icon (shown in dark mode) -->
+        <svg class="icon-moon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">
+          <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+        </svg>
+      </button>
+
+      <!-- Hamburger (mobile only) -->
+      <button
+        class="mobile-nav-toggle"
+        @click="open = !open"
+        :aria-expanded="open"
+        :aria-label="open ? 'Close menu' : 'Open menu'"
+        type="button"
+      >
+        <svg x-show="!open" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <line x1="3" y1="6" x2="21" y2="6"/>
+          <line x1="3" y1="12" x2="21" y2="12"/>
+          <line x1="3" y1="18" x2="21" y2="18"/>
+        </svg>
+        <svg x-show="open" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <line x1="18" y1="6" x2="6" y2="18"/>
+          <line x1="6" y1="6" x2="18" y2="18"/>
+        </svg>
+      </button>
+
+    </div><!-- /.nav-actions -->
+  </div><!-- /.nav-inner -->
+
+  <!-- Mobile drawer -->
+  <div
+    class="mobile-nav"
+    x-show="open"
+    x-transition:enter="transition ease-out duration-200"
+    x-transition:enter-start="opacity-0 -translate-y-1"
+    x-transition:enter-end="opacity-100 translate-y-0"
+    x-transition:leave="transition ease-in duration-150"
+    x-transition:leave-start="opacity-100 translate-y-0"
+    x-transition:leave-end="opacity-0 -translate-y-1"
+    @click.outside="open = false"
+    @keydown.escape.window="open = false"
+  >
+    <ul role="list">
+      
+      <li>
+        <a href="/topics/" @click="open = false">Essays</a>
+      </li>
+      
+      <li>
+        <a href="/series/" @click="open = false">Modelling</a>
+      </li>
+      
+      <li>
+        <a href="/about/" @click="open = false">About</a>
+      </li>
+      
+    </ul>
+  </div><!-- /.mobile-nav -->
+
+</header>
+
+
+<div id="main-content">
+  <!-- Essay stylesheet and runtime — self-contained -->
+<link rel="stylesheet" href="/assets/css/essay.css">
+<script type="module" src="/assets/js/essay/core.js"></script>
+
+<div class="essay-layout" id="essay-layout">
+
+  <!-- essay-toc.html — Sticky table of contents (left column).
+     The <ol> is empty on load; assets/js/essay/core.js populates it
+     from h2/h3 elements found in #essay-content after the page renders. -->
+
+<nav class="essay-toc" id="essay-toc" aria-label="Table of contents">
+  <div class="essay-toc-inner">
+    <p class="essay-toc-heading" aria-hidden="true">Contents</p>
+    <ol class="essay-toc-list" id="essay-toc-list">
+      <!-- Populated at runtime by assets/js/essay/core.js buildToc() -->
+    </ol>
+  </div>
+</nav>
+
+
+  <main class="essay-main" id="essay-main" role="main">
+    <article class="essay-article">
+
+      <!-- essay-hero.html — Header for computational essay template.
+     Displays feature image, tag label, title, excerpt, and post metadata. -->
+
+<header class="essay-hero">
+  
+  <figure class="essay-hero-figure">
+    <img
+      src="/assets/images/change-detection.webp"
+      alt="Land Use Change modelling"
+      class="essay-hero-img"
+      loading="eager"
+    >
+    
+  </figure>
+  
+
+  <div class="essay-hero-body">
+
+    
+    
+    
+    
+    
+    <nav class="essay-breadcrumb" aria-label="Series position">
+      
+      <a href="/series/laboratory/" class="essay-breadcrumb-link">Computational geography laboratory</a>
+      
+      
+      <span class="essay-breadcrumb-sep" aria-hidden="true">›</span>
+      <span class="essay-breadcrumb-cluster">Land Use and Demographic Dynamics</span>
+      
+      
+      <span class="essay-breadcrumb-sep" aria-hidden="true">›</span>
+      <span class="essay-breadcrumb-pos">Model 99</span>
+      
+    </nav>
+    
+
+    <div class="essay-hero-labels">
+      
+      <a href="/topics/modelling/" class="essay-tag-label">modelling</a>
+      
+      
+      <span class="difficulty-badge difficulty-badge--4">Level 4</span>
+      
+    </div>
+
+    <h1 class="essay-title">Land Use Change modelling</h1>
+
+    
+    <p class="essay-excerpt">Cities grow by converting surrounding land — farmland, forest, grassland — cell by cell. The probability that any given cell converts in any given year depends on its neighbourhood, its physical suitability, its accessibility to roads and centres, and planning constraints. Cellular automata encode this rule structure into a spatially explicit simulation. This essay derives the logistic regression transition probability, defines the neighbourhood effect function, implements a basic CA urban growth model, and builds scenario projections validated against historical satellite data.
+</p>
+    
+
+    
+    <p class="essay-prereqs"><span class="essay-prereqs-label">Prerequisites:</span> logistic regression, cellular automata, probability and Markov chains, spatial neighbourhood functions</p>
+    
+
+    <div class="essay-meta">
+      
+      <div class="essay-meta-secondary">
+        <time class="essay-date" datetime="2026-03-05">5 Mar 2026</time>
+        
+        
+        <span class="essay-sep" aria-hidden="true">·</span>
+        <span class="essay-updated">Updated <time datetime="2026-03-17">17 Mar 2026</time></span>
+        
+        <span class="essay-sep" aria-hidden="true">·</span>
+        <span class="essay-reading-time">15 min read</span>
+      </div>
+    </div>
+  </div>
+</header>
+
+
+      
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<nav class="series-nav" aria-label="Series navigation">
+
+  <div class="series-nav-header">
+    <span class="series-nav-label">AL</span>
+    <span class="series-nav-title">Land Use and Demographic Dynamics</span>
+  </div>
+
+  <ol class="series-nav-list">
+    
+    <li class="series-nav-item series-nav-item--current">
+      
+      <span class="series-nav-link series-nav-link--current" aria-current="page">
+        <span class="series-nav-number">99</span>
+        Land Use Change modelling
+      </span>
+      
+    </li>
+    
+    <li class="series-nav-item">
+      
+      <a href="/model/urban-scaling-laws-and-city-structure/" class="series-nav-link">
+        <span class="series-nav-number">100</span>
+        Urban Scaling Laws and City Structure
+      </a>
+      
+    </li>
+    
+    <li class="series-nav-item">
+      
+      <a href="/model/demographic-spatial-dynamics/" class="series-nav-link">
+        <span class="series-nav-number">101</span>
+        Demographic Spatial Dynamics
+      </a>
+      
+    </li>
+    
+  </ol>
+
+  
+  <div class="series-nav-footer">
+    <a href="/series/laboratory/" class="series-nav-all">
+      All 39 in this series &rarr;
+    </a>
+  </div>
+  
+
+</nav>
+
+
+
+
+      <div class="essay-content gh-content" id="essay-content">
+        <p>Between 1985 and 2015, the urbanised area of China increased by approximately 5.8 million hectares — an expansion of built-up land roughly the size of France in 30 years. That expansion did not occur randomly. It followed roads, spread outward from existing urban centres in concentric waves, leapfrogged in places where agricultural land was cheap, and concentrated along rivers and flat terrain. Its spatial pattern was the product of millions of individual decisions by landowners, developers, and planners — but those decisions shared common drivers that could, in principle, be modelled.</p>
+
+<p>The <strong>cellular automaton</strong> (CA) approach treats the landscape as a grid of cells, each with a land use state, and simulates change by applying transition rules that depend on the cell’s own state, its neighbourhood, and its attributes. It does not model the decisions of individual actors — it models the aggregate outcome of those decisions as a spatially explicit probability field.</p>
+
+<hr />
+
+<h2 id="1-the-question">1. The Question</h2>
+
+<p>How do we estimate the probability that a cell of agricultural land will convert to urban use in any given year? How does the spatial neighbourhood of a cell affect that probability? How do we validate a CA model against historical data, and how do we use it to project future land use under different scenarios?</p>
+
+<hr />
+
+<h2 id="2-the-conceptual-model">2. The Conceptual Model</h2>
+
+<p>Land use change is a <strong>stochastic spatial process</strong>. At each time step, each undeveloped cell has some probability of transitioning to urban (or another developed state) that depends on:</p>
+
+<ul>
+  <li><strong>Physical suitability:</strong> slope, flood risk, soil quality — factors that determine the physical cost of development</li>
+  <li><strong>Accessibility:</strong> proximity to roads, city centres, transit — factors that determine the economic value of development</li>
+  <li><strong>Neighbourhood effect:</strong> the fraction of already-developed cells in the neighbourhood — urban growth tends to cluster spatially because infrastructure, services, and social networks extend from existing development</li>
+  <li><strong>Policy constraints:</strong> zoning, protected areas, agricultural land reserves — hard or soft limits on development</li>
+</ul>
+
+<p>The <strong>SLEUTH model</strong> (Clarke et al. 1997) and the <strong>FLUS model</strong> (Liu et al. 2017) are the most widely used CA land change models. Both combine logistic-regression-calibrated transition probabilities with neighbourhood effect functions and stochastic selection to produce spatially realistic growth patterns.</p>
+
+<hr />
+
+<h2 id="3-building-the-mathematical-model">3. Building the Mathematical Model</h2>
+
+<h3 id="31-logistic-regression-for-transition-probability">3.1 Logistic Regression for Transition Probability</h3>
+
+<p>The probability that cell $(r,c)$ transitions from non-urban to urban at time $t$ is modelled by logistic regression on a set of spatial predictor variables:</p>
+
+\[P_{r,c} = \frac{1}{1 + e^{-z_{r,c}}}\]
+
+<p>where $z_{r,c}$ is the linear predictor (logit):</p>
+
+\[z_{r,c} = \beta_0 + \beta_1 x_1 + \beta_2 x_2 + \ldots + \beta_k x_k\]
+
+<p>Common predictor variables $x_k$:</p>
+
+<table>
+  <thead>
+    <tr>
+      <th>Variable</th>
+      <th>Typical $\beta$ sign</th>
+      <th>Interpretation</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>Distance to city centre</td>
+      <td>negative</td>
+      <td>Farther = lower probability</td>
+    </tr>
+    <tr>
+      <td>Distance to nearest road</td>
+      <td>negative</td>
+      <td>Farther from roads = lower probability</td>
+    </tr>
+    <tr>
+      <td>Slope</td>
+      <td>negative</td>
+      <td>Steeper = lower probability</td>
+    </tr>
+    <tr>
+      <td>Elevation</td>
+      <td>negative (typically)</td>
+      <td>Higher = lower probability</td>
+    </tr>
+    <tr>
+      <td>Distance to existing urban</td>
+      <td>negative</td>
+      <td>Farther from built-up = lower probability</td>
+    </tr>
+    <tr>
+      <td>Soil quality rank</td>
+      <td>negative</td>
+      <td>Better farmland = lower probability (ALR protection)</td>
+    </tr>
+    <tr>
+      <td>Population density (nearby)</td>
+      <td>positive</td>
+      <td>More people nearby = higher probability</td>
+    </tr>
+  </tbody>
+</table>
+
+<p>Parameters $\beta_k$ are estimated by maximum likelihood on a training sample of observed transitions from historical land use maps (typically comparing land use at two time points, 10–20 years apart). The log-likelihood to maximise:</p>
+
+\[\mathcal{L}(\boldsymbol{\beta}) = \sum_i [y_i \ln P_i + (1 - y_i)\ln(1 - P_i)]\]
+
+<p>where $y_i = 1$ if cell $i$ transitioned and $y_i = 0$ if it did not.</p>
+
+<h3 id="32-the-neighbourhood-effect-function">3.2 The Neighbourhood Effect Function</h3>
+
+<p>The neighbourhood effect $\Omega_{r,c}$ captures urban spread dynamics — the tendency for development to cluster around existing urban areas:</p>
+
+\[\Omega_{r,c}(t) = \frac{\sum_{(r',c') \in \mathcal{N}(r,c)} \mathbf{1}[\text{urban at } t]}{|\mathcal{N}(r,c)|}\]
+
+<p>where $\mathcal{N}(r,c)$ is the Moore neighbourhood (8 surrounding cells) or an extended neighbourhood (up to 5-cell radius). $\Omega_{r,c}$ is the fraction of neighbourhood cells already urbanised — ranging from 0 (isolated cell, no urban neighbours) to 1 (surrounded by urban cells).</p>
+
+<p>The combined transition probability incorporating the neighbourhood effect:</p>
+
+\[P_{r,c}^{\text{combined}} = P_{r,c}^{\text{logistic}} \cdot \left[\alpha + (1-\alpha) \cdot g(\Omega_{r,c})\right]\]
+
+<p>where $\alpha \in [0,1]$ controls the relative weight of the inherent probability vs. neighbourhood influence, and $g(\Omega)$ is a monotonically increasing function of $\Omega$, such as:</p>
+
+\[g(\Omega) = 1 - (1 - \Omega)^\gamma\]
+
+<p>For $\gamma &gt; 1$, growth is initially slow when neighbours are sparse and accelerates as the neighbourhood fills — an S-shaped neighbourhood response. For $\gamma = 1$: $g(\Omega) = \Omega$ (linear).</p>
+
+<h3 id="33-demand-allocation-and-the-stochastic-ca-rule">3.3 Demand Allocation and the Stochastic CA Rule</h3>
+
+<p>At each time step, the model must convert a specified number of cells $N_t$ (the demand, derived from population projections) from non-urban to urban. The allocation proceeds:</p>
+
+<ol>
+  <li>Compute $P_{r,c}^{\text{combined}}$ for all eligible non-urban cells</li>
+  <li>Sample a uniform random number $U_{r,c} \sim \text{Uniform}(0,1)$ for each cell</li>
+  <li>Compute a combined score: $\text{Score}<em>{r,c} = P</em>{r,c}^{\text{combined}} - U_{r,c}$</li>
+  <li>Rank cells by Score; convert the top $N_t$ cells</li>
+</ol>
+
+<p>This procedure ensures: (a) cells with high probability are most likely selected, but (b) some randomness allows lower-probability cells to occasionally be chosen, producing realistic spatial irregularity. The stochastic component mimics the idiosyncratic decisions of individual developers and landowners that aggregate into the observed noisy spatial pattern.</p>
+
+<p>The demand $N_t$ is typically derived from a demographic model: if zone population grows by $\Delta P$ persons and the residential density is $\delta$ persons per hectare and the average cell size is $A_{\text{cell}}$ hectares:</p>
+
+\[N_t = \frac{\Delta P}{\delta \cdot A_{\text{cell}} \cdot \text{cells per hectare}}\]
+
+<h3 id="34-flus-model-suitability-and-competition">3.4 FLUS Model: Suitability and Competition</h3>
+
+<p>The FLUS (Future Land Use Simulation) model extends the basic CA by handling multiple land use types simultaneously, incorporating competition between land use types for each cell:</p>
+
+\[P_{r,c,k}^{\text{FLUS}} = \frac{P_{r,c,k}^{\text{ANN}} \cdot \Omega_{r,c,k} \cdot sc_{r,c,k}}{\sum_{l} P_{r,c,l}^{\text{ANN}} \cdot \Omega_{r,c,l} \cdot sc_{r,c,l}}\]
+
+<p>where:</p>
+<ul>
+  <li>$P_{r,c,k}^{\text{ANN}}$ is the suitability probability for land use $k$ from a neural network (or logistic regression)</li>
+  <li>$\Omega_{r,c,k}$ is the neighbourhood effect for type $k$</li>
+  <li>$sc_{r,c,k}$ is a competition factor — if type $k$ is in high demand globally, it wins more local competitions</li>
+</ul>
+
+<p>FLUS simultaneously simulates urban expansion, cropland conversion, forest loss, and wetland change — a necessary capability when land use change is not one-way but involves complex multi-type competition across the landscape.</p>
+
+<h3 id="35-validation-figure-of-merit">3.5 Validation: Figure of Merit</h3>
+
+<p>The <strong>Figure of Merit</strong> (FOM) is the standard validation metric for land change models (Pontius et al. 2008):</p>
+
+\[\text{FOM} = \frac{C}{A + B + C + D}\]
+
+<p>where, comparing the simulated change map to the observed change map:</p>
+<ul>
+  <li>$A$ = observed change, simulated as no change (missed transitions)</li>
+  <li>$B$ = observed no change, simulated as change (false alarms)</li>
+  <li>$C$ = observed change, simulated as change, correct location (hits)</li>
+  <li>$D$ = observed change, simulated as change, wrong location (location error)</li>
+</ul>
+
+<p>FOM ranges from 0 (no correct predictions) to 1 (perfect). Values of 0.15–0.40 are considered good for urban land change models — the inherent unpredictability of individual cell decisions means FOM rarely exceeds 0.5 even for excellent models.</p>
+
+<h3 id="36-scenario-construction">3.6 Scenario Construction</h3>
+
+<p>Land change scenarios vary the <strong>demand</strong>, <strong>spatial allocation rules</strong>, and <strong>policy constraints</strong>:</p>
+
+<p><strong>Business as usual (BAU):</strong> historical growth rate continues; current zoning maintained</p>
+
+<p><strong>Compact growth:</strong> demand allocated preferentially to infill (cells within existing urban area) and transit corridors; reduced greenfield development</p>
+
+<p><strong>Sprawl:</strong> higher demand (faster population growth assumption); relaxed edge restrictions; highway extensions increase accessibility to fringe areas</p>
+
+<p><strong>Conservation:</strong> protected area buffers expanded; agricultural land reserve boundaries tightened; demand concentrated in designated growth zones</p>
+
+<p>For each scenario, run the CA forward 20–40 years and compute outcome metrics: total developed area, loss of agricultural land, infrastructure cost per capita, mean commute time to city centre, biodiversity habitat fragmentation index.</p>
+
+<hr />
+
+<h2 id="4-worked-example-by-hand">4. Worked Example by Hand</h2>
+
+<p><strong>Setting:</strong> A 5×5 cell grid representing the fringe of a mid-size Alberta city. Cells are 500 m × 500 m (25 ha each). We want to apply one iteration of the CA to determine which cells convert to urban.</p>
+
+<p><strong>Existing urban cells (value = 1 in the grid):</strong></p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>0 0 0 0 0
+0 0 1 0 0
+0 1 1 1 0
+0 0 1 0 0
+0 0 0 0 0
+</code></pre></div></div>
+
+<p><strong>Logistic transition probabilities $P^{\text{log}}$ (pre-computed from distance and slope data):</strong></p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>0.05 0.08 0.12 0.08 0.05
+0.10 0.18 [1]  0.18 0.10
+0.12 [1]  [1]  [1]  0.12
+0.10 0.18 [1]  0.18 0.10
+0.05 0.08 0.12 0.08 0.05
+</code></pre></div></div>
+
+<p><strong>Step 1: Compute neighbourhood fraction $\Omega$ for non-urban cells</strong></p>
+
+<p>For cell $(1,1)$ (row 1, col 1, 0-indexed): neighbours in Moore neighbourhood are $(0,0),(0,1),(0,2),(1,0),(1,2),(2,0),(2,1),(2,2)$. Urban neighbours: $(1,2),(2,1),(2,2)$ = 3 urban out of 8 neighbours. $\Omega_{1,1} = 3/8 = 0.375$.</p>
+
+<p>For cell $(0,2)$ (top middle): 3 urban neighbours out of 5 valid neighbours = 0.60.</p>
+
+<p><strong>Step 2: Combined probability</strong> (using $g(\Omega) = \Omega$, $\alpha = 0.3$)</p>
+
+\[P^{\text{comb}}_{1,1} = 0.18 \times [0.3 + 0.7 \times 0.375] = 0.18 \times 0.563 = 0.101\]
+
+\[P^{\text{comb}}_{0,2} = 0.12 \times [0.3 + 0.7 \times 0.60] = 0.12 \times 0.720 = 0.086\]
+
+<p><strong>Step 3: Sample random numbers</strong> (example for 4 cells):</p>
+
+<table>
+  <thead>
+    <tr>
+      <th>Cell</th>
+      <th>$P^{\text{comb}}$</th>
+      <th>$U$ (random)</th>
+      <th>Score = P - U</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>(1,1)</td>
+      <td>0.101</td>
+      <td>0.42</td>
+      <td>-0.319</td>
+    </tr>
+    <tr>
+      <td>(1,3)</td>
+      <td>0.101</td>
+      <td>0.08</td>
+      <td><strong>+0.021</strong></td>
+    </tr>
+    <tr>
+      <td>(0,2)</td>
+      <td>0.086</td>
+      <td>0.15</td>
+      <td><strong>-0.064</strong></td>
+    </tr>
+    <tr>
+      <td>(2,4)</td>
+      <td>0.072</td>
+      <td>0.91</td>
+      <td>-0.838</td>
+    </tr>
+  </tbody>
+</table>
+
+<p>If demand $N_t = 1$ cell, convert cell $(1,3)$ — the only positive score. If demand = 0.5 cells on average (stochastic rounding), run the selection with a probability: no cells convert this step, but the scores update for the next.</p>
+
+<hr />
+
+<h2 id="5-computational-implementation">5. Computational Implementation</h2>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>function logistic_probability(X, beta):
+    z = beta[0] + sum(beta[k] * X[k] for k in 1..K)
+    return 1 / (1 + exp(-z))
+
+function neighbourhood_fraction(grid, r, c, radius=1):
+    count, total = 0, 0
+    for dr in -radius..radius:
+        for dc in -radius..radius:
+            if (dr,dc) != (0,0) and valid_cell(r+dr, c+dc):
+                total += 1
+                count += grid[r+dr, c+dc] == URBAN
+    return count / total
+
+function ca_step(grid, P_log, alpha, gamma, N_demand):
+    candidates = [(r,c) for (r,c) where grid[r,c] != URBAN]
+    scores = []
+    for (r,c) in candidates:
+        omega = neighbourhood_fraction(grid, r, c)
+        g_omega = 1 - (1 - omega)**gamma
+        P_comb = P_log[r,c] * (alpha + (1-alpha) * g_omega)
+        U = random_uniform(0, 1)
+        scores.append((P_comb - U, r, c))
+    sort scores descending
+    convert top N_demand cells to URBAN
+    return updated grid
+</code></pre></div></div>
+
+<pre><code class="language-{pyodide}">import numpy as np
+
+def logistic_p(distances_to_road, distances_to_urban, slopes,
+               b0=-2.5, b_road=-0.02, b_urban=-0.03, b_slope=-0.05):
+    z = (b0 + b_road*distances_to_road + 
+         b_urban*distances_to_urban + b_slope*slopes)
+    return 1 / (1 + np.exp(-z))
+
+def neighbourhood_omega(grid, r, c):
+    rows, cols = grid.shape
+    total = urban = 0
+    for dr in [-1, 0, 1]:
+        for dc in [-1, 0, 1]:
+            if dr == 0 and dc == 0: continue
+            nr, nc = r+dr, c+dc
+            if 0 &lt;= nr &lt; rows and 0 &lt;= nc &lt; cols:
+                total += 1
+                urban += int(grid[nr, nc])
+    return urban / total if total &gt; 0 else 0
+
+def ca_step(grid, P_log, alpha=0.3, gamma=1.5, N_demand=3, rng=None):
+    if rng is None: rng = np.random.default_rng(42)
+    rows, cols = grid.shape
+    scores = []
+    for r in range(rows):
+        for c in range(cols):
+            if grid[r, c] == 0:
+                omega = neighbourhood_omega(grid, r, c)
+                g_omega = 1 - (1 - omega)**gamma
+                P_comb = P_log[r, c] * (alpha + (1-alpha)*g_omega)
+                U = rng.uniform()
+                scores.append((P_comb - U, r, c))
+    scores.sort(reverse=True)
+    new_grid = grid.copy()
+    for i in range(min(N_demand, len(scores))):
+        _, r, c = scores[i]
+        new_grid[r, c] = 1
+    return new_grid
+
+# 5x5 example
+grid = np.array([
+    [0,0,0,0,0],
+    [0,0,1,0,0],
+    [0,1,1,1,0],
+    [0,0,1,0,0],
+    [0,0,0,0,0]], dtype=float)
+
+P_log = np.array([
+    [0.05,0.08,0.12,0.08,0.05],
+    [0.10,0.18,0.00,0.18,0.10],
+    [0.12,0.00,0.00,0.00,0.12],
+    [0.10,0.18,0.00,0.18,0.10],
+    [0.05,0.08,0.12,0.08,0.05]])
+
+new_grid = ca_step(grid, P_log, N_demand=2)
+print("Urban cells before:", int(grid.sum()))
+print("Urban cells after: ", int(new_grid.sum()))
+print("\nUpdated grid:\n", new_grid.astype(int))
+</code></pre>
+
+<hr />
+
+<h2 id="6-visualization">6. Visualization</h2>
+
+<div data-viz="echarts" style="height:420px" data-options="{
+  &quot;title&quot;: {&quot;text&quot;: &quot;CA Urban Growth: Simulated Developed Area vs Year (Three Scenarios)&quot;, &quot;textStyle&quot;: {&quot;fontSize&quot;: 14}},
+  &quot;tooltip&quot;: {&quot;trigger&quot;: &quot;axis&quot;},
+  &quot;legend&quot;: {&quot;data&quot;: [&quot;Sprawl&quot;, &quot;Business as usual&quot;, &quot;Compact growth&quot;], &quot;bottom&quot;: 0},
+  &quot;xAxis&quot;: {&quot;name&quot;: &quot;Year&quot;, &quot;nameLocation&quot;: &quot;middle&quot;, &quot;nameGap&quot;: 30,
+    &quot;data&quot;: [2025, 2030, 2035, 2040, 2045, 2050, 2055, 2060]},
+  &quot;yAxis&quot;: {&quot;name&quot;: &quot;Developed area (km²)&quot;, &quot;nameLocation&quot;: &quot;middle&quot;, &quot;nameGap&quot;: 55, &quot;min&quot;: 100},
+  &quot;series&quot;: [
+    {&quot;name&quot;: &quot;Sprawl&quot;, &quot;type&quot;: &quot;line&quot;, &quot;smooth&quot;: true,
+     &quot;data&quot;: [120, 148, 183, 224, 272, 328, 392, 465]},
+    {&quot;name&quot;: &quot;Business as usual&quot;, &quot;type&quot;: &quot;line&quot;, &quot;smooth&quot;: true,
+     &quot;data&quot;: [120, 140, 163, 190, 220, 254, 291, 333]},
+    {&quot;name&quot;: &quot;Compact growth&quot;, &quot;type&quot;: &quot;line&quot;, &quot;smooth&quot;: true,
+     &quot;data&quot;: [120, 132, 146, 161, 177, 195, 215, 236]}
+  ]
+}"></div>
+
+<p>By 2060, the sprawl scenario produces nearly 2× the developed area of the compact growth scenario for the same population growth. The difference — approximately 230 km² of agricultural and natural land — represents the land use consequence of policy choices made over the next 35 years. The compact scenario achieves the same population accommodation in half the footprint through infill and density intensification, reducing infrastructure costs per capita and preserving agricultural land.</p>
+
+<hr />
+
+<h2 id="7-interpretation">7. Interpretation</h2>
+
+<p>The CA model captures the self-reinforcing spatial dynamics of urban growth: once a cluster of urban cells forms, it increases the neighbourhood effect $\Omega$ for surrounding cells, raising their transition probability and making further growth more likely. This positive feedback produces the characteristic urban fringe pattern — not a uniform expansion outward, but a fingered, irregular boundary that advances most rapidly along roads and transport corridors where logistic suitability probability is highest.</p>
+
+<p>The model also reveals the <strong>path dependence</strong> of urban form. A single large development in a previously empty area becomes a seed for future growth around it, even if the initial development was driven by a one-time subsidy or developer decision that would not have been rational in a different planning context. This means that current development decisions constrain the spatial options available to planners 20–30 years hence — a powerful argument for early, proactive planning of growth boundaries rather than reactive management of existing patterns.</p>
+
+<p>The Agricultural Land Reserve (ALR) in British Columbia and the similar Farmland Identification Program in Alberta represent policy implementations of the conservation scenario — hard constraints on the logistic probability field that prevent high-probability fringe cells from converting regardless of market signals. The CA model allows us to quantify exactly how much agricultural land is saved under different ALR boundary configurations.</p>
+
+<hr />
+
+<h2 id="8-what-could-go-wrong">8. What Could Go Wrong?</h2>
+
+<p><strong>Equifinality: many parameter sets produce similar outcomes.</strong> Logistic regression on historical data identifies one set of $\beta$ coefficients, but different parameter combinations may produce equally good fits to the training data and very different projections. Sensitivity analysis across plausible parameter ranges should accompany any scenario projection.</p>
+
+<p><strong>Non-stationarity of calibrated parameters.</strong> The transition probabilities calibrated on 1990–2010 data may not apply to 2025–2060 projections if the relationship between accessibility, suitability, and development probability has changed. Remote work trends, changing preferences for density, and autonomous vehicles could substantially alter the spatial drivers of development.</p>
+
+<p><strong>The model does not simulate prices.</strong> Land values, development costs, and regulatory costs are implicit in the historical patterns used to calibrate the model. If carbon pricing, infrastructure levies, or zoning changes alter development economics, the calibrated model will not correctly predict the response. An economic equilibrium model (e.g., urban land use and transport interaction, LUTI) is needed for policy experiments that change relative costs.</p>
+
+<p><strong>FOM validation is necessary but not sufficient.</strong> A model can achieve a high FOM on the training period and still project poorly 30 years out if the underlying spatial drivers shift. Multi-period cross-validation (calibrate on 1990–2005, validate on 2005–2020) provides more robust assessment than single-period validation.</p>
+
+<hr />
+
+<h2 id="9-summary">9. Summary</h2>
+
+<p>Land use change modelling with cellular automata combines a logistic-regression transition probability (capturing physical suitability and accessibility) with a neighbourhood effect function (capturing spatial clustering dynamics) and stochastic allocation (capturing individual decision variability) to simulate urban expansion over decadal timescales.</p>
+
+<p>Model parameters are calibrated from historical land use change observations and validated against withheld data using the Figure of Merit. Scenario projections vary demand trajectories and policy constraints to produce conditional forecasts that inform planning decisions — particularly about agricultural land conservation, infrastructure investment, and the spatial distribution of population growth.</p>
+
+<p><strong>Key equations:</strong></p>
+
+\[P_{r,c} = \frac{1}{1+e^{-(\beta_0 + \sum_k \beta_k x_k)}} \quad \text{[logistic transition probability]}\]
+
+\[\Omega_{r,c} = \frac{1}{|\mathcal{N}|}\sum_{(r',c')\in\mathcal{N}} \mathbf{1}[\text{urban}] \quad \text{[neighbourhood fraction]}\]
+
+\[P^{\text{comb}} = P^{\text{log}} \cdot [\alpha + (1-\alpha)(1 - (1-\Omega)^\gamma)]\]
+
+\[\text{FOM} = C/(A+B+C+D) \quad \text{[Figure of Merit]}\]
+
+<hr />
+
+<h2 id="math-refresher">Math Refresher</h2>
+
+<p><strong>The logistic function and binary classification.</strong> The logistic function $\sigma(z) = 1/(1+e^{-z})$ maps any real number $z$ to the interval $(0,1)$ — making it natural for probabilities. It is the inverse of the logit: $z = \ln[p/(1-p)]$. The logit of a probability is the log-odds. Logistic regression models the log-odds as a linear function of predictors. The coefficient $\beta_k$ means: a unit increase in $x_k$ multiplies the odds of the event by $e^{\beta_k}$. For small probabilities, this is approximately a $\beta_k \times 100\%$ change in probability.</p>
+
+<p><strong>Cellular automata as discrete dynamical systems.</strong> A CA is a dynamical system on a lattice: state at time $t+1$ depends on state at $t$ through a local rule applied identically to each cell. The mathematics of CA convergence, fixed points, and pattern formation has been studied since von Neumann’s work in the 1950s. Urban CA models are stochastic (random elements) and heterogeneous (rules vary by cell attributes) — generalisations of the classical deterministic, homogeneous CA framework, but sharing the same core property of local interactions generating global patterns.</p>
+
+<p><strong>Maximum likelihood estimation.</strong> Given binary outcomes $y_i \in {0,1}$ and predicted probabilities $P_i$, the log-likelihood is $\mathcal{L} = \sum_i [y_i \ln P_i + (1-y_i)\ln(1-P_i)]$. Maximising $\mathcal{L}$ over $\boldsymbol{\beta}$ gives the maximum likelihood estimates — the parameter values that make the observed data most probable under the model. This is equivalent to minimising the <strong>binary cross-entropy loss</strong>, which is the standard loss function for neural network classifiers, establishing a direct connection between logistic regression and deep learning.</p>
+
+      </div>
+
+      
+
+
+
+      
+
+  
+  
+  
+  
+
+
+
+      <!-- essay-footer-notes.html — References / endnotes section.
+     Hidden by default; assets/js/essay/core.js shows it and populates
+     #essay-endnotes-list from [data-cite] elements in the content.
+
+     In posts, create citation markers with:
+       <cite data-cite="Author, Title, URL">1</cite>
+     The JS collects these and renders a numbered reference list here. -->
+
+<footer class="essay-endnotes" id="essay-endnotes" aria-label="References" hidden>
+  <div class="essay-endnotes-inner">
+    <h2 class="essay-endnotes-heading">References</h2>
+    <ol class="essay-endnotes-list" id="essay-endnotes-list">
+      <!-- Populated at runtime by assets/js/essay/core.js buildEndnotes() -->
+    </ol>
+  </div>
+</footer>
+
+
+      
+
+      
+
+      
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    </article>
+  </main>
+
+  <aside
+    class="essay-sidenotes"
+    id="essay-sidenotes"
+    aria-label="Margin notes"
+  ></aside>
+
+</div>
+
+</div>
+
+<footer>
+  <div class="footer-inner">
+
+    <!-- Col 1: Brand -->
+    <div class="footer-brand">
+      <div class="footer-brand-logo">
+        
+        <img loading="lazy" src="/assets/images/logo.webp" alt="WaywardHouse" width="28" height="28">
+        
+        WaywardHouse<span>.</span>
+      </div>
+      
+      
+      <p class="footer-brand-desc">Understanding how place, economy, and environment interact — through analysis, modelling, and open tools.</p>
+      
+
+      <div class="footer-social">
+        
+        
+        
+        <a href="/feed.xml" class="social-icon" target="_blank" rel="noopener noreferrer" aria-label="RSS feed">
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M4 11a9 9 0 0 1 9 9"/>
+            <path d="M4 4a16 16 0 0 1 16 16"/>
+            <circle cx="5" cy="19" r="1"/>
+          </svg>
+        </a>
+      </div>
+    </div>
+
+    <!-- Col 2: Topics (configurable via footer_topics, falls back to auto-categories) -->
+    <nav aria-labelledby="footer-topics">
+      <h3 class="footer-col-title" id="footer-topics">Reading</h3>
+      <ul class="footer-links">
+        
+          
+          <li><a href="/topics/">Essays</a></li>
+          
+          <li><a href="/series/">Modelling</a></li>
+          
+          <li><a href="/archive/">Archive</a></li>
+          
+          <li><a href="/start-here/">Start Here</a></li>
+          
+        
+      </ul>
+    </nav>
+
+    <!-- Col 3: Secondary navigation -->
+    
+    <nav aria-labelledby="footer-company">
+      <h3 class="footer-col-title" id="footer-company">Site</h3>
+      <ul class="footer-links">
+        
+        <li><a href="/start-here/">Start Here</a></li>
+        
+        <li><a href="/about/">About</a></li>
+        
+        <li><a href="/contact/">Contact</a></li>
+        
+      </ul>
+    </nav>
+    
+
+    <!-- Col 4: Resources -->
+    <nav aria-labelledby="footer-resources">
+      <h3 class="footer-col-title" id="footer-resources">Resources</h3>
+      <ul class="footer-links">
+        <li><a href="/archive/">Archive</a></li>
+        <li><a href="/feed.xml">RSS Feed</a></li>
+        <li><a href="/topics/">All Topics</a></li>
+      </ul>
+    </nav>
+
+  </div><!-- /.footer-inner -->
+
+  <div class="footer-bottom">
+    <span class="footer-copy">
+      &copy; 2026 WaywardHouse.
+    </span>
+    <div class="footer-legal">
+      <a href="/privacy/">Privacy Policy</a>
+      <a href="/terms/">Terms of Service</a>
+    </div>
+  </div>
+
+</footer>
+
+
+<!-- Alpine.js bundle -->
+<script type="module" src="/assets/dist/main.js"></script>
+
+<!-- Visualization runtime — detects and loads CDN libraries dynamically -->
+<script type="module" src="/assets/js/core.js"></script>
+
+<!-- Search overlay — event-driven: nav button $dispatches 'search:open' -->
+<div
+  x-data="search"
+  x-init="init()"
+  @search:open.window="open()"
+>
+  <div
+    class="search-overlay"
+    x-show="isOpen"
+    x-transition:enter="transition ease-out duration-150"
+    x-transition:enter-start="opacity-0"
+    x-transition:enter-end="opacity-100"
+    x-transition:leave="transition ease-in duration-100"
+    x-transition:leave-start="opacity-100"
+    x-transition:leave-end="opacity-0"
+    @click.self="close()"
+    style="display: none;"
+    role="dialog"
+    aria-modal="true"
+    aria-label="Search"
+  >
+    <div class="search-panel">
+      <div class="search-input-wrap">
+        <svg class="search-icon" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <circle cx="11" cy="11" r="8"/>
+          <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+        </svg>
+        <input
+          class="search-input"
+          type="search"
+          placeholder="Search posts…"
+          x-model="query"
+          x-ref="input"
+          @input.debounce.300ms="runSearch()"
+          @keydown.escape="close()"
+          autocomplete="off"
+          spellcheck="false"
+          aria-label="Search query"
+        >
+        <kbd class="search-esc" aria-hidden="true">ESC</kbd>
+      </div>
+
+      <div class="search-results" x-show="query.trim().length > 0">
+        <div class="search-status" x-show="loading" aria-live="polite">Searching…</div>
+        <div class="search-status" x-show="!loading && results.length === 0" aria-live="polite">
+          No results for "<span x-text="query"></span>"
+        </div>
+        <ul class="search-result-list" x-show="!loading && results.length > 0" role="list">
+          <template x-for="result in results" :key="result.url">
+            <li>
+              <a :href="result.url" class="search-result-item" @click="close()">
+                <div class="search-result-title" x-text="result.meta?.title || result.url"></div>
+                <div class="search-result-excerpt" x-html="result.excerpt"></div>
+              </a>
+            </li>
+          </template>
+        </ul>
+      </div>
+    </div>
+  </div>
+</div>
+
+</body>
+</html>

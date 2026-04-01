@@ -1,0 +1,929 @@
+<!DOCTYPE html>
+
+<html lang="en" data-brand="wayward" data-theme="light">
+<head>
+  <meta charset="utf-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Satellite Data Assimilation in Environmental Models — WaywardHouse</title>
+<meta name="description" content="More than one billion satellite observations are assimilated into global weather models every day. This essay explains the mathematical framework — variational assimilation — that ingests these observations while accounting...">
+
+<!-- Dark mode flash prevention — runs synchronously before first paint -->
+<script>
+  (function () {
+    var defaultDark = 'light' === 'dark';
+    var s = localStorage.getItem('theme');
+    var dark = s !== null ? s === 'dark' : defaultDark;
+    document.documentElement.dataset.theme = dark ? 'dark' : 'light';
+  })();
+</script>
+
+<!-- Preconnect to CDN domains used by the viz runtime -->
+<link rel="preconnect" href="https://cdn.jsdelivr.net">
+<link rel="preconnect" href="https://unpkg.com">
+<link rel="preconnect" href="https://esm.sh">
+<link rel="preconnect" href="https://api.mapbox.com">
+<link rel="preconnect" href="https://events.mapbox.com">
+
+
+<script>window.MAPBOX_TOKEN = 'pk.eyJ1IjoiYnJlYWRlZGNvZCIsImEiOiJjbW0xa25qc2EwMmtwMnJwejJlNndqdnoxIn0._7I9PwXuFLrOQINVZ84y1w';</script>
+
+
+<!-- Fonts -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:ital,wght@0,300;0,400;0,600;0,700;0,800;0,900;1,700;1,800&family=Barlow:wght@300;400&family=IBM+Plex+Mono:ital,wght@0,300;0,400;0,500;1,300&family=Literata:ital,opsz,wght@0,7..72,300;0,7..72,400;0,7..72,500;1,7..72,300;1,7..72,400&display=swap" rel="stylesheet">
+
+<!-- Theme stylesheet (Vite build output) -->
+<link rel="stylesheet" href="/assets/dist/main.css">
+
+<!-- Brand token overrides — loaded after main.css so variables cascade correctly -->
+
+<link rel="stylesheet" href="/assets/css/brand-wayward.css">
+
+
+
+<!-- Syntax highlighting (Rouge — light + dark) -->
+<link rel="stylesheet" href="/assets/css/syntax.css">
+
+<!-- Begin Jekyll SEO tag v2.8.0 -->
+<title>Satellite Data Assimilation in Environmental Models | WaywardHouse</title>
+<meta name="generator" content="Jekyll v4.4.1" />
+<meta property="og:title" content="Satellite Data Assimilation in Environmental Models" />
+<meta property="og:locale" content="en" />
+<meta name="description" content="More than one billion satellite observations are assimilated into global weather models every day. This essay explains the mathematical framework — variational assimilation — that ingests these observations while accounting for their uncertainties, the observation operators that translate model state to satellite radiances, the background error covariance that controls how information spreads spatially from each observation, and the 3D-Var and 4D-Var cost functions that are minimised to produce the analysis. Land surface data assimilation case studies illustrate how MODIS, SMOS, and Landsat observations constrain catchment-scale hydrological models." />
+<meta property="og:description" content="More than one billion satellite observations are assimilated into global weather models every day. This essay explains the mathematical framework — variational assimilation — that ingests these observations while accounting for their uncertainties, the observation operators that translate model state to satellite radiances, the background error covariance that controls how information spreads spatially from each observation, and the 3D-Var and 4D-Var cost functions that are minimised to produce the analysis. Land surface data assimilation case studies illustrate how MODIS, SMOS, and Landsat observations constrain catchment-scale hydrological models." />
+<link rel="canonical" href="https://wayward.house/model/satellite-data-assimilation-in-environmental-models-114/" />
+<meta property="og:url" content="https://wayward.house/model/satellite-data-assimilation-in-environmental-models-114/" />
+<meta property="og:site_name" content="WaywardHouse" />
+<meta property="og:image" content="https://wayward.house/assets/images/time-series-satellite.webp" />
+<meta property="og:type" content="article" />
+<meta property="article:published_time" content="2026-03-05T00:00:00-07:00" />
+<meta name="twitter:card" content="summary_large_image" />
+<meta property="twitter:image" content="https://wayward.house/assets/images/time-series-satellite.webp" />
+<meta property="twitter:title" content="Satellite Data Assimilation in Environmental Models" />
+<meta name="twitter:site" content="@" />
+<script type="application/ld+json">
+{"@context":"https://schema.org","@type":"BlogPosting","dateModified":"2026-03-17T16:54:02-06:00","datePublished":"2026-03-05T00:00:00-07:00","description":"More than one billion satellite observations are assimilated into global weather models every day. This essay explains the mathematical framework — variational assimilation — that ingests these observations while accounting for their uncertainties, the observation operators that translate model state to satellite radiances, the background error covariance that controls how information spreads spatially from each observation, and the 3D-Var and 4D-Var cost functions that are minimised to produce the analysis. Land surface data assimilation case studies illustrate how MODIS, SMOS, and Landsat observations constrain catchment-scale hydrological models.","headline":"Satellite Data Assimilation in Environmental Models","image":"https://wayward.house/assets/images/time-series-satellite.webp","mainEntityOfPage":{"@type":"WebPage","@id":"https://wayward.house/model/satellite-data-assimilation-in-environmental-models-114/"},"publisher":{"@type":"Organization","logo":{"@type":"ImageObject","url":"https://wayward.house/assets/images/logo.webp"}},"url":"https://wayward.house/model/satellite-data-assimilation-in-environmental-models-114/"}</script>
+<!-- End Jekyll SEO tag -->
+
+
+
+<!-- Cloudflare Web Analytics -->
+<script defer src="https://static.cloudflareinsights.com/beacon.min.js"
+  data-cf-beacon='{"token": "62c47d78bf9d4c80972d4e6242d79ff8"}'></script>
+
+
+</head>
+<body class="
+  model-template
+   tag-modelling
+   tag-hash-math
+  
+   tag-hash-viz
+  
+  
+  
+  
+  
+  
+">
+
+<a href="#main-content" class="skip-link">Skip to content</a>
+
+<header class="nav" x-data="{ open: false }">
+  <div class="nav-inner">
+
+    <!-- Logo -->
+    <a href="/" class="nav-logo">
+      
+      <img loading="lazy" src="/assets/images/logo.webp" alt="WaywardHouse" width="32" height="32">
+      
+      WaywardHouse<span>.</span>
+    </a>
+
+    <!-- Desktop nav links -->
+    <ul class="nav-links" role="list">
+      
+      <li>
+        <a href="/topics/">Essays</a>
+      </li>
+      
+      <li>
+        <a href="/series/">Modelling</a>
+      </li>
+      
+      <li>
+        <a href="/about/">About</a>
+      </li>
+      
+    </ul>
+
+    <!-- Actions -->
+    <div class="nav-actions">
+
+      <!-- Search button -->
+      <button
+        class="search-toggle"
+        type="button"
+        aria-label="Search (⌘K)"
+        title="Search (⌘K)"
+        @click="$dispatch('search:open')"
+      >
+        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <circle cx="11" cy="11" r="8"/>
+          <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+        </svg>
+      </button>
+
+      <!-- Dark mode toggle -->
+      <button
+        class="theme-toggle"
+        x-data="darkMode"
+        x-init="init()"
+        @click="toggle()"
+        :aria-label="dark ? 'Switch to light mode' : 'Switch to dark mode'"
+        type="button"
+      >
+        <!-- Sun icon (shown in light mode) -->
+        <svg class="icon-sun" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">
+          <circle cx="12" cy="12" r="5"/>
+          <line x1="12" y1="1" x2="12" y2="3"/>
+          <line x1="12" y1="21" x2="12" y2="23"/>
+          <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/>
+          <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/>
+          <line x1="1" y1="12" x2="3" y2="12"/>
+          <line x1="21" y1="12" x2="23" y2="12"/>
+          <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/>
+          <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>
+        </svg>
+        <!-- Moon icon (shown in dark mode) -->
+        <svg class="icon-moon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">
+          <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+        </svg>
+      </button>
+
+      <!-- Hamburger (mobile only) -->
+      <button
+        class="mobile-nav-toggle"
+        @click="open = !open"
+        :aria-expanded="open"
+        :aria-label="open ? 'Close menu' : 'Open menu'"
+        type="button"
+      >
+        <svg x-show="!open" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <line x1="3" y1="6" x2="21" y2="6"/>
+          <line x1="3" y1="12" x2="21" y2="12"/>
+          <line x1="3" y1="18" x2="21" y2="18"/>
+        </svg>
+        <svg x-show="open" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <line x1="18" y1="6" x2="6" y2="18"/>
+          <line x1="6" y1="6" x2="18" y2="18"/>
+        </svg>
+      </button>
+
+    </div><!-- /.nav-actions -->
+  </div><!-- /.nav-inner -->
+
+  <!-- Mobile drawer -->
+  <div
+    class="mobile-nav"
+    x-show="open"
+    x-transition:enter="transition ease-out duration-200"
+    x-transition:enter-start="opacity-0 -translate-y-1"
+    x-transition:enter-end="opacity-100 translate-y-0"
+    x-transition:leave="transition ease-in duration-150"
+    x-transition:leave-start="opacity-100 translate-y-0"
+    x-transition:leave-end="opacity-0 -translate-y-1"
+    @click.outside="open = false"
+    @keydown.escape.window="open = false"
+  >
+    <ul role="list">
+      
+      <li>
+        <a href="/topics/" @click="open = false">Essays</a>
+      </li>
+      
+      <li>
+        <a href="/series/" @click="open = false">Modelling</a>
+      </li>
+      
+      <li>
+        <a href="/about/" @click="open = false">About</a>
+      </li>
+      
+    </ul>
+  </div><!-- /.mobile-nav -->
+
+</header>
+
+
+<div id="main-content">
+  <!-- Essay stylesheet and runtime — self-contained -->
+<link rel="stylesheet" href="/assets/css/essay.css">
+<script type="module" src="/assets/js/essay/core.js"></script>
+
+<div class="essay-layout" id="essay-layout">
+
+  <!-- essay-toc.html — Sticky table of contents (left column).
+     The <ol> is empty on load; assets/js/essay/core.js populates it
+     from h2/h3 elements found in #essay-content after the page renders. -->
+
+<nav class="essay-toc" id="essay-toc" aria-label="Table of contents">
+  <div class="essay-toc-inner">
+    <p class="essay-toc-heading" aria-hidden="true">Contents</p>
+    <ol class="essay-toc-list" id="essay-toc-list">
+      <!-- Populated at runtime by assets/js/essay/core.js buildToc() -->
+    </ol>
+  </div>
+</nav>
+
+
+  <main class="essay-main" id="essay-main" role="main">
+    <article class="essay-article">
+
+      <!-- essay-hero.html — Header for computational essay template.
+     Displays feature image, tag label, title, excerpt, and post metadata. -->
+
+<header class="essay-hero">
+  
+  <figure class="essay-hero-figure">
+    <img
+      src="/assets/images/time-series-satellite.webp"
+      alt="Satellite Data Assimilation in Environmental Models"
+      class="essay-hero-img"
+      loading="eager"
+    >
+    
+  </figure>
+  
+
+  <div class="essay-hero-body">
+
+    
+    
+    
+    
+    
+    <nav class="essay-breadcrumb" aria-label="Series position">
+      
+      <a href="/series/laboratory/" class="essay-breadcrumb-link">Computational geography laboratory</a>
+      
+      
+      <span class="essay-breadcrumb-sep" aria-hidden="true">›</span>
+      <span class="essay-breadcrumb-cluster">Ensemble Methods and Data Assimilation</span>
+      
+      
+      <span class="essay-breadcrumb-sep" aria-hidden="true">›</span>
+      <span class="essay-breadcrumb-pos">Model 114</span>
+      
+    </nav>
+    
+
+    <div class="essay-hero-labels">
+      
+      <a href="/topics/modelling/" class="essay-tag-label">modelling</a>
+      
+      
+      <span class="difficulty-badge difficulty-badge--5">Level 5</span>
+      
+    </div>
+
+    <h1 class="essay-title">Satellite Data Assimilation in Environmental Models</h1>
+
+    
+    <p class="essay-excerpt">More than one billion satellite observations are assimilated into global weather models every day. This essay explains the mathematical framework — variational assimilation — that ingests these observations while accounting for their uncertainties, the observation operators that translate model state to satellite radiances, the background error covariance that controls how information spreads spatially from each observation, and the 3D-Var and 4D-Var cost functions that are minimised to produce the analysis. Land surface data assimilation case studies illustrate how MODIS, SMOS, and Landsat observations constrain catchment-scale hydrological models.
+</p>
+    
+
+    
+    <p class="essay-prereqs"><span class="essay-prereqs-label">Prerequisites:</span> cost function minimisation (variational methods), adjoint operators, observation error characterisation, background error covariances</p>
+    
+
+    <div class="essay-meta">
+      
+      <div class="essay-meta-secondary">
+        <time class="essay-date" datetime="2026-03-05">5 Mar 2026</time>
+        
+        
+        <span class="essay-sep" aria-hidden="true">·</span>
+        <span class="essay-updated">Updated <time datetime="2026-03-17">17 Mar 2026</time></span>
+        
+        <span class="essay-sep" aria-hidden="true">·</span>
+        <span class="essay-reading-time">17 min read</span>
+      </div>
+    </div>
+  </div>
+</header>
+
+
+      
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<nav class="series-nav" aria-label="Series navigation">
+
+  <div class="series-nav-header">
+    <span class="series-nav-label">AU</span>
+    <span class="series-nav-title">Ensemble Methods and Data Assimilation</span>
+  </div>
+
+  <ol class="series-nav-list">
+    
+    <li class="series-nav-item">
+      
+      <a href="/model/ensemble-forecasting-and-uncertainty-quantification-112/" class="series-nav-link">
+        <span class="series-nav-number">112</span>
+        Ensemble Forecasting and Uncertainty Quantification
+      </a>
+      
+    </li>
+    
+    <li class="series-nav-item">
+      
+      <a href="/model/the-kalman-filter-and-sequential-data-assimilation-113/" class="series-nav-link">
+        <span class="series-nav-number">113</span>
+        The Kalman Filter and Sequential Data Assimilation
+      </a>
+      
+    </li>
+    
+    <li class="series-nav-item series-nav-item--current">
+      
+      <span class="series-nav-link series-nav-link--current" aria-current="page">
+        <span class="series-nav-number">114</span>
+        Satellite Data Assimilation in Environmental Models
+      </span>
+      
+    </li>
+    
+  </ol>
+
+  
+  <div class="series-nav-footer">
+    <a href="/series/laboratory/" class="series-nav-all">
+      All 39 in this series &rarr;
+    </a>
+  </div>
+  
+
+</nav>
+
+
+
+
+      <div class="essay-content gh-content" id="essay-content">
+        <p>At 00:00 UTC every day, the ECMWF data assimilation system begins ingesting observations that have arrived in the previous 12 hours from: 3,000 radiosonde balloon soundings, 300,000 aircraft reports, 500,000 surface station observations, and approximately 40 million satellite observations from polar-orbiting and geostationary platforms. Six hours later, an analysis of the global atmosphere at 9 km horizontal resolution and 137 vertical levels is available as the initial condition for the forecast. The system that fuses these heterogeneous, asynchronous, uncertain data streams is variational data assimilation — one of the most computationally intensive mathematical procedures run routinely on Earth.</p>
+
+<p>The core insight is that finding the “best” initial condition is equivalent to minimising a cost function that measures the distance from a background state (the model’s prior estimate), penalised by the distances from all available observations, each weighted by the inverse of its error covariance.</p>
+
+<hr />
+
+<h2 id="1-the-question">1. The Question</h2>
+
+<p>How do we assimilate a billion observations per day into a model with $10^7$ state variables? How are satellite radiances connected to model state variables through observation operators? How do background error covariances control the spatial spreading of observational information? And how does the 4D-Var method extend assimilation to use observations over a time window to constrain the initial state?</p>
+
+<hr />
+
+<h2 id="2-the-conceptual-model">2. The Conceptual Model</h2>
+
+<p>Variational data assimilation frames the analysis problem as minimisation of a quadratic cost function:</p>
+
+\[J(\mathbf{x}) = \underbrace{\frac{1}{2}(\mathbf{x} - \mathbf{x}^b)^\top\mathbf{B}^{-1}(\mathbf{x} - \mathbf{x}^b)}_{\text{background term}} + \underbrace{\frac{1}{2}\sum_i (\mathbf{y}_i^o - h_i(\mathbf{x}))^\top\mathbf{R}_i^{-1}(\mathbf{y}_i^o - h_i(\mathbf{x}))}_{\text{observation term}}\]
+
+<p>The minimum $\mathbf{x}^a = \arg\min J$ is the analysis — the model state that is simultaneously closest to the background (prior knowledge) and consistent with all observations (evidence). The solution is equivalent to the Kalman filter analysis when the model and operators are linear and errors are Gaussian, but the variational formulation scales to arbitrary problem size without needing to explicitly form the covariance matrices.</p>
+
+<hr />
+
+<h2 id="3-building-the-mathematical-model">3. Building the Mathematical Model</h2>
+
+<h3 id="31-the-3d-var-cost-function">3.1 The 3D-Var Cost Function</h3>
+
+<p>In <strong>3D-Var</strong> (three-dimensional variational assimilation), all observations within a time window are treated as simultaneous, and the cost function is minimised over the 3D model state at a single analysis time:</p>
+
+\[J(\mathbf{x}) = \frac{1}{2}(\mathbf{x} - \mathbf{x}^b)^\top\mathbf{B}^{-1}(\mathbf{x} - \mathbf{x}^b) + \frac{1}{2}(\mathbf{y}^o - H\mathbf{x})^\top\mathbf{R}^{-1}(\mathbf{y}^o - H\mathbf{x})\]
+
+<p>For linear $H$, the gradient:</p>
+
+\[\nabla_\mathbf{x} J = \mathbf{B}^{-1}(\mathbf{x} - \mathbf{x}^b) - H^\top\mathbf{R}^{-1}(\mathbf{y}^o - H\mathbf{x})\]
+
+<p>Setting $\nabla J = 0$ recovers the Kalman filter solution:</p>
+
+\[\mathbf{x}^a = \mathbf{x}^b + (\mathbf{B}^{-1} + H^\top\mathbf{R}^{-1}H)^{-1}H^\top\mathbf{R}^{-1}(\mathbf{y}^o - H\mathbf{x}^b)\]
+
+\[= \mathbf{x}^b + \mathbf{B}H^\top(H\mathbf{B}H^\top + \mathbf{R})^{-1}(\mathbf{y}^o - H\mathbf{x}^b)\]
+
+<p>The $\mathbf{B}$ matrix (background error covariance) in 3D-Var plays the role of $\mathbf{P}^b$ in the Kalman filter. Unlike the Kalman filter where $\mathbf{P}^b$ is updated at each cycle, in 3D-Var $\mathbf{B}$ is fixed — it is estimated statistically from an ensemble of forecast error pairs and is held constant throughout the operational cycle.</p>
+
+<p><strong>Why not just solve the linear system directly?</strong> Because $\mathbf{B}$ is $n \times n$ with $n = 10^7$ — it cannot be stored explicitly (requires $10^{14}$ elements). Instead, $\mathbf{B}$ is implicitly represented through a sequence of operators: spectral transforms, recursive filters, and balance operators that collectively produce the same effect as multiplying by $\mathbf{B}^{1/2}$. The cost function is minimised using an iterative gradient descent algorithm (L-BFGS or conjugate gradient) that only requires evaluating $J$ and $\nabla J$, not forming $\mathbf{B}$ explicitly.</p>
+
+<h3 id="32-background-error-covariance-mathbfb">3.2 Background Error Covariance $\mathbf{B}$</h3>
+
+<p>The background error covariance $\mathbf{B}_{ij} = \text{Cov}(\varepsilon_i^b, \varepsilon_j^b)$ specifies the spatial structure of expected background errors. Its key properties:</p>
+
+<p><strong>Spatial correlations:</strong> $\mathbf{B}$ encodes how far observational information should spread. A temperature observation at one grid point should influence temperatures at nearby points (through $\mathbf{B}$ off-diagonal elements) but not at remote points.</p>
+
+<p><strong>Cross-variable correlations:</strong> Temperature and pressure are dynamically balanced (geostrophic balance). A temperature observation at 500 hPa should update both temperature and winds through the $\mathbf{B}$ cross-covariance. This <strong>balance constraint</strong> is built into the $\mathbf{B}$ representation through balance operators.</p>
+
+<p><strong>Estimation methods:</strong> The NMC method (Parrish and Derber 1992) estimates $\mathbf{B}$ from differences between 48-hour and 24-hour forecasts valid at the same time (both valid at $t+24$, initialized at $t+0$ and $t-24$). The difference approximates the forecast error covariance. The ensemble method uses an ensemble of model runs to directly sample the forecast error covariance — producing flow-dependent $\mathbf{B}$ estimates (used in hybrid 3D-Var/EnKF systems).</p>
+
+<p><strong>Horizontal length scales</strong> in operational NWP: ~200–500 km for temperature and wind; shorter for moisture (humidity has shorter correlation scales). In land surface assimilation: 5–50 km depending on land surface heterogeneity.</p>
+
+<h3 id="33-observation-error-characterisation">3.3 Observation Error Characterisation</h3>
+
+<p>The observation error $\boldsymbol{\epsilon}^o = \mathbf{y}^o - h(\mathbf{x}^t)$ (difference between observation and truth-equivalent) has three components:</p>
+
+<ol>
+  <li><strong>Instrument error:</strong> Measurement noise intrinsic to the sensor ($\sim$0.1–1 K for infrared sounders)</li>
+  <li><strong>Representativeness error:</strong> The observation represents a sub-grid scale process that the model cannot resolve (most important for precipitation and surface observations)</li>
+  <li><strong>Forward model error:</strong> Error in the observation operator $h$ (e.g., radiative transfer model approximations)</li>
+</ol>
+
+<p>In practice, the $\mathbf{R}$ matrix is assumed diagonal (observation errors are uncorrelated). This is incorrect for dense satellite observations (adjacent pixels are correlated by the point spread function and atmospheric radiative transfer) but simplifies the matrix inversion enormously. Accounting for interchannel and inter-pixel observation error correlations is an active research area.</p>
+
+<p><strong>Observation thinning:</strong> To reduce inter-observation correlations and computational cost, satellite observations are thinned to one per super-observation box (typically 50–200 km × 50–200 km). Information is lost, but the diagonal $\mathbf{R}$ assumption is better justified.</p>
+
+<h3 id="34-observation-operators-for-satellite-retrievals">3.4 Observation Operators for Satellite Retrievals</h3>
+
+<p>Three types of satellite-derived quantities are assimilated:</p>
+
+<p><strong>Type 1 — Radiances (direct assimilation):</strong> The model state variables (temperature, humidity profiles) are passed through a <strong>radiative transfer model</strong> (RTTOV, CRTM) to compute the top-of-atmosphere radiance in the sensor’s spectral channel. The forward model:</p>
+
+\[\mathbf{y}_{\text{sim}} = h_{\text{RT}}(T(z), q(z), \text{surface}, \text{clouds})\]
+
+<p>Direct radiance assimilation avoids the retrieval step and its assumptions, but requires the radiative transfer calculation to be fast (~1 ms per profile) and its Jacobian (tangent linear) to be available for the adjoint-based gradient computation.</p>
+
+<p><strong>Type 2 — Retrieved profiles or column quantities:</strong> The observation has been processed through a retrieval algorithm to produce a geophysical variable (e.g., AIRS temperature profile, SMOS soil moisture). The observation operator maps model state to the retrieved quantity. Care is needed because retrieval algorithms often impose smoothing constraints that create correlations in the $\mathbf{R}$ matrix.</p>
+
+<p><strong>Type 3 — Reflectances and surface properties (land surface assimilation):</strong> MODIS NDVI, Landsat surface temperature, or Sentinel-1 SAR backscatter are related to model state variables (LAI, skin temperature, soil moisture) through land surface parameterisations. These relationships are often highly nonlinear and uncertain.</p>
+
+<h3 id="35-4d-var-time-window-assimilation">3.5 4D-Var: Time-Window Assimilation</h3>
+
+<p><strong>4D-Var</strong> extends the 3D-Var cost function to use observations at multiple times within an assimilation window $[t_0, t_N]$:</p>
+
+\[J(\mathbf{x}_0) = \frac{1}{2}(\mathbf{x}_0 - \mathbf{x}_0^b)^\top\mathbf{B}^{-1}(\mathbf{x}_0 - \mathbf{x}_0^b) + \frac{1}{2}\sum_{t=0}^N (\mathbf{y}_t^o - h(\mathbf{x}_t))^\top\mathbf{R}_t^{-1}(\mathbf{y}_t^o - h(\mathbf{x}_t))\]
+
+<p>where $\mathbf{x}<em>t = \mathcal{M}</em>{0 \to t}(\mathbf{x}_0)$ is the model trajectory starting from initial state $\mathbf{x}_0$.</p>
+
+<p>The cost function is minimised over the initial state $\mathbf{x}_0$. Its gradient requires backpropagating observation residuals through the model using the <strong>adjoint</strong> (transpose of the tangent linear model):</p>
+
+\[\nabla_{\mathbf{x}_0} J = \mathbf{B}^{-1}(\mathbf{x}_0 - \mathbf{x}_0^b) + \mathcal{M}_{0\to N}^*\left[H_N^\top\mathbf{R}_N^{-1}(h(\mathbf{x}_N) - \mathbf{y}_N^o)\right] + \ldots\]
+
+<p>where $\mathcal{M}^*$ is the adjoint of the model. The adjoint propagates the sensitivity of $J$ with respect to the final state backwards in time to the initial state — the same mathematical operation as backpropagation in neural network training.</p>
+
+<p><strong>4D-Var advantages over 3D-Var:</strong></p>
+<ul>
+  <li>Uses information from the model dynamics to spread observational information in time</li>
+  <li>Implicitly provides a flow-dependent background error covariance (through the model trajectory)</li>
+  <li>Higher analysis quality, especially for observations between analysis times (aircraft, radiosondes)</li>
+</ul>
+
+<p><strong>4D-Var computational cost:</strong> Two full model integrations per outer loop iteration: one forward (to compute $J$) and one adjoint (to compute $\nabla J$). ECMWF uses 4D-Var with 12-hour windows; the minimisation requires ~100 iterations, totalling ~200 model integrations per analysis cycle.</p>
+
+<h3 id="36-land-surface-data-assimilation">3.6 Land Surface Data Assimilation</h3>
+
+<p>Land surface data assimilation (LDAS) applies the same framework to constrain catchment and land surface models with satellite retrievals. Key examples:</p>
+
+<p><strong>SMOS/SMAP soil moisture into VIC or Noah-LSM:</strong></p>
+
+<p>Observation operator: $h(\mathbf{x}) = \text{LPRM}(\sigma_{\text{soil}}, T_{\text{soil}}, \text{texture}) \to \text{TB}_{6-10\text{GHz}}$</p>
+
+<p>Or in retrieval form: $h(\mathbf{x})$ = linear rescaling of model soil moisture to the retrieval observation space (CDF-matching).</p>
+
+<p>Innovation covariance decomposition:
+\(\mathbf{S} = \mathbf{H}\mathbf{P}^b\mathbf{H}^\top + \mathbf{R} = \sigma_{\text{model}}^2 + \sigma_{\text{obs}}^2\)</p>
+
+<p>where $\sigma_{\text{model}}^2$ is modelled soil moisture variance and $\sigma_{\text{obs}}^2$ is satellite soil moisture retrieval uncertainty (~0.04 m³/m³ for SMOS).</p>
+
+<p><strong>MODIS LAI into CLM or CABLE:</strong></p>
+
+<p>LAI is estimated from MODIS reflectances; model LAI evolves from phenological equations. The observation operator is direct: $h(\mathbf{x}) = \text{LAI}_{\text{model}}$. Assimilation constrains the phenological model parameters and corrects transient LAI errors from cloud contamination in the forcing.</p>
+
+<p><strong>GRACE total water storage into hydrological models:</strong></p>
+
+<p>GRACE measures monthly changes in total water storage anomalies at ~300 km resolution. The observation operator integrates all model water storage compartments (soil layers, groundwater, snow, surface water): $h(\mathbf{x}) = \sum_k \Delta S_k$. EnKF assimilation of GRACE provides the only continental-scale constraint on deep soil and groundwater storage in data-sparse regions.</p>
+
+<hr />
+
+<h2 id="4-worked-example-by-hand">4. Worked Example by Hand</h2>
+
+<p><strong>Setting:</strong> 3D-Var analysis for a single soil moisture variable at one grid point. Background $x^b = 0.28$ m³/m³ with background error variance $B = 0.0025$ (m³/m³)². Two observations available: in-situ probe $y_1^o = 0.25$, $R_1 = 0.0004$; satellite retrieval $y_2^o = 0.22$, $R_2 = 0.0025$ (both with $H = 1$).</p>
+
+<p><strong>3D-Var cost function:</strong></p>
+
+\[J(x) = \frac{(x - 0.28)^2}{2 \times 0.0025} + \frac{(x - 0.25)^2}{2 \times 0.0004} + \frac{(x - 0.22)^2}{2 \times 0.0025}\]
+
+\[= 200(x-0.28)^2 + 1250(x-0.25)^2 + 200(x-0.22)^2\]
+
+<p><strong>Gradient:</strong> $\nabla J = 400(x-0.28) + 2500(x-0.25) + 400(x-0.22) = 0$</p>
+
+<p>$$3300x = 400(0.28) + 2500(0.25) + 400(0.22) = 112 + 625 + 88 = 825$$</p>
+
+\[x^a = 825/3300 = 0.250 \text{ m}^3/\text{m}^3\]
+
+<p><strong>Analysis uncertainty:</strong> $1/P^a = 1/B + 1/R_1 + 1/R_2 = 400 + 2500 + 400 = 3300 \Rightarrow P^a = 0.000303$, $\sigma^a = 0.0174$ m³/m³.</p>
+
+<p>The in-situ probe carries the most weight (precision 2500 vs. 400 each for background and satellite) and pulls the analysis toward 0.25. The analysis is the precision-weighted average, and the analysis variance is smaller than any individual component.</p>
+
+<hr />
+
+<h2 id="5-computational-implementation">5. Computational Implementation</h2>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>function cost_3dvar(x, x_b, B_inv, y_obs_list, H_list, R_inv_list):
+    # Background term
+    dx = x - x_b
+    J_b = 0.5 * dx.T @ B_inv @ dx
+    # Observation terms
+    J_o = 0
+    for y, H, R_inv in zip(y_obs_list, H_list, R_inv_list):
+        innov = y - H @ x
+        J_o += 0.5 * innov.T @ R_inv @ innov
+    return J_b + J_o
+
+function gradient_3dvar(x, x_b, B_inv, y_obs_list, H_list, R_inv_list):
+    grad = B_inv @ (x - x_b)
+    for y, H, R_inv in zip(y_obs_list, H_list, R_inv_list):
+        innov = y - H @ x
+        grad -= H.T @ R_inv @ innov
+    return grad
+
+function minimise_3dvar(x_b, B_inv, y_obs_list, H_list, R_inv_list):
+    return minimize(lambda x: cost_3dvar(x, ...), x0=x_b,
+                    jac=lambda x: gradient_3dvar(x, ...),
+                    method='L-BFGS-B')
+
+function observation_operator_soil(model_sm, obs_depth=5):
+    # Simple exponential weighting to observation depth
+    return model_sm * exp(-obs_depth/10)
+
+function rttov_jacobian(T_profile, q_profile, channel):
+    # Tangent linear of RT model: dTB/dT, dTB/dq
+    # In practice: call RTTOV TL model
+    H_T = forward_rttov(T_profile + epsilon, q_profile, channel) - rttov(T_profile, q_profile, channel)
+    return H_T / epsilon
+</code></pre></div></div>
+
+<pre><code class="language-{pyodide}">import numpy as np
+from scipy.optimize import minimize
+
+def cost_3dvar(x, x_b, B_inv, obs_data):
+    J = 0.5 * np.dot(x - x_b, B_inv * (x - x_b))   # B_inv diagonal
+    for y, H, R_inv in obs_data:
+        innov = y - H * x
+        J += 0.5 * innov**2 * R_inv
+    return J
+
+def grad_3dvar(x, x_b, B_inv, obs_data):
+    g = B_inv * (x - x_b)
+    for y, H, R_inv in obs_data:
+        innov = y - H * x
+        g -= H * R_inv * innov
+    return g
+
+# Single-variable case (scalar)
+x_b = np.array([0.28])
+B_inv = np.array([1/0.0025])   # 400
+
+# Observations: (value, H, R_inv)
+obs = [(np.array([0.25]), 1.0, 1/0.0004),   # in-situ probe
+       (np.array([0.22]), 1.0, 1/0.0025)]   # satellite retrieval
+
+result = minimize(lambda x: cost_3dvar(x, x_b, B_inv, obs),
+                  x0=x_b, jac=lambda x: grad_3dvar(x, x_b, B_inv, obs))
+
+x_a = result.x[0]
+P_a = 1.0 / (B_inv[0] + sum(R_inv for _, _, R_inv in obs))
+print(f"3D-Var analysis:")
+print(f"  Background: {x_b[0]:.4f} m³/m³  (σ = {1/B_inv[0]**0.5:.4f})")
+print(f"  In-situ:    {obs[0][0][0]:.4f} m³/m³  (σ = {obs[0][2]**-0.5:.4f})")
+print(f"  Satellite:  {obs[1][0][0]:.4f} m³/m³  (σ = {obs[1][2]**-0.5:.4f})")
+print(f"  Analysis:   {x_a:.4f} m³/m³  (σ = {P_a**0.5:.4f})")
+print(f"  Weights: bg={B_inv[0]/(B_inv[0]+sum(r for _,_,r in obs)):.2f}, "
+      f"insitu={obs[0][2]/(B_inv[0]+sum(r for _,_,r in obs)):.2f}, "
+      f"sat={obs[1][2]/(B_inv[0]+sum(r for _,_,r in obs)):.2f}")
+
+# Sensitivity analysis: how does analysis change with different R_satellite?
+print(f"\nSensitivity to satellite error:")
+for sigma_sat in [0.01, 0.03, 0.05, 0.08, 0.12]:
+    obs_test = [(np.array([0.25]), 1.0, 1/0.0004),
+                (np.array([0.22]), 1.0, 1/sigma_sat**2)]
+    r = minimize(lambda x: cost_3dvar(x, x_b, B_inv, obs_test),
+                 x0=x_b, jac=lambda x: grad_3dvar(x, x_b, B_inv, obs_test))
+    print(f"  σ_sat={sigma_sat:.2f}: x_a={r.x[0]:.4f}")
+</code></pre>
+
+<hr />
+
+<h2 id="6-visualization">6. Visualization</h2>
+
+<div data-viz="echarts" style="height:420px" data-options="{
+  &quot;title&quot;: {&quot;text&quot;: &quot;3D-Var Cost Function — Analysis as Minimum of Background + Observation Terms&quot;, &quot;textStyle&quot;: {&quot;fontSize&quot;: 14}},
+  &quot;tooltip&quot;: {&quot;trigger&quot;: &quot;axis&quot;},
+  &quot;legend&quot;: {&quot;data&quot;: [&quot;Background term J_b&quot;, &quot;Observation term J_o&quot;, &quot;Total cost J&quot;, &quot;Analysis x_a&quot;], &quot;bottom&quot;: 0},
+  &quot;xAxis&quot;: {&quot;name&quot;: &quot;Soil moisture x (m³/m³)&quot;, &quot;nameLocation&quot;: &quot;middle&quot;, &quot;nameGap&quot;: 30,
+    &quot;data&quot;: [&quot;0.18&quot;,&quot;0.20&quot;,&quot;0.22&quot;,&quot;0.24&quot;,&quot;0.25&quot;,&quot;0.26&quot;,&quot;0.27&quot;,&quot;0.28&quot;,&quot;0.30&quot;,&quot;0.32&quot;,&quot;0.35&quot;]},
+  &quot;yAxis&quot;: {&quot;name&quot;: &quot;Cost J(x)&quot;, &quot;nameLocation&quot;: &quot;middle&quot;, &quot;nameGap&quot;: 45, &quot;min&quot;: 0},
+  &quot;series&quot;: [
+    {&quot;name&quot;: &quot;Background term J_b&quot;, &quot;type&quot;: &quot;line&quot;, &quot;smooth&quot;: true,
+     &quot;itemStyle&quot;: {&quot;color&quot;: &quot;#90A4AE&quot;},
+     &quot;data&quot;: [4.0, 2.88, 1.92, 0.88, 0.45, 0.18, 0.05, 0.0, 0.18, 0.72, 2.45]},
+    {&quot;name&quot;: &quot;Observation term J_o&quot;, &quot;type&quot;: &quot;line&quot;, &quot;smooth&quot;: true,
+     &quot;itemStyle&quot;: {&quot;color&quot;: &quot;#1565C0&quot;},
+     &quot;data&quot;: [6.32, 3.87, 2.15, 0.88, 0.45, 0.30, 0.40, 0.72, 1.85, 3.85, 8.35]},
+    {&quot;name&quot;: &quot;Total cost J&quot;, &quot;type&quot;: &quot;line&quot;, &quot;smooth&quot;: true, &quot;lineStyle&quot;: {&quot;width&quot;: 3},
+     &quot;itemStyle&quot;: {&quot;color&quot;: &quot;#C62828&quot;},
+     &quot;data&quot;: [10.32, 6.75, 4.07, 1.76, 0.90, 0.48, 0.45, 0.72, 2.03, 4.57, 10.80]},
+    {&quot;name&quot;: &quot;Analysis x_a&quot;, &quot;type&quot;: &quot;line&quot;,
+     &quot;lineStyle&quot;: {&quot;type&quot;: &quot;dashed&quot;, &quot;color&quot;: &quot;#2E7D32&quot;},
+     &quot;data&quot;: [null,null,null,null,null,0.48,null,null,null,null,null],
+     &quot;markPoint&quot;: {&quot;data&quot;: [{&quot;name&quot;:&quot;min&quot;, &quot;coord&quot;:[&quot;0.26&quot;,&quot;0.45&quot;]}]}}
+  ]
+}"></div>
+
+<p>The background term (grey) is minimised at $x^b = 0.28$; the observation term (blue) is minimised at the precision-weighted mean of the two observations (~0.245). The total cost (red) achieves its minimum at the analysis $x^a = 0.250$ — slightly below the background, close to the precise in-situ observation, and less influenced by the noisier satellite retrieval. The parabolic shape of the cost function reflects the Gaussian error assumptions.</p>
+
+<hr />
+
+<h2 id="7-interpretation">7. Interpretation</h2>
+
+<p>The 3D-Var framework makes the observational influence on the analysis transparent. A highly precise observation (small $R$) contributes a steep, narrow parabola to $J$; an imprecise observation contributes a broad, flat parabola. The analysis is the minimum of their sum — geometrically, the point where the “tension” between all observations and the background is balanced. In this precision-weighted view, a useless observation ($R \to \infty$) contributes zero curvature to $J_o$ and has no influence on the analysis.</p>
+
+<p>The $\mathbf{B}$ matrix is the most consequential and most uncertain component of the system. Its spatial correlation structure determines how far observational information spreads: a temperature observation in Edmonton updates temperatures not just at the Edmonton grid point, but at all points within the correlation length scale of the background error — typically 200–500 km in the midlatitude troposphere. If $\mathbf{B}$ has too-short correlation length scales, information from sparse observing networks does not spread far enough; too-long length scales produce overly smooth analyses that blur sharp fronts.</p>
+
+<p>The operational progression from 3D-Var to 4D-Var represents a fundamental improvement: by using the model dynamics to propagate observational information in time, 4D-Var effectively has a flow-dependent $\mathbf{B}$ that adjusts to the current weather pattern. An observation near a jet stream contributes information along the jet axis (long correlation length scales); an observation in a diffluent trough contributes information over a shorter range. This flow-dependence is what allows 4D-Var to extract more meteorological value from the same observation network.</p>
+
+<hr />
+
+<h2 id="8-what-could-go-wrong">8. What Could Go Wrong?</h2>
+
+<p><strong>Linearisation errors in the adjoint.</strong> The 4D-Var adjoint is derived from the tangent linear model — a linearisation of the full nonlinear dynamics around the background trajectory. For strongly nonlinear processes (deep convection, model shock formation, land surface freeze-thaw transitions), the tangent linear approximation breaks down. The gradient is computed incorrectly, the minimisation converges slowly or to a local minimum, and the resulting analysis can be degraded compared to no assimilation. Ensemble-based methods (EnKF, EnVar) avoid this by sampling the error distribution rather than linearising.</p>
+
+<p><strong>Bias in observations or model.</strong> The cost function assumes all errors are zero-mean. Systematic bias in the background (model biases: cold tropical stratosphere, warm Arctic surface) or in observations (instrument calibration drift, uncorrected cloud effects in satellite retrievals) produces a biased analysis. Variational bias correction (VarBC) estimates and removes observation biases as part of the minimisation, but requires a long training period to converge.</p>
+
+<p><strong>Observation error correlation neglect.</strong> The diagonal $\mathbf{R}$ assumption is wrong for satellite data. Adjacent IASI radiance channels are correlated by the instrument point spread function and atmospheric radiative transfer. Ignoring these correlations leads to suboptimal weighting — either inflating or deflating the influence of satellite observations. Implementing full $\mathbf{R}$ matrices for high-density satellite data is computationally tractable with modern storage but requires careful estimation of the off-diagonal elements.</p>
+
+<p><strong>Land surface parameter uncertainty.</strong> In land surface data assimilation, the soil moisture observation operator depends on soil texture, vegetation cover, and surface roughness — all uncertain model parameters. Assimilating soil moisture retrievals while ignoring parameter uncertainty produces state updates that are inconsistent with the assumed model structure, potentially degrading rather than improving predictions of soil temperature, evapotranspiration, and runoff.</p>
+
+<hr />
+
+<h2 id="9-summary">9. Summary</h2>
+
+<p>3D-Var minimises the cost function $J(\mathbf{x}) = \frac{1}{2}(\mathbf{x}-\mathbf{x}^b)^\top\mathbf{B}^{-1}(\mathbf{x}-\mathbf{x}^b) + \frac{1}{2}(\mathbf{y}^o-H\mathbf{x})^\top\mathbf{R}^{-1}(\mathbf{y}^o-H\mathbf{x})$, producing the analysis as a precision-weighted combination of background and observations. For linear operators, the 3D-Var analysis equals the Kalman filter analysis; the $\mathbf{B}$ matrix plays the role of $\mathbf{P}^b$.</p>
+
+<p>4D-Var extends the cost function over a time window $[t_0, t_N]$, using the model trajectory $\mathbf{x}<em>t = \mathcal{M}</em>{0\to t}(\mathbf{x}_0)$ and its adjoint to propagate observational information in time. Satellite radiances are assimilated through nonlinear observation operators (RTTOV for atmospheric sounding, emission models for passive microwave land surface). In land surface assimilation, SMOS/SMAP soil moisture, MODIS LAI, and GRACE total water storage constrain hydrological models at catchment to continental scales.</p>
+
+<p><strong>Key equations:</strong></p>
+
+\[J(\mathbf{x}) = \tfrac{1}{2}(\mathbf{x}-\mathbf{x}^b)^\top\mathbf{B}^{-1}(\mathbf{x}-\mathbf{x}^b) + \tfrac{1}{2}(\mathbf{y}^o-H\mathbf{x})^\top\mathbf{R}^{-1}(\mathbf{y}^o-H\mathbf{x})\]
+
+\[\mathbf{x}^a = \mathbf{x}^b + \mathbf{B}H^\top(H\mathbf{B}H^\top + \mathbf{R})^{-1}(\mathbf{y}^o - H\mathbf{x}^b)\]
+
+\[\nabla J = \mathbf{B}^{-1}(\mathbf{x}-\mathbf{x}^b) - H^\top\mathbf{R}^{-1}(\mathbf{y}^o - H\mathbf{x})\]
+
+<p>$$1/P^a = 1/B + \sum_i H_i^2/R_i \quad\text{[scalar, multiple obs]}$$</p>
+
+<hr />
+
+<h2 id="math-refresher">Math Refresher</h2>
+
+<p><strong>The adjoint operator.</strong> For a linear operator $H: \mathbb{R}^n \to \mathbb{R}^p$ (a matrix), the adjoint is its transpose $H^\top: \mathbb{R}^p \to \mathbb{R}^n$. In 4D-Var, the adjoint of the full model $\mathcal{M}_{0\to N}$ maps a sensitivity at time $N$ (gradient of $J$ with respect to the final state) back to time 0 (gradient with respect to the initial state). This is computed by running the model backwards in time, propagating sensitivity rather than state. The computational cost of one adjoint run equals approximately one forward run — the reason 4D-Var is expensive is not that the adjoint is hard to run, but that many forward-adjoint cycles are needed to converge the minimisation.</p>
+
+<p><strong>Quadratic minimisation.</strong> The 3D-Var cost function $J(\mathbf{x})$ is a quadratic form — a bowl-shaped surface in $n$-dimensional space with exactly one minimum. Gradient descent on a quadratic function converges exactly in $n$ steps using the conjugate gradient method. In practice, the effective dimensionality is much smaller (the leading eigenvectors of $\mathbf{B}$ and $H^\top\mathbf{R}^{-1}H$ span only a few hundred to a few thousand directions), so convergence is achieved in 50–100 iterations rather than $10^7$. The structure of $\mathbf{B}$ (smooth, large-scale covariances) is what allows such rapid convergence — a poorly conditioned $\mathbf{B}$ would require many more iterations.</p>
+
+      </div>
+
+      
+
+
+
+      
+
+  
+  
+  
+  
+
+
+
+      <!-- essay-footer-notes.html — References / endnotes section.
+     Hidden by default; assets/js/essay/core.js shows it and populates
+     #essay-endnotes-list from [data-cite] elements in the content.
+
+     In posts, create citation markers with:
+       <cite data-cite="Author, Title, URL">1</cite>
+     The JS collects these and renders a numbered reference list here. -->
+
+<footer class="essay-endnotes" id="essay-endnotes" aria-label="References" hidden>
+  <div class="essay-endnotes-inner">
+    <h2 class="essay-endnotes-heading">References</h2>
+    <ol class="essay-endnotes-list" id="essay-endnotes-list">
+      <!-- Populated at runtime by assets/js/essay/core.js buildEndnotes() -->
+    </ol>
+  </div>
+</footer>
+
+
+      
+
+      
+
+      
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    </article>
+  </main>
+
+  <aside
+    class="essay-sidenotes"
+    id="essay-sidenotes"
+    aria-label="Margin notes"
+  ></aside>
+
+</div>
+
+</div>
+
+<footer>
+  <div class="footer-inner">
+
+    <!-- Col 1: Brand -->
+    <div class="footer-brand">
+      <div class="footer-brand-logo">
+        
+        <img loading="lazy" src="/assets/images/logo.webp" alt="WaywardHouse" width="28" height="28">
+        
+        WaywardHouse<span>.</span>
+      </div>
+      
+      
+      <p class="footer-brand-desc">Understanding how place, economy, and environment interact — through analysis, modelling, and open tools.</p>
+      
+
+      <div class="footer-social">
+        
+        
+        
+        <a href="/feed.xml" class="social-icon" target="_blank" rel="noopener noreferrer" aria-label="RSS feed">
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M4 11a9 9 0 0 1 9 9"/>
+            <path d="M4 4a16 16 0 0 1 16 16"/>
+            <circle cx="5" cy="19" r="1"/>
+          </svg>
+        </a>
+      </div>
+    </div>
+
+    <!-- Col 2: Topics (configurable via footer_topics, falls back to auto-categories) -->
+    <nav aria-labelledby="footer-topics">
+      <h3 class="footer-col-title" id="footer-topics">Reading</h3>
+      <ul class="footer-links">
+        
+          
+          <li><a href="/topics/">Essays</a></li>
+          
+          <li><a href="/series/">Modelling</a></li>
+          
+          <li><a href="/archive/">Archive</a></li>
+          
+          <li><a href="/start-here/">Start Here</a></li>
+          
+        
+      </ul>
+    </nav>
+
+    <!-- Col 3: Secondary navigation -->
+    
+    <nav aria-labelledby="footer-company">
+      <h3 class="footer-col-title" id="footer-company">Site</h3>
+      <ul class="footer-links">
+        
+        <li><a href="/start-here/">Start Here</a></li>
+        
+        <li><a href="/about/">About</a></li>
+        
+        <li><a href="/contact/">Contact</a></li>
+        
+      </ul>
+    </nav>
+    
+
+    <!-- Col 4: Resources -->
+    <nav aria-labelledby="footer-resources">
+      <h3 class="footer-col-title" id="footer-resources">Resources</h3>
+      <ul class="footer-links">
+        <li><a href="/archive/">Archive</a></li>
+        <li><a href="/feed.xml">RSS Feed</a></li>
+        <li><a href="/topics/">All Topics</a></li>
+      </ul>
+    </nav>
+
+  </div><!-- /.footer-inner -->
+
+  <div class="footer-bottom">
+    <span class="footer-copy">
+      &copy; 2026 WaywardHouse.
+    </span>
+    <div class="footer-legal">
+      <a href="/privacy/">Privacy Policy</a>
+      <a href="/terms/">Terms of Service</a>
+    </div>
+  </div>
+
+</footer>
+
+
+<!-- Alpine.js bundle -->
+<script type="module" src="/assets/dist/main.js"></script>
+
+<!-- Visualization runtime — detects and loads CDN libraries dynamically -->
+<script type="module" src="/assets/js/core.js"></script>
+
+<!-- Search overlay — event-driven: nav button $dispatches 'search:open' -->
+<div
+  x-data="search"
+  x-init="init()"
+  @search:open.window="open()"
+>
+  <div
+    class="search-overlay"
+    x-show="isOpen"
+    x-transition:enter="transition ease-out duration-150"
+    x-transition:enter-start="opacity-0"
+    x-transition:enter-end="opacity-100"
+    x-transition:leave="transition ease-in duration-100"
+    x-transition:leave-start="opacity-100"
+    x-transition:leave-end="opacity-0"
+    @click.self="close()"
+    style="display: none;"
+    role="dialog"
+    aria-modal="true"
+    aria-label="Search"
+  >
+    <div class="search-panel">
+      <div class="search-input-wrap">
+        <svg class="search-icon" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <circle cx="11" cy="11" r="8"/>
+          <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+        </svg>
+        <input
+          class="search-input"
+          type="search"
+          placeholder="Search posts…"
+          x-model="query"
+          x-ref="input"
+          @input.debounce.300ms="runSearch()"
+          @keydown.escape="close()"
+          autocomplete="off"
+          spellcheck="false"
+          aria-label="Search query"
+        >
+        <kbd class="search-esc" aria-hidden="true">ESC</kbd>
+      </div>
+
+      <div class="search-results" x-show="query.trim().length > 0">
+        <div class="search-status" x-show="loading" aria-live="polite">Searching…</div>
+        <div class="search-status" x-show="!loading && results.length === 0" aria-live="polite">
+          No results for "<span x-text="query"></span>"
+        </div>
+        <ul class="search-result-list" x-show="!loading && results.length > 0" role="list">
+          <template x-for="result in results" :key="result.url">
+            <li>
+              <a :href="result.url" class="search-result-item" @click="close()">
+                <div class="search-result-title" x-text="result.meta?.title || result.url"></div>
+                <div class="search-result-excerpt" x-html="result.excerpt"></div>
+              </a>
+            </li>
+          </template>
+        </ul>
+      </div>
+    </div>
+  </div>
+</div>
+
+</body>
+</html>
