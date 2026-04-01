@@ -1,0 +1,881 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
+
+<meta charset="utf-8">
+<meta name="generator" content="quarto-1.9.36">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+
+<meta name="dcterms.date" content="2026-03-05">
+<meta name="description" content="Cities grow by converting surrounding land — farmland, forest, grassland — cell by cell. The probability that any given cell converts in any given year depends on its neighbourhood, its physical suitability, its accessibility to roads and centres, and planning constraints. Cellular automata encode this rule structure into a spatially explicit simulation. This essay derives the logistic regression transition probability, defines the neighbourhood effect function, implements a basic CA urban growth model, and builds scenario projections validated against historical satellite data.">
+
+<title>Land Use Change modelling – Computational Geography</title>
+<style>
+/* Default styles provided by pandoc.
+** See https://pandoc.org/MANUAL.html#variables-for-html for config info.
+*/
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: min(4vw, 1.5em);}
+div.column{flex: auto; overflow-x: auto;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+  width: 0.8em;
+  margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
+  vertical-align: middle;
+}
+</style>
+
+
+<script src="../site_libs/clipboard/clipboard.min.js"></script>
+<script src="../site_libs/quarto-html/tabby.min.js"></script>
+<script src="../site_libs/quarto-html/popper.min.js"></script>
+<script src="../site_libs/quarto-html/tippy.umd.min.js"></script>
+<script src="../site_libs/quarto-html/anchor.min.js"></script>
+<link href="../site_libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="../site_libs/quarto-html/light-border.css" rel="stylesheet">
+<link href="../site_libs/quarto-html/quarto-html-640605f58ae58ee79329c070719e555b.min.css" rel="stylesheet" append-hash="true" data-mode="light">
+<link href="../site_libs/quarto-html/quarto-syntax-highlighting-845c23b38eaddc0f92fda52bfe77a8c8.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<script>
+  (function () {
+    var s = localStorage.getItem('theme');
+    var dark = s !== null ? s === 'dark' : false;
+    document.documentElement.dataset.theme = dark ? 'dark' : 'light';
+    document.documentElement.dataset.brand = 'wayward';
+  })();
+</script>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:ital,wght@0,300;0,400;0,600;0,700;0,800;0,900;1,700;1,800&amp;family=Barlow:wght@300;400;500;600&amp;family=IBM+Plex+Mono:ital,wght@0,300;0,400;0,500;1,300&amp;family=Literata:ital,opsz,wght@0,7..72,300;0,7..72,400;0,7..72,500;1,7..72,300;1,7..72,400&amp;display=swap" rel="stylesheet">
+
+  <script>window.backupDefine = window.define; window.define = undefined;</script><script src="https://cdn.jsdelivr.net/npm/katex@latest/dist/katex.min.js"></script>
+  <script>document.addEventListener("DOMContentLoaded", function () {
+ var mathElements = document.getElementsByClassName("math");
+ var macros = [];
+ for (var i = 0; i < mathElements.length; i++) {
+  var texText = mathElements[i].firstChild;
+  if (mathElements[i].tagName == "SPAN") {
+   katex.render(texText.data, mathElements[i], {
+    displayMode: mathElements[i].classList.contains('display'),
+    throwOnError: false,
+    macros: macros,
+    fleqn: false
+   });
+}}});
+  </script>
+  <script>window.define = window.backupDefine; window.backupDefine = undefined;</script><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@latest/dist/katex.min.css">
+
+<script type="text/javascript">
+const typesetMath = (el) => {
+  if (window.MathJax) {
+    // MathJax Typeset
+    window.MathJax.typeset([el]);
+  } else if (window.katex) {
+    // KaTeX Render
+    var mathElements = el.getElementsByClassName("math");
+    var macros = [];
+    for (var i = 0; i < mathElements.length; i++) {
+      var texText = mathElements[i].firstChild;
+      if (mathElements[i].tagName == "SPAN" && texText && texText.data) {
+        window.katex.render(texText.data, mathElements[i], {
+          displayMode: mathElements[i].classList.contains('display'),
+          throwOnError: false,
+          macros: macros,
+          fleqn: false
+        });
+      }
+    }
+  }
+}
+window.Quarto = {
+  typesetMath
+};
+</script>
+
+<link rel="stylesheet" href="../assets/css/quarto-wayward.css">
+</head>
+
+<body class="reading-body tag-hash-math tag-hash-viz">
+
+
+<header id="title-block-header">
+<h1 class="title"><span class="chapter-title">Land Use Change modelling</span></h1>
+<p class="subtitle">Cellular automata, logistic regression, and the simulation of urban growth</p>
+
+<p class="date">2026-03-05</p>
+</header>
+
+<nav id="TOC" role="doc-toc">
+    <h2 id="toc-title">Table of contents</h2>
+   
+  <ul>
+  <li><a href="#the-question" id="toc-the-question">1. The Question</a></li>
+  <li><a href="#the-conceptual-model" id="toc-the-conceptual-model">2. The Conceptual Model</a></li>
+  <li><a href="#building-the-mathematical-model" id="toc-building-the-mathematical-model">3. Building the Mathematical Model</a>
+  <ul>
+  <li><a href="#logistic-regression-for-transition-probability" id="toc-logistic-regression-for-transition-probability">3.1 Logistic Regression for Transition Probability</a></li>
+  <li><a href="#the-neighbourhood-effect-function" id="toc-the-neighbourhood-effect-function">3.2 The Neighbourhood Effect Function</a></li>
+  <li><a href="#demand-allocation-and-the-stochastic-ca-rule" id="toc-demand-allocation-and-the-stochastic-ca-rule">3.3 Demand Allocation and the Stochastic CA Rule</a></li>
+  <li><a href="#flus-model-suitability-and-competition" id="toc-flus-model-suitability-and-competition">3.4 FLUS Model: Suitability and Competition</a></li>
+  <li><a href="#validation-figure-of-merit" id="toc-validation-figure-of-merit">3.5 Validation: Figure of Merit</a></li>
+  <li><a href="#scenario-construction" id="toc-scenario-construction">3.6 Scenario Construction</a></li>
+  </ul></li>
+  <li><a href="#worked-example-by-hand" id="toc-worked-example-by-hand">4. Worked Example by Hand</a></li>
+  <li><a href="#computational-implementation" id="toc-computational-implementation">5. Computational Implementation</a></li>
+  <li><a href="#visualization" id="toc-visualization">6. Visualization</a></li>
+  <li><a href="#interpretation" id="toc-interpretation">7. Interpretation</a></li>
+  <li><a href="#what-could-go-wrong" id="toc-what-could-go-wrong">8. What Could Go Wrong?</a></li>
+  <li><a href="#summary" id="toc-summary">9. Summary</a></li>
+  <li><a href="#math-refresher" id="toc-math-refresher">Math Refresher</a></li>
+  </ul>
+</nav>
+<p>Between 1985 and 2015, the urbanised area of China increased by approximately 5.8 million hectares — an expansion of built-up land roughly the size of France in 30 years. That expansion did not occur randomly. It followed roads, spread outward from existing urban centres in concentric waves, leapfrogged in places where agricultural land was cheap, and concentrated along rivers and flat terrain. Its spatial pattern was the product of millions of individual decisions by landowners, developers, and planners — but those decisions shared common drivers that could, in principle, be modelled.</p>
+<p>The <strong>cellular automaton</strong> (CA) approach treats the landscape as a grid of cells, each with a land use state, and simulates change by applying transition rules that depend on the cell’s own state, its neighbourhood, and its attributes. It does not model the decisions of individual actors — it models the aggregate outcome of those decisions as a spatially explicit probability field.</p>
+<hr>
+<h2 id="the-question" class="anchored">1. The Question</h2>
+<p>How do we estimate the probability that a cell of agricultural land will convert to urban use in any given year? How does the spatial neighbourhood of a cell affect that probability? How do we validate a CA model against historical data, and how do we use it to project future land use under different scenarios?</p>
+<hr>
+<h2 id="the-conceptual-model" class="anchored">2. The Conceptual Model</h2>
+<p>Land use change is a <strong>stochastic spatial process</strong>. At each time step, each undeveloped cell has some probability of transitioning to urban (or another developed state) that depends on:</p>
+<ul>
+<li><strong>Physical suitability:</strong> slope, flood risk, soil quality — factors that determine the physical cost of development</li>
+<li><strong>Accessibility:</strong> proximity to roads, city centres, transit — factors that determine the economic value of development</li>
+<li><strong>Neighbourhood effect:</strong> the fraction of already-developed cells in the neighbourhood — urban growth tends to cluster spatially because infrastructure, services, and social networks extend from existing development</li>
+<li><strong>Policy constraints:</strong> zoning, protected areas, agricultural land reserves — hard or soft limits on development</li>
+</ul>
+<p>The <strong>SLEUTH model</strong> (Clarke et al.&nbsp;1997) and the <strong>FLUS model</strong> (Liu et al.&nbsp;2017) are the most widely used CA land change models. Both combine logistic-regression-calibrated transition probabilities with neighbourhood effect functions and stochastic selection to produce spatially realistic growth patterns.</p>
+<hr>
+<h2 id="building-the-mathematical-model" class="anchored">3. Building the Mathematical Model</h2>
+<h3 id="logistic-regression-for-transition-probability" class="anchored">3.1 Logistic Regression for Transition Probability</h3>
+<p>The probability that cell <span class="math inline">(r,c)</span> transitions from non-urban to urban at time <span class="math inline">t</span> is modelled by logistic regression on a set of spatial predictor variables:</p>
+<p><span class="math display">P_{r,c} = \frac{1}{1 + e^{-z_{r,c}}}</span></p>
+<p>where <span class="math inline">z_{r,c}</span> is the linear predictor (logit):</p>
+<p><span class="math display">z_{r,c} = \beta_0 + \beta_1 x_1 + \beta_2 x_2 + \ldots + \beta_k x_k</span></p>
+<p>Common predictor variables <span class="math inline">x_k</span>:</p>
+<table class="caption-top">
+<colgroup>
+<col style="width: 33%">
+<col style="width: 33%">
+<col style="width: 33%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>Variable</th>
+<th>Typical <span class="math inline">\beta</span> sign</th>
+<th>Interpretation</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>Distance to city centre</td>
+<td>negative</td>
+<td>Farther = lower probability</td>
+</tr>
+<tr class="even">
+<td>Distance to nearest road</td>
+<td>negative</td>
+<td>Farther from roads = lower probability</td>
+</tr>
+<tr class="odd">
+<td>Slope</td>
+<td>negative</td>
+<td>Steeper = lower probability</td>
+</tr>
+<tr class="even">
+<td>Elevation</td>
+<td>negative (typically)</td>
+<td>Higher = lower probability</td>
+</tr>
+<tr class="odd">
+<td>Distance to existing urban</td>
+<td>negative</td>
+<td>Farther from built-up = lower probability</td>
+</tr>
+<tr class="even">
+<td>Soil quality rank</td>
+<td>negative</td>
+<td>Better farmland = lower probability (ALR protection)</td>
+</tr>
+<tr class="odd">
+<td>Population density (nearby)</td>
+<td>positive</td>
+<td>More people nearby = higher probability</td>
+</tr>
+</tbody>
+</table>
+<p>Parameters <span class="math inline">\beta_k</span> are estimated by maximum likelihood on a training sample of observed transitions from historical land use maps (typically comparing land use at two time points, 10–20 years apart). The log-likelihood to maximise:</p>
+<p><span class="math display">\mathcal{L}(\boldsymbol{\beta}) = \sum_i [y_i \ln P_i + (1 - y_i)\ln(1 - P_i)]</span></p>
+<p>where <span class="math inline">y_i = 1</span> if cell <span class="math inline">i</span> transitioned and <span class="math inline">y_i = 0</span> if it did not.</p>
+<h3 id="the-neighbourhood-effect-function" class="anchored">3.2 The Neighbourhood Effect Function</h3>
+<p>The neighbourhood effect <span class="math inline">\Omega_{r,c}</span> captures urban spread dynamics — the tendency for development to cluster around existing urban areas:</p>
+<p><span class="math display">\Omega_{r,c}(t) = \frac{\sum_{(r',c') \in \mathcal{N}(r,c)} \mathbf{1}[\text{urban at } t]}{|\mathcal{N}(r,c)|}</span></p>
+<p>where <span class="math inline">\mathcal{N}(r,c)</span> is the Moore neighbourhood (8 surrounding cells) or an extended neighbourhood (up to 5-cell radius). <span class="math inline">\Omega_{r,c}</span> is the fraction of neighbourhood cells already urbanised — ranging from 0 (isolated cell, no urban neighbours) to 1 (surrounded by urban cells).</p>
+<p>The combined transition probability incorporating the neighbourhood effect:</p>
+<p><span class="math display">P_{r,c}^{\text{combined}} = P_{r,c}^{\text{logistic}} \cdot \left[\alpha + (1-\alpha) \cdot g(\Omega_{r,c})\right]</span></p>
+<p>where <span class="math inline">\alpha \in [0,1]</span> controls the relative weight of the inherent probability vs.&nbsp;neighbourhood influence, and <span class="math inline">g(\Omega)</span> is a monotonically increasing function of <span class="math inline">\Omega</span>, such as:</p>
+<p><span class="math display">g(\Omega) = 1 - (1 - \Omega)^\gamma</span></p>
+<p>For <span class="math inline">\gamma &gt; 1</span>, growth is initially slow when neighbours are sparse and accelerates as the neighbourhood fills — an S-shaped neighbourhood response. For <span class="math inline">\gamma = 1</span>: <span class="math inline">g(\Omega) = \Omega</span> (linear).</p>
+<h3 id="demand-allocation-and-the-stochastic-ca-rule" class="anchored">3.3 Demand Allocation and the Stochastic CA Rule</h3>
+<p>At each time step, the model must convert a specified number of cells <span class="math inline">N_t</span> (the demand, derived from population projections) from non-urban to urban. The allocation proceeds:</p>
+<ol type="1">
+<li>Compute <span class="math inline">P_{r,c}^{\text{combined}}</span> for all eligible non-urban cells</li>
+<li>Sample a uniform random number <span class="math inline">U_{r,c} \sim \text{Uniform}(0,1)</span> for each cell</li>
+<li>Compute a combined score: <span class="math inline">\text{Score}_{r,c} = P_{r,c}^{\text{combined}} - U_{r,c}</span></li>
+<li>Rank cells by Score; convert the top <span class="math inline">N_t</span> cells</li>
+</ol>
+<p>This procedure ensures: (a) cells with high probability are most likely selected, but (b) some randomness allows lower-probability cells to occasionally be chosen, producing realistic spatial irregularity. The stochastic component mimics the idiosyncratic decisions of individual developers and landowners that aggregate into the observed noisy spatial pattern.</p>
+<p>The demand <span class="math inline">N_t</span> is typically derived from a demographic model: if zone population grows by <span class="math inline">\Delta P</span> persons and the residential density is <span class="math inline">\delta</span> persons per hectare and the average cell size is <span class="math inline">A_{\text{cell}}</span> hectares:</p>
+<p><span class="math display">N_t = \frac{\Delta P}{\delta \cdot A_{\text{cell}} \cdot \text{cells per hectare}}</span></p>
+<h3 id="flus-model-suitability-and-competition" class="anchored">3.4 FLUS Model: Suitability and Competition</h3>
+<p>The FLUS (Future Land Use Simulation) model extends the basic CA by handling multiple land use types simultaneously, incorporating competition between land use types for each cell:</p>
+<p><span class="math display">P_{r,c,k}^{\text{FLUS}} = \frac{P_{r,c,k}^{\text{ANN}} \cdot \Omega_{r,c,k} \cdot sc_{r,c,k}}{\sum_{l} P_{r,c,l}^{\text{ANN}} \cdot \Omega_{r,c,l} \cdot sc_{r,c,l}}</span></p>
+<p>where: - <span class="math inline">P_{r,c,k}^{\text{ANN}}</span> is the suitability probability for land use <span class="math inline">k</span> from a neural network (or logistic regression) - <span class="math inline">\Omega_{r,c,k}</span> is the neighbourhood effect for type <span class="math inline">k</span> - <span class="math inline">sc_{r,c,k}</span> is a competition factor — if type <span class="math inline">k</span> is in high demand globally, it wins more local competitions</p>
+<p>FLUS simultaneously simulates urban expansion, cropland conversion, forest loss, and wetland change — a necessary capability when land use change is not one-way but involves complex multi-type competition across the landscape.</p>
+<h3 id="validation-figure-of-merit" class="anchored">3.5 Validation: Figure of Merit</h3>
+<p>The <strong>Figure of Merit</strong> (FOM) is the standard validation metric for land change models (Pontius et al.&nbsp;2008):</p>
+<p><span class="math display">\text{FOM} = \frac{C}{A + B + C + D}</span></p>
+<p>where, comparing the simulated change map to the observed change map: - <span class="math inline">A</span> = observed change, simulated as no change (missed transitions) - <span class="math inline">B</span> = observed no change, simulated as change (false alarms) - <span class="math inline">C</span> = observed change, simulated as change, correct location (hits) - <span class="math inline">D</span> = observed change, simulated as change, wrong location (location error)</p>
+<p>FOM ranges from 0 (no correct predictions) to 1 (perfect). Values of 0.15–0.40 are considered good for urban land change models — the inherent unpredictability of individual cell decisions means FOM rarely exceeds 0.5 even for excellent models.</p>
+<h3 id="scenario-construction" class="anchored">3.6 Scenario Construction</h3>
+<p>Land change scenarios vary the <strong>demand</strong>, <strong>spatial allocation rules</strong>, and <strong>policy constraints</strong>:</p>
+<p><strong>Business as usual (BAU):</strong> historical growth rate continues; current zoning maintained</p>
+<p><strong>Compact growth:</strong> demand allocated preferentially to infill (cells within existing urban area) and transit corridors; reduced greenfield development</p>
+<p><strong>Sprawl:</strong> higher demand (faster population growth assumption); relaxed edge restrictions; highway extensions increase accessibility to fringe areas</p>
+<p><strong>Conservation:</strong> protected area buffers expanded; agricultural land reserve boundaries tightened; demand concentrated in designated growth zones</p>
+<p>For each scenario, run the CA forward 20–40 years and compute outcome metrics: total developed area, loss of agricultural land, infrastructure cost per capita, mean commute time to city centre, biodiversity habitat fragmentation index.</p>
+<hr>
+<h2 id="worked-example-by-hand" class="anchored">4. Worked Example by Hand</h2>
+<p><strong>Setting:</strong> A 5×5 cell grid representing the fringe of a mid-size Alberta city. Cells are 500 m × 500 m (25 ha each). We want to apply one iteration of the CA to determine which cells convert to urban.</p>
+<p><strong>Existing urban cells (value = 1 in the grid):</strong></p>
+<pre><code>0 0 0 0 0
+0 0 1 0 0
+0 1 1 1 0
+0 0 1 0 0
+0 0 0 0 0</code></pre>
+<p><strong>Logistic transition probabilities <span class="math inline">P^{\text{log}}</span> (pre-computed from distance and slope data):</strong></p>
+<pre><code>0.05 0.08 0.12 0.08 0.05
+0.10 0.18 [1]  0.18 0.10
+0.12 [1]  [1]  [1]  0.12
+0.10 0.18 [1]  0.18 0.10
+0.05 0.08 0.12 0.08 0.05</code></pre>
+<p><strong>Step 1: Compute neighbourhood fraction <span class="math inline">\Omega</span> for non-urban cells</strong></p>
+<p>For cell <span class="math inline">(1,1)</span> (row 1, col 1, 0-indexed): neighbours in Moore neighbourhood are <span class="math inline">(0,0),(0,1),(0,2),(1,0),(1,2),(2,0),(2,1),(2,2)</span>. Urban neighbours: <span class="math inline">(1,2),(2,1),(2,2)</span> = 3 urban out of 8 neighbours. <span class="math inline">\Omega_{1,1} = 3/8 = 0.375</span>.</p>
+<p>For cell <span class="math inline">(0,2)</span> (top middle): 3 urban neighbours out of 5 valid neighbours = 0.60.</p>
+<p><strong>Step 2: Combined probability</strong> (using <span class="math inline">g(\Omega) = \Omega</span>, <span class="math inline">\alpha = 0.3</span>)</p>
+<p><span class="math display">P^{\text{comb}}_{1,1} = 0.18 \times [0.3 + 0.7 \times 0.375] = 0.18 \times 0.563 = 0.101</span></p>
+<p><span class="math display">P^{\text{comb}}_{0,2} = 0.12 \times [0.3 + 0.7 \times 0.60] = 0.12 \times 0.720 = 0.086</span></p>
+<p><strong>Step 3: Sample random numbers</strong> (example for 4 cells):</p>
+<table class="caption-top">
+<thead>
+<tr class="header">
+<th>Cell</th>
+<th><span class="math inline">P^{\text{comb}}</span></th>
+<th><span class="math inline">U</span> (random)</th>
+<th>Score = P - U</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>(1,1)</td>
+<td>0.101</td>
+<td>0.42</td>
+<td>-0.319</td>
+</tr>
+<tr class="even">
+<td>(1,3)</td>
+<td>0.101</td>
+<td>0.08</td>
+<td><strong>+0.021</strong></td>
+</tr>
+<tr class="odd">
+<td>(0,2)</td>
+<td>0.086</td>
+<td>0.15</td>
+<td><strong>-0.064</strong></td>
+</tr>
+<tr class="even">
+<td>(2,4)</td>
+<td>0.072</td>
+<td>0.91</td>
+<td>-0.838</td>
+</tr>
+</tbody>
+</table>
+<p>If demand <span class="math inline">N_t = 1</span> cell, convert cell <span class="math inline">(1,3)</span> — the only positive score. If demand = 0.5 cells on average (stochastic rounding), run the selection with a probability: no cells convert this step, but the scores update for the next.</p>
+<hr>
+<h2 id="computational-implementation" class="anchored">5. Computational Implementation</h2>
+<pre><code>function logistic_probability(X, beta):
+    z = beta[0] + sum(beta[k] * X[k] for k in 1..K)
+    return 1 / (1 + exp(-z))
+
+function neighbourhood_fraction(grid, r, c, radius=1):
+    count, total = 0, 0
+    for dr in -radius..radius:
+        for dc in -radius..radius:
+            if (dr,dc) != (0,0) and valid_cell(r+dr, c+dc):
+                total += 1
+                count += grid[r+dr, c+dc] == URBAN
+    return count / total
+
+function ca_step(grid, P_log, alpha, gamma, N_demand):
+    candidates = [(r,c) for (r,c) where grid[r,c] != URBAN]
+    scores = []
+    for (r,c) in candidates:
+        omega = neighbourhood_fraction(grid, r, c)
+        g_omega = 1 - (1 - omega)**gamma
+        P_comb = P_log[r,c] * (alpha + (1-alpha) * g_omega)
+        U = random_uniform(0, 1)
+        scores.append((P_comb - U, r, c))
+    sort scores descending
+    convert top N_demand cells to URBAN
+    return updated grid</code></pre>
+<pre class="{pyodide}"><code>import numpy as np
+
+def logistic_p(distances_to_road, distances_to_urban, slopes,
+               b0=-2.5, b_road=-0.02, b_urban=-0.03, b_slope=-0.05):
+    z = (b0 + b_road*distances_to_road + 
+         b_urban*distances_to_urban + b_slope*slopes)
+    return 1 / (1 + np.exp(-z))
+
+def neighbourhood_omega(grid, r, c):
+    rows, cols = grid.shape
+    total = urban = 0
+    for dr in [-1, 0, 1]:
+        for dc in [-1, 0, 1]:
+            if dr == 0 and dc == 0: continue
+            nr, nc = r+dr, c+dc
+            if 0 &lt;= nr &lt; rows and 0 &lt;= nc &lt; cols:
+                total += 1
+                urban += int(grid[nr, nc])
+    return urban / total if total &gt; 0 else 0
+
+def ca_step(grid, P_log, alpha=0.3, gamma=1.5, N_demand=3, rng=None):
+    if rng is None: rng = np.random.default_rng(42)
+    rows, cols = grid.shape
+    scores = []
+    for r in range(rows):
+        for c in range(cols):
+            if grid[r, c] == 0:
+                omega = neighbourhood_omega(grid, r, c)
+                g_omega = 1 - (1 - omega)**gamma
+                P_comb = P_log[r, c] * (alpha + (1-alpha)*g_omega)
+                U = rng.uniform()
+                scores.append((P_comb - U, r, c))
+    scores.sort(reverse=True)
+    new_grid = grid.copy()
+    for i in range(min(N_demand, len(scores))):
+        _, r, c = scores[i]
+        new_grid[r, c] = 1
+    return new_grid
+
+# 5x5 example
+grid = np.array([
+    [0,0,0,0,0],
+    [0,0,1,0,0],
+    [0,1,1,1,0],
+    [0,0,1,0,0],
+    [0,0,0,0,0]], dtype=float)
+
+P_log = np.array([
+    [0.05,0.08,0.12,0.08,0.05],
+    [0.10,0.18,0.00,0.18,0.10],
+    [0.12,0.00,0.00,0.00,0.12],
+    [0.10,0.18,0.00,0.18,0.10],
+    [0.05,0.08,0.12,0.08,0.05]])
+
+new_grid = ca_step(grid, P_log, N_demand=2)
+print("Urban cells before:", int(grid.sum()))
+print("Urban cells after: ", int(new_grid.sum()))
+print("\nUpdated grid:\n", new_grid.astype(int))</code></pre>
+<hr>
+<h2 id="visualization" class="anchored">6. Visualization</h2>
+<div data-viz="echarts" style="height:420px" data-options="{
+  &quot;title&quot;: {&quot;text&quot;: &quot;CA Urban Growth: Simulated Developed Area vs Year (Three Scenarios)&quot;, &quot;textStyle&quot;: {&quot;fontSize&quot;: 14}},
+  &quot;tooltip&quot;: {&quot;trigger&quot;: &quot;axis&quot;},
+  &quot;legend&quot;: {&quot;data&quot;: [&quot;Sprawl&quot;, &quot;Business as usual&quot;, &quot;Compact growth&quot;], &quot;bottom&quot;: 0},
+  &quot;xAxis&quot;: {&quot;name&quot;: &quot;Year&quot;, &quot;nameLocation&quot;: &quot;middle&quot;, &quot;nameGap&quot;: 30,
+    &quot;data&quot;: [2025, 2030, 2035, 2040, 2045, 2050, 2055, 2060]},
+  &quot;yAxis&quot;: {&quot;name&quot;: &quot;Developed area (km²)&quot;, &quot;nameLocation&quot;: &quot;middle&quot;, &quot;nameGap&quot;: 55, &quot;min&quot;: 100},
+  &quot;series&quot;: [
+    {&quot;name&quot;: &quot;Sprawl&quot;, &quot;type&quot;: &quot;line&quot;, &quot;smooth&quot;: true,
+     &quot;data&quot;: [120, 148, 183, 224, 272, 328, 392, 465]},
+    {&quot;name&quot;: &quot;Business as usual&quot;, &quot;type&quot;: &quot;line&quot;, &quot;smooth&quot;: true,
+     &quot;data&quot;: [120, 140, 163, 190, 220, 254, 291, 333]},
+    {&quot;name&quot;: &quot;Compact growth&quot;, &quot;type&quot;: &quot;line&quot;, &quot;smooth&quot;: true,
+     &quot;data&quot;: [120, 132, 146, 161, 177, 195, 215, 236]}
+  ]
+}">
+
+</div>
+<p>By 2060, the sprawl scenario produces nearly 2× the developed area of the compact growth scenario for the same population growth. The difference — approximately 230 km² of agricultural and natural land — represents the land use consequence of policy choices made over the next 35 years. The compact scenario achieves the same population accommodation in half the footprint through infill and density intensification, reducing infrastructure costs per capita and preserving agricultural land.</p>
+<hr>
+<h2 id="interpretation" class="anchored">7. Interpretation</h2>
+<p>The CA model captures the self-reinforcing spatial dynamics of urban growth: once a cluster of urban cells forms, it increases the neighbourhood effect <span class="math inline">\Omega</span> for surrounding cells, raising their transition probability and making further growth more likely. This positive feedback produces the characteristic urban fringe pattern — not a uniform expansion outward, but a fingered, irregular boundary that advances most rapidly along roads and transport corridors where logistic suitability probability is highest.</p>
+<p>The model also reveals the <strong>path dependence</strong> of urban form. A single large development in a previously empty area becomes a seed for future growth around it, even if the initial development was driven by a one-time subsidy or developer decision that would not have been rational in a different planning context. This means that current development decisions constrain the spatial options available to planners 20–30 years hence — a powerful argument for early, proactive planning of growth boundaries rather than reactive management of existing patterns.</p>
+<p>The Agricultural Land Reserve (ALR) in British Columbia and the similar Farmland Identification Program in Alberta represent policy implementations of the conservation scenario — hard constraints on the logistic probability field that prevent high-probability fringe cells from converting regardless of market signals. The CA model allows us to quantify exactly how much agricultural land is saved under different ALR boundary configurations.</p>
+<hr>
+<h2 id="what-could-go-wrong" class="anchored">8. What Could Go Wrong?</h2>
+<p><strong>Equifinality: many parameter sets produce similar outcomes.</strong> Logistic regression on historical data identifies one set of <span class="math inline">\beta</span> coefficients, but different parameter combinations may produce equally good fits to the training data and very different projections. Sensitivity analysis across plausible parameter ranges should accompany any scenario projection.</p>
+<p><strong>Non-stationarity of calibrated parameters.</strong> The transition probabilities calibrated on 1990–2010 data may not apply to 2025–2060 projections if the relationship between accessibility, suitability, and development probability has changed. Remote work trends, changing preferences for density, and autonomous vehicles could substantially alter the spatial drivers of development.</p>
+<p><strong>The model does not simulate prices.</strong> Land values, development costs, and regulatory costs are implicit in the historical patterns used to calibrate the model. If carbon pricing, infrastructure levies, or zoning changes alter development economics, the calibrated model will not correctly predict the response. An economic equilibrium model (e.g., urban land use and transport interaction, LUTI) is needed for policy experiments that change relative costs.</p>
+<p><strong>FOM validation is necessary but not sufficient.</strong> A model can achieve a high FOM on the training period and still project poorly 30 years out if the underlying spatial drivers shift. Multi-period cross-validation (calibrate on 1990–2005, validate on 2005–2020) provides more robust assessment than single-period validation.</p>
+<hr>
+<h2 id="summary" class="anchored">9. Summary</h2>
+<p>Land use change modelling with cellular automata combines a logistic-regression transition probability (capturing physical suitability and accessibility) with a neighbourhood effect function (capturing spatial clustering dynamics) and stochastic allocation (capturing individual decision variability) to simulate urban expansion over decadal timescales.</p>
+<p>Model parameters are calibrated from historical land use change observations and validated against withheld data using the Figure of Merit. Scenario projections vary demand trajectories and policy constraints to produce conditional forecasts that inform planning decisions — particularly about agricultural land conservation, infrastructure investment, and the spatial distribution of population growth.</p>
+<p><strong>Key equations:</strong></p>
+<p><span class="math display">P_{r,c} = \frac{1}{1+e^{-(\beta_0 + \sum_k \beta_k x_k)}} \quad \text{[logistic transition probability]}</span></p>
+<p><span class="math display">\Omega_{r,c} = \frac{1}{|\mathcal{N}|}\sum_{(r',c')\in\mathcal{N}} \mathbf{1}[\text{urban}] \quad \text{[neighbourhood fraction]}</span></p>
+<p><span class="math display">P^{\text{comb}} = P^{\text{log}} \cdot [\alpha + (1-\alpha)(1 - (1-\Omega)^\gamma)]</span></p>
+<p><span class="math display">\text{FOM} = C/(A+B+C+D) \quad \text{[Figure of Merit]}</span></p>
+<hr>
+<h2 id="math-refresher" class="anchored">Math Refresher</h2>
+<p><strong>The logistic function and binary classification.</strong> The logistic function <span class="math inline">\sigma(z) = 1/(1+e^{-z})</span> maps any real number <span class="math inline">z</span> to the interval <span class="math inline">(0,1)</span> — making it natural for probabilities. It is the inverse of the logit: <span class="math inline">z = \ln[p/(1-p)]</span>. The logit of a probability is the log-odds. Logistic regression models the log-odds as a linear function of predictors. The coefficient <span class="math inline">\beta_k</span> means: a unit increase in <span class="math inline">x_k</span> multiplies the odds of the event by <span class="math inline">e^{\beta_k}</span>. For small probabilities, this is approximately a <span class="math inline">\beta_k \times 100\%</span> change in probability.</p>
+<p><strong>Cellular automata as discrete dynamical systems.</strong> A CA is a dynamical system on a lattice: state at time <span class="math inline">t+1</span> depends on state at <span class="math inline">t</span> through a local rule applied identically to each cell. The mathematics of CA convergence, fixed points, and pattern formation has been studied since von Neumann’s work in the 1950s. Urban CA models are stochastic (random elements) and heterogeneous (rules vary by cell attributes) — generalisations of the classical deterministic, homogeneous CA framework, but sharing the same core property of local interactions generating global patterns.</p>
+<p><strong>Maximum likelihood estimation.</strong> Given binary outcomes <span class="math inline">y_i \in \{0,1\}</span> and predicted probabilities <span class="math inline">P_i</span>, the log-likelihood is <span class="math inline">\mathcal{L} = \sum_i [y_i \ln P_i + (1-y_i)\ln(1-P_i)]</span>. Maximising <span class="math inline">\mathcal{L}</span> over <span class="math inline">\boldsymbol{\beta}</span> gives the maximum likelihood estimates — the parameter values that make the observed data most probable under the model. This is equivalent to minimising the <strong>binary cross-entropy loss</strong>, which is the standard loss function for neural network classifiers, establishing a direct connection between logistic regression and deep learning.</p>
+
+
+<footer class="wayward-footer">
+  <div class="wayward-footer__inner">
+    <div class="wayward-footer__brand">
+      <div class="wayward-footer__logo">WaywardHouse<span>.</span></div>
+      <p>Understanding how place, economy, and environment interact through analysis, modelling, and open tools.</p>
+    </div>
+
+    <nav class="wayward-footer__group" aria-labelledby="footer-reading">
+      <h2 id="footer-reading" class="anchored">Reading</h2>
+      <a href="../articles/">Articles</a>
+      <a href="../learn/">Learn</a>
+      <a href="../archive.html">Archive</a>
+      <a href="../start-here.html">Start Here</a>
+    </nav>
+
+    <nav class="wayward-footer__group" aria-labelledby="footer-site">
+      <h2 id="footer-site" class="anchored">Site</h2>
+      <a href="../start-here.html">Start Here</a>
+      <a href="../about.html">About</a>
+      <a href="../contact.html">Contact</a>
+    </nav>
+
+    <nav class="wayward-footer__group" aria-labelledby="footer-resources">
+      <h2 id="footer-resources" class="anchored">Resources</h2>
+      <a href="../topics/">All Topics</a>
+      <a href="../privacy.html">Privacy Policy</a>
+      <a href="../terms.html">Terms of Use</a>
+    </nav>
+  </div>
+</footer>
+
+<script type="module" src="../assets/dist/main.js"></script>
+<script type="module" src="../assets/js/core.js"></script>
+<script id="quarto-html-after-body" type="application/javascript">
+  window.document.addEventListener("DOMContentLoaded", function (event) {
+    const tabsets =  window.document.querySelectorAll(".panel-tabset-tabby")
+    tabsets.forEach(function(tabset) {
+      const tabby = new Tabby('#' + tabset.id);
+    });
+    const icon = "";
+    const anchorJS = new window.AnchorJS();
+    anchorJS.options = {
+      placement: 'right',
+      icon: icon
+    };
+    anchorJS.add('.anchored');
+    const isCodeAnnotation = (el) => {
+      for (const clz of el.classList) {
+        if (clz.startsWith('code-annotation-')) {                     
+          return true;
+        }
+      }
+      return false;
+    }
+    const onCopySuccess = function(e) {
+      // button target
+      const button = e.trigger;
+      // don't keep focus
+      button.blur();
+      // flash "checked"
+      button.classList.add('code-copy-button-checked');
+      var currentTitle = button.getAttribute("title");
+      button.setAttribute("title", "Copied!");
+      let tooltip;
+      if (window.bootstrap) {
+        button.setAttribute("data-bs-toggle", "tooltip");
+        button.setAttribute("data-bs-placement", "left");
+        button.setAttribute("data-bs-title", "Copied!");
+        tooltip = new bootstrap.Tooltip(button, 
+          { trigger: "manual", 
+            customClass: "code-copy-button-tooltip",
+            offset: [0, -8]});
+        tooltip.show();    
+      }
+      setTimeout(function() {
+        if (tooltip) {
+          tooltip.hide();
+          button.removeAttribute("data-bs-title");
+          button.removeAttribute("data-bs-toggle");
+          button.removeAttribute("data-bs-placement");
+        }
+        button.setAttribute("title", currentTitle);
+        button.classList.remove('code-copy-button-checked');
+      }, 1000);
+      // clear code selection
+      e.clearSelection();
+    }
+    const getTextToCopy = function(trigger) {
+      const outerScaffold = trigger.parentElement.cloneNode(true);
+      const codeEl = outerScaffold.querySelector('code');
+      for (const childEl of codeEl.children) {
+        if (isCodeAnnotation(childEl)) {
+          childEl.remove();
+        }
+      }
+      return codeEl.innerText;
+    }
+    const clipboard = new window.ClipboardJS('.code-copy-button:not([data-in-quarto-modal])', {
+      text: getTextToCopy
+    });
+    clipboard.on('success', onCopySuccess);
+    if (window.document.getElementById('quarto-embedded-source-code-modal')) {
+      const clipboardModal = new window.ClipboardJS('.code-copy-button[data-in-quarto-modal]', {
+        text: getTextToCopy,
+        container: window.document.getElementById('quarto-embedded-source-code-modal')
+      });
+      clipboardModal.on('success', onCopySuccess);
+    }
+      var localhostRegex = new RegExp(/^(?:http|https):\/\/localhost\:?[0-9]*\//);
+      var mailtoRegex = new RegExp(/^mailto:/);
+        var filterRegex = new RegExp('/' + window.location.host + '/');
+      var isInternal = (href) => {
+          return filterRegex.test(href) || localhostRegex.test(href) || mailtoRegex.test(href);
+      }
+      // Inspect non-navigation links and adorn them if external
+     var links = window.document.querySelectorAll('a[href]:not(.nav-link):not(.navbar-brand):not(.toc-action):not(.sidebar-link):not(.sidebar-item-toggle):not(.pagination-link):not(.no-external):not([aria-hidden]):not(.dropdown-item):not(.quarto-navigation-tool):not(.about-link)');
+      for (var i=0; i<links.length; i++) {
+        const link = links[i];
+        if (!isInternal(link.href)) {
+          // undo the damage that might have been done by quarto-nav.js in the case of
+          // links that we want to consider external
+          if (link.dataset.originalHref !== undefined) {
+            link.href = link.dataset.originalHref;
+          }
+        }
+      }
+    function tippyHover(el, contentFn, onTriggerFn, onUntriggerFn) {
+      const config = {
+        allowHTML: true,
+        maxWidth: 500,
+        delay: 100,
+        arrow: false,
+        appendTo: function(el) {
+            return el.parentElement;
+        },
+        interactive: true,
+        interactiveBorder: 10,
+        theme: 'light-border',
+        placement: 'bottom-start',
+      };
+      if (contentFn) {
+        config.content = contentFn;
+      }
+      if (onTriggerFn) {
+        config.onTrigger = onTriggerFn;
+      }
+      if (onUntriggerFn) {
+        config.onUntrigger = onUntriggerFn;
+      }
+      window.tippy(el, config); 
+    }
+    const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+    for (var i=0; i<noterefs.length; i++) {
+      const ref = noterefs[i];
+      tippyHover(ref, function() {
+        // use id or data attribute instead here
+        let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+        try { href = new URL(href).hash; } catch {}
+        const id = href.replace(/^#\/?/, "");
+        const note = window.document.getElementById(id);
+        if (note) {
+          return note.innerHTML;
+        } else {
+          return "";
+        }
+      });
+    }
+    const xrefs = window.document.querySelectorAll('a.quarto-xref');
+    const processXRef = (id, note) => {
+      // Strip column container classes
+      const stripColumnClz = (el) => {
+        el.classList.remove("page-full", "page-columns");
+        if (el.children) {
+          for (const child of el.children) {
+            stripColumnClz(child);
+          }
+        }
+      }
+      stripColumnClz(note)
+      if (id === null || id.startsWith('sec-')) {
+        // Special case sections, only their first couple elements
+        const container = document.createElement("div");
+        if (note.children && note.children.length > 2) {
+          container.appendChild(note.children[0].cloneNode(true));
+          for (let i = 1; i < note.children.length; i++) {
+            const child = note.children[i];
+            if (child.tagName === "P" && child.innerText === "") {
+              continue;
+            } else {
+              container.appendChild(child.cloneNode(true));
+              break;
+            }
+          }
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(container);
+          }
+          return container.innerHTML
+        } else {
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(note);
+          }
+          return note.innerHTML;
+        }
+      } else {
+        // Remove any anchor links if they are present
+        const anchorLink = note.querySelector('a.anchorjs-link');
+        if (anchorLink) {
+          anchorLink.remove();
+        }
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(note);
+        }
+        if (note.classList.contains("callout")) {
+          return note.outerHTML;
+        } else {
+          return note.innerHTML;
+        }
+      }
+    }
+    for (var i=0; i<xrefs.length; i++) {
+      const xref = xrefs[i];
+      tippyHover(xref, undefined, function(instance) {
+        instance.disable();
+        let url = xref.getAttribute('href');
+        let hash = undefined; 
+        if (url.startsWith('#')) {
+          hash = url;
+        } else {
+          try { hash = new URL(url).hash; } catch {}
+        }
+        if (hash) {
+          const id = hash.replace(/^#\/?/, "");
+          const note = window.document.getElementById(id);
+          if (note !== null) {
+            try {
+              const html = processXRef(id, note.cloneNode(true));
+              instance.setContent(html);
+            } finally {
+              instance.enable();
+              instance.show();
+            }
+          } else {
+            // See if we can fetch this
+            fetch(url.split('#')[0])
+            .then(res => res.text())
+            .then(html => {
+              const parser = new DOMParser();
+              const htmlDoc = parser.parseFromString(html, "text/html");
+              const note = htmlDoc.getElementById(id);
+              if (note !== null) {
+                const html = processXRef(id, note);
+                instance.setContent(html);
+              } 
+            }).finally(() => {
+              instance.enable();
+              instance.show();
+            });
+          }
+        } else {
+          // See if we can fetch a full url (with no hash to target)
+          // This is a special case and we should probably do some content thinning / targeting
+          fetch(url)
+          .then(res => res.text())
+          .then(html => {
+            const parser = new DOMParser();
+            const htmlDoc = parser.parseFromString(html, "text/html");
+            const note = htmlDoc.querySelector('main.content');
+            if (note !== null) {
+              // This should only happen for chapter cross references
+              // (since there is no id in the URL)
+              // remove the first header
+              if (note.children.length > 0 && note.children[0].tagName === "HEADER") {
+                note.children[0].remove();
+              }
+              const html = processXRef(null, note);
+              instance.setContent(html);
+            } 
+          }).finally(() => {
+            instance.enable();
+            instance.show();
+          });
+        }
+      }, function(instance) {
+      });
+    }
+        let selectedAnnoteEl;
+        const selectorForAnnotation = ( cell, annotation) => {
+          let cellAttr = 'data-code-cell="' + cell + '"';
+          let lineAttr = 'data-code-annotation="' +  annotation + '"';
+          const selector = 'span[' + cellAttr + '][' + lineAttr + ']';
+          return selector;
+        }
+        const selectCodeLines = (annoteEl) => {
+          const doc = window.document;
+          const targetCell = annoteEl.getAttribute("data-target-cell");
+          const targetAnnotation = annoteEl.getAttribute("data-target-annotation");
+          const annoteSpan = window.document.querySelector(selectorForAnnotation(targetCell, targetAnnotation));
+          const lines = annoteSpan.getAttribute("data-code-lines").split(",");
+          const lineIds = lines.map((line) => {
+            return targetCell + "-" + line;
+          })
+          let top = null;
+          let height = null;
+          let parent = null;
+          if (lineIds.length > 0) {
+              //compute the position of the single el (top and bottom and make a div)
+              const el = window.document.getElementById(lineIds[0]);
+              top = el.offsetTop;
+              height = el.offsetHeight;
+              parent = el.parentElement.parentElement;
+            if (lineIds.length > 1) {
+              const lastEl = window.document.getElementById(lineIds[lineIds.length - 1]);
+              const bottom = lastEl.offsetTop + lastEl.offsetHeight;
+              height = bottom - top;
+            }
+            if (top !== null && height !== null && parent !== null) {
+              // cook up a div (if necessary) and position it 
+              let div = window.document.getElementById("code-annotation-line-highlight");
+              if (div === null) {
+                div = window.document.createElement("div");
+                div.setAttribute("id", "code-annotation-line-highlight");
+                div.style.position = 'absolute';
+                parent.appendChild(div);
+              }
+              div.style.top = top - 2 + "px";
+              div.style.height = height + 4 + "px";
+              div.style.left = 0;
+              let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
+              if (gutterDiv === null) {
+                gutterDiv = window.document.createElement("div");
+                gutterDiv.setAttribute("id", "code-annotation-line-highlight-gutter");
+                gutterDiv.style.position = 'absolute';
+                const codeCell = window.document.getElementById(targetCell);
+                const gutter = codeCell.querySelector('.code-annotation-gutter');
+                gutter.appendChild(gutterDiv);
+              }
+              gutterDiv.style.top = top - 2 + "px";
+              gutterDiv.style.height = height + 4 + "px";
+            }
+            selectedAnnoteEl = annoteEl;
+          }
+        };
+        const unselectCodeLines = () => {
+          const elementsIds = ["code-annotation-line-highlight", "code-annotation-line-highlight-gutter"];
+          elementsIds.forEach((elId) => {
+            const div = window.document.getElementById(elId);
+            if (div) {
+              div.remove();
+            }
+          });
+          selectedAnnoteEl = undefined;
+        };
+          // Handle positioning of the toggle
+      window.addEventListener(
+        "resize",
+        throttle(() => {
+          elRect = undefined;
+          if (selectedAnnoteEl) {
+            selectCodeLines(selectedAnnoteEl);
+          }
+        }, 10)
+      );
+      function throttle(fn, ms) {
+      let throttle = false;
+      let timer;
+        return (...args) => {
+          if(!throttle) { // first call gets through
+              fn.apply(this, args);
+              throttle = true;
+          } else { // all the others get throttled
+              if(timer) clearTimeout(timer); // cancel #2
+              timer = setTimeout(() => {
+                fn.apply(this, args);
+                timer = throttle = false;
+              }, ms);
+          }
+        };
+      }
+        // Attach click handler to the DT
+        const annoteDls = window.document.querySelectorAll('dt[data-target-cell]');
+        for (const annoteDlNode of annoteDls) {
+          annoteDlNode.addEventListener('click', (event) => {
+            const clickedEl = event.target;
+            if (clickedEl !== selectedAnnoteEl) {
+              unselectCodeLines();
+              const activeEl = window.document.querySelector('dt[data-target-cell].code-annotation-active');
+              if (activeEl) {
+                activeEl.classList.remove('code-annotation-active');
+              }
+              selectCodeLines(clickedEl);
+              clickedEl.classList.add('code-annotation-active');
+            } else {
+              // Unselect the line
+              unselectCodeLines();
+              clickedEl.classList.remove('code-annotation-active');
+            }
+          });
+        }
+    const findCites = (el) => {
+      const parentEl = el.parentElement;
+      if (parentEl) {
+        const cites = parentEl.dataset.cites;
+        if (cites) {
+          return {
+            el,
+            cites: cites.split(' ')
+          };
+        } else {
+          return findCites(el.parentElement)
+        }
+      } else {
+        return undefined;
+      }
+    };
+    var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+    for (var i=0; i<bibliorefs.length; i++) {
+      const ref = bibliorefs[i];
+      const citeInfo = findCites(ref);
+      if (citeInfo) {
+        tippyHover(citeInfo.el, function() {
+          var popup = window.document.createElement('div');
+          citeInfo.cites.forEach(function(cite) {
+            var citeDiv = window.document.createElement('div');
+            citeDiv.classList.add('hanging-indent');
+            citeDiv.classList.add('csl-entry');
+            var biblioDiv = window.document.getElementById('ref-' + cite);
+            if (biblioDiv) {
+              citeDiv.innerHTML = biblioDiv.innerHTML;
+            }
+            popup.appendChild(citeDiv);
+          });
+          return popup.innerHTML;
+        });
+      }
+    }
+  });
+  </script>
+
+
+
+
+</body></html>

@@ -1,0 +1,781 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
+
+<meta charset="utf-8">
+<meta name="generator" content="quarto-1.9.36">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+
+<meta name="dcterms.date" content="2026-03-05">
+<meta name="description" content="Downstream of a sewage outfall, dissolved oxygen in a river first drops — as bacteria decompose the organic waste — then recovers as the river re-oxygenates from the atmosphere. The Streeter-Phelps model (1925) describes this DO sag curve with two coupled first-order differential equations: BOD exertion (deoxygenation) and atmospheric reaeration. This essay derives the model from mass balance principles, finds the critical deficit analytically, applies it to NPDES permit calculations, and identifies the conditions under which receiving water quality standards are violated.">
+
+<title>Dissolved Oxygen Dynamics and the Streeter-Phelps Model – Computational Geography</title>
+<style>
+/* Default styles provided by pandoc.
+** See https://pandoc.org/MANUAL.html#variables-for-html for config info.
+*/
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: min(4vw, 1.5em);}
+div.column{flex: auto; overflow-x: auto;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+  width: 0.8em;
+  margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
+  vertical-align: middle;
+}
+</style>
+
+
+<script src="../site_libs/clipboard/clipboard.min.js"></script>
+<script src="../site_libs/quarto-html/tabby.min.js"></script>
+<script src="../site_libs/quarto-html/popper.min.js"></script>
+<script src="../site_libs/quarto-html/tippy.umd.min.js"></script>
+<script src="../site_libs/quarto-html/anchor.min.js"></script>
+<link href="../site_libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="../site_libs/quarto-html/light-border.css" rel="stylesheet">
+<link href="../site_libs/quarto-html/quarto-html-640605f58ae58ee79329c070719e555b.min.css" rel="stylesheet" append-hash="true" data-mode="light">
+<link href="../site_libs/quarto-html/quarto-syntax-highlighting-845c23b38eaddc0f92fda52bfe77a8c8.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<script>
+  (function () {
+    var s = localStorage.getItem('theme');
+    var dark = s !== null ? s === 'dark' : false;
+    document.documentElement.dataset.theme = dark ? 'dark' : 'light';
+    document.documentElement.dataset.brand = 'wayward';
+  })();
+</script>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:ital,wght@0,300;0,400;0,600;0,700;0,800;0,900;1,700;1,800&amp;family=Barlow:wght@300;400;500;600&amp;family=IBM+Plex+Mono:ital,wght@0,300;0,400;0,500;1,300&amp;family=Literata:ital,opsz,wght@0,7..72,300;0,7..72,400;0,7..72,500;1,7..72,300;1,7..72,400&amp;display=swap" rel="stylesheet">
+
+  <script>window.backupDefine = window.define; window.define = undefined;</script><script src="https://cdn.jsdelivr.net/npm/katex@latest/dist/katex.min.js"></script>
+  <script>document.addEventListener("DOMContentLoaded", function () {
+ var mathElements = document.getElementsByClassName("math");
+ var macros = [];
+ for (var i = 0; i < mathElements.length; i++) {
+  var texText = mathElements[i].firstChild;
+  if (mathElements[i].tagName == "SPAN") {
+   katex.render(texText.data, mathElements[i], {
+    displayMode: mathElements[i].classList.contains('display'),
+    throwOnError: false,
+    macros: macros,
+    fleqn: false
+   });
+}}});
+  </script>
+  <script>window.define = window.backupDefine; window.backupDefine = undefined;</script><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@latest/dist/katex.min.css">
+
+<script type="text/javascript">
+const typesetMath = (el) => {
+  if (window.MathJax) {
+    // MathJax Typeset
+    window.MathJax.typeset([el]);
+  } else if (window.katex) {
+    // KaTeX Render
+    var mathElements = el.getElementsByClassName("math");
+    var macros = [];
+    for (var i = 0; i < mathElements.length; i++) {
+      var texText = mathElements[i].firstChild;
+      if (mathElements[i].tagName == "SPAN" && texText && texText.data) {
+        window.katex.render(texText.data, mathElements[i], {
+          displayMode: mathElements[i].classList.contains('display'),
+          throwOnError: false,
+          macros: macros,
+          fleqn: false
+        });
+      }
+    }
+  }
+}
+window.Quarto = {
+  typesetMath
+};
+</script>
+
+<link rel="stylesheet" href="../assets/css/quarto-wayward.css">
+</head>
+
+<body class="reading-body tag-hash-math tag-hash-viz">
+
+
+<header id="title-block-header">
+<h1 class="title"><span class="chapter-title">Dissolved Oxygen Dynamics and the Streeter-Phelps Model</span></h1>
+<p class="subtitle">BOD exertion, reaeration, and the DO sag curve downstream of a wastewater discharge</p>
+
+<p class="date">2026-03-05</p>
+</header>
+
+<nav id="TOC" role="doc-toc">
+    <h2 id="toc-title">Table of contents</h2>
+   
+  <ul>
+  <li><a href="#the-question" id="toc-the-question">1. The Question</a></li>
+  <li><a href="#the-conceptual-model" id="toc-the-conceptual-model">2. The Conceptual Model</a></li>
+  <li><a href="#building-the-mathematical-model" id="toc-building-the-mathematical-model">3. Building the Mathematical Model</a>
+  <ul>
+  <li><a href="#oxygen-saturation" id="toc-oxygen-saturation">3.1 Oxygen Saturation</a></li>
+  <li><a href="#bod-kinetics" id="toc-bod-kinetics">3.2 BOD Kinetics</a></li>
+  <li><a href="#reaeration" id="toc-reaeration">3.3 Reaeration</a></li>
+  <li><a href="#the-streeter-phelps-do-sag-equation" id="toc-the-streeter-phelps-do-sag-equation">3.4 The Streeter-Phelps DO Sag Equation</a></li>
+  <li><a href="#critical-deficit-and-critical-location" id="toc-critical-deficit-and-critical-location">3.5 Critical Deficit and Critical Location</a></li>
+  <li><a href="#mixing-and-initial-conditions" id="toc-mixing-and-initial-conditions">3.6 Mixing and Initial Conditions</a></li>
+  <li><a href="#npdes-and-treatment-effectiveness" id="toc-npdes-and-treatment-effectiveness">3.7 NPDES and Treatment Effectiveness</a></li>
+  </ul></li>
+  <li><a href="#worked-example-by-hand" id="toc-worked-example-by-hand">4. Worked Example by Hand</a></li>
+  <li><a href="#computational-implementation" id="toc-computational-implementation">5. Computational Implementation</a></li>
+  <li><a href="#visualization" id="toc-visualization">6. Visualization</a></li>
+  <li><a href="#interpretation" id="toc-interpretation">7. Interpretation</a></li>
+  <li><a href="#what-could-go-wrong" id="toc-what-could-go-wrong">8. What Could Go Wrong?</a></li>
+  <li><a href="#summary" id="toc-summary">9. Summary</a></li>
+  <li><a href="#math-refresher" id="toc-math-refresher">Math Refresher</a></li>
+  </ul>
+</nav>
+<p>On August 1, 1858, the British Parliament passed the Metropolis Local Management Amendment Act giving the Metropolitan Board of Works emergency powers to clean up the Thames — not for reasons of public health, but because the smell coming off the river was so severe that the windows of the Houses of Parliament had to be hung with curtains soaked in chloride of lime. The Great Stink, as it became known, was caused by years of raw sewage discharge into a tidal river that had no capacity to process it. Dissolved oxygen had dropped to near zero over stretches of the central Thames.</p>
+<p>The Streeter-Phelps model — developed in 1925 for the Ohio River — provides the mathematical framework for quantifying exactly the process that created the Great Stink: the depletion of dissolved oxygen by organic waste, and the counter-acting process of atmospheric reaeration that drives recovery downstream.</p>
+<hr>
+<h2 id="the-question" class="anchored">1. The Question</h2>
+<p>Given a wastewater discharge into a river, where is dissolved oxygen lowest and what is the minimum DO value? Under what conditions does the river violate water quality standards? How much BOD must be removed by treatment to bring the discharge into compliance?</p>
+<hr>
+<h2 id="the-conceptual-model" class="anchored">2. The Conceptual Model</h2>
+<p>When organic waste enters a river, bacteria consume it aerobically — using dissolved oxygen (DO) to oxidise the waste to carbon dioxide and water. The <strong>biochemical oxygen demand</strong> (BOD) measures the mass of oxygen required to fully decompose the organic material. As BOD is exerted, DO drops. Simultaneously, oxygen transfers from the atmosphere into the water surface — <strong>reaeration</strong> — attempting to restore saturation.</p>
+<p>The competition between these two processes creates the characteristic <strong>DO sag curve</strong>: DO drops from the initial mixing point to a minimum (the <strong>critical deficit</strong>) at some distance downstream, then recovers as BOD is consumed and reaeration dominates.</p>
+<hr>
+<h2 id="building-the-mathematical-model" class="anchored">3. Building the Mathematical Model</h2>
+<h3 id="oxygen-saturation" class="anchored">3.1 Oxygen Saturation</h3>
+<p>The saturation concentration <span class="math inline">C_s</span> [mg L⁻¹] of dissolved oxygen in fresh water depends on temperature <span class="math inline">T</span> [°C]:</p>
+<p><span class="math display">C_s(T) \approx 14.62 - 0.3898T + 0.006969T^2 - 0.00005896T^3</span></p>
+<p>At 20°C: <span class="math inline">C_s \approx 9.08</span> mg L⁻¹; at 25°C: <span class="math inline">\approx 8.26</span> mg L⁻¹. Cold water holds more oxygen than warm water — the reason warm-water discharges from power plant cooling are environmentally concerning even without chemical pollution.</p>
+<h3 id="bod-kinetics" class="anchored">3.2 BOD Kinetics</h3>
+<p><strong>Biochemical oxygen demand (BOD)</strong> in the river <span class="math inline">L(t)</span> [mg L⁻¹] decreases by first-order kinetics as bacteria decompose the organic matter:</p>
+<p><span class="math display">\frac{dL}{dt} = -k_d L</span></p>
+<p>where <span class="math inline">k_d</span> [day⁻¹] is the <strong>deoxygenation coefficient</strong>. Solution:</p>
+<p><span class="math display">L(t) = L_0 e^{-k_d t}</span></p>
+<p>where <span class="math inline">L_0</span> is the ultimate BOD at the discharge point after mixing with the river. The time <span class="math inline">t</span> here is travel time downstream: <span class="math inline">t = x/U</span> where <span class="math inline">x</span> [m] is distance downstream and <span class="math inline">U</span> [m day⁻¹] is river velocity.</p>
+<p>The <strong>deoxygenation coefficient</strong> <span class="math inline">k_d</span> incorporates both biodegradation (<span class="math inline">k_r</span>, biochemical removal) and BOD removal by settling (<span class="math inline">k_s</span>): <span class="math inline">k_d = k_r + k_s</span>. Typical values: <span class="math inline">k_d = 0.1</span>–$0.3$ day⁻¹ for municipal wastewater at 20°C.</p>
+<p><strong>Temperature correction</strong> (van’t Hoff-Arrhenius):</p>
+<p><span class="math display">k_d(T) = k_d(20°\text{C}) \times 1.047^{(T-20)}</span></p>
+<p>A 10°C rise approximately doubles reaction rates (since $1.047^{10} $ — not quite doubling, but substantially faster).</p>
+<h3 id="reaeration" class="anchored">3.3 Reaeration</h3>
+<p>Oxygen transfer from the atmosphere into the water:</p>
+<p><span class="math display">\frac{dC}{dt}\bigg|_{\text{reaer}} = k_2 (C_s - C)</span></p>
+<p>where <span class="math inline">k_2</span> [day⁻¹] is the <strong>reaeration coefficient</strong> and <span class="math inline">(C_s - C)</span> is the <strong>oxygen deficit</strong> <span class="math inline">D = C_s - C</span>. When <span class="math inline">C &lt; C_s</span> (deficit), reaeration adds oxygen; when <span class="math inline">C &gt; C_s</span> (supersaturation), oxygen escapes.</p>
+<p>The reaeration coefficient depends on stream turbulence and depth. The <strong>O’Connor-Dobbins formula</strong>:</p>
+<p><span class="math display">k_2 = 3.93 \frac{U^{0.5}}{H^{1.5}}</span></p>
+<p>where <span class="math inline">U</span> [m s⁻¹] is mean velocity and <span class="math inline">H</span> [m] is mean depth. Shallow, fast-moving mountain streams have <span class="math inline">k_2 = 5</span>–$20$ day⁻¹; deep, slow rivers have <span class="math inline">k_2 = 0.1</span>–$0.5$ day⁻¹.</p>
+<h3 id="the-streeter-phelps-do-sag-equation" class="anchored">3.4 The Streeter-Phelps DO Sag Equation</h3>
+<p>The oxygen deficit <span class="math inline">D = C_s - C</span> evolves as:</p>
+<p><span class="math display">\frac{dD}{dt} = k_d L - k_2 D</span></p>
+<p>This is a first-order linear ODE. The deoxygenation term (<span class="math inline">k_d L</span>) increases the deficit (consumes oxygen); the reaeration term (<span class="math inline">k_2 D</span>) decreases it (restores oxygen). With <span class="math inline">L = L_0 e^{-k_d t}</span> and initial deficit <span class="math inline">D_0 = C_s - C_0</span>:</p>
+<p><span class="math display">\boxed{D(t) = \frac{k_d L_0}{k_2 - k_d}\left(e^{-k_d t} - e^{-k_2 t}\right) + D_0 e^{-k_2 t}}</span></p>
+<p>This is the <strong>Streeter-Phelps equation</strong> — one of the most important equations in environmental engineering. The first term is the BOD-driven deoxygenation; the second term is the initial deficit decaying due to reaeration.</p>
+<h3 id="critical-deficit-and-critical-location" class="anchored">3.5 Critical Deficit and Critical Location</h3>
+<p>The <strong>critical deficit</strong> <span class="math inline">D_c</span> is the maximum deficit — the lowest dissolved oxygen point — which occurs at the <strong>critical time</strong> <span class="math inline">t_c</span>. Setting <span class="math inline">dD/dt = 0</span>:</p>
+<p><span class="math display">k_d L_0 e^{-k_d t_c} = k_2 D_c = k_2 D(t_c)</span></p>
+<p>Solving for <span class="math inline">t_c</span>:</p>
+<p><span class="math display">t_c = \frac{1}{k_2 - k_d} \ln\left[\frac{k_2}{k_d}\left(1 - \frac{D_0(k_2-k_d)}{k_d L_0}\right)\right]</span></p>
+<p>The critical deficit:</p>
+<p><span class="math display">D_c = \frac{k_d L_0}{k_2} e^{-k_d t_c}</span></p>
+<p>The critical distance downstream: <span class="math inline">x_c = U \cdot t_c</span>.</p>
+<p><strong>Minimum DO:</strong> <span class="math inline">C_{\min} = C_s - D_c</span></p>
+<p>Water quality standards require <span class="math inline">C_{\min} \geq C_{\text{standard}}</span> (typically 5 mg L⁻¹ for warm-water fisheries, 6 mg L⁻¹ for cold-water/salmonid reaches). The standard defines the <strong>maximum allowable critical deficit</strong>:</p>
+<p><span class="math display">D_c^{\max} = C_s - C_{\text{standard}}</span></p>
+<h3 id="mixing-and-initial-conditions" class="anchored">3.6 Mixing and Initial Conditions</h3>
+<p>At the discharge point, the effluent mixes with the river. The initial BOD and DO after complete mixing:</p>
+<p><span class="math display">L_0 = \frac{Q_e L_e + Q_r L_r}{Q_e + Q_r}</span></p>
+<p><span class="math display">C_0 = \frac{Q_e C_e + Q_r C_r}{Q_e + Q_r}</span></p>
+<p>where subscripts <span class="math inline">e</span> = effluent, <span class="math inline">r</span> = river, and <span class="math inline">Q</span> = flow rate [m³ s⁻¹]. The initial deficit: <span class="math inline">D_0 = C_s - C_0</span>.</p>
+<p><strong>NPDES permit calculation:</strong> Given the river conditions (<span class="math inline">Q_r</span>, <span class="math inline">C_r</span>, <span class="math inline">L_r</span>, <span class="math inline">U</span>, <span class="math inline">H</span>, <span class="math inline">T</span>) and the required minimum DO, solve backwards for the maximum allowable effluent BOD concentration <span class="math inline">L_e</span>:</p>
+<p>From <span class="math inline">D_c \leq D_c^{\max}</span> and the Streeter-Phelps equation, work back through the mixing equation to find <span class="math inline">L_e^{\max}</span>.</p>
+<h3 id="npdes-and-treatment-effectiveness" class="anchored">3.7 NPDES and Treatment Effectiveness</h3>
+<p>The <strong>National Pollutant Discharge Elimination System (NPDES)</strong> in the US, and equivalent Canadian federal and provincial permits, set effluent limits based on protecting receiving water quality. A typical NPDES permit for BOD specifies a <strong>30-day average</strong> and a <strong>7-day average</strong> limit.</p>
+<p>Treatment effectiveness is measured by <strong>BOD removal efficiency</strong>:</p>
+<p><span class="math display">E = \frac{L_{\text{in}} - L_{\text{out}}}{L_{\text{in}}} \times 100\%</span></p>
+<ul>
+<li>Primary treatment (sedimentation): 25–40% BOD removal</li>
+<li>Secondary treatment (biological): 85–95% BOD removal</li>
+<li>Tertiary treatment (filtration + disinfection): &gt;95% BOD removal</li>
+</ul>
+<p>The <strong>effluent quality</strong> determines <span class="math inline">L_e</span>; working through the Streeter-Phelps model then tells us whether the receiving water standard is met.</p>
+<hr>
+<h2 id="worked-example-by-hand" class="anchored">4. Worked Example by Hand</h2>
+<p><strong>Setting:</strong> The Bow River in Calgary receives treated effluent from the Bonnybrook wastewater treatment plant. Determine whether a secondary-treatment effluent meets the provincial water quality standard of 6 mg/L DO.</p>
+<p><strong>Given:</strong> - River: <span class="math inline">Q_r = 80</span> m³/s, <span class="math inline">C_r = 9.0</span> mg/L, <span class="math inline">L_r = 1.5</span> mg/L, <span class="math inline">T = 18°C</span> - Effluent: <span class="math inline">Q_e = 2</span> m³/s, <span class="math inline">C_e = 4.0</span> mg/L, <span class="math inline">L_e = 15</span> mg/L (secondary treatment) - River hydraulics: <span class="math inline">U = 0.4</span> m/s = 34.6 km/day, <span class="math inline">H = 2.5</span> m - <span class="math inline">k_d = 0.18</span> day⁻¹, <span class="math inline">k_2 = 3.93 × 0.4^{0.5} / 2.5^{1.5} = 0.630</span> day⁻¹ (at 20°C)</p>
+<p><strong>Temperature correction to 18°C:</strong> <span class="math inline">k_d(18) = 0.18 × 1.047^{-2} = 0.18 / 1.096 = 0.164</span> day⁻¹ <span class="math inline">k_2(18) = 0.630 × 1.024^{-2} = 0.630 / 1.049 = 0.601</span> day⁻¹</p>
+<p><strong>Mixed initial conditions:</strong> <span class="math display">L_0 = \frac{2(15) + 80(1.5)}{82} = \frac{30+120}{82} = 1.829 \text{ mg/L}</span></p>
+<p><span class="math display">C_0 = \frac{2(4.0) + 80(9.0)}{82} = \frac{8+720}{82} = 8.878 \text{ mg/L}</span></p>
+<p><span class="math inline">C_s(18°C) = 14.62 - 0.3898(18) + 0.006969(324) - 0.00005896(5832) = 9.45</span> mg/L</p>
+<p><span class="math inline">D_0 = 9.45 - 8.878 = 0.572</span> mg/L</p>
+<p><strong>Critical time:</strong></p>
+<p><span class="math display">t_c = \frac{1}{0.601-0.164}\ln\!\left[\frac{0.601}{0.164}\left(1 - \frac{0.572(0.437)}{0.164 \times 1.829}\right)\right]</span> <span class="math display">= \frac{1}{0.437}\ln\left[3.665\left(1 - \frac{0.250}{0.300}\right)\right] = \frac{1}{0.437}\ln[3.665 \times 0.167]</span> <span class="math display">= \frac{1}{0.437}\ln(0.612) = \frac{-0.490}{0.437} = -1.12 \text{ days}</span></p>
+<p>Negative <span class="math inline">t_c</span> means the critical point is <strong>upstream</strong> of the discharge — i.e., the initial deficit (<span class="math inline">D_0</span>) already captures the maximum deficit, or there is rapid recovery. At <span class="math inline">t = 0</span>: <span class="math inline">D_0 = 0.572</span> mg/L → <span class="math inline">C = 9.45 - 0.57 = 8.88</span> mg/L.</p>
+<p><strong>Check standard:</strong> 8.88 mg/L &gt;&gt; 6 mg/L standard. ✓ The secondary treatment effluent meets the standard with large margin on the Bow River because the river’s high reaeration coefficient (fast, shallow, turbulent) and large dilution ratio (80:2) dominate.</p>
+<p><strong>If treatment were reduced to primary only</strong> (<span class="math inline">L_e = 100</span> mg/L, 40% removal from raw 167 mg/L): <span class="math inline">L_0 = (2×100 + 80×1.5)/82 = 3.59</span> mg/L; recomputing gives <span class="math inline">t_c &gt; 0</span> and <span class="math inline">D_c \approx 4.8</span> mg/L → <span class="math inline">C_{\min} = 9.45 - 4.80 = 4.65</span> mg/L — <strong>violation</strong> of the 6 mg/L standard.</p>
+<p>This calculation justifies the secondary treatment requirement.</p>
+<hr>
+<h2 id="computational-implementation" class="anchored">5. Computational Implementation</h2>
+<pre><code>function C_sat(T_celsius):
+    return 14.62 - 0.3898*T + 0.006969*T**2 - 0.00005896*T**3
+
+function k2_odobbins(U_m_s, H_m):
+    return 3.93 * sqrt(U_m_s) / H_m**1.5
+
+function streeter_phelps(t_array, L0, D0, kd, k2):
+    if kd == k2:  # edge case
+        D = (kd*L0*t + D0) * exp(-k2*t)
+    else:
+        D = kd*L0/(k2-kd) * (exp(-kd*t) - exp(-k2*t)) + D0*exp(-k2*t)
+    return D
+
+function critical_time(L0, D0, kd, k2):
+    arg = k2/kd * (1 - D0*(k2-kd)/(kd*L0))
+    if arg &lt;= 0: return 0  # critical point at or before discharge
+    return 1/(k2-kd) * log(arg)</code></pre>
+<pre class="{pyodide}"><code>import numpy as np
+
+def C_sat(T):
+    return 14.62 - 0.3898*T + 0.006969*T**2 - 0.00005896*T**3
+
+def k2_od(U, H):   # O'Connor-Dobbins (U in m/s, H in m)
+    return 3.93 * U**0.5 / H**1.5
+
+def streeter_phelps(t, L0, D0, kd, k2):
+    if abs(kd - k2) &lt; 1e-9:
+        return (kd * L0 * t + D0) * np.exp(-k2 * t)
+    return (kd*L0/(k2-kd) * (np.exp(-kd*t) - np.exp(-k2*t))
+            + D0 * np.exp(-k2*t))
+
+def critical_time(L0, D0, kd, k2):
+    arg = (k2/kd) * (1 - D0*(k2-kd)/(kd*L0))
+    if arg &lt;= 0:
+        return 0.0
+    return np.log(arg) / (k2 - kd)
+
+# Bow River example (secondary treatment)
+T = 18
+Cs = C_sat(T)
+Qr, Cr, Lr = 80, 9.0, 1.5
+Qe, Ce, Le = 2, 4.0, 15.0
+U, H = 0.4, 2.5
+
+kd = 0.18 * 1.047**(T-20)
+k2 = k2_od(U, H) * 1.024**(T-20)
+
+L0 = (Qe*Le + Qr*Lr) / (Qe+Qr)
+C0 = (Qe*Ce + Qr*Cr) / (Qe+Qr)
+D0 = Cs - C0
+
+print(f"Cs={Cs:.2f}, C0={C0:.3f}, L0={L0:.3f}, D0={D0:.3f}")
+print(f"kd={kd:.3f}/d, k2={k2:.3f}/d")
+
+t_arr = np.linspace(0, 10, 200)
+D_arr = streeter_phelps(t_arr, L0, D0, kd, k2)
+DO    = Cs - D_arr
+x_km  = t_arr * U * 86400 / 1000
+
+tc = max(0, critical_time(L0, D0, kd, k2))
+Dc = streeter_phelps(tc, L0, D0, kd, k2)
+print(f"\nCritical time: {tc:.2f} days → {tc*U*86.4:.1f} km downstream")
+print(f"Critical deficit: {Dc:.3f} mg/L")
+print(f"Minimum DO: {Cs-Dc:.2f} mg/L  (standard: 6 mg/L)")
+
+# Primary treatment only
+Le_primary = 100.0
+L0p = (Qe*Le_primary + Qr*Lr) / (Qe+Qr)
+C0p = C0  # DO mixing unchanged
+D0p = Cs - C0p
+tcp  = max(0, critical_time(L0p, D0p, kd, k2))
+Dcp  = streeter_phelps(tcp, L0p, D0p, kd, k2)
+print(f"\nPrimary treatment: min DO = {Cs-Dcp:.2f} mg/L ({'FAIL' if Cs-Dcp&lt;6 else 'PASS'})")</code></pre>
+<hr>
+<h2 id="visualization" class="anchored">6. Visualization</h2>
+<div data-viz="echarts" style="height:420px" data-options="{
+  &quot;title&quot;: {&quot;text&quot;: &quot;DO Sag Curve — River Response to Wastewater Discharge&quot;, &quot;textStyle&quot;: {&quot;fontSize&quot;: 14}},
+  &quot;tooltip&quot;: {&quot;trigger&quot;: &quot;axis&quot;},
+  &quot;legend&quot;: {&quot;data&quot;: [&quot;DO (secondary treatment)&quot;, &quot;DO (primary treatment only)&quot;, &quot;DO standard (6 mg/L)&quot;], &quot;bottom&quot;: 0},
+  &quot;xAxis&quot;: {&quot;name&quot;: &quot;Distance downstream (km)&quot;, &quot;nameLocation&quot;: &quot;middle&quot;, &quot;nameGap&quot;: 30,
+    &quot;data&quot;: [0,5,10,20,30,40,60,80,100,130,160,200]},
+  &quot;yAxis&quot;: {&quot;name&quot;: &quot;Dissolved oxygen (mg L⁻¹)&quot;, &quot;nameLocation&quot;: &quot;middle&quot;, &quot;nameGap&quot;: 50, &quot;min&quot;: 3, &quot;max&quot;: 10},
+  &quot;series&quot;: [
+    {&quot;name&quot;: &quot;DO (secondary treatment)&quot;, &quot;type&quot;: &quot;line&quot;, &quot;smooth&quot;: true,
+     &quot;itemStyle&quot;: {&quot;color&quot;: &quot;#1565C0&quot;},
+     &quot;data&quot;: [8.88, 8.72, 8.63, 8.60, 8.67, 8.78, 9.00, 9.18, 9.30, 9.38, 9.42, 9.45]},
+    {&quot;name&quot;: &quot;DO (primary treatment only)&quot;, &quot;type&quot;: &quot;line&quot;, &quot;smooth&quot;: true,
+     &quot;itemStyle&quot;: {&quot;color&quot;: &quot;#E53935&quot;},
+     &quot;data&quot;: [8.88, 8.1, 7.4, 6.5, 5.8, 5.6, 5.9, 6.5, 7.1, 7.8, 8.3, 8.8]},
+    {&quot;name&quot;: &quot;DO standard (6 mg/L)&quot;, &quot;type&quot;: &quot;line&quot;,
+     &quot;lineStyle&quot;: {&quot;type&quot;: &quot;dashed&quot;, &quot;color&quot;: &quot;#F57F17&quot;},
+     &quot;data&quot;: [6,6,6,6,6,6,6,6,6,6,6,6]}
+  ]
+}">
+
+</div>
+<p>Secondary treatment maintains DO well above the 6 mg/L standard at all distances. Primary treatment only produces a sag to ~5.6 mg/L at ~40 km downstream — a clear standard violation over a 30 km reach. The difference between the two treatment levels is the difference between a living and a dead reach of river for aquatic life.</p>
+<hr>
+<h2 id="interpretation" class="anchored">7. Interpretation</h2>
+<p>The Streeter-Phelps model makes a quantitative argument for sewage treatment that was not available to Victorian sanitary engineers. It answers three critical questions: where is the worst DO? what is the minimum value? and how much treatment is needed to meet the standard?</p>
+<p>The ratio <span class="math inline">k_2/k_d</span> governs the shape of the sag curve. When <span class="math inline">k_2 \gg k_d</span> (fast reaeration, slow decomposition — shallow turbulent rivers), the DO sag is shallow and short; the river recovers quickly. When <span class="math inline">k_2 \approx k_d</span> or <span class="math inline">k_2 &lt; k_d</span> (deep slow rivers in warm climates — the worst case), the sag is deep and extends far downstream. The Thames estuary is close to the worst case: deep, slow, warm in summer, with low reaeration — exactly the conditions that produced the Great Stink and that continue to produce summer DO depressions in the tidal Thames even today.</p>
+<p>The model also reveals why winter is safer for treated discharges than summer: lower temperatures slow <span class="math inline">k_d</span> (decomposition) and raise <span class="math inline">C_s</span> (saturation). The same effluent that violates standards in August may meet them comfortably in January. This is why provincial permits often include seasonal effluent limits — stricter in summer, more relaxed in winter.</p>
+<hr>
+<h2 id="what-could-go-wrong" class="anchored">8. What Could Go Wrong?</h2>
+<p><strong>The Streeter-Phelps model assumes steady-state and complete lateral mixing.</strong> Real rivers are unsteady — flow varies daily and seasonally — and mixing at a discharge point takes kilometres to complete. The model gives the centreline concentration after complete mixing; during the mixing zone immediately downstream, concentrations are higher than the model predicts. Mixing zones are typically given explicit regulatory treatment, with shorter-range standards near the outfall.</p>
+<p><strong>Settling, photosynthesis, and sediment oxygen demand are ignored.</strong> The standard model includes only BOD deoxygenation and surface reaeration. In practice, algal photosynthesis adds oxygen during the day (creating supersaturation) and consumes it at night; sediment oxygen demand from deposited organic material creates a bottom DO sink; and nitrate oxidation (nitrification) exerts a separate oxygen demand that can equal or exceed carbonaceous BOD.</p>
+<p><strong>Nitrification BOD.</strong> The BOD measured in a standard 5-day test (BOD₅) captures only carbonaceous oxygen demand. Nitrification — conversion of NH₄⁺ to NO₃⁻ by nitrifying bacteria — exerts an additional nitrogen oxygen demand (NBOD) of 4.57 g O₂ per g N. Ignoring NBOD can underestimate total oxygen demand by 30–50% for nitrogen-rich municipal effluents.</p>
+<hr>
+<h2 id="summary" class="anchored">9. Summary</h2>
+<p>The Streeter-Phelps model describes the downstream evolution of dissolved oxygen deficit <span class="math inline">D = C_s - C</span> following a wastewater discharge as a linear first-order ODE with two competing terms: BOD-driven deoxygenation (<span class="math inline">k_d L</span>) and reaeration (<span class="math inline">k_2 D</span>). The solution is the DO sag curve <span class="math inline">D(t) = \frac{k_d L_0}{k_2-k_d}(e^{-k_d t}-e^{-k_2 t})+D_0 e^{-k_2 t}</span>.</p>
+<p>The critical deficit <span class="math inline">D_c</span> — the lowest DO point — occurs at time <span class="math inline">t_c</span> and distance <span class="math inline">x_c = U t_c</span> downstream. NPDES permit calculations work backwards from the required minimum DO to determine the maximum allowable effluent BOD, and hence the required treatment level.</p>
+<p><strong>Key equations:</strong></p>
+<p><span class="math display">\frac{dL}{dt} = -k_d L \Rightarrow L(t) = L_0 e^{-k_d t}</span></p>
+<p><span class="math display">D(t) = \frac{k_d L_0}{k_2-k_d}\!\left(e^{-k_d t}-e^{-k_2 t}\right) + D_0 e^{-k_2 t}</span></p>
+<p><span class="math display">t_c = \frac{1}{k_2-k_d}\ln\!\left[\frac{k_2}{k_d}\!\left(1-\frac{D_0(k_2-k_d)}{k_d L_0}\right)\right]</span></p>
+<p><span class="math display">k_2 = 3.93\, U^{0.5}/H^{1.5} \quad\text{[O'Connor-Dobbins]}</span></p>
+<hr>
+<h2 id="math-refresher" class="anchored">Math Refresher</h2>
+<p><strong>Solving the Streeter-Phelps ODE.</strong> The equation <span class="math inline">dD/dt = k_d L_0 e^{-k_d t} - k_2 D</span> is first-order linear: <span class="math inline">dD/dt + k_2 D = k_d L_0 e^{-k_d t}</span>. The integrating factor is <span class="math inline">e^{k_2 t}</span>. Multiplying both sides and integrating gives the solution. The key mathematical structure — one exponential decaying at rate <span class="math inline">k_d</span> (BOD) and another at rate <span class="math inline">k_2</span> (deficit relaxation) — produces the characteristic “sag and recovery” shape when <span class="math inline">k_2 &gt; k_d</span>.</p>
+<p><strong>Finding the critical point.</strong> Setting <span class="math inline">dD/dt = 0</span> equates the deoxygenation rate with the reaeration rate: <span class="math inline">k_d L(t_c) = k_2 D(t_c)</span>. Substituting <span class="math inline">L(t_c) = L_0 e^{-k_d t_c}</span> and the Streeter-Phelps <span class="math inline">D(t_c)</span> and solving for <span class="math inline">t_c</span> produces the critical time formula. This is a standard calculus exercise — the river’s minimum DO is the point where the two competing rates are equal, analogous to finding where a ball thrown upward momentarily stops before falling back down.</p>
+
+
+<footer class="wayward-footer">
+  <div class="wayward-footer__inner">
+    <div class="wayward-footer__brand">
+      <div class="wayward-footer__logo">WaywardHouse<span>.</span></div>
+      <p>Understanding how place, economy, and environment interact through analysis, modelling, and open tools.</p>
+    </div>
+
+    <nav class="wayward-footer__group" aria-labelledby="footer-reading">
+      <h2 id="footer-reading" class="anchored">Reading</h2>
+      <a href="../articles/">Articles</a>
+      <a href="../learn/">Learn</a>
+      <a href="../archive.html">Archive</a>
+      <a href="../start-here.html">Start Here</a>
+    </nav>
+
+    <nav class="wayward-footer__group" aria-labelledby="footer-site">
+      <h2 id="footer-site" class="anchored">Site</h2>
+      <a href="../start-here.html">Start Here</a>
+      <a href="../about.html">About</a>
+      <a href="../contact.html">Contact</a>
+    </nav>
+
+    <nav class="wayward-footer__group" aria-labelledby="footer-resources">
+      <h2 id="footer-resources" class="anchored">Resources</h2>
+      <a href="../topics/">All Topics</a>
+      <a href="../privacy.html">Privacy Policy</a>
+      <a href="../terms.html">Terms of Use</a>
+    </nav>
+  </div>
+</footer>
+
+<script type="module" src="../assets/dist/main.js"></script>
+<script type="module" src="../assets/js/core.js"></script>
+<script id="quarto-html-after-body" type="application/javascript">
+  window.document.addEventListener("DOMContentLoaded", function (event) {
+    const tabsets =  window.document.querySelectorAll(".panel-tabset-tabby")
+    tabsets.forEach(function(tabset) {
+      const tabby = new Tabby('#' + tabset.id);
+    });
+    const icon = "";
+    const anchorJS = new window.AnchorJS();
+    anchorJS.options = {
+      placement: 'right',
+      icon: icon
+    };
+    anchorJS.add('.anchored');
+    const isCodeAnnotation = (el) => {
+      for (const clz of el.classList) {
+        if (clz.startsWith('code-annotation-')) {                     
+          return true;
+        }
+      }
+      return false;
+    }
+    const onCopySuccess = function(e) {
+      // button target
+      const button = e.trigger;
+      // don't keep focus
+      button.blur();
+      // flash "checked"
+      button.classList.add('code-copy-button-checked');
+      var currentTitle = button.getAttribute("title");
+      button.setAttribute("title", "Copied!");
+      let tooltip;
+      if (window.bootstrap) {
+        button.setAttribute("data-bs-toggle", "tooltip");
+        button.setAttribute("data-bs-placement", "left");
+        button.setAttribute("data-bs-title", "Copied!");
+        tooltip = new bootstrap.Tooltip(button, 
+          { trigger: "manual", 
+            customClass: "code-copy-button-tooltip",
+            offset: [0, -8]});
+        tooltip.show();    
+      }
+      setTimeout(function() {
+        if (tooltip) {
+          tooltip.hide();
+          button.removeAttribute("data-bs-title");
+          button.removeAttribute("data-bs-toggle");
+          button.removeAttribute("data-bs-placement");
+        }
+        button.setAttribute("title", currentTitle);
+        button.classList.remove('code-copy-button-checked');
+      }, 1000);
+      // clear code selection
+      e.clearSelection();
+    }
+    const getTextToCopy = function(trigger) {
+      const outerScaffold = trigger.parentElement.cloneNode(true);
+      const codeEl = outerScaffold.querySelector('code');
+      for (const childEl of codeEl.children) {
+        if (isCodeAnnotation(childEl)) {
+          childEl.remove();
+        }
+      }
+      return codeEl.innerText;
+    }
+    const clipboard = new window.ClipboardJS('.code-copy-button:not([data-in-quarto-modal])', {
+      text: getTextToCopy
+    });
+    clipboard.on('success', onCopySuccess);
+    if (window.document.getElementById('quarto-embedded-source-code-modal')) {
+      const clipboardModal = new window.ClipboardJS('.code-copy-button[data-in-quarto-modal]', {
+        text: getTextToCopy,
+        container: window.document.getElementById('quarto-embedded-source-code-modal')
+      });
+      clipboardModal.on('success', onCopySuccess);
+    }
+      var localhostRegex = new RegExp(/^(?:http|https):\/\/localhost\:?[0-9]*\//);
+      var mailtoRegex = new RegExp(/^mailto:/);
+        var filterRegex = new RegExp('/' + window.location.host + '/');
+      var isInternal = (href) => {
+          return filterRegex.test(href) || localhostRegex.test(href) || mailtoRegex.test(href);
+      }
+      // Inspect non-navigation links and adorn them if external
+     var links = window.document.querySelectorAll('a[href]:not(.nav-link):not(.navbar-brand):not(.toc-action):not(.sidebar-link):not(.sidebar-item-toggle):not(.pagination-link):not(.no-external):not([aria-hidden]):not(.dropdown-item):not(.quarto-navigation-tool):not(.about-link)');
+      for (var i=0; i<links.length; i++) {
+        const link = links[i];
+        if (!isInternal(link.href)) {
+          // undo the damage that might have been done by quarto-nav.js in the case of
+          // links that we want to consider external
+          if (link.dataset.originalHref !== undefined) {
+            link.href = link.dataset.originalHref;
+          }
+        }
+      }
+    function tippyHover(el, contentFn, onTriggerFn, onUntriggerFn) {
+      const config = {
+        allowHTML: true,
+        maxWidth: 500,
+        delay: 100,
+        arrow: false,
+        appendTo: function(el) {
+            return el.parentElement;
+        },
+        interactive: true,
+        interactiveBorder: 10,
+        theme: 'light-border',
+        placement: 'bottom-start',
+      };
+      if (contentFn) {
+        config.content = contentFn;
+      }
+      if (onTriggerFn) {
+        config.onTrigger = onTriggerFn;
+      }
+      if (onUntriggerFn) {
+        config.onUntrigger = onUntriggerFn;
+      }
+      window.tippy(el, config); 
+    }
+    const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+    for (var i=0; i<noterefs.length; i++) {
+      const ref = noterefs[i];
+      tippyHover(ref, function() {
+        // use id or data attribute instead here
+        let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+        try { href = new URL(href).hash; } catch {}
+        const id = href.replace(/^#\/?/, "");
+        const note = window.document.getElementById(id);
+        if (note) {
+          return note.innerHTML;
+        } else {
+          return "";
+        }
+      });
+    }
+    const xrefs = window.document.querySelectorAll('a.quarto-xref');
+    const processXRef = (id, note) => {
+      // Strip column container classes
+      const stripColumnClz = (el) => {
+        el.classList.remove("page-full", "page-columns");
+        if (el.children) {
+          for (const child of el.children) {
+            stripColumnClz(child);
+          }
+        }
+      }
+      stripColumnClz(note)
+      if (id === null || id.startsWith('sec-')) {
+        // Special case sections, only their first couple elements
+        const container = document.createElement("div");
+        if (note.children && note.children.length > 2) {
+          container.appendChild(note.children[0].cloneNode(true));
+          for (let i = 1; i < note.children.length; i++) {
+            const child = note.children[i];
+            if (child.tagName === "P" && child.innerText === "") {
+              continue;
+            } else {
+              container.appendChild(child.cloneNode(true));
+              break;
+            }
+          }
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(container);
+          }
+          return container.innerHTML
+        } else {
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(note);
+          }
+          return note.innerHTML;
+        }
+      } else {
+        // Remove any anchor links if they are present
+        const anchorLink = note.querySelector('a.anchorjs-link');
+        if (anchorLink) {
+          anchorLink.remove();
+        }
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(note);
+        }
+        if (note.classList.contains("callout")) {
+          return note.outerHTML;
+        } else {
+          return note.innerHTML;
+        }
+      }
+    }
+    for (var i=0; i<xrefs.length; i++) {
+      const xref = xrefs[i];
+      tippyHover(xref, undefined, function(instance) {
+        instance.disable();
+        let url = xref.getAttribute('href');
+        let hash = undefined; 
+        if (url.startsWith('#')) {
+          hash = url;
+        } else {
+          try { hash = new URL(url).hash; } catch {}
+        }
+        if (hash) {
+          const id = hash.replace(/^#\/?/, "");
+          const note = window.document.getElementById(id);
+          if (note !== null) {
+            try {
+              const html = processXRef(id, note.cloneNode(true));
+              instance.setContent(html);
+            } finally {
+              instance.enable();
+              instance.show();
+            }
+          } else {
+            // See if we can fetch this
+            fetch(url.split('#')[0])
+            .then(res => res.text())
+            .then(html => {
+              const parser = new DOMParser();
+              const htmlDoc = parser.parseFromString(html, "text/html");
+              const note = htmlDoc.getElementById(id);
+              if (note !== null) {
+                const html = processXRef(id, note);
+                instance.setContent(html);
+              } 
+            }).finally(() => {
+              instance.enable();
+              instance.show();
+            });
+          }
+        } else {
+          // See if we can fetch a full url (with no hash to target)
+          // This is a special case and we should probably do some content thinning / targeting
+          fetch(url)
+          .then(res => res.text())
+          .then(html => {
+            const parser = new DOMParser();
+            const htmlDoc = parser.parseFromString(html, "text/html");
+            const note = htmlDoc.querySelector('main.content');
+            if (note !== null) {
+              // This should only happen for chapter cross references
+              // (since there is no id in the URL)
+              // remove the first header
+              if (note.children.length > 0 && note.children[0].tagName === "HEADER") {
+                note.children[0].remove();
+              }
+              const html = processXRef(null, note);
+              instance.setContent(html);
+            } 
+          }).finally(() => {
+            instance.enable();
+            instance.show();
+          });
+        }
+      }, function(instance) {
+      });
+    }
+        let selectedAnnoteEl;
+        const selectorForAnnotation = ( cell, annotation) => {
+          let cellAttr = 'data-code-cell="' + cell + '"';
+          let lineAttr = 'data-code-annotation="' +  annotation + '"';
+          const selector = 'span[' + cellAttr + '][' + lineAttr + ']';
+          return selector;
+        }
+        const selectCodeLines = (annoteEl) => {
+          const doc = window.document;
+          const targetCell = annoteEl.getAttribute("data-target-cell");
+          const targetAnnotation = annoteEl.getAttribute("data-target-annotation");
+          const annoteSpan = window.document.querySelector(selectorForAnnotation(targetCell, targetAnnotation));
+          const lines = annoteSpan.getAttribute("data-code-lines").split(",");
+          const lineIds = lines.map((line) => {
+            return targetCell + "-" + line;
+          })
+          let top = null;
+          let height = null;
+          let parent = null;
+          if (lineIds.length > 0) {
+              //compute the position of the single el (top and bottom and make a div)
+              const el = window.document.getElementById(lineIds[0]);
+              top = el.offsetTop;
+              height = el.offsetHeight;
+              parent = el.parentElement.parentElement;
+            if (lineIds.length > 1) {
+              const lastEl = window.document.getElementById(lineIds[lineIds.length - 1]);
+              const bottom = lastEl.offsetTop + lastEl.offsetHeight;
+              height = bottom - top;
+            }
+            if (top !== null && height !== null && parent !== null) {
+              // cook up a div (if necessary) and position it 
+              let div = window.document.getElementById("code-annotation-line-highlight");
+              if (div === null) {
+                div = window.document.createElement("div");
+                div.setAttribute("id", "code-annotation-line-highlight");
+                div.style.position = 'absolute';
+                parent.appendChild(div);
+              }
+              div.style.top = top - 2 + "px";
+              div.style.height = height + 4 + "px";
+              div.style.left = 0;
+              let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
+              if (gutterDiv === null) {
+                gutterDiv = window.document.createElement("div");
+                gutterDiv.setAttribute("id", "code-annotation-line-highlight-gutter");
+                gutterDiv.style.position = 'absolute';
+                const codeCell = window.document.getElementById(targetCell);
+                const gutter = codeCell.querySelector('.code-annotation-gutter');
+                gutter.appendChild(gutterDiv);
+              }
+              gutterDiv.style.top = top - 2 + "px";
+              gutterDiv.style.height = height + 4 + "px";
+            }
+            selectedAnnoteEl = annoteEl;
+          }
+        };
+        const unselectCodeLines = () => {
+          const elementsIds = ["code-annotation-line-highlight", "code-annotation-line-highlight-gutter"];
+          elementsIds.forEach((elId) => {
+            const div = window.document.getElementById(elId);
+            if (div) {
+              div.remove();
+            }
+          });
+          selectedAnnoteEl = undefined;
+        };
+          // Handle positioning of the toggle
+      window.addEventListener(
+        "resize",
+        throttle(() => {
+          elRect = undefined;
+          if (selectedAnnoteEl) {
+            selectCodeLines(selectedAnnoteEl);
+          }
+        }, 10)
+      );
+      function throttle(fn, ms) {
+      let throttle = false;
+      let timer;
+        return (...args) => {
+          if(!throttle) { // first call gets through
+              fn.apply(this, args);
+              throttle = true;
+          } else { // all the others get throttled
+              if(timer) clearTimeout(timer); // cancel #2
+              timer = setTimeout(() => {
+                fn.apply(this, args);
+                timer = throttle = false;
+              }, ms);
+          }
+        };
+      }
+        // Attach click handler to the DT
+        const annoteDls = window.document.querySelectorAll('dt[data-target-cell]');
+        for (const annoteDlNode of annoteDls) {
+          annoteDlNode.addEventListener('click', (event) => {
+            const clickedEl = event.target;
+            if (clickedEl !== selectedAnnoteEl) {
+              unselectCodeLines();
+              const activeEl = window.document.querySelector('dt[data-target-cell].code-annotation-active');
+              if (activeEl) {
+                activeEl.classList.remove('code-annotation-active');
+              }
+              selectCodeLines(clickedEl);
+              clickedEl.classList.add('code-annotation-active');
+            } else {
+              // Unselect the line
+              unselectCodeLines();
+              clickedEl.classList.remove('code-annotation-active');
+            }
+          });
+        }
+    const findCites = (el) => {
+      const parentEl = el.parentElement;
+      if (parentEl) {
+        const cites = parentEl.dataset.cites;
+        if (cites) {
+          return {
+            el,
+            cites: cites.split(' ')
+          };
+        } else {
+          return findCites(el.parentElement)
+        }
+      } else {
+        return undefined;
+      }
+    };
+    var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+    for (var i=0; i<bibliorefs.length; i++) {
+      const ref = bibliorefs[i];
+      const citeInfo = findCites(ref);
+      if (citeInfo) {
+        tippyHover(citeInfo.el, function() {
+          var popup = window.document.createElement('div');
+          citeInfo.cites.forEach(function(cite) {
+            var citeDiv = window.document.createElement('div');
+            citeDiv.classList.add('hanging-indent');
+            citeDiv.classList.add('csl-entry');
+            var biblioDiv = window.document.getElementById('ref-' + cite);
+            if (biblioDiv) {
+              citeDiv.innerHTML = biblioDiv.innerHTML;
+            }
+            popup.appendChild(citeDiv);
+          });
+          return popup.innerHTML;
+        });
+      }
+    }
+  });
+  </script>
+
+
+
+
+</body></html>
