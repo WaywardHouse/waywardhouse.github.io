@@ -1,0 +1,954 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
+
+<meta charset="utf-8">
+<meta name="generator" content="quarto-1.9.36">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+
+<meta name="dcterms.date" content="2026-02-26">
+<meta name="description" content="Vegetation reflects near-infrared light strongly but absorbs red light (for photosynthesis). This spectral signature enables satellites to map greenness globally. This model derives NDVI and EVI, explains why they correlate with photosynthesis, and shows how to interpret vegetation index time series.">
+
+<title>Vegetation Indices and Remote Sensing – WaywardHouse</title>
+<style>
+/* Default styles provided by pandoc.
+** See https://pandoc.org/MANUAL.html#variables-for-html for config info.
+*/
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: min(4vw, 1.5em);}
+div.column{flex: auto; overflow-x: auto;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+  width: 0.8em;
+  margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
+  vertical-align: middle;
+}
+</style>
+
+
+<link href="../../assets/images/logo.webp" rel="icon">
+<script src="../../site_libs/clipboard/clipboard.min.js"></script>
+<script src="../../site_libs/quarto-html/tabby.min.js"></script>
+<script src="../../site_libs/quarto-html/popper.min.js"></script>
+<script src="../../site_libs/quarto-html/tippy.umd.min.js"></script>
+<link href="../../site_libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="../../site_libs/quarto-html/light-border.css" rel="stylesheet">
+<link href="../../site_libs/quarto-html/quarto-html-640605f58ae58ee79329c070719e555b.min.css" rel="stylesheet" append-hash="true" data-mode="light">
+<link href="../../site_libs/quarto-html/quarto-syntax-highlighting-845c23b38eaddc0f92fda52bfe77a8c8.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<style>html{ scroll-behavior: smooth; }</style>
+<script>
+  (function () {
+    var s = localStorage.getItem('theme');
+    var dark = s !== null ? s === 'dark' : false;
+    document.documentElement.dataset.theme = dark ? 'dark' : 'light';
+    document.documentElement.dataset.brand = 'wayward';
+  })();
+</script>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:ital,wght@0,300;0,400;0,600;0,700;0,800;0,900;1,700;1,800&amp;family=Barlow:wght@300;400;500;600&amp;family=IBM+Plex+Mono:ital,wght@0,300;0,400;0,500;1,300&amp;family=Literata:ital,opsz,wght@0,7..72,300;0,7..72,400;0,7..72,500;1,7..72,300;1,7..72,400&amp;display=swap" rel="stylesheet">
+
+  <script>window.backupDefine = window.define; window.define = undefined;</script><script src="https://cdn.jsdelivr.net/npm/katex@latest/dist/katex.min.js"></script>
+  <script>document.addEventListener("DOMContentLoaded", function () {
+ var mathElements = document.getElementsByClassName("math");
+ var macros = [];
+ for (var i = 0; i < mathElements.length; i++) {
+  var texText = mathElements[i].firstChild;
+  if (mathElements[i].tagName == "SPAN") {
+   katex.render(texText.data, mathElements[i], {
+    displayMode: mathElements[i].classList.contains('display'),
+    throwOnError: false,
+    macros: macros,
+    fleqn: false
+   });
+}}});
+  </script>
+  <script>window.define = window.backupDefine; window.backupDefine = undefined;</script><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@latest/dist/katex.min.css">
+
+<script type="text/javascript">
+const typesetMath = (el) => {
+  if (window.MathJax) {
+    // MathJax Typeset
+    window.MathJax.typeset([el]);
+  } else if (window.katex) {
+    // KaTeX Render
+    var mathElements = el.getElementsByClassName("math");
+    var macros = [];
+    for (var i = 0; i < mathElements.length; i++) {
+      var texText = mathElements[i].firstChild;
+      if (mathElements[i].tagName == "SPAN" && texText && texText.data) {
+        window.katex.render(texText.data, mathElements[i], {
+          displayMode: mathElements[i].classList.contains('display'),
+          throwOnError: false,
+          macros: macros,
+          fleqn: false
+        });
+      }
+    }
+  }
+}
+window.Quarto = {
+  typesetMath
+};
+</script>
+
+<link rel="stylesheet" href="../../assets/css/quarto-wayward.css">
+</head>
+
+<body class="reading-body tag-hash-math tag-hash-viz">
+
+
+<header id="title-block-header">
+<h1 class="title">Vegetation Indices and Remote Sensing</h1>
+<p class="subtitle">NDVI, EVI, and monitoring photosynthesis from space</p>
+
+<p class="date">2026-02-26</p>
+</header>
+
+
+<h2 id="before-you-start">Before You Start</h2>
+<p><strong>You should know</strong><br>
+That plants interact with light in different ways at different wavelengths, and that ratios can help compare signals measured on different scales.</p>
+<p><strong>You will learn</strong><br>
+How vegetation indices like NDVI and EVI are built, what they are measuring, and how satellites use reflected light to estimate greenness.</p>
+<p><strong>Why this matters</strong><br>
+This is one of the clearest examples of computational geography connecting physics, biology, and Earth observation into one practical tool.</p>
+<p><strong>If this gets hard, focus on…</strong><br>
+The essential idea is that healthy vegetation reflects near-infrared strongly and absorbs red light, so comparing those bands tells us something useful.</p>
+<p>In the summer of 2012, a drought so severe that it was described as a 500-year event gripped the central United States. Corn yields across the Midwest fell by a third. The damage was visible from space — not as browning that a photograph would show, but as a measurable collapse in the near-infrared reflectance of the crop canopy relative to red reflectance. MODIS satellites, orbiting at 705 km altitude, had been tracking the drought’s progression across millions of hectares of cropland in near-real time, using a quantity called NDVI. The number that went into the emergency response briefings in Washington was computed from band arithmetic that takes about five keystrokes to type.</p>
+<p>The spectral signature of healthy vegetation is one of the most distinctive in all of remote sensing: leaves absorb red light (chlorophyll uses it for photosynthesis) and reflect near-infrared light strongly (the cellular structure of leaves is nearly transparent to NIR). The ratio of the difference to the sum of these two reflectances — the Normalised Difference Vegetation Index — is near zero for bare soil and water, and approaches 1.0 for dense healthy canopy. It correlates reasonably well with leaf area index, photosynthesis rate, and green biomass. This model derives NDVI and its more sophisticated successor EVI from the underlying physics of leaf optics, explains why normalisation matters, and shows what the time series of a vegetation index reveals about ecosystem seasonality and stress.</p>
+<h2 id="the-question">1. The Question</h2>
+<p>How do satellites measure plant health and productivity from space?</p>
+<p>From 700 km overhead, satellites observe Earth in multiple wavelengths (colors). Healthy vegetation has a distinctive spectral signature: - <strong>Red light</strong> (620–700 nm): Strongly absorbed by chlorophyll → low reflectance (~5–10%) - <strong>Near-infrared</strong> (NIR, 780–900 nm): Strongly reflected by leaf structure → high reflectance (~40–50%)</p>
+<p>This contrast creates <strong>vegetation indices</strong>—mathematical combinations of spectral bands that quantify “greenness” and correlate with: - Leaf area index (LAI) - Photosynthesis rate (GPP from Model 20) - Biomass - Crop yield</p>
+<p>The mathematical question: How do we combine red and NIR reflectance to create a robust vegetation index?</p>
+<hr>
+<h2 id="the-conceptual-model">2. The Conceptual Model</h2>
+<h3 id="spectral-reflectance">Spectral Reflectance</h3>
+<p><strong>Reflectance</strong> (<span class="math inline">\rho</span>) is the fraction of incident light reflected by a surface:</p>
+<p><span class="math display">\rho_{\lambda} = \frac{E_{\text{reflected}}(\lambda)}{E_{\text{incident}}(\lambda)}</span></p>
+<p>Where <span class="math inline">\lambda</span> is wavelength.</p>
+<p><strong>Typical vegetation reflectance:</strong> - <strong>Blue</strong> (450–500 nm): Low (~5%, absorbed by chlorophyll) - <strong>Green</strong> (500–580 nm): Moderate (~10%, why leaves look green) - <strong>Red</strong> (620–700 nm): Very low (~5%, strong chlorophyll absorption) - <strong>NIR</strong> (780–900 nm): High (~40–50%, internal leaf structure scattering) - <strong>SWIR</strong> (1550–1750 nm): Low (~10–20%, water absorption)</p>
+<h3 id="why-nir-is-high-for-vegetation">Why NIR is High for Vegetation</h3>
+<p>Leaf internal structure: - <strong>Spongy mesophyll:</strong> Air-cell interfaces scatter light - <strong>Minimal absorption:</strong> No chlorophyll in NIR - Result: Multiple scattering → high reflectance</p>
+<p><strong>Senescent leaves</strong> (dying, autumn colors): - Chlorophyll breaks down - Red reflectance increases (~20–30%) - NIR decreases (~30–40%) - Red-NIR contrast weakens → lower vegetation index</p>
+<h3 id="soil-background">Soil Background</h3>
+<p><strong>Bare soil</strong> has: - Similar red and NIR (~15–25% both) - Low red-NIR contrast - Low vegetation index (as expected)</p>
+<p><strong>Partial cover:</strong> Mixture of vegetation and soil → intermediate index.</p>
+<hr>
+<h2 id="building-the-mathematical-model">3. Building the Mathematical Model</h2>
+<h3 id="normalized-difference-vegetation-index-ndvi">Normalized Difference Vegetation Index (NDVI)</h3>
+<p>The most widely used vegetation index:</p>
+<p><span class="math display">\text{NDVI} = \frac{\rho_{\text{NIR}} - \rho_{\text{red}}}{\rho_{\text{NIR}} + \rho_{\text{red}}}</span></p>
+<p><strong>Properties:</strong> - Range: −1 to +1 - <strong>Dense vegetation:</strong> NDVI ≈ 0.7–0.9 (high NIR, low red) - <strong>Sparse vegetation:</strong> NDVI ≈ 0.2–0.5 - <strong>Bare soil:</strong> NDVI ≈ 0.05–0.2 - <strong>Water:</strong> NDVI ≈ −0.1 to 0 (NIR absorbed by water) - <strong>Clouds/snow:</strong> NDVI ≈ 0 to 0.3 (both red and NIR high and similar)</p>
+<p><strong>Why normalize?</strong> - Reduces effects of illumination angle - Reduces atmospheric scattering - Makes values comparable across scenes</p>
+<h3 id="enhanced-vegetation-index-evi">Enhanced Vegetation Index (EVI)</h3>
+<p><strong>EVI</strong> reduces sensitivity to soil and atmosphere:</p>
+<p><span class="math display">\text{EVI} = G \frac{\rho_{\text{NIR}} - \rho_{\text{red}}}{\rho_{\text{NIR}} + C_1 \rho_{\text{red}} - C_2 \rho_{\text{blue}} + L}</span></p>
+<p>Where: - <span class="math inline">G = 2.5</span> (gain factor) - <span class="math inline">C_1 = 6</span>, <span class="math inline">C_2 = 7.5</span> (coefficients for atmospheric correction) - <span class="math inline">L = 1</span> (soil adjustment factor)</p>
+<p><strong>Advantages over NDVI:</strong> - Less saturated at high LAI - Better atmospheric correction - Improved sensitivity in dense canopies</p>
+<p><strong>MODIS EVI</strong> uses these exact coefficients.</p>
+<h3 id="simple-ratio-sr">Simple Ratio (SR)</h3>
+<p>The <strong>simple ratio</strong> predates NDVI:</p>
+<p><span class="math display">\text{SR} = \frac{\rho_{\text{NIR}}}{\rho_{\text{red}}}</span></p>
+<p><strong>Properties:</strong> - Range: 0 to ~30 - Dense vegetation: SR ≈ 8–15 - Bare soil: SR ≈ 1–2</p>
+<p><strong>Relationship to NDVI:</strong></p>
+<p><span class="math display">\text{NDVI} = \frac{\text{SR} - 1}{\text{SR} + 1}</span></p>
+<p>SR has larger dynamic range but is more sensitive to noise.</p>
+<h3 id="connecting-to-leaf-area-index">Connecting to Leaf Area Index</h3>
+<p><strong>Empirical relationship:</strong></p>
+<p><span class="math display">\text{LAI} \approx a \times \text{NDVI}^b</span></p>
+<p>Or approximately linear for moderate LAI:</p>
+<p><span class="math display">\text{LAI} \approx 6 \times \text{NDVI}</span></p>
+<p><strong>Saturation:</strong> At high LAI (&gt; 5), NDVI saturates (approaches 0.9 asymptotically). EVI remains more responsive.</p>
+<h3 id="connecting-to-photosynthesis">Connecting to Photosynthesis</h3>
+<p><strong>fPAR</strong> (fraction of Photosynthetically Active Radiation absorbed):</p>
+<p><span class="math display">\text{fPAR} \approx 1.24 \times \text{NDVI} - 0.168</span></p>
+<p>(For NDVI between 0.15 and 0.9)</p>
+<p><strong>GPP estimation:</strong></p>
+<p><span class="math display">\text{GPP} \approx \varepsilon \times \text{fPAR} \times \text{PAR}</span></p>
+<p>Where: - <span class="math inline">\varepsilon</span> = light use efficiency (~1–2 g C/MJ PAR) - PAR = photosynthetically active radiation (from solar radiation measurements)</p>
+<p>This is the basis for <strong>MODIS GPP</strong> product.</p>
+<hr>
+<h2 id="worked-example-by-hand">4. Worked Example by Hand</h2>
+<p><strong>Problem:</strong> A Landsat scene has the following reflectance values for a pixel: - Red: <span class="math inline">\rho_{\text{red}} = 0.08</span> - NIR: <span class="math inline">\rho_{\text{NIR}} = 0.42</span> - Blue: <span class="math inline">\rho_{\text{blue}} = 0.06</span></p>
+<p>Calculate:<br>
+(a) NDVI<br>
+(b) Simple Ratio (SR)<br>
+(c) EVI<br>
+(d) Estimated LAI</p>
+<h3 id="solution">Solution</h3>
+<p><strong>(a) NDVI</strong></p>
+<p><span class="math display">\text{NDVI} = \frac{\rho_{\text{NIR}} - \rho_{\text{red}}}{\rho_{\text{NIR}} + \rho_{\text{red}}} = \frac{0.42 - 0.08}{0.42 + 0.08}</span></p>
+<p><span class="math display">= \frac{0.34}{0.50} = 0.68</span></p>
+<p><strong>(b) Simple Ratio</strong></p>
+<p><span class="math display">\text{SR} = \frac{\rho_{\text{NIR}}}{\rho_{\text{red}}} = \frac{0.42}{0.08} = 5.25</span></p>
+<p><strong>Check relationship:</strong></p>
+<p><span class="math display">\text{NDVI} = \frac{SR - 1}{SR + 1} = \frac{5.25 - 1}{5.25 + 1} = \frac{4.25}{6.25} = 0.68</span> ✓</p>
+<p><strong>(c) EVI</strong></p>
+<p><span class="math display">\text{EVI} = 2.5 \frac{0.42 - 0.08}{0.42 + 6(0.08) - 7.5(0.06) + 1}</span></p>
+<p><span class="math display">= 2.5 \frac{0.34}{0.42 + 0.48 - 0.45 + 1}</span></p>
+<p><span class="math display">= 2.5 \frac{0.34}{1.45} = 2.5 \times 0.234 = 0.59</span></p>
+<p><strong>(d) Estimated LAI</strong></p>
+<p><span class="math display">\text{LAI} \approx 6 \times \text{NDVI} = 6 \times 0.68 = 4.08</span></p>
+<p><strong>Interpretation:</strong> NDVI = 0.68 indicates healthy, moderately dense vegetation (corn mid-season, temperate forest canopy). LAI ≈ 4 is typical for mature crops.</p>
+<hr>
+<h2 id="computational-implementation">5. Computational Implementation</h2>
+<p>Below is an interactive vegetation index calculator with spectral reflectance curves.</p>
+<div id="vi-viz" class="viz-container">
+<div class="controls">
+<pre><code>&lt;label&gt;
+  Land cover type:
+  &lt;select id="landcover-type"&gt;
+    &lt;option value="dense-veg"&gt;Dense Vegetation&lt;/option&gt;
+    &lt;option value="moderate-veg" selected&gt;Moderate Vegetation&lt;/option&gt;
+    &lt;option value="sparse-veg"&gt;Sparse Vegetation&lt;/option&gt;
+    &lt;option value="bare-soil"&gt;Bare Soil&lt;/option&gt;
+    &lt;option value="water"&gt;Water&lt;/option&gt;
+    &lt;option value="snow"&gt;Snow&lt;/option&gt;
+  &lt;/select&gt;
+&lt;/label&gt;
+&lt;label&gt;
+  Red reflectance:
+  &lt;input type="range" id="red-slider" min="0" max="0.5" step="0.01" value="0.08"&gt;
+  &lt;span id="red-value"&gt;0.08&lt;/span&gt;
+&lt;/label&gt;
+&lt;label&gt;
+  NIR reflectance:
+  &lt;input type="range" id="nir-slider" min="0" max="0.6" step="0.01" value="0.42"&gt;
+  &lt;span id="nir-value"&gt;0.42&lt;/span&gt;
+&lt;/label&gt;
+&lt;label&gt;
+  Blue reflectance:
+  &lt;input type="range" id="blue-slider" min="0" max="0.4" step="0.01" value="0.06"&gt;
+  &lt;span id="blue-value"&gt;0.06&lt;/span&gt;
+&lt;/label&gt;</code></pre>
+</div>
+<div class="vi-results">
+<pre><code>&lt;p&gt;&lt;strong&gt;NDVI:&lt;/strong&gt; &lt;span id="ndvi-result"&gt;&lt;/span&gt;&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;EVI:&lt;/strong&gt; &lt;span id="evi-result"&gt;&lt;/span&gt;&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;Simple Ratio:&lt;/strong&gt; &lt;span id="sr-result"&gt;&lt;/span&gt;&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;Est. LAI:&lt;/strong&gt; &lt;span id="lai-result"&gt;&lt;/span&gt;&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;Classification:&lt;/strong&gt; &lt;span id="class-result"&gt;&lt;/span&gt;&lt;/p&gt;</code></pre>
+</div>
+<div id="vi-chart" style="width: 100%; height: 450px;">
+
+</div>
+</div>
+<script type="module">
+await new Promise(resolve => {
+  const checkECharts = () => {
+    if (typeof echarts !== 'undefined') resolve();
+    else setTimeout(checkECharts, 50);
+  };
+  checkECharts();
+});
+
+(function() {
+  const chart = echarts.init(document.getElementById('vi-chart'));
+  
+  const landcovers = {
+    'dense-veg': { red: 0.04, nir: 0.50, blue: 0.03, name: 'Dense Vegetation' },
+    'moderate-veg': { red: 0.08, nir: 0.42, blue: 0.06, name: 'Moderate Vegetation' },
+    'sparse-veg': { red: 0.15, nir: 0.30, blue: 0.10, name: 'Sparse Vegetation' },
+    'bare-soil': { red: 0.20, nir: 0.25, blue: 0.15, name: 'Bare Soil' },
+    'water': { red: 0.05, nir: 0.02, blue: 0.04, name: 'Water' },
+    'snow': { red: 0.70, nir: 0.75, blue: 0.80, name: 'Snow' }
+  };
+  
+  let red = 0.08;
+  let nir = 0.42;
+  let blue = 0.06;
+  
+  function calculateIndices() {
+    const ndvi = (nir - red) / (nir + red);
+    const evi = 2.5 * (nir - red) / (nir + 6*red - 7.5*blue + 1);
+    const sr = nir / red;
+    const lai = 6 * ndvi;
+    
+    let classification;
+    if (ndvi < 0) classification = 'Water/Snow';
+    else if (ndvi < 0.2) classification = 'Bare Soil';
+    else if (ndvi < 0.4) classification = 'Sparse Vegetation';
+    else if (ndvi < 0.7) classification = 'Moderate Vegetation';
+    else classification = 'Dense Vegetation';
+    
+    document.getElementById('ndvi-result').textContent = ndvi.toFixed(3);
+    document.getElementById('evi-result').textContent = evi.toFixed(3);
+    document.getElementById('sr-result').textContent = sr.toFixed(2);
+    document.getElementById('lai-result').textContent = lai > 0 ? lai.toFixed(1) : 'N/A';
+    document.getElementById('class-result').textContent = classification;
+    
+    updateChart(ndvi, evi);
+  }
+  
+  function updateChart(ndvi, evi) {
+    // Generate spectral curve
+    const wavelengths = [];
+    const reflectances = [];
+    
+    // Simplified spectral curve (interpolated)
+    const bands = [
+      { wl: 450, refl: blue },
+      { wl: 550, refl: blue * 1.5 }, // Green peak
+      { wl: 670, refl: red },
+      { wl: 850, refl: nir },
+      { wl: 1650, refl: nir * 0.4 } // SWIR
+    ];
+    
+    for (let wl = 400; wl <= 1700; wl += 20) {
+      wavelengths.push(wl);
+      // Linear interpolation between bands
+      let refl = 0;
+      for (let i = 0; i < bands.length - 1; i++) {
+        if (wl >= bands[i].wl && wl <= bands[i+1].wl) {
+          const t = (wl - bands[i].wl) / (bands[i+1].wl - bands[i].wl);
+          refl = bands[i].refl + t * (bands[i+1].refl - bands[i].refl);
+          break;
+        }
+      }
+      reflectances.push(refl);
+    }
+    
+    const option = {
+      title: {
+        text: 'Spectral Reflectance Curve',
+        left: 'center'
+      },
+      tooltip: {
+        trigger: 'axis',
+        formatter: (params) => {
+          return `Wavelength: ${params[0].value[0]} nm<br/>Reflectance: ${(params[0].value[1] * 100).toFixed(1)}%`;
+        }
+      },
+      grid: {
+        left: 80,
+        right: 40,
+        top: 60,
+        bottom: 100
+      },
+      xAxis: {
+        type: 'value',
+        name: 'Wavelength (nm)',
+        nameLocation: 'middle',
+        nameGap: 30,
+        min: 400,
+        max: 1700
+      },
+      yAxis: {
+        type: 'value',
+        name: 'Reflectance',
+        nameLocation: 'middle',
+        nameGap: 50,
+        min: 0,
+        max: 1,
+        axisLabel: {
+          formatter: (val) => (val * 100).toFixed(0) + '%'
+        }
+      },
+      series: [
+        {
+          type: 'line',
+          data: wavelengths.map((wl, i) => [wl, reflectances[i]]),
+          lineStyle: { color: '#2ECC71', width: 3 },
+          showSymbol: false,
+          areaStyle: {
+            color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
+              { offset: 0, color: 'rgba(46, 204, 113, 0.3)' },
+              { offset: 1, color: 'rgba(46, 204, 113, 0)' }
+            ])
+          },
+          markArea: {
+            silent: true,
+            data: [
+              [
+                { name: 'Blue', xAxis: 450 },
+                { xAxis: 500 }
+              ],
+              [
+                { name: 'Red', xAxis: 620 },
+                { xAxis: 700 }
+              ],
+              [
+                { name: 'NIR', xAxis: 780 },
+                { xAxis: 900 }
+              ]
+            ],
+            itemStyle: {
+              color: 'rgba(52, 152, 219, 0.1)'
+            },
+            label: {
+              position: 'top'
+            }
+          },
+          markPoint: {
+            data: [
+              { coord: [450, blue], symbol: 'circle', symbolSize: 10, 
+                itemStyle: { color: '#3498DB' }, 
+                label: { show: true, formatter: 'Blue', position: 'top' } },
+              { coord: [670, red], symbol: 'circle', symbolSize: 10, 
+                itemStyle: { color: '#E74C3C' }, 
+                label: { show: true, formatter: 'Red', position: 'bottom' } },
+              { coord: [850, nir], symbol: 'circle', symbolSize: 10, 
+                itemStyle: { color: '#8B4513' }, 
+                label: { show: true, formatter: 'NIR', position: 'top' } }
+            ]
+          }
+        }
+      ]
+    };
+    
+    chart.setOption(option);
+  }
+  
+  document.getElementById('landcover-type').addEventListener('change', (e) => {
+    const lc = landcovers[e.target.value];
+    red = lc.red;
+    nir = lc.nir;
+    blue = lc.blue;
+    
+    document.getElementById('red-slider').value = red;
+    document.getElementById('red-value').textContent = red.toFixed(2);
+    document.getElementById('nir-slider').value = nir;
+    document.getElementById('nir-value').textContent = nir.toFixed(2);
+    document.getElementById('blue-slider').value = blue;
+    document.getElementById('blue-value').textContent = blue.toFixed(2);
+    
+    calculateIndices();
+  });
+  
+  document.getElementById('red-slider').addEventListener('input', (e) => {
+    red = parseFloat(e.target.value);
+    document.getElementById('red-value').textContent = red.toFixed(2);
+    calculateIndices();
+  });
+  
+  document.getElementById('nir-slider').addEventListener('input', (e) => {
+    nir = parseFloat(e.target.value);
+    document.getElementById('nir-value').textContent = nir.toFixed(2);
+    calculateIndices();
+  });
+  
+  document.getElementById('blue-slider').addEventListener('input', (e) => {
+    blue = parseFloat(e.target.value);
+    document.getElementById('blue-value').textContent = blue.toFixed(2);
+    calculateIndices();
+  });
+  
+  calculateIndices();
+  
+  window.addEventListener('resize', () => chart.resize());
+})();
+</script>
+<p><strong>Try this:</strong> - <strong>Dense vegetation:</strong> High NIR peak (~850 nm), low red trough → high NDVI - <strong>Bare soil:</strong> Similar red and NIR → low NDVI (~0.1–0.2) - <strong>Water:</strong> Very low NIR absorption → negative NDVI - <strong>Snow:</strong> High reflectance across all bands → NDVI near zero - Notice: The “red edge” (sharp increase 700–750 nm) is characteristic of vegetation</p>
+<p><strong>Key insight:</strong> The red-NIR contrast uniquely identifies photosynthetically active vegetation.</p>
+<hr>
+<h2 id="interpretation">6. Interpretation</h2>
+<h3 id="seasonal-patterns">Seasonal Patterns</h3>
+<p><strong>NDVI time series</strong> tracks growing season: - <strong>Spring:</strong> NDVI rises (green-up, leaf emergence) - <strong>Summer:</strong> NDVI peaks (maximum LAI) - <strong>Autumn:</strong> NDVI declines (senescence, leaf fall) - <strong>Winter:</strong> NDVI low (dormancy, snow cover)</p>
+<p><strong>Example:</strong> Temperate deciduous forest: - January: NDVI ≈ 0.2 (bare branches) - July: NDVI ≈ 0.8 (full canopy)</p>
+<h3 id="drought-detection">Drought Detection</h3>
+<p><strong>Water stress</strong> reduces: - Leaf area (wilting, leaf drop) - Chlorophyll content - NIR reflectance (leaf structure degrades)</p>
+<p><strong>Result:</strong> NDVI declines during drought.</p>
+<p><strong>Agricultural monitoring:</strong> Compare current NDVI to historical average → detect crop stress.</p>
+<h3 id="global-patterns">Global Patterns</h3>
+<p><strong>NDVI maps</strong> reveal: - <strong>Tropical rainforests:</strong> NDVI &gt; 0.8 year-round - <strong>Savannas:</strong> Seasonal variation (0.3–0.7) - <strong>Deserts:</strong> NDVI &lt; 0.2 - <strong>Tundra:</strong> Brief summer peak (0.3–0.5) - <strong>Croplands:</strong> Strong seasonal cycle</p>
+<p><strong>MODIS NDVI</strong> (500 m resolution, 16-day) is the standard global product.</p>
+<hr>
+<h2 id="what-could-go-wrong">7. What Could Go Wrong?</h2>
+<h3 id="atmospheric-contamination">Atmospheric Contamination</h3>
+<p><strong>Aerosols and water vapor</strong> scatter blue/red more than NIR: - Increases apparent NIR - Decreases apparent red - Inflates NDVI</p>
+<p><strong>Mitigation:</strong> - Atmospheric correction (6S model, dark object subtraction) - EVI includes blue band for correction - Use imagery from clear days</p>
+<h3 id="soil-background-1">Soil Background</h3>
+<p>In <strong>sparse vegetation</strong>, soil dominates signal: - Bright soil → high reflectance in all bands - Dark soil → low reflectance</p>
+<p><strong>Soil-Adjusted Vegetation Index (SAVI):</strong></p>
+<p><span class="math display">\text{SAVI} = \frac{(1 + L)(\rho_{\text{NIR}} - \rho_{\text{red}})}{\rho_{\text{NIR}} + \rho_{\text{red}} + L}</span></p>
+<p>Where <span class="math inline">L = 0.5</span> for moderate cover (adjust 0–1 based on density).</p>
+<h3 id="saturation-at-high-lai">Saturation at High LAI</h3>
+<p>NDVI saturates when LAI &gt; 5: - Forest canopies (LAI = 6–8) all have NDVI ≈ 0.85–0.90 - Cannot distinguish between mature forest and very dense forest</p>
+<p><strong>Solution:</strong> Use EVI (less saturation) or NIRv (NIR × NDVI).</p>
+<h3 id="confusing-ndvi-with-biomass">Confusing NDVI with Biomass</h3>
+<p><strong>NDVI ∝ LAI</strong> (leaf area), not total biomass.</p>
+<p>A grassland with LAI = 4 has similar NDVI to a forest with LAI = 4, but the forest has 100× more biomass (wood).</p>
+<p><strong>For biomass:</strong> Use SAR (Synthetic Aperture Radar) or LiDAR.</p>
+<hr>
+<h2 id="extension-other-vegetation-indices">8. Extension: Other Vegetation Indices</h2>
+<p><strong>Normalized Difference Water Index (NDWI):</strong></p>
+<p><span class="math display">\text{NDWI} = \frac{\rho_{\text{NIR}} - \rho_{\text{SWIR}}}{\rho_{\text{NIR}} + \rho_{\text{SWIR}}}</span></p>
+<p>Sensitive to water content in vegetation (drought stress).</p>
+<p><strong>Chlorophyll Indices:</strong> - Use red edge (705–750 nm) for chlorophyll content - More sensitive to plant health than NDVI</p>
+<p><strong>Photochemical Reflectance Index (PRI):</strong></p>
+<p><span class="math display">\text{PRI} = \frac{\rho_{531} - \rho_{570}}{\rho_{531} + \rho_{570}}</span></p>
+<p>Tracks xanthophyll cycle → photosynthetic light use efficiency.</p>
+<hr>
+<h2 id="math-refresher-normalization-and-indices">9. Math Refresher: Normalization and Indices</h2>
+<h3 id="why-normalize">Why Normalize?</h3>
+<p><strong>Problem:</strong> Reflectance values change with: - Illumination angle (sun elevation) - Atmospheric conditions - Sensor calibration</p>
+<p><strong>Solution:</strong> Normalize by forming ratios.</p>
+<p><strong>Example:</strong> Instead of <span class="math inline">\rho_{\text{NIR}} - \rho_{\text{red}}</span>, use:</p>
+<p><span class="math display">\text{NDVI} = \frac{\rho_{\text{NIR}} - \rho_{\text{red}}}{\rho_{\text{NIR}} + \rho_{\text{red}}}</span></p>
+<p><strong>Effect:</strong> - Range: Always −1 to +1 - Insensitive to uniform brightness changes - Comparable across scenes</p>
+<h3 id="index-properties">Index Properties</h3>
+<p><strong>Symmetric indices:</strong><br>
+<span class="math inline">f(a, b) = -f(b, a)</span></p>
+<p>Example: NDVI<span class="math inline">(b, a) = -</span>NDVI<span class="math inline">(a, b)</span></p>
+<p><strong>Bounded:</strong><br>
+Output constrained to known range (e.g., −1 to 1)</p>
+<p><strong>Monotonic:</strong><br>
+Increases with target variable (e.g., NDVI increases with LAI)</p>
+<hr>
+<h2 id="summary">Summary</h2>
+<ul>
+<li><strong>NDVI</strong> = <span class="math inline">(NIR - Red) / (NIR + Red)</span>: Most common vegetation index</li>
+<li>Range: −1 (water) to +1 (dense vegetation)</li>
+<li>Dense vegetation: NDVI ≈ 0.7–0.9 (high NIR, low red)</li>
+<li>Bare soil: NDVI ≈ 0.1–0.2 (similar red and NIR)</li>
+<li><strong>EVI</strong> improves on NDVI for dense canopies and atmospheric effects</li>
+<li><strong>Simple Ratio</strong> (NIR/Red) has larger dynamic range but more noise</li>
+<li>NDVI correlates with LAI, fPAR, and GPP</li>
+<li>Seasonal NDVI tracks growing season (green-up, peak, senescence)</li>
+<li>Red edge (700–750 nm) is diagnostic of healthy vegetation</li>
+<li>Vegetation indices enable global monitoring of photosynthesis from space</li>
+</ul>
+<hr>
+
+
+<footer class="wayward-footer">
+  <div class="wayward-footer__inner">
+    <div class="wayward-footer__brand">
+      <div class="wayward-footer__logo">WaywardHouse<span>.</span></div>
+      <p>Understanding how place, economy, and environment interact through analysis, modelling, and open tools.</p>
+    </div>
+
+    <nav class="wayward-footer__group" aria-labelledby="footer-reading">
+      <h2 id="footer-reading">Reading</h2>
+      <a href="../../articles/">Articles</a>
+      <a href="../../learn/">Library</a>
+      <a href="../../learn/computational-geography/core/">↳ Comp Geo Book</a>
+      <a href="../../archive.html">Archive</a>
+    </nav>
+
+    <nav class="wayward-footer__group" aria-labelledby="footer-site">
+      <h2 id="footer-site">Site</h2>
+      <a href="../../start-here.html">Start Here</a>
+      <a href="../../about.html">About</a>
+      <a href="../../contact.html">Contact</a>
+    </nav>
+
+    <nav class="wayward-footer__group" aria-labelledby="footer-resources">
+      <h2 id="footer-resources">Resources</h2>
+      <a href="../../topics/">All Topics</a>
+      <a href="../../privacy.html">Privacy Policy</a>
+      <a href="../../terms.html">Terms of Use</a>
+    </nav>
+  </div>
+</footer>
+
+<script type="module" src="../../assets/dist/main.js"></script>
+<script type="module" src="../../assets/js/core.js"></script>
+<script id="quarto-html-after-body" type="application/javascript">
+  window.document.addEventListener("DOMContentLoaded", function (event) {
+    const tabsets =  window.document.querySelectorAll(".panel-tabset-tabby")
+    tabsets.forEach(function(tabset) {
+      const tabby = new Tabby('#' + tabset.id);
+    });
+    const isCodeAnnotation = (el) => {
+      for (const clz of el.classList) {
+        if (clz.startsWith('code-annotation-')) {                     
+          return true;
+        }
+      }
+      return false;
+    }
+    const onCopySuccess = function(e) {
+      // button target
+      const button = e.trigger;
+      // don't keep focus
+      button.blur();
+      // flash "checked"
+      button.classList.add('code-copy-button-checked');
+      var currentTitle = button.getAttribute("title");
+      button.setAttribute("title", "Copied!");
+      let tooltip;
+      if (window.bootstrap) {
+        button.setAttribute("data-bs-toggle", "tooltip");
+        button.setAttribute("data-bs-placement", "left");
+        button.setAttribute("data-bs-title", "Copied!");
+        tooltip = new bootstrap.Tooltip(button, 
+          { trigger: "manual", 
+            customClass: "code-copy-button-tooltip",
+            offset: [0, -8]});
+        tooltip.show();    
+      }
+      setTimeout(function() {
+        if (tooltip) {
+          tooltip.hide();
+          button.removeAttribute("data-bs-title");
+          button.removeAttribute("data-bs-toggle");
+          button.removeAttribute("data-bs-placement");
+        }
+        button.setAttribute("title", currentTitle);
+        button.classList.remove('code-copy-button-checked');
+      }, 1000);
+      // clear code selection
+      e.clearSelection();
+    }
+    const getTextToCopy = function(trigger) {
+      const outerScaffold = trigger.parentElement.cloneNode(true);
+      const codeEl = outerScaffold.querySelector('code');
+      for (const childEl of codeEl.children) {
+        if (isCodeAnnotation(childEl)) {
+          childEl.remove();
+        }
+      }
+      return codeEl.innerText;
+    }
+    const clipboard = new window.ClipboardJS('.code-copy-button:not([data-in-quarto-modal])', {
+      text: getTextToCopy
+    });
+    clipboard.on('success', onCopySuccess);
+    if (window.document.getElementById('quarto-embedded-source-code-modal')) {
+      const clipboardModal = new window.ClipboardJS('.code-copy-button[data-in-quarto-modal]', {
+        text: getTextToCopy,
+        container: window.document.getElementById('quarto-embedded-source-code-modal')
+      });
+      clipboardModal.on('success', onCopySuccess);
+    }
+      var localhostRegex = new RegExp(/^(?:http|https):\/\/localhost\:?[0-9]*\//);
+      var mailtoRegex = new RegExp(/^mailto:/);
+        var filterRegex = new RegExp("https:\/\/wayward\.house");
+      var isInternal = (href) => {
+          return filterRegex.test(href) || localhostRegex.test(href) || mailtoRegex.test(href);
+      }
+      // Inspect non-navigation links and adorn them if external
+     var links = window.document.querySelectorAll('a[href]:not(.nav-link):not(.navbar-brand):not(.toc-action):not(.sidebar-link):not(.sidebar-item-toggle):not(.pagination-link):not(.no-external):not([aria-hidden]):not(.dropdown-item):not(.quarto-navigation-tool):not(.about-link)');
+      for (var i=0; i<links.length; i++) {
+        const link = links[i];
+        if (!isInternal(link.href)) {
+          // undo the damage that might have been done by quarto-nav.js in the case of
+          // links that we want to consider external
+          if (link.dataset.originalHref !== undefined) {
+            link.href = link.dataset.originalHref;
+          }
+        }
+      }
+    function tippyHover(el, contentFn, onTriggerFn, onUntriggerFn) {
+      const config = {
+        allowHTML: true,
+        maxWidth: 500,
+        delay: 100,
+        arrow: false,
+        appendTo: function(el) {
+            return el.parentElement;
+        },
+        interactive: true,
+        interactiveBorder: 10,
+        theme: 'light-border',
+        placement: 'bottom-start',
+      };
+      if (contentFn) {
+        config.content = contentFn;
+      }
+      if (onTriggerFn) {
+        config.onTrigger = onTriggerFn;
+      }
+      if (onUntriggerFn) {
+        config.onUntrigger = onUntriggerFn;
+      }
+      window.tippy(el, config); 
+    }
+    const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+    for (var i=0; i<noterefs.length; i++) {
+      const ref = noterefs[i];
+      tippyHover(ref, function() {
+        // use id or data attribute instead here
+        let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+        try { href = new URL(href).hash; } catch {}
+        const id = href.replace(/^#\/?/, "");
+        const note = window.document.getElementById(id);
+        if (note) {
+          return note.innerHTML;
+        } else {
+          return "";
+        }
+      });
+    }
+    const xrefs = window.document.querySelectorAll('a.quarto-xref');
+    const processXRef = (id, note) => {
+      // Strip column container classes
+      const stripColumnClz = (el) => {
+        el.classList.remove("page-full", "page-columns");
+        if (el.children) {
+          for (const child of el.children) {
+            stripColumnClz(child);
+          }
+        }
+      }
+      stripColumnClz(note)
+      if (id === null || id.startsWith('sec-')) {
+        // Special case sections, only their first couple elements
+        const container = document.createElement("div");
+        if (note.children && note.children.length > 2) {
+          container.appendChild(note.children[0].cloneNode(true));
+          for (let i = 1; i < note.children.length; i++) {
+            const child = note.children[i];
+            if (child.tagName === "P" && child.innerText === "") {
+              continue;
+            } else {
+              container.appendChild(child.cloneNode(true));
+              break;
+            }
+          }
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(container);
+          }
+          return container.innerHTML
+        } else {
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(note);
+          }
+          return note.innerHTML;
+        }
+      } else {
+        // Remove any anchor links if they are present
+        const anchorLink = note.querySelector('a.anchorjs-link');
+        if (anchorLink) {
+          anchorLink.remove();
+        }
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(note);
+        }
+        if (note.classList.contains("callout")) {
+          return note.outerHTML;
+        } else {
+          return note.innerHTML;
+        }
+      }
+    }
+    for (var i=0; i<xrefs.length; i++) {
+      const xref = xrefs[i];
+      tippyHover(xref, undefined, function(instance) {
+        instance.disable();
+        let url = xref.getAttribute('href');
+        let hash = undefined; 
+        if (url.startsWith('#')) {
+          hash = url;
+        } else {
+          try { hash = new URL(url).hash; } catch {}
+        }
+        if (hash) {
+          const id = hash.replace(/^#\/?/, "");
+          const note = window.document.getElementById(id);
+          if (note !== null) {
+            try {
+              const html = processXRef(id, note.cloneNode(true));
+              instance.setContent(html);
+            } finally {
+              instance.enable();
+              instance.show();
+            }
+          } else {
+            // See if we can fetch this
+            fetch(url.split('#')[0])
+            .then(res => res.text())
+            .then(html => {
+              const parser = new DOMParser();
+              const htmlDoc = parser.parseFromString(html, "text/html");
+              const note = htmlDoc.getElementById(id);
+              if (note !== null) {
+                const html = processXRef(id, note);
+                instance.setContent(html);
+              } 
+            }).finally(() => {
+              instance.enable();
+              instance.show();
+            });
+          }
+        } else {
+          // See if we can fetch a full url (with no hash to target)
+          // This is a special case and we should probably do some content thinning / targeting
+          fetch(url)
+          .then(res => res.text())
+          .then(html => {
+            const parser = new DOMParser();
+            const htmlDoc = parser.parseFromString(html, "text/html");
+            const note = htmlDoc.querySelector('main.content');
+            if (note !== null) {
+              // This should only happen for chapter cross references
+              // (since there is no id in the URL)
+              // remove the first header
+              if (note.children.length > 0 && note.children[0].tagName === "HEADER") {
+                note.children[0].remove();
+              }
+              const html = processXRef(null, note);
+              instance.setContent(html);
+            } 
+          }).finally(() => {
+            instance.enable();
+            instance.show();
+          });
+        }
+      }, function(instance) {
+      });
+    }
+        let selectedAnnoteEl;
+        const selectorForAnnotation = ( cell, annotation) => {
+          let cellAttr = 'data-code-cell="' + cell + '"';
+          let lineAttr = 'data-code-annotation="' +  annotation + '"';
+          const selector = 'span[' + cellAttr + '][' + lineAttr + ']';
+          return selector;
+        }
+        const selectCodeLines = (annoteEl) => {
+          const doc = window.document;
+          const targetCell = annoteEl.getAttribute("data-target-cell");
+          const targetAnnotation = annoteEl.getAttribute("data-target-annotation");
+          const annoteSpan = window.document.querySelector(selectorForAnnotation(targetCell, targetAnnotation));
+          const lines = annoteSpan.getAttribute("data-code-lines").split(",");
+          const lineIds = lines.map((line) => {
+            return targetCell + "-" + line;
+          })
+          let top = null;
+          let height = null;
+          let parent = null;
+          if (lineIds.length > 0) {
+              //compute the position of the single el (top and bottom and make a div)
+              const el = window.document.getElementById(lineIds[0]);
+              top = el.offsetTop;
+              height = el.offsetHeight;
+              parent = el.parentElement.parentElement;
+            if (lineIds.length > 1) {
+              const lastEl = window.document.getElementById(lineIds[lineIds.length - 1]);
+              const bottom = lastEl.offsetTop + lastEl.offsetHeight;
+              height = bottom - top;
+            }
+            if (top !== null && height !== null && parent !== null) {
+              // cook up a div (if necessary) and position it 
+              let div = window.document.getElementById("code-annotation-line-highlight");
+              if (div === null) {
+                div = window.document.createElement("div");
+                div.setAttribute("id", "code-annotation-line-highlight");
+                div.style.position = 'absolute';
+                parent.appendChild(div);
+              }
+              div.style.top = top - 2 + "px";
+              div.style.height = height + 4 + "px";
+              div.style.left = 0;
+              let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
+              if (gutterDiv === null) {
+                gutterDiv = window.document.createElement("div");
+                gutterDiv.setAttribute("id", "code-annotation-line-highlight-gutter");
+                gutterDiv.style.position = 'absolute';
+                const codeCell = window.document.getElementById(targetCell);
+                const gutter = codeCell.querySelector('.code-annotation-gutter');
+                gutter.appendChild(gutterDiv);
+              }
+              gutterDiv.style.top = top - 2 + "px";
+              gutterDiv.style.height = height + 4 + "px";
+            }
+            selectedAnnoteEl = annoteEl;
+          }
+        };
+        const unselectCodeLines = () => {
+          const elementsIds = ["code-annotation-line-highlight", "code-annotation-line-highlight-gutter"];
+          elementsIds.forEach((elId) => {
+            const div = window.document.getElementById(elId);
+            if (div) {
+              div.remove();
+            }
+          });
+          selectedAnnoteEl = undefined;
+        };
+          // Handle positioning of the toggle
+      window.addEventListener(
+        "resize",
+        throttle(() => {
+          elRect = undefined;
+          if (selectedAnnoteEl) {
+            selectCodeLines(selectedAnnoteEl);
+          }
+        }, 10)
+      );
+      function throttle(fn, ms) {
+      let throttle = false;
+      let timer;
+        return (...args) => {
+          if(!throttle) { // first call gets through
+              fn.apply(this, args);
+              throttle = true;
+          } else { // all the others get throttled
+              if(timer) clearTimeout(timer); // cancel #2
+              timer = setTimeout(() => {
+                fn.apply(this, args);
+                timer = throttle = false;
+              }, ms);
+          }
+        };
+      }
+        // Attach click handler to the DT
+        const annoteDls = window.document.querySelectorAll('dt[data-target-cell]');
+        for (const annoteDlNode of annoteDls) {
+          annoteDlNode.addEventListener('click', (event) => {
+            const clickedEl = event.target;
+            if (clickedEl !== selectedAnnoteEl) {
+              unselectCodeLines();
+              const activeEl = window.document.querySelector('dt[data-target-cell].code-annotation-active');
+              if (activeEl) {
+                activeEl.classList.remove('code-annotation-active');
+              }
+              selectCodeLines(clickedEl);
+              clickedEl.classList.add('code-annotation-active');
+            } else {
+              // Unselect the line
+              unselectCodeLines();
+              clickedEl.classList.remove('code-annotation-active');
+            }
+          });
+        }
+    const findCites = (el) => {
+      const parentEl = el.parentElement;
+      if (parentEl) {
+        const cites = parentEl.dataset.cites;
+        if (cites) {
+          return {
+            el,
+            cites: cites.split(' ')
+          };
+        } else {
+          return findCites(el.parentElement)
+        }
+      } else {
+        return undefined;
+      }
+    };
+    var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+    for (var i=0; i<bibliorefs.length; i++) {
+      const ref = bibliorefs[i];
+      const citeInfo = findCites(ref);
+      if (citeInfo) {
+        tippyHover(citeInfo.el, function() {
+          var popup = window.document.createElement('div');
+          citeInfo.cites.forEach(function(cite) {
+            var citeDiv = window.document.createElement('div');
+            citeDiv.classList.add('hanging-indent');
+            citeDiv.classList.add('csl-entry');
+            var biblioDiv = window.document.getElementById('ref-' + cite);
+            if (biblioDiv) {
+              citeDiv.innerHTML = biblioDiv.innerHTML;
+            }
+            popup.appendChild(citeDiv);
+          });
+          return popup.innerHTML;
+        });
+      }
+    }
+  });
+  </script>
+
+
+
+
+<script src="../../site_libs/quarto-html/zenscroll-min.js"></script>
+</body></html>

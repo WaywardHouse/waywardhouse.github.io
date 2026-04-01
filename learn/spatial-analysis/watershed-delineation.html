@@ -1,0 +1,1193 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
+
+<meta charset="utf-8">
+<meta name="generator" content="quarto-1.9.36">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+
+<meta name="dcterms.date" content="2026-02-27">
+<meta name="description" content="Where does rainfall flow? Which streams feed this river? What area drains to this outlet? Watershed delineation extracts drainage basins from DEMs by tracing flow direction and accumulation. This model derives the D8 algorithm, implements pour point analysis, and extracts stream networks from terrain.">
+
+<title>Watershed Delineation and Flow Networks – WaywardHouse</title>
+<style>
+/* Default styles provided by pandoc.
+** See https://pandoc.org/MANUAL.html#variables-for-html for config info.
+*/
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: min(4vw, 1.5em);}
+div.column{flex: auto; overflow-x: auto;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+  width: 0.8em;
+  margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
+  vertical-align: middle;
+}
+</style>
+
+
+<link href="../../assets/images/logo.webp" rel="icon">
+<script src="../../site_libs/clipboard/clipboard.min.js"></script>
+<script src="../../site_libs/quarto-html/tabby.min.js"></script>
+<script src="../../site_libs/quarto-html/popper.min.js"></script>
+<script src="../../site_libs/quarto-html/tippy.umd.min.js"></script>
+<link href="../../site_libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="../../site_libs/quarto-html/light-border.css" rel="stylesheet">
+<link href="../../site_libs/quarto-html/quarto-html-640605f58ae58ee79329c070719e555b.min.css" rel="stylesheet" append-hash="true" data-mode="light">
+<link href="../../site_libs/quarto-html/quarto-syntax-highlighting-845c23b38eaddc0f92fda52bfe77a8c8.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<style>html{ scroll-behavior: smooth; }</style>
+<script>
+  (function () {
+    var s = localStorage.getItem('theme');
+    var dark = s !== null ? s === 'dark' : false;
+    document.documentElement.dataset.theme = dark ? 'dark' : 'light';
+    document.documentElement.dataset.brand = 'wayward';
+  })();
+</script>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:ital,wght@0,300;0,400;0,600;0,700;0,800;0,900;1,700;1,800&amp;family=Barlow:wght@300;400;500;600&amp;family=IBM+Plex+Mono:ital,wght@0,300;0,400;0,500;1,300&amp;family=Literata:ital,opsz,wght@0,7..72,300;0,7..72,400;0,7..72,500;1,7..72,300;1,7..72,400&amp;display=swap" rel="stylesheet">
+
+  <script>window.backupDefine = window.define; window.define = undefined;</script><script src="https://cdn.jsdelivr.net/npm/katex@latest/dist/katex.min.js"></script>
+  <script>document.addEventListener("DOMContentLoaded", function () {
+ var mathElements = document.getElementsByClassName("math");
+ var macros = [];
+ for (var i = 0; i < mathElements.length; i++) {
+  var texText = mathElements[i].firstChild;
+  if (mathElements[i].tagName == "SPAN") {
+   katex.render(texText.data, mathElements[i], {
+    displayMode: mathElements[i].classList.contains('display'),
+    throwOnError: false,
+    macros: macros,
+    fleqn: false
+   });
+}}});
+  </script>
+  <script>window.define = window.backupDefine; window.backupDefine = undefined;</script><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@latest/dist/katex.min.css">
+
+<script type="text/javascript">
+const typesetMath = (el) => {
+  if (window.MathJax) {
+    // MathJax Typeset
+    window.MathJax.typeset([el]);
+  } else if (window.katex) {
+    // KaTeX Render
+    var mathElements = el.getElementsByClassName("math");
+    var macros = [];
+    for (var i = 0; i < mathElements.length; i++) {
+      var texText = mathElements[i].firstChild;
+      if (mathElements[i].tagName == "SPAN" && texText && texText.data) {
+        window.katex.render(texText.data, mathElements[i], {
+          displayMode: mathElements[i].classList.contains('display'),
+          throwOnError: false,
+          macros: macros,
+          fleqn: false
+        });
+      }
+    }
+  }
+}
+window.Quarto = {
+  typesetMath
+};
+</script>
+
+<link rel="stylesheet" href="../../assets/css/quarto-wayward.css">
+</head>
+
+<body class="reading-body tag-hash-math tag-hash-viz">
+
+
+<header id="title-block-header">
+<h1 class="title">Watershed Delineation and Flow Networks</h1>
+<p class="subtitle">Extracting drainage basins from digital elevation models</p>
+
+<p class="date">2026-02-27</p>
+</header>
+
+
+<p>Water quality managers in the Athabasca River basin need to answer a question that seems simple but requires a surprising amount of spatial computation: which parcels of land — which farms, which industrial sites, which municipalities — drain into this reach of river? The answer determines whose effluent license applies, whose operations require monitoring, and whose land practices affect the downstream fishery. Before digital elevation models and flow-routing algorithms, watershed boundaries were traced by hand on topographic maps by experienced technicians. Today a GIS can delineate hundreds of nested watersheds in a large basin automatically from a DEM, consistently and reproducibly, in minutes.</p>
+<p>Watershed delineation is the automatic extraction of drainage basin boundaries from terrain data. The key insight is that every cell in a DEM can be assigned a flow direction to the steepest downslope neighbour; a complete map of flow directions is a directed graph; and the watershed of any outlet point is simply all the cells that eventually drain to it by following the graph. This is the same logic as the hydrological flow model in Series 1, now applied at the scale of complete basins and implemented with algorithms (D8 flow direction, breach filling of sinks, flow accumulation) that handle the practical complications of real terrain data. This model derives those algorithms, implements the watershed extraction procedure, and discusses the sensitivity of results to DEM resolution and sink-filling choices.</p>
+<h2 id="the-question">1. The Question</h2>
+<p>If it rains on this mountain, where does the water eventually flow?</p>
+<p><strong>Watershed</strong> (also called catchment or drainage basin): Area that drains to a common outlet.</p>
+<p><strong>Applications:</strong> - <strong>Flood prediction:</strong> How much area contributes flow to this point? - <strong>Water quality:</strong> Which land uses drain into this stream? - <strong>Reservoir planning:</strong> What’s the contributing area to a dam site? - <strong>Erosion modelling:</strong> Where does sediment originate and accumulate? - <strong>Ecological assessment:</strong> Upstream impacts on downstream habitats</p>
+<p>The mathematical question: Given a DEM, how do we automatically extract: 1. <strong>Flow direction</strong> from each cell 2. <strong>Flow accumulation</strong> (contributing area) 3. <strong>Stream network</strong> (where flow accumulates) 4. <strong>Watershed boundaries</strong> for any pour point</p>
+<hr>
+<h2 id="the-conceptual-model">2. The Conceptual Model</h2>
+<h3 id="flow-direction">Flow Direction</h3>
+<p><strong>Water flows downhill</strong> along path of steepest descent.</p>
+<p><strong>For each cell:</strong> Determine which neighbor receives flow.</p>
+<p><strong>D8 method</strong> (8-direction): - Examine all 8 neighbors - Flow to neighbor with steepest descent - Ties: Use deterministic rule (e.g., choose first in priority order)</p>
+<p><strong>Flow direction encoding:</strong></p>
+<pre><code>32  64  128
+16  [X]   1
+ 8   4    2</code></pre>
+<p>Powers of 2 → single value encodes direction.</p>
+<p><strong>Example:</strong> Flow to east (right) → direction = 1</p>
+<h3 id="flow-accumulation">Flow Accumulation</h3>
+<p><strong>For each cell:</strong> Count how many upstream cells drain through it.</p>
+<p><strong>Algorithm:</strong> 1. Start with cells having no upstream contributors (ridges) 2. Process in topological order (high to low elevation) 3. Each cell passes its accumulated flow to its downstream neighbor</p>
+<p><strong>Result:</strong> Raster where value = number of contributing cells.</p>
+<p><strong>High accumulation</strong> = stream channels (many cells drain here)</p>
+<h3 id="stream-network-extraction">Stream Network Extraction</h3>
+<p><strong>Threshold accumulation</strong> to identify streams:</p>
+<p><span class="math display">\text{stream} = (\text{accumulation} &gt; T)</span></p>
+<p><strong>Typical threshold:</strong> T = 100-1000 cells (depends on DEM resolution)</p>
+<p><strong>Result:</strong> Binary raster of stream network.</p>
+<h3 id="watershed-delineation">Watershed Delineation</h3>
+<p><strong>Pour point:</strong> Outlet location where we want to define watershed.</p>
+<p><strong>Watershed:</strong> All cells that drain to (flow through) pour point.</p>
+<p><strong>Algorithm:</strong> Trace upslope from pour point, marking all contributing cells.</p>
+<hr>
+<h2 id="building-the-mathematical-model">3. Building the Mathematical Model</h2>
+<h3 id="d8-flow-direction">D8 Flow Direction</h3>
+<p><strong>For cell at <span class="math inline">(i, j)</span> with elevation <span class="math inline">z_{i,j}</span>:</strong></p>
+<p><strong>Compute slope to each neighbor:</strong></p>
+<p><span class="math display">s_n = \frac{z_{i,j} - z_n}{d_n}</span></p>
+<p>Where: - <span class="math inline">z_n</span> = elevation of neighbor - <span class="math inline">d_n</span> = distance to neighbor (1 for cardinal, <span class="math inline">\sqrt{2}</span> for diagonal)</p>
+<p><strong>Flow direction:</strong></p>
+<p><span class="math display">\text{dir}_{i,j} = \arg\max_n(s_n)</span></p>
+<p>(Direction of maximum slope)</p>
+<p><strong>Edge cases:</strong></p>
+<p><strong>Flat area</strong> (<span class="math inline">s_n = 0</span> for all neighbors): - Mark as undefined or use flat resolution algorithm</p>
+<p><strong>Depression</strong> (all neighbors higher): - Mark as sink or fill depression</p>
+<h3 id="depression-filling">Depression Filling</h3>
+<p><strong>Depressions</strong> (local minima) disrupt flow routing.</p>
+<p><strong>Fill algorithm:</strong></p>
+<pre><code>1. Initialize output DEM = input DEM
+2. Set boundary cells to input elevation
+3. Set interior cells to very high value
+4. Iterate:
+   - For each interior cell:
+   - New elevation = min(current, max(neighbors) + epsilon)
+5. Repeat until convergence</code></pre>
+<p><strong>Result:</strong> DEM with depressions filled to spill elevation.</p>
+<p><strong>Epsilon</strong> (small value like 0.01m) ensures flow out of filled areas.</p>
+<h3 id="flow-accumulation-algorithm">Flow Accumulation Algorithm</h3>
+<p><strong>Pseudocode:</strong></p>
+<pre><code>function flow_accumulation(flow_direction):
+    # Initialize
+    accumulation = ones(rows, cols)  # Each cell contributes itself
+    
+    # Sort cells by elevation (high to low)
+    cells = sort_by_elevation_descending(DEM)
+    
+    # Process in topological order
+    for each cell in cells:
+        downstream = get_downstream_cell(cell, flow_direction)
+        if downstream exists:
+            accumulation[downstream] += accumulation[cell]
+    
+    return accumulation</code></pre>
+<p><strong>Complexity:</strong> <span class="math inline">O(n)</span> after sorting <span class="math inline">O(n \log n)</span></p>
+<p><strong>Key:</strong> Topological ordering ensures upstream cells processed before downstream.</p>
+<h3 id="watershed-extraction">Watershed Extraction</h3>
+<p><strong>Upslope area from pour point:</strong></p>
+<pre><code>function extract_watershed(flow_direction, pour_point):
+    watershed = empty_set()
+    to_process = {pour_point}
+    
+    while to_process not empty:
+        cell = to_process.pop()
+        watershed.add(cell)
+        
+        # Find all neighbors that flow into this cell
+        for each neighbor of cell:
+            if flow_direction[neighbor] points to cell:
+                to_process.add(neighbor)
+    
+    return watershed</code></pre>
+<p><strong>Result:</strong> Set of all cells contributing flow to pour point.</p>
+<hr>
+<h2 id="worked-example-by-hand">4. Worked Example by Hand</h2>
+<p><strong>Problem:</strong> Compute flow direction and accumulation for this DEM.</p>
+<p><strong>Elevation (meters):</strong></p>
+<pre><code>      j=0  j=1  j=2  j=3
+i=0    50   48   46   44
+i=1    52   45   43   42
+i=2    54   47   44   40
+i=3    56   49   46   38</code></pre>
+<p>Use D8 method (8 neighbors).</p>
+<h3 id="solution">Solution</h3>
+<p><strong>Step 1: Flow Direction</strong></p>
+<p><strong>Cell (0,1)</strong> elevation 48:</p>
+<p>Neighbors and slopes: - (0,0): (48-50)/1 = -2 (uphill, ignore) - (0,2): (48-46)/1 = 2 ✓ - (1,0): (48-52)/√2 = -2.83 (uphill) - (1,1): (48-45)/1 = 3 ✓ - (1,2): (48-43)/√2 = 3.54 ✓ <strong>Maximum</strong></p>
+<p><strong>Flow direction:</strong> Southeast diagonal (code = 2)</p>
+<p><strong>Cell (1,1)</strong> elevation 45:</p>
+<p>Neighbors: - (0,0): -7/√2 (uphill) - (0,1): -3 (uphill) - (0,2): 2 - (1,0): -7 (uphill) - (1,2): 2 - (2,0): -9/√2 (uphill) - (2,1): -2 (uphill) - (2,2): 1</p>
+<p><strong>Maximum slope:</strong> (1,2) or (0,2) both = 2. Choose (1,2) by convention.</p>
+<p><strong>Flow direction:</strong> East (code = 1)</p>
+<p><strong>Continue for all cells…</strong></p>
+<p><strong>Flow direction map:</strong></p>
+<pre><code>      j=0  j=1  j=2  j=3
+i=0     1    2    2    4
+i=1     1    1    2    4
+i=2     1    1    2    4
+i=3     1    1    1    4</code></pre>
+<p>(1=E, 2=SE, 4=S)</p>
+<p><strong>Step 2: Flow Accumulation</strong></p>
+<p>Process cells in descending elevation order:</p>
+<p><strong>(3,0) elevation 56:</strong> Accumulation = 1, flows to (3,1) - Update (3,1): 1 + 1 = 2</p>
+<p><strong>(2,0) elevation 54:</strong> Accumulation = 1, flows to (2,1) - Update (2,1): 1 + 1 = 2</p>
+<p><strong>(1,0) elevation 52:</strong> Accumulation = 1, flows to (1,1) - Update (1,1): 1 + 1 = 2</p>
+<p><strong>(0,0) elevation 50:</strong> Accumulation = 1, flows to (0,1) - Update (0,1): 1 + 1 = 2</p>
+<p><strong>(3,1) elevation 49:</strong> Accumulation = 2, flows to (3,2) - Update (3,2): 1 + 2 = 3</p>
+<p><strong>Continue…</strong></p>
+<p><strong>Final accumulation:</strong></p>
+<pre><code>      j=0  j=1  j=2  j=3
+i=0     1    2    4    8
+i=1     1    2    5   10
+i=2     1    2    6   13
+i=3     1    2    3   16</code></pre>
+<p><strong>Cell (3,3):</strong> Accumulates flow from all 16 cells (entire grid drains here).</p>
+<p><strong>This is the watershed outlet.</strong></p>
+<hr>
+<h2 id="computational-implementation">5. Computational Implementation</h2>
+<p>Below is an interactive watershed delineation tool.</p>
+<div id="watershed-viz" class="viz-container">
+<div class="controls">
+<pre><code>&lt;label&gt;
+  Terrain type:
+  &lt;select id="terrain-type"&gt;
+    &lt;option value="valley" selected&gt;Simple Valley&lt;/option&gt;
+    &lt;option value="ridge"&gt;Ridge and Valleys&lt;/option&gt;
+    &lt;option value="complex"&gt;Complex Terrain&lt;/option&gt;
+  &lt;/select&gt;
+&lt;/label&gt;
+&lt;label&gt;
+  Stream threshold:
+  &lt;input type="range" id="stream-threshold" min="10" max="200" step="10" value="50"&gt;
+  &lt;span id="stream-threshold-val"&gt;50&lt;/span&gt; cells
+&lt;/label&gt;
+&lt;label&gt;
+  Show flow direction:
+  &lt;input type="checkbox" id="show-flow-dir"&gt;
+&lt;/label&gt;
+&lt;label&gt;
+  Show streams:
+  &lt;input type="checkbox" id="show-streams" checked&gt;
+&lt;/label&gt;
+&lt;div class="watershed-info"&gt;
+  &lt;p&gt;&lt;strong&gt;Click any cell to extract its watershed&lt;/strong&gt;&lt;/p&gt;
+  &lt;p&gt;&lt;strong&gt;Watershed area:&lt;/strong&gt; &lt;span id="watershed-area"&gt;--&lt;/span&gt; cells&lt;/p&gt;
+  &lt;p&gt;&lt;strong&gt;Max accumulation:&lt;/strong&gt; &lt;span id="max-accum"&gt;--&lt;/span&gt; cells&lt;/p&gt;
+&lt;/div&gt;</code></pre>
+</div>
+<div id="watershed-canvas-container">
+<pre><code>&lt;canvas id="watershed-canvas" width="700" height="350" style="border: 1px solid #ddd; cursor: crosshair;"&gt;&lt;/canvas&gt;</code></pre>
+</div>
+</div>
+<script type="module">
+(function() {
+  const canvas = document.getElementById('watershed-canvas');
+  const ctx = canvas.getContext('2d');
+  
+  let terrainType = 'valley';
+  let streamThreshold = 50;
+  let showFlowDir = false;
+  let showStreams = true;
+  let pourPoint = null;
+  
+  const size = 50;
+  const cellSize = 7;
+  
+  const terrains = {};
+  
+  // Generate terrains
+  function generateValley() {
+    const dem = [];
+    for (let i = 0; i < size; i++) {
+      const row = [];
+      for (let j = 0; j < size; j++) {
+        const centerDist = Math.abs(j - size/2);
+        const elevation = 100 - i * 1.5 + centerDist * 2;
+        row.push(elevation);
+      }
+      dem.push(row);
+    }
+    return dem;
+  }
+  
+  function generateRidge() {
+    const dem = [];
+    for (let i = 0; i < size; i++) {
+      const row = [];
+      for (let j = 0; j < size; j++) {
+        const ridge = Math.abs(j - size/2) < 5 ? 20 : 0;
+        const elevation = 100 - i * 1.2 + ridge;
+        row.push(elevation);
+      }
+      dem.push(row);
+    }
+    return dem;
+  }
+  
+  function generateComplex() {
+    const dem = [];
+    for (let i = 0; i < size; i++) {
+      const row = [];
+      for (let j = 0; j < size; j++) {
+        const noise = Math.sin(i / 8) * Math.cos(j / 8) * 10;
+        const elevation = 100 - i * 1.0 - j * 0.5 + noise;
+        row.push(elevation);
+      }
+      dem.push(row);
+    }
+    return dem;
+  }
+  
+  terrains.valley = generateValley();
+  terrains.ridge = generateRidge();
+  terrains.complex = generateComplex();
+  
+  function getDEM() {
+    return terrains[terrainType];
+  }
+  
+  function computeFlowDirection(dem) {
+    const flowDir = [];
+    const neighbors = [
+      {di: -1, dj: 0, dist: 1, code: 64},
+      {di: -1, dj: 1, dist: Math.SQRT2, code: 128},
+      {di: 0, dj: 1, dist: 1, code: 1},
+      {di: 1, dj: 1, dist: Math.SQRT2, code: 2},
+      {di: 1, dj: 0, dist: 1, code: 4},
+      {di: 1, dj: -1, dist: Math.SQRT2, code: 8},
+      {di: 0, dj: -1, dist: 1, code: 16},
+      {di: -1, dj: -1, dist: Math.SQRT2, code: 32}
+    ];
+    
+    for (let i = 0; i < size; i++) {
+      const row = [];
+      for (let j = 0; j < size; j++) {
+        let maxSlope = -Infinity;
+        let direction = 0;
+        
+        for (let {di, dj, dist, code} of neighbors) {
+          const ni = i + di;
+          const nj = j + dj;
+          
+          if (ni >= 0 && ni < size && nj >= 0 && nj < size) {
+            const slope = (dem[i][j] - dem[ni][nj]) / dist;
+            if (slope > maxSlope) {
+              maxSlope = slope;
+              direction = code;
+            }
+          }
+        }
+        
+        row.push(direction);
+      }
+      flowDir.push(row);
+    }
+    
+    return flowDir;
+  }
+  
+  function computeFlowAccumulation(flowDir) {
+    const accum = Array(size).fill(null).map(() => Array(size).fill(1));
+    
+    // Create elevation-sorted list
+    const dem = getDEM();
+    const cells = [];
+    for (let i = 0; i < size; i++) {
+      for (let j = 0; j < size; j++) {
+        cells.push({i, j, elev: dem[i][j]});
+      }
+    }
+    cells.sort((a, b) => b.elev - a.elev);
+    
+    // Process in topological order
+    const dirMap = {
+      64: {di: -1, dj: 0},
+      128: {di: -1, dj: 1},
+      1: {di: 0, dj: 1},
+      2: {di: 1, dj: 1},
+      4: {di: 1, dj: 0},
+      8: {di: 1, dj: -1},
+      16: {di: 0, dj: -1},
+      32: {di: -1, dj: -1}
+    };
+    
+    for (let {i, j} of cells) {
+      const dir = flowDir[i][j];
+      if (dir > 0 && dirMap[dir]) {
+        const {di, dj} = dirMap[dir];
+        const ni = i + di;
+        const nj = j + dj;
+        if (ni >= 0 && ni < size && nj >= 0 && nj < size) {
+          accum[ni][nj] += accum[i][j];
+        }
+      }
+    }
+    
+    return accum;
+  }
+  
+  function extractWatershed(flowDir, pourI, pourJ) {
+    const watershed = Array(size).fill(null).map(() => Array(size).fill(false));
+    const queue = [{i: pourI, j: pourJ}];
+    watershed[pourI][pourJ] = true;
+    
+    const dirMap = {
+      64: {di: -1, dj: 0},
+      128: {di: -1, dj: 1},
+      1: {di: 0, dj: 1},
+      2: {di: 1, dj: 1},
+      4: {di: 1, dj: 0},
+      8: {di: 1, dj: -1},
+      16: {di: 0, dj: -1},
+      32: {di: -1, dj: -1}
+    };
+    
+    // Reverse direction lookup
+    const reverseDir = {
+      64: 4, 128: 8, 1: 16, 2: 32, 4: 64, 8: 128, 16: 1, 32: 2
+    };
+    
+    while (queue.length > 0) {
+      const {i, j} = queue.shift();
+      
+      // Check all neighbors
+      for (let [code, {di, dj}] of Object.entries(dirMap)) {
+        const ni = i + di;
+        const nj = j + dj;
+        
+        if (ni >= 0 && ni < size && nj >= 0 && nj < size) {
+          if (!watershed[ni][nj] && flowDir[ni][nj] == reverseDir[code]) {
+            watershed[ni][nj] = true;
+            queue.push({i: ni, j: nj});
+          }
+        }
+      }
+    }
+    
+    return watershed;
+  }
+  
+  function drawDEM(dem, x, y, width, height) {
+    let min = Infinity, max = -Infinity;
+    for (let row of dem) {
+      for (let val of row) {
+        min = Math.min(min, val);
+        max = Math.max(max, val);
+      }
+    }
+    
+    for (let i = 0; i < size; i++) {
+      for (let j = 0; j < size; j++) {
+        const norm = (dem[i][j] - min) / (max - min);
+        const gray = Math.floor(100 + 155 * norm);
+        
+        ctx.fillStyle = `rgb(${gray}, ${gray}, ${gray})`;
+        ctx.fillRect(x + j * cellSize, y + i * cellSize, cellSize, cellSize);
+      }
+    }
+  }
+  
+  function drawAccumulation(accum, x, y, width, height) {
+    const maxAccum = Math.max(...accum.flat());
+    
+    for (let i = 0; i < size; i++) {
+      for (let j = 0; j < size; j++) {
+        const norm = Math.log(accum[i][j]) / Math.log(maxAccum);
+        const blue = Math.floor(255 * norm);
+        
+        ctx.fillStyle = `rgb(200, 200, ${200 + blue/4})`;
+        ctx.fillRect(x + j * cellSize, y + i * cellSize, cellSize, cellSize);
+      }
+    }
+    
+    document.getElementById('max-accum').textContent = maxAccum;
+  }
+  
+  function drawStreams(accum, x, y) {
+    ctx.strokeStyle = '#3498DB';
+    ctx.lineWidth = 1;
+    
+    for (let i = 0; i < size; i++) {
+      for (let j = 0; j < size; j++) {
+        if (accum[i][j] >= streamThreshold) {
+          ctx.fillStyle = '#3498DB';
+          ctx.fillRect(x + j * cellSize, y + i * cellSize, cellSize, cellSize);
+        }
+      }
+    }
+  }
+  
+  function drawWatershed(watershed, x, y) {
+    let area = 0;
+    for (let i = 0; i < size; i++) {
+      for (let j = 0; j < size; j++) {
+        if (watershed[i][j]) {
+          area++;
+          ctx.fillStyle = 'rgba(46, 204, 113, 0.5)';
+          ctx.fillRect(x + j * cellSize, y + i * cellSize, cellSize, cellSize);
+        }
+      }
+    }
+    
+    document.getElementById('watershed-area').textContent = area;
+  }
+  
+  function drawFlowDirection(flowDir, x, y) {
+    const dirMap = {
+      64: {di: -1, dj: 0},
+      128: {di: -1, dj: 1},
+      1: {di: 0, dj: 1},
+      2: {di: 1, dj: 1},
+      4: {di: 1, dj: 0},
+      8: {di: 1, dj: -1},
+      16: {di: 0, dj: -1},
+      32: {di: -1, dj: -1}
+    };
+    
+    ctx.strokeStyle = 'rgba(231, 76, 60, 0.5)';
+    ctx.lineWidth = 1;
+    
+    for (let i = 0; i < size; i += 2) {
+      for (let j = 0; j < size; j += 2) {
+        const dir = flowDir[i][j];
+        if (dir > 0 && dirMap[dir]) {
+          const {di, dj} = dirMap[dir];
+          const cx = x + j * cellSize + cellSize/2;
+          const cy = y + i * cellSize + cellSize/2;
+          
+          ctx.beginPath();
+          ctx.moveTo(cx, cy);
+          ctx.lineTo(cx + dj * cellSize/2, cy + di * cellSize/2);
+          ctx.stroke();
+        }
+      }
+    }
+  }
+  
+  function render() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    
+    const dem = getDEM();
+    const flowDir = computeFlowDirection(dem);
+    const accum = computeFlowAccumulation(flowDir);
+    
+    // Left panel: DEM
+    drawDEM(dem, 10, 10, size * cellSize, size * cellSize);
+    ctx.fillStyle = '#2C3E50';
+    ctx.font = 'bold 12px sans-serif';
+    ctx.fillText('Elevation', 15, 25);
+    
+    // Right panel: Flow accumulation
+    drawAccumulation(accum, 10 + size * cellSize + 10, 10, size * cellSize, size * cellSize);
+    ctx.fillText('Flow Accumulation', 10 + size * cellSize + 15, 25);
+    
+    if (showStreams) {
+      drawStreams(accum, 10 + size * cellSize + 10, 10);
+    }
+    
+    if (showFlowDir) {
+      drawFlowDirection(flowDir, 10 + size * cellSize + 10, 10);
+    }
+    
+    if (pourPoint) {
+      const watershed = extractWatershed(flowDir, pourPoint.i, pourPoint.j);
+      drawWatershed(watershed, 10 + size * cellSize + 10, 10);
+      
+      // Mark pour point
+      ctx.fillStyle = '#E74C3C';
+      ctx.beginPath();
+      ctx.arc(
+        10 + size * cellSize + 10 + pourPoint.j * cellSize + cellSize/2,
+        10 + pourPoint.i * cellSize + cellSize/2,
+        cellSize/2, 0, 2 * Math.PI
+      );
+      ctx.fill();
+    }
+  }
+  
+  canvas.addEventListener('click', (e) => {
+    const rect = canvas.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+    
+    // Check if click is in right panel
+    const rightPanelX = 10 + size * cellSize + 10;
+    if (x >= rightPanelX && x < rightPanelX + size * cellSize &&
+        y >= 10 && y < 10 + size * cellSize) {
+      
+      const j = Math.floor((x - rightPanelX) / cellSize);
+      const i = Math.floor((y - 10) / cellSize);
+      
+      pourPoint = {i, j};
+      render();
+    }
+  });
+  
+  document.getElementById('terrain-type').addEventListener('change', (e) => {
+    terrainType = e.target.value;
+    pourPoint = null;
+    render();
+  });
+  
+  document.getElementById('stream-threshold').addEventListener('input', (e) => {
+    streamThreshold = parseInt(e.target.value);
+    document.getElementById('stream-threshold-val').textContent = streamThreshold;
+    render();
+  });
+  
+  document.getElementById('show-flow-dir').addEventListener('change', (e) => {
+    showFlowDir = e.target.checked;
+    render();
+  });
+  
+  document.getElementById('show-streams').addEventListener('change', (e) => {
+    showStreams = e.target.checked;
+    render();
+  });
+  
+  render();
+})();
+</script>
+<p><strong>Try this:</strong> - <strong>Click right panel</strong> to set pour point (red dot) and extract watershed (green overlay) - <strong>Simple valley:</strong> Water flows down center channel - <strong>Ridge and valleys:</strong> Divides drainage into separate basins - <strong>Complex terrain:</strong> Multiple drainage patterns - <strong>Stream threshold:</strong> Higher = only major streams shown (blue) - <strong>Show flow direction:</strong> Red arrows show where each cell drains - <strong>Left:</strong> Elevation (lighter = higher) - <strong>Right:</strong> Flow accumulation (darker blue = more contributing area)</p>
+<p><strong>Key insight:</strong> Watershed boundaries follow ridges—all rain inside the green area flows to the red pour point!</p>
+<hr>
+<h2 id="interpretation">6. Interpretation</h2>
+<h3 id="flood-risk-assessment">Flood Risk Assessment</h3>
+<p><strong>Contributing area</strong> = watershed size upstream of point.</p>
+<p><strong>Larger watershed</strong> → more runoff → higher flood potential</p>
+<p><strong>Example:</strong> Dam site with 500 km² watershed - Expected peak flow during storm - Reservoir sizing for flood control</p>
+<h3 id="water-quality-management">Water Quality Management</h3>
+<p><strong>Pollutant sources</strong> within watershed affect downstream quality.</p>
+<p><strong>Non-point source pollution:</strong> - Agricultural runoff (fertilizers, pesticides) - Urban stormwater (oil, sediment) - Septic systems</p>
+<p><strong>Delineate watershed</strong> → identify all potential sources → prioritize management.</p>
+<h3 id="stream-order-classification">Stream Order Classification</h3>
+<p><strong>Strahler stream order:</strong></p>
+<ol type="1">
+<li><strong>First-order:</strong> Headwater streams (no tributaries)</li>
+<li><strong>Second-order:</strong> Junction of two first-order streams</li>
+<li><strong>Nth-order:</strong> Junction of two (n-1)-order streams</li>
+</ol>
+<p><strong>Higher order</strong> = larger river</p>
+<p><strong>Application:</strong> Stream classification for habitat assessment</p>
+<h3 id="reservoir-yield">Reservoir Yield</h3>
+<p><strong>Runoff coefficient</strong> (<span class="math inline">C</span>):</p>
+<p><span class="math display">Q = C \times P \times A</span></p>
+<p>Where: - <span class="math inline">Q</span> = runoff volume - <span class="math inline">P</span> = precipitation - <span class="math inline">A</span> = watershed area - <span class="math inline">C</span> = 0.1 (forest) to 0.9 (pavement)</p>
+<p><strong>Reservoir inflow</strong> = accumulated runoff from watershed</p>
+<hr>
+<h2 id="what-could-go-wrong">7. What Could Go Wrong?</h2>
+<h3 id="flat-areas">Flat Areas</h3>
+<p><strong>D8 fails</strong> where no downslope neighbor exists.</p>
+<p><strong>Solutions:</strong></p>
+<p><strong>1. Impose flow direction:</strong> - Route to nearest definite flow (edge of flat)</p>
+<p><strong>2. D-infinity algorithm:</strong> - Allow fractional flow to multiple neighbors - More realistic but more complex</p>
+<p><strong>3. Epsilon slope:</strong> - Add tiny random elevation noise to break ties</p>
+<h3 id="depressions-and-sinks">Depressions and Sinks</h3>
+<p><strong>Natural depressions:</strong> - Lakes (real features) - DEM artifacts (errors)</p>
+<p><strong>Consequences:</strong> - Flow accumulation terminates - Watershed extraction incomplete</p>
+<p><strong>Solutions:</strong></p>
+<p><strong>Fill depressions:</strong> - Raise elevation to spill point - Loses lake information</p>
+<p><strong>Breach depressions:</strong> - Cut channel through lowest barrier - Preserves topography better</p>
+<p><strong>Hybrid:</strong> - Fill small artifacts, preserve large lakes</p>
+<h3 id="dem-resolution">DEM Resolution</h3>
+<p><strong>Coarse DEM</strong> misses small drainage features: - Ditches - Culverts - Small channels</p>
+<p><strong>Result:</strong> Incorrectly routed flow</p>
+<p><strong>Solution:</strong> Use finest available DEM (1m LiDAR ideal)</p>
+<h3 id="edge-effects">Edge Effects</h3>
+<p><strong>Watershed extends beyond DEM boundary:</strong></p>
+<p>Flow direction undefined at edges.</p>
+<p><strong>Solution:</strong> - Use larger DEM extent - Or explicitly model boundary conditions</p>
+<hr>
+<h2 id="extension-d-infinity-algorithm">8. Extension: D-Infinity Algorithm</h2>
+<p><strong>D8 limitation:</strong> Flow restricted to 8 directions (multiples of 45°).</p>
+<p><strong>D-infinity:</strong> Flow in any direction.</p>
+<p><strong>Method:</strong></p>
+<ol type="1">
+<li>Fit plane to 3×3 neighborhood</li>
+<li>Compute steepest descent direction (continuous)</li>
+<li>Apportion flow to two nearest neighbors</li>
+</ol>
+<p><strong>Flow partitioning:</strong></p>
+<p>If steepest descent at angle <span class="math inline">\theta</span> between neighbors <span class="math inline">A</span> and <span class="math inline">B</span>:</p>
+<p><span class="math display">f_A = \frac{\theta_B - \theta}{\theta_B - \theta_A}</span></p>
+<p><span class="math display">f_B = 1 - f_A</span></p>
+<p><strong>Result:</strong> More realistic flow divergence</p>
+<p><strong>Cost:</strong> Higher computational complexity</p>
+<hr>
+<h2 id="math-refresher-topological-sorting">9. Math Refresher: Topological Sorting</h2>
+<h3 id="definition">Definition</h3>
+<p><strong>Topological sort:</strong> Linear ordering of directed acyclic graph (DAG) such that for every edge <span class="math inline">u \to v</span>, <span class="math inline">u</span> comes before <span class="math inline">v</span> in the ordering.</p>
+<h3 id="application-to-flow">Application to Flow</h3>
+<p><strong>Flow network</strong> = DAG where edges point downstream.</p>
+<p><strong>Topological order</strong> = process cells from high to low elevation.</p>
+<p><strong>Ensures:</strong> When processing cell, all upstream contributors already processed.</p>
+<h3 id="kahns-algorithm">Kahn’s Algorithm</h3>
+<pre><code>L = empty list (topological order)
+S = set of nodes with no incoming edges
+
+while S not empty:
+    remove node n from S
+    add n to L
+    for each node m with edge n → m:
+        remove edge n → m
+        if m has no other incoming edges:
+            add m to S</code></pre>
+<p><strong>For flow:</strong> Start with ridge cells (no upstream), process downhill.</p>
+<h3 id="elevation-sorting">Elevation Sorting</h3>
+<p><strong>Simpler for DEMs:</strong> Sort by elevation instead of graph structure.</p>
+<p><strong>Works because:</strong> Higher elevation → upstream in flow network.</p>
+<hr>
+<h2 id="summary">Summary</h2>
+<ul>
+<li><strong>Watershed</strong> (drainage basin) = area that drains to a common outlet</li>
+<li><strong>D8 algorithm</strong> computes flow direction from each cell to steepest neighbor</li>
+<li><strong>Flow accumulation</strong> counts upstream contributing cells by processing in elevation order</li>
+<li><strong>Stream network</strong> extracted by thresholding flow accumulation (&gt;100-1000 cells)</li>
+<li><strong>Watershed delineation</strong> traces upslope from pour point to find all contributors</li>
+<li><strong>Depression filling</strong> removes artificial sinks before flow routing</li>
+<li><strong>Applications:</strong> Flood risk, water quality, reservoir planning, erosion modelling</li>
+<li><strong>Challenges:</strong> Flat areas, depressions, DEM resolution, edge effects</li>
+<li><strong>D-infinity</strong> extends to continuous flow direction (more realistic, more complex)</li>
+<li>Critical for hydrological modelling and environmental management</li>
+</ul>
+<hr>
+
+
+<footer class="wayward-footer">
+  <div class="wayward-footer__inner">
+    <div class="wayward-footer__brand">
+      <div class="wayward-footer__logo">WaywardHouse<span>.</span></div>
+      <p>Understanding how place, economy, and environment interact through analysis, modelling, and open tools.</p>
+    </div>
+
+    <nav class="wayward-footer__group" aria-labelledby="footer-reading">
+      <h2 id="footer-reading">Reading</h2>
+      <a href="../../articles/">Articles</a>
+      <a href="../../learn/">Library</a>
+      <a href="../../learn/computational-geography/core/">↳ Comp Geo Book</a>
+      <a href="../../archive.html">Archive</a>
+    </nav>
+
+    <nav class="wayward-footer__group" aria-labelledby="footer-site">
+      <h2 id="footer-site">Site</h2>
+      <a href="../../start-here.html">Start Here</a>
+      <a href="../../about.html">About</a>
+      <a href="../../contact.html">Contact</a>
+    </nav>
+
+    <nav class="wayward-footer__group" aria-labelledby="footer-resources">
+      <h2 id="footer-resources">Resources</h2>
+      <a href="../../topics/">All Topics</a>
+      <a href="../../privacy.html">Privacy Policy</a>
+      <a href="../../terms.html">Terms of Use</a>
+    </nav>
+  </div>
+</footer>
+
+<script type="module" src="../../assets/dist/main.js"></script>
+<script type="module" src="../../assets/js/core.js"></script>
+<script id="quarto-html-after-body" type="application/javascript">
+  window.document.addEventListener("DOMContentLoaded", function (event) {
+    const tabsets =  window.document.querySelectorAll(".panel-tabset-tabby")
+    tabsets.forEach(function(tabset) {
+      const tabby = new Tabby('#' + tabset.id);
+    });
+    const isCodeAnnotation = (el) => {
+      for (const clz of el.classList) {
+        if (clz.startsWith('code-annotation-')) {                     
+          return true;
+        }
+      }
+      return false;
+    }
+    const onCopySuccess = function(e) {
+      // button target
+      const button = e.trigger;
+      // don't keep focus
+      button.blur();
+      // flash "checked"
+      button.classList.add('code-copy-button-checked');
+      var currentTitle = button.getAttribute("title");
+      button.setAttribute("title", "Copied!");
+      let tooltip;
+      if (window.bootstrap) {
+        button.setAttribute("data-bs-toggle", "tooltip");
+        button.setAttribute("data-bs-placement", "left");
+        button.setAttribute("data-bs-title", "Copied!");
+        tooltip = new bootstrap.Tooltip(button, 
+          { trigger: "manual", 
+            customClass: "code-copy-button-tooltip",
+            offset: [0, -8]});
+        tooltip.show();    
+      }
+      setTimeout(function() {
+        if (tooltip) {
+          tooltip.hide();
+          button.removeAttribute("data-bs-title");
+          button.removeAttribute("data-bs-toggle");
+          button.removeAttribute("data-bs-placement");
+        }
+        button.setAttribute("title", currentTitle);
+        button.classList.remove('code-copy-button-checked');
+      }, 1000);
+      // clear code selection
+      e.clearSelection();
+    }
+    const getTextToCopy = function(trigger) {
+      const outerScaffold = trigger.parentElement.cloneNode(true);
+      const codeEl = outerScaffold.querySelector('code');
+      for (const childEl of codeEl.children) {
+        if (isCodeAnnotation(childEl)) {
+          childEl.remove();
+        }
+      }
+      return codeEl.innerText;
+    }
+    const clipboard = new window.ClipboardJS('.code-copy-button:not([data-in-quarto-modal])', {
+      text: getTextToCopy
+    });
+    clipboard.on('success', onCopySuccess);
+    if (window.document.getElementById('quarto-embedded-source-code-modal')) {
+      const clipboardModal = new window.ClipboardJS('.code-copy-button[data-in-quarto-modal]', {
+        text: getTextToCopy,
+        container: window.document.getElementById('quarto-embedded-source-code-modal')
+      });
+      clipboardModal.on('success', onCopySuccess);
+    }
+      var localhostRegex = new RegExp(/^(?:http|https):\/\/localhost\:?[0-9]*\//);
+      var mailtoRegex = new RegExp(/^mailto:/);
+        var filterRegex = new RegExp("https:\/\/wayward\.house");
+      var isInternal = (href) => {
+          return filterRegex.test(href) || localhostRegex.test(href) || mailtoRegex.test(href);
+      }
+      // Inspect non-navigation links and adorn them if external
+     var links = window.document.querySelectorAll('a[href]:not(.nav-link):not(.navbar-brand):not(.toc-action):not(.sidebar-link):not(.sidebar-item-toggle):not(.pagination-link):not(.no-external):not([aria-hidden]):not(.dropdown-item):not(.quarto-navigation-tool):not(.about-link)');
+      for (var i=0; i<links.length; i++) {
+        const link = links[i];
+        if (!isInternal(link.href)) {
+          // undo the damage that might have been done by quarto-nav.js in the case of
+          // links that we want to consider external
+          if (link.dataset.originalHref !== undefined) {
+            link.href = link.dataset.originalHref;
+          }
+        }
+      }
+    function tippyHover(el, contentFn, onTriggerFn, onUntriggerFn) {
+      const config = {
+        allowHTML: true,
+        maxWidth: 500,
+        delay: 100,
+        arrow: false,
+        appendTo: function(el) {
+            return el.parentElement;
+        },
+        interactive: true,
+        interactiveBorder: 10,
+        theme: 'light-border',
+        placement: 'bottom-start',
+      };
+      if (contentFn) {
+        config.content = contentFn;
+      }
+      if (onTriggerFn) {
+        config.onTrigger = onTriggerFn;
+      }
+      if (onUntriggerFn) {
+        config.onUntrigger = onUntriggerFn;
+      }
+      window.tippy(el, config); 
+    }
+    const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+    for (var i=0; i<noterefs.length; i++) {
+      const ref = noterefs[i];
+      tippyHover(ref, function() {
+        // use id or data attribute instead here
+        let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+        try { href = new URL(href).hash; } catch {}
+        const id = href.replace(/^#\/?/, "");
+        const note = window.document.getElementById(id);
+        if (note) {
+          return note.innerHTML;
+        } else {
+          return "";
+        }
+      });
+    }
+    const xrefs = window.document.querySelectorAll('a.quarto-xref');
+    const processXRef = (id, note) => {
+      // Strip column container classes
+      const stripColumnClz = (el) => {
+        el.classList.remove("page-full", "page-columns");
+        if (el.children) {
+          for (const child of el.children) {
+            stripColumnClz(child);
+          }
+        }
+      }
+      stripColumnClz(note)
+      if (id === null || id.startsWith('sec-')) {
+        // Special case sections, only their first couple elements
+        const container = document.createElement("div");
+        if (note.children && note.children.length > 2) {
+          container.appendChild(note.children[0].cloneNode(true));
+          for (let i = 1; i < note.children.length; i++) {
+            const child = note.children[i];
+            if (child.tagName === "P" && child.innerText === "") {
+              continue;
+            } else {
+              container.appendChild(child.cloneNode(true));
+              break;
+            }
+          }
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(container);
+          }
+          return container.innerHTML
+        } else {
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(note);
+          }
+          return note.innerHTML;
+        }
+      } else {
+        // Remove any anchor links if they are present
+        const anchorLink = note.querySelector('a.anchorjs-link');
+        if (anchorLink) {
+          anchorLink.remove();
+        }
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(note);
+        }
+        if (note.classList.contains("callout")) {
+          return note.outerHTML;
+        } else {
+          return note.innerHTML;
+        }
+      }
+    }
+    for (var i=0; i<xrefs.length; i++) {
+      const xref = xrefs[i];
+      tippyHover(xref, undefined, function(instance) {
+        instance.disable();
+        let url = xref.getAttribute('href');
+        let hash = undefined; 
+        if (url.startsWith('#')) {
+          hash = url;
+        } else {
+          try { hash = new URL(url).hash; } catch {}
+        }
+        if (hash) {
+          const id = hash.replace(/^#\/?/, "");
+          const note = window.document.getElementById(id);
+          if (note !== null) {
+            try {
+              const html = processXRef(id, note.cloneNode(true));
+              instance.setContent(html);
+            } finally {
+              instance.enable();
+              instance.show();
+            }
+          } else {
+            // See if we can fetch this
+            fetch(url.split('#')[0])
+            .then(res => res.text())
+            .then(html => {
+              const parser = new DOMParser();
+              const htmlDoc = parser.parseFromString(html, "text/html");
+              const note = htmlDoc.getElementById(id);
+              if (note !== null) {
+                const html = processXRef(id, note);
+                instance.setContent(html);
+              } 
+            }).finally(() => {
+              instance.enable();
+              instance.show();
+            });
+          }
+        } else {
+          // See if we can fetch a full url (with no hash to target)
+          // This is a special case and we should probably do some content thinning / targeting
+          fetch(url)
+          .then(res => res.text())
+          .then(html => {
+            const parser = new DOMParser();
+            const htmlDoc = parser.parseFromString(html, "text/html");
+            const note = htmlDoc.querySelector('main.content');
+            if (note !== null) {
+              // This should only happen for chapter cross references
+              // (since there is no id in the URL)
+              // remove the first header
+              if (note.children.length > 0 && note.children[0].tagName === "HEADER") {
+                note.children[0].remove();
+              }
+              const html = processXRef(null, note);
+              instance.setContent(html);
+            } 
+          }).finally(() => {
+            instance.enable();
+            instance.show();
+          });
+        }
+      }, function(instance) {
+      });
+    }
+        let selectedAnnoteEl;
+        const selectorForAnnotation = ( cell, annotation) => {
+          let cellAttr = 'data-code-cell="' + cell + '"';
+          let lineAttr = 'data-code-annotation="' +  annotation + '"';
+          const selector = 'span[' + cellAttr + '][' + lineAttr + ']';
+          return selector;
+        }
+        const selectCodeLines = (annoteEl) => {
+          const doc = window.document;
+          const targetCell = annoteEl.getAttribute("data-target-cell");
+          const targetAnnotation = annoteEl.getAttribute("data-target-annotation");
+          const annoteSpan = window.document.querySelector(selectorForAnnotation(targetCell, targetAnnotation));
+          const lines = annoteSpan.getAttribute("data-code-lines").split(",");
+          const lineIds = lines.map((line) => {
+            return targetCell + "-" + line;
+          })
+          let top = null;
+          let height = null;
+          let parent = null;
+          if (lineIds.length > 0) {
+              //compute the position of the single el (top and bottom and make a div)
+              const el = window.document.getElementById(lineIds[0]);
+              top = el.offsetTop;
+              height = el.offsetHeight;
+              parent = el.parentElement.parentElement;
+            if (lineIds.length > 1) {
+              const lastEl = window.document.getElementById(lineIds[lineIds.length - 1]);
+              const bottom = lastEl.offsetTop + lastEl.offsetHeight;
+              height = bottom - top;
+            }
+            if (top !== null && height !== null && parent !== null) {
+              // cook up a div (if necessary) and position it 
+              let div = window.document.getElementById("code-annotation-line-highlight");
+              if (div === null) {
+                div = window.document.createElement("div");
+                div.setAttribute("id", "code-annotation-line-highlight");
+                div.style.position = 'absolute';
+                parent.appendChild(div);
+              }
+              div.style.top = top - 2 + "px";
+              div.style.height = height + 4 + "px";
+              div.style.left = 0;
+              let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
+              if (gutterDiv === null) {
+                gutterDiv = window.document.createElement("div");
+                gutterDiv.setAttribute("id", "code-annotation-line-highlight-gutter");
+                gutterDiv.style.position = 'absolute';
+                const codeCell = window.document.getElementById(targetCell);
+                const gutter = codeCell.querySelector('.code-annotation-gutter');
+                gutter.appendChild(gutterDiv);
+              }
+              gutterDiv.style.top = top - 2 + "px";
+              gutterDiv.style.height = height + 4 + "px";
+            }
+            selectedAnnoteEl = annoteEl;
+          }
+        };
+        const unselectCodeLines = () => {
+          const elementsIds = ["code-annotation-line-highlight", "code-annotation-line-highlight-gutter"];
+          elementsIds.forEach((elId) => {
+            const div = window.document.getElementById(elId);
+            if (div) {
+              div.remove();
+            }
+          });
+          selectedAnnoteEl = undefined;
+        };
+          // Handle positioning of the toggle
+      window.addEventListener(
+        "resize",
+        throttle(() => {
+          elRect = undefined;
+          if (selectedAnnoteEl) {
+            selectCodeLines(selectedAnnoteEl);
+          }
+        }, 10)
+      );
+      function throttle(fn, ms) {
+      let throttle = false;
+      let timer;
+        return (...args) => {
+          if(!throttle) { // first call gets through
+              fn.apply(this, args);
+              throttle = true;
+          } else { // all the others get throttled
+              if(timer) clearTimeout(timer); // cancel #2
+              timer = setTimeout(() => {
+                fn.apply(this, args);
+                timer = throttle = false;
+              }, ms);
+          }
+        };
+      }
+        // Attach click handler to the DT
+        const annoteDls = window.document.querySelectorAll('dt[data-target-cell]');
+        for (const annoteDlNode of annoteDls) {
+          annoteDlNode.addEventListener('click', (event) => {
+            const clickedEl = event.target;
+            if (clickedEl !== selectedAnnoteEl) {
+              unselectCodeLines();
+              const activeEl = window.document.querySelector('dt[data-target-cell].code-annotation-active');
+              if (activeEl) {
+                activeEl.classList.remove('code-annotation-active');
+              }
+              selectCodeLines(clickedEl);
+              clickedEl.classList.add('code-annotation-active');
+            } else {
+              // Unselect the line
+              unselectCodeLines();
+              clickedEl.classList.remove('code-annotation-active');
+            }
+          });
+        }
+    const findCites = (el) => {
+      const parentEl = el.parentElement;
+      if (parentEl) {
+        const cites = parentEl.dataset.cites;
+        if (cites) {
+          return {
+            el,
+            cites: cites.split(' ')
+          };
+        } else {
+          return findCites(el.parentElement)
+        }
+      } else {
+        return undefined;
+      }
+    };
+    var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+    for (var i=0; i<bibliorefs.length; i++) {
+      const ref = bibliorefs[i];
+      const citeInfo = findCites(ref);
+      if (citeInfo) {
+        tippyHover(citeInfo.el, function() {
+          var popup = window.document.createElement('div');
+          citeInfo.cites.forEach(function(cite) {
+            var citeDiv = window.document.createElement('div');
+            citeDiv.classList.add('hanging-indent');
+            citeDiv.classList.add('csl-entry');
+            var biblioDiv = window.document.getElementById('ref-' + cite);
+            if (biblioDiv) {
+              citeDiv.innerHTML = biblioDiv.innerHTML;
+            }
+            popup.appendChild(citeDiv);
+          });
+          return popup.innerHTML;
+        });
+      }
+    }
+  });
+  </script>
+
+
+
+
+<script src="../../site_libs/quarto-html/zenscroll-min.js"></script>
+</body></html>

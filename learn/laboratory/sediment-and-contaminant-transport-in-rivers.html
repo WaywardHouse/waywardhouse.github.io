@@ -1,0 +1,741 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
+
+<meta charset="utf-8">
+<meta name="generator" content="quarto-1.9.36">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+
+<meta name="dcterms.date" content="2026-03-05">
+<meta name="description" content="A slug of dye injected into a river spreads into a Gaussian plume as it travels downstream — compressed in its leading edge, broadened by turbulent mixing. The advection-dispersion equation describes this spreading, predicts the peak concentration at any downstream location and time, and generalises to reactive contaminants that decay, sorb to sediment, or transform chemically. This article derives the ADE from first principles, applies it to conservative tracer breakthrough curves, characterises the mixing length downstream of a discharge, and extends to reactive transport with first-order decay and linear sorption.">
+
+<title>Sediment and Contaminant Transport in Rivers – WaywardHouse</title>
+<style>
+/* Default styles provided by pandoc.
+** See https://pandoc.org/MANUAL.html#variables-for-html for config info.
+*/
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: min(4vw, 1.5em);}
+div.column{flex: auto; overflow-x: auto;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+  width: 0.8em;
+  margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
+  vertical-align: middle;
+}
+</style>
+
+
+<link href="../../assets/images/logo.webp" rel="icon">
+<script src="../../site_libs/clipboard/clipboard.min.js"></script>
+<script src="../../site_libs/quarto-html/tabby.min.js"></script>
+<script src="../../site_libs/quarto-html/popper.min.js"></script>
+<script src="../../site_libs/quarto-html/tippy.umd.min.js"></script>
+<link href="../../site_libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="../../site_libs/quarto-html/light-border.css" rel="stylesheet">
+<link href="../../site_libs/quarto-html/quarto-html-640605f58ae58ee79329c070719e555b.min.css" rel="stylesheet" append-hash="true" data-mode="light">
+<link href="../../site_libs/quarto-html/quarto-syntax-highlighting-845c23b38eaddc0f92fda52bfe77a8c8.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<style>html{ scroll-behavior: smooth; }</style>
+<script>
+  (function () {
+    var s = localStorage.getItem('theme');
+    var dark = s !== null ? s === 'dark' : false;
+    document.documentElement.dataset.theme = dark ? 'dark' : 'light';
+    document.documentElement.dataset.brand = 'wayward';
+  })();
+</script>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:ital,wght@0,300;0,400;0,600;0,700;0,800;0,900;1,700;1,800&amp;family=Barlow:wght@300;400;500;600&amp;family=IBM+Plex+Mono:ital,wght@0,300;0,400;0,500;1,300&amp;family=Literata:ital,opsz,wght@0,7..72,300;0,7..72,400;0,7..72,500;1,7..72,300;1,7..72,400&amp;display=swap" rel="stylesheet">
+
+  <script>window.backupDefine = window.define; window.define = undefined;</script><script src="https://cdn.jsdelivr.net/npm/katex@latest/dist/katex.min.js"></script>
+  <script>document.addEventListener("DOMContentLoaded", function () {
+ var mathElements = document.getElementsByClassName("math");
+ var macros = [];
+ for (var i = 0; i < mathElements.length; i++) {
+  var texText = mathElements[i].firstChild;
+  if (mathElements[i].tagName == "SPAN") {
+   katex.render(texText.data, mathElements[i], {
+    displayMode: mathElements[i].classList.contains('display'),
+    throwOnError: false,
+    macros: macros,
+    fleqn: false
+   });
+}}});
+  </script>
+  <script>window.define = window.backupDefine; window.backupDefine = undefined;</script><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@latest/dist/katex.min.css">
+
+<script type="text/javascript">
+const typesetMath = (el) => {
+  if (window.MathJax) {
+    // MathJax Typeset
+    window.MathJax.typeset([el]);
+  } else if (window.katex) {
+    // KaTeX Render
+    var mathElements = el.getElementsByClassName("math");
+    var macros = [];
+    for (var i = 0; i < mathElements.length; i++) {
+      var texText = mathElements[i].firstChild;
+      if (mathElements[i].tagName == "SPAN" && texText && texText.data) {
+        window.katex.render(texText.data, mathElements[i], {
+          displayMode: mathElements[i].classList.contains('display'),
+          throwOnError: false,
+          macros: macros,
+          fleqn: false
+        });
+      }
+    }
+  }
+}
+window.Quarto = {
+  typesetMath
+};
+</script>
+
+<link rel="stylesheet" href="../../assets/css/quarto-wayward.css">
+</head>
+
+<body class="reading-body tag-hash-math tag-hash-viz">
+
+
+<header id="title-block-header">
+<h1 class="title">Sediment and Contaminant Transport in Rivers</h1>
+<p class="subtitle">Advection-dispersion equation, longitudinal dispersion, and reactive transport</p>
+
+<p class="date">2026-03-05</p>
+</header>
+
+
+<p>On July 25, 2015, the Gold King Mine in Colorado blew out, releasing 11 million litres of acid mine drainage containing arsenic, lead, and cadmium into Cement Creek, a tributary of the Animas River. By August 9, the contamination plume had reached the San Juan River in New Mexico — 600 km downstream. Along the way, it arrived as a visible orange slug of sediment, peaked, and then declined as the pulse dispersed and diluted. By the time it reached the Colorado River, concentrations were elevated but below health-based action levels.</p>
+<p>The shape of that plume — the orange slug growing broader and lower as it travelled — is exactly what the advection-dispersion equation (ADE) predicts. Understanding the ADE quantitatively allows emergency managers to answer the critical questions: when will the contamination arrive? what will the peak concentration be? how long until it passes?</p>
+<hr>
+<h2 id="the-question">1. The Question</h2>
+<p>How does a dissolved contaminant spread in a river? What is the concentration at any location and time after a spill? How far downstream does it take for a side-stream discharge to be fully mixed across the river? And how does chemical decay or sorption modify the transport?</p>
+<hr>
+<h2 id="the-conceptual-model">2. The Conceptual Model</h2>
+<p>A dissolved substance in a river is simultaneously carried downstream by the mean flow (<strong>advection</strong>) and spread by the random velocity fluctuations of turbulence (<strong>dispersion</strong>). Advection moves the centre of mass at the mean flow velocity; dispersion spreads the distribution around that centre. The combination produces the characteristic Gaussian plume that broadens as the square root of travel time.</p>
+<p>For reactive contaminants, additional processes modify the concentration: first-order decay (radioactive decay, biodegradation), linear sorption to suspended sediment, and volatilisation. Each process can be added to the ADE as a source or sink term.</p>
+<hr>
+<h2 id="building-the-mathematical-model">3. Building the Mathematical Model</h2>
+<h3 id="derivation-of-the-advection-dispersion-equation">3.1 Derivation of the Advection-Dispersion Equation</h3>
+<p>Consider a control volume of length <span class="math inline">\Delta x</span>, cross-sectional area <span class="math inline">A</span> [m²], in a river with mean velocity <span class="math inline">U</span> [m s⁻¹]. The mass <span class="math inline">M</span> [g] of solute in the control volume changes due to advective flux and dispersive flux:</p>
+<p><strong>Advective flux in</strong> at <span class="math inline">x</span>: <span class="math inline">F_{\text{adv}}^{\text{in}} = U C A</span></p>
+<p><strong>Advective flux out</strong> at <span class="math inline">x + \Delta x</span>: <span class="math inline">F_{\text{adv}}^{\text{out}} = U C A + \frac{\partial(UCA)}{\partial x}\Delta x</span></p>
+<p><strong>Dispersive flux</strong> follows Fick’s first law — net flux from high to low concentration: <span class="math inline">F_{\text{disp}} = -D_L A \frac{\partial C}{\partial x}</span></p>
+<p>Mass balance over <span class="math inline">\Delta x</span> and <span class="math inline">\Delta t</span>, dividing by <span class="math inline">A\Delta x</span>:</p>
+<p><span class="math display">\frac{\partial C}{\partial t} = -U\frac{\partial C}{\partial x} + D_L\frac{\partial^2 C}{\partial x^2}</span></p>
+<p>This is the <strong>one-dimensional advection-dispersion equation (ADE)</strong>, where: - <span class="math inline">C(x,t)</span> [mg L⁻¹] = concentration - <span class="math inline">U</span> [m s⁻¹] = mean river velocity - <span class="math inline">D_L</span> [m² s⁻¹] = longitudinal dispersion coefficient</p>
+<p>The two terms on the right have opposite characters: advection (<span class="math inline">-U\partial C/\partial x</span>) translates the distribution downstream without changing its shape; dispersion (<span class="math inline">D_L\partial^2 C/\partial x^2</span>) spreads and flattens it.</p>
+<h3 id="analytical-solution-instantaneous-slug-release">3.2 Analytical Solution: Instantaneous Slug Release</h3>
+<p>For an instantaneous release of mass <span class="math inline">M</span> [g] into a stream of cross-sectional area <span class="math inline">A</span> at <span class="math inline">x = 0</span>, <span class="math inline">t = 0</span>, the solution is a <strong>Gaussian plume</strong> moving downstream:</p>
+<p><span class="math display">C(x,t) = \frac{M}{A\sqrt{4\pi D_L t}} \exp\!\left(-\frac{(x-Ut)^2}{4D_L t}\right)</span></p>
+<p>Key properties: - Peak concentration: <span class="math inline">C_{\max}(t) = M/(A\sqrt{4\pi D_L t})</span> — falls as <span class="math inline">t^{-1/2}</span> - Peak location: <span class="math inline">x_{\max}(t) = Ut</span> — moves at mean velocity - Plume width (standard deviation): <span class="math inline">\sigma_x = \sqrt{2D_L t}</span> — grows as <span class="math inline">t^{1/2}</span> - At any fixed downstream location <span class="math inline">x_0</span>, the concentration peaks at time <span class="math inline">t_{\max} \approx x_0/U</span> and the <strong>breakthrough curve</strong> is approximately Gaussian in time with <span class="math inline">\sigma_t \approx \sigma_x/U = \sqrt{2D_L x_0/U}/U</span></p>
+<h3 id="continuous-source-solution">3.3 Continuous Source Solution</h3>
+<p>For a continuous steady source of discharge rate <span class="math inline">q_s</span> [g s⁻¹] at <span class="math inline">x = 0</span>, the steady-state upstream-downstream concentration profile:</p>
+<p>For <span class="math inline">x &gt; 0</span> (downstream):</p>
+<p><span class="math display">C(x) = \frac{q_s}{UA}\exp\!\left(-\frac{U x}{2D_L}\right) \cdot 2\cosh\left(\frac{Ux}{2D_L}\right) \approx \frac{q_s}{UA}</span></p>
+<p>For a far-field downstream source in a long river, the concentration at distance <span class="math inline">x</span> downstream from a continuous point source at the surface:</p>
+<p><span class="math display">C(x) = \frac{q_s}{Q} \quad (x \gg D_L/U)</span></p>
+<p>where <span class="math inline">Q = UA</span> is river discharge. This is simply dilution — for a well-mixed continuous source, the downstream concentration is source mass flux divided by river volumetric flux.</p>
+<h3 id="the-longitudinal-dispersion-coefficient">3.4 The Longitudinal Dispersion Coefficient</h3>
+<p>The dispersion coefficient <span class="math inline">D_L</span> is much larger than molecular diffusion — it represents the spreading caused by differential velocities across the channel cross-section (faster in the centre, slower near the banks). Fischer et al.&nbsp;(1979):</p>
+<p><span class="math display">D_L = 0.011 \frac{U^2 W^2}{H u_*}</span></p>
+<p>where <span class="math inline">U</span> = mean velocity [m s⁻¹], <span class="math inline">W</span> = channel width [m], <span class="math inline">H</span> = mean depth [m], and <span class="math inline">u_* = \sqrt{gHS}</span> = shear velocity with <span class="math inline">S</span> = channel slope.</p>
+<p>For a typical Alberta river reach: <span class="math inline">U = 0.8</span> m/s, <span class="math inline">W = 40</span> m, <span class="math inline">H = 1.5</span> m, <span class="math inline">S = 0.0005</span>:</p>
+<p><span class="math display">u_* = \sqrt{9.81 \times 1.5 \times 0.0005} = \sqrt{0.00736} = 0.0858 \text{ m/s}</span></p>
+<p><span class="math display">D_L = 0.011 \times \frac{0.8^2 \times 40^2}{1.5 \times 0.0858} = 0.011 \times \frac{1024}{0.1287} = 0.011 \times 7955 = 87.5 \text{ m}^2/\text{s}</span></p>
+<p>This is approximately $10^5$ times larger than the molecular diffusion coefficient of ~$10^{-9}$ m² s⁻¹ — confirming that turbulent dispersion, not molecular diffusion, governs river mixing.</p>
+<h3 id="mixing-lengths-and-transverse-mixing">3.5 Mixing Lengths and Transverse Mixing</h3>
+<p>A continuous discharge from one bank requires a <strong>mixing length</strong> <span class="math inline">L_M</span> [m] to achieve complete lateral mixing across the channel width <span class="math inline">W</span> [m]:</p>
+<p><span class="math display">L_M \approx \frac{0.4 W^2 U}{D_T}</span></p>
+<p>where <span class="math inline">D_T</span> [m² s⁻¹] is the transverse dispersion coefficient. The transverse coefficient is much smaller than the longitudinal:</p>
+<p><span class="math display">D_T \approx 0.15 H u_*</span></p>
+<p>For the Alberta river above: <span class="math inline">D_T = 0.15 \times 1.5 \times 0.0858 = 0.019</span> m² s⁻¹.</p>
+<p><span class="math display">L_M = \frac{0.4 \times 40^2 \times 0.8}{0.019} = \frac{512}{0.019} = 26,900 \text{ m} \approx 27 \text{ km}</span></p>
+<p>The discharge needs 27 km to mix fully across a 40 m wide channel. Before that, the ADE predictions using fully mixed concentrations overestimate the dilution available close to the bank on the opposite side.</p>
+<h3 id="reactive-transport-first-order-decay">3.6 Reactive Transport: First-Order Decay</h3>
+<p>For a contaminant that decays by first-order kinetics (radioactive decay, biodegradation, photolysis) with rate constant <span class="math inline">\lambda</span> [s⁻¹]:</p>
+<p><span class="math display">\frac{\partial C}{\partial t} = -U\frac{\partial C}{\partial x} + D_L\frac{\partial^2 C}{\partial x^2} - \lambda C</span></p>
+<p>Solution for instantaneous slug:</p>
+<p><span class="math display">C(x,t) = \frac{M}{A\sqrt{4\pi D_L t}} \exp\!\left(-\frac{(x-Ut)^2}{4D_L t} - \lambda t\right)</span></p>
+<p>The decay factor <span class="math inline">e^{-\lambda t}</span> reduces the total mass in the water column. For conservative tracers (<span class="math inline">\lambda = 0</span>), total mass is conserved as the plume disperses.</p>
+<h3 id="sorption-and-retardation">3.7 Sorption and Retardation</h3>
+<p>When a contaminant sorbs onto suspended sediment or bed material, the effective transport velocity is reduced. For linear instantaneous sorption (Henry’s law):</p>
+<p><span class="math display">q = K_d C</span></p>
+<p>where <span class="math inline">q</span> [mg kg⁻¹] is contaminant concentration in sediment and <span class="math inline">K_d</span> [L kg⁻¹] is the distribution coefficient. The sorbed phase moves with the sediment, which in suspended transport moves at approximately the flow velocity but in bed load moves more slowly.</p>
+<p>For mobile (dissolved + suspended sediment) transport, the <strong>retardation factor</strong> <span class="math inline">R_f</span>:</p>
+<p><span class="math display">R_f = 1 + \frac{\rho_b K_d}{n}</span></p>
+<p>where <span class="math inline">\rho_b</span> [kg L⁻¹] is bulk sediment density and <span class="math inline">n</span> is porosity (for porous media; in river transport, use suspended sediment concentration <span class="math inline">C_s</span> [kg m⁻³] and modify accordingly). The effective velocity is <span class="math inline">U/R_f &lt; U</span> — strongly sorbing compounds move slower than the water.</p>
+<p>For highly hydrophobic organic compounds (PCBs, PAHs, dioxins), <span class="math inline">K_d</span> can be $10<sup>4$–$10</sup>6$ L kg⁻¹ — these compounds are essentially immobile in river sediments, sorbing within hours of entering the system and remaining in bed sediments for decades to centuries.</p>
+<hr>
+<h2 id="worked-example-by-hand">4. Worked Example by Hand</h2>
+<p><strong>Setting:</strong> A tanker spills 500 kg of a water-soluble chemical into the Bow River near Calgary. River properties: <span class="math inline">U = 0.9</span> m s⁻¹ = 77.8 km day⁻¹, <span class="math inline">A = 80</span> m² (depth 2 m, width 40 m), <span class="math inline">D_L = 50</span> m² s⁻¹.</p>
+<p><strong>Mass input:</strong> <span class="math inline">M = 500</span> kg = $5 ^8$ mg</p>
+<p><strong>Peak concentration vs.&nbsp;time at <span class="math inline">x = 50</span> km downstream:</strong></p>
+<p>Travel time to 50 km: <span class="math inline">t^* \approx 50{,}000/0.9 = 55{,}556</span> s ≈ 15.4 hours</p>
+<p><span class="math display">C_{\max}(t^*) = \frac{M}{A\sqrt{4\pi D_L t^*}} = \frac{5\times10^8}{80\sqrt{4\pi \times 50 \times 55{,}556}}</span></p>
+<p><span class="math display">= \frac{5\times10^8}{80\sqrt{34{,}906{,}585}} = \frac{5\times10^8}{80 \times 5908} = \frac{5\times10^8}{472{,}640} = 1057 \text{ mg m}^{-3} = 1.06 \text{ mg L}^{-1}</span></p>
+<p><strong>Plume width at 50 km:</strong> <span class="math inline">\sigma_x = \sqrt{2D_L t^*} = \sqrt{2 \times 50 \times 55{,}556} = \sqrt{5.56\times10^6} = 2357</span> m ≈ 2.4 km</p>
+<p>The 95% of mass is within ±2<span class="math inline">\sigma_x</span> = ±4.7 km of the peak at the time it passes 50 km.</p>
+<p><strong>Arrival time window:</strong> The plume passes a monitoring station at 50 km from <span class="math inline">t = t^* - 2\sigma_t</span> to <span class="math inline">t = t^* + 2\sigma_t</span>, where <span class="math inline">\sigma_t = \sigma_x/U = 2357/0.9 = 2619</span> s ≈ 44 min. The main pulse passes in about 1.5 hours — consistent with emergency response timescales.</p>
+<p><strong>If the chemical has decay rate <span class="math inline">\lambda = 0.5</span> day⁻¹ = $5.79 ^{-6}$ s⁻¹:</strong></p>
+<p><span class="math display">C_{\max}^{\text{reactive}}(t^*) = C_{\max}^{\text{conservative}} \times e^{-\lambda t^*} = 1057 \times e^{-5.79\times10^{-6} \times 55{,}556} = 1057 \times e^{-0.322} = 1057 \times 0.724 = 765 \text{ mg/m}^3</span></p>
+<p>Decay reduces peak concentration by 28% at 50 km — significant but not dominant for this moderate decay rate.</p>
+<hr>
+<h2 id="computational-implementation">5. Computational Implementation</h2>
+<pre><code>function ade_slug(x_array, t, M, A, U, D_L, decay=0):
+    # Instantaneous slug ADE solution
+    sigma_sq = 2 * D_L * t
+    peak_pos = U * t
+    C = M / (A * sqrt(4 * pi * D_L * t))
+    C *= exp(-(x_array - peak_pos)**2 / (2 * sigma_sq))
+    C *= exp(-decay * t)
+    return C
+
+function breakthrough_curve(x0, t_array, M, A, U, D_L, decay=0):
+    C = []
+    for t in t_array:
+        if t &lt;= 0: C.append(0); continue
+        sigma_sq = 2 * D_L * t
+        c = M / (A * sqrt(4*pi*D_L*t))
+        c *= exp(-(x0 - U*t)**2 / sigma_sq)
+        c *= exp(-decay * t)
+        C.append(c)
+    return C
+
+function dispersion_coefficient(U, W, H, S):
+    u_star = sqrt(9.81 * H * S)
+    return 0.011 * U**2 * W**2 / (H * u_star)</code></pre>
+<pre class="{pyodide}"><code>import numpy as np
+
+def ade_slug(x, t, M, A, U, DL, lam=0):
+    if t &lt;= 0: return np.zeros_like(x, dtype=float)
+    factor = M / (A * np.sqrt(4*np.pi*DL*t))
+    return factor * np.exp(-(x - U*t)**2 / (4*DL*t) - lam*t)
+
+def breakthrough(x0, t_arr, M, A, U, DL, lam=0):
+    return np.array([ade_slug(np.array([x0]), t, M, A, U, DL, lam)[0]
+                     for t in t_arr])
+
+def DL_fischer(U, W, H, S):
+    u_star = np.sqrt(9.81 * H * S)
+    return 0.011 * U**2 * W**2 / (H * u_star)
+
+# Bow River spill
+M = 5e8   # mg (500 kg)
+A = 80.0  # m²
+U = 0.9   # m/s
+DL = DL_fischer(0.9, 40, 2.0, 0.0005)
+print(f"Longitudinal dispersion coefficient: {DL:.1f} m²/s")
+
+# Peak at 50 km downstream
+x0 = 50_000
+t_star = x0 / U
+sigma_x = np.sqrt(2*DL*t_star)
+C_peak = M / (A * np.sqrt(4*np.pi*DL*t_star))
+print(f"\nAt x = {x0/1000:.0f} km:")
+print(f"  Travel time: {t_star/3600:.1f} hours")
+print(f"  Peak conc (conservative): {C_peak:.1f} mg/m³ = {C_peak/1000:.4f} mg/L")
+print(f"  Plume σ: {sigma_x/1000:.1f} km")
+
+# With decay (λ = 0.5/day)
+lam = 0.5 / 86400
+C_reactive = C_peak * np.exp(-lam * t_star)
+print(f"  Peak conc (λ=0.5/d): {C_reactive:.1f} mg/m³  (reduction: {100*(1-C_reactive/C_peak):.0f}%)")
+
+# Breakthrough at multiple stations
+t_arr = np.linspace(1000, 300_000, 500)
+stations = [20_000, 50_000, 100_000]
+print(f"\nBreakthrough times and peaks:")
+for xs in stations:
+    bt = breakthrough(xs, t_arr, M, A, U, DL)
+    tmax = t_arr[np.argmax(bt)]
+    print(f"  x={xs/1000:.0f}km: peak at t={tmax/3600:.1f}h, C_peak={bt.max():.0f} mg/m³")</code></pre>
+<hr>
+<h2 id="visualization">6. Visualization</h2>
+<div data-viz="echarts" style="height:420px" data-options="{
+  &quot;title&quot;: {&quot;text&quot;: &quot;Conservative Tracer Breakthrough Curves at Downstream Monitoring Stations&quot;, &quot;textStyle&quot;: {&quot;fontSize&quot;: 14}},
+  &quot;tooltip&quot;: {&quot;trigger&quot;: &quot;axis&quot;},
+  &quot;legend&quot;: {&quot;data&quot;: [&quot;x = 20 km&quot;, &quot;x = 50 km&quot;, &quot;x = 100 km&quot;], &quot;bottom&quot;: 0},
+  &quot;xAxis&quot;: {&quot;name&quot;: &quot;Time after spill (hours)&quot;, &quot;nameLocation&quot;: &quot;middle&quot;, &quot;nameGap&quot;: 30,
+    &quot;data&quot;: [0,2,4,6,8,10,12,14,16,18,20,22,24,28,32,38,46,56,70,90]},
+  &quot;yAxis&quot;: {&quot;name&quot;: &quot;Concentration (mg m⁻³)&quot;, &quot;nameLocation&quot;: &quot;middle&quot;, &quot;nameGap&quot;: 55},
+  &quot;series&quot;: [
+    {&quot;name&quot;: &quot;x = 20 km&quot;, &quot;type&quot;: &quot;line&quot;, &quot;smooth&quot;: true,
+     &quot;itemStyle&quot;: {&quot;color&quot;: &quot;#C62828&quot;},
+     &quot;data&quot;: [0,0,0,820,3200,4100,2800,1400,550,190,55,14,3,0,0,0,0,0,0,0]},
+    {&quot;name&quot;: &quot;x = 50 km&quot;, &quot;type&quot;: &quot;line&quot;, &quot;smooth&quot;: true,
+     &quot;itemStyle&quot;: {&quot;color&quot;: &quot;#1565C0&quot;},
+     &quot;data&quot;: [0,0,0,0,0,0,60,320,780,1050,980,720,460,180,55,10,2,0,0,0]},
+    {&quot;name&quot;: &quot;x = 100 km&quot;, &quot;type&quot;: &quot;line&quot;, &quot;smooth&quot;: true,
+     &quot;itemStyle&quot;: {&quot;color&quot;: &quot;#2E7D32&quot;},
+     &quot;data&quot;: [0,0,0,0,0,0,0,0,5,35,110,280,480,680,700,560,360,190,80,25]}
+  ]
+}">
+
+</div>
+<p>Three characteristic features of ADE breakthrough curves: the peak arrives approximately at <span class="math inline">t = x/U</span>; the peak concentration falls proportionally to $1/$ as the plume spreads; and the curves become increasingly asymmetric (right-tailed) at greater distances due to the time-domain stretching of the Gaussian. The emergency manager can read directly when contamination will arrive and how long it will last.</p>
+<hr>
+<h2 id="interpretation">7. Interpretation</h2>
+<p>The ADE result that peak concentration falls as <span class="math inline">M/(A\sqrt{4\pi D_L t}) \propto x^{-1/2}</span> has profound implications for emergency response. Doubling the distance from the spill does not halve the peak — it reduces it by only <span class="math inline">\sqrt{2} \approx 1.41\times</span>. Contamination from a large spill remains detectable far downstream. Conversely, for a continuous source (as in the Gold King Mine case), the downstream concentration at steady state is simply <span class="math inline">q_s/Q</span> — pure dilution, with no spatial gradient beyond the mixing length.</p>
+<p>The mixing length result (27 km for a 40 m wide river) is important for permit design: a regulatory monitor placed 1 km downstream of a lateral discharge would measure bank-side concentrations much higher than the whole-river average, potentially triggering violations that would not occur further downstream. Standard practice places whole-river monitoring stations beyond the mixing length for this reason.</p>
+<p>The sorption result — strongly hydrophobic compounds become essentially immobilised in bed sediments — explains why contaminated sediment cleanup is so difficult and expensive. Dredging removes the contaminated sediment but disturbs adjacent material, temporarily releasing contaminants to the water column. Capping (covering the contaminated sediment with clean material) prevents release but does not remove the contamination. Natural recovery through burial by cleaner sediment may take decades in low-energy depositional environments.</p>
+<hr>
+<h2 id="what-could-go-wrong">8. What Could Go Wrong?</h2>
+<p><strong>The ADE assumes Fickian (Gaussian) dispersion.</strong> In heterogeneous rivers — with dead zones behind boulders, hyporheic exchange with the streambed, vegetated margins — transport is non-Fickian: tails are heavier than Gaussian, and breakthrough curves show double peaks or very long recession limbs. The CTRW (continuous time random walk) framework generalises the ADE to non-Fickian transport but at significantly greater mathematical complexity.</p>
+<p><strong>Transverse mixing is critical near the source.</strong> The ADE assumption of complete lateral mixing is violated in the near-field mixing zone. For a bank discharge of a toxic compound, the concentration at the near bank remains much higher than the ADE whole-river average until the mixing length is reached. Acute aquatic toxicity effects (fish kills) can occur within the mixing zone even when whole-river concentrations meet standards.</p>
+<p><strong>Bed sediment acts as a long-term secondary source.</strong> For contaminants with high <span class="math inline">K_d</span>, the river bed becomes a reservoir that slowly releases contamination back to the water column over years to decades after the primary source is removed. This was observed on the Hudson River (PCBs from GE capacitor plants) and the Athabasca River (PAHs from natural bitumen deposits and oil sands processing areas) — rivers that continue to show elevated contaminant concentrations long after regulatory action addressed the primary sources.</p>
+<hr>
+<h2 id="summary">9. Summary</h2>
+<p>The advection-dispersion equation <span class="math inline">\partial C/\partial t = -U\partial C/\partial x + D_L\partial^2 C/\partial x^2</span> describes the downstream transport and spreading of dissolved contaminants. For an instantaneous slug release, the solution is a Gaussian plume with peak concentration <span class="math inline">\propto (D_L t)^{-1/2}</span> and width <span class="math inline">\sigma_x = \sqrt{2D_L t}</span>. The longitudinal dispersion coefficient is estimated by Fischer’s formula <span class="math inline">D_L = 0.011 U^2 W^2/(Hu_*)</span>.</p>
+<p>First-order decay (biodegradation, radioactive decay) adds an exponential damping factor <span class="math inline">e^{-\lambda t}</span>. Linear sorption retards transport by factor <span class="math inline">R_f = 1 + \rho_b K_d/n</span>. Lateral mixing requires a distance <span class="math inline">L_M \approx 0.4W^2U/D_T</span> before a bank-edge discharge is fully mixed across the channel — typically tens of kilometres for rivers wider than 20 m.</p>
+<p><strong>Key equations:</strong></p>
+<p><span class="math display">\frac{\partial C}{\partial t} = -U\frac{\partial C}{\partial x} + D_L\frac{\partial^2 C}{\partial x^2} - \lambda C</span></p>
+<p><span class="math display">C(x,t) = \frac{M}{A\sqrt{4\pi D_L t}}\exp\!\left(-\frac{(x-Ut)^2}{4D_L t}-\lambda t\right)</span></p>
+<p><span class="math display">D_L = 0.011\frac{U^2 W^2}{H u_*}, \quad u_* = \sqrt{gHS}</span></p>
+<p><span class="math display">L_M \approx 0.4W^2U/D_T, \quad D_T \approx 0.15 H u_*</span></p>
+<hr>
+<h2 id="math-refresher">Math Refresher</h2>
+<p><strong>The Gaussian and the diffusion equation.</strong> The ADE without advection reduces to <span class="math inline">\partial C/\partial t = D_L \partial^2 C/\partial x^2</span> — the diffusion equation. Its fundamental solution is the Gaussian: <span class="math inline">C(x,t) = C_0/\sqrt{4\pi D_L t} \exp(-x^2/4D_L t)</span>. Adding advection at velocity <span class="math inline">U</span> simply shifts the Gaussian downstream: replace <span class="math inline">x</span> with <span class="math inline">x - Ut</span>. This is the mathematical expression of a simple physical fact: the mean current carries the plume, and diffusion spreads it symmetrically around the moving centre.</p>
+<p><strong>Dimensional analysis for <span class="math inline">D_L</span>.</strong> The dispersion coefficient has units [m² s⁻¹] = [length² / time]. Fischer’s formula <span class="math inline">D_L \propto U^2 W^2 / (H u_*)</span> is dimensionally consistent: <span class="math inline">[m/s]^2 [m]^2 / ([m][m/s]) = [m^4/s^2] / [m^2/s] = [m^2/s]</span>. The physical interpretation: larger channels (<span class="math inline">W</span> larger), faster flow (<span class="math inline">U</span> larger), and smoother beds (lower <span class="math inline">u_*</span>) all increase dispersion — because the velocity gradient across the wide, fast, smooth channel is larger, creating more differential advection and hence more spreading.</p>
+
+
+<footer class="wayward-footer">
+  <div class="wayward-footer__inner">
+    <div class="wayward-footer__brand">
+      <div class="wayward-footer__logo">WaywardHouse<span>.</span></div>
+      <p>Understanding how place, economy, and environment interact through analysis, modelling, and open tools.</p>
+    </div>
+
+    <nav class="wayward-footer__group" aria-labelledby="footer-reading">
+      <h2 id="footer-reading">Reading</h2>
+      <a href="../../articles/">Articles</a>
+      <a href="../../learn/">Library</a>
+      <a href="../../learn/computational-geography/core/">↳ Comp Geo Book</a>
+      <a href="../../archive.html">Archive</a>
+    </nav>
+
+    <nav class="wayward-footer__group" aria-labelledby="footer-site">
+      <h2 id="footer-site">Site</h2>
+      <a href="../../start-here.html">Start Here</a>
+      <a href="../../about.html">About</a>
+      <a href="../../contact.html">Contact</a>
+    </nav>
+
+    <nav class="wayward-footer__group" aria-labelledby="footer-resources">
+      <h2 id="footer-resources">Resources</h2>
+      <a href="../../topics/">All Topics</a>
+      <a href="../../privacy.html">Privacy Policy</a>
+      <a href="../../terms.html">Terms of Use</a>
+    </nav>
+  </div>
+</footer>
+
+<script type="module" src="../../assets/dist/main.js"></script>
+<script type="module" src="../../assets/js/core.js"></script>
+<script id="quarto-html-after-body" type="application/javascript">
+  window.document.addEventListener("DOMContentLoaded", function (event) {
+    const tabsets =  window.document.querySelectorAll(".panel-tabset-tabby")
+    tabsets.forEach(function(tabset) {
+      const tabby = new Tabby('#' + tabset.id);
+    });
+    const isCodeAnnotation = (el) => {
+      for (const clz of el.classList) {
+        if (clz.startsWith('code-annotation-')) {                     
+          return true;
+        }
+      }
+      return false;
+    }
+    const onCopySuccess = function(e) {
+      // button target
+      const button = e.trigger;
+      // don't keep focus
+      button.blur();
+      // flash "checked"
+      button.classList.add('code-copy-button-checked');
+      var currentTitle = button.getAttribute("title");
+      button.setAttribute("title", "Copied!");
+      let tooltip;
+      if (window.bootstrap) {
+        button.setAttribute("data-bs-toggle", "tooltip");
+        button.setAttribute("data-bs-placement", "left");
+        button.setAttribute("data-bs-title", "Copied!");
+        tooltip = new bootstrap.Tooltip(button, 
+          { trigger: "manual", 
+            customClass: "code-copy-button-tooltip",
+            offset: [0, -8]});
+        tooltip.show();    
+      }
+      setTimeout(function() {
+        if (tooltip) {
+          tooltip.hide();
+          button.removeAttribute("data-bs-title");
+          button.removeAttribute("data-bs-toggle");
+          button.removeAttribute("data-bs-placement");
+        }
+        button.setAttribute("title", currentTitle);
+        button.classList.remove('code-copy-button-checked');
+      }, 1000);
+      // clear code selection
+      e.clearSelection();
+    }
+    const getTextToCopy = function(trigger) {
+      const outerScaffold = trigger.parentElement.cloneNode(true);
+      const codeEl = outerScaffold.querySelector('code');
+      for (const childEl of codeEl.children) {
+        if (isCodeAnnotation(childEl)) {
+          childEl.remove();
+        }
+      }
+      return codeEl.innerText;
+    }
+    const clipboard = new window.ClipboardJS('.code-copy-button:not([data-in-quarto-modal])', {
+      text: getTextToCopy
+    });
+    clipboard.on('success', onCopySuccess);
+    if (window.document.getElementById('quarto-embedded-source-code-modal')) {
+      const clipboardModal = new window.ClipboardJS('.code-copy-button[data-in-quarto-modal]', {
+        text: getTextToCopy,
+        container: window.document.getElementById('quarto-embedded-source-code-modal')
+      });
+      clipboardModal.on('success', onCopySuccess);
+    }
+      var localhostRegex = new RegExp(/^(?:http|https):\/\/localhost\:?[0-9]*\//);
+      var mailtoRegex = new RegExp(/^mailto:/);
+        var filterRegex = new RegExp("https:\/\/wayward\.house");
+      var isInternal = (href) => {
+          return filterRegex.test(href) || localhostRegex.test(href) || mailtoRegex.test(href);
+      }
+      // Inspect non-navigation links and adorn them if external
+     var links = window.document.querySelectorAll('a[href]:not(.nav-link):not(.navbar-brand):not(.toc-action):not(.sidebar-link):not(.sidebar-item-toggle):not(.pagination-link):not(.no-external):not([aria-hidden]):not(.dropdown-item):not(.quarto-navigation-tool):not(.about-link)');
+      for (var i=0; i<links.length; i++) {
+        const link = links[i];
+        if (!isInternal(link.href)) {
+          // undo the damage that might have been done by quarto-nav.js in the case of
+          // links that we want to consider external
+          if (link.dataset.originalHref !== undefined) {
+            link.href = link.dataset.originalHref;
+          }
+        }
+      }
+    function tippyHover(el, contentFn, onTriggerFn, onUntriggerFn) {
+      const config = {
+        allowHTML: true,
+        maxWidth: 500,
+        delay: 100,
+        arrow: false,
+        appendTo: function(el) {
+            return el.parentElement;
+        },
+        interactive: true,
+        interactiveBorder: 10,
+        theme: 'light-border',
+        placement: 'bottom-start',
+      };
+      if (contentFn) {
+        config.content = contentFn;
+      }
+      if (onTriggerFn) {
+        config.onTrigger = onTriggerFn;
+      }
+      if (onUntriggerFn) {
+        config.onUntrigger = onUntriggerFn;
+      }
+      window.tippy(el, config); 
+    }
+    const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+    for (var i=0; i<noterefs.length; i++) {
+      const ref = noterefs[i];
+      tippyHover(ref, function() {
+        // use id or data attribute instead here
+        let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+        try { href = new URL(href).hash; } catch {}
+        const id = href.replace(/^#\/?/, "");
+        const note = window.document.getElementById(id);
+        if (note) {
+          return note.innerHTML;
+        } else {
+          return "";
+        }
+      });
+    }
+    const xrefs = window.document.querySelectorAll('a.quarto-xref');
+    const processXRef = (id, note) => {
+      // Strip column container classes
+      const stripColumnClz = (el) => {
+        el.classList.remove("page-full", "page-columns");
+        if (el.children) {
+          for (const child of el.children) {
+            stripColumnClz(child);
+          }
+        }
+      }
+      stripColumnClz(note)
+      if (id === null || id.startsWith('sec-')) {
+        // Special case sections, only their first couple elements
+        const container = document.createElement("div");
+        if (note.children && note.children.length > 2) {
+          container.appendChild(note.children[0].cloneNode(true));
+          for (let i = 1; i < note.children.length; i++) {
+            const child = note.children[i];
+            if (child.tagName === "P" && child.innerText === "") {
+              continue;
+            } else {
+              container.appendChild(child.cloneNode(true));
+              break;
+            }
+          }
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(container);
+          }
+          return container.innerHTML
+        } else {
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(note);
+          }
+          return note.innerHTML;
+        }
+      } else {
+        // Remove any anchor links if they are present
+        const anchorLink = note.querySelector('a.anchorjs-link');
+        if (anchorLink) {
+          anchorLink.remove();
+        }
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(note);
+        }
+        if (note.classList.contains("callout")) {
+          return note.outerHTML;
+        } else {
+          return note.innerHTML;
+        }
+      }
+    }
+    for (var i=0; i<xrefs.length; i++) {
+      const xref = xrefs[i];
+      tippyHover(xref, undefined, function(instance) {
+        instance.disable();
+        let url = xref.getAttribute('href');
+        let hash = undefined; 
+        if (url.startsWith('#')) {
+          hash = url;
+        } else {
+          try { hash = new URL(url).hash; } catch {}
+        }
+        if (hash) {
+          const id = hash.replace(/^#\/?/, "");
+          const note = window.document.getElementById(id);
+          if (note !== null) {
+            try {
+              const html = processXRef(id, note.cloneNode(true));
+              instance.setContent(html);
+            } finally {
+              instance.enable();
+              instance.show();
+            }
+          } else {
+            // See if we can fetch this
+            fetch(url.split('#')[0])
+            .then(res => res.text())
+            .then(html => {
+              const parser = new DOMParser();
+              const htmlDoc = parser.parseFromString(html, "text/html");
+              const note = htmlDoc.getElementById(id);
+              if (note !== null) {
+                const html = processXRef(id, note);
+                instance.setContent(html);
+              } 
+            }).finally(() => {
+              instance.enable();
+              instance.show();
+            });
+          }
+        } else {
+          // See if we can fetch a full url (with no hash to target)
+          // This is a special case and we should probably do some content thinning / targeting
+          fetch(url)
+          .then(res => res.text())
+          .then(html => {
+            const parser = new DOMParser();
+            const htmlDoc = parser.parseFromString(html, "text/html");
+            const note = htmlDoc.querySelector('main.content');
+            if (note !== null) {
+              // This should only happen for chapter cross references
+              // (since there is no id in the URL)
+              // remove the first header
+              if (note.children.length > 0 && note.children[0].tagName === "HEADER") {
+                note.children[0].remove();
+              }
+              const html = processXRef(null, note);
+              instance.setContent(html);
+            } 
+          }).finally(() => {
+            instance.enable();
+            instance.show();
+          });
+        }
+      }, function(instance) {
+      });
+    }
+        let selectedAnnoteEl;
+        const selectorForAnnotation = ( cell, annotation) => {
+          let cellAttr = 'data-code-cell="' + cell + '"';
+          let lineAttr = 'data-code-annotation="' +  annotation + '"';
+          const selector = 'span[' + cellAttr + '][' + lineAttr + ']';
+          return selector;
+        }
+        const selectCodeLines = (annoteEl) => {
+          const doc = window.document;
+          const targetCell = annoteEl.getAttribute("data-target-cell");
+          const targetAnnotation = annoteEl.getAttribute("data-target-annotation");
+          const annoteSpan = window.document.querySelector(selectorForAnnotation(targetCell, targetAnnotation));
+          const lines = annoteSpan.getAttribute("data-code-lines").split(",");
+          const lineIds = lines.map((line) => {
+            return targetCell + "-" + line;
+          })
+          let top = null;
+          let height = null;
+          let parent = null;
+          if (lineIds.length > 0) {
+              //compute the position of the single el (top and bottom and make a div)
+              const el = window.document.getElementById(lineIds[0]);
+              top = el.offsetTop;
+              height = el.offsetHeight;
+              parent = el.parentElement.parentElement;
+            if (lineIds.length > 1) {
+              const lastEl = window.document.getElementById(lineIds[lineIds.length - 1]);
+              const bottom = lastEl.offsetTop + lastEl.offsetHeight;
+              height = bottom - top;
+            }
+            if (top !== null && height !== null && parent !== null) {
+              // cook up a div (if necessary) and position it 
+              let div = window.document.getElementById("code-annotation-line-highlight");
+              if (div === null) {
+                div = window.document.createElement("div");
+                div.setAttribute("id", "code-annotation-line-highlight");
+                div.style.position = 'absolute';
+                parent.appendChild(div);
+              }
+              div.style.top = top - 2 + "px";
+              div.style.height = height + 4 + "px";
+              div.style.left = 0;
+              let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
+              if (gutterDiv === null) {
+                gutterDiv = window.document.createElement("div");
+                gutterDiv.setAttribute("id", "code-annotation-line-highlight-gutter");
+                gutterDiv.style.position = 'absolute';
+                const codeCell = window.document.getElementById(targetCell);
+                const gutter = codeCell.querySelector('.code-annotation-gutter');
+                gutter.appendChild(gutterDiv);
+              }
+              gutterDiv.style.top = top - 2 + "px";
+              gutterDiv.style.height = height + 4 + "px";
+            }
+            selectedAnnoteEl = annoteEl;
+          }
+        };
+        const unselectCodeLines = () => {
+          const elementsIds = ["code-annotation-line-highlight", "code-annotation-line-highlight-gutter"];
+          elementsIds.forEach((elId) => {
+            const div = window.document.getElementById(elId);
+            if (div) {
+              div.remove();
+            }
+          });
+          selectedAnnoteEl = undefined;
+        };
+          // Handle positioning of the toggle
+      window.addEventListener(
+        "resize",
+        throttle(() => {
+          elRect = undefined;
+          if (selectedAnnoteEl) {
+            selectCodeLines(selectedAnnoteEl);
+          }
+        }, 10)
+      );
+      function throttle(fn, ms) {
+      let throttle = false;
+      let timer;
+        return (...args) => {
+          if(!throttle) { // first call gets through
+              fn.apply(this, args);
+              throttle = true;
+          } else { // all the others get throttled
+              if(timer) clearTimeout(timer); // cancel #2
+              timer = setTimeout(() => {
+                fn.apply(this, args);
+                timer = throttle = false;
+              }, ms);
+          }
+        };
+      }
+        // Attach click handler to the DT
+        const annoteDls = window.document.querySelectorAll('dt[data-target-cell]');
+        for (const annoteDlNode of annoteDls) {
+          annoteDlNode.addEventListener('click', (event) => {
+            const clickedEl = event.target;
+            if (clickedEl !== selectedAnnoteEl) {
+              unselectCodeLines();
+              const activeEl = window.document.querySelector('dt[data-target-cell].code-annotation-active');
+              if (activeEl) {
+                activeEl.classList.remove('code-annotation-active');
+              }
+              selectCodeLines(clickedEl);
+              clickedEl.classList.add('code-annotation-active');
+            } else {
+              // Unselect the line
+              unselectCodeLines();
+              clickedEl.classList.remove('code-annotation-active');
+            }
+          });
+        }
+    const findCites = (el) => {
+      const parentEl = el.parentElement;
+      if (parentEl) {
+        const cites = parentEl.dataset.cites;
+        if (cites) {
+          return {
+            el,
+            cites: cites.split(' ')
+          };
+        } else {
+          return findCites(el.parentElement)
+        }
+      } else {
+        return undefined;
+      }
+    };
+    var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+    for (var i=0; i<bibliorefs.length; i++) {
+      const ref = bibliorefs[i];
+      const citeInfo = findCites(ref);
+      if (citeInfo) {
+        tippyHover(citeInfo.el, function() {
+          var popup = window.document.createElement('div');
+          citeInfo.cites.forEach(function(cite) {
+            var citeDiv = window.document.createElement('div');
+            citeDiv.classList.add('hanging-indent');
+            citeDiv.classList.add('csl-entry');
+            var biblioDiv = window.document.getElementById('ref-' + cite);
+            if (biblioDiv) {
+              citeDiv.innerHTML = biblioDiv.innerHTML;
+            }
+            popup.appendChild(citeDiv);
+          });
+          return popup.innerHTML;
+        });
+      }
+    }
+  });
+  </script>
+
+
+
+
+<script src="../../site_libs/quarto-html/zenscroll-min.js"></script>
+</body></html>

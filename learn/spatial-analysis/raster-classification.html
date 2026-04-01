@@ -1,0 +1,1101 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
+
+<meta charset="utf-8">
+<meta name="generator" content="quarto-1.9.36">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+
+<meta name="dcterms.date" content="2026-02-27">
+<meta name="description" content="Convert elevation to slope classes. Transform NDVI to vegetation categories. Turn temperature into climate zones. Classification transforms continuous raster values into discrete categories using thresholds, ranges, and decision rules. This model derives classification methods and shows how to choose breakpoints.">
+
+<title>Raster Classification and Reclassification – WaywardHouse</title>
+<style>
+/* Default styles provided by pandoc.
+** See https://pandoc.org/MANUAL.html#variables-for-html for config info.
+*/
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: min(4vw, 1.5em);}
+div.column{flex: auto; overflow-x: auto;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+  width: 0.8em;
+  margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
+  vertical-align: middle;
+}
+/* CSS for syntax highlighting */
+html { -webkit-text-size-adjust: 100%; }
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+  { counter-reset: source-line 0; }
+pre.numberSource code > span
+  { position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+  { content: counter(source-line);
+    position: relative; left: -1em; text-align: right; vertical-align: baseline;
+    border: none; display: inline-block;
+    -webkit-touch-callout: none; -webkit-user-select: none;
+    -khtml-user-select: none; -moz-user-select: none;
+    -ms-user-select: none; user-select: none;
+    padding: 0 4px; width: 4em;
+  }
+pre.numberSource { margin-left: 3em;  padding-left: 4px; }
+div.sourceCode
+  {   }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
+</style>
+
+
+<link href="../../assets/images/logo.webp" rel="icon">
+<script src="../../site_libs/clipboard/clipboard.min.js"></script>
+<script src="../../site_libs/quarto-html/tabby.min.js"></script>
+<script src="../../site_libs/quarto-html/popper.min.js"></script>
+<script src="../../site_libs/quarto-html/tippy.umd.min.js"></script>
+<link href="../../site_libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="../../site_libs/quarto-html/light-border.css" rel="stylesheet">
+<link href="../../site_libs/quarto-html/quarto-html-640605f58ae58ee79329c070719e555b.min.css" rel="stylesheet" append-hash="true" data-mode="light">
+<link href="../../site_libs/quarto-html/quarto-syntax-highlighting-845c23b38eaddc0f92fda52bfe77a8c8.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<style>html{ scroll-behavior: smooth; }</style>
+<script>
+  (function () {
+    var s = localStorage.getItem('theme');
+    var dark = s !== null ? s === 'dark' : false;
+    document.documentElement.dataset.theme = dark ? 'dark' : 'light';
+    document.documentElement.dataset.brand = 'wayward';
+  })();
+</script>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:ital,wght@0,300;0,400;0,600;0,700;0,800;0,900;1,700;1,800&amp;family=Barlow:wght@300;400;500;600&amp;family=IBM+Plex+Mono:ital,wght@0,300;0,400;0,500;1,300&amp;family=Literata:ital,opsz,wght@0,7..72,300;0,7..72,400;0,7..72,500;1,7..72,300;1,7..72,400&amp;display=swap" rel="stylesheet">
+
+  <script>window.backupDefine = window.define; window.define = undefined;</script><script src="https://cdn.jsdelivr.net/npm/katex@latest/dist/katex.min.js"></script>
+  <script>document.addEventListener("DOMContentLoaded", function () {
+ var mathElements = document.getElementsByClassName("math");
+ var macros = [];
+ for (var i = 0; i < mathElements.length; i++) {
+  var texText = mathElements[i].firstChild;
+  if (mathElements[i].tagName == "SPAN") {
+   katex.render(texText.data, mathElements[i], {
+    displayMode: mathElements[i].classList.contains('display'),
+    throwOnError: false,
+    macros: macros,
+    fleqn: false
+   });
+}}});
+  </script>
+  <script>window.define = window.backupDefine; window.backupDefine = undefined;</script><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@latest/dist/katex.min.css">
+
+<script type="text/javascript">
+const typesetMath = (el) => {
+  if (window.MathJax) {
+    // MathJax Typeset
+    window.MathJax.typeset([el]);
+  } else if (window.katex) {
+    // KaTeX Render
+    var mathElements = el.getElementsByClassName("math");
+    var macros = [];
+    for (var i = 0; i < mathElements.length; i++) {
+      var texText = mathElements[i].firstChild;
+      if (mathElements[i].tagName == "SPAN" && texText && texText.data) {
+        window.katex.render(texText.data, mathElements[i], {
+          displayMode: mathElements[i].classList.contains('display'),
+          throwOnError: false,
+          macros: macros,
+          fleqn: false
+        });
+      }
+    }
+  }
+}
+window.Quarto = {
+  typesetMath
+};
+</script>
+
+<link rel="stylesheet" href="../../assets/css/quarto-wayward.css">
+</head>
+
+<body class="reading-body tag-hash-math tag-hash-viz">
+
+
+<header id="title-block-header">
+<h1 class="title">Raster Classification and Reclassification</h1>
+<p class="subtitle">Converting continuous values to discrete categories</p>
+
+<p class="date">2026-02-27</p>
+</header>
+
+
+<p>Canada’s national land cover dataset — 30-metre resolution, updated roughly every five years from Landsat imagery — classifies every pixel in the country into one of seventeen categories: water, wetland, cropland, urban, treed upland, and so on. The classification is the product of a decision process applied to hundreds of millions of pixels, each represented by a stack of spectral reflectance values in multiple bands. The output — discrete categories on a continuous landscape — is what land managers, carbon accountants, and biodiversity assessors actually work with. But the categories are not in the data; they are imposed on it. And the choice of where to draw the boundaries between classes has a larger effect on the results than most users appreciate.</p>
+<p>Raster classification converts continuous fields — elevation, slope, temperature, spectral reflectance, vegetation index — into discrete categories. The conversion requires two decisions: how many classes to create, and where to place the breakpoints between them. Equal-interval classification (divide the range into equal steps) is intuitive but produces classes with very unequal numbers of pixels if the data is skewed. Quantile classification (equal numbers of pixels per class) preserves the count distribution but may split a cluster of very similar values. Natural breaks (Jenks optimisation) minimises within-class variance and often produces the most cartographically satisfying result, but the algorithm is quadratic in the number of classes and requires care on large datasets. This model derives and compares all three schemes, introduces the confusion matrix for evaluating classification accuracy, and discusses when each approach is appropriate.</p>
+<h2 id="the-question">1. The Question</h2>
+<p>How do you convert a continuous elevation raster into slope classes: “flat”, “gentle”, “steep”, “very steep”?</p>
+<p><strong>Reclassification</strong> transforms raster values using decision rules:</p>
+<p><strong>Examples:</strong> - <strong>Slope categories:</strong> 0-5° = flat, 5-15° = gentle, 15-30° = steep, &gt;30° = very steep - <strong>Land cover from NDVI:</strong> &lt;0.2 = bare, 0.2-0.4 = sparse veg, 0.4-0.6 = moderate, &gt;0.6 = dense - <strong>Habitat suitability:</strong> Combine elevation + slope + aspect into “suitable” vs “unsuitable” - <strong>Fire risk zones:</strong> Temperature + humidity + vegetation → low/medium/high risk</p>
+<p>The mathematical question: Given continuous input values, how do we assign them to discrete classes efficiently and meaningfully?</p>
+<p><strong>Key decisions:</strong> - <strong>Number of classes:</strong> Too few → information loss; too many → complexity - <strong>Breakpoints:</strong> Where to split? Equal intervals? Natural breaks? Quantiles? - <strong>Edge handling:</strong> Is 15.0° “gentle” or “steep”?</p>
+<hr>
+<h2 id="the-conceptual-model">2. The Conceptual Model</h2>
+<h3 id="classification-vs.-reclassification">Classification vs.&nbsp;Reclassification</h3>
+<p><strong>Classification:</strong> Assign raw values to meaningful categories - Satellite imagery → land cover classes - Temperature values → climate zones</p>
+<p><strong>Reclassification:</strong> Transform one categorical raster to another - 10 land cover types → 3 broad categories (urban/forest/agriculture) - Detailed soil types → simplified drainage classes</p>
+<p><strong>Both use the same mathematical framework.</strong></p>
+<h3 id="classification-schemes">Classification Schemes</h3>
+<p><strong>1. Equal Interval</strong></p>
+<p>Divide value range into equal-width bins.</p>
+<p><span class="math display">\text{Class } i: \left[\min + i \cdot \frac{\max - \min}{n}, \min + (i+1) \cdot \frac{\max - \min}{n}\right)</span></p>
+<p><strong>Example:</strong> Elevation 0-1000m, 5 classes → each class spans 200m</p>
+<p><strong>Pros:</strong> Simple, intuitive<br>
+<strong>Cons:</strong> May have empty classes or very unbalanced distribution</p>
+<p><strong>2. Quantiles (Equal Count)</strong></p>
+<p>Each class contains equal number of pixels.</p>
+<p><strong>k% quantile:</strong> Value below which k% of data falls.</p>
+<p><strong>Example:</strong> 4 classes → breakpoints at 25th, 50th, 75th percentiles</p>
+<p><strong>Pros:</strong> Balanced class sizes<br>
+<strong>Cons:</strong> Breakpoints may not align with natural boundaries</p>
+<p><strong>3. Natural Breaks (Jenks)</strong></p>
+<p>Minimize within-class variance, maximize between-class variance.</p>
+<p><strong>Objective:</strong> Find breaks that create most homogeneous classes.</p>
+<p><strong>Algorithm:</strong> Dynamic programming to optimize:</p>
+<p><span class="math display">\min \sum_{i=1}^{k} \sum_{x \in \text{class}_i} (x - \bar{x}_i)^2</span></p>
+<p><strong>Pros:</strong> Respects data distribution<br>
+<strong>Cons:</strong> Computationally expensive, breakpoints change with data</p>
+<p><strong>4. Standard Deviation</strong></p>
+<p>Classes based on deviations from mean.</p>
+<p><span class="math display">\text{Class boundaries: } \mu - 2\sigma, \mu - \sigma, \mu, \mu + \sigma, \mu + 2\sigma</span></p>
+<p><strong>Pros:</strong> Statistical meaning (normal distribution)<br>
+<strong>Cons:</strong> Assumes normal distribution (often violated)</p>
+<p><strong>5. Manual/Expert</strong></p>
+<p>Domain expert specifies meaningful thresholds.</p>
+<p><strong>Example:</strong> Slope classes from geomorphology literature - 0-2°: Flat (flooding possible) - 2-5°: Gentle (easy to build on) - 5-15°: Moderate (erosion risk increases) - 15-30°: Steep (difficult access) - &gt;30°: Very steep (landslide risk)</p>
+<p><strong>Pros:</strong> Incorporates domain knowledge<br>
+<strong>Cons:</strong> Subjective, may not fit specific dataset</p>
+<hr>
+<h2 id="building-the-mathematical-model">3. Building the Mathematical Model</h2>
+<h3 id="simple-threshold-classification">Simple Threshold Classification</h3>
+<p><strong>Binary classification:</strong></p>
+<p><span class="math display">z_{\text{out}} = \begin{cases}
+1 &amp; \text{if } z_{\text{in}} \geq T \\
+0 &amp; \text{if } z_{\text{in}} &lt; T
+\end{cases}</span></p>
+<p><strong>Example:</strong> Water detection from elevation - Threshold <span class="math inline">T = 0</span> m (sea level) - Output: 1 = land, 0 = water</p>
+<h3 id="multi-class-range-classification">Multi-Class Range Classification</h3>
+<p><strong>Define breakpoints:</strong> <span class="math inline">b_0 &lt; b_1 &lt; b_2 &lt; \cdots &lt; b_n</span></p>
+<p><strong>Classification function:</strong></p>
+<p><span class="math display">\text{class}(z) = \begin{cases}
+1 &amp; \text{if } b_0 \leq z &lt; b_1 \\
+2 &amp; \text{if } b_1 \leq z &lt; b_2 \\
+\vdots \\
+n &amp; \text{if } b_{n-1} \leq z &lt; b_n
+\end{cases}</span></p>
+<p><strong>Implementation:</strong></p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb1"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> classify(value, breaks):</span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a>    <span class="cf">for</span> i, break_value <span class="kw">in</span> <span class="bu">enumerate</span>(breaks[<span class="dv">1</span>:]):</span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a>        <span class="cf">if</span> value <span class="op">&lt;</span> break_value:</span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a>            <span class="cf">return</span> i <span class="op">+</span> <span class="dv">1</span></span>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> <span class="bu">len</span>(breaks)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<h3 id="lookup-table-reclassification">Lookup Table Reclassification</h3>
+<p><strong>Map specific input values to output values.</strong></p>
+<p><strong>Lookup table:</strong></p>
+<table class="caption-top">
+<thead>
+<tr class="header">
+<th>Input Value</th>
+<th>Output Value</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>1 (Forest)</td>
+<td>1 (Vegetation)</td>
+</tr>
+<tr class="even">
+<td>2 (Grass)</td>
+<td>1 (Vegetation)</td>
+</tr>
+<tr class="odd">
+<td>3 (Crops)</td>
+<td>1 (Vegetation)</td>
+</tr>
+<tr class="even">
+<td>4 (Urban)</td>
+<td>2 (Developed)</td>
+</tr>
+<tr class="odd">
+<td>5 (Water)</td>
+<td>3 (Water)</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Function:</strong></p>
+<p><span class="math display">z_{\text{out}} = \text{LUT}[z_{\text{in}}]</span></p>
+<p><strong>Efficient with arrays/dictionaries.</strong></p>
+<h3 id="fuzzy-classification">Fuzzy Classification</h3>
+<p><strong>Instead of hard boundaries, use membership functions.</strong></p>
+<p><strong>Example - “Moderate slope” membership:</strong></p>
+<p><span class="math display">\mu_{\text{moderate}}(s) = \begin{cases}
+0 &amp; s &lt; 5 \\
+\frac{s - 5}{10} &amp; 5 \leq s &lt; 15 \\
+1 &amp; 15 \leq s &lt; 25 \\
+\frac{35 - s}{10} &amp; 25 \leq s &lt; 35 \\
+0 &amp; s \geq 35
+\end{cases}</span></p>
+<p><strong>Value between 0 and 1</strong> indicates degree of membership.</p>
+<p><strong>Advantage:</strong> Represents uncertainty at boundaries.</p>
+<hr>
+<h2 id="worked-example-by-hand">4. Worked Example by Hand</h2>
+<p><strong>Problem:</strong> Classify this temperature raster (°C) into 3 categories using equal intervals.</p>
+<p><strong>Input:</strong></p>
+<pre><code>    j=0  j=1  j=2  j=3
+i=0  10   15   20   25
+i=1  12   18   22   28
+i=2  14   16   24   30
+i=3  11   19   26   32</code></pre>
+<p><strong>Categories:</strong> - Cold (1) - Moderate (2) - Hot (3)</p>
+<h3 id="solution">Solution</h3>
+<p><strong>Step 1: Find range</strong></p>
+<p><span class="math display">\min = 10°C, \quad \max = 32°C</span> <span class="math display">\text{range} = 32 - 10 = 22°C</span></p>
+<p><strong>Step 2: Calculate interval width</strong></p>
+<p><span class="math display">\text{width} = \frac{22}{3} = 7.33°C</span></p>
+<p><strong>Step 3: Define breakpoints</strong></p>
+<ul>
+<li><span class="math inline">b_0 = 10</span></li>
+<li><span class="math inline">b_1 = 10 + 7.33 = 17.33</span></li>
+<li><span class="math inline">b_2 = 17.33 + 7.33 = 24.67</span></li>
+<li><span class="math inline">b_3 = 32</span></li>
+</ul>
+<p><strong>Classes:</strong> - Cold (1): [10, 17.33) - Moderate (2): [17.33, 24.67) - Hot (3): [24.67, 32]</p>
+<p><strong>Step 4: Classify each cell</strong></p>
+<p><strong>Row 0:</strong> - 10 &lt; 17.33 → 1 (Cold) - 15 &lt; 17.33 → 1 - 20 ∈ [17.33, 24.67) → 2 (Moderate) - 25 ≥ 24.67 → 3 (Hot)</p>
+<p><strong>Row 1:</strong> - 12 → 1, 18 → 2, 22 → 2, 28 → 3</p>
+<p><strong>Row 2:</strong> - 14 → 1, 16 → 1, 24 → 2, 30 → 3</p>
+<p><strong>Row 3:</strong> - 11 → 1, 19 → 2, 26 → 3, 32 → 3</p>
+<p><strong>Output:</strong></p>
+<pre><code>    j=0  j=1  j=2  j=3
+i=0   1    1    2    3
+i=1   1    2    2    3
+i=2   1    1    2    3
+i=3   1    2    3    3</code></pre>
+<p><strong>Class counts:</strong> - Cold (1): 6 cells - Moderate (2): 6 cells - Hot (3): 4 cells</p>
+<p><strong>Not perfectly balanced</strong> (would be 5.33 each) because we used equal intervals, not quantiles.</p>
+<hr>
+<h2 id="computational-implementation">5. Computational Implementation</h2>
+<p>Below is an interactive raster classification tool.</p>
+<div id="classify-viz" class="viz-container">
+<div class="controls">
+<pre><code>&lt;label&gt;
+  Classification method:
+  &lt;select id="class-method"&gt;
+    &lt;option value="equal-interval" selected&gt;Equal Interval&lt;/option&gt;
+    &lt;option value="quantile"&gt;Quantile (Equal Count)&lt;/option&gt;
+    &lt;option value="std-dev"&gt;Standard Deviation&lt;/option&gt;
+    &lt;option value="manual"&gt;Manual Thresholds&lt;/option&gt;
+  &lt;/select&gt;
+&lt;/label&gt;
+&lt;label&gt;
+  Number of classes:
+  &lt;input type="range" id="n-classes" min="2" max="8" step="1" value="5"&gt;
+  &lt;span id="n-classes-value"&gt;5&lt;/span&gt;
+&lt;/label&gt;
+&lt;div id="manual-controls" style="display:none;"&gt;
+  &lt;label&gt;
+    Threshold 1:
+    &lt;input type="range" id="manual-t1" min="0" max="100" step="5" value="30"&gt;
+    &lt;span id="manual-t1-val"&gt;30&lt;/span&gt;
+  &lt;/label&gt;
+  &lt;label&gt;
+    Threshold 2:
+    &lt;input type="range" id="manual-t2" min="0" max="100" step="5" value="60"&gt;
+    &lt;span id="manual-t2-val"&gt;60&lt;/span&gt;
+  &lt;/label&gt;
+&lt;/div&gt;
+&lt;label&gt;
+  Show histogram:
+  &lt;input type="checkbox" id="show-histogram" checked&gt;
+&lt;/label&gt;</code></pre>
+</div>
+<div id="classify-canvas-container">
+<pre><code>&lt;canvas id="classify-canvas" width="700" height="400" style="border: 1px solid #ddd;"&gt;&lt;/canvas&gt;</code></pre>
+</div>
+<div class="classify-info">
+<pre><code>&lt;p id="class-distribution"&gt;&lt;/p&gt;</code></pre>
+</div>
+</div>
+<script type="module">
+(function() {
+  const canvas = document.getElementById('classify-canvas');
+  const ctx = canvas.getContext('2d');
+  
+  let method = 'equal-interval';
+  let nClasses = 5;
+  let showHistogram = true;
+  let manualT1 = 30;
+  let manualT2 = 60;
+  
+  const size = 40;
+  const data = [];
+  
+  // Generate test data with interesting distribution
+  for (let i = 0; i < size; i++) {
+    const row = [];
+    for (let j = 0; j < size; j++) {
+      // Multi-modal distribution
+      const cx1 = 15, cy1 = 15;
+      const cx2 = 25, cy2 = 25;
+      const d1 = Math.sqrt((i - cx1) ** 2 + (j - cy1) ** 2);
+      const d2 = Math.sqrt((i - cx2) ** 2 + (j - cy2) ** 2);
+      const value = 30 * Math.exp(-d1 / 8) + 70 * Math.exp(-d2 / 6) + Math.random() * 10;
+      row.push(value);
+    }
+    data.push(row);
+  }
+  
+  function getBreakpoints(flatData, method, n) {
+    const sorted = [...flatData].sort((a, b) => a - b);
+    const min = sorted[0];
+    const max = sorted[sorted.length - 1];
+    
+    if (method === 'equal-interval') {
+      const breaks = [min];
+      const width = (max - min) / n;
+      for (let i = 1; i < n; i++) {
+        breaks.push(min + i * width);
+      }
+      breaks.push(max + 1);
+      return breaks;
+      
+    } else if (method === 'quantile') {
+      const breaks = [min];
+      for (let i = 1; i < n; i++) {
+        const idx = Math.floor(sorted.length * i / n);
+        breaks.push(sorted[idx]);
+      }
+      breaks.push(max + 1);
+      return breaks;
+      
+    } else if (method === 'std-dev') {
+      const mean = flatData.reduce((s, v) => s + v, 0) / flatData.length;
+      const variance = flatData.reduce((s, v) => s + (v - mean) ** 2, 0) / flatData.length;
+      const std = Math.sqrt(variance);
+      
+      const breaks = [];
+      for (let i = -2; i <= 2; i++) {
+        breaks.push(mean + i * std);
+      }
+      return breaks.sort((a, b) => a - b);
+      
+    } else if (method === 'manual') {
+      return [min, manualT1, manualT2, max + 1];
+    }
+  }
+  
+  function classify(value, breaks) {
+    for (let i = 0; i < breaks.length - 1; i++) {
+      if (value >= breaks[i] && value < breaks[i + 1]) {
+        return i;
+      }
+    }
+    return breaks.length - 2;
+  }
+  
+  function drawClassified(data, breaks, x, y, width, height) {
+    const cellW = width / data[0].length;
+    const cellH = height / data.length;
+    
+    const colors = [
+      '#3498DB', '#2ECC71', '#F39C12', '#E74C3C', '#9B59B6',
+      '#1ABC9C', '#34495E', '#E67E22'
+    ];
+    
+    const classCounts = new Array(breaks.length - 1).fill(0);
+    
+    for (let i = 0; i < data.length; i++) {
+      for (let j = 0; j < data[0].length; j++) {
+        const classId = classify(data[i][j], breaks);
+        classCounts[classId]++;
+        
+        ctx.fillStyle = colors[classId % colors.length];
+        ctx.fillRect(x + j * cellW, y + i * cellH, cellW, cellH);
+      }
+    }
+    
+    // Update distribution
+    let distText = '<strong>Class Distribution:</strong><br>';
+    for (let i = 0; i < classCounts.length; i++) {
+      const pct = (classCounts[i] / (data.length * data[0].length) * 100).toFixed(1);
+      distText += `Class ${i + 1}: ${classCounts[i]} cells (${pct}%)<br>`;
+    }
+    document.getElementById('class-distribution').innerHTML = distText;
+  }
+  
+  function drawHistogram(flatData, breaks, x, y, width, height) {
+    const nBins = 30;
+    const min = Math.min(...flatData);
+    const max = Math.max(...flatData);
+    const binWidth = (max - min) / nBins;
+    
+    const bins = new Array(nBins).fill(0);
+    for (let value of flatData) {
+      const binIdx = Math.min(Math.floor((value - min) / binWidth), nBins - 1);
+      bins[binIdx]++;
+    }
+    
+    const maxCount = Math.max(...bins);
+    const barWidth = width / nBins;
+    
+    // Draw bars
+    ctx.fillStyle = '#BDC3C7';
+    for (let i = 0; i < nBins; i++) {
+      const barHeight = (bins[i] / maxCount) * height;
+      ctx.fillRect(
+        x + i * barWidth,
+        y + height - barHeight,
+        barWidth - 1,
+        barHeight
+      );
+    }
+    
+    // Draw breakpoint lines
+    ctx.strokeStyle = '#E74C3C';
+    ctx.lineWidth = 2;
+    for (let i = 1; i < breaks.length - 1; i++) {
+      const xPos = x + ((breaks[i] - min) / (max - min)) * width;
+      ctx.beginPath();
+      ctx.moveTo(xPos, y);
+      ctx.lineTo(xPos, y + height);
+      ctx.stroke();
+    }
+    
+    // Label
+    ctx.fillStyle = '#2C3E50';
+    ctx.font = 'bold 12px sans-serif';
+    ctx.fillText('Value Distribution', x + 5, y + 15);
+  }
+  
+  function render() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    
+    const flatData = data.flat();
+    const breaks = getBreakpoints(flatData, method, nClasses);
+    
+    drawClassified(data, breaks, 20, 20, 300, 300, 'Classified');
+    
+    if (showHistogram) {
+      drawHistogram(flatData, breaks, 350, 50, 320, 250);
+    }
+    
+    // Title
+    ctx.fillStyle = '#2C3E50';
+    ctx.font = 'bold 14px sans-serif';
+    ctx.fillText(`Method: ${method}, Classes: ${breaks.length - 1}`, 20, 340);
+  }
+  
+  document.getElementById('class-method').addEventListener('change', (e) => {
+    method = e.target.value;
+    if (method === 'manual') {
+      document.getElementById('manual-controls').style.display = 'block';
+      nClasses = 3;
+      document.getElementById('n-classes').value = 3;
+      document.getElementById('n-classes-value').textContent = 3;
+    } else {
+      document.getElementById('manual-controls').style.display = 'none';
+    }
+    render();
+  });
+  
+  document.getElementById('n-classes').addEventListener('input', (e) => {
+    nClasses = parseInt(e.target.value);
+    document.getElementById('n-classes-value').textContent = nClasses;
+    render();
+  });
+  
+  document.getElementById('manual-t1').addEventListener('input', (e) => {
+    manualT1 = parseFloat(e.target.value);
+    document.getElementById('manual-t1-val').textContent = manualT1;
+    render();
+  });
+  
+  document.getElementById('manual-t2').addEventListener('input', (e) => {
+    manualT2 = parseFloat(e.target.value);
+    document.getElementById('manual-t2-val').textContent = manualT2;
+    render();
+  });
+  
+  document.getElementById('show-histogram').addEventListener('change', (e) => {
+    showHistogram = e.target.checked;
+    render();
+  });
+  
+  render();
+})();
+</script>
+<p><strong>Try this:</strong> - <strong>Equal interval:</strong> Fixed-width bins (may be unbalanced) - <strong>Quantile:</strong> Balanced class sizes (breaks at data percentiles) - <strong>Standard deviation:</strong> Statistical bins (assumes normal distribution) - <strong>Manual:</strong> Set your own thresholds (red lines on histogram) - <strong>Adjust class count:</strong> See how distribution changes - <strong>Histogram:</strong> Red lines show where breaks occur in data</p>
+<p><strong>Key insight:</strong> Method choice dramatically affects results—no single “correct” classification.</p>
+<hr>
+<h2 id="interpretation">6. Interpretation</h2>
+<h3 id="slope-classification-example">Slope Classification Example</h3>
+<p><strong>From DEM to actionable information:</strong></p>
+<pre><code>1. Calculate slope (degrees) from DEM
+2. Classify:
+   - 0-2°: Suitable for farming, flooding risk
+   - 2-5°: Good for construction
+   - 5-15°: Moderate difficulty, erosion control needed
+   - 15-30°: Forestry, recreation only
+   - &gt;30°: Hazard zones, protect from development</code></pre>
+<p><strong>Result:</strong> Planning tool, not just numbers.</p>
+<h3 id="ndvi-to-land-cover">NDVI to Land Cover</h3>
+<p><strong>Thresholds from literature:</strong></p>
+<pre><code>NDVI &lt; 0.1: Water, barren land
+0.1-0.2: Sparse vegetation (desert)
+0.2-0.4: Grassland, shrubland
+0.4-0.6: Cropland, mixed vegetation
+0.6-0.8: Dense vegetation (forest)
+&gt;0.8: Very dense vegetation (rainforest)</code></pre>
+<p><strong>Validated against ground truth</strong> from field surveys.</p>
+<h3 id="multi-criteria-suitability">Multi-Criteria Suitability</h3>
+<p><strong>Combine multiple factors:</strong></p>
+<pre><code>slope_class = classify(slope, [0, 5, 15, 30])
+aspect_class = classify(aspect, [0, 90, 180, 270, 360])
+soil_class = reclassify(soil_type, lookup_table)
+
+suitability = (slope_class == 1) AND 
+              (aspect_class IN [2, 3]) AND
+              (soil_class IN [1, 2])</code></pre>
+<p><strong>Boolean result:</strong> Suitable (1) or not (0).</p>
+<hr>
+<h2 id="what-could-go-wrong">7. What Could Go Wrong?</h2>
+<h3 id="arbitrary-breakpoints">Arbitrary Breakpoints</h3>
+<p><strong>Equal interval on skewed data:</strong></p>
+<pre><code>Data: [1, 1, 2, 2, 2, 3, 3, 50]
+Equal intervals (4 classes):
+  [1, 13.25): 7 values → Class 1
+  [13.25, 25.5): 0 values → Class 2
+  [25.5, 37.75): 0 values → Class 3
+  [37.75, 50]: 1 value → Class 4</code></pre>
+<p><strong>Problem:</strong> Empty classes, unbalanced.</p>
+<p><strong>Solution:</strong> Use quantiles or remove outliers first.</p>
+<h3 id="sensitivity-to-outliers">Sensitivity to Outliers</h3>
+<p><strong>One extreme value shifts all breakpoints:</strong></p>
+<pre><code>Data: [10, 12, 14, 15, 16, 18, 20, 1000]
+Equal intervals with outlier → huge bins</code></pre>
+<p><strong>Solution:</strong> - Remove outliers before classification - Use robust statistics (median, IQR) - Clip extreme values</p>
+<h3 id="loss-of-information">Loss of Information</h3>
+<p><strong>Continuous to categorical loses detail:</strong></p>
+<pre><code>Original: 15.2°, 15.8° (0.6° difference)
+Classified: Both → Class 2 "gentle" (appear identical)
+
+Original: 14.9°, 15.1° (0.2° difference)  
+Classified: 14.9° → Class 1, 15.1° → Class 2 (appear very different)</code></pre>
+<p><strong>Problem:</strong> Boundary artifacts.</p>
+<p><strong>Solution:</strong> Use buffer zones or fuzzy classification.</p>
+<h3 id="inappropriate-method">Inappropriate Method</h3>
+<p><strong>Quantiles on categorical data:</strong></p>
+<pre><code>Land cover codes: [1, 1, 1, 2, 2, 3, 3, 3]
+Quantile classification → meaningless</code></pre>
+<p><strong>Solution:</strong> Only classify continuous data. Reclassify categorical via lookup tables.</p>
+<hr>
+<h2 id="extension-unsupervised-classification">8. Extension: Unsupervised Classification</h2>
+<p><strong>Automated clustering</strong> finds natural groups in data.</p>
+<p><strong>K-means algorithm:</strong></p>
+<pre><code>1. Initialize k cluster centers randomly
+2. Assign each pixel to nearest center
+3. Recompute centers as mean of assigned pixels
+4. Repeat 2-3 until convergence</code></pre>
+<p><strong>For multi-band imagery:</strong></p>
+<pre><code>pixel = [band1, band2, band3, ..., bandN]
+distance = sqrt(sum((pixel - center)²))</code></pre>
+<p><strong>Advantage:</strong> No manual thresholds needed.</p>
+<p><strong>Disadvantage:</strong> Classes may not align with semantic categories.</p>
+<p><strong>Example:</strong> Classify Landsat image (7 bands) into 10 land cover types automatically.</p>
+<hr>
+<h2 id="math-refresher-quantiles-and-percentiles">9. Math Refresher: Quantiles and Percentiles</h2>
+<h3 id="definition">Definition</h3>
+<p><strong>p-th quantile</strong> (<span class="math inline">Q_p</span>): Value below which fraction <span class="math inline">p</span> of data falls.</p>
+<p><strong>Example:</strong> Median = 0.5 quantile (50th percentile)</p>
+<h3 id="calculation">Calculation</h3>
+<p>For sorted data <span class="math inline">x_1 \leq x_2 \leq \cdots \leq x_n</span>:</p>
+<p><strong>Position:</strong></p>
+<p><span class="math display">\text{pos} = p \times (n - 1) + 1</span></p>
+<p><strong>If position is integer:</strong> <span class="math inline">Q_p = x_{\text{pos}}</span></p>
+<p><strong>If fractional:</strong> Interpolate between <span class="math inline">x_{\lfloor\text{pos}\rfloor}</span> and <span class="math inline">x_{\lceil\text{pos}\rceil}</span></p>
+<p><strong>Example:</strong> Find 0.25 quantile of [1, 2, 3, 4, 5]</p>
+<p><span class="math display">\text{pos} = 0.25 \times (5 - 1) + 1 = 2</span></p>
+<p><span class="math display">Q_{0.25} = x_2 = 2</span></p>
+<h3 id="for-classification">For Classification</h3>
+<p><strong>Divide into k equal-count classes:</strong></p>
+<p>Breakpoints at quantiles: <span class="math inline">Q_{1/k}, Q_{2/k}, \ldots, Q_{(k-1)/k}</span></p>
+<p><strong>Example:</strong> 4 classes → breaks at 0.25, 0.5, 0.75 quantiles</p>
+<hr>
+<h2 id="summary">Summary</h2>
+<ul>
+<li><strong>Classification</strong> converts continuous rasters to discrete categories</li>
+<li><strong>Five methods:</strong> Equal interval, quantile, natural breaks, standard deviation, manual</li>
+<li><strong>Equal interval:</strong> Fixed-width bins, simple but may be unbalanced</li>
+<li><strong>Quantile:</strong> Equal-count bins, balanced but may group dissimilar values</li>
+<li><strong>Natural breaks:</strong> Minimizes within-class variance, computationally expensive</li>
+<li><strong>Manual thresholds:</strong> Domain expert knowledge, most meaningful for applications</li>
+<li><strong>Reclassification:</strong> Uses lookup tables to transform categorical rasters</li>
+<li><strong>Fuzzy classification:</strong> Membership functions instead of hard boundaries</li>
+<li><strong>Applications:</strong> Slope classes, land cover mapping, suitability analysis</li>
+<li><strong>Challenges:</strong> Outliers, information loss, boundary artifacts</li>
+<li>Method choice depends on data distribution and application requirements</li>
+</ul>
+<p><strong>This completes Cluster K (Raster Foundations)!</strong> We’ve covered resampling (33), map algebra (34), and classification (35).</p>
+<p><strong>Next:</strong> Model 36 launches <strong>Cluster M (Terrain Analysis)</strong> with viewshed and line-of-sight analysis!</p>
+<hr>
+
+
+<footer class="wayward-footer">
+  <div class="wayward-footer__inner">
+    <div class="wayward-footer__brand">
+      <div class="wayward-footer__logo">WaywardHouse<span>.</span></div>
+      <p>Understanding how place, economy, and environment interact through analysis, modelling, and open tools.</p>
+    </div>
+
+    <nav class="wayward-footer__group" aria-labelledby="footer-reading">
+      <h2 id="footer-reading">Reading</h2>
+      <a href="../../articles/">Articles</a>
+      <a href="../../learn/">Library</a>
+      <a href="../../learn/computational-geography/core/">↳ Comp Geo Book</a>
+      <a href="../../archive.html">Archive</a>
+    </nav>
+
+    <nav class="wayward-footer__group" aria-labelledby="footer-site">
+      <h2 id="footer-site">Site</h2>
+      <a href="../../start-here.html">Start Here</a>
+      <a href="../../about.html">About</a>
+      <a href="../../contact.html">Contact</a>
+    </nav>
+
+    <nav class="wayward-footer__group" aria-labelledby="footer-resources">
+      <h2 id="footer-resources">Resources</h2>
+      <a href="../../topics/">All Topics</a>
+      <a href="../../privacy.html">Privacy Policy</a>
+      <a href="../../terms.html">Terms of Use</a>
+    </nav>
+  </div>
+</footer>
+
+<script type="module" src="../../assets/dist/main.js"></script>
+<script type="module" src="../../assets/js/core.js"></script>
+<script id="quarto-html-after-body" type="application/javascript">
+  window.document.addEventListener("DOMContentLoaded", function (event) {
+    const tabsets =  window.document.querySelectorAll(".panel-tabset-tabby")
+    tabsets.forEach(function(tabset) {
+      const tabby = new Tabby('#' + tabset.id);
+    });
+    const isCodeAnnotation = (el) => {
+      for (const clz of el.classList) {
+        if (clz.startsWith('code-annotation-')) {                     
+          return true;
+        }
+      }
+      return false;
+    }
+    const onCopySuccess = function(e) {
+      // button target
+      const button = e.trigger;
+      // don't keep focus
+      button.blur();
+      // flash "checked"
+      button.classList.add('code-copy-button-checked');
+      var currentTitle = button.getAttribute("title");
+      button.setAttribute("title", "Copied!");
+      let tooltip;
+      if (window.bootstrap) {
+        button.setAttribute("data-bs-toggle", "tooltip");
+        button.setAttribute("data-bs-placement", "left");
+        button.setAttribute("data-bs-title", "Copied!");
+        tooltip = new bootstrap.Tooltip(button, 
+          { trigger: "manual", 
+            customClass: "code-copy-button-tooltip",
+            offset: [0, -8]});
+        tooltip.show();    
+      }
+      setTimeout(function() {
+        if (tooltip) {
+          tooltip.hide();
+          button.removeAttribute("data-bs-title");
+          button.removeAttribute("data-bs-toggle");
+          button.removeAttribute("data-bs-placement");
+        }
+        button.setAttribute("title", currentTitle);
+        button.classList.remove('code-copy-button-checked');
+      }, 1000);
+      // clear code selection
+      e.clearSelection();
+    }
+    const getTextToCopy = function(trigger) {
+      const outerScaffold = trigger.parentElement.cloneNode(true);
+      const codeEl = outerScaffold.querySelector('code');
+      for (const childEl of codeEl.children) {
+        if (isCodeAnnotation(childEl)) {
+          childEl.remove();
+        }
+      }
+      return codeEl.innerText;
+    }
+    const clipboard = new window.ClipboardJS('.code-copy-button:not([data-in-quarto-modal])', {
+      text: getTextToCopy
+    });
+    clipboard.on('success', onCopySuccess);
+    if (window.document.getElementById('quarto-embedded-source-code-modal')) {
+      const clipboardModal = new window.ClipboardJS('.code-copy-button[data-in-quarto-modal]', {
+        text: getTextToCopy,
+        container: window.document.getElementById('quarto-embedded-source-code-modal')
+      });
+      clipboardModal.on('success', onCopySuccess);
+    }
+      var localhostRegex = new RegExp(/^(?:http|https):\/\/localhost\:?[0-9]*\//);
+      var mailtoRegex = new RegExp(/^mailto:/);
+        var filterRegex = new RegExp("https:\/\/wayward\.house");
+      var isInternal = (href) => {
+          return filterRegex.test(href) || localhostRegex.test(href) || mailtoRegex.test(href);
+      }
+      // Inspect non-navigation links and adorn them if external
+     var links = window.document.querySelectorAll('a[href]:not(.nav-link):not(.navbar-brand):not(.toc-action):not(.sidebar-link):not(.sidebar-item-toggle):not(.pagination-link):not(.no-external):not([aria-hidden]):not(.dropdown-item):not(.quarto-navigation-tool):not(.about-link)');
+      for (var i=0; i<links.length; i++) {
+        const link = links[i];
+        if (!isInternal(link.href)) {
+          // undo the damage that might have been done by quarto-nav.js in the case of
+          // links that we want to consider external
+          if (link.dataset.originalHref !== undefined) {
+            link.href = link.dataset.originalHref;
+          }
+        }
+      }
+    function tippyHover(el, contentFn, onTriggerFn, onUntriggerFn) {
+      const config = {
+        allowHTML: true,
+        maxWidth: 500,
+        delay: 100,
+        arrow: false,
+        appendTo: function(el) {
+            return el.parentElement;
+        },
+        interactive: true,
+        interactiveBorder: 10,
+        theme: 'light-border',
+        placement: 'bottom-start',
+      };
+      if (contentFn) {
+        config.content = contentFn;
+      }
+      if (onTriggerFn) {
+        config.onTrigger = onTriggerFn;
+      }
+      if (onUntriggerFn) {
+        config.onUntrigger = onUntriggerFn;
+      }
+      window.tippy(el, config); 
+    }
+    const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+    for (var i=0; i<noterefs.length; i++) {
+      const ref = noterefs[i];
+      tippyHover(ref, function() {
+        // use id or data attribute instead here
+        let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+        try { href = new URL(href).hash; } catch {}
+        const id = href.replace(/^#\/?/, "");
+        const note = window.document.getElementById(id);
+        if (note) {
+          return note.innerHTML;
+        } else {
+          return "";
+        }
+      });
+    }
+    const xrefs = window.document.querySelectorAll('a.quarto-xref');
+    const processXRef = (id, note) => {
+      // Strip column container classes
+      const stripColumnClz = (el) => {
+        el.classList.remove("page-full", "page-columns");
+        if (el.children) {
+          for (const child of el.children) {
+            stripColumnClz(child);
+          }
+        }
+      }
+      stripColumnClz(note)
+      if (id === null || id.startsWith('sec-')) {
+        // Special case sections, only their first couple elements
+        const container = document.createElement("div");
+        if (note.children && note.children.length > 2) {
+          container.appendChild(note.children[0].cloneNode(true));
+          for (let i = 1; i < note.children.length; i++) {
+            const child = note.children[i];
+            if (child.tagName === "P" && child.innerText === "") {
+              continue;
+            } else {
+              container.appendChild(child.cloneNode(true));
+              break;
+            }
+          }
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(container);
+          }
+          return container.innerHTML
+        } else {
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(note);
+          }
+          return note.innerHTML;
+        }
+      } else {
+        // Remove any anchor links if they are present
+        const anchorLink = note.querySelector('a.anchorjs-link');
+        if (anchorLink) {
+          anchorLink.remove();
+        }
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(note);
+        }
+        if (note.classList.contains("callout")) {
+          return note.outerHTML;
+        } else {
+          return note.innerHTML;
+        }
+      }
+    }
+    for (var i=0; i<xrefs.length; i++) {
+      const xref = xrefs[i];
+      tippyHover(xref, undefined, function(instance) {
+        instance.disable();
+        let url = xref.getAttribute('href');
+        let hash = undefined; 
+        if (url.startsWith('#')) {
+          hash = url;
+        } else {
+          try { hash = new URL(url).hash; } catch {}
+        }
+        if (hash) {
+          const id = hash.replace(/^#\/?/, "");
+          const note = window.document.getElementById(id);
+          if (note !== null) {
+            try {
+              const html = processXRef(id, note.cloneNode(true));
+              instance.setContent(html);
+            } finally {
+              instance.enable();
+              instance.show();
+            }
+          } else {
+            // See if we can fetch this
+            fetch(url.split('#')[0])
+            .then(res => res.text())
+            .then(html => {
+              const parser = new DOMParser();
+              const htmlDoc = parser.parseFromString(html, "text/html");
+              const note = htmlDoc.getElementById(id);
+              if (note !== null) {
+                const html = processXRef(id, note);
+                instance.setContent(html);
+              } 
+            }).finally(() => {
+              instance.enable();
+              instance.show();
+            });
+          }
+        } else {
+          // See if we can fetch a full url (with no hash to target)
+          // This is a special case and we should probably do some content thinning / targeting
+          fetch(url)
+          .then(res => res.text())
+          .then(html => {
+            const parser = new DOMParser();
+            const htmlDoc = parser.parseFromString(html, "text/html");
+            const note = htmlDoc.querySelector('main.content');
+            if (note !== null) {
+              // This should only happen for chapter cross references
+              // (since there is no id in the URL)
+              // remove the first header
+              if (note.children.length > 0 && note.children[0].tagName === "HEADER") {
+                note.children[0].remove();
+              }
+              const html = processXRef(null, note);
+              instance.setContent(html);
+            } 
+          }).finally(() => {
+            instance.enable();
+            instance.show();
+          });
+        }
+      }, function(instance) {
+      });
+    }
+        let selectedAnnoteEl;
+        const selectorForAnnotation = ( cell, annotation) => {
+          let cellAttr = 'data-code-cell="' + cell + '"';
+          let lineAttr = 'data-code-annotation="' +  annotation + '"';
+          const selector = 'span[' + cellAttr + '][' + lineAttr + ']';
+          return selector;
+        }
+        const selectCodeLines = (annoteEl) => {
+          const doc = window.document;
+          const targetCell = annoteEl.getAttribute("data-target-cell");
+          const targetAnnotation = annoteEl.getAttribute("data-target-annotation");
+          const annoteSpan = window.document.querySelector(selectorForAnnotation(targetCell, targetAnnotation));
+          const lines = annoteSpan.getAttribute("data-code-lines").split(",");
+          const lineIds = lines.map((line) => {
+            return targetCell + "-" + line;
+          })
+          let top = null;
+          let height = null;
+          let parent = null;
+          if (lineIds.length > 0) {
+              //compute the position of the single el (top and bottom and make a div)
+              const el = window.document.getElementById(lineIds[0]);
+              top = el.offsetTop;
+              height = el.offsetHeight;
+              parent = el.parentElement.parentElement;
+            if (lineIds.length > 1) {
+              const lastEl = window.document.getElementById(lineIds[lineIds.length - 1]);
+              const bottom = lastEl.offsetTop + lastEl.offsetHeight;
+              height = bottom - top;
+            }
+            if (top !== null && height !== null && parent !== null) {
+              // cook up a div (if necessary) and position it 
+              let div = window.document.getElementById("code-annotation-line-highlight");
+              if (div === null) {
+                div = window.document.createElement("div");
+                div.setAttribute("id", "code-annotation-line-highlight");
+                div.style.position = 'absolute';
+                parent.appendChild(div);
+              }
+              div.style.top = top - 2 + "px";
+              div.style.height = height + 4 + "px";
+              div.style.left = 0;
+              let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
+              if (gutterDiv === null) {
+                gutterDiv = window.document.createElement("div");
+                gutterDiv.setAttribute("id", "code-annotation-line-highlight-gutter");
+                gutterDiv.style.position = 'absolute';
+                const codeCell = window.document.getElementById(targetCell);
+                const gutter = codeCell.querySelector('.code-annotation-gutter');
+                gutter.appendChild(gutterDiv);
+              }
+              gutterDiv.style.top = top - 2 + "px";
+              gutterDiv.style.height = height + 4 + "px";
+            }
+            selectedAnnoteEl = annoteEl;
+          }
+        };
+        const unselectCodeLines = () => {
+          const elementsIds = ["code-annotation-line-highlight", "code-annotation-line-highlight-gutter"];
+          elementsIds.forEach((elId) => {
+            const div = window.document.getElementById(elId);
+            if (div) {
+              div.remove();
+            }
+          });
+          selectedAnnoteEl = undefined;
+        };
+          // Handle positioning of the toggle
+      window.addEventListener(
+        "resize",
+        throttle(() => {
+          elRect = undefined;
+          if (selectedAnnoteEl) {
+            selectCodeLines(selectedAnnoteEl);
+          }
+        }, 10)
+      );
+      function throttle(fn, ms) {
+      let throttle = false;
+      let timer;
+        return (...args) => {
+          if(!throttle) { // first call gets through
+              fn.apply(this, args);
+              throttle = true;
+          } else { // all the others get throttled
+              if(timer) clearTimeout(timer); // cancel #2
+              timer = setTimeout(() => {
+                fn.apply(this, args);
+                timer = throttle = false;
+              }, ms);
+          }
+        };
+      }
+        // Attach click handler to the DT
+        const annoteDls = window.document.querySelectorAll('dt[data-target-cell]');
+        for (const annoteDlNode of annoteDls) {
+          annoteDlNode.addEventListener('click', (event) => {
+            const clickedEl = event.target;
+            if (clickedEl !== selectedAnnoteEl) {
+              unselectCodeLines();
+              const activeEl = window.document.querySelector('dt[data-target-cell].code-annotation-active');
+              if (activeEl) {
+                activeEl.classList.remove('code-annotation-active');
+              }
+              selectCodeLines(clickedEl);
+              clickedEl.classList.add('code-annotation-active');
+            } else {
+              // Unselect the line
+              unselectCodeLines();
+              clickedEl.classList.remove('code-annotation-active');
+            }
+          });
+        }
+    const findCites = (el) => {
+      const parentEl = el.parentElement;
+      if (parentEl) {
+        const cites = parentEl.dataset.cites;
+        if (cites) {
+          return {
+            el,
+            cites: cites.split(' ')
+          };
+        } else {
+          return findCites(el.parentElement)
+        }
+      } else {
+        return undefined;
+      }
+    };
+    var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+    for (var i=0; i<bibliorefs.length; i++) {
+      const ref = bibliorefs[i];
+      const citeInfo = findCites(ref);
+      if (citeInfo) {
+        tippyHover(citeInfo.el, function() {
+          var popup = window.document.createElement('div');
+          citeInfo.cites.forEach(function(cite) {
+            var citeDiv = window.document.createElement('div');
+            citeDiv.classList.add('hanging-indent');
+            citeDiv.classList.add('csl-entry');
+            var biblioDiv = window.document.getElementById('ref-' + cite);
+            if (biblioDiv) {
+              citeDiv.innerHTML = biblioDiv.innerHTML;
+            }
+            popup.appendChild(citeDiv);
+          });
+          return popup.innerHTML;
+        });
+      }
+    }
+  });
+  </script>
+
+
+
+
+<script src="../../site_libs/quarto-html/zenscroll-min.js"></script>
+</body></html>

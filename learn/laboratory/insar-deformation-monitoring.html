@@ -1,0 +1,725 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
+
+<meta charset="utf-8">
+<meta name="generator" content="quarto-1.9.36">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+
+<meta name="dcterms.date" content="2026-03-05">
+<meta name="description" content="Two radar images of the same area, taken weeks apart from slightly different orbital positions, contain in their phase difference a record of every millimetre of ground motion that occurred between the acquisitions. InSAR — interferometric SAR — reads that record. This article derives the interferometric phase from the geometry of two-pass imaging, explains the phase unwrapping problem, and applies the technique to measure land subsidence, earthquake deformation, and volcanic inflation.">
+
+<title>InSAR Deformation Monitoring – WaywardHouse</title>
+<style>
+/* Default styles provided by pandoc.
+** See https://pandoc.org/MANUAL.html#variables-for-html for config info.
+*/
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: min(4vw, 1.5em);}
+div.column{flex: auto; overflow-x: auto;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+  width: 0.8em;
+  margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
+  vertical-align: middle;
+}
+</style>
+
+
+<link href="../../assets/images/logo.webp" rel="icon">
+<script src="../../site_libs/clipboard/clipboard.min.js"></script>
+<script src="../../site_libs/quarto-html/tabby.min.js"></script>
+<script src="../../site_libs/quarto-html/popper.min.js"></script>
+<script src="../../site_libs/quarto-html/tippy.umd.min.js"></script>
+<link href="../../site_libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="../../site_libs/quarto-html/light-border.css" rel="stylesheet">
+<link href="../../site_libs/quarto-html/quarto-html-640605f58ae58ee79329c070719e555b.min.css" rel="stylesheet" append-hash="true" data-mode="light">
+<link href="../../site_libs/quarto-html/quarto-syntax-highlighting-845c23b38eaddc0f92fda52bfe77a8c8.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<style>html{ scroll-behavior: smooth; }</style>
+<script>
+  (function () {
+    var s = localStorage.getItem('theme');
+    var dark = s !== null ? s === 'dark' : false;
+    document.documentElement.dataset.theme = dark ? 'dark' : 'light';
+    document.documentElement.dataset.brand = 'wayward';
+  })();
+</script>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:ital,wght@0,300;0,400;0,600;0,700;0,800;0,900;1,700;1,800&amp;family=Barlow:wght@300;400;500;600&amp;family=IBM+Plex+Mono:ital,wght@0,300;0,400;0,500;1,300&amp;family=Literata:ital,opsz,wght@0,7..72,300;0,7..72,400;0,7..72,500;1,7..72,300;1,7..72,400&amp;display=swap" rel="stylesheet">
+
+  <script>window.backupDefine = window.define; window.define = undefined;</script><script src="https://cdn.jsdelivr.net/npm/katex@latest/dist/katex.min.js"></script>
+  <script>document.addEventListener("DOMContentLoaded", function () {
+ var mathElements = document.getElementsByClassName("math");
+ var macros = [];
+ for (var i = 0; i < mathElements.length; i++) {
+  var texText = mathElements[i].firstChild;
+  if (mathElements[i].tagName == "SPAN") {
+   katex.render(texText.data, mathElements[i], {
+    displayMode: mathElements[i].classList.contains('display'),
+    throwOnError: false,
+    macros: macros,
+    fleqn: false
+   });
+}}});
+  </script>
+  <script>window.define = window.backupDefine; window.backupDefine = undefined;</script><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@latest/dist/katex.min.css">
+
+<script type="text/javascript">
+const typesetMath = (el) => {
+  if (window.MathJax) {
+    // MathJax Typeset
+    window.MathJax.typeset([el]);
+  } else if (window.katex) {
+    // KaTeX Render
+    var mathElements = el.getElementsByClassName("math");
+    var macros = [];
+    for (var i = 0; i < mathElements.length; i++) {
+      var texText = mathElements[i].firstChild;
+      if (mathElements[i].tagName == "SPAN" && texText && texText.data) {
+        window.katex.render(texText.data, mathElements[i], {
+          displayMode: mathElements[i].classList.contains('display'),
+          throwOnError: false,
+          macros: macros,
+          fleqn: false
+        });
+      }
+    }
+  }
+}
+window.Quarto = {
+  typesetMath
+};
+</script>
+
+<link rel="stylesheet" href="../../assets/css/quarto-wayward.css">
+</head>
+
+<body class="reading-body tag-hash-math tag-hash-viz">
+
+
+<header id="title-block-header">
+<h1 class="title">InSAR Deformation Monitoring</h1>
+<p class="subtitle">Interferometric phase, unwrapping, and millimetre-scale surface displacement from orbit</p>
+
+<p class="date">2026-03-05</p>
+</header>
+
+
+<p>On 17 January 1994, the Northridge earthquake struck the San Fernando Valley north of Los Angeles. Within weeks, Didier Massonnet and colleagues had produced a map of the coseismic ground deformation from ERS-1 SAR data — a coloured interference pattern covering 100 km × 100 km, showing displacement fringes that corresponded precisely to the earthquake fault geometry. Each colour cycle represented 2.8 cm of range change along the satellite line of sight. The map was published in Nature and marked the moment the Earth science community recognised InSAR as a transformative tool.</p>
+<p>The physics is elegant: two radar images of the same area, acquired from nearly the same orbital position but at different times, contain phase information that records the path length from satellite to ground. If the ground has moved between the two acquisitions, the path lengths differ, and the phase difference encodes that displacement. With wavelengths of a few centimetres and phase measurements accurate to a fraction of a radian, InSAR can detect surface motion smaller than a millimetre.</p>
+<hr>
+<h2 id="the-question">1. The Question</h2>
+<p>How does the phase difference between two SAR images encode surface displacement? How do we extract displacement from the wrapped phase? And what limits the accuracy and applicability of the technique?</p>
+<hr>
+<h2 id="the-conceptual-model">2. The Conceptual Model</h2>
+<p>A SAR image records, at each pixel, the complex backscattered field <span class="math inline">s = A e^{j\phi}</span>, where <span class="math inline">A</span> is amplitude and <span class="math inline">\phi</span> is phase. The phase accumulates over the two-way path from satellite to ground:</p>
+<p><span class="math display">\phi = -\frac{4\pi R}{\lambda}</span></p>
+<p>where <span class="math inline">R</span> is the slant range and the minus sign is conventional (phase decreases as range increases). For a satellite 700 km away and <span class="math inline">\lambda = 0.056</span> m:</p>
+<p><span class="math display">\phi = -\frac{4\pi \times 700{,}000}{0.056} \approx -1.57 \times 10^8 \text{ rad}</span></p>
+<p>This is an enormous number of phase cycles — completely uninformative on its own. What is informative is the <strong>phase difference</strong> between two acquisitions: the contribution from the absolute range cancels, leaving only the change.</p>
+<hr>
+<h2 id="building-the-mathematical-model">3. Building the Mathematical Model</h2>
+<h3 id="the-interferometric-phase">3.1 The Interferometric Phase</h3>
+<p>Two SAR images <span class="math inline">s_1 = A_1 e^{j\phi_1}</span> and <span class="math inline">s_2 = A_2 e^{j\phi_2}</span> are multiplied together (one conjugated) to form the <strong>interferogram</strong>:</p>
+<p><span class="math display">I = s_1 \cdot s_2^* = A_1 A_2 e^{j(\phi_1 - \phi_2)}</span></p>
+<p>The phase of the interferogram is:</p>
+<p><span class="math display">\Delta\phi = \phi_1 - \phi_2 = -\frac{4\pi}{\lambda}(R_1 - R_2)</span></p>
+<p>The difference <span class="math inline">R_1 - R_2</span> has three contributions:</p>
+<p><span class="math display">R_1 - R_2 = \Delta R_{\text{topo}} + \Delta R_{\text{defo}} + \Delta R_{\text{atm}} + \Delta R_{\text{noise}}</span></p>
+<ul>
+<li><strong>Topographic term</strong> <span class="math inline">\Delta R_{\text{topo}}</span>: the two satellites view from slightly different positions (baseline <span class="math inline">B_\perp</span>), so a hill of height <span class="math inline">h</span> appears at slightly different ranges in each image.</li>
+<li><strong>Deformation term</strong> <span class="math inline">\Delta R_{\text{defo}}</span>: if the ground moves by <span class="math inline">d</span> [m] along the line of sight (LOS) between acquisitions, the range changes by <span class="math inline">d</span>.</li>
+<li><strong>Atmospheric term</strong> <span class="math inline">\Delta R_{\text{atm}}</span>: spatial variations in water vapour and ionospheric electron content change the path delay differently in each image.</li>
+<li><strong>Noise term</strong> <span class="math inline">\Delta R_{\text{noise}}</span>: thermal noise and decorrelation.</li>
+</ul>
+<h3 id="the-topographic-phase">3.2 The Topographic Phase</h3>
+<p>If the two satellites orbit at positions separated by a perpendicular baseline <span class="math inline">B_\perp</span> [m] (the component of the baseline perpendicular to the LOS), a point at height <span class="math inline">h</span> above the reference surface appears at range <span class="math inline">R_1</span> in image 1 and <span class="math inline">R_2</span> in image 2:</p>
+<p><span class="math display">\Delta R_{\text{topo}} \approx -\frac{B_\perp h}{R \sin\theta_i}</span></p>
+<p>The corresponding phase contribution is:</p>
+<p><span class="math display">\Delta\phi_{\text{topo}} = -\frac{4\pi}{\lambda} \cdot \left(-\frac{B_\perp h}{R\sin\theta_i}\right) = \frac{4\pi B_\perp h}{\lambda R \sin\theta_i}</span></p>
+<p>This is the <strong>topographic phase</strong> — it is removed using a digital elevation model (DEM) to produce a <strong>differential interferogram</strong> containing primarily the deformation signal.</p>
+<p>The <strong>altitude of ambiguity</strong> <span class="math inline">h_a</span> [m] is the height difference that produces one full phase cycle ($2$) of topographic phase:</p>
+<p><span class="math display">h_a = \frac{\lambda R \sin\theta_i}{2 B_\perp}</span></p>
+<p>For <span class="math inline">\lambda = 0.056</span> m, <span class="math inline">R = 700</span> km, <span class="math inline">\theta_i = 38°</span>, <span class="math inline">B_\perp = 100</span> m:</p>
+<p><span class="math display">h_a = \frac{0.056 \times 700{,}000 \times 0.616}{2 \times 100} = \frac{24{,}147}{200} = 120.7 \text{ m}</span></p>
+<p>A 100 m baseline produces one fringe per 120 m of topographic height. Shorter baselines are preferable for deformation studies (less topographic sensitivity); longer baselines are useful for DEM generation (more phase cycles per unit height).</p>
+<h3 id="the-deformation-phase">3.3 The Deformation Phase</h3>
+<p>After removing the topographic phase, the residual differential phase is dominated by the deformation term:</p>
+<p><span class="math display">\Delta\phi_{\text{defo}} = -\frac{4\pi}{\lambda} d_{\text{LOS}}</span></p>
+<p>where <span class="math inline">d_{\text{LOS}}</span> [m] is the surface displacement in the satellite LOS direction (positive = toward the satellite). Solving for displacement:</p>
+<p><span class="math display">d_{\text{LOS}} = -\frac{\lambda \Delta\phi_{\text{defo}}}{4\pi}</span></p>
+<p>For Sentinel-1 C-band (<span class="math inline">\lambda = 0.056</span> m), one full phase cycle (<span class="math inline">\Delta\phi = 2\pi</span>) corresponds to:</p>
+<p><span class="math display">d = \frac{0.056}{2} = 0.028 \text{ m} = 2.8 \text{ cm}</span></p>
+<p>This is the <strong>half-wavelength sensitivity</strong>: each fringe in the interferogram represents 2.8 cm of LOS displacement. The phase measurement precision is typically <span class="math inline">\sim\pi/10</span> rad, giving displacement sensitivity of approximately <span class="math inline">\lambda/40 = 1.4</span> mm.</p>
+<h3 id="phase-unwrapping">3.4 Phase Unwrapping</h3>
+<p>The interferometric phase is inherently <strong>wrapped</strong> — it is only known modulo $2$, since <span class="math inline">e^{j\phi}</span> is periodic. The observed phase at pixel <span class="math inline">(i,j)</span> is:</p>
+<p><span class="math display">\Delta\phi_{\text{obs}}(i,j) = W[\Delta\phi_{\text{true}}(i,j)] \in (-\pi, \pi]</span></p>
+<p>where <span class="math inline">W[\cdot]</span> is the wrapping operator. To recover the true (unwrapped) phase, we must add the correct integer multiple of $2$ at each pixel:</p>
+<p><span class="math display">\Delta\phi_{\text{true}}(i,j) = \Delta\phi_{\text{obs}}(i,j) + 2\pi n(i,j)</span></p>
+<p>The integers <span class="math inline">n(i,j)</span> are unknown. Phase unwrapping is the problem of determining them.</p>
+<p>The standard assumption is <strong>phase continuity</strong>: the true phase field varies smoothly, so phase jumps in the wrapped image of magnitude greater than <span class="math inline">\pi</span> are treated as wrapping artefacts. The Goldstein branch-cut algorithm and the minimum-cost-flow algorithm are the most widely used approaches.</p>
+<p>The unwrapping problem fails at <strong>phase discontinuities</strong> — abrupt deformation gradients (fault edges, landslides), strong atmospheric gradients, or decorrelated regions. In these cases, the assumption of smooth phase variation is violated and unwrapping errors propagate through the image.</p>
+<h3 id="coherence">3.5 Coherence</h3>
+<p>The <strong>interferometric coherence</strong> <span class="math inline">\gamma</span> measures the degree of phase correlation between the two images:</p>
+<p><span class="math display">\gamma = \frac{|\langle s_1 s_2^* \rangle|}{\sqrt{\langle |s_1|^2 \rangle \langle |s_2|^2 \rangle}} \in [0, 1]</span></p>
+<p>where angle brackets denote spatial averaging over a window of pixels. High coherence (<span class="math inline">\gamma &gt; 0.6</span>) means reliable phase measurements; low coherence (<span class="math inline">\gamma &lt; 0.3</span>) means the phase is dominated by noise and cannot be used.</p>
+<p>Coherence is reduced by: - <strong>Temporal decorrelation:</strong> surface changes between acquisitions (vegetation growth, wind, rain, agricultural tillage). Forest has low coherence over weeks; bare rock maintains coherence over years. - <strong>Geometric decorrelation:</strong> large perpendicular baselines cause the two images to view slightly different facets of scatterers, reducing correlation. - <strong>Volume decorrelation:</strong> scattering from distributed volumes (vegetation, snow) rather than point-like scatterers.</p>
+<h3 id="time-series-insar">3.6 Time-Series InSAR</h3>
+<p>A single interferogram measures the deformation over one time interval. <strong>Time-series InSAR</strong> (PSInSAR, SBAS) combines dozens to hundreds of interferograms from a stack of SAR acquisitions to:</p>
+<ol type="1">
+<li>Separate deformation from atmospheric delays by exploiting their different temporal signatures</li>
+<li>Measure long-term displacement rates (mm yr⁻¹) rather than episodic events</li>
+<li>Identify <strong>persistent scatterers</strong> (PS) — individual pixels (often building corners, rock outcrops) that maintain high coherence over years — and measure their displacement history</li>
+</ol>
+<p>The atmospheric delay contribution <span class="math inline">\Delta\phi_{\text{atm}}</span> has a spatial correlation length of 5–20 km and is uncorrelated in time; deformation signals are often spatially coherent over longer scales. Stacking exploits this difference: atmospheric noise averages toward zero over many interferograms while deformation accumulates.</p>
+<hr>
+<h2 id="worked-example-by-hand">4. Worked Example by Hand</h2>
+<p><strong>Setting:</strong> Sentinel-1 interferogram over a subsiding industrial area in the Po Valley, Italy. We observe 4.5 fringes (complete colour cycles) in the differential interferogram over a 6-month period between two acquisitions.</p>
+<p><strong>Given:</strong> - <span class="math inline">\lambda = 0.056</span> m (C-band) - <span class="math inline">\theta_i = 34°</span> (incidence angle) - Number of fringes observed: <span class="math inline">n = 4.5</span> - <span class="math inline">B_\perp = 45</span> m (short baseline — good coherence) - DEM has been used to remove topographic phase</p>
+<p><strong>Step 1: Total unwrapped phase</strong></p>
+<p><span class="math display">\Delta\phi_{\text{defo}} = 4.5 \times 2\pi = 28.27 \text{ rad}</span></p>
+<p><strong>Step 2: LOS displacement</strong></p>
+<p><span class="math display">d_{\text{LOS}} = -\frac{\lambda \Delta\phi_{\text{defo}}}{4\pi} = -\frac{0.056 \times 28.27}{4\pi} = -\frac{1.583}{12.566} = -0.126 \text{ m}</span></p>
+<p>The negative sign indicates motion <strong>away</strong> from the satellite (subsidence, since the satellite looks obliquely downward). The ground has subsided 12.6 cm in 6 months.</p>
+<p><strong>Step 3: Vertical displacement estimate</strong></p>
+<p>The LOS displacement is a projection of the 3D displacement vector. For predominantly vertical deformation:</p>
+<p><span class="math display">d_{\text{vertical}} = \frac{d_{\text{LOS}}}{\cos\theta_i} = \frac{-0.126}{\cos 34°} = \frac{-0.126}{0.829} = -0.152 \text{ m}</span></p>
+<p>The area is subsiding at approximately 15.2 cm per 6 months = <strong>30.4 cm yr⁻¹</strong> — an extraordinarily high subsidence rate, consistent with groundwater extraction or compaction of unconsolidated sediments.</p>
+<p><strong>Step 4: Altitude of ambiguity</strong> (to assess topographic phase error if DEM has a 5 m error)</p>
+<p><span class="math display">h_a = \frac{0.056 \times 700{,}000 \times \sin 56°}{2 \times 45} = \frac{0.056 \times 700{,}000 \times 0.829}{90} = \frac{32{,}494}{90} = 361 \text{ m}</span></p>
+<p>A 5 m DEM error introduces $5/361 = 0.014$ fringes of topographic phase error — negligible compared to 4.5 deformation fringes. The short baseline makes this interferogram very insensitive to topographic errors.</p>
+<hr>
+<h2 id="computational-implementation">5. Computational Implementation</h2>
+<pre><code>function form_interferogram(s1, s2):
+    return s1 * conjugate(s2)        # complex interferogram
+
+function compute_phase(interferogram):
+    return angle(interferogram)       # wrapped phase in (-π, π]
+
+function topographic_phase(B_perp, h_dem, R, theta_i, lam):
+    return (4*pi * B_perp * h_dem) / (lam * R * sin(theta_i))
+
+function los_displacement(phase_unwrapped, lam):
+    return -(lam * phase_unwrapped) / (4 * pi)
+
+function coherence(s1, s2, window=5):
+    # window × window spatial averaging
+    numerator   = abs(spatial_mean(s1 * conjugate(s2)))
+    denominator = sqrt(spatial_mean(|s1|²) * spatial_mean(|s2|²))
+    return numerator / denominator</code></pre>
+<pre class="{pyodide}"><code>import numpy as np
+
+lam = 0.056  # C-band
+
+def los_from_fringes(n_fringes, lam=0.056):
+    phi = n_fringes * 2 * np.pi
+    return -(lam * phi) / (4 * np.pi)
+
+def vertical_disp(d_los, theta_deg):
+    return d_los / np.cos(np.radians(theta_deg))
+
+def altitude_ambiguity(lam, R, theta_deg, B_perp):
+    return (lam * R * np.sin(np.radians(theta_deg))) / (2 * B_perp)
+
+# Worked example
+d_los = los_from_fringes(4.5)
+d_vert = vertical_disp(d_los, 34)
+ha = altitude_ambiguity(0.056, 700e3, 34, 45)
+
+print(f"LOS displacement:    {d_los*100:.1f} cm")
+print(f"Vertical subsidence: {d_vert*100:.1f} cm  ({d_vert*200:.1f} cm/yr)")
+print(f"Altitude of ambiguity: {ha:.0f} m")
+print(f"5m DEM error → {5/ha:.4f} fringe error (negligible)")
+
+# Sensitivity
+print(f"\nSentinel-1 C-band sensitivity:")
+print(f"  1 fringe = {lam/2*100:.1f} cm LOS displacement")
+print(f"  π/10 rad = {lam/40*1000:.1f} mm LOS displacement (noise floor)")</code></pre>
+<hr>
+<h2 id="visualization">6. Visualization</h2>
+<div data-viz="echarts" style="height:420px" data-options="{
+  &quot;title&quot;: {&quot;text&quot;: &quot;InSAR Displacement Sensitivity and Fringe Count vs Subsidence Rate&quot;, &quot;textStyle&quot;: {&quot;fontSize&quot;: 14}},
+  &quot;tooltip&quot;: {&quot;trigger&quot;: &quot;axis&quot;},
+  &quot;legend&quot;: {&quot;data&quot;: [&quot;Sentinel-1 C (λ=5.6cm)&quot;, &quot;Sentinel-1 C (λ=5.6cm, 1yr)&quot;], &quot;bottom&quot;: 0},
+  &quot;xAxis&quot;: {&quot;name&quot;: &quot;Subsidence rate (cm yr⁻¹)&quot;, &quot;nameLocation&quot;: &quot;middle&quot;, &quot;nameGap&quot;: 30,
+    &quot;data&quot;: [1, 2, 5, 10, 20, 30, 50, 100]},
+  &quot;yAxis&quot;: {&quot;name&quot;: &quot;Fringes per year (2.8cm/fringe)&quot;, &quot;nameLocation&quot;: &quot;middle&quot;, &quot;nameGap&quot;: 50},
+  &quot;series&quot;: [
+    {
+      &quot;name&quot;: &quot;Fringes per year (C-band)&quot;,
+      &quot;type&quot;: &quot;bar&quot;,
+      &quot;data&quot;: [0.4, 0.7, 1.8, 3.6, 7.1, 10.7, 17.9, 35.7],
+      &quot;label&quot;: {&quot;show&quot;: true, &quot;position&quot;: &quot;top&quot;, &quot;formatter&quot;: &quot;{c}&quot;}
+    }
+  ]
+}">
+
+</div>
+<p>Each fringe represents 2.8 cm of LOS displacement for Sentinel-1. Subsidence of 10 cm yr⁻¹ produces 3.6 fringes — easily counted in an interferogram. At very high rates (&gt;50 cm yr⁻¹), fringes become densely packed and phase unwrapping becomes unreliable without supplementary data.</p>
+<hr>
+<h2 id="interpretation">7. Interpretation</h2>
+<p>InSAR has fundamentally changed how Earth scientists monitor surface deformation. Before InSAR, measuring ground displacement required GPS benchmarks or levelling surveys — point measurements, expensive, sparse. InSAR delivers spatially continuous deformation maps at centimetre precision, covering thousands of square kilometres per image.</p>
+<p>The applications span a wide range of hazards and processes. Earthquake deformation maps directly constrain fault slip models — the Northridge example used the fringe pattern to invert for fault geometry and average slip before field teams had reached most of the fault. Volcanic inflation at Yellowstone, Long Valley, and dozens of other calderas is routinely monitored by InSAR, providing early warning of magma movement. Groundwater extraction and aquifer compaction in California’s Central Valley, Mexico City, and the North China Plain are mapped with mm yr⁻¹ precision, revealing which aquifer systems are losing permanent storage capacity.</p>
+<p>The technique’s limitation — line-of-sight sensitivity — is its primary constraint. A purely horizontal east-west displacement is nearly invisible to a polar-orbiting SAR (which has a mostly north-south flight track and an oblique look), while the same displacement magnitude oriented in the vertical would produce strong fringes. Combining ascending and descending orbit interferograms partially resolves this ambiguity, separating vertical from east-west deformation.</p>
+<hr>
+<h2 id="what-could-go-wrong">8. What Could Go Wrong?</h2>
+<p><strong>Atmospheric delays dominate over small deformation signals.</strong> A 10 cm change in water vapour column height changes the microwave path delay by approximately 2–4 cm, comparable to the deformation signals of slow creep or inter-seismic strain. Single interferograms cannot separate atmospheric and deformation contributions. Time-series methods are essential for signals below <span class="math inline">\sim 5</span> cm.</p>
+<p><strong>Phase unwrapping errors propagate.</strong> An unwrapping error of $2$ at one location (adding or removing one fringe incorrectly) propagates as a constant offset or a ramp across all pixels connected to that location by the unwrapping path. In rapidly deforming areas (post-seismic landslides, active volcanoes) where the phase gradient exceeds <span class="math inline">\pi</span> per pixel, unwrapping necessarily fails and the deformation field is only partially recoverable.</p>
+<p><strong>Temporal decorrelation over vegetation.</strong> In tropical and temperate forests, a 12-day Sentinel-1 repeat interval is often sufficient to decorrelate the signal — leaves move in the wind, vegetation grows, and the coherence falls below 0.3. Longer-wavelength L-band SAR (ALOS-2, NISAR) maintains coherence longer over vegetation because the longer wavelength is less sensitive to small-scale surface changes.</p>
+<p><strong>Reference frame ambiguity.</strong> InSAR measures relative displacement: the phase at each pixel is relative to a reference point assumed to be stable. If the reference point is itself deforming (a common problem in areas of broad subsidence), the apparent displacement pattern is systematically biased. Anchoring to GPS benchmarks or GNSS-consistent reference frames is essential for absolute displacement maps.</p>
+<hr>
+<h2 id="summary">9. Summary</h2>
+<p>InSAR forms an interferogram by multiplying two complex SAR images to extract their phase difference. That phase difference encodes topographic height (from the baseline geometry), surface displacement (from the deformation term), and atmospheric delay. After removing topography using a DEM, the differential phase gives LOS displacement with <span class="math inline">\lambda/40</span> sensitivity — approximately 1–2 mm for C-band satellites.</p>
+<p>Phase unwrapping recovers the integer ambiguity from the wrapped observations under the assumption of phase continuity. Coherence quantifies the reliability of the phase measurement — decorrelation over vegetation and over long time intervals limits the applicability of the technique. Time-series InSAR overcomes many single-interferogram limitations by exploiting the temporal structure of atmospheric noise and deformation signals across stacks of dozens to hundreds of images.</p>
+<p><strong>Key equations:</strong></p>
+<p><span class="math display">\Delta\phi_{\text{defo}} = -\frac{4\pi}{\lambda} d_{\text{LOS}} \quad \text{[deformation phase]}</span></p>
+<p><span class="math display">\Delta\phi_{\text{topo}} = \frac{4\pi B_\perp h}{\lambda R \sin\theta_i} \quad \text{[topographic phase]}</span></p>
+<p><span class="math display">h_a = \frac{\lambda R \sin\theta_i}{2 B_\perp} \quad \text{[altitude of ambiguity]}</span></p>
+<p><span class="math display">\gamma = \frac{|\langle s_1 s_2^*\rangle|}{\sqrt{\langle|s_1|^2\rangle\langle|s_2|^2\rangle}} \quad \text{[coherence]}</span></p>
+<hr>
+<h2 id="math-refresher">Math Refresher</h2>
+<p><strong>Phase and the complex exponential.</strong> A signal <span class="math inline">s = Ae^{j\phi} = A(\cos\phi + j\sin\phi)</span> stores amplitude <span class="math inline">A = |s|</span> and phase <span class="math inline">\phi = \arg(s)</span>. Multiplying two signals <span class="math inline">s_1 e^{j\phi_1}</span> and <span class="math inline">s_2^* = s_2 e^{-j\phi_2}</span> gives <span class="math inline">s_1 s_2^* = A_1 A_2 e^{j(\phi_1-\phi_2)}</span> — the product carries the phase difference. This is why interferogram formation is simply pixel-by-pixel complex multiplication: the absolute phases (huge numbers) cancel, leaving the difference (small, informative).</p>
+<p><strong>Wrapping and modular arithmetic.</strong> The wrapped phase <span class="math inline">W[\phi] = \phi - 2\pi \lfloor(\phi+\pi)/(2\pi)\rfloor</span> maps any real number to <span class="math inline">(-\pi, \pi]</span>. Phase unwrapping is the inverse problem: given the wrapped values, recover the original. It is equivalent to the problem of determining which multiple of $2$ to add at each pixel, given only the constraint that the unwrapped field is smooth.</p>
+<p><strong>Line-of-sight projection.</strong> For a satellite looking at incidence angle <span class="math inline">\theta_i</span> from vertical, the LOS unit vector has components <span class="math inline">(\sin\theta_i, 0, \cos\theta_i)</span> in the (east, north, up) frame (for a right-looking satellite on a descending pass). The LOS displacement is <span class="math inline">d_{\text{LOS}} = \mathbf{d} \cdot \hat{\mathbf{LOS}}</span> — the dot product of the 3D displacement vector with the LOS unit vector. For predominantly vertical motion: <span class="math inline">d_{\text{LOS}} = d_v \cos\theta_i</span>, giving <span class="math inline">d_v = d_{\text{LOS}}/\cos\theta_i</span>.</p>
+
+
+<footer class="wayward-footer">
+  <div class="wayward-footer__inner">
+    <div class="wayward-footer__brand">
+      <div class="wayward-footer__logo">WaywardHouse<span>.</span></div>
+      <p>Understanding how place, economy, and environment interact through analysis, modelling, and open tools.</p>
+    </div>
+
+    <nav class="wayward-footer__group" aria-labelledby="footer-reading">
+      <h2 id="footer-reading">Reading</h2>
+      <a href="../../articles/">Articles</a>
+      <a href="../../learn/">Library</a>
+      <a href="../../learn/computational-geography/core/">↳ Comp Geo Book</a>
+      <a href="../../archive.html">Archive</a>
+    </nav>
+
+    <nav class="wayward-footer__group" aria-labelledby="footer-site">
+      <h2 id="footer-site">Site</h2>
+      <a href="../../start-here.html">Start Here</a>
+      <a href="../../about.html">About</a>
+      <a href="../../contact.html">Contact</a>
+    </nav>
+
+    <nav class="wayward-footer__group" aria-labelledby="footer-resources">
+      <h2 id="footer-resources">Resources</h2>
+      <a href="../../topics/">All Topics</a>
+      <a href="../../privacy.html">Privacy Policy</a>
+      <a href="../../terms.html">Terms of Use</a>
+    </nav>
+  </div>
+</footer>
+
+<script type="module" src="../../assets/dist/main.js"></script>
+<script type="module" src="../../assets/js/core.js"></script>
+<script id="quarto-html-after-body" type="application/javascript">
+  window.document.addEventListener("DOMContentLoaded", function (event) {
+    const tabsets =  window.document.querySelectorAll(".panel-tabset-tabby")
+    tabsets.forEach(function(tabset) {
+      const tabby = new Tabby('#' + tabset.id);
+    });
+    const isCodeAnnotation = (el) => {
+      for (const clz of el.classList) {
+        if (clz.startsWith('code-annotation-')) {                     
+          return true;
+        }
+      }
+      return false;
+    }
+    const onCopySuccess = function(e) {
+      // button target
+      const button = e.trigger;
+      // don't keep focus
+      button.blur();
+      // flash "checked"
+      button.classList.add('code-copy-button-checked');
+      var currentTitle = button.getAttribute("title");
+      button.setAttribute("title", "Copied!");
+      let tooltip;
+      if (window.bootstrap) {
+        button.setAttribute("data-bs-toggle", "tooltip");
+        button.setAttribute("data-bs-placement", "left");
+        button.setAttribute("data-bs-title", "Copied!");
+        tooltip = new bootstrap.Tooltip(button, 
+          { trigger: "manual", 
+            customClass: "code-copy-button-tooltip",
+            offset: [0, -8]});
+        tooltip.show();    
+      }
+      setTimeout(function() {
+        if (tooltip) {
+          tooltip.hide();
+          button.removeAttribute("data-bs-title");
+          button.removeAttribute("data-bs-toggle");
+          button.removeAttribute("data-bs-placement");
+        }
+        button.setAttribute("title", currentTitle);
+        button.classList.remove('code-copy-button-checked');
+      }, 1000);
+      // clear code selection
+      e.clearSelection();
+    }
+    const getTextToCopy = function(trigger) {
+      const outerScaffold = trigger.parentElement.cloneNode(true);
+      const codeEl = outerScaffold.querySelector('code');
+      for (const childEl of codeEl.children) {
+        if (isCodeAnnotation(childEl)) {
+          childEl.remove();
+        }
+      }
+      return codeEl.innerText;
+    }
+    const clipboard = new window.ClipboardJS('.code-copy-button:not([data-in-quarto-modal])', {
+      text: getTextToCopy
+    });
+    clipboard.on('success', onCopySuccess);
+    if (window.document.getElementById('quarto-embedded-source-code-modal')) {
+      const clipboardModal = new window.ClipboardJS('.code-copy-button[data-in-quarto-modal]', {
+        text: getTextToCopy,
+        container: window.document.getElementById('quarto-embedded-source-code-modal')
+      });
+      clipboardModal.on('success', onCopySuccess);
+    }
+      var localhostRegex = new RegExp(/^(?:http|https):\/\/localhost\:?[0-9]*\//);
+      var mailtoRegex = new RegExp(/^mailto:/);
+        var filterRegex = new RegExp("https:\/\/wayward\.house");
+      var isInternal = (href) => {
+          return filterRegex.test(href) || localhostRegex.test(href) || mailtoRegex.test(href);
+      }
+      // Inspect non-navigation links and adorn them if external
+     var links = window.document.querySelectorAll('a[href]:not(.nav-link):not(.navbar-brand):not(.toc-action):not(.sidebar-link):not(.sidebar-item-toggle):not(.pagination-link):not(.no-external):not([aria-hidden]):not(.dropdown-item):not(.quarto-navigation-tool):not(.about-link)');
+      for (var i=0; i<links.length; i++) {
+        const link = links[i];
+        if (!isInternal(link.href)) {
+          // undo the damage that might have been done by quarto-nav.js in the case of
+          // links that we want to consider external
+          if (link.dataset.originalHref !== undefined) {
+            link.href = link.dataset.originalHref;
+          }
+        }
+      }
+    function tippyHover(el, contentFn, onTriggerFn, onUntriggerFn) {
+      const config = {
+        allowHTML: true,
+        maxWidth: 500,
+        delay: 100,
+        arrow: false,
+        appendTo: function(el) {
+            return el.parentElement;
+        },
+        interactive: true,
+        interactiveBorder: 10,
+        theme: 'light-border',
+        placement: 'bottom-start',
+      };
+      if (contentFn) {
+        config.content = contentFn;
+      }
+      if (onTriggerFn) {
+        config.onTrigger = onTriggerFn;
+      }
+      if (onUntriggerFn) {
+        config.onUntrigger = onUntriggerFn;
+      }
+      window.tippy(el, config); 
+    }
+    const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+    for (var i=0; i<noterefs.length; i++) {
+      const ref = noterefs[i];
+      tippyHover(ref, function() {
+        // use id or data attribute instead here
+        let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+        try { href = new URL(href).hash; } catch {}
+        const id = href.replace(/^#\/?/, "");
+        const note = window.document.getElementById(id);
+        if (note) {
+          return note.innerHTML;
+        } else {
+          return "";
+        }
+      });
+    }
+    const xrefs = window.document.querySelectorAll('a.quarto-xref');
+    const processXRef = (id, note) => {
+      // Strip column container classes
+      const stripColumnClz = (el) => {
+        el.classList.remove("page-full", "page-columns");
+        if (el.children) {
+          for (const child of el.children) {
+            stripColumnClz(child);
+          }
+        }
+      }
+      stripColumnClz(note)
+      if (id === null || id.startsWith('sec-')) {
+        // Special case sections, only their first couple elements
+        const container = document.createElement("div");
+        if (note.children && note.children.length > 2) {
+          container.appendChild(note.children[0].cloneNode(true));
+          for (let i = 1; i < note.children.length; i++) {
+            const child = note.children[i];
+            if (child.tagName === "P" && child.innerText === "") {
+              continue;
+            } else {
+              container.appendChild(child.cloneNode(true));
+              break;
+            }
+          }
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(container);
+          }
+          return container.innerHTML
+        } else {
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(note);
+          }
+          return note.innerHTML;
+        }
+      } else {
+        // Remove any anchor links if they are present
+        const anchorLink = note.querySelector('a.anchorjs-link');
+        if (anchorLink) {
+          anchorLink.remove();
+        }
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(note);
+        }
+        if (note.classList.contains("callout")) {
+          return note.outerHTML;
+        } else {
+          return note.innerHTML;
+        }
+      }
+    }
+    for (var i=0; i<xrefs.length; i++) {
+      const xref = xrefs[i];
+      tippyHover(xref, undefined, function(instance) {
+        instance.disable();
+        let url = xref.getAttribute('href');
+        let hash = undefined; 
+        if (url.startsWith('#')) {
+          hash = url;
+        } else {
+          try { hash = new URL(url).hash; } catch {}
+        }
+        if (hash) {
+          const id = hash.replace(/^#\/?/, "");
+          const note = window.document.getElementById(id);
+          if (note !== null) {
+            try {
+              const html = processXRef(id, note.cloneNode(true));
+              instance.setContent(html);
+            } finally {
+              instance.enable();
+              instance.show();
+            }
+          } else {
+            // See if we can fetch this
+            fetch(url.split('#')[0])
+            .then(res => res.text())
+            .then(html => {
+              const parser = new DOMParser();
+              const htmlDoc = parser.parseFromString(html, "text/html");
+              const note = htmlDoc.getElementById(id);
+              if (note !== null) {
+                const html = processXRef(id, note);
+                instance.setContent(html);
+              } 
+            }).finally(() => {
+              instance.enable();
+              instance.show();
+            });
+          }
+        } else {
+          // See if we can fetch a full url (with no hash to target)
+          // This is a special case and we should probably do some content thinning / targeting
+          fetch(url)
+          .then(res => res.text())
+          .then(html => {
+            const parser = new DOMParser();
+            const htmlDoc = parser.parseFromString(html, "text/html");
+            const note = htmlDoc.querySelector('main.content');
+            if (note !== null) {
+              // This should only happen for chapter cross references
+              // (since there is no id in the URL)
+              // remove the first header
+              if (note.children.length > 0 && note.children[0].tagName === "HEADER") {
+                note.children[0].remove();
+              }
+              const html = processXRef(null, note);
+              instance.setContent(html);
+            } 
+          }).finally(() => {
+            instance.enable();
+            instance.show();
+          });
+        }
+      }, function(instance) {
+      });
+    }
+        let selectedAnnoteEl;
+        const selectorForAnnotation = ( cell, annotation) => {
+          let cellAttr = 'data-code-cell="' + cell + '"';
+          let lineAttr = 'data-code-annotation="' +  annotation + '"';
+          const selector = 'span[' + cellAttr + '][' + lineAttr + ']';
+          return selector;
+        }
+        const selectCodeLines = (annoteEl) => {
+          const doc = window.document;
+          const targetCell = annoteEl.getAttribute("data-target-cell");
+          const targetAnnotation = annoteEl.getAttribute("data-target-annotation");
+          const annoteSpan = window.document.querySelector(selectorForAnnotation(targetCell, targetAnnotation));
+          const lines = annoteSpan.getAttribute("data-code-lines").split(",");
+          const lineIds = lines.map((line) => {
+            return targetCell + "-" + line;
+          })
+          let top = null;
+          let height = null;
+          let parent = null;
+          if (lineIds.length > 0) {
+              //compute the position of the single el (top and bottom and make a div)
+              const el = window.document.getElementById(lineIds[0]);
+              top = el.offsetTop;
+              height = el.offsetHeight;
+              parent = el.parentElement.parentElement;
+            if (lineIds.length > 1) {
+              const lastEl = window.document.getElementById(lineIds[lineIds.length - 1]);
+              const bottom = lastEl.offsetTop + lastEl.offsetHeight;
+              height = bottom - top;
+            }
+            if (top !== null && height !== null && parent !== null) {
+              // cook up a div (if necessary) and position it 
+              let div = window.document.getElementById("code-annotation-line-highlight");
+              if (div === null) {
+                div = window.document.createElement("div");
+                div.setAttribute("id", "code-annotation-line-highlight");
+                div.style.position = 'absolute';
+                parent.appendChild(div);
+              }
+              div.style.top = top - 2 + "px";
+              div.style.height = height + 4 + "px";
+              div.style.left = 0;
+              let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
+              if (gutterDiv === null) {
+                gutterDiv = window.document.createElement("div");
+                gutterDiv.setAttribute("id", "code-annotation-line-highlight-gutter");
+                gutterDiv.style.position = 'absolute';
+                const codeCell = window.document.getElementById(targetCell);
+                const gutter = codeCell.querySelector('.code-annotation-gutter');
+                gutter.appendChild(gutterDiv);
+              }
+              gutterDiv.style.top = top - 2 + "px";
+              gutterDiv.style.height = height + 4 + "px";
+            }
+            selectedAnnoteEl = annoteEl;
+          }
+        };
+        const unselectCodeLines = () => {
+          const elementsIds = ["code-annotation-line-highlight", "code-annotation-line-highlight-gutter"];
+          elementsIds.forEach((elId) => {
+            const div = window.document.getElementById(elId);
+            if (div) {
+              div.remove();
+            }
+          });
+          selectedAnnoteEl = undefined;
+        };
+          // Handle positioning of the toggle
+      window.addEventListener(
+        "resize",
+        throttle(() => {
+          elRect = undefined;
+          if (selectedAnnoteEl) {
+            selectCodeLines(selectedAnnoteEl);
+          }
+        }, 10)
+      );
+      function throttle(fn, ms) {
+      let throttle = false;
+      let timer;
+        return (...args) => {
+          if(!throttle) { // first call gets through
+              fn.apply(this, args);
+              throttle = true;
+          } else { // all the others get throttled
+              if(timer) clearTimeout(timer); // cancel #2
+              timer = setTimeout(() => {
+                fn.apply(this, args);
+                timer = throttle = false;
+              }, ms);
+          }
+        };
+      }
+        // Attach click handler to the DT
+        const annoteDls = window.document.querySelectorAll('dt[data-target-cell]');
+        for (const annoteDlNode of annoteDls) {
+          annoteDlNode.addEventListener('click', (event) => {
+            const clickedEl = event.target;
+            if (clickedEl !== selectedAnnoteEl) {
+              unselectCodeLines();
+              const activeEl = window.document.querySelector('dt[data-target-cell].code-annotation-active');
+              if (activeEl) {
+                activeEl.classList.remove('code-annotation-active');
+              }
+              selectCodeLines(clickedEl);
+              clickedEl.classList.add('code-annotation-active');
+            } else {
+              // Unselect the line
+              unselectCodeLines();
+              clickedEl.classList.remove('code-annotation-active');
+            }
+          });
+        }
+    const findCites = (el) => {
+      const parentEl = el.parentElement;
+      if (parentEl) {
+        const cites = parentEl.dataset.cites;
+        if (cites) {
+          return {
+            el,
+            cites: cites.split(' ')
+          };
+        } else {
+          return findCites(el.parentElement)
+        }
+      } else {
+        return undefined;
+      }
+    };
+    var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+    for (var i=0; i<bibliorefs.length; i++) {
+      const ref = bibliorefs[i];
+      const citeInfo = findCites(ref);
+      if (citeInfo) {
+        tippyHover(citeInfo.el, function() {
+          var popup = window.document.createElement('div');
+          citeInfo.cites.forEach(function(cite) {
+            var citeDiv = window.document.createElement('div');
+            citeDiv.classList.add('hanging-indent');
+            citeDiv.classList.add('csl-entry');
+            var biblioDiv = window.document.getElementById('ref-' + cite);
+            if (biblioDiv) {
+              citeDiv.innerHTML = biblioDiv.innerHTML;
+            }
+            popup.appendChild(citeDiv);
+          });
+          return popup.innerHTML;
+        });
+      }
+    }
+  });
+  </script>
+
+
+
+
+<script src="../../site_libs/quarto-html/zenscroll-min.js"></script>
+</body></html>

@@ -1,0 +1,947 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
+
+<meta charset="utf-8">
+<meta name="generator" content="quarto-1.9.36">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+
+<meta name="dcterms.date" content="2026-02-26">
+<meta name="description" content="The gradient of a terrain surface tells you two things: how steep the slope is and which direction it faces. This chapter shows how to compute partial derivatives from a DEM using finite differences and combine them into the gradient vector that underpins slope, aspect, and flow routing.">
+
+<title>Gradient, Aspect, and Direction of Steepest Descent – WaywardHouse</title>
+<style>
+/* Default styles provided by pandoc.
+** See https://pandoc.org/MANUAL.html#variables-for-html for config info.
+*/
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: min(4vw, 1.5em);}
+div.column{flex: auto; overflow-x: auto;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+  width: 0.8em;
+  margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
+  vertical-align: middle;
+}
+</style>
+
+
+<link href="../../assets/images/logo.webp" rel="icon">
+<script src="../../site_libs/clipboard/clipboard.min.js"></script>
+<script src="../../site_libs/quarto-html/tabby.min.js"></script>
+<script src="../../site_libs/quarto-html/popper.min.js"></script>
+<script src="../../site_libs/quarto-html/tippy.umd.min.js"></script>
+<link href="../../site_libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="../../site_libs/quarto-html/light-border.css" rel="stylesheet">
+<link href="../../site_libs/quarto-html/quarto-html-640605f58ae58ee79329c070719e555b.min.css" rel="stylesheet" append-hash="true" data-mode="light">
+<link href="../../site_libs/quarto-html/quarto-syntax-highlighting-845c23b38eaddc0f92fda52bfe77a8c8.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<style>html{ scroll-behavior: smooth; }</style>
+<script>
+  (function () {
+    var s = localStorage.getItem('theme');
+    var dark = s !== null ? s === 'dark' : false;
+    document.documentElement.dataset.theme = dark ? 'dark' : 'light';
+    document.documentElement.dataset.brand = 'wayward';
+  })();
+</script>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:ital,wght@0,300;0,400;0,600;0,700;0,800;0,900;1,700;1,800&amp;family=Barlow:wght@300;400;500;600&amp;family=IBM+Plex+Mono:ital,wght@0,300;0,400;0,500;1,300&amp;family=Literata:ital,opsz,wght@0,7..72,300;0,7..72,400;0,7..72,500;1,7..72,300;1,7..72,400&amp;display=swap" rel="stylesheet">
+
+  <script>window.backupDefine = window.define; window.define = undefined;</script><script src="https://cdn.jsdelivr.net/npm/katex@latest/dist/katex.min.js"></script>
+  <script>document.addEventListener("DOMContentLoaded", function () {
+ var mathElements = document.getElementsByClassName("math");
+ var macros = [];
+ for (var i = 0; i < mathElements.length; i++) {
+  var texText = mathElements[i].firstChild;
+  if (mathElements[i].tagName == "SPAN") {
+   katex.render(texText.data, mathElements[i], {
+    displayMode: mathElements[i].classList.contains('display'),
+    throwOnError: false,
+    macros: macros,
+    fleqn: false
+   });
+}}});
+  </script>
+  <script>window.define = window.backupDefine; window.backupDefine = undefined;</script><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@latest/dist/katex.min.css">
+
+<script type="text/javascript">
+const typesetMath = (el) => {
+  if (window.MathJax) {
+    // MathJax Typeset
+    window.MathJax.typeset([el]);
+  } else if (window.katex) {
+    // KaTeX Render
+    var mathElements = el.getElementsByClassName("math");
+    var macros = [];
+    for (var i = 0; i < mathElements.length; i++) {
+      var texText = mathElements[i].firstChild;
+      if (mathElements[i].tagName == "SPAN" && texText && texText.data) {
+        window.katex.render(texText.data, mathElements[i], {
+          displayMode: mathElements[i].classList.contains('display'),
+          throwOnError: false,
+          macros: macros,
+          fleqn: false
+        });
+      }
+    }
+  }
+}
+window.Quarto = {
+  typesetMath
+};
+</script>
+
+<link rel="stylesheet" href="../../assets/css/quarto-wayward.css">
+</head>
+
+<body class="reading-body tag-hash-math tag-hash-viz">
+
+
+<header id="title-block-header">
+<h1 class="title">Gradient, Aspect, and Direction of Steepest Descent</h1>
+<p class="subtitle">Partial derivatives in action on terrain surfaces</p>
+
+<p class="date">2026-02-26</p>
+</header>
+
+
+<h2 id="before-you-start">Before You Start</h2>
+<p><strong>You should know</strong><br>
+What a digital elevation model is and how slope measures change from one place to another.</p>
+<p><strong>You will learn</strong><br>
+How terrain steepness and direction are calculated, what a gradient means, and why water and gravity tend to follow steepest descent.</p>
+<p><strong>Why this matters</strong><br>
+This chapter turns stored elevation into motion and process. It is a key bridge from map data to hydrology, erosion, and landform analysis.</p>
+<p><strong>If this gets hard, focus on…</strong><br>
+The physical picture: the gradient points uphill fastest, and steepest descent points downhill fastest. Hold onto that picture first.</p>
+<p>Ask a backcountry skier where the avalanche risk is concentrated on a particular slope and they will immediately name the aspect — north-facing or south-facing, shallow or steep. They are, without knowing it, estimating the gradient vector. The orientation of erosion rills, the direction of hillslope seepage, the angle at which a cut slope was designed — all these encode the same two quantities: the rate of elevation change with horizontal distance, and the compass direction in which that rate is greatest.</p>
+<p>The gradient is the multivariable calculus tool that turns a terrain surface into a set of directional instructions. Computed from a digital elevation model using finite differences — a simple arithmetic operation applied to a 3×3 window of elevation values — it gives you simultaneously how steep any cell is and which way it faces. Slope is the gradient’s magnitude. Aspect is its direction. Water flows opposite to the gradient, toward the lowest available neighbour. These three derived quantities underpin almost everything in terrain analysis: flow routing, viewshed calculation, solar irradiance mapping, mass movement susceptibility. This model shows how to compute them from first principles.</p>
+<h2 id="the-question">1. The Question</h2>
+<p>Given a digital elevation model, how do we calculate: 1. <strong>Slope</strong> — how steep is the terrain? 2. <strong>Aspect</strong> — which direction does the slope face? 3. <strong>Flow direction</strong> — which way would water flow?</p>
+<p>All three questions have the same answer: <strong>compute the gradient</strong>.</p>
+<p>The gradient is a vector pointing in the direction of steepest ascent, with magnitude equal to the rate of ascent. Water flows <strong>opposite</strong> the gradient (downhill). Slope is the gradient’s magnitude. Aspect is the gradient’s direction.</p>
+<p>The mathematical question: How do we compute the gradient from a grid of elevation values?</p>
+<hr>
+<h2 id="the-conceptual-model">2. The Conceptual Model</h2>
+<h3 id="partial-derivatives-slope-in-each-direction">Partial Derivatives: Slope in Each Direction</h3>
+<p>For a continuous surface <span class="math inline">z = f(x, y)</span>, the <strong>partial derivatives</strong> measure how elevation changes when you move in one direction:</p>
+<p><span class="math display">\frac{\partial z}{\partial x} = \text{rate of change in the east-west direction}</span></p>
+<p><span class="math display">\frac{\partial z}{\partial y} = \text{rate of change in the north-south direction}</span></p>
+<p><strong>Example:</strong> If <span class="math inline">\frac{\partial z}{\partial x} = 0.05</span> (dimensionless, or m/m), then elevation increases by 0.05 meters for every meter you move eastward.</p>
+<h3 id="the-gradient-vector">The Gradient Vector</h3>
+<p>The <strong>gradient</strong> combines both partial derivatives into a vector:</p>
+<p><span class="math display">\nabla z = \left(\frac{\partial z}{\partial x}, \frac{\partial z}{\partial y}\right)</span></p>
+<p><strong>Properties:</strong> - <strong>Direction:</strong> Points in the direction of steepest <strong>ascent</strong> - <strong>Magnitude:</strong> Rate of ascent in that direction (steepest slope)</p>
+<h3 id="slope-and-aspect-from-the-gradient">Slope and Aspect from the Gradient</h3>
+<p><strong>Slope</strong> (steepness):</p>
+<p><span class="math display">S = |\nabla z| = \sqrt{\left(\frac{\partial z}{\partial x}\right)^2 + \left(\frac{\partial z}{\partial y}\right)^2}</span></p>
+<p>Units: dimensionless (rise/run) or degrees/percent</p>
+<p><strong>Aspect</strong> (direction the slope faces):</p>
+<p><span class="math display">\theta = \arctan2\left(\frac{\partial z}{\partial y}, \frac{\partial z}{\partial x}\right)</span></p>
+<p>Measured clockwise from north (geographic convention): - 0° = north - 90° = east - 180° = south - 270° = west</p>
+<hr>
+<h2 id="building-the-mathematical-model">3. Building the Mathematical Model</h2>
+<h3 id="finite-differences-approximating-derivatives">Finite Differences: Approximating Derivatives</h3>
+<p>A DEM gives us discrete elevation values <span class="math inline">z_{i,j}</span>. We don’t have a formula for <span class="math inline">z(x, y)</span>, so we can’t compute derivatives analytically.</p>
+<p><strong>Solution:</strong> Approximate derivatives using <strong>finite differences</strong> — the discrete analog of derivatives.</p>
+<p><strong>Central difference (most accurate for interior cells):</strong></p>
+<p><span class="math display">\frac{\partial z}{\partial x} \approx \frac{z_{i, j+1} - z_{i, j-1}}{2 \Delta x}</span></p>
+<p><span class="math display">\frac{\partial z}{\partial y} \approx \frac{z_{i+1, j} - z_{i-1, j}}{2 \Delta y}</span></p>
+<p>Where <span class="math inline">\Delta x</span> and <span class="math inline">\Delta y</span> are the cell sizes (often equal: <span class="math inline">\Delta x = \Delta y = d</span>).</p>
+<p><strong>Interpretation:</strong> The derivative in the x-direction is approximated by the elevation difference between the cells to the east and west, divided by the distance between them.</p>
+<h3 id="the-33-neighborhood">The 3×3 Neighborhood</h3>
+<p>For cell <span class="math inline">(i, j)</span>, the central difference uses a 3×3 window:</p>
+<pre><code>z[i-1,j-1]   z[i-1,j]   z[i-1,j+1]
+z[i,j-1]     z[i,j]     z[i,j+1]
+z[i+1,j-1]   z[i+1,j]   z[i+1,j+1]</code></pre>
+<p><strong>Horn’s method</strong> (commonly used in GIS software) weights diagonal neighbors:</p>
+<p><span class="math display">\frac{\partial z}{\partial x} = \frac{(z_{i-1,j+1} + 2z_{i,j+1} + z_{i+1,j+1}) - (z_{i-1,j-1} + 2z_{i,j-1} + z_{i+1,j-1})}{8 \Delta x}</span></p>
+<p><span class="math display">\frac{\partial z}{\partial y} = \frac{(z_{i+1,j-1} + 2z_{i+1,j} + z_{i+1,j+1}) - (z_{i-1,j-1} + 2z_{i-1,j} + z_{i-1,j+1})}{8 \Delta y}</span></p>
+<p>This is a <strong>weighted average</strong> that reduces noise.</p>
+<h3 id="computing-slope-and-aspect">Computing Slope and Aspect</h3>
+<p>Once you have <span class="math inline">\frac{\partial z}{\partial x}</span> and <span class="math inline">\frac{\partial z}{\partial y}</span>:</p>
+<p><strong>Slope (in radians):</strong></p>
+<p><span class="math display">S_{\text{rad}} = \arctan\left(\sqrt{\left(\frac{\partial z}{\partial x}\right)^2 + \left(\frac{\partial z}{\partial y}\right)^2}\right)</span></p>
+<p><strong>Slope (in degrees):</strong></p>
+<p><span class="math display">S_{\text{deg}} = S_{\text{rad}} \times \frac{180}{\pi}</span></p>
+<p><strong>Slope (as percent):</strong></p>
+<p><span class="math display">S_{\%} = \sqrt{\left(\frac{\partial z}{\partial x}\right)^2 + \left(\frac{\partial z}{\partial y}\right)^2} \times 100</span></p>
+<p><strong>Aspect (in degrees from north):</strong></p>
+<p><span class="math display">A = 90° - \arctan2\left(\frac{\partial z}{\partial y}, \frac{\partial z}{\partial x}\right) \times \frac{180}{\pi}</span></p>
+<p>(Adjust to ensure <span class="math inline">0^\circ \leq A &lt; 360^\circ</span>)</p>
+<hr>
+<h2 id="worked-example-by-hand">4. Worked Example by Hand</h2>
+<p><strong>Problem:</strong> A 3×3 DEM with cell size <span class="math inline">d = 10</span> m:</p>
+<pre><code>100  105  110
+102  107  112
+105  110  115</code></pre>
+<p>Calculate slope and aspect at the center cell <span class="math inline">(i=1, j=1)</span> using central differences.</p>
+<h3 id="solution">Solution</h3>
+<p><strong>Cell values:</strong> - <span class="math inline">z_{0,0} = 100</span>, <span class="math inline">z_{0,1} = 105</span>, <span class="math inline">z_{0,2} = 110</span> - <span class="math inline">z_{1,0} = 102</span>, <span class="math inline">z_{1,1} = 107</span>, <span class="math inline">z_{1,2} = 112</span> - <span class="math inline">z_{2,0} = 105</span>, <span class="math inline">z_{2,1} = 110</span>, <span class="math inline">z_{2,2} = 115</span></p>
+<p><strong>Partial derivative in x (east-west):</strong></p>
+<p><span class="math display">\frac{\partial z}{\partial x} = \frac{z_{1,2} - z_{1,0}}{2 \Delta x} = \frac{112 - 102}{2 \times 10} = \frac{10}{20} = 0.5</span></p>
+<p><strong>Partial derivative in y (north-south):</strong></p>
+<p><span class="math display">\frac{\partial z}{\partial y} = \frac{z_{2,1} - z_{0,1}}{2 \Delta y} = \frac{110 - 105}{2 \times 10} = \frac{5}{20} = 0.25</span></p>
+<p><strong>Slope magnitude:</strong></p>
+<p><span class="math display">S = \sqrt{(0.5)^2 + (0.25)^2} = \sqrt{0.25 + 0.0625} = \sqrt{0.3125} \approx 0.559</span></p>
+<p><strong>Slope in degrees:</strong></p>
+<p><span class="math display">S_{\text{deg}} = \arctan(0.559) \times \frac{180}{\pi} \approx 29.2°</span></p>
+<p><strong>Aspect:</strong></p>
+<p><span class="math display">\theta_{\text{raw}} = \arctan2(0.25, 0.5) \times \frac{180}{\pi} \approx 26.6°</span></p>
+<p>Convert to geographic aspect (clockwise from north):</p>
+<p><span class="math display">A = 90° - 26.6° = 63.4°</span></p>
+<p>The slope is <strong>29.2° steep</strong> and faces <strong>63.4° (ENE — slightly east of northeast)</strong>.</p>
+<hr>
+<h2 id="computational-implementation">5. Computational Implementation</h2>
+<p>Below is an interactive model computing slope and aspect from a synthetic DEM.</p>
+<div id="gradient-viz" class="viz-container">
+<div class="controls">
+<pre><code>&lt;label&gt;
+  Terrain type:
+  &lt;select id="terrain-gradient-select"&gt;
+    &lt;option value="plane"&gt;Tilted plane&lt;/option&gt;
+    &lt;option value="cone"&gt;Cone&lt;/option&gt;
+    &lt;option value="ridge"&gt;Ridge&lt;/option&gt;
+    &lt;option value="valley"&gt;Valley&lt;/option&gt;
+    &lt;option value="saddle"&gt;Saddle&lt;/option&gt;
+  &lt;/select&gt;
+&lt;/label&gt;
+&lt;label&gt;
+  Grid resolution:
+  &lt;input type="range" id="res-gradient-slider" min="20" max="60" step="10" value="40"&gt;
+  &lt;span id="res-gradient-value"&gt;40&lt;/span&gt; cells
+&lt;/label&gt;
+&lt;label&gt;
+  Display:
+  &lt;select id="display-select"&gt;
+    &lt;option value="slope"&gt;Slope (degrees)&lt;/option&gt;
+    &lt;option value="aspect"&gt;Aspect (degrees from N)&lt;/option&gt;
+    &lt;option value="vectors"&gt;Gradient vectors&lt;/option&gt;
+  &lt;/select&gt;
+&lt;/label&gt;</code></pre>
+</div>
+<div id="gradient-chart" style="width: 100%; height: 600px;">
+
+</div>
+</div>
+<script type="module">
+await new Promise(resolve => {
+  const checkECharts = () => {
+    if (typeof echarts !== 'undefined') resolve();
+    else setTimeout(checkECharts, 50);
+  };
+  checkECharts();
+});
+
+(function() {
+  const chart = echarts.init(document.getElementById('gradient-chart'));
+  
+  let terrainType = 'plane';
+  let resolution = 40;
+  let displayMode = 'slope';
+  
+  function generateTerrain(type, res) {
+    const z = [];
+    const extent = 100;
+    const step = extent / res;
+    
+    for (let i = 0; i < res; i++) {
+      z[i] = [];
+      for (let j = 0; j < res; j++) {
+        const x = (j - res/2) * step;
+        const y = (i - res/2) * step;
+        
+        switch(type) {
+          case 'plane':
+            z[i][j] = 10 + x * 0.3 + y * 0.2;
+            break;
+          case 'cone':
+            z[i][j] = 50 - Math.sqrt(x*x + y*y) * 0.5;
+            break;
+          case 'ridge':
+            z[i][j] = 30 - Math.abs(x) * 0.3;
+            break;
+          case 'valley':
+            z[i][j] = Math.abs(y) * 0.3;
+            break;
+          case 'saddle':
+            z[i][j] = (x*x - y*y) * 0.01;
+            break;
+        }
+      }
+    }
+    
+    return z;
+  }
+  
+  function computeGradient(z, cellSize) {
+    const res = z.length;
+    const dzdx = [];
+    const dzdy = [];
+    const slope = [];
+    const aspect = [];
+    
+    for (let i = 1; i < res - 1; i++) {
+      dzdx[i] = [];
+      dzdy[i] = [];
+      slope[i] = [];
+      aspect[i] = [];
+      
+      for (let j = 1; j < res - 1; j++) {
+        // Central differences
+        const dx = (z[i][j+1] - z[i][j-1]) / (2 * cellSize);
+        const dy = (z[i+1][j] - z[i-1][j]) / (2 * cellSize);
+        
+        dzdx[i][j] = dx;
+        dzdy[i][j] = dy;
+        
+        const slopeMag = Math.sqrt(dx*dx + dy*dy);
+        slope[i][j] = Math.atan(slopeMag) * 180 / Math.PI;
+        
+        // Aspect (0° = N, 90° = E, 180° = S, 270° = W)
+        let asp = 90 - Math.atan2(dy, dx) * 180 / Math.PI;
+        if (asp < 0) asp += 360;
+        aspect[i][j] = asp;
+      }
+    }
+    
+    return {dzdx, dzdy, slope, aspect};
+  }
+  
+  function updateChart() {
+    const z = generateTerrain(terrainType, resolution);
+    const cellSize = 100 / resolution;
+    const grad = computeGradient(z, cellSize);
+    
+    let data = [];
+    let title = '';
+    let colorScale = [];
+    
+    if (displayMode === 'slope') {
+      for (let i = 1; i < resolution - 1; i++) {
+        for (let j = 1; j < resolution - 1; j++) {
+          data.push([j, i, grad.slope[i][j]]);
+        }
+      }
+      title = 'Slope (degrees)';
+      colorScale = ['#f7fbff', '#deebf7', '#c6dbef', '#9ecae1', '#6baed6', 
+                    '#4292c6', '#2171b5', '#08519c', '#08306b'];
+      
+    } else if (displayMode === 'aspect') {
+      for (let i = 1; i < resolution - 1; i++) {
+        for (let j = 1; j < resolution - 1; j++) {
+          data.push([j, i, grad.aspect[i][j]]);
+        }
+      }
+      title = 'Aspect (degrees from North)';
+      colorScale = ['#d7191c', '#fdae61', '#ffffbf', '#abd9e9', '#2c7bb6',
+                    '#d7191c']; // Circular color scale
+    }
+    
+    const option = {
+      title: {
+        text: `${title}: ${terrainType}`,
+        left: 'center'
+      },
+      tooltip: {
+        position: 'top',
+        formatter: function(params) {
+          if (displayMode === 'slope') {
+            return `Slope: ${params.value[2].toFixed(1)}°`;
+          } else if (displayMode === 'aspect') {
+            const dirs = ['N', 'NE', 'E', 'SE', 'S', 'SW', 'W', 'NW', 'N'];
+            const idx = Math.round(params.value[2] / 45);
+            return `Aspect: ${params.value[2].toFixed(1)}° (${dirs[idx]})`;
+          }
+        }
+      },
+      grid: {
+        left: 60,
+        right: 60,
+        top: 60,
+        bottom: 60
+      },
+      xAxis: {
+        type: 'category',
+        show: false
+      },
+      yAxis: {
+        type: 'category',
+        show: false
+      },
+      visualMap: {
+        min: displayMode === 'slope' ? 0 : 0,
+        max: displayMode === 'slope' ? 
+          Math.max(...data.map(d => d[2])) : 360,
+        calculable: true,
+        orient: 'horizontal',
+        left: 'center',
+        bottom: 10,
+        inRange: {
+          color: colorScale
+        }
+      },
+      series: [{
+        type: 'heatmap',
+        data: data,
+        label: {
+          show: false
+        },
+        emphasis: {
+          itemStyle: {
+            shadowBlur: 10,
+            shadowColor: 'rgba(0, 0, 0, 0.5)'
+          }
+        }
+      }]
+    };
+    
+    chart.setOption(option);
+  }
+  
+  document.getElementById('terrain-gradient-select').addEventListener('change', (e) => {
+    terrainType = e.target.value;
+    updateChart();
+  });
+  
+  document.getElementById('res-gradient-slider').addEventListener('input', (e) => {
+    resolution = parseInt(e.target.value);
+    document.getElementById('res-gradient-value').textContent = resolution;
+    updateChart();
+  });
+  
+  document.getElementById('display-select').addEventListener('change', (e) => {
+    displayMode = e.target.value;
+    updateChart();
+  });
+  
+  updateChart();
+  
+  window.addEventListener('resize', () => chart.resize());
+})();
+</script>
+<p><strong>Try this:</strong> - <strong>Plane:</strong> Uniform slope and aspect (constant gradient everywhere) - <strong>Cone:</strong> Slope increases toward the peak; aspect radiates outward - <strong>Ridge:</strong> High slope along the ridge flanks; aspect points away from the ridgeline - <strong>Valley:</strong> Aspect points toward the valley axis - <strong>Saddle:</strong> Aspect flips 180° across the saddle point</p>
+<p><strong>Key insight:</strong> The gradient captures both the <strong>magnitude</strong> (slope steepness) and <strong>direction</strong> (aspect) of the terrain’s tilt at every point.</p>
+<hr>
+<h2 id="interpretation">6. Interpretation</h2>
+<h3 id="slope-units">Slope Units</h3>
+<p><strong>Rise/run (dimensionless):</strong> <span class="math inline">\frac{\Delta z}{\Delta x} = 0.1</span> means 0.1 m rise per 1 m horizontal distance.</p>
+<p><strong>Degrees:</strong> <span class="math inline">\arctan(0.1) \approx 5.7°</span></p>
+<p><strong>Percent:</strong> <span class="math inline">0.1 \times 100 = 10\%</span></p>
+<p><strong>Conversion:</strong> - Gentle: &lt;5° or &lt;9% - Moderate: 5–15° or 9–27% - Steep: 15–30° or 27–58% - Very steep: &gt;30° or &gt;58%</p>
+<h3 id="aspect-and-solar-radiation">Aspect and Solar Radiation</h3>
+<p>Aspect determines <strong>insolation</strong> (solar radiation received): - <strong>Equator-facing slopes</strong> (south in N. Hemisphere, north in S. Hemisphere): maximum energy - <strong>Pole-facing slopes</strong>: minimum energy - <strong>East/west slopes</strong>: intermediate</p>
+<p>This creates <strong>microclimates</strong> — different vegetation, soil moisture, snow persistence.</p>
+<h3 id="flow-direction">Flow Direction</h3>
+<p>Water flows <strong>downhill</strong> — opposite the gradient direction.</p>
+<p>If <span class="math inline">\nabla z = (0.5, 0.25)</span> (pointing ENE uphill), then flow direction is <span class="math inline">(-0.5, -0.25)</span> (pointing WSW downhill).</p>
+<p><strong>Next model (Model 9)</strong> will use this to route water across a DEM.</p>
+<hr>
+<h2 id="what-could-go-wrong">7. What Could Go Wrong?</h2>
+<h3 id="edge-effects">Edge Effects</h3>
+<p>Cells on the edge of a DEM have no neighbors beyond the boundary. Central differences require neighbors on both sides.</p>
+<p><strong>Solutions:</strong> - Mark edge cells as “no data” - Use <strong>forward/backward differences</strong> at edges (less accurate) - Extend the DEM artificially (mirror, clamp values)</p>
+<h3 id="noisy-dems">Noisy DEMs</h3>
+<p>Real DEMs contain measurement errors. Small errors can produce large swings in slope when differencing nearby cells.</p>
+<p><strong>Solutions:</strong> - <strong>Smooth</strong> the DEM first (e.g., Gaussian filter) - Use weighted finite differences (Horn’s method) - Increase cell size (aggregate to coarser resolution)</p>
+<h3 id="coordinate-system-issues">Coordinate System Issues</h3>
+<p>If <span class="math inline">\Delta x \neq \Delta y</span> (non-square cells), use separate cell sizes in the x and y derivatives.</p>
+<p>If using <strong>geographic coordinates</strong> (lat/lon), the distance per degree varies with latitude. Convert to a projected coordinate system first.</p>
+<h3 id="flat-areas">Flat Areas</h3>
+<p>If <span class="math inline">\frac{\partial z}{\partial x} = \frac{\partial z}{\partial y} = 0</span>, the gradient is zero: - Slope is 0° - Aspect is <strong>undefined</strong> (no preferred direction)</p>
+<p>GIS software often assigns flat areas an aspect of -1 or 360°.</p>
+<hr>
+<h2 id="extension-the-gradient-as-a-vector-field">8. Extension: The Gradient as a Vector Field</h2>
+<p>The gradient <span class="math inline">\nabla z</span> assigns a <strong>vector</strong> to every point in the plane. This is a <strong>vector field</strong>.</p>
+<p><strong>Visualization:</strong> At each grid point, draw an arrow: - <strong>Direction:</strong> Points uphill (steepest ascent) - <strong>Length:</strong> Proportional to slope magnitude</p>
+<p><strong>Properties:</strong> - Gradient vectors are <strong>perpendicular to contour lines</strong> (level curves of constant elevation) - Water flows along <strong>streamlines</strong> — curves tangent to the negative gradient</p>
+<p>This geometric view connects calculus, vector analysis, and physical flow.</p>
+<hr>
+<h2 id="math-refresher-partial-derivatives">9. Math Refresher: Partial Derivatives</h2>
+<h3 id="notation">Notation</h3>
+<p>For <span class="math inline">z = f(x, y)</span>:</p>
+<p><span class="math display">\frac{\partial z}{\partial x} = \frac{\partial f}{\partial x} = f_x</span></p>
+<p><strong>Read as:</strong> “the partial derivative of z with respect to x.”</p>
+<h3 id="how-to-compute-analytically">How to Compute (Analytically)</h3>
+<p>Treat <span class="math inline">y</span> as a constant, differentiate with respect to <span class="math inline">x</span>:</p>
+<p><strong>Example:</strong> <span class="math inline">z = x^2 + 3xy + y^2</span></p>
+<p><span class="math display">\frac{\partial z}{\partial x} = 2x + 3y</span></p>
+<p><span class="math display">\frac{\partial z}{\partial y} = 3x + 2y</span></p>
+<h3 id="geometric-interpretation">Geometric Interpretation</h3>
+<p><span class="math inline">\frac{\partial z}{\partial x}</span> is the slope of the surface in the x-direction (holding y constant).</p>
+<p>Imagine slicing the surface with a vertical plane parallel to the x-axis — the cross-section is a curve, and <span class="math inline">\frac{\partial z}{\partial x}</span> is its slope.</p>
+<hr>
+<h2 id="summary">Summary</h2>
+<ul>
+<li>The <strong>gradient</strong> <span class="math inline">\nabla z = \left(\frac{\partial z}{\partial x}, \frac{\partial z}{\partial y}\right)</span> points in the direction of steepest ascent</li>
+<li><strong>Slope</strong> is the magnitude: <span class="math inline">S = |\nabla z|</span></li>
+<li><strong>Aspect</strong> is the direction: <span class="math inline">A = \arctan2\left(\frac{\partial z}{\partial y}, \frac{\partial z}{\partial x}\right)</span></li>
+<li><strong>Finite differences</strong> approximate partial derivatives from a DEM</li>
+<li>Central differences: <span class="math inline">\frac{\partial z}{\partial x} \approx \frac{z_{i,j+1} - z_{i,j-1}}{2\Delta x}</span></li>
+<li>Water flows <strong>downhill</strong> — opposite the gradient</li>
+<li>Aspect creates microclimates; slope affects erosion, stability, and runoff</li>
+</ul>
+<hr>
+<h2 class="section-title" id="feedback">Feedback</h2>
+<div class="section-copy">
+<p>Chapters need different interaction than articles. The useful questions here are usually “is there an error?”, “where did I get stuck?”, or “what should I read next?”</p>
+</div>
+<div class="feedback-grid">
+  <div class="feedback-card">
+    <h3>Report An Error</h3>
+    <p>Use this for mistakes in notation, code, or explanation.</p>
+    <a href="../../pages/contact.html">Report a chapter issue →</a>
+  </div>
+  <div class="feedback-card">
+    <h3>I Got Stuck</h3>
+    <p>Use this when a derivation, definition, or worked example loses you.</p>
+    <a href="../../pages/contact.html">Send a stuck point →</a>
+  </div>
+  <div class="feedback-card">
+    <h3>Next Chapter</h3>
+    <p>Continue through the foundations sequence.</p>
+    <a href="./hydrological-flow-as-optimization.html">Go to Chapter 10 →</a>
+  </div>
+</div>
+
+
+<footer class="wayward-footer">
+  <div class="wayward-footer__inner">
+    <div class="wayward-footer__brand">
+      <div class="wayward-footer__logo">WaywardHouse<span>.</span></div>
+      <p>Understanding how place, economy, and environment interact through analysis, modelling, and open tools.</p>
+    </div>
+
+    <nav class="wayward-footer__group" aria-labelledby="footer-reading">
+      <h2 id="footer-reading">Reading</h2>
+      <a href="../../articles/">Articles</a>
+      <a href="../../learn/">Library</a>
+      <a href="../../learn/computational-geography/core/">↳ Comp Geo Book</a>
+      <a href="../../archive.html">Archive</a>
+    </nav>
+
+    <nav class="wayward-footer__group" aria-labelledby="footer-site">
+      <h2 id="footer-site">Site</h2>
+      <a href="../../start-here.html">Start Here</a>
+      <a href="../../about.html">About</a>
+      <a href="../../contact.html">Contact</a>
+    </nav>
+
+    <nav class="wayward-footer__group" aria-labelledby="footer-resources">
+      <h2 id="footer-resources">Resources</h2>
+      <a href="../../topics/">All Topics</a>
+      <a href="../../privacy.html">Privacy Policy</a>
+      <a href="../../terms.html">Terms of Use</a>
+    </nav>
+  </div>
+</footer>
+
+<script type="module" src="../../assets/dist/main.js"></script>
+<script type="module" src="../../assets/js/core.js"></script>
+<script id="quarto-html-after-body" type="application/javascript">
+  window.document.addEventListener("DOMContentLoaded", function (event) {
+    const tabsets =  window.document.querySelectorAll(".panel-tabset-tabby")
+    tabsets.forEach(function(tabset) {
+      const tabby = new Tabby('#' + tabset.id);
+    });
+    const isCodeAnnotation = (el) => {
+      for (const clz of el.classList) {
+        if (clz.startsWith('code-annotation-')) {                     
+          return true;
+        }
+      }
+      return false;
+    }
+    const onCopySuccess = function(e) {
+      // button target
+      const button = e.trigger;
+      // don't keep focus
+      button.blur();
+      // flash "checked"
+      button.classList.add('code-copy-button-checked');
+      var currentTitle = button.getAttribute("title");
+      button.setAttribute("title", "Copied!");
+      let tooltip;
+      if (window.bootstrap) {
+        button.setAttribute("data-bs-toggle", "tooltip");
+        button.setAttribute("data-bs-placement", "left");
+        button.setAttribute("data-bs-title", "Copied!");
+        tooltip = new bootstrap.Tooltip(button, 
+          { trigger: "manual", 
+            customClass: "code-copy-button-tooltip",
+            offset: [0, -8]});
+        tooltip.show();    
+      }
+      setTimeout(function() {
+        if (tooltip) {
+          tooltip.hide();
+          button.removeAttribute("data-bs-title");
+          button.removeAttribute("data-bs-toggle");
+          button.removeAttribute("data-bs-placement");
+        }
+        button.setAttribute("title", currentTitle);
+        button.classList.remove('code-copy-button-checked');
+      }, 1000);
+      // clear code selection
+      e.clearSelection();
+    }
+    const getTextToCopy = function(trigger) {
+      const outerScaffold = trigger.parentElement.cloneNode(true);
+      const codeEl = outerScaffold.querySelector('code');
+      for (const childEl of codeEl.children) {
+        if (isCodeAnnotation(childEl)) {
+          childEl.remove();
+        }
+      }
+      return codeEl.innerText;
+    }
+    const clipboard = new window.ClipboardJS('.code-copy-button:not([data-in-quarto-modal])', {
+      text: getTextToCopy
+    });
+    clipboard.on('success', onCopySuccess);
+    if (window.document.getElementById('quarto-embedded-source-code-modal')) {
+      const clipboardModal = new window.ClipboardJS('.code-copy-button[data-in-quarto-modal]', {
+        text: getTextToCopy,
+        container: window.document.getElementById('quarto-embedded-source-code-modal')
+      });
+      clipboardModal.on('success', onCopySuccess);
+    }
+      var localhostRegex = new RegExp(/^(?:http|https):\/\/localhost\:?[0-9]*\//);
+      var mailtoRegex = new RegExp(/^mailto:/);
+        var filterRegex = new RegExp("https:\/\/wayward\.house");
+      var isInternal = (href) => {
+          return filterRegex.test(href) || localhostRegex.test(href) || mailtoRegex.test(href);
+      }
+      // Inspect non-navigation links and adorn them if external
+     var links = window.document.querySelectorAll('a[href]:not(.nav-link):not(.navbar-brand):not(.toc-action):not(.sidebar-link):not(.sidebar-item-toggle):not(.pagination-link):not(.no-external):not([aria-hidden]):not(.dropdown-item):not(.quarto-navigation-tool):not(.about-link)');
+      for (var i=0; i<links.length; i++) {
+        const link = links[i];
+        if (!isInternal(link.href)) {
+          // undo the damage that might have been done by quarto-nav.js in the case of
+          // links that we want to consider external
+          if (link.dataset.originalHref !== undefined) {
+            link.href = link.dataset.originalHref;
+          }
+        }
+      }
+    function tippyHover(el, contentFn, onTriggerFn, onUntriggerFn) {
+      const config = {
+        allowHTML: true,
+        maxWidth: 500,
+        delay: 100,
+        arrow: false,
+        appendTo: function(el) {
+            return el.parentElement;
+        },
+        interactive: true,
+        interactiveBorder: 10,
+        theme: 'light-border',
+        placement: 'bottom-start',
+      };
+      if (contentFn) {
+        config.content = contentFn;
+      }
+      if (onTriggerFn) {
+        config.onTrigger = onTriggerFn;
+      }
+      if (onUntriggerFn) {
+        config.onUntrigger = onUntriggerFn;
+      }
+      window.tippy(el, config); 
+    }
+    const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+    for (var i=0; i<noterefs.length; i++) {
+      const ref = noterefs[i];
+      tippyHover(ref, function() {
+        // use id or data attribute instead here
+        let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+        try { href = new URL(href).hash; } catch {}
+        const id = href.replace(/^#\/?/, "");
+        const note = window.document.getElementById(id);
+        if (note) {
+          return note.innerHTML;
+        } else {
+          return "";
+        }
+      });
+    }
+    const xrefs = window.document.querySelectorAll('a.quarto-xref');
+    const processXRef = (id, note) => {
+      // Strip column container classes
+      const stripColumnClz = (el) => {
+        el.classList.remove("page-full", "page-columns");
+        if (el.children) {
+          for (const child of el.children) {
+            stripColumnClz(child);
+          }
+        }
+      }
+      stripColumnClz(note)
+      if (id === null || id.startsWith('sec-')) {
+        // Special case sections, only their first couple elements
+        const container = document.createElement("div");
+        if (note.children && note.children.length > 2) {
+          container.appendChild(note.children[0].cloneNode(true));
+          for (let i = 1; i < note.children.length; i++) {
+            const child = note.children[i];
+            if (child.tagName === "P" && child.innerText === "") {
+              continue;
+            } else {
+              container.appendChild(child.cloneNode(true));
+              break;
+            }
+          }
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(container);
+          }
+          return container.innerHTML
+        } else {
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(note);
+          }
+          return note.innerHTML;
+        }
+      } else {
+        // Remove any anchor links if they are present
+        const anchorLink = note.querySelector('a.anchorjs-link');
+        if (anchorLink) {
+          anchorLink.remove();
+        }
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(note);
+        }
+        if (note.classList.contains("callout")) {
+          return note.outerHTML;
+        } else {
+          return note.innerHTML;
+        }
+      }
+    }
+    for (var i=0; i<xrefs.length; i++) {
+      const xref = xrefs[i];
+      tippyHover(xref, undefined, function(instance) {
+        instance.disable();
+        let url = xref.getAttribute('href');
+        let hash = undefined; 
+        if (url.startsWith('#')) {
+          hash = url;
+        } else {
+          try { hash = new URL(url).hash; } catch {}
+        }
+        if (hash) {
+          const id = hash.replace(/^#\/?/, "");
+          const note = window.document.getElementById(id);
+          if (note !== null) {
+            try {
+              const html = processXRef(id, note.cloneNode(true));
+              instance.setContent(html);
+            } finally {
+              instance.enable();
+              instance.show();
+            }
+          } else {
+            // See if we can fetch this
+            fetch(url.split('#')[0])
+            .then(res => res.text())
+            .then(html => {
+              const parser = new DOMParser();
+              const htmlDoc = parser.parseFromString(html, "text/html");
+              const note = htmlDoc.getElementById(id);
+              if (note !== null) {
+                const html = processXRef(id, note);
+                instance.setContent(html);
+              } 
+            }).finally(() => {
+              instance.enable();
+              instance.show();
+            });
+          }
+        } else {
+          // See if we can fetch a full url (with no hash to target)
+          // This is a special case and we should probably do some content thinning / targeting
+          fetch(url)
+          .then(res => res.text())
+          .then(html => {
+            const parser = new DOMParser();
+            const htmlDoc = parser.parseFromString(html, "text/html");
+            const note = htmlDoc.querySelector('main.content');
+            if (note !== null) {
+              // This should only happen for chapter cross references
+              // (since there is no id in the URL)
+              // remove the first header
+              if (note.children.length > 0 && note.children[0].tagName === "HEADER") {
+                note.children[0].remove();
+              }
+              const html = processXRef(null, note);
+              instance.setContent(html);
+            } 
+          }).finally(() => {
+            instance.enable();
+            instance.show();
+          });
+        }
+      }, function(instance) {
+      });
+    }
+        let selectedAnnoteEl;
+        const selectorForAnnotation = ( cell, annotation) => {
+          let cellAttr = 'data-code-cell="' + cell + '"';
+          let lineAttr = 'data-code-annotation="' +  annotation + '"';
+          const selector = 'span[' + cellAttr + '][' + lineAttr + ']';
+          return selector;
+        }
+        const selectCodeLines = (annoteEl) => {
+          const doc = window.document;
+          const targetCell = annoteEl.getAttribute("data-target-cell");
+          const targetAnnotation = annoteEl.getAttribute("data-target-annotation");
+          const annoteSpan = window.document.querySelector(selectorForAnnotation(targetCell, targetAnnotation));
+          const lines = annoteSpan.getAttribute("data-code-lines").split(",");
+          const lineIds = lines.map((line) => {
+            return targetCell + "-" + line;
+          })
+          let top = null;
+          let height = null;
+          let parent = null;
+          if (lineIds.length > 0) {
+              //compute the position of the single el (top and bottom and make a div)
+              const el = window.document.getElementById(lineIds[0]);
+              top = el.offsetTop;
+              height = el.offsetHeight;
+              parent = el.parentElement.parentElement;
+            if (lineIds.length > 1) {
+              const lastEl = window.document.getElementById(lineIds[lineIds.length - 1]);
+              const bottom = lastEl.offsetTop + lastEl.offsetHeight;
+              height = bottom - top;
+            }
+            if (top !== null && height !== null && parent !== null) {
+              // cook up a div (if necessary) and position it 
+              let div = window.document.getElementById("code-annotation-line-highlight");
+              if (div === null) {
+                div = window.document.createElement("div");
+                div.setAttribute("id", "code-annotation-line-highlight");
+                div.style.position = 'absolute';
+                parent.appendChild(div);
+              }
+              div.style.top = top - 2 + "px";
+              div.style.height = height + 4 + "px";
+              div.style.left = 0;
+              let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
+              if (gutterDiv === null) {
+                gutterDiv = window.document.createElement("div");
+                gutterDiv.setAttribute("id", "code-annotation-line-highlight-gutter");
+                gutterDiv.style.position = 'absolute';
+                const codeCell = window.document.getElementById(targetCell);
+                const gutter = codeCell.querySelector('.code-annotation-gutter');
+                gutter.appendChild(gutterDiv);
+              }
+              gutterDiv.style.top = top - 2 + "px";
+              gutterDiv.style.height = height + 4 + "px";
+            }
+            selectedAnnoteEl = annoteEl;
+          }
+        };
+        const unselectCodeLines = () => {
+          const elementsIds = ["code-annotation-line-highlight", "code-annotation-line-highlight-gutter"];
+          elementsIds.forEach((elId) => {
+            const div = window.document.getElementById(elId);
+            if (div) {
+              div.remove();
+            }
+          });
+          selectedAnnoteEl = undefined;
+        };
+          // Handle positioning of the toggle
+      window.addEventListener(
+        "resize",
+        throttle(() => {
+          elRect = undefined;
+          if (selectedAnnoteEl) {
+            selectCodeLines(selectedAnnoteEl);
+          }
+        }, 10)
+      );
+      function throttle(fn, ms) {
+      let throttle = false;
+      let timer;
+        return (...args) => {
+          if(!throttle) { // first call gets through
+              fn.apply(this, args);
+              throttle = true;
+          } else { // all the others get throttled
+              if(timer) clearTimeout(timer); // cancel #2
+              timer = setTimeout(() => {
+                fn.apply(this, args);
+                timer = throttle = false;
+              }, ms);
+          }
+        };
+      }
+        // Attach click handler to the DT
+        const annoteDls = window.document.querySelectorAll('dt[data-target-cell]');
+        for (const annoteDlNode of annoteDls) {
+          annoteDlNode.addEventListener('click', (event) => {
+            const clickedEl = event.target;
+            if (clickedEl !== selectedAnnoteEl) {
+              unselectCodeLines();
+              const activeEl = window.document.querySelector('dt[data-target-cell].code-annotation-active');
+              if (activeEl) {
+                activeEl.classList.remove('code-annotation-active');
+              }
+              selectCodeLines(clickedEl);
+              clickedEl.classList.add('code-annotation-active');
+            } else {
+              // Unselect the line
+              unselectCodeLines();
+              clickedEl.classList.remove('code-annotation-active');
+            }
+          });
+        }
+    const findCites = (el) => {
+      const parentEl = el.parentElement;
+      if (parentEl) {
+        const cites = parentEl.dataset.cites;
+        if (cites) {
+          return {
+            el,
+            cites: cites.split(' ')
+          };
+        } else {
+          return findCites(el.parentElement)
+        }
+      } else {
+        return undefined;
+      }
+    };
+    var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+    for (var i=0; i<bibliorefs.length; i++) {
+      const ref = bibliorefs[i];
+      const citeInfo = findCites(ref);
+      if (citeInfo) {
+        tippyHover(citeInfo.el, function() {
+          var popup = window.document.createElement('div');
+          citeInfo.cites.forEach(function(cite) {
+            var citeDiv = window.document.createElement('div');
+            citeDiv.classList.add('hanging-indent');
+            citeDiv.classList.add('csl-entry');
+            var biblioDiv = window.document.getElementById('ref-' + cite);
+            if (biblioDiv) {
+              citeDiv.innerHTML = biblioDiv.innerHTML;
+            }
+            popup.appendChild(citeDiv);
+          });
+          return popup.innerHTML;
+        });
+      }
+    }
+  });
+  </script>
+
+
+
+
+<script src="../../site_libs/quarto-html/zenscroll-min.js"></script>
+</body></html>
