@@ -1,0 +1,765 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
+
+<meta charset="utf-8">
+<meta name="generator" content="quarto-1.9.36">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+
+<meta name="dcterms.date" content="2026-03-05">
+<meta name="description" content="The ocean has absorbed approximately 28% of all anthropogenic CO₂ emissions since industrialisation — about 170 billion tonnes of carbon. Without this buffering, atmospheric CO₂ would be ~60 ppm higher today. The ocean’s uptake capacity is governed by physical chemistry (Henry’s Law and carbonate buffering), physical transport (the solubility pump), and biological production (the biological pump). This essay derives the air-sea CO₂ flux from Henry’s Law, explains why warm oceans outgas and cold oceans absorb, and quantifies the temperature sensitivity of ocean uptake capacity.">
+
+<title>Ocean Carbon Uptake and Air-Sea Exchange – Computational Geography</title>
+<style>
+/* Default styles provided by pandoc.
+** See https://pandoc.org/MANUAL.html#variables-for-html for config info.
+*/
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: min(4vw, 1.5em);}
+div.column{flex: auto; overflow-x: auto;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+  width: 0.8em;
+  margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
+  vertical-align: middle;
+}
+</style>
+
+
+<script src="../site_libs/clipboard/clipboard.min.js"></script>
+<script src="../site_libs/quarto-html/tabby.min.js"></script>
+<script src="../site_libs/quarto-html/popper.min.js"></script>
+<script src="../site_libs/quarto-html/tippy.umd.min.js"></script>
+<script src="../site_libs/quarto-html/anchor.min.js"></script>
+<link href="../site_libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="../site_libs/quarto-html/light-border.css" rel="stylesheet">
+<link href="../site_libs/quarto-html/quarto-html-640605f58ae58ee79329c070719e555b.min.css" rel="stylesheet" append-hash="true" data-mode="light">
+<link href="../site_libs/quarto-html/quarto-syntax-highlighting-845c23b38eaddc0f92fda52bfe77a8c8.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<script>
+  (function () {
+    var s = localStorage.getItem('theme');
+    var dark = s !== null ? s === 'dark' : false;
+    document.documentElement.dataset.theme = dark ? 'dark' : 'light';
+    document.documentElement.dataset.brand = 'wayward';
+  })();
+</script>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:ital,wght@0,300;0,400;0,600;0,700;0,800;0,900;1,700;1,800&amp;family=Barlow:wght@300;400;500;600&amp;family=IBM+Plex+Mono:ital,wght@0,300;0,400;0,500;1,300&amp;family=Literata:ital,opsz,wght@0,7..72,300;0,7..72,400;0,7..72,500;1,7..72,300;1,7..72,400&amp;display=swap" rel="stylesheet">
+
+  <script>window.backupDefine = window.define; window.define = undefined;</script><script src="https://cdn.jsdelivr.net/npm/katex@latest/dist/katex.min.js"></script>
+  <script>document.addEventListener("DOMContentLoaded", function () {
+ var mathElements = document.getElementsByClassName("math");
+ var macros = [];
+ for (var i = 0; i < mathElements.length; i++) {
+  var texText = mathElements[i].firstChild;
+  if (mathElements[i].tagName == "SPAN") {
+   katex.render(texText.data, mathElements[i], {
+    displayMode: mathElements[i].classList.contains('display'),
+    throwOnError: false,
+    macros: macros,
+    fleqn: false
+   });
+}}});
+  </script>
+  <script>window.define = window.backupDefine; window.backupDefine = undefined;</script><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@latest/dist/katex.min.css">
+
+<script type="text/javascript">
+const typesetMath = (el) => {
+  if (window.MathJax) {
+    // MathJax Typeset
+    window.MathJax.typeset([el]);
+  } else if (window.katex) {
+    // KaTeX Render
+    var mathElements = el.getElementsByClassName("math");
+    var macros = [];
+    for (var i = 0; i < mathElements.length; i++) {
+      var texText = mathElements[i].firstChild;
+      if (mathElements[i].tagName == "SPAN" && texText && texText.data) {
+        window.katex.render(texText.data, mathElements[i], {
+          displayMode: mathElements[i].classList.contains('display'),
+          throwOnError: false,
+          macros: macros,
+          fleqn: false
+        });
+      }
+    }
+  }
+}
+window.Quarto = {
+  typesetMath
+};
+</script>
+
+<link rel="stylesheet" href="../assets/css/quarto-wayward.css">
+</head>
+
+<body class="reading-body tag-hash-math tag-hash-viz">
+
+
+<header id="title-block-header">
+<h1 class="title"><span class="chapter-title">Ocean Carbon Uptake and Air-Sea Exchange</span></h1>
+<p class="subtitle">Henry’s Law, solubility pump, biological pump, and gas exchange velocity</p>
+
+<p class="date">2026-03-05</p>
+</header>
+
+<nav id="TOC" role="doc-toc">
+    <h2 id="toc-title">Table of contents</h2>
+   
+  <ul>
+  <li><a href="#the-question" id="toc-the-question">1. The Question</a></li>
+  <li><a href="#the-conceptual-model" id="toc-the-conceptual-model">2. The Conceptual Model</a></li>
+  <li><a href="#building-the-mathematical-model" id="toc-building-the-mathematical-model">3. Building the Mathematical Model</a>
+  <ul>
+  <li><a href="#henrys-law-and-co₂-solubility" id="toc-henrys-law-and-co₂-solubility">3.1 Henry’s Law and CO₂ Solubility</a></li>
+  <li><a href="#ocean-carbon-chemistry-the-buffer-factor" id="toc-ocean-carbon-chemistry-the-buffer-factor">3.2 Ocean Carbon Chemistry — The Buffer Factor</a></li>
+  <li><a href="#air-sea-gas-exchange-flux" id="toc-air-sea-gas-exchange-flux">3.3 Air-Sea Gas Exchange Flux</a></li>
+  <li><a href="#the-solubility-pump" id="toc-the-solubility-pump">3.4 The Solubility Pump</a></li>
+  <li><a href="#the-biological-pump" id="toc-the-biological-pump">3.5 The Biological Pump</a></li>
+  <li><a href="#temperature-effect-on-uptake-capacity" id="toc-temperature-effect-on-uptake-capacity">3.6 Temperature Effect on Uptake Capacity</a></li>
+  </ul></li>
+  <li><a href="#worked-example-by-hand" id="toc-worked-example-by-hand">4. Worked Example by Hand</a></li>
+  <li><a href="#computational-implementation" id="toc-computational-implementation">5. Computational Implementation</a></li>
+  <li><a href="#visualization" id="toc-visualization">6. Visualization</a></li>
+  <li><a href="#interpretation" id="toc-interpretation">7. Interpretation</a></li>
+  <li><a href="#what-could-go-wrong" id="toc-what-could-go-wrong">8. What Could Go Wrong?</a></li>
+  <li><a href="#summary" id="toc-summary">9. Summary</a></li>
+  <li><a href="#math-refresher" id="toc-math-refresher">Math Refresher</a></li>
+  </ul>
+</nav>
+<p>At latitude 60°N in the North Atlantic, surface ocean water is cold — around 5–8°C. Cold water dissolves more CO₂ than warm water, and as water cools while drifting poleward, it absorbs CO₂ from the atmosphere. It then sinks — dense, cold, CO₂-rich water descends to the deep ocean in the North Atlantic Deep Water formation, carrying that carbon into storage for centuries. In the tropics, the reverse occurs: upwelled deep water warms at the surface, CO₂ becomes less soluble, and the ocean outgasses. The net of these processes constitutes the <strong>ocean carbon sink</strong> — roughly 10 Gt CO₂ yr⁻¹ in recent decades.</p>
+<hr>
+<h2 id="the-question" class="anchored">1. The Question</h2>
+<p>How much CO₂ does the ocean absorb from the atmosphere, and what controls this? How does temperature affect the ocean’s capacity to hold dissolved carbon? What are the solubility pump and biological pump, and how much do they each contribute?</p>
+<hr>
+<h2 id="the-conceptual-model" class="anchored">2. The Conceptual Model</h2>
+<p>CO₂ exchange at the ocean surface is driven by the difference between atmospheric CO₂ partial pressure (<span class="math inline">p\text{CO}_{2,\text{atm}}</span>) and oceanic surface CO₂ partial pressure (<span class="math inline">p\text{CO}_{2,\text{sw}}</span>). When <span class="math inline">p\text{CO}_{2,\text{atm}} &gt; p\text{CO}_{2,\text{sw}}</span>, the ocean absorbs CO₂. The rate depends on the partial pressure difference and a gas exchange velocity <span class="math inline">k_w</span> that depends on wind speed and sea surface conditions.</p>
+<hr>
+<h2 id="building-the-mathematical-model" class="anchored">3. Building the Mathematical Model</h2>
+<h3 id="henrys-law-and-co₂-solubility" class="anchored">3.1 Henry’s Law and CO₂ Solubility</h3>
+<p>The dissolution of CO₂ in seawater follows Henry’s Law:</p>
+<p><span class="math display">[\text{CO}_2]_{\text{aq}} = K_H \times p\text{CO}_2</span></p>
+<p>where <span class="math inline">K_H</span> is Henry’s volatility constant [mol L⁻¹ atm⁻¹] and <span class="math inline">p\text{CO}_2</span> is the partial pressure of CO₂ in the gas phase [atm]. For CO₂ in seawater at 20°C, <span class="math inline">K_H \approx 0.034</span> mol L⁻¹ atm⁻¹.</p>
+<p><strong>Temperature dependence</strong> — CO₂ solubility decreases strongly with temperature:</p>
+<p><span class="math display">K_H(T) = K_H^0 \exp\!\left[-\frac{\Delta H_{\text{sol}}}{R}\left(\frac{1}{T} - \frac{1}{T_0}\right)\right]</span></p>
+<p>where <span class="math inline">\Delta H_{\text{sol}} \approx -20</span> kJ mol⁻¹ is the enthalpy of solution (negative: dissolving is exothermic), <span class="math inline">R = 8.314</span> J mol⁻¹ K⁻¹, and temperatures are in Kelvin.</p>
+<p>Approximate empirical rule: <strong>CO₂ solubility decreases by ~4% per °C warming.</strong> This is critical: as the ocean warms, it can hold less dissolved CO₂ and will take up less of future anthropogenic emissions.</p>
+<p><strong>Example:</strong> At 2°C (polar oceans): <span class="math inline">K_H \approx 0.059</span> mol L⁻¹ atm⁻¹; at 25°C (tropical oceans): <span class="math inline">K_H \approx 0.029</span> mol L⁻¹ atm⁻¹. The polar ocean can dissolve twice as much CO₂ per unit partial pressure.</p>
+<h3 id="ocean-carbon-chemistry-the-buffer-factor" class="anchored">3.2 Ocean Carbon Chemistry — The Buffer Factor</h3>
+<p>CO₂ in seawater does not simply dissolve as molecular CO₂ (aq) — it reacts:</p>
+<p><span class="math display">\text{CO}_2 + \text{H}_2\text{O} \rightleftharpoons \text{H}_2\text{CO}_3 \rightleftharpoons \text{HCO}_3^- + \text{H}^+ \rightleftharpoons \text{CO}_3^{2-} + 2\text{H}^+</span></p>
+<p>The total <strong>dissolved inorganic carbon (DIC)</strong> is the sum of all forms:</p>
+<p><span class="math display">\text{DIC} = [\text{CO}_{2(\text{aq})}] + [\text{H}_2\text{CO}_3] + [\text{HCO}_3^-] + [\text{CO}_3^{2-}]</span></p>
+<p>At typical ocean pH (~8.1), DIC is dominated by <span class="math inline">\text{HCO}_3^-</span> (~88%) and <span class="math inline">\text{CO}_3^{2-}</span> (~11%), with molecular <span class="math inline">\text{CO}_2</span> only ~1%. This chemistry dramatically increases the ocean’s effective CO₂ storage capacity relative to a simple solubility calculation.</p>
+<p>The <strong>Revelle buffer factor</strong> (or Revelle factor) <span class="math inline">\gamma</span>:</p>
+<p><span class="math display">\gamma = \frac{\Delta p\text{CO}_2 / p\text{CO}_2}{\Delta\text{DIC}/\text{DIC}} \approx 10\text{–}15</span></p>
+<p>For every 1% increase in atmospheric CO₂, DIC increases by only ~1/10 to 1/15 of 1%. The ocean buffers CO₂ but inefficiently — the fraction of added CO₂ that the ocean can absorb decreases as DIC increases and the buffer capacity is consumed. <strong>As the ocean absorbs more CO₂, its ability to absorb future CO₂ decreases.</strong> This is the chemical basis for the ocean sink weakening as atmospheric CO₂ rises.</p>
+<h3 id="air-sea-gas-exchange-flux" class="anchored">3.3 Air-Sea Gas Exchange Flux</h3>
+<p>The net CO₂ flux from atmosphere to ocean:</p>
+<p><span class="math display">F = k_w \times K_H \times (p\text{CO}_{2,\text{atm}} - p\text{CO}_{2,\text{sw}})</span></p>
+<p>where: - <span class="math inline">F</span> = net flux [mol m⁻² s⁻¹ or g C m⁻² yr⁻¹] (positive = ocean uptake) - <span class="math inline">k_w</span> = piston velocity (or transfer velocity) [m s⁻¹] - <span class="math inline">K_H</span> = Henry’s solubility [mol m⁻³ Pa⁻¹] - <span class="math inline">\Delta p\text{CO}_2 = p\text{CO}_{2,\text{atm}} - p\text{CO}_{2,\text{sw}}</span> = surface partial pressure difference [µatm or Pa]</p>
+<p><strong>Piston velocity</strong> <span class="math inline">k_w</span> depends primarily on wind speed:</p>
+<p><span class="math display">k_w = a \times U_{10}^2 \times \left(\frac{\text{Sc}}{660}\right)^{-0.5}</span></p>
+<p>where <span class="math inline">U_{10}</span> is wind speed at 10 m (m s⁻¹), Sc is the Schmidt number (kinematic viscosity divided by CO₂ molecular diffusivity), and <span class="math inline">a \approx 0.26</span> cm h⁻¹ m⁻² s² (Wanninkhof 1992). At <span class="math inline">U_{10} = 7</span> m s⁻¹ (global mean): <span class="math inline">k_w \approx 13</span> cm h⁻¹ ≈ 14 m d⁻¹ (a “piston” that sweeps CO₂ out of a 14 m deep layer per day under those winds).</p>
+<h3 id="the-solubility-pump" class="anchored">3.4 The Solubility Pump</h3>
+<p>The <strong>solubility pump</strong> is the physical mechanism by which ocean circulation transfers DIC to the deep ocean:</p>
+<ol type="1">
+<li>Cold surface water in polar regions has high CO₂ solubility → absorbs CO₂ from atmosphere</li>
+<li>Thermohaline circulation sinks this dense, CO₂-rich water (North Atlantic Deep Water, Antarctic Bottom Water)</li>
+<li>Water sequestered in the deep ocean for 200–1,000 years</li>
+<li>Upwelling in tropics/subtropics brings CO₂-poor (older deep) water to surface, which warms → outgasses CO₂</li>
+</ol>
+<p>Without thermohaline circulation, atmospheric CO₂ would be ~150–200 ppm higher (pre-industrial level of 280 ppm would be 430–480 ppm).</p>
+<h3 id="the-biological-pump" class="anchored">3.5 The Biological Pump</h3>
+<p>The <strong>biological pump</strong> sequesters carbon through biology:</p>
+<ol type="1">
+<li>Phytoplankton in the sunlit surface layer fix CO₂ into organic matter via photosynthesis</li>
+<li>A fraction of this particulate organic carbon (POC) sinks before being remineralised: the “export production”</li>
+<li>Bacteria in the mesopelagic zone (100–1000 m) remineralise ~90% of sinking POC back to DIC — but 100–1000 m below the surface, isolated from the atmosphere on century timescales</li>
+<li>~1% reaches the seafloor and is buried in sediments — permanently sequestered on geological timescales</li>
+</ol>
+<p><strong>Export efficiency:</strong> The fraction of net primary production (NPP) that sinks below the mixed layer as POC is called the <strong>export ratio</strong> or <strong>e-ratio</strong>:</p>
+<p><span class="math display">e = \frac{\text{Export production}}{\text{NPP}} \approx 0.05\text{–}0.30</span></p>
+<p>High e-ratios in cold, nutrient-rich waters (subpolar seas, upwelling zones); low e-ratios in warm, stratified, nutrient-poor waters (subtropical gyres).</p>
+<p><strong>Biological pump magnitude:</strong> Global POC export below 100 m ≈ 4–12 Gt C yr⁻¹. Of this, ~0.1–0.2 Gt C yr⁻¹ reaches permanent burial. The biological pump is approximately 10× larger than the permanent burial flux — most sinking carbon is recycled in the mesopelagic before burial.</p>
+<h3 id="temperature-effect-on-uptake-capacity" class="anchored">3.6 Temperature Effect on Uptake Capacity</h3>
+<p>Global ocean warming of 1°C reduces CO₂ solubility by ~4%, reducing ocean uptake capacity:</p>
+<p><span class="math display">\Delta F \approx -0.04 \times F \times \Delta T</span></p>
+<p>For a current ocean uptake of ~10 Gt CO₂ yr⁻¹: a 2°C warming → loss of 0.8 Gt CO₂ yr⁻¹ of uptake capacity — equivalent to adding ~2.5% to the net atmospheric CO₂ growth rate. This is a positive feedback (warming → less ocean uptake → more CO₂ → more warming).</p>
+<p>Ocean stratification also increases with warming: a warmer, more buoyant surface layer forms a stronger barrier to mixing with nutrient-rich deep water → less primary production → weaker biological pump. Model projections suggest 10–20% reduction in POC export by 2100 under high-emission scenarios.</p>
+<hr>
+<h2 id="worked-example-by-hand" class="anchored">4. Worked Example by Hand</h2>
+<p><strong>Setting:</strong> North Atlantic subpolar gyre, autumn. Sea surface temperature: 12°C. Atmospheric CO₂: 420 µatm. Ocean surface <span class="math inline">p\text{CO}_2</span>: 380 µatm. Wind speed <span class="math inline">U_{10}</span> = 9 m s⁻¹.</p>
+<p><strong>Step 1: Piston velocity</strong></p>
+<p><span class="math display">k_w = 0.26 \times 9^2 \times \left(\frac{600}{660}\right)^{-0.5} = 0.26 \times 81 \times 1.048 = 22.1 \text{ cm h}^{-1}</span></p>
+<p><strong>Step 2: Convert to SI</strong> (<span class="math inline">k_w = 22.1/100/3600 = 6.14 \times 10^{-5}</span> m s⁻¹)</p>
+<p><strong>Step 3: Solubility at 12°C</strong> (<span class="math inline">K_H \approx 0.046</span> mol L⁻¹ atm⁻¹ = 46 mmol L⁻¹ atm⁻¹)</p>
+<p><strong>Step 4: ΔpCO₂</strong> = 420 − 380 = 40 µatm = $40 ^{-6}$ atm</p>
+<p><strong>Step 5: Net flux</strong></p>
+<p><span class="math display">F = k_w \times K_H \times \Delta p\text{CO}_2</span></p>
+<p>Converting consistently: <span class="math inline">K_H = 0.046</span> mol L⁻¹ atm⁻¹ = 46 mol m⁻³ atm⁻¹.</p>
+<p><span class="math display">F = 6.14 \times 10^{-5} \text{ m s}^{-1} \times 46 \text{ mol m}^{-3}\text{ atm}^{-1} \times 40 \times 10^{-6} \text{ atm}</span></p>
+<p><span class="math display">= 6.14 \times 10^{-5} \times 46 \times 40 \times 10^{-6} = 1.13 \times 10^{-7} \text{ mol m}^{-2}\text{ s}^{-1}</span></p>
+<p><strong>Convert to annual flux:</strong></p>
+<p><span class="math display">F = 1.13 \times 10^{-7} \times 12 \times 3600 \times 365 = 42.8 \text{ mmol m}^{-2}\text{ d}^{-1} \times 365 = 15.6 \text{ mol m}^{-2}\text{ yr}^{-1}</span></p>
+<p><span class="math display">= 15.6 \times 44 = 687 \text{ mmol CO}_2 \text{ m}^{-2}\text{ yr}^{-1} = 187 \text{ g CO}_2 \text{ m}^{-2}\text{ yr}^{-1} \approx 1.9 \text{ t CO}_2 \text{ ha}^{-1}\text{ yr}^{-1}</span></p>
+<p>This is a strong uptake flux — the North Atlantic subpolar gyre is one of the most intense CO₂ sink regions in the global ocean.</p>
+<hr>
+<h2 id="computational-implementation" class="anchored">5. Computational Implementation</h2>
+<pre><code>function henry_constant(T_C):
+    T_K = T_C + 273.15
+    T0_K = 298.15   # 25°C reference
+    dH_sol = -20000  # J/mol (enthalpy of solution)
+    R = 8.314
+    K0 = 0.034  # mol/L/atm at 25°C
+    return K0 * exp(-dH_sol / R * (1/T_K - 1/T0_K))
+
+function piston_velocity(U10, Sc=600):
+    # Wanninkhof 1992
+    return 0.26 * U10**2 * (Sc/660)**(-0.5)  # cm/hr
+
+function air_sea_flux(dpCO2_uatm, T_C, U10):
+    K_H = henry_constant(T_C)  # mol/L/atm
+    k_w = piston_velocity(U10) / 100 / 3600  # m/s
+    K_H_SI = K_H * 1000  # mol/m3/atm
+    dpCO2_atm = dpCO2_uatm * 1e-6
+    flux_mol_m2_s = k_w * K_H_SI * dpCO2_atm
+    flux_g_C_m2_yr = flux_mol_m2_s * 12 * 3600 * 24 * 365
+    return flux_g_C_m2_yr</code></pre>
+<pre class="{pyodide}"><code>import numpy as np
+
+def henry_K(T_C):
+    """Henry's Law constant for CO2 in seawater, mol/L/atm"""
+    T_K = T_C + 273.15
+    K0 = 0.034  # at 25°C
+    dH = -20000  # J/mol
+    R = 8.314
+    return K0 * np.exp(-dH/R * (1/T_K - 1/298.15))
+
+def piston_v(U10, Sc=600):
+    """Wanninkhof 1992 piston velocity, m/s"""
+    k_cm_hr = 0.26 * U10**2 * (Sc/660)**(-0.5)
+    return k_cm_hr / 100 / 3600
+
+def air_sea_flux(dpCO2_uatm, T_C, U10):
+    """Net CO2 flux, g C m-2 yr-1. Positive = ocean uptake."""
+    K_H = henry_K(T_C) * 1000  # mol/m3/atm
+    kw = piston_v(U10)
+    dpCO2 = dpCO2_uatm * 1e-6  # atm
+    flux_mol = kw * K_H * dpCO2
+    return flux_mol * 12 * 3600 * 24 * 365
+
+print("Temperature effect on CO₂ solubility:")
+print(f"{'T (°C)':&gt;8} {'K_H (mol/L/atm)':&gt;18} {'Relative solubility':&gt;20}")
+T_ref = henry_K(0)
+for T in [0, 5, 10, 15, 20, 25, 30]:
+    K = henry_K(T)
+    print(f"{T:&gt;8}  {K:&gt;18.4f}  {K/T_ref*100:&gt;18.1f}%")
+
+print("\nAir-sea CO₂ flux by region (ΔpCO₂ = +40 µatm, U10 = 8 m/s):")
+print(f"{'Region':&gt;25} {'T (°C)':&gt;8} {'Flux (g C/m²/yr)':&gt;18}")
+regions = [('N Atlantic subpolar', 10), ('Temperate ocean', 15),
+           ('Subtropical', 22), ('Tropical', 28)]
+for name, T in regions:
+    F = air_sea_flux(40, T, 8)
+    print(f"{name:&gt;25} {T:&gt;8}  {F:&gt;16.1f}")
+
+print("\nWind speed sensitivity (T=15°C, ΔpCO₂=40 µatm):")
+for U in [3, 5, 7, 9, 11, 13]:
+    F = air_sea_flux(40, 15, U)
+    print(f"  U10={U:2d} m/s: k_w={piston_v(U)*100*3600:.1f} cm/h  →  F={F:.1f} g C/m²/yr")</code></pre>
+<hr>
+<h2 id="visualization" class="anchored">6. Visualization</h2>
+<div data-viz="echarts" style="height:420px" data-options="{
+  &quot;title&quot;: {&quot;text&quot;: &quot;Ocean CO₂ Uptake: Solubility vs Temperature and Wind Speed&quot;, &quot;textStyle&quot;: {&quot;fontSize&quot;: 14}},
+  &quot;tooltip&quot;: {&quot;trigger&quot;: &quot;axis&quot;},
+  &quot;legend&quot;: {&quot;data&quot;: [&quot;Uptake flux at U10=8 m/s (g C/m²/yr)&quot;, &quot;CO₂ solubility K_H (relative, %)&quot;], &quot;bottom&quot;: 0},
+  &quot;xAxis&quot;: {&quot;name&quot;: &quot;Sea surface temperature (°C)&quot;, &quot;nameLocation&quot;: &quot;middle&quot;, &quot;nameGap&quot;: 30,
+    &quot;data&quot;: [0,3,6,9,12,15,18,21,24,27,30]},
+  &quot;yAxis&quot;: [
+    {&quot;name&quot;: &quot;Flux (g C m⁻² yr⁻¹, ΔpCO₂=40µatm)&quot;, &quot;nameLocation&quot;: &quot;middle&quot;, &quot;nameGap&quot;: 60},
+    {&quot;name&quot;: &quot;Relative solubility (%)&quot;, &quot;nameLocation&quot;: &quot;middle&quot;, &quot;nameGap&quot;: 50, &quot;position&quot;: &quot;right&quot;, &quot;min&quot;: 50, &quot;max&quot;: 130}
+  ],
+  &quot;series&quot;: [
+    {&quot;name&quot;: &quot;Uptake flux at U10=8 m/s (g C/m²/yr)&quot;, &quot;type&quot;: &quot;bar&quot;,
+     &quot;itemStyle&quot;: {&quot;color&quot;: &quot;#1565C0&quot;},
+     &quot;data&quot;: [35.8, 31.4, 27.6, 24.4, 21.6, 19.2, 17.1, 15.3, 13.7, 12.4, 11.2]},
+    {&quot;name&quot;: &quot;CO₂ solubility K_H (relative, %)&quot;, &quot;type&quot;: &quot;line&quot;, &quot;smooth&quot;: true,
+     &quot;yAxisIndex&quot;: 1,
+     &quot;itemStyle&quot;: {&quot;color&quot;: &quot;#C62828&quot;},
+     &quot;data&quot;: [126, 116, 107, 99, 92, 85, 79, 74, 69, 64, 60]}
+  ]
+}">
+
+</div>
+<p>Cold polar waters (0–5°C) absorb 3× more CO₂ per unit ΔpCO₂ than tropical waters (28–30°C) under the same wind conditions. This explains the observed geographic pattern of ocean CO₂ uptake: the North Atlantic and Southern Ocean are strong sinks; the equatorial Pacific and Indian Ocean are sources or near-neutral.</p>
+<hr>
+<h2 id="interpretation" class="anchored">7. Interpretation</h2>
+<p>The ocean’s role as a carbon sink is thermodynamically constrained in two ways. First, solubility decreases with temperature — warming reduces uptake capacity. Second, the Revelle buffer factor means the carbonate chemistry becomes less efficient at absorbing CO₂ as DIC increases — the more CO₂ the ocean has already absorbed, the harder it is for it to absorb the next tonne.</p>
+<p>Both effects are observable in the historical record: the fraction of anthropogenic CO₂ absorbed by the ocean has remained roughly constant (about 26–28%) despite accelerating emissions, because the buffer capacity loss and warming are approximately compensated by the larger ΔpCO₂ gradient. Whether this fraction remains constant, increases (if sink efficiency improves), or decreases (if ocean warming and stratification dominate) is one of the largest uncertainties in 21st-century carbon projections.</p>
+<hr>
+<h2 id="what-could-go-wrong" class="anchored">8. What Could Go Wrong?</h2>
+<p><strong>Undersampling of ΔpCO₂.</strong> The global ocean surface <span class="math inline">p\text{CO}_{2,\text{sw}}</span> is mapped from discrete ship-based measurements compiled in the SOCAT database (~30 million observations since 1970, but heavily biased toward well-travelled shipping lanes). Remote ocean regions — particularly the Southern Ocean — are severely undersampled. Interpolated annual flux maps carry ±1 Gt CO₂ yr⁻¹ uncertainty from this spatial coverage problem.</p>
+<p><strong>Ocean acidification feedback.</strong> As the ocean absorbs CO₂, it acidifies: <span class="math inline">\text{CO}_2 + \text{H}_2\text{O} \to \text{H}^+ + \text{HCO}_3^-</span> drives pH down. Since pre-industrial times, surface ocean pH has fallen from ~8.18 to ~8.08 — a 26% increase in hydrogen ion concentration. Lower pH consumes <span class="math inline">\text{CO}_3^{2-}</span> ions, reducing the Revelle buffer capacity and further limiting future uptake. Calcifying organisms (corals, pteropods, coccolithophores) are also affected, potentially weakening the biological pump.</p>
+<p><strong>Interannual variability from ENSO.</strong> El Niño events warm the tropical Pacific, suppress upwelling of CO₂-rich water, and reduce the equatorial outgassing source. This makes the global ocean temporarily absorb more CO₂ during El Niño than La Niña years. The 2015–16 El Niño reduced outgassing by ~0.5 Gt CO₂ yr⁻¹. Year-to-year variability in ocean uptake (±0.5–1.5 Gt CO₂ yr⁻¹) makes it difficult to detect long-term trends from annual snapshots.</p>
+<hr>
+<h2 id="summary" class="anchored">9. Summary</h2>
+<p>The ocean absorbs CO₂ according to Henry’s Law: <span class="math inline">[\text{CO}_2] = K_H \times p\text{CO}_2</span>, with <span class="math inline">K_H</span> decreasing ~4% per °C. The net air-sea flux is:</p>
+<p><span class="math display">F = k_w \times K_H \times (p\text{CO}_{2,\text{atm}} - p\text{CO}_{2,\text{sw}})</span></p>
+<p>where the piston velocity <span class="math inline">k_w \propto U_{10}^2</span>. The solubility pump exports CO₂-rich cold water to the deep via thermohaline circulation; the biological pump exports particulate organic carbon via sinking, remineralising 90% in the mesopelagic. The Revelle buffer factor (~10–15) limits chemical uptake efficiency.</p>
+<p>Ocean uptake (~26–28% of anthropogenic emissions, ~10 Gt CO₂ yr⁻¹) decreases per unit CO₂ as temperature rises and buffer capacity is consumed.</p>
+<p><strong>Key equations:</strong></p>
+<p><span class="math display">[\text{CO}_2]_{\text{aq}} = K_H \times p\text{CO}_2</span></p>
+<p><span class="math display">F = k_w K_H \Delta p\text{CO}_2, \quad k_w \propto U_{10}^2</span></p>
+<p><span class="math display">\gamma = \frac{\Delta p\text{CO}_2/p\text{CO}_2}{\Delta\text{DIC}/\text{DIC}} \approx 10\text{–}15 \quad\text{[Revelle factor]}</span></p>
+<hr>
+<h2 id="math-refresher" class="anchored">Math Refresher</h2>
+<p><strong>Partial pressure and concentration.</strong> A gas mixture at total pressure <span class="math inline">P_{\text{total}}</span> contains CO₂ at mole fraction <span class="math inline">x_{\text{CO}_2}</span>. The partial pressure of CO₂ is <span class="math inline">p\text{CO}_2 = x_{\text{CO}_2} \times P_{\text{total}}</span>. Current atmospheric CO₂ is 420 ppm by mole = 420 µmol/mol = $420 ^{-6}$ mole fraction. At standard pressure (1 atm): <span class="math inline">p\text{CO}_2 = 420 \times 10^{-6}</span> atm = 420 µatm. Henry’s Law says dissolved concentration is proportional to partial pressure: twice the <span class="math inline">p\text{CO}_2</span> → twice as much dissolved. This direct proportionality breaks down for CO₂ in seawater because of the carbonate chemistry — additional dissolved CO₂ is “consumed” by reaction with carbonate ions, so the effective solubility is much higher than Henry’s Law alone predicts.</p>
+
+
+<footer class="wayward-footer">
+  <div class="wayward-footer__inner">
+    <div class="wayward-footer__brand">
+      <div class="wayward-footer__logo">WaywardHouse<span>.</span></div>
+      <p>Understanding how place, economy, and environment interact through analysis, modelling, and open tools.</p>
+    </div>
+
+    <nav class="wayward-footer__group" aria-labelledby="footer-reading">
+      <h2 id="footer-reading" class="anchored">Reading</h2>
+      <a href="../articles/">Articles</a>
+      <a href="../learn/">Learn</a>
+      <a href="../archive.html">Archive</a>
+      <a href="../start-here.html">Start Here</a>
+    </nav>
+
+    <nav class="wayward-footer__group" aria-labelledby="footer-site">
+      <h2 id="footer-site" class="anchored">Site</h2>
+      <a href="../start-here.html">Start Here</a>
+      <a href="../about.html">About</a>
+      <a href="../contact.html">Contact</a>
+    </nav>
+
+    <nav class="wayward-footer__group" aria-labelledby="footer-resources">
+      <h2 id="footer-resources" class="anchored">Resources</h2>
+      <a href="../topics/">All Topics</a>
+      <a href="../privacy.html">Privacy Policy</a>
+      <a href="../terms.html">Terms of Use</a>
+    </nav>
+  </div>
+</footer>
+
+<script type="module" src="../assets/dist/main.js"></script>
+<script type="module" src="../assets/js/core.js"></script>
+<script id="quarto-html-after-body" type="application/javascript">
+  window.document.addEventListener("DOMContentLoaded", function (event) {
+    const tabsets =  window.document.querySelectorAll(".panel-tabset-tabby")
+    tabsets.forEach(function(tabset) {
+      const tabby = new Tabby('#' + tabset.id);
+    });
+    const icon = "";
+    const anchorJS = new window.AnchorJS();
+    anchorJS.options = {
+      placement: 'right',
+      icon: icon
+    };
+    anchorJS.add('.anchored');
+    const isCodeAnnotation = (el) => {
+      for (const clz of el.classList) {
+        if (clz.startsWith('code-annotation-')) {                     
+          return true;
+        }
+      }
+      return false;
+    }
+    const onCopySuccess = function(e) {
+      // button target
+      const button = e.trigger;
+      // don't keep focus
+      button.blur();
+      // flash "checked"
+      button.classList.add('code-copy-button-checked');
+      var currentTitle = button.getAttribute("title");
+      button.setAttribute("title", "Copied!");
+      let tooltip;
+      if (window.bootstrap) {
+        button.setAttribute("data-bs-toggle", "tooltip");
+        button.setAttribute("data-bs-placement", "left");
+        button.setAttribute("data-bs-title", "Copied!");
+        tooltip = new bootstrap.Tooltip(button, 
+          { trigger: "manual", 
+            customClass: "code-copy-button-tooltip",
+            offset: [0, -8]});
+        tooltip.show();    
+      }
+      setTimeout(function() {
+        if (tooltip) {
+          tooltip.hide();
+          button.removeAttribute("data-bs-title");
+          button.removeAttribute("data-bs-toggle");
+          button.removeAttribute("data-bs-placement");
+        }
+        button.setAttribute("title", currentTitle);
+        button.classList.remove('code-copy-button-checked');
+      }, 1000);
+      // clear code selection
+      e.clearSelection();
+    }
+    const getTextToCopy = function(trigger) {
+      const outerScaffold = trigger.parentElement.cloneNode(true);
+      const codeEl = outerScaffold.querySelector('code');
+      for (const childEl of codeEl.children) {
+        if (isCodeAnnotation(childEl)) {
+          childEl.remove();
+        }
+      }
+      return codeEl.innerText;
+    }
+    const clipboard = new window.ClipboardJS('.code-copy-button:not([data-in-quarto-modal])', {
+      text: getTextToCopy
+    });
+    clipboard.on('success', onCopySuccess);
+    if (window.document.getElementById('quarto-embedded-source-code-modal')) {
+      const clipboardModal = new window.ClipboardJS('.code-copy-button[data-in-quarto-modal]', {
+        text: getTextToCopy,
+        container: window.document.getElementById('quarto-embedded-source-code-modal')
+      });
+      clipboardModal.on('success', onCopySuccess);
+    }
+      var localhostRegex = new RegExp(/^(?:http|https):\/\/localhost\:?[0-9]*\//);
+      var mailtoRegex = new RegExp(/^mailto:/);
+        var filterRegex = new RegExp('/' + window.location.host + '/');
+      var isInternal = (href) => {
+          return filterRegex.test(href) || localhostRegex.test(href) || mailtoRegex.test(href);
+      }
+      // Inspect non-navigation links and adorn them if external
+     var links = window.document.querySelectorAll('a[href]:not(.nav-link):not(.navbar-brand):not(.toc-action):not(.sidebar-link):not(.sidebar-item-toggle):not(.pagination-link):not(.no-external):not([aria-hidden]):not(.dropdown-item):not(.quarto-navigation-tool):not(.about-link)');
+      for (var i=0; i<links.length; i++) {
+        const link = links[i];
+        if (!isInternal(link.href)) {
+          // undo the damage that might have been done by quarto-nav.js in the case of
+          // links that we want to consider external
+          if (link.dataset.originalHref !== undefined) {
+            link.href = link.dataset.originalHref;
+          }
+        }
+      }
+    function tippyHover(el, contentFn, onTriggerFn, onUntriggerFn) {
+      const config = {
+        allowHTML: true,
+        maxWidth: 500,
+        delay: 100,
+        arrow: false,
+        appendTo: function(el) {
+            return el.parentElement;
+        },
+        interactive: true,
+        interactiveBorder: 10,
+        theme: 'light-border',
+        placement: 'bottom-start',
+      };
+      if (contentFn) {
+        config.content = contentFn;
+      }
+      if (onTriggerFn) {
+        config.onTrigger = onTriggerFn;
+      }
+      if (onUntriggerFn) {
+        config.onUntrigger = onUntriggerFn;
+      }
+      window.tippy(el, config); 
+    }
+    const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+    for (var i=0; i<noterefs.length; i++) {
+      const ref = noterefs[i];
+      tippyHover(ref, function() {
+        // use id or data attribute instead here
+        let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+        try { href = new URL(href).hash; } catch {}
+        const id = href.replace(/^#\/?/, "");
+        const note = window.document.getElementById(id);
+        if (note) {
+          return note.innerHTML;
+        } else {
+          return "";
+        }
+      });
+    }
+    const xrefs = window.document.querySelectorAll('a.quarto-xref');
+    const processXRef = (id, note) => {
+      // Strip column container classes
+      const stripColumnClz = (el) => {
+        el.classList.remove("page-full", "page-columns");
+        if (el.children) {
+          for (const child of el.children) {
+            stripColumnClz(child);
+          }
+        }
+      }
+      stripColumnClz(note)
+      if (id === null || id.startsWith('sec-')) {
+        // Special case sections, only their first couple elements
+        const container = document.createElement("div");
+        if (note.children && note.children.length > 2) {
+          container.appendChild(note.children[0].cloneNode(true));
+          for (let i = 1; i < note.children.length; i++) {
+            const child = note.children[i];
+            if (child.tagName === "P" && child.innerText === "") {
+              continue;
+            } else {
+              container.appendChild(child.cloneNode(true));
+              break;
+            }
+          }
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(container);
+          }
+          return container.innerHTML
+        } else {
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(note);
+          }
+          return note.innerHTML;
+        }
+      } else {
+        // Remove any anchor links if they are present
+        const anchorLink = note.querySelector('a.anchorjs-link');
+        if (anchorLink) {
+          anchorLink.remove();
+        }
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(note);
+        }
+        if (note.classList.contains("callout")) {
+          return note.outerHTML;
+        } else {
+          return note.innerHTML;
+        }
+      }
+    }
+    for (var i=0; i<xrefs.length; i++) {
+      const xref = xrefs[i];
+      tippyHover(xref, undefined, function(instance) {
+        instance.disable();
+        let url = xref.getAttribute('href');
+        let hash = undefined; 
+        if (url.startsWith('#')) {
+          hash = url;
+        } else {
+          try { hash = new URL(url).hash; } catch {}
+        }
+        if (hash) {
+          const id = hash.replace(/^#\/?/, "");
+          const note = window.document.getElementById(id);
+          if (note !== null) {
+            try {
+              const html = processXRef(id, note.cloneNode(true));
+              instance.setContent(html);
+            } finally {
+              instance.enable();
+              instance.show();
+            }
+          } else {
+            // See if we can fetch this
+            fetch(url.split('#')[0])
+            .then(res => res.text())
+            .then(html => {
+              const parser = new DOMParser();
+              const htmlDoc = parser.parseFromString(html, "text/html");
+              const note = htmlDoc.getElementById(id);
+              if (note !== null) {
+                const html = processXRef(id, note);
+                instance.setContent(html);
+              } 
+            }).finally(() => {
+              instance.enable();
+              instance.show();
+            });
+          }
+        } else {
+          // See if we can fetch a full url (with no hash to target)
+          // This is a special case and we should probably do some content thinning / targeting
+          fetch(url)
+          .then(res => res.text())
+          .then(html => {
+            const parser = new DOMParser();
+            const htmlDoc = parser.parseFromString(html, "text/html");
+            const note = htmlDoc.querySelector('main.content');
+            if (note !== null) {
+              // This should only happen for chapter cross references
+              // (since there is no id in the URL)
+              // remove the first header
+              if (note.children.length > 0 && note.children[0].tagName === "HEADER") {
+                note.children[0].remove();
+              }
+              const html = processXRef(null, note);
+              instance.setContent(html);
+            } 
+          }).finally(() => {
+            instance.enable();
+            instance.show();
+          });
+        }
+      }, function(instance) {
+      });
+    }
+        let selectedAnnoteEl;
+        const selectorForAnnotation = ( cell, annotation) => {
+          let cellAttr = 'data-code-cell="' + cell + '"';
+          let lineAttr = 'data-code-annotation="' +  annotation + '"';
+          const selector = 'span[' + cellAttr + '][' + lineAttr + ']';
+          return selector;
+        }
+        const selectCodeLines = (annoteEl) => {
+          const doc = window.document;
+          const targetCell = annoteEl.getAttribute("data-target-cell");
+          const targetAnnotation = annoteEl.getAttribute("data-target-annotation");
+          const annoteSpan = window.document.querySelector(selectorForAnnotation(targetCell, targetAnnotation));
+          const lines = annoteSpan.getAttribute("data-code-lines").split(",");
+          const lineIds = lines.map((line) => {
+            return targetCell + "-" + line;
+          })
+          let top = null;
+          let height = null;
+          let parent = null;
+          if (lineIds.length > 0) {
+              //compute the position of the single el (top and bottom and make a div)
+              const el = window.document.getElementById(lineIds[0]);
+              top = el.offsetTop;
+              height = el.offsetHeight;
+              parent = el.parentElement.parentElement;
+            if (lineIds.length > 1) {
+              const lastEl = window.document.getElementById(lineIds[lineIds.length - 1]);
+              const bottom = lastEl.offsetTop + lastEl.offsetHeight;
+              height = bottom - top;
+            }
+            if (top !== null && height !== null && parent !== null) {
+              // cook up a div (if necessary) and position it 
+              let div = window.document.getElementById("code-annotation-line-highlight");
+              if (div === null) {
+                div = window.document.createElement("div");
+                div.setAttribute("id", "code-annotation-line-highlight");
+                div.style.position = 'absolute';
+                parent.appendChild(div);
+              }
+              div.style.top = top - 2 + "px";
+              div.style.height = height + 4 + "px";
+              div.style.left = 0;
+              let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
+              if (gutterDiv === null) {
+                gutterDiv = window.document.createElement("div");
+                gutterDiv.setAttribute("id", "code-annotation-line-highlight-gutter");
+                gutterDiv.style.position = 'absolute';
+                const codeCell = window.document.getElementById(targetCell);
+                const gutter = codeCell.querySelector('.code-annotation-gutter');
+                gutter.appendChild(gutterDiv);
+              }
+              gutterDiv.style.top = top - 2 + "px";
+              gutterDiv.style.height = height + 4 + "px";
+            }
+            selectedAnnoteEl = annoteEl;
+          }
+        };
+        const unselectCodeLines = () => {
+          const elementsIds = ["code-annotation-line-highlight", "code-annotation-line-highlight-gutter"];
+          elementsIds.forEach((elId) => {
+            const div = window.document.getElementById(elId);
+            if (div) {
+              div.remove();
+            }
+          });
+          selectedAnnoteEl = undefined;
+        };
+          // Handle positioning of the toggle
+      window.addEventListener(
+        "resize",
+        throttle(() => {
+          elRect = undefined;
+          if (selectedAnnoteEl) {
+            selectCodeLines(selectedAnnoteEl);
+          }
+        }, 10)
+      );
+      function throttle(fn, ms) {
+      let throttle = false;
+      let timer;
+        return (...args) => {
+          if(!throttle) { // first call gets through
+              fn.apply(this, args);
+              throttle = true;
+          } else { // all the others get throttled
+              if(timer) clearTimeout(timer); // cancel #2
+              timer = setTimeout(() => {
+                fn.apply(this, args);
+                timer = throttle = false;
+              }, ms);
+          }
+        };
+      }
+        // Attach click handler to the DT
+        const annoteDls = window.document.querySelectorAll('dt[data-target-cell]');
+        for (const annoteDlNode of annoteDls) {
+          annoteDlNode.addEventListener('click', (event) => {
+            const clickedEl = event.target;
+            if (clickedEl !== selectedAnnoteEl) {
+              unselectCodeLines();
+              const activeEl = window.document.querySelector('dt[data-target-cell].code-annotation-active');
+              if (activeEl) {
+                activeEl.classList.remove('code-annotation-active');
+              }
+              selectCodeLines(clickedEl);
+              clickedEl.classList.add('code-annotation-active');
+            } else {
+              // Unselect the line
+              unselectCodeLines();
+              clickedEl.classList.remove('code-annotation-active');
+            }
+          });
+        }
+    const findCites = (el) => {
+      const parentEl = el.parentElement;
+      if (parentEl) {
+        const cites = parentEl.dataset.cites;
+        if (cites) {
+          return {
+            el,
+            cites: cites.split(' ')
+          };
+        } else {
+          return findCites(el.parentElement)
+        }
+      } else {
+        return undefined;
+      }
+    };
+    var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+    for (var i=0; i<bibliorefs.length; i++) {
+      const ref = bibliorefs[i];
+      const citeInfo = findCites(ref);
+      if (citeInfo) {
+        tippyHover(citeInfo.el, function() {
+          var popup = window.document.createElement('div');
+          citeInfo.cites.forEach(function(cite) {
+            var citeDiv = window.document.createElement('div');
+            citeDiv.classList.add('hanging-indent');
+            citeDiv.classList.add('csl-entry');
+            var biblioDiv = window.document.getElementById('ref-' + cite);
+            if (biblioDiv) {
+              citeDiv.innerHTML = biblioDiv.innerHTML;
+            }
+            popup.appendChild(citeDiv);
+          });
+          return popup.innerHTML;
+        });
+      }
+    }
+  });
+  </script>
+
+
+
+
+</body></html>

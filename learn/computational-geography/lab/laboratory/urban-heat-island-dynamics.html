@@ -1,0 +1,883 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
+
+<meta charset="utf-8">
+<meta name="generator" content="quarto-1.9.36">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+
+<meta name="dcterms.date" content="2026-03-05">
+<meta name="description" content="Cities are warmer than the countryside that surrounds them — by 2–8°C on calm, clear nights in large metropolitan areas. That temperature difference, the urban heat island, is not incidental: it is the thermodynamic consequence of replacing vegetation with impervious surfaces, suppressing evaporation, trapping longwave radiation, and releasing anthropogenic heat. This essay derives the urban surface energy balance, quantifies each mechanism, and evaluates the physics of mitigation strategies from cool roofs to urban forests.">
+
+<title>Urban Heat Island Dynamics – Computational Geography</title>
+<style>
+/* Default styles provided by pandoc.
+** See https://pandoc.org/MANUAL.html#variables-for-html for config info.
+*/
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: min(4vw, 1.5em);}
+div.column{flex: auto; overflow-x: auto;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+  width: 0.8em;
+  margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
+  vertical-align: middle;
+}
+</style>
+
+
+<script src="../site_libs/clipboard/clipboard.min.js"></script>
+<script src="../site_libs/quarto-html/tabby.min.js"></script>
+<script src="../site_libs/quarto-html/popper.min.js"></script>
+<script src="../site_libs/quarto-html/tippy.umd.min.js"></script>
+<script src="../site_libs/quarto-html/anchor.min.js"></script>
+<link href="../site_libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="../site_libs/quarto-html/light-border.css" rel="stylesheet">
+<link href="../site_libs/quarto-html/quarto-html-640605f58ae58ee79329c070719e555b.min.css" rel="stylesheet" append-hash="true" data-mode="light">
+<link href="../site_libs/quarto-html/quarto-syntax-highlighting-845c23b38eaddc0f92fda52bfe77a8c8.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<script>
+  (function () {
+    var s = localStorage.getItem('theme');
+    var dark = s !== null ? s === 'dark' : false;
+    document.documentElement.dataset.theme = dark ? 'dark' : 'light';
+    document.documentElement.dataset.brand = 'wayward';
+  })();
+</script>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:ital,wght@0,300;0,400;0,600;0,700;0,800;0,900;1,700;1,800&amp;family=Barlow:wght@300;400;500;600&amp;family=IBM+Plex+Mono:ital,wght@0,300;0,400;0,500;1,300&amp;family=Literata:ital,opsz,wght@0,7..72,300;0,7..72,400;0,7..72,500;1,7..72,300;1,7..72,400&amp;display=swap" rel="stylesheet">
+
+  <script>window.backupDefine = window.define; window.define = undefined;</script><script src="https://cdn.jsdelivr.net/npm/katex@latest/dist/katex.min.js"></script>
+  <script>document.addEventListener("DOMContentLoaded", function () {
+ var mathElements = document.getElementsByClassName("math");
+ var macros = [];
+ for (var i = 0; i < mathElements.length; i++) {
+  var texText = mathElements[i].firstChild;
+  if (mathElements[i].tagName == "SPAN") {
+   katex.render(texText.data, mathElements[i], {
+    displayMode: mathElements[i].classList.contains('display'),
+    throwOnError: false,
+    macros: macros,
+    fleqn: false
+   });
+}}});
+  </script>
+  <script>window.define = window.backupDefine; window.backupDefine = undefined;</script><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@latest/dist/katex.min.css">
+
+<script type="text/javascript">
+const typesetMath = (el) => {
+  if (window.MathJax) {
+    // MathJax Typeset
+    window.MathJax.typeset([el]);
+  } else if (window.katex) {
+    // KaTeX Render
+    var mathElements = el.getElementsByClassName("math");
+    var macros = [];
+    for (var i = 0; i < mathElements.length; i++) {
+      var texText = mathElements[i].firstChild;
+      if (mathElements[i].tagName == "SPAN" && texText && texText.data) {
+        window.katex.render(texText.data, mathElements[i], {
+          displayMode: mathElements[i].classList.contains('display'),
+          throwOnError: false,
+          macros: macros,
+          fleqn: false
+        });
+      }
+    }
+  }
+}
+window.Quarto = {
+  typesetMath
+};
+</script>
+
+<link rel="stylesheet" href="../assets/css/quarto-wayward.css">
+</head>
+
+<body class="reading-body tag-hash-math tag-hash-viz">
+
+
+<header id="title-block-header">
+<h1 class="title"><span class="chapter-title">Urban Heat Island Dynamics</span></h1>
+<p class="subtitle">Surface energy balance, anthropogenic heat, and the thermal penalty of the built environment</p>
+
+<p class="date">2026-03-05</p>
+</header>
+
+<nav id="TOC" role="doc-toc">
+    <h2 id="toc-title">Table of contents</h2>
+   
+  <ul>
+  <li><a href="#the-question" id="toc-the-question">1. The Question</a></li>
+  <li><a href="#the-conceptual-model" id="toc-the-conceptual-model">2. The Conceptual Model</a></li>
+  <li><a href="#building-the-mathematical-model" id="toc-building-the-mathematical-model">3. Building the Mathematical Model</a>
+  <ul>
+  <li><a href="#the-surface-energy-balance" id="toc-the-surface-energy-balance">3.1 The Surface Energy Balance</a></li>
+  <li><a href="#the-bowen-ratio-and-evaporation-suppression" id="toc-the-bowen-ratio-and-evaporation-suppression">3.2 The Bowen Ratio and Evaporation Suppression</a></li>
+  <li><a href="#anthropogenic-heat-flux" id="toc-anthropogenic-heat-flux">3.3 Anthropogenic Heat Flux</a></li>
+  <li><a href="#sky-view-factor-and-nocturnal-cooling-suppression" id="toc-sky-view-factor-and-nocturnal-cooling-suppression">3.4 Sky View Factor and Nocturnal Cooling Suppression</a></li>
+  <li><a href="#thermal-mass-and-heat-storage" id="toc-thermal-mass-and-heat-storage">3.5 Thermal Mass and Heat Storage</a></li>
+  <li><a href="#uhi-intensity-prediction" id="toc-uhi-intensity-prediction">3.6 UHI Intensity Prediction</a></li>
+  <li><a href="#green-infrastructure-mitigation" id="toc-green-infrastructure-mitigation">3.7 Green Infrastructure Mitigation</a></li>
+  </ul></li>
+  <li><a href="#worked-example-by-hand" id="toc-worked-example-by-hand">4. Worked Example by Hand</a></li>
+  <li><a href="#computational-implementation" id="toc-computational-implementation">5. Computational Implementation</a></li>
+  <li><a href="#visualization" id="toc-visualization">6. Visualization</a></li>
+  <li><a href="#interpretation" id="toc-interpretation">7. Interpretation</a></li>
+  <li><a href="#what-could-go-wrong" id="toc-what-could-go-wrong">8. What Could Go Wrong?</a></li>
+  <li><a href="#summary" id="toc-summary">9. Summary</a></li>
+  <li><a href="#math-refresher" id="toc-math-refresher">Math Refresher</a></li>
+  </ul>
+</nav>
+<p>On a calm summer night in Phoenix, Arizona, the city centre is routinely 8–10°C warmer than the desert 30 km away. The same phenomenon plays out at smaller magnitude in every city on Earth — a 1°C difference in a small prairie town, 6°C in Tokyo, 3–5°C in Calgary or Edmonton on the coldest January nights when furnaces run full tilt. The urban heat island (UHI) is not a curiosity. It is a public health hazard: during the August 2003 European heat wave, excess mortality was concentrated in Paris’s densest arrondissements, where the UHI amplified synoptic heat stress by several critical degrees.</p>
+<p>Understanding the UHI quantitatively means understanding the surface energy balance. A city is not simply a hot version of the surrounding countryside — it is a fundamentally different thermodynamic system that absorbs, stores, and releases energy on a different schedule.</p>
+<hr>
+<h2 id="the-question" class="anchored">1. The Question</h2>
+<p>Why are cities warmer than their surroundings? Which physical mechanisms contribute, and in what proportion? How can we predict UHI intensity from measurable urban properties, and which mitigation strategies have the strongest physical basis?</p>
+<hr>
+<h2 id="the-conceptual-model" class="anchored">2. The Conceptual Model</h2>
+<p>The surface energy balance describes how incoming radiation is partitioned among sensible heat (warming the air), latent heat (evaporation), ground storage, and longwave emission. Cities alter every term:</p>
+<ul>
+<li><strong>Albedo reduction:</strong> dark roofs and asphalt absorb more solar radiation than vegetated surfaces</li>
+<li><strong>Evaporation suppression:</strong> impervious surfaces prevent evaporation, forcing absorbed energy into sensible heat</li>
+<li><strong>Thermal mass increase:</strong> dense building materials store heat by day and release it at night, suppressing nocturnal cooling</li>
+<li><strong>Anthropogenic heat:</strong> combustion and electricity add heat with no rural counterpart</li>
+<li><strong>Sky view factor reduction:</strong> buildings trap longwave radiation that would otherwise escape to space</li>
+<li><strong>Roughness increase:</strong> buildings enhance turbulent mixing but reduce street-level wind speeds</li>
+</ul>
+<p>These six mechanisms interact. Their relative importance varies by climate, season, and city form.</p>
+<hr>
+<h2 id="building-the-mathematical-model" class="anchored">3. Building the Mathematical Model</h2>
+<h3 id="the-surface-energy-balance" class="anchored">3.1 The Surface Energy Balance</h3>
+<p>At any surface, net radiation <span class="math inline">Q^*</span> [W m⁻²] must balance the available heat pathways:</p>
+<p><span class="math display">Q^* = Q_H + Q_E + \Delta Q_S + Q_F</span></p>
+<p>where <span class="math inline">Q_H</span> is sensible heat flux to the atmosphere, <span class="math inline">Q_E</span> is latent heat flux (evaporation), <span class="math inline">\Delta Q_S</span> is net heat storage in the urban fabric, and <span class="math inline">Q_F</span> is anthropogenic heat release. Net radiation is:</p>
+<p><span class="math display">Q^* = (1 - \alpha)K_\downarrow + L_\downarrow - L_\uparrow</span></p>
+<p>where <span class="math inline">\alpha</span> is surface albedo, <span class="math inline">K_\downarrow</span> is incoming shortwave [W m⁻²], <span class="math inline">L_\downarrow</span> is incoming atmospheric longwave, and <span class="math inline">L_\uparrow</span> is outgoing longwave emission from the surface:</p>
+<p><span class="math display">L_\uparrow = \varepsilon_s \sigma T_s^4</span></p>
+<p>Here <span class="math inline">\varepsilon_s \approx 0.95</span>–$0.98$ is surface emissivity, <span class="math inline">\sigma = 5.67 \times 10^{-8}</span> W m⁻² K⁻⁴ is the Stefan-Boltzmann constant, and <span class="math inline">T_s</span> is surface temperature in Kelvin.</p>
+<p>Typical midday values in summer:</p>
+<table class="caption-top">
+<thead>
+<tr class="header">
+<th>Term</th>
+<th>Rural</th>
+<th>Urban dense</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><span class="math inline">\alpha</span></td>
+<td>0.18–0.25</td>
+<td>0.10–0.18</td>
+</tr>
+<tr class="even">
+<td><span class="math inline">Q^*</span> (W m⁻²)</td>
+<td>420–480</td>
+<td>460–540</td>
+</tr>
+<tr class="odd">
+<td><span class="math inline">Q_H / Q^*</span></td>
+<td>0.25–0.35</td>
+<td>0.55–0.75</td>
+</tr>
+<tr class="even">
+<td><span class="math inline">Q_E / Q^*</span></td>
+<td>0.45–0.60</td>
+<td>0.10–0.20</td>
+</tr>
+<tr class="odd">
+<td><span class="math inline">\Delta Q_S / Q^*</span></td>
+<td>0.10–0.15</td>
+<td>0.20–0.35</td>
+</tr>
+</tbody>
+</table>
+<h3 id="the-bowen-ratio-and-evaporation-suppression" class="anchored">3.2 The Bowen Ratio and Evaporation Suppression</h3>
+<p>The <strong>Bowen ratio</strong> <span class="math inline">\beta = Q_H / Q_E</span> summarises the sensible-to-latent partition. For vegetated rural surfaces in summer, <span class="math inline">\beta \approx 0.3</span>–$0.6$. For dense impervious urban surfaces, <span class="math inline">\beta \approx 3</span>–$10$.</p>
+<p>If the latent heat pathway is suppressed by impervious fraction <span class="math inline">f_i</span>, the increase in sensible heat flux is approximately:</p>
+<p><span class="math display">\Delta Q_H \approx f_i \cdot Q_{E,\text{rural}}</span></p>
+<p>For <span class="math inline">f_i = 0.65</span> and <span class="math inline">Q_{E,\text{rural}} = 180</span> W m⁻²: <span class="math inline">\Delta Q_H \approx 117</span> W m⁻². This extra 117 W m⁻² of sensible heat must warm the air — and does so by raising the surface and near-surface temperature. This single mechanism accounts for roughly half of the typical daytime UHI forcing in temperate cities.</p>
+<h3 id="anthropogenic-heat-flux" class="anchored">3.3 Anthropogenic Heat Flux</h3>
+<p>Anthropogenic heat <span class="math inline">Q_F</span> is the energy released by all human activities per unit city area. It is estimated from energy consumption statistics:</p>
+<p><span class="math display">Q_F = \frac{E_{\text{fuel}} + E_{\text{electricity}}}{A_{\text{city}}}</span></p>
+<p>Representative values:</p>
+<table class="caption-top">
+<thead>
+<tr class="header">
+<th>City</th>
+<th>Season</th>
+<th><span class="math inline">Q_F</span> (W m⁻²)</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>Manhattan</td>
+<td>Annual</td>
+<td>100–300</td>
+</tr>
+<tr class="even">
+<td>Tokyo</td>
+<td>Summer</td>
+<td>50–90</td>
+</tr>
+<tr class="odd">
+<td>London</td>
+<td>Annual</td>
+<td>15–40</td>
+</tr>
+<tr class="even">
+<td>Edmonton</td>
+<td>Winter</td>
+<td>40–80</td>
+</tr>
+<tr class="odd">
+<td>Phoenix</td>
+<td>Summer</td>
+<td>20–45</td>
+</tr>
+</tbody>
+</table>
+<p>Edmonton’s winter <span class="math inline">Q_F</span> deserves attention: at 40–80 W m⁻² from space heating, it rivals or exceeds the net solar radiation in January. Edmonton’s UHI is therefore <strong>strongest in winter</strong> — the opposite of most sunbelt cities. This counterintuitive result follows directly from the energy balance: when <span class="math inline">K_\downarrow</span> is small and <span class="math inline">Q_F</span> is large, the UHI is anthropogenic heat-dominated.</p>
+<p>The spatial distribution of <span class="math inline">Q_F</span> is strongly heterogeneous. Dense commercial cores and industrial districts show <span class="math inline">Q_F</span> an order of magnitude above residential suburbs. Traffic corridors generate linear filaments of elevated <span class="math inline">Q_F</span> proportional to vehicle counts and fuel consumption rates.</p>
+<h3 id="sky-view-factor-and-nocturnal-cooling-suppression" class="anchored">3.4 Sky View Factor and Nocturnal Cooling Suppression</h3>
+<p>The <strong>sky view factor</strong> <span class="math inline">\psi_s</span> [0–1] is the fraction of the upper hemisphere visible as sky from a point at street level. An open rural surface has <span class="math inline">\psi_s = 1</span>; a narrow street canyon may have <span class="math inline">\psi_s = 0.2</span>–$0.4$.</p>
+<p>Nocturnal cooling occurs by longwave radiation to the sky. Net longwave loss from the surface:</p>
+<p><span class="math display">L_{\text{net}} = \psi_s \varepsilon_s \sigma (T_s^4 - T_{\text{sky}}^4)</span></p>
+<p>A surface with <span class="math inline">\psi_s = 0.3</span> loses only 30% of the longwave radiation that the same surface in an open field would emit. The remaining 70% is absorbed and re-emitted by surrounding buildings, staying within the urban system rather than escaping to space.</p>
+<p>The nocturnal cooling rate for the surface obeys:</p>
+<p><span class="math display">\frac{dT_s}{dt} = -\frac{\psi_s \varepsilon_s \sigma \cdot 4\bar{T}^3}{\rho c_p d_{\text{eff}}} (T_s - T_{\text{sky}}) \equiv -\frac{T_s - T_{\text{sky}}}{\tau_{\text{cool}}}</span></p>
+<p>where <span class="math inline">\tau_{\text{cool}} = \rho c_p d_{\text{eff}} / (4\psi_s \varepsilon_s \sigma \bar{T}^3)</span> is the cooling time constant. As <span class="math inline">\psi_s</span> decreases, <span class="math inline">\tau_{\text{cool}}</span> increases — urban surfaces cool more slowly, maintaining higher temperatures through the night. This is the dominant mechanism for <strong>nocturnal UHI intensity</strong>: calm, clear nights produce maximum UHI because they maximise radiative cooling potential, which the urban surface cannot realise due to building obstruction of the sky.</p>
+<p>The UHI is systematically strongest on calm, clear nights and weakest on windy, cloudy days — a pattern observed in every city on Earth, and a direct consequence of this sky view factor mechanism.</p>
+<h3 id="thermal-mass-and-heat-storage" class="anchored">3.5 Thermal Mass and Heat Storage</h3>
+<p>Urban materials store more daytime heat per unit plan area than rural soils, releasing it after sunset to maintain elevated night temperatures.</p>
+<table class="caption-top">
+<colgroup>
+<col style="width: 33%">
+<col style="width: 33%">
+<col style="width: 33%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>Material</th>
+<th><span class="math inline">\rho c_p</span> (MJ m⁻³ K⁻¹)</th>
+<th><span class="math inline">\kappa = k/\rho c_p</span> (10⁻⁷ m² s⁻¹)</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>Concrete</td>
+<td>2.11</td>
+<td>7.2</td>
+</tr>
+<tr class="even">
+<td>Asphalt</td>
+<td>1.94</td>
+<td>3.9</td>
+</tr>
+<tr class="odd">
+<td>Dry soil</td>
+<td>1.00</td>
+<td>3.0</td>
+</tr>
+<tr class="even">
+<td>Moist soil</td>
+<td>2.50</td>
+<td>6.0</td>
+</tr>
+</tbody>
+</table>
+<p>The <strong>diurnal skin depth</strong> — how deep a diurnal temperature wave penetrates — is:</p>
+<p><span class="math display">z_d = \sqrt{\frac{2\kappa}{\omega}}</span></p>
+<p>where <span class="math inline">\omega = 2\pi / 86400 = 7.27 \times 10^{-5}</span> rad s⁻¹. For concrete (<span class="math inline">\kappa = 7.2 \times 10^{-7}</span> m² s⁻¹):</p>
+<p><span class="math display">z_d = \sqrt{\frac{2 \times 7.2 \times 10^{-7}}{7.27 \times 10^{-5}}} = \sqrt{0.0198} = 0.141 \text{ m}</span></p>
+<p>The heat stored in the top 14 cm of concrete per unit area per day is <span class="math inline">\Delta Q_S = \rho c_p z_d \Delta T_{\text{surface}} \approx 2.11 \times 10^6 \times 0.141 \times 10 = 2.97 \text{ MJ m}^{-2}</span>. Averaged over the 12-hour night, this releases <span class="math inline">\approx 69</span> W m⁻² — a substantial heat source that prevents the urban surface from cooling as rapidly as rural soil.</p>
+<h3 id="uhi-intensity-prediction" class="anchored">3.6 UHI Intensity Prediction</h3>
+<p><strong>Oke (1973) empirical formula</strong> for maximum UHI intensity <span class="math inline">\Delta T_{u-r}</span> in mid-latitude cities:</p>
+<p><span class="math display">\Delta T_{u-r,\max} = 2.01 \log_{10} P - 4.06 \quad [°\text{C}]</span></p>
+<p>where <span class="math inline">P</span> is city population. This captures the bulk effect of increasing urban density with population.</p>
+<p>A more physically grounded predictor uses sky view factor and impervious fraction:</p>
+<p><span class="math display">\Delta T_{u-r} \approx A(1 - \psi_s) + B f_i + C \frac{Q_F}{Q^*}</span></p>
+<p>Typical North American coefficients: <span class="math inline">A \approx 3°\text{C}</span>, <span class="math inline">B \approx 2°\text{C}</span>, <span class="math inline">C \approx 2°\text{C}</span> per unit ratio. The three terms represent the sky-view, evaporation-suppression, and anthropogenic mechanisms respectively.</p>
+<h3 id="green-infrastructure-mitigation" class="anchored">3.7 Green Infrastructure Mitigation</h3>
+<p><strong>Cool roofs</strong> increase albedo from <span class="math inline">\alpha \approx 0.10</span> (dark) to <span class="math inline">\alpha \approx 0.65</span>–$0.80$ (white). Reduction in absorbed solar radiation per unit roof area:</p>
+<p><span class="math display">\Delta Q_{\text{cool roof}} = \Delta\alpha \cdot K_\downarrow</span></p>
+<p>For <span class="math inline">\Delta\alpha = 0.55</span> and summer noon <span class="math inline">K_\downarrow = 600</span> W m⁻²: <span class="math inline">\Delta Q = 330</span> W m⁻². City-scale effect depends on roof fraction of plan area (typically 20–35%). A city with 25% roof coverage achieves $0.25 = 82.5$ W m⁻² average reduction in absorbed radiation — comparable to removing a large fraction of the UHI forcing.</p>
+<p>Cool roofs are <strong>less effective in cold climates</strong>: in winter, dark roofs usefully absorb solar radiation for space heating. A Canadian analysis must account for the seasonal sign reversal.</p>
+<p><strong>Urban trees</strong> cool through two pathways: shading (blocking <span class="math inline">K_\downarrow</span> from reaching the surface) and evapotranspiration (converting <span class="math inline">Q_H</span> to <span class="math inline">Q_E</span>). A mature deciduous tree transpires 100–400 L day⁻¹. Converting to heat flux over the canopy projection area <span class="math inline">A_{\text{canopy}}</span>:</p>
+<p><span class="math display">Q_E^{\text{tree}} = \frac{\dot{m}_{ET} L_v}{A_{\text{canopy}}}</span></p>
+<p>For <span class="math inline">\dot{m} = 200</span> L day⁻¹ = $2.31 ^{-3}$ kg s⁻¹, <span class="math inline">L_v = 2.45 \times 10^6</span> J kg⁻¹, <span class="math inline">A_{\text{canopy}} = 25</span> m²:</p>
+<p><span class="math display">Q_E^{\text{tree}} = \frac{2.31 \times 10^{-3} \times 2.45 \times 10^6}{25} = 226 \text{ W m}^{-2}</span></p>
+<p>Under-canopy temperatures are typically 2–5°C cooler than adjacent sun-exposed surfaces.</p>
+<p><strong>Park cool island</strong> — the cooling effect extends beyond the park boundary, decaying approximately exponentially with distance:</p>
+<p><span class="math display">\Delta T_{\text{park}}(d) = \Delta T_{\max} e^{-d/d_0}</span></p>
+<p>where <span class="math inline">\Delta T_{\max} \approx 1</span>–$4$°C at the park edge and <span class="math inline">d_0 \approx 100</span>–$400$ m is the e-folding decay distance. Parks larger than 1 ha typically produce measurable cooling; parks larger than 10 ha produce city-scale microclimate effects extending hundreds of metres into surrounding streets.</p>
+<hr>
+<h2 id="worked-example-by-hand" class="anchored">4. Worked Example by Hand</h2>
+<p><strong>Setting:</strong> Edmonton, Alberta (pop. ~1 million). Estimate maximum nocturnal UHI intensity and evaluate a cool roof programme covering 25% of plan area.</p>
+<p><strong>Given:</strong> - <span class="math inline">f_i = 0.55</span>, <span class="math inline">\psi_s = 0.55</span>, <span class="math inline">Q_F = 55</span> W m⁻² (winter average) - <span class="math inline">K_\downarrow = 130</span> W m⁻² (winter average), <span class="math inline">Q^* \approx 70</span> W m⁻² (winter net radiation) - Population: 1,000,000</p>
+<p><strong>Step 1: Oke empirical UHI maximum</strong></p>
+<p><span class="math display">\Delta T_{\max} = 2.01 \times \log_{10}(10^6) - 4.06 = 2.01 \times 6 - 4.06 = 12.06 - 4.06 = 8.0°\text{C}</span></p>
+<p>This is the theoretical maximum on the calmest, clearest night.</p>
+<p><strong>Step 2: Physical estimate (winter)</strong></p>
+<p><span class="math display">\Delta T \approx 3(1 - 0.55) + 2(0.55) + 2\left(\frac{55}{70}\right)</span> <span class="math display">= 1.35 + 1.10 + 1.57 = 4.0°\text{C}</span></p>
+<p>The anthropogenic heat term (<span class="math inline">C \cdot Q_F/Q^* = 1.57°\text{C}</span>) is the largest single contributor in winter — reflecting Edmonton’s heating-dominated climate.</p>
+<p><strong>Step 3: Cool roof benefit (summer)</strong></p>
+<p>Summer: <span class="math inline">K_\downarrow = 480</span> W m⁻², <span class="math inline">\Delta\alpha = 0.50</span>, roof fraction = 0.25:</p>
+<p><span class="math display">\Delta Q_{\text{city}} = 0.25 \times 0.50 \times 480 = 60 \text{ W m}^{-2}</span></p>
+<p>UHI forcing (summer) <span class="math inline">\approx Q_F + \Delta Q_H \approx 25 + 90 = 115</span> W m⁻²</p>
+<p>Reduction: $60/115 = 52%$ of UHI forcing — but this analysis ignores the winter heating penalty. For Edmonton, the net annual benefit of cool roofs is substantially lower than the summer benefit alone.</p>
+<hr>
+<h2 id="computational-implementation" class="anchored">5. Computational Implementation</h2>
+<pre><code>function Q_net(alpha, K_down, L_down, T_s, eps=0.95):
+    sigma = 5.67e-8
+    L_up = eps * sigma * T_s**4
+    return (1 - alpha) * K_down + L_down - L_up
+
+function uhi_predict(f_i, psi_s, Q_F, Q_star, A=3, B=2, C=2):
+    return A * (1 - psi_s) + B * f_i + C * (Q_F / Q_star)
+
+function oke_uhi(population):
+    return max(0, 2.01 * log10(population) - 4.06)
+
+function park_cooling(d, dT_max, d0):
+    return dT_max * exp(-d / d0)
+
+function cool_roof_forcing(delta_alpha, roof_fraction, K_down):
+    return delta_alpha * roof_fraction * K_down</code></pre>
+<pre class="{pyodide}"><code>import numpy as np
+
+sigma = 5.67e-8
+
+def oke_uhi(pop):
+    return max(0, 2.01 * np.log10(pop) - 4.06)
+
+def uhi_physical(fi, psi, QF, Qs, A=3, B=2, C=2):
+    return A*(1-psi) + B*fi + C*(QF/Qs)
+
+def park_cooling(d, dT_max=2.5, d0=200):
+    return dT_max * np.exp(-d/d0)
+
+# Edmonton UHI
+print("Edmonton UHI estimates:")
+print(f"  Oke (1973) max: {oke_uhi(1e6):.1f}°C")
+print(f"  Physical (winter): {uhi_physical(0.55, 0.55, 55, 70):.1f}°C")
+print(f"  Physical (summer): {uhi_physical(0.55, 0.55, 25, 200):.1f}°C")
+
+# Cool roof
+cr = 0.25 * 0.50 * 480
+print(f"\nCool roof city forcing (summer): {cr:.0f} W/m²")
+
+# Oke UHI vs city size
+print("\nUHI max by city size (Oke 1973):")
+for pop in [10_000, 100_000, 500_000, 1_000_000, 5_000_000]:
+    print(f"  {pop:&gt;9,.0f} people: {oke_uhi(pop):.1f}°C")
+
+# Park cooling
+print("\nPark cool island extent:")
+for d in [0, 100, 200, 400, 800]:
+    print(f"  {d:4d}m from park: {park_cooling(d):.2f}°C")</code></pre>
+<hr>
+<h2 id="visualization" class="anchored">6. Visualization</h2>
+<div data-viz="echarts" style="height:420px" data-options="{
+  &quot;title&quot;: {&quot;text&quot;: &quot;Surface Energy Balance: Rural vs Urban (summer midday)&quot;, &quot;textStyle&quot;: {&quot;fontSize&quot;: 14}},
+  &quot;tooltip&quot;: {&quot;trigger&quot;: &quot;axis&quot;},
+  &quot;legend&quot;: {&quot;data&quot;: [&quot;Rural vegetated&quot;, &quot;Urban dense&quot;], &quot;bottom&quot;: 0},
+  &quot;xAxis&quot;: {&quot;type&quot;: &quot;category&quot;,
+    &quot;data&quot;: [&quot;Net radiation Q*&quot;, &quot;Sensible QH&quot;, &quot;Latent QE&quot;, &quot;Storage ΔQS&quot;, &quot;Anthropogenic QF&quot;],
+    &quot;axisLabel&quot;: {&quot;rotate&quot;: 12}},
+  &quot;yAxis&quot;: {&quot;name&quot;: &quot;Energy flux (W m⁻²)&quot;, &quot;nameLocation&quot;: &quot;middle&quot;, &quot;nameGap&quot;: 50, &quot;min&quot;: 0, &quot;max&quot;: 580},
+  &quot;series&quot;: [
+    {&quot;name&quot;: &quot;Rural vegetated&quot;, &quot;type&quot;: &quot;bar&quot;,
+     &quot;data&quot;: [
+       {&quot;value&quot;: 445, &quot;itemStyle&quot;: {&quot;color&quot;: &quot;#FFC107&quot;}},
+       {&quot;value&quot;: 133, &quot;itemStyle&quot;: {&quot;color&quot;: &quot;#FF7043&quot;}},
+       {&quot;value&quot;: 267, &quot;itemStyle&quot;: {&quot;color&quot;: &quot;#42A5F5&quot;}},
+       {&quot;value&quot;: 45,  &quot;itemStyle&quot;: {&quot;color&quot;: &quot;#8D6E63&quot;}},
+       {&quot;value&quot;: 2,   &quot;itemStyle&quot;: {&quot;color&quot;: &quot;#BDBDBD&quot;}}
+     ]},
+    {&quot;name&quot;: &quot;Urban dense&quot;, &quot;type&quot;: &quot;bar&quot;,
+     &quot;data&quot;: [
+       {&quot;value&quot;: 510, &quot;itemStyle&quot;: {&quot;color&quot;: &quot;#FFA000&quot;}},
+       {&quot;value&quot;: 357, &quot;itemStyle&quot;: {&quot;color&quot;: &quot;#E53935&quot;}},
+       {&quot;value&quot;: 51,  &quot;itemStyle&quot;: {&quot;color&quot;: &quot;#1E88E5&quot;}},
+       {&quot;value&quot;: 42,  &quot;itemStyle&quot;: {&quot;color&quot;: &quot;#5D4037&quot;}},
+       {&quot;value&quot;: 60,  &quot;itemStyle&quot;: {&quot;color&quot;: &quot;#757575&quot;}}
+     ]}
+  ]
+}">
+
+</div>
+<p>The energy balance shift from rural to urban is primarily the collapse of <span class="math inline">Q_E</span> (latent heat) and the corresponding rise in <span class="math inline">Q_H</span> (sensible heat). Rural areas route ~60% of net radiation into evaporation; dense urban areas route less than 10%. That additional ~200 W m⁻² of sensible heat directly warms the urban atmosphere. The anthropogenic term adds a further 60 W m⁻² with no rural analogue.</p>
+<hr>
+<h2 id="interpretation" class="anchored">7. Interpretation</h2>
+<p>The UHI is not a single phenomenon — it is the superposition of six mechanisms operating on different timescales. During the day, impervious surface albedo and suppressed evaporation dominate. At night, sky view factor and thermal mass release dominate. On the annual scale in cold climates, anthropogenic heat dominates in winter. Effective UHI management requires identifying which mechanism dominates in a given city and targeting interventions accordingly.</p>
+<p>This mechanistic understanding has important policy implications. Cool roofs are the correct intervention in sun-rich, warm climates (Phoenix, Los Angeles, Singapore) but may increase winter heating demand in cold climates (Edmonton, Helsinki) if applied to buildings that currently benefit from passive solar gain. Urban tree planting is most effective in warm, humid climates where ET rates are high; in arid cities, the water demand for irrigation may offset the climate benefit. Sky view factor improvements through setback requirements and building height limits have the strongest effect in dense canyon-like city centres.</p>
+<p>The public health dimension is direct. During heat waves, the UHI adds to synoptic heat stress. The 2003 Paris heat wave killed approximately 14,000 people in France; the 2021 Pacific Northwest heat dome killed 619 in British Columbia, with deaths concentrated in dense urban neighbourhoods without air conditioning. Under climate projections, the combination of background warming and UHI means that cities will experience heat stress conditions that would historically have been fatal with increasing frequency — making UHI mitigation a public health intervention as much as a climate one.</p>
+<hr>
+<h2 id="what-could-go-wrong" class="anchored">8. What Could Go Wrong?</h2>
+<p><strong>The Oke formula is empirical and context-dependent.</strong> Calibrated on mid-latitude North American and European cities, it overestimates UHI in coastal cities (sea breezes suppress the effect) and in cities with high rural Bowen ratios (arid surroundings already have low evaporation, reducing the rural-urban contrast). It should be treated as a first approximation, not a prediction.</p>
+<p><strong>Cool roofs have a winter heating penalty in cold climates.</strong> The analysis above calculates only the summer benefit. In Edmonton, a cool roof that saves 60 W m⁻² of cooling energy in July also costs roughly 30–40 W m⁻² of heating energy in January. Net annual energy balance and net carbon balance depend on the grid electricity source and the heating fuel mix.</p>
+<p><strong>Urban trees require water.</strong> Evapotranspirative cooling requires available soil moisture. In drought conditions or on fully paved surfaces with no infiltration opportunity, trees transpire at a fraction of their potential rate and the cooling benefit is reduced to shading alone (~30–50% of the full benefit). Urban irrigation of street trees in arid cities may consume more water than the climate benefit justifies.</p>
+<p><strong>The sky view factor varies enormously within a city.</strong> A city-average <span class="math inline">\psi_s = 0.55</span> masks values ranging from 0.15 in dense downtown canyons to 0.95 in suburban cul-de-sacs. The UHI is not spatially uniform — it is a field with strong gradients that concentrates heat in exactly the dense, low-income neighbourhoods that are least likely to have air conditioning and most vulnerable to heat stress.</p>
+<hr>
+<h2 id="summary" class="anchored">9. Summary</h2>
+<p>The urban heat island arises from four interacting modifications to the surface energy balance: increased net radiation absorption (lower albedo, reduced sky view factor); suppressed evaporation (impervious surfaces); elevated thermal mass (dense building materials); and added anthropogenic heat (combustion, electricity). Together these raise urban temperatures 2–8°C above rural surroundings, with maximum intensity on calm, clear nights when radiative cooling is most strongly suppressed by building geometry.</p>
+<p>Mitigation strategies target specific mechanisms: cool roofs reduce absorbed solar; urban trees restore the evapotranspiration pathway; parks create decaying cool islands extending hundreds of metres; building setbacks and sky view factor preservation reduce nocturnal trapping. Strategy selection must be matched to the dominant local mechanism and the seasonal climate context.</p>
+<p><strong>Key equations:</strong></p>
+<p><span class="math display">Q^* = (1-\alpha)K_\downarrow + L_\downarrow - \varepsilon_s\sigma T_s^4</span></p>
+<p><span class="math display">Q^* = Q_H + Q_E + \Delta Q_S + Q_F</span></p>
+<p><span class="math display">\Delta T_{u-r,\max} = 2.01\log_{10}P - 4.06 \quad \text{[Oke 1973]}</span></p>
+<p><span class="math display">z_d = \sqrt{2\kappa/\omega} \quad \text{[diurnal skin depth]}</span></p>
+<p><span class="math display">\Delta T_{\text{park}}(d) = \Delta T_{\max} e^{-d/d_0}</span></p>
+<hr>
+<h2 id="math-refresher" class="anchored">Math Refresher</h2>
+<p><strong>The Stefan-Boltzmann law.</strong> Every object above absolute zero emits electromagnetic radiation. The total power per unit area is <span class="math inline">L = \varepsilon\sigma T^4</span>, with <span class="math inline">\sigma = 5.67 \times 10^{-8}</span> W m⁻² K⁻⁴ and <span class="math inline">T</span> in Kelvin. The <span class="math inline">T^4</span> dependence makes emission very sensitive to temperature: increasing <span class="math inline">T</span> from 280 K to 300 K (a 7% rise) increases emission by <span class="math inline">(300/280)^4 - 1 = 32\%</span>. The key practical implication: a warm urban surface emits substantially more longwave radiation than the cool rural surface it replaced, but this extra emission is partially re-absorbed by surrounding buildings if <span class="math inline">\psi_s</span> is small — the building canyon recirculates longwave energy rather than allowing it to escape.</p>
+<p><strong>Bowen ratio and energy partitioning.</strong> If <span class="math inline">Q^*</span> is fixed and <span class="math inline">\beta = Q_H/Q_E</span>, then <span class="math inline">Q_H = \beta Q^*/(\beta+1)</span> and <span class="math inline">Q_E = Q^*/(\beta+1)</span>. As <span class="math inline">\beta \to \infty</span> (dry impervious surface), all net radiation goes to sensible heat. As <span class="math inline">\beta \to 0</span> (open water), all goes to evaporation. The Bowen ratio is a single dimensionless number that summarises the entire heat partition — a powerful compression of complex land surface physics into one measurable parameter.</p>
+
+
+<footer class="wayward-footer">
+  <div class="wayward-footer__inner">
+    <div class="wayward-footer__brand">
+      <div class="wayward-footer__logo">WaywardHouse<span>.</span></div>
+      <p>Understanding how place, economy, and environment interact through analysis, modelling, and open tools.</p>
+    </div>
+
+    <nav class="wayward-footer__group" aria-labelledby="footer-reading">
+      <h2 id="footer-reading" class="anchored">Reading</h2>
+      <a href="../articles/">Articles</a>
+      <a href="../learn/">Learn</a>
+      <a href="../archive.html">Archive</a>
+      <a href="../start-here.html">Start Here</a>
+    </nav>
+
+    <nav class="wayward-footer__group" aria-labelledby="footer-site">
+      <h2 id="footer-site" class="anchored">Site</h2>
+      <a href="../start-here.html">Start Here</a>
+      <a href="../about.html">About</a>
+      <a href="../contact.html">Contact</a>
+    </nav>
+
+    <nav class="wayward-footer__group" aria-labelledby="footer-resources">
+      <h2 id="footer-resources" class="anchored">Resources</h2>
+      <a href="../topics/">All Topics</a>
+      <a href="../privacy.html">Privacy Policy</a>
+      <a href="../terms.html">Terms of Use</a>
+    </nav>
+  </div>
+</footer>
+
+<script type="module" src="../assets/dist/main.js"></script>
+<script type="module" src="../assets/js/core.js"></script>
+<script id="quarto-html-after-body" type="application/javascript">
+  window.document.addEventListener("DOMContentLoaded", function (event) {
+    const tabsets =  window.document.querySelectorAll(".panel-tabset-tabby")
+    tabsets.forEach(function(tabset) {
+      const tabby = new Tabby('#' + tabset.id);
+    });
+    const icon = "";
+    const anchorJS = new window.AnchorJS();
+    anchorJS.options = {
+      placement: 'right',
+      icon: icon
+    };
+    anchorJS.add('.anchored');
+    const isCodeAnnotation = (el) => {
+      for (const clz of el.classList) {
+        if (clz.startsWith('code-annotation-')) {                     
+          return true;
+        }
+      }
+      return false;
+    }
+    const onCopySuccess = function(e) {
+      // button target
+      const button = e.trigger;
+      // don't keep focus
+      button.blur();
+      // flash "checked"
+      button.classList.add('code-copy-button-checked');
+      var currentTitle = button.getAttribute("title");
+      button.setAttribute("title", "Copied!");
+      let tooltip;
+      if (window.bootstrap) {
+        button.setAttribute("data-bs-toggle", "tooltip");
+        button.setAttribute("data-bs-placement", "left");
+        button.setAttribute("data-bs-title", "Copied!");
+        tooltip = new bootstrap.Tooltip(button, 
+          { trigger: "manual", 
+            customClass: "code-copy-button-tooltip",
+            offset: [0, -8]});
+        tooltip.show();    
+      }
+      setTimeout(function() {
+        if (tooltip) {
+          tooltip.hide();
+          button.removeAttribute("data-bs-title");
+          button.removeAttribute("data-bs-toggle");
+          button.removeAttribute("data-bs-placement");
+        }
+        button.setAttribute("title", currentTitle);
+        button.classList.remove('code-copy-button-checked');
+      }, 1000);
+      // clear code selection
+      e.clearSelection();
+    }
+    const getTextToCopy = function(trigger) {
+      const outerScaffold = trigger.parentElement.cloneNode(true);
+      const codeEl = outerScaffold.querySelector('code');
+      for (const childEl of codeEl.children) {
+        if (isCodeAnnotation(childEl)) {
+          childEl.remove();
+        }
+      }
+      return codeEl.innerText;
+    }
+    const clipboard = new window.ClipboardJS('.code-copy-button:not([data-in-quarto-modal])', {
+      text: getTextToCopy
+    });
+    clipboard.on('success', onCopySuccess);
+    if (window.document.getElementById('quarto-embedded-source-code-modal')) {
+      const clipboardModal = new window.ClipboardJS('.code-copy-button[data-in-quarto-modal]', {
+        text: getTextToCopy,
+        container: window.document.getElementById('quarto-embedded-source-code-modal')
+      });
+      clipboardModal.on('success', onCopySuccess);
+    }
+      var localhostRegex = new RegExp(/^(?:http|https):\/\/localhost\:?[0-9]*\//);
+      var mailtoRegex = new RegExp(/^mailto:/);
+        var filterRegex = new RegExp('/' + window.location.host + '/');
+      var isInternal = (href) => {
+          return filterRegex.test(href) || localhostRegex.test(href) || mailtoRegex.test(href);
+      }
+      // Inspect non-navigation links and adorn them if external
+     var links = window.document.querySelectorAll('a[href]:not(.nav-link):not(.navbar-brand):not(.toc-action):not(.sidebar-link):not(.sidebar-item-toggle):not(.pagination-link):not(.no-external):not([aria-hidden]):not(.dropdown-item):not(.quarto-navigation-tool):not(.about-link)');
+      for (var i=0; i<links.length; i++) {
+        const link = links[i];
+        if (!isInternal(link.href)) {
+          // undo the damage that might have been done by quarto-nav.js in the case of
+          // links that we want to consider external
+          if (link.dataset.originalHref !== undefined) {
+            link.href = link.dataset.originalHref;
+          }
+        }
+      }
+    function tippyHover(el, contentFn, onTriggerFn, onUntriggerFn) {
+      const config = {
+        allowHTML: true,
+        maxWidth: 500,
+        delay: 100,
+        arrow: false,
+        appendTo: function(el) {
+            return el.parentElement;
+        },
+        interactive: true,
+        interactiveBorder: 10,
+        theme: 'light-border',
+        placement: 'bottom-start',
+      };
+      if (contentFn) {
+        config.content = contentFn;
+      }
+      if (onTriggerFn) {
+        config.onTrigger = onTriggerFn;
+      }
+      if (onUntriggerFn) {
+        config.onUntrigger = onUntriggerFn;
+      }
+      window.tippy(el, config); 
+    }
+    const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+    for (var i=0; i<noterefs.length; i++) {
+      const ref = noterefs[i];
+      tippyHover(ref, function() {
+        // use id or data attribute instead here
+        let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+        try { href = new URL(href).hash; } catch {}
+        const id = href.replace(/^#\/?/, "");
+        const note = window.document.getElementById(id);
+        if (note) {
+          return note.innerHTML;
+        } else {
+          return "";
+        }
+      });
+    }
+    const xrefs = window.document.querySelectorAll('a.quarto-xref');
+    const processXRef = (id, note) => {
+      // Strip column container classes
+      const stripColumnClz = (el) => {
+        el.classList.remove("page-full", "page-columns");
+        if (el.children) {
+          for (const child of el.children) {
+            stripColumnClz(child);
+          }
+        }
+      }
+      stripColumnClz(note)
+      if (id === null || id.startsWith('sec-')) {
+        // Special case sections, only their first couple elements
+        const container = document.createElement("div");
+        if (note.children && note.children.length > 2) {
+          container.appendChild(note.children[0].cloneNode(true));
+          for (let i = 1; i < note.children.length; i++) {
+            const child = note.children[i];
+            if (child.tagName === "P" && child.innerText === "") {
+              continue;
+            } else {
+              container.appendChild(child.cloneNode(true));
+              break;
+            }
+          }
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(container);
+          }
+          return container.innerHTML
+        } else {
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(note);
+          }
+          return note.innerHTML;
+        }
+      } else {
+        // Remove any anchor links if they are present
+        const anchorLink = note.querySelector('a.anchorjs-link');
+        if (anchorLink) {
+          anchorLink.remove();
+        }
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(note);
+        }
+        if (note.classList.contains("callout")) {
+          return note.outerHTML;
+        } else {
+          return note.innerHTML;
+        }
+      }
+    }
+    for (var i=0; i<xrefs.length; i++) {
+      const xref = xrefs[i];
+      tippyHover(xref, undefined, function(instance) {
+        instance.disable();
+        let url = xref.getAttribute('href');
+        let hash = undefined; 
+        if (url.startsWith('#')) {
+          hash = url;
+        } else {
+          try { hash = new URL(url).hash; } catch {}
+        }
+        if (hash) {
+          const id = hash.replace(/^#\/?/, "");
+          const note = window.document.getElementById(id);
+          if (note !== null) {
+            try {
+              const html = processXRef(id, note.cloneNode(true));
+              instance.setContent(html);
+            } finally {
+              instance.enable();
+              instance.show();
+            }
+          } else {
+            // See if we can fetch this
+            fetch(url.split('#')[0])
+            .then(res => res.text())
+            .then(html => {
+              const parser = new DOMParser();
+              const htmlDoc = parser.parseFromString(html, "text/html");
+              const note = htmlDoc.getElementById(id);
+              if (note !== null) {
+                const html = processXRef(id, note);
+                instance.setContent(html);
+              } 
+            }).finally(() => {
+              instance.enable();
+              instance.show();
+            });
+          }
+        } else {
+          // See if we can fetch a full url (with no hash to target)
+          // This is a special case and we should probably do some content thinning / targeting
+          fetch(url)
+          .then(res => res.text())
+          .then(html => {
+            const parser = new DOMParser();
+            const htmlDoc = parser.parseFromString(html, "text/html");
+            const note = htmlDoc.querySelector('main.content');
+            if (note !== null) {
+              // This should only happen for chapter cross references
+              // (since there is no id in the URL)
+              // remove the first header
+              if (note.children.length > 0 && note.children[0].tagName === "HEADER") {
+                note.children[0].remove();
+              }
+              const html = processXRef(null, note);
+              instance.setContent(html);
+            } 
+          }).finally(() => {
+            instance.enable();
+            instance.show();
+          });
+        }
+      }, function(instance) {
+      });
+    }
+        let selectedAnnoteEl;
+        const selectorForAnnotation = ( cell, annotation) => {
+          let cellAttr = 'data-code-cell="' + cell + '"';
+          let lineAttr = 'data-code-annotation="' +  annotation + '"';
+          const selector = 'span[' + cellAttr + '][' + lineAttr + ']';
+          return selector;
+        }
+        const selectCodeLines = (annoteEl) => {
+          const doc = window.document;
+          const targetCell = annoteEl.getAttribute("data-target-cell");
+          const targetAnnotation = annoteEl.getAttribute("data-target-annotation");
+          const annoteSpan = window.document.querySelector(selectorForAnnotation(targetCell, targetAnnotation));
+          const lines = annoteSpan.getAttribute("data-code-lines").split(",");
+          const lineIds = lines.map((line) => {
+            return targetCell + "-" + line;
+          })
+          let top = null;
+          let height = null;
+          let parent = null;
+          if (lineIds.length > 0) {
+              //compute the position of the single el (top and bottom and make a div)
+              const el = window.document.getElementById(lineIds[0]);
+              top = el.offsetTop;
+              height = el.offsetHeight;
+              parent = el.parentElement.parentElement;
+            if (lineIds.length > 1) {
+              const lastEl = window.document.getElementById(lineIds[lineIds.length - 1]);
+              const bottom = lastEl.offsetTop + lastEl.offsetHeight;
+              height = bottom - top;
+            }
+            if (top !== null && height !== null && parent !== null) {
+              // cook up a div (if necessary) and position it 
+              let div = window.document.getElementById("code-annotation-line-highlight");
+              if (div === null) {
+                div = window.document.createElement("div");
+                div.setAttribute("id", "code-annotation-line-highlight");
+                div.style.position = 'absolute';
+                parent.appendChild(div);
+              }
+              div.style.top = top - 2 + "px";
+              div.style.height = height + 4 + "px";
+              div.style.left = 0;
+              let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
+              if (gutterDiv === null) {
+                gutterDiv = window.document.createElement("div");
+                gutterDiv.setAttribute("id", "code-annotation-line-highlight-gutter");
+                gutterDiv.style.position = 'absolute';
+                const codeCell = window.document.getElementById(targetCell);
+                const gutter = codeCell.querySelector('.code-annotation-gutter');
+                gutter.appendChild(gutterDiv);
+              }
+              gutterDiv.style.top = top - 2 + "px";
+              gutterDiv.style.height = height + 4 + "px";
+            }
+            selectedAnnoteEl = annoteEl;
+          }
+        };
+        const unselectCodeLines = () => {
+          const elementsIds = ["code-annotation-line-highlight", "code-annotation-line-highlight-gutter"];
+          elementsIds.forEach((elId) => {
+            const div = window.document.getElementById(elId);
+            if (div) {
+              div.remove();
+            }
+          });
+          selectedAnnoteEl = undefined;
+        };
+          // Handle positioning of the toggle
+      window.addEventListener(
+        "resize",
+        throttle(() => {
+          elRect = undefined;
+          if (selectedAnnoteEl) {
+            selectCodeLines(selectedAnnoteEl);
+          }
+        }, 10)
+      );
+      function throttle(fn, ms) {
+      let throttle = false;
+      let timer;
+        return (...args) => {
+          if(!throttle) { // first call gets through
+              fn.apply(this, args);
+              throttle = true;
+          } else { // all the others get throttled
+              if(timer) clearTimeout(timer); // cancel #2
+              timer = setTimeout(() => {
+                fn.apply(this, args);
+                timer = throttle = false;
+              }, ms);
+          }
+        };
+      }
+        // Attach click handler to the DT
+        const annoteDls = window.document.querySelectorAll('dt[data-target-cell]');
+        for (const annoteDlNode of annoteDls) {
+          annoteDlNode.addEventListener('click', (event) => {
+            const clickedEl = event.target;
+            if (clickedEl !== selectedAnnoteEl) {
+              unselectCodeLines();
+              const activeEl = window.document.querySelector('dt[data-target-cell].code-annotation-active');
+              if (activeEl) {
+                activeEl.classList.remove('code-annotation-active');
+              }
+              selectCodeLines(clickedEl);
+              clickedEl.classList.add('code-annotation-active');
+            } else {
+              // Unselect the line
+              unselectCodeLines();
+              clickedEl.classList.remove('code-annotation-active');
+            }
+          });
+        }
+    const findCites = (el) => {
+      const parentEl = el.parentElement;
+      if (parentEl) {
+        const cites = parentEl.dataset.cites;
+        if (cites) {
+          return {
+            el,
+            cites: cites.split(' ')
+          };
+        } else {
+          return findCites(el.parentElement)
+        }
+      } else {
+        return undefined;
+      }
+    };
+    var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+    for (var i=0; i<bibliorefs.length; i++) {
+      const ref = bibliorefs[i];
+      const citeInfo = findCites(ref);
+      if (citeInfo) {
+        tippyHover(citeInfo.el, function() {
+          var popup = window.document.createElement('div');
+          citeInfo.cites.forEach(function(cite) {
+            var citeDiv = window.document.createElement('div');
+            citeDiv.classList.add('hanging-indent');
+            citeDiv.classList.add('csl-entry');
+            var biblioDiv = window.document.getElementById('ref-' + cite);
+            if (biblioDiv) {
+              citeDiv.innerHTML = biblioDiv.innerHTML;
+            }
+            popup.appendChild(citeDiv);
+          });
+          return popup.innerHTML;
+        });
+      }
+    }
+  });
+  </script>
+
+
+
+
+</body></html>
