@@ -1,0 +1,816 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
+
+<meta charset="utf-8">
+<meta name="generator" content="quarto-1.9.36">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+
+<meta name="dcterms.date" content="2026-03-05">
+<meta name="description" content="Terrestrial vegetation absorbs roughly 120 billion tonnes of CO₂ from the atmosphere each year through photosynthesis — more than three times the annual fossil fuel emission. Half of this is returned immediately by plant respiration. The net uptake, and its sensitivity to temperature, moisture, and light, is the largest single uncertainty in the global carbon budget. This essay derives the photosynthesis equation, models gross primary production using the Monteith light-use efficiency framework, defines GPP, NPP, NEP, and CUE, and quantifies seasonal variation across Alberta’s biomes.">
+
+<title>Photosynthesis and Gross Primary Production – Computational Geography</title>
+<style>
+/* Default styles provided by pandoc.
+** See https://pandoc.org/MANUAL.html#variables-for-html for config info.
+*/
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: min(4vw, 1.5em);}
+div.column{flex: auto; overflow-x: auto;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+  width: 0.8em;
+  margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
+  vertical-align: middle;
+}
+</style>
+
+
+<script src="../site_libs/clipboard/clipboard.min.js"></script>
+<script src="../site_libs/quarto-html/tabby.min.js"></script>
+<script src="../site_libs/quarto-html/popper.min.js"></script>
+<script src="../site_libs/quarto-html/tippy.umd.min.js"></script>
+<script src="../site_libs/quarto-html/anchor.min.js"></script>
+<link href="../site_libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="../site_libs/quarto-html/light-border.css" rel="stylesheet">
+<link href="../site_libs/quarto-html/quarto-html-640605f58ae58ee79329c070719e555b.min.css" rel="stylesheet" append-hash="true" data-mode="light">
+<link href="../site_libs/quarto-html/quarto-syntax-highlighting-845c23b38eaddc0f92fda52bfe77a8c8.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<script>
+  (function () {
+    var s = localStorage.getItem('theme');
+    var dark = s !== null ? s === 'dark' : false;
+    document.documentElement.dataset.theme = dark ? 'dark' : 'light';
+    document.documentElement.dataset.brand = 'wayward';
+  })();
+</script>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:ital,wght@0,300;0,400;0,600;0,700;0,800;0,900;1,700;1,800&amp;family=Barlow:wght@300;400;500;600&amp;family=IBM+Plex+Mono:ital,wght@0,300;0,400;0,500;1,300&amp;family=Literata:ital,opsz,wght@0,7..72,300;0,7..72,400;0,7..72,500;1,7..72,300;1,7..72,400&amp;display=swap" rel="stylesheet">
+
+  <script>window.backupDefine = window.define; window.define = undefined;</script><script src="https://cdn.jsdelivr.net/npm/katex@latest/dist/katex.min.js"></script>
+  <script>document.addEventListener("DOMContentLoaded", function () {
+ var mathElements = document.getElementsByClassName("math");
+ var macros = [];
+ for (var i = 0; i < mathElements.length; i++) {
+  var texText = mathElements[i].firstChild;
+  if (mathElements[i].tagName == "SPAN") {
+   katex.render(texText.data, mathElements[i], {
+    displayMode: mathElements[i].classList.contains('display'),
+    throwOnError: false,
+    macros: macros,
+    fleqn: false
+   });
+}}});
+  </script>
+  <script>window.define = window.backupDefine; window.backupDefine = undefined;</script><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@latest/dist/katex.min.css">
+
+<script type="text/javascript">
+const typesetMath = (el) => {
+  if (window.MathJax) {
+    // MathJax Typeset
+    window.MathJax.typeset([el]);
+  } else if (window.katex) {
+    // KaTeX Render
+    var mathElements = el.getElementsByClassName("math");
+    var macros = [];
+    for (var i = 0; i < mathElements.length; i++) {
+      var texText = mathElements[i].firstChild;
+      if (mathElements[i].tagName == "SPAN" && texText && texText.data) {
+        window.katex.render(texText.data, mathElements[i], {
+          displayMode: mathElements[i].classList.contains('display'),
+          throwOnError: false,
+          macros: macros,
+          fleqn: false
+        });
+      }
+    }
+  }
+}
+window.Quarto = {
+  typesetMath
+};
+</script>
+
+<link rel="stylesheet" href="../assets/css/quarto-wayward.css">
+</head>
+
+<body class="reading-body tag-hash-math tag-hash-viz">
+
+
+<header id="title-block-header">
+<h1 class="title"><span class="chapter-title">Photosynthesis and Gross Primary Production</span></h1>
+<p class="subtitle">Light-use efficiency, GPP, NPP, NEP, and carbon use efficiency</p>
+
+<p class="date">2026-03-05</p>
+</header>
+
+<nav id="TOC" role="doc-toc">
+    <h2 id="toc-title">Table of contents</h2>
+   
+  <ul>
+  <li><a href="#the-question" id="toc-the-question">1. The Question</a></li>
+  <li><a href="#the-conceptual-model" id="toc-the-conceptual-model">2. The Conceptual Model</a></li>
+  <li><a href="#building-the-mathematical-model" id="toc-building-the-mathematical-model">3. Building the Mathematical Model</a>
+  <ul>
+  <li><a href="#the-photosynthesis-equation" id="toc-the-photosynthesis-equation">3.1 The Photosynthesis Equation</a></li>
+  <li><a href="#the-monteith-light-use-efficiency-model" id="toc-the-monteith-light-use-efficiency-model">3.2 The Monteith Light-Use Efficiency Model</a></li>
+  <li><a href="#the-carbon-flux-budget" id="toc-the-carbon-flux-budget">3.3 The Carbon Flux Budget</a></li>
+  <li><a href="#annual-gpp-and-seasonal-integration" id="toc-annual-gpp-and-seasonal-integration">3.4 Annual GPP and Seasonal Integration</a></li>
+  </ul></li>
+  <li><a href="#worked-example-by-hand" id="toc-worked-example-by-hand">4. Worked Example by Hand</a></li>
+  <li><a href="#computational-implementation" id="toc-computational-implementation">5. Computational Implementation</a></li>
+  <li><a href="#visualization" id="toc-visualization">6. Visualization</a></li>
+  <li><a href="#interpretation" id="toc-interpretation">7. Interpretation</a></li>
+  <li><a href="#what-could-go-wrong" id="toc-what-could-go-wrong">8. What Could Go Wrong?</a></li>
+  <li><a href="#summary" id="toc-summary">9. Summary</a></li>
+  <li><a href="#math-refresher" id="toc-math-refresher">Math Refresher</a></li>
+  </ul>
+</nav>
+<p>Every summer morning, as the sun rises over the aspen parkland north of Edmonton, chloroplasts in millions of trembling aspen leaves begin absorbing carbon dioxide and converting it to sugar. By noon, on a warm clear August day, an aspen stand may be absorbing 8–12 g of CO₂ per square metre per day. By September, the leaves yellow; by October, photosynthesis effectively stops. The annual integral of this process — gross primary production — is the largest natural carbon flux on Earth.</p>
+<hr>
+<h2 id="the-question" class="anchored">1. The Question</h2>
+<p>How much CO₂ does vegetation absorb per unit area per year? How does this depend on light, temperature, and water availability? How much of the fixed carbon remains as net ecosystem carbon gain after plant and microbial respiration?</p>
+<hr>
+<h2 id="the-conceptual-model" class="anchored">2. The Conceptual Model</h2>
+<p>Photosynthesis fixes atmospheric CO₂ into organic matter using light energy. The gross rate of this fixation — <strong>Gross Primary Production (GPP)</strong> — is the total carbon flux from atmosphere to vegetation. Plants immediately respire a fraction of this for their own metabolic needs (<strong>autotrophic respiration, <span class="math inline">R_a</span></strong>), leaving <strong>Net Primary Production (NPP)</strong> — the carbon available for growth, roots, and reproductive structures. Decomposers in the soil respire some of the dead organic matter (<strong>heterotrophic respiration, <span class="math inline">R_h</span></strong>), leaving <strong>Net Ecosystem Production (NEP)</strong> — the net carbon sink or source of the whole ecosystem.</p>
+<hr>
+<h2 id="building-the-mathematical-model" class="anchored">3. Building the Mathematical Model</h2>
+<h3 id="the-photosynthesis-equation" class="anchored">3.1 The Photosynthesis Equation</h3>
+<p>The idealised net photosynthesis equation:</p>
+<p><span class="math inline">&amp;#36;6\,\text{CO}_2 + 6\,\text{H}_2\text{O} + \text{light energy} \to \text{C}_6\text{H}_{12}\text{O}_6 + 6\,\text{O}_2</span>$</p>
+<p>One mole of glucose (180 g) is produced from 6 moles of CO₂ (6 × 44 = 264 g). Carbon mass ratio:</p>
+<p><span class="math display">\frac{m_C \text{ fixed}}{m_{\text{CO}_2} \text{ absorbed}} = \frac{6 \times 12}{6 \times 44} = \frac{72}{264} = \frac{12}{44} = 0.2727</span></p>
+<p>GPP is typically reported in units of g C m⁻² d⁻¹ or t C ha⁻¹ yr⁻¹. Converting observed CO₂ fluxes to carbon: multiply by 12/44.</p>
+<p>The thermodynamic minimum energy requirement is 2870 kJ mol⁻¹ of glucose, but real photosynthesis requires about 8 moles of photons per mole of CO₂ fixed (quantum yield). The maximum theoretical quantum yield is thus 1/8 mol CO₂ per mole of photons = 0.125 mol/mol.</p>
+<h3 id="the-monteith-light-use-efficiency-model" class="anchored">3.2 The Monteith Light-Use Efficiency Model</h3>
+<p><strong>Gross Primary Production</strong> can be modelled with the <strong>Monteith (1972, 1977) LUE model</strong>:</p>
+<p><span class="math display">\text{GPP} = \varepsilon \times \text{fAPAR} \times \text{APAR}_0 \times f(T) \times f(W)</span></p>
+<p>where: - <span class="math inline">\varepsilon</span> = maximum light-use efficiency [g C mol<span class="math inline">_{\text{photon}}^{-1}</span> or g C MJ<span class="math inline">_{\text{PAR}}^{-1}</span>] - fAPAR = fraction of absorbed photosynthetically active radiation (0–1) - <span class="math inline">\text{APAR}_0</span> = incident PAR [MJ m⁻² d⁻¹ or mol<span class="math inline">_{\text{photon}}</span> m⁻² d⁻¹] - <span class="math inline">f(T)</span> = temperature scalar (0–1), reducing <span class="math inline">\varepsilon</span> below optimum - <span class="math inline">f(W)</span> = water stress scalar (0–1), reducing <span class="math inline">\varepsilon</span> under drought</p>
+<p><strong>fAPAR</strong> is directly related to NDVI (from satellite): <span class="math inline">\text{fAPAR} \approx (1.14 \times \text{NDVI} - 0.03)</span>, clipped to [0, 1]. This makes satellite NDVI a spatial proxy for GPP.</p>
+<p><strong>Temperature scalar</strong> (simple form):</p>
+<p><span class="math display">f(T) = \frac{(T - T_{\min})(T - T_{\max})}{(T - T_{\min})(T - T_{\max}) - (T - T_{\text{opt}})^2}</span></p>
+<p>with typical values: <span class="math inline">T_{\min} = 0°</span>C, <span class="math inline">T_{\max} = 40°</span>C, <span class="math inline">T_{\text{opt}} = 20°</span>C for temperate vegetation.</p>
+<p><strong>Light response (rectangular hyperbola):</strong> At the leaf level, photosynthesis saturates at high light:</p>
+<p><span class="math display">A = A_{\max}\frac{\alpha_q I}{A_{\max} + \alpha_q I}</span></p>
+<p>where <span class="math inline">I</span> = photon flux density, <span class="math inline">\alpha_q</span> = initial quantum yield, <span class="math inline">A_{\max}</span> = light-saturated rate. At ecosystem scale, this saturation is less pronounced because different leaf layers are illuminated at different intensities — the LUE model approximates the ecosystem-scale relationship as nearly linear.</p>
+<h3 id="the-carbon-flux-budget" class="anchored">3.3 The Carbon Flux Budget</h3>
+<p><span class="math display">\text{GPP} = \text{Total carbon fixed by photosynthesis}</span></p>
+<p><span class="math display">\text{NPP} = \text{GPP} - R_a \quad \text{[Net Primary Production]}</span></p>
+<p><span class="math display">\text{NEP} = \text{NPP} - R_h = \text{GPP} - R_a - R_h \quad \text{[Net Ecosystem Production]}</span></p>
+<p><span class="math display">\text{NBP} = \text{NEP} - \text{Disturbances} \quad \text{[Net Biome Production]}</span></p>
+<p><strong>Carbon Use Efficiency (CUE):</strong></p>
+<p><span class="math display">\text{CUE} = \frac{\text{NPP}}{\text{GPP}} = 1 - \frac{R_a}{\text{GPP}}</span></p>
+<p>A long-standing paradigm (Gifford 1994) proposed CUE ≈ 0.50 universally — half of GPP is used by plant respiration. More recent synthesis shows CUE varies from 0.30–0.70 depending on growth form and climate:</p>
+<table class="caption-top">
+<thead>
+<tr class="header">
+<th>Vegetation type</th>
+<th>Typical CUE</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>Tropical rainforest</td>
+<td>0.30–0.40</td>
+</tr>
+<tr class="even">
+<td>Temperate deciduous</td>
+<td>0.40–0.55</td>
+</tr>
+<tr class="odd">
+<td>Boreal forest</td>
+<td>0.45–0.55</td>
+</tr>
+<tr class="even">
+<td>Temperate grassland</td>
+<td>0.55–0.65</td>
+</tr>
+<tr class="odd">
+<td>Agricultural crops</td>
+<td>0.45–0.60</td>
+</tr>
+<tr class="even">
+<td>Tundra</td>
+<td>0.50–0.65</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Heterotrophic respiration and NEP sign convention:</strong></p>
+<ul>
+<li>NEP &gt; 0: ecosystem is a carbon sink (more uptake than release)</li>
+<li>NEP &lt; 0: ecosystem is a carbon source (more release than uptake)</li>
+</ul>
+<p>Young, regrowing forests after disturbance typically have NEP &lt; 0 (high <span class="math inline">R_h</span> from decomposing legacy carbon). Mature forests have NEP near zero or slightly positive. Young fast-growing forests have NEP &gt; 0.</p>
+<h3 id="annual-gpp-and-seasonal-integration" class="anchored">3.4 Annual GPP and Seasonal Integration</h3>
+<p>Annual GPP integrates the daily rates over the growing season:</p>
+<p><span class="math display">\text{GPP}_{\text{annual}} = \sum_{d=1}^{365} \text{GPP}_d = \sum_{d=1}^{365} \varepsilon \times \text{fAPAR}(d) \times \text{PAR}(d) \times f(T_d) \times f(W_d)</span></p>
+<p>For Alberta biomes:</p>
+<table class="caption-top">
+<thead>
+<tr class="header">
+<th>Biome</th>
+<th>GPP (g C m⁻² yr⁻¹)</th>
+<th>NPP (g C m⁻² yr⁻¹)</th>
+<th>NEP (g C m⁻² yr⁻¹)</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>Boreal forest</td>
+<td>600–900</td>
+<td>300–450</td>
+<td>−50 to +100</td>
+</tr>
+<tr class="even">
+<td>Aspen parkland</td>
+<td>700–1000</td>
+<td>380–550</td>
+<td>0 to +150</td>
+</tr>
+<tr class="odd">
+<td>Prairie/grassland</td>
+<td>300–600</td>
+<td>180–360</td>
+<td>−50 to +80</td>
+</tr>
+<tr class="even">
+<td>Crop (wheat)</td>
+<td>500–700</td>
+<td>250–350</td>
+<td>−200 to 0 (harvested)</td>
+</tr>
+<tr class="odd">
+<td>Wetland/fen</td>
+<td>400–600</td>
+<td>200–300</td>
+<td>+50 to +200 (peat accumulation)</td>
+</tr>
+</tbody>
+</table>
+<hr>
+<h2 id="worked-example-by-hand" class="anchored">4. Worked Example by Hand</h2>
+<p><strong>Setting:</strong> A mixed-wood boreal stand near Hinton, Alberta (53°N). July conditions: - Incident PAR: 18 MJ m⁻² d⁻¹ - NDVI (from Landsat): 0.72 → fAPAR = 1.14 × 0.72 − 0.03 = 0.79 - Mean temperature: 16°C (near optimum), <span class="math inline">f(T) = 0.92</span> - No drought, <span class="math inline">f(W) = 1.0</span> - Maximum LUE for boreal deciduous: <span class="math inline">\varepsilon = 1.0</span> g C MJ<span class="math inline">_{\text{PAR}}^{-1}</span></p>
+<p><strong>GPP (July day):</strong></p>
+<p><span class="math display">\text{GPP} = 1.0 \times 0.79 \times 18 \times 0.92 \times 1.0 = 13.1 \text{ g C m}^{-2} \text{ d}^{-1}</span></p>
+<p><strong>NPP</strong> (CUE = 0.50):</p>
+<p><span class="math display">\text{NPP} = 13.1 \times 0.50 = 6.55 \text{ g C m}^{-2} \text{ d}^{-1}</span></p>
+<p><strong>Annual scaling</strong> (assuming 140-day growing season with average <span class="math inline">\text{GPP}_d = 6.0</span> g C m⁻² d⁻¹):</p>
+<p><span class="math display">\text{GPP}_{\text{annual}} = 140 \times 6.0 = 840 \text{ g C m}^{-2} \text{ yr}^{-1} = 8.4 \text{ t C ha}^{-1} \text{ yr}^{-1}</span></p>
+<p><strong>NEP</strong> assuming <span class="math inline">R_h = 360</span> g C m⁻² yr⁻¹ (soil respiration):</p>
+<p><span class="math display">\text{NEP} = \text{GPP} - R_a - R_h = 840 - 420 - 360 = 60 \text{ g C m}^{-2} \text{ yr}^{-1}</span></p>
+<p>This stand is a modest carbon sink: sequestering ~0.6 t C ha⁻¹ yr⁻¹, consistent with eddy covariance measurements at the nearby Boreas study sites.</p>
+<hr>
+<h2 id="computational-implementation" class="anchored">5. Computational Implementation</h2>
+<pre><code>function lue_gpp(par_mj, ndvi, T_mean, VPD_kPa, eps_max=1.0,
+                 T_min=0, T_max=40, T_opt=20, VPD_max=3.0):
+    fAPAR = clip(1.14 * ndvi - 0.03, 0, 1)
+    
+    # Temperature scalar
+    if T_min &lt; T_mean &lt; T_max:
+        fT = (T_mean-T_min)*(T_mean-T_max) / ((T_mean-T_min)*(T_mean-T_max) - (T_mean-T_opt)**2)
+    else:
+        fT = 0.0
+    
+    # Water/VPD scalar (linear from 1 at VPD=0 to 0 at VPD_max)
+    fW = max(0, 1 - VPD_kPa / VPD_max)
+    
+    gpp = eps_max * fAPAR * par_mj * fT * fW
+    return {'GPP': gpp, 'fAPAR': fAPAR, 'fT': fT, 'fW': fW}
+
+function annual_carbon_budget(daily_gpp_array, CUE=0.5, Rh=360):
+    GPP_annual = sum(daily_gpp_array)
+    NPP_annual = GPP_annual * CUE
+    NEP_annual = NPP_annual - Rh
+    return GPP_annual, NPP_annual, NEP_annual</code></pre>
+<pre class="{pyodide}"><code>import numpy as np
+
+def lue_gpp(par_mj, ndvi, T, eps_max=1.0, T_min=0, T_max=40, T_opt=20, VPD=1.0, VPD_max=3.0):
+    fAPAR = np.clip(1.14 * ndvi - 0.03, 0, 1)
+    # Temperature scalar
+    if T_min &lt; T &lt; T_max:
+        fT = (T-T_min)*(T-T_max) / ((T-T_min)*(T-T_max) - (T-T_opt)**2)
+    else:
+        fT = 0.0
+    fW = max(0, 1 - VPD/VPD_max)
+    return eps_max * fAPAR * par_mj * fT * fW, fAPAR, fT, fW
+
+# Seasonal GPP for boreal Alberta (53°N)
+# Simplified monthly PAR, temperature, NDVI, VPD
+months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec']
+par_monthly = [2, 4, 9, 14, 18, 21, 20, 17, 11, 6, 2, 1]    # MJ/m2/d
+T_monthly   = [-15,-12,-5, 3,  11, 15, 17, 16, 10, 3, -7,-13]  # °C
+ndvi_monthly= [0.20,0.20,0.22,0.30,0.62,0.72,0.76,0.72,0.60,0.38,0.24,0.20]
+vpd_monthly = [0.2, 0.2, 0.4, 0.6, 0.9, 1.4, 1.6, 1.5, 1.0, 0.5, 0.3, 0.2]
+days_per_month = [31,28,31,30,31,30,31,31,30,31,30,31]
+
+print(f"{'Month':&gt;5} {'PAR':&gt;6} {'T(°C)':&gt;7} {'NDVI':&gt;6} {'fAPAR':&gt;7} {'fT':&gt;5} {'GPP':&gt;8} {'GPP_mo':&gt;9}")
+print(f"{'':&gt;5} {'MJ/d':&gt;6} {'':&gt;7} {'':&gt;6} {'':&gt;7} {'':&gt;5} {'gC/m2/d':&gt;8} {'gC/m2/mo':&gt;9}")
+print("-"*65)
+
+annual_gpp = 0
+for i, m in enumerate(months):
+    gpp_d, fAPAR, fT, fW = lue_gpp(par_monthly[i], ndvi_monthly[i], T_monthly[i], vpd=vpd_monthly[i])
+    gpp_mo = gpp_d * days_per_month[i]
+    annual_gpp += gpp_mo
+    print(f"{m:&gt;5} {par_monthly[i]:&gt;6.0f} {T_monthly[i]:&gt;7.0f} {ndvi_monthly[i]:&gt;6.2f} "
+          f"{fAPAR:&gt;7.2f} {fT:&gt;5.2f} {gpp_d:&gt;8.2f} {gpp_mo:&gt;9.1f}")
+
+print(f"\nAnnual GPP: {annual_gpp:.0f} g C m⁻² yr⁻¹ = {annual_gpp/100:.2f} t C ha⁻¹ yr⁻¹")
+
+CUE = 0.50
+Rh  = 350  # g C/m2/yr (soil + microbial respiration)
+NPP = annual_gpp * CUE
+NEP = NPP - Rh
+print(f"NPP (CUE={CUE}): {NPP:.0f} g C m⁻² yr⁻¹")
+print(f"NEP: {NEP:.0f} g C m⁻² yr⁻¹  ({'sink' if NEP&gt;0 else 'source'})")</code></pre>
+<hr>
+<h2 id="visualization" class="anchored">6. Visualization</h2>
+<div data-viz="echarts" style="height:420px" data-options="{
+  &quot;title&quot;: {&quot;text&quot;: &quot;Seasonal GPP, NPP, and Ecosystem Respiration — Boreal Alberta (53°N)&quot;, &quot;textStyle&quot;: {&quot;fontSize&quot;: 14}},
+  &quot;tooltip&quot;: {&quot;trigger&quot;: &quot;axis&quot;},
+  &quot;legend&quot;: {&quot;data&quot;: [&quot;GPP (g C/m²/d)&quot;,&quot;Ra (g C/m²/d)&quot;,&quot;Rh (g C/m²/d)&quot;,&quot;NEP (g C/m²/d)&quot;], &quot;bottom&quot;: 0},
+  &quot;xAxis&quot;: {&quot;data&quot;: [&quot;Jan&quot;,&quot;Feb&quot;,&quot;Mar&quot;,&quot;Apr&quot;,&quot;May&quot;,&quot;Jun&quot;,&quot;Jul&quot;,&quot;Aug&quot;,&quot;Sep&quot;,&quot;Oct&quot;,&quot;Nov&quot;,&quot;Dec&quot;]},
+  &quot;yAxis&quot;: {&quot;name&quot;: &quot;g C m⁻² d⁻¹&quot;, &quot;nameLocation&quot;: &quot;middle&quot;, &quot;nameGap&quot;: 45},
+  &quot;series&quot;: [
+    {&quot;name&quot;: &quot;GPP (g C/m²/d)&quot;, &quot;type&quot;: &quot;bar&quot;,
+     &quot;itemStyle&quot;: {&quot;color&quot;: &quot;#2E7D32&quot;},
+     &quot;data&quot;: [0.0, 0.0, 0.5, 2.5, 6.5, 9.5, 10.5, 9.0, 5.0, 1.5, 0.1, 0.0]},
+    {&quot;name&quot;: &quot;Ra (g C/m²/d)&quot;, &quot;type&quot;: &quot;bar&quot;, &quot;stack&quot;: &quot;resp&quot;,
+     &quot;itemStyle&quot;: {&quot;color&quot;: &quot;#F57F17&quot;},
+     &quot;data&quot;: [0.3, 0.3, 0.5, 1.2, 3.2, 4.8, 5.3, 4.5, 2.5, 0.8, 0.4, 0.3]},
+    {&quot;name&quot;: &quot;Rh (g C/m²/d)&quot;, &quot;type&quot;: &quot;bar&quot;, &quot;stack&quot;: &quot;resp&quot;,
+     &quot;itemStyle&quot;: {&quot;color&quot;: &quot;#B71C1C&quot;},
+     &quot;data&quot;: [0.3, 0.3, 0.4, 0.7, 1.0, 1.2, 1.3, 1.2, 1.0, 0.7, 0.4, 0.3]},
+    {&quot;name&quot;: &quot;NEP (g C/m²/d)&quot;, &quot;type&quot;: &quot;line&quot;,
+     &quot;itemStyle&quot;: {&quot;color&quot;: &quot;#1565C0&quot;},
+     &quot;data&quot;: [-0.6,-0.6,-0.4,0.6,2.3,3.5,3.9,3.3,1.5,0.0,-0.7,-0.6]}
+  ]
+}">
+
+</div>
+<p>The boreal forest is a carbon source (NEP &lt; 0) from November through March when ecosystem respiration exceeds GPP. The ecosystem switches to a sink in April–May as photosynthesis accelerates faster than respiration (photosynthesis has a stronger temperature response at low temperatures). Peak sink activity occurs in June–August; the growing season lasts approximately May–September.</p>
+<hr>
+<h2 id="interpretation" class="anchored">7. Interpretation</h2>
+<p>The global terrestrial GPP of ~120 Gt CO₂ yr⁻¹ (33 Gt C yr⁻¹) dwarfs fossil fuel emissions (~37 Gt CO₂ yr⁻¹). The atmosphere does not net accumulate this enormous photosynthetic uptake because terrestrial respiration (<span class="math inline">R_a + R_h</span>) returns nearly the same amount — the terrestrial biosphere is approximately in balance, with a small net sink of ~3 Gt CO₂ yr⁻¹ (the residual “land sink” in the global carbon budget). Small changes in the balance between photosynthesis and respiration — driven by temperature, moisture, or land use change — can have CO₂ consequences comparable to human emissions.</p>
+<p>The MODIS MOD17 product provides global 8-day GPP at 500 m resolution by applying the Monteith LUE model with NDVI-derived fAPAR and meteorological forcings from NASA’s Global Modelling and Assimilation Office. It is the most widely used global GPP dataset, validated against ~150 eddy covariance towers worldwide, including several in Alberta’s boreal zone (BERMS network).</p>
+<hr>
+<h2 id="what-could-go-wrong" class="anchored">8. What Could Go Wrong?</h2>
+<p><strong>Eddy covariance gap-filling errors accumulate.</strong> Net Ecosystem Exchange (NEE, the measured quantity, equivalent to −NEP) is measured continuously by eddy covariance towers. Gaps (fog, rain, instrument failure) require statistical gap-filling — typically with look-up tables or neural networks trained on daytime data. Annual sums are sensitive to how nighttime gaps are filled; different gap-filling methods can produce NEP estimates differing by ±20–30 g C m⁻² yr⁻¹ — similar in magnitude to the annual NEP itself for near-neutral ecosystems.</p>
+<p><strong>LUE <span class="math inline">\varepsilon</span> is not constant.</strong> The Monteith model treats <span class="math inline">\varepsilon_{\max}</span> as a species- or biome-specific constant. In reality, <span class="math inline">\varepsilon</span> varies with nitrogen content (fertilised crops have higher <span class="math inline">\varepsilon</span>), leaf age (older leaves have lower <span class="math inline">\varepsilon</span>), and atmospheric CO₂ concentration (elevated CO₂ can increase <span class="math inline">\varepsilon</span> under certain conditions). Applying a fixed <span class="math inline">\varepsilon</span> for mixed-age, mixed-species landscapes introduces systematic biases.</p>
+<p><strong>CUE is not universally 0.50.</strong> The assumption CUE = 0.50 is useful for global estimates but masks large variation. Tropical forests under water stress may have CUE &lt; 0.35 because maintenance respiration of large biomass is high. Young fast-growing crops may have CUE &gt; 0.60. Using the universal value for specific ecosystem types introduces errors of 10–40% in NPP estimates.</p>
+<hr>
+<h2 id="summary" class="anchored">9. Summary</h2>
+<p>The photosynthesis equation $6_2 + 6_2 <em>6</em>{12}_6 + 6_2$ fixes 12/44 = 0.273 g C per g CO₂ absorbed. The Monteith LUE model expresses GPP as:</p>
+<p><span class="math display">\text{GPP} = \varepsilon \times \text{fAPAR} \times \text{PAR} \times f(T) \times f(W)</span></p>
+<p>where fAPAR links to satellite NDVI. Carbon flux hierarchy: GPP → NPP (= GPP × CUE) → NEP (= NPP − <span class="math inline">R_h</span>). CUE ≈ 0.50 for many ecosystems; NEP &gt; 0 = sink, NEP &lt; 0 = source.</p>
+<p>Boreal Alberta forests are carbon sinks in summer (May–September) and sources in winter; annual GPP ≈ 700–900 g C m⁻² yr⁻¹, with NEP of −50 to +150 g C m⁻² yr⁻¹ depending on stand age, disturbance history, and climate.</p>
+<hr>
+<h2 id="math-refresher" class="anchored">Math Refresher</h2>
+<p><strong>Fluxes and their units.</strong> A carbon flux is a rate of transfer: grams of carbon per unit area per unit time. Common units in ecosystem science are g C m⁻² d⁻¹ (daily tower measurement), g C m⁻² yr⁻¹ (annual budget), or t C ha⁻¹ yr⁻¹ (land management scale). Converting between them: 1 g m⁻² yr⁻¹ = 0.01 t ha⁻¹ yr⁻¹ (because 1 ha = 10,000 m² and 1 t = 10⁶ g, so the ratio is 10⁶/10⁴ = 100 — divide g/m² by 100 to get t/ha). The annual integral of daily fluxes sums over 365 days: <span class="math inline">\text{Annual} = \sum_{d=1}^{365} \text{GPP}_d \approx \bar{\text{GPP}} \times N_{\text{growing days}}</span>. Global totals use Pg C yr⁻¹ (= 10¹⁵ g C yr⁻¹): 33 Pg C yr⁻¹ = 33 × 10¹⁵ g C yr⁻¹ = 33 Gt C yr⁻¹.</p>
+
+
+<footer class="wayward-footer">
+  <div class="wayward-footer__inner">
+    <div class="wayward-footer__brand">
+      <div class="wayward-footer__logo">WaywardHouse<span>.</span></div>
+      <p>Understanding how place, economy, and environment interact through analysis, modelling, and open tools.</p>
+    </div>
+
+    <nav class="wayward-footer__group" aria-labelledby="footer-reading">
+      <h2 id="footer-reading" class="anchored">Reading</h2>
+      <a href="../articles/">Articles</a>
+      <a href="../learn/">Learn</a>
+      <a href="../archive.html">Archive</a>
+      <a href="../start-here.html">Start Here</a>
+    </nav>
+
+    <nav class="wayward-footer__group" aria-labelledby="footer-site">
+      <h2 id="footer-site" class="anchored">Site</h2>
+      <a href="../start-here.html">Start Here</a>
+      <a href="../about.html">About</a>
+      <a href="../contact.html">Contact</a>
+    </nav>
+
+    <nav class="wayward-footer__group" aria-labelledby="footer-resources">
+      <h2 id="footer-resources" class="anchored">Resources</h2>
+      <a href="../topics/">All Topics</a>
+      <a href="../privacy.html">Privacy Policy</a>
+      <a href="../terms.html">Terms of Use</a>
+    </nav>
+  </div>
+</footer>
+
+<script type="module" src="../assets/dist/main.js"></script>
+<script type="module" src="../assets/js/core.js"></script>
+<script id="quarto-html-after-body" type="application/javascript">
+  window.document.addEventListener("DOMContentLoaded", function (event) {
+    const tabsets =  window.document.querySelectorAll(".panel-tabset-tabby")
+    tabsets.forEach(function(tabset) {
+      const tabby = new Tabby('#' + tabset.id);
+    });
+    const icon = "";
+    const anchorJS = new window.AnchorJS();
+    anchorJS.options = {
+      placement: 'right',
+      icon: icon
+    };
+    anchorJS.add('.anchored');
+    const isCodeAnnotation = (el) => {
+      for (const clz of el.classList) {
+        if (clz.startsWith('code-annotation-')) {                     
+          return true;
+        }
+      }
+      return false;
+    }
+    const onCopySuccess = function(e) {
+      // button target
+      const button = e.trigger;
+      // don't keep focus
+      button.blur();
+      // flash "checked"
+      button.classList.add('code-copy-button-checked');
+      var currentTitle = button.getAttribute("title");
+      button.setAttribute("title", "Copied!");
+      let tooltip;
+      if (window.bootstrap) {
+        button.setAttribute("data-bs-toggle", "tooltip");
+        button.setAttribute("data-bs-placement", "left");
+        button.setAttribute("data-bs-title", "Copied!");
+        tooltip = new bootstrap.Tooltip(button, 
+          { trigger: "manual", 
+            customClass: "code-copy-button-tooltip",
+            offset: [0, -8]});
+        tooltip.show();    
+      }
+      setTimeout(function() {
+        if (tooltip) {
+          tooltip.hide();
+          button.removeAttribute("data-bs-title");
+          button.removeAttribute("data-bs-toggle");
+          button.removeAttribute("data-bs-placement");
+        }
+        button.setAttribute("title", currentTitle);
+        button.classList.remove('code-copy-button-checked');
+      }, 1000);
+      // clear code selection
+      e.clearSelection();
+    }
+    const getTextToCopy = function(trigger) {
+      const outerScaffold = trigger.parentElement.cloneNode(true);
+      const codeEl = outerScaffold.querySelector('code');
+      for (const childEl of codeEl.children) {
+        if (isCodeAnnotation(childEl)) {
+          childEl.remove();
+        }
+      }
+      return codeEl.innerText;
+    }
+    const clipboard = new window.ClipboardJS('.code-copy-button:not([data-in-quarto-modal])', {
+      text: getTextToCopy
+    });
+    clipboard.on('success', onCopySuccess);
+    if (window.document.getElementById('quarto-embedded-source-code-modal')) {
+      const clipboardModal = new window.ClipboardJS('.code-copy-button[data-in-quarto-modal]', {
+        text: getTextToCopy,
+        container: window.document.getElementById('quarto-embedded-source-code-modal')
+      });
+      clipboardModal.on('success', onCopySuccess);
+    }
+      var localhostRegex = new RegExp(/^(?:http|https):\/\/localhost\:?[0-9]*\//);
+      var mailtoRegex = new RegExp(/^mailto:/);
+        var filterRegex = new RegExp('/' + window.location.host + '/');
+      var isInternal = (href) => {
+          return filterRegex.test(href) || localhostRegex.test(href) || mailtoRegex.test(href);
+      }
+      // Inspect non-navigation links and adorn them if external
+     var links = window.document.querySelectorAll('a[href]:not(.nav-link):not(.navbar-brand):not(.toc-action):not(.sidebar-link):not(.sidebar-item-toggle):not(.pagination-link):not(.no-external):not([aria-hidden]):not(.dropdown-item):not(.quarto-navigation-tool):not(.about-link)');
+      for (var i=0; i<links.length; i++) {
+        const link = links[i];
+        if (!isInternal(link.href)) {
+          // undo the damage that might have been done by quarto-nav.js in the case of
+          // links that we want to consider external
+          if (link.dataset.originalHref !== undefined) {
+            link.href = link.dataset.originalHref;
+          }
+        }
+      }
+    function tippyHover(el, contentFn, onTriggerFn, onUntriggerFn) {
+      const config = {
+        allowHTML: true,
+        maxWidth: 500,
+        delay: 100,
+        arrow: false,
+        appendTo: function(el) {
+            return el.parentElement;
+        },
+        interactive: true,
+        interactiveBorder: 10,
+        theme: 'light-border',
+        placement: 'bottom-start',
+      };
+      if (contentFn) {
+        config.content = contentFn;
+      }
+      if (onTriggerFn) {
+        config.onTrigger = onTriggerFn;
+      }
+      if (onUntriggerFn) {
+        config.onUntrigger = onUntriggerFn;
+      }
+      window.tippy(el, config); 
+    }
+    const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+    for (var i=0; i<noterefs.length; i++) {
+      const ref = noterefs[i];
+      tippyHover(ref, function() {
+        // use id or data attribute instead here
+        let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+        try { href = new URL(href).hash; } catch {}
+        const id = href.replace(/^#\/?/, "");
+        const note = window.document.getElementById(id);
+        if (note) {
+          return note.innerHTML;
+        } else {
+          return "";
+        }
+      });
+    }
+    const xrefs = window.document.querySelectorAll('a.quarto-xref');
+    const processXRef = (id, note) => {
+      // Strip column container classes
+      const stripColumnClz = (el) => {
+        el.classList.remove("page-full", "page-columns");
+        if (el.children) {
+          for (const child of el.children) {
+            stripColumnClz(child);
+          }
+        }
+      }
+      stripColumnClz(note)
+      if (id === null || id.startsWith('sec-')) {
+        // Special case sections, only their first couple elements
+        const container = document.createElement("div");
+        if (note.children && note.children.length > 2) {
+          container.appendChild(note.children[0].cloneNode(true));
+          for (let i = 1; i < note.children.length; i++) {
+            const child = note.children[i];
+            if (child.tagName === "P" && child.innerText === "") {
+              continue;
+            } else {
+              container.appendChild(child.cloneNode(true));
+              break;
+            }
+          }
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(container);
+          }
+          return container.innerHTML
+        } else {
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(note);
+          }
+          return note.innerHTML;
+        }
+      } else {
+        // Remove any anchor links if they are present
+        const anchorLink = note.querySelector('a.anchorjs-link');
+        if (anchorLink) {
+          anchorLink.remove();
+        }
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(note);
+        }
+        if (note.classList.contains("callout")) {
+          return note.outerHTML;
+        } else {
+          return note.innerHTML;
+        }
+      }
+    }
+    for (var i=0; i<xrefs.length; i++) {
+      const xref = xrefs[i];
+      tippyHover(xref, undefined, function(instance) {
+        instance.disable();
+        let url = xref.getAttribute('href');
+        let hash = undefined; 
+        if (url.startsWith('#')) {
+          hash = url;
+        } else {
+          try { hash = new URL(url).hash; } catch {}
+        }
+        if (hash) {
+          const id = hash.replace(/^#\/?/, "");
+          const note = window.document.getElementById(id);
+          if (note !== null) {
+            try {
+              const html = processXRef(id, note.cloneNode(true));
+              instance.setContent(html);
+            } finally {
+              instance.enable();
+              instance.show();
+            }
+          } else {
+            // See if we can fetch this
+            fetch(url.split('#')[0])
+            .then(res => res.text())
+            .then(html => {
+              const parser = new DOMParser();
+              const htmlDoc = parser.parseFromString(html, "text/html");
+              const note = htmlDoc.getElementById(id);
+              if (note !== null) {
+                const html = processXRef(id, note);
+                instance.setContent(html);
+              } 
+            }).finally(() => {
+              instance.enable();
+              instance.show();
+            });
+          }
+        } else {
+          // See if we can fetch a full url (with no hash to target)
+          // This is a special case and we should probably do some content thinning / targeting
+          fetch(url)
+          .then(res => res.text())
+          .then(html => {
+            const parser = new DOMParser();
+            const htmlDoc = parser.parseFromString(html, "text/html");
+            const note = htmlDoc.querySelector('main.content');
+            if (note !== null) {
+              // This should only happen for chapter cross references
+              // (since there is no id in the URL)
+              // remove the first header
+              if (note.children.length > 0 && note.children[0].tagName === "HEADER") {
+                note.children[0].remove();
+              }
+              const html = processXRef(null, note);
+              instance.setContent(html);
+            } 
+          }).finally(() => {
+            instance.enable();
+            instance.show();
+          });
+        }
+      }, function(instance) {
+      });
+    }
+        let selectedAnnoteEl;
+        const selectorForAnnotation = ( cell, annotation) => {
+          let cellAttr = 'data-code-cell="' + cell + '"';
+          let lineAttr = 'data-code-annotation="' +  annotation + '"';
+          const selector = 'span[' + cellAttr + '][' + lineAttr + ']';
+          return selector;
+        }
+        const selectCodeLines = (annoteEl) => {
+          const doc = window.document;
+          const targetCell = annoteEl.getAttribute("data-target-cell");
+          const targetAnnotation = annoteEl.getAttribute("data-target-annotation");
+          const annoteSpan = window.document.querySelector(selectorForAnnotation(targetCell, targetAnnotation));
+          const lines = annoteSpan.getAttribute("data-code-lines").split(",");
+          const lineIds = lines.map((line) => {
+            return targetCell + "-" + line;
+          })
+          let top = null;
+          let height = null;
+          let parent = null;
+          if (lineIds.length > 0) {
+              //compute the position of the single el (top and bottom and make a div)
+              const el = window.document.getElementById(lineIds[0]);
+              top = el.offsetTop;
+              height = el.offsetHeight;
+              parent = el.parentElement.parentElement;
+            if (lineIds.length > 1) {
+              const lastEl = window.document.getElementById(lineIds[lineIds.length - 1]);
+              const bottom = lastEl.offsetTop + lastEl.offsetHeight;
+              height = bottom - top;
+            }
+            if (top !== null && height !== null && parent !== null) {
+              // cook up a div (if necessary) and position it 
+              let div = window.document.getElementById("code-annotation-line-highlight");
+              if (div === null) {
+                div = window.document.createElement("div");
+                div.setAttribute("id", "code-annotation-line-highlight");
+                div.style.position = 'absolute';
+                parent.appendChild(div);
+              }
+              div.style.top = top - 2 + "px";
+              div.style.height = height + 4 + "px";
+              div.style.left = 0;
+              let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
+              if (gutterDiv === null) {
+                gutterDiv = window.document.createElement("div");
+                gutterDiv.setAttribute("id", "code-annotation-line-highlight-gutter");
+                gutterDiv.style.position = 'absolute';
+                const codeCell = window.document.getElementById(targetCell);
+                const gutter = codeCell.querySelector('.code-annotation-gutter');
+                gutter.appendChild(gutterDiv);
+              }
+              gutterDiv.style.top = top - 2 + "px";
+              gutterDiv.style.height = height + 4 + "px";
+            }
+            selectedAnnoteEl = annoteEl;
+          }
+        };
+        const unselectCodeLines = () => {
+          const elementsIds = ["code-annotation-line-highlight", "code-annotation-line-highlight-gutter"];
+          elementsIds.forEach((elId) => {
+            const div = window.document.getElementById(elId);
+            if (div) {
+              div.remove();
+            }
+          });
+          selectedAnnoteEl = undefined;
+        };
+          // Handle positioning of the toggle
+      window.addEventListener(
+        "resize",
+        throttle(() => {
+          elRect = undefined;
+          if (selectedAnnoteEl) {
+            selectCodeLines(selectedAnnoteEl);
+          }
+        }, 10)
+      );
+      function throttle(fn, ms) {
+      let throttle = false;
+      let timer;
+        return (...args) => {
+          if(!throttle) { // first call gets through
+              fn.apply(this, args);
+              throttle = true;
+          } else { // all the others get throttled
+              if(timer) clearTimeout(timer); // cancel #2
+              timer = setTimeout(() => {
+                fn.apply(this, args);
+                timer = throttle = false;
+              }, ms);
+          }
+        };
+      }
+        // Attach click handler to the DT
+        const annoteDls = window.document.querySelectorAll('dt[data-target-cell]');
+        for (const annoteDlNode of annoteDls) {
+          annoteDlNode.addEventListener('click', (event) => {
+            const clickedEl = event.target;
+            if (clickedEl !== selectedAnnoteEl) {
+              unselectCodeLines();
+              const activeEl = window.document.querySelector('dt[data-target-cell].code-annotation-active');
+              if (activeEl) {
+                activeEl.classList.remove('code-annotation-active');
+              }
+              selectCodeLines(clickedEl);
+              clickedEl.classList.add('code-annotation-active');
+            } else {
+              // Unselect the line
+              unselectCodeLines();
+              clickedEl.classList.remove('code-annotation-active');
+            }
+          });
+        }
+    const findCites = (el) => {
+      const parentEl = el.parentElement;
+      if (parentEl) {
+        const cites = parentEl.dataset.cites;
+        if (cites) {
+          return {
+            el,
+            cites: cites.split(' ')
+          };
+        } else {
+          return findCites(el.parentElement)
+        }
+      } else {
+        return undefined;
+      }
+    };
+    var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+    for (var i=0; i<bibliorefs.length; i++) {
+      const ref = bibliorefs[i];
+      const citeInfo = findCites(ref);
+      if (citeInfo) {
+        tippyHover(citeInfo.el, function() {
+          var popup = window.document.createElement('div');
+          citeInfo.cites.forEach(function(cite) {
+            var citeDiv = window.document.createElement('div');
+            citeDiv.classList.add('hanging-indent');
+            citeDiv.classList.add('csl-entry');
+            var biblioDiv = window.document.getElementById('ref-' + cite);
+            if (biblioDiv) {
+              citeDiv.innerHTML = biblioDiv.innerHTML;
+            }
+            popup.appendChild(citeDiv);
+          });
+          return popup.innerHTML;
+        });
+      }
+    }
+  });
+  </script>
+
+
+
+
+</body></html>

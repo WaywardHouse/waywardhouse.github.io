@@ -1,0 +1,796 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
+
+<meta charset="utf-8">
+<meta name="generator" content="quarto-1.9.36">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+
+<meta name="dcterms.date" content="2026-03-05">
+<meta name="description" content="A street canyon traps vehicle exhaust in a recirculating vortex. The depth of that trap depends on the ratio of building height to street width. The pedestrian- level concentration of NO₂ and PM₂.₅ depends on canyon geometry, traffic volume, and emission factors. This essay derives the street canyon flow regimes, applies the Gaussian plume model to urban dispersion, connects emission factors to roadside concentrations, and identifies the geometries that produce chronic air quality violations.">
+
+<title>Urban Ventilation and Pollutant Dispersion – Computational Geography</title>
+<style>
+/* Default styles provided by pandoc.
+** See https://pandoc.org/MANUAL.html#variables-for-html for config info.
+*/
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: min(4vw, 1.5em);}
+div.column{flex: auto; overflow-x: auto;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+  width: 0.8em;
+  margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
+  vertical-align: middle;
+}
+</style>
+
+
+<script src="../site_libs/clipboard/clipboard.min.js"></script>
+<script src="../site_libs/quarto-html/tabby.min.js"></script>
+<script src="../site_libs/quarto-html/popper.min.js"></script>
+<script src="../site_libs/quarto-html/tippy.umd.min.js"></script>
+<script src="../site_libs/quarto-html/anchor.min.js"></script>
+<link href="../site_libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="../site_libs/quarto-html/light-border.css" rel="stylesheet">
+<link href="../site_libs/quarto-html/quarto-html-640605f58ae58ee79329c070719e555b.min.css" rel="stylesheet" append-hash="true" data-mode="light">
+<link href="../site_libs/quarto-html/quarto-syntax-highlighting-845c23b38eaddc0f92fda52bfe77a8c8.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<script>
+  (function () {
+    var s = localStorage.getItem('theme');
+    var dark = s !== null ? s === 'dark' : false;
+    document.documentElement.dataset.theme = dark ? 'dark' : 'light';
+    document.documentElement.dataset.brand = 'wayward';
+  })();
+</script>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:ital,wght@0,300;0,400;0,600;0,700;0,800;0,900;1,700;1,800&amp;family=Barlow:wght@300;400;500;600&amp;family=IBM+Plex+Mono:ital,wght@0,300;0,400;0,500;1,300&amp;family=Literata:ital,opsz,wght@0,7..72,300;0,7..72,400;0,7..72,500;1,7..72,300;1,7..72,400&amp;display=swap" rel="stylesheet">
+
+  <script>window.backupDefine = window.define; window.define = undefined;</script><script src="https://cdn.jsdelivr.net/npm/katex@latest/dist/katex.min.js"></script>
+  <script>document.addEventListener("DOMContentLoaded", function () {
+ var mathElements = document.getElementsByClassName("math");
+ var macros = [];
+ for (var i = 0; i < mathElements.length; i++) {
+  var texText = mathElements[i].firstChild;
+  if (mathElements[i].tagName == "SPAN") {
+   katex.render(texText.data, mathElements[i], {
+    displayMode: mathElements[i].classList.contains('display'),
+    throwOnError: false,
+    macros: macros,
+    fleqn: false
+   });
+}}});
+  </script>
+  <script>window.define = window.backupDefine; window.backupDefine = undefined;</script><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@latest/dist/katex.min.css">
+
+<script type="text/javascript">
+const typesetMath = (el) => {
+  if (window.MathJax) {
+    // MathJax Typeset
+    window.MathJax.typeset([el]);
+  } else if (window.katex) {
+    // KaTeX Render
+    var mathElements = el.getElementsByClassName("math");
+    var macros = [];
+    for (var i = 0; i < mathElements.length; i++) {
+      var texText = mathElements[i].firstChild;
+      if (mathElements[i].tagName == "SPAN" && texText && texText.data) {
+        window.katex.render(texText.data, mathElements[i], {
+          displayMode: mathElements[i].classList.contains('display'),
+          throwOnError: false,
+          macros: macros,
+          fleqn: false
+        });
+      }
+    }
+  }
+}
+window.Quarto = {
+  typesetMath
+};
+</script>
+
+<link rel="stylesheet" href="../assets/css/quarto-wayward.css">
+</head>
+
+<body class="reading-body tag-hash-math tag-hash-viz">
+
+
+<header id="title-block-header">
+<h1 class="title"><span class="chapter-title">Urban Ventilation and Pollutant Dispersion</span></h1>
+<p class="subtitle">Street canyon flow regimes, Gaussian plumes, and the geometry of urban air quality</p>
+
+<p class="date">2026-03-05</p>
+</header>
+
+<nav id="TOC" role="doc-toc">
+    <h2 id="toc-title">Table of contents</h2>
+   
+  <ul>
+  <li><a href="#the-question" id="toc-the-question">1. The Question</a></li>
+  <li><a href="#the-conceptual-model" id="toc-the-conceptual-model">2. The Conceptual Model</a></li>
+  <li><a href="#building-the-mathematical-model" id="toc-building-the-mathematical-model">3. Building the Mathematical Model</a>
+  <ul>
+  <li><a href="#canyon-ventilation-velocity" id="toc-canyon-ventilation-velocity">3.1 Canyon Ventilation Velocity</a></li>
+  <li><a href="#the-box-model-for-canyon-concentration" id="toc-the-box-model-for-canyon-concentration">3.2 The Box Model for Canyon Concentration</a></li>
+  <li><a href="#leeward-vs.-windward-wall-asymmetry" id="toc-leeward-vs.-windward-wall-asymmetry">3.3 Leeward vs.&nbsp;Windward Wall Asymmetry</a></li>
+  <li><a href="#traffic-emission-factors" id="toc-traffic-emission-factors">3.4 Traffic Emission Factors</a></li>
+  <li><a href="#the-gaussian-plume-model" id="toc-the-gaussian-plume-model">3.5 The Gaussian Plume Model</a></li>
+  <li><a href="#urban-boundary-layer-height" id="toc-urban-boundary-layer-height">3.6 Urban Boundary Layer Height</a></li>
+  <li><a href="#no₂-chemistry-primary-vs.-secondary" id="toc-no₂-chemistry-primary-vs.-secondary">3.7 NO₂ Chemistry: Primary vs.&nbsp;Secondary</a></li>
+  </ul></li>
+  <li><a href="#worked-example-by-hand" id="toc-worked-example-by-hand">4. Worked Example by Hand</a></li>
+  <li><a href="#computational-implementation" id="toc-computational-implementation">5. Computational Implementation</a></li>
+  <li><a href="#visualization" id="toc-visualization">6. Visualization</a></li>
+  <li><a href="#interpretation" id="toc-interpretation">7. Interpretation</a></li>
+  <li><a href="#what-could-go-wrong" id="toc-what-could-go-wrong">8. What Could Go Wrong?</a></li>
+  <li><a href="#summary" id="toc-summary">9. Summary</a></li>
+  <li><a href="#math-refresher" id="toc-math-refresher">Math Refresher</a></li>
+  </ul>
+</nav>
+<p>On a winter morning on Marylebone Road in London, NO₂ concentrations routinely reach 300–400 μg m⁻³ — three to four times the World Health Organization annual guideline of 40 μg m⁻³. A few hundred metres away in Regent’s Park, the concentration is below 30 μg m⁻³. Traffic volumes are comparable in both locations. The difference is geometry: Marylebone Road is flanked by tall buildings that trap exhaust at street level; the park disperses it into the full depth of the boundary layer.</p>
+<p>Street canyon geometry is the dominant control on near-road air quality in dense urban environments. Understanding it requires fluid mechanics — specifically, how a turbulent flow separates and reattaches when it encounters a repeated obstacle array.</p>
+<hr>
+<h2 id="the-question" class="anchored">1. The Question</h2>
+<p>How does street canyon geometry control the flow regime and the pollutant concentration within it? How do we estimate roadside concentrations from traffic counts and emission factors? And how does the urban boundary layer determine the eventual fate of pollutants emitted at street level?</p>
+<hr>
+<h2 id="the-conceptual-model" class="anchored">2. The Conceptual Model</h2>
+<p>A street canyon is two parallel rows of buildings with a street between them. The <strong>aspect ratio</strong> <span class="math inline">H/W</span> (building height divided by street width) determines which of three flow regimes applies when wind blows perpendicular to the street axis:</p>
+<p><strong>Isolated roughness flow</strong> (<span class="math inline">H/W &lt; 0.3</span>): buildings are spaced far enough apart that flow reattaches to the ground between them; each building behaves independently.</p>
+<p><strong>Wake interference flow</strong> ($0.3 &lt; H/W &lt; 0.7$): building wakes interact; flow is complex and highly three-dimensional.</p>
+<p><strong>Skimming flow</strong> (<span class="math inline">H/W &gt; 0.7</span>): the flow above rooftop level skims over the canyon; a stable, nearly two-dimensional recirculating vortex forms inside. Most traffic pollution is trapped in this vortex rather than ventilated upward.</p>
+<p>The skimming regime is ubiquitous in dense city centres — a <span class="math inline">H/W</span> of 1.0–2.5 corresponds to a typical downtown canyon. It is in skimming flow that the worst air quality problems occur.</p>
+<hr>
+<h2 id="building-the-mathematical-model" class="anchored">3. Building the Mathematical Model</h2>
+<h3 id="canyon-ventilation-velocity" class="anchored">3.1 Canyon Ventilation Velocity</h3>
+<p>In skimming flow, the canyon interior is coupled to the overlying flow primarily through turbulent exchange at roof level. The effective <strong>canyon ventilation velocity</strong> <span class="math inline">u_c</span> [m s⁻¹] scales with the friction velocity <span class="math inline">u_*</span> above the rooftops:</p>
+<p><span class="math display">u_c \approx \frac{u_*}{(H/W)^{0.5}}</span></p>
+<p>Deeper canyons (<span class="math inline">H/W</span> larger) have lower <span class="math inline">u_c</span> and therefore accumulate more pollution for the same emission rate. The friction velocity above rooftops relates to the reference wind speed <span class="math inline">U_H</span> at roof height <span class="math inline">H</span>:</p>
+<p><span class="math display">u_* = \frac{k_v \, U_H}{\ln(H/z_0)}</span></p>
+<p>where <span class="math inline">k_v = 0.41</span> is the von Kármán constant and <span class="math inline">z_0</span> is the aerodynamic roughness length (0.5–2 m for urban surfaces).</p>
+<h3 id="the-box-model-for-canyon-concentration" class="anchored">3.2 The Box Model for Canyon Concentration</h3>
+<p>At steady state in a canyon of height <span class="math inline">H</span> [m] and width <span class="math inline">W</span> [m], the concentration of a pollutant from road traffic (emission rate <span class="math inline">Q</span> [μg m⁻¹ s⁻¹] per metre of road length) is determined by balancing emission against ventilation. The <strong>box model</strong> treats the canyon as a well-mixed volume:</p>
+<p><span class="math display">\text{Rate in (emission)} = \text{Rate out (ventilation)}</span></p>
+<p><span class="math display">Q = C_{\text{canyon}} \cdot u_c \cdot H</span></p>
+<p>Solving for concentration:</p>
+<p><span class="math display">\boxed{C_{\text{canyon}} = \frac{Q \cdot W}{H \cdot u_c \cdot W} = \frac{Q}{H \cdot u_c}}</span></p>
+<p>Wait — the box model per unit street length: emission <span class="math inline">Q</span> [μg m⁻¹ s⁻¹] enters a box of cross-section <span class="math inline">H \times W</span> [m²] and is ventilated at rate <span class="math inline">u_c H</span> [m² s⁻¹]:</p>
+<p><span class="math display">C_{\text{canyon}} = \frac{Q}{u_c \cdot H} \quad [\mu\text{g m}^{-3}]</span></p>
+<p><strong>Key scaling relationships:</strong> - <span class="math inline">C \propto Q</span> (doubling traffic → doubling concentration) - <span class="math inline">C \propto 1/u_c \propto (H/W)^{0.5}</span> (deeper canyons → higher concentration) - <span class="math inline">C \propto 1/H</span> (taller buildings → greater dilution volume) - <span class="math inline">C \propto 1/U_H</span> (stronger wind → better ventilation)</p>
+<h3 id="leeward-vs.-windward-wall-asymmetry" class="anchored">3.3 Leeward vs.&nbsp;Windward Wall Asymmetry</h3>
+<p>The recirculating vortex in skimming flow creates a systematic asymmetry: the <strong>leeward wall</strong> (on the upwind side of the canyon, where the vortex brings air downward from rooftop level to street) has higher concentrations than the <strong>windward wall</strong> (where the vortex moves air upward). For a road centred in the canyon, the leeward wall concentration is approximately 1.5–2× the canyon-average value.</p>
+<p>This asymmetry matters for receptor placement: a school or hospital on the leeward side of a major road canyon experiences significantly worse air quality than the same building on the windward side — a consideration that has been neglected in most planning regulations.</p>
+<h3 id="traffic-emission-factors" class="anchored">3.4 Traffic Emission Factors</h3>
+<p>The emission rate <span class="math inline">Q</span> from a road segment is computed from traffic volume, emission factors, and vehicle speed:</p>
+<p><span class="math display">Q = \frac{N}{3600} \cdot \text{EF} \cdot v \cdot \frac{1}{1000} \quad [\text{g s}^{-1}\text{m}^{-1}]</span></p>
+<p>where <span class="math inline">N</span> [veh hr⁻¹] is hourly traffic count, EF [g km⁻¹ veh⁻¹] is the emission factor, and <span class="math inline">v</span> [km hr⁻¹] is speed. Converting g s⁻¹ m⁻¹ to μg s⁻¹ m⁻¹, multiply by $10^6$.</p>
+<p>Representative Euro 6 real-world emission factors for NO<span class="math inline">_x</span>:</p>
+<table class="caption-top">
+<thead>
+<tr class="header">
+<th>Vehicle type</th>
+<th>NO<span class="math inline">_x</span> (g km⁻¹)</th>
+<th>PM₂.₅ (g km⁻¹)</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>Petrol car</td>
+<td>0.06</td>
+<td>0.001</td>
+</tr>
+<tr class="even">
+<td>Diesel car</td>
+<td>0.50</td>
+<td>0.003</td>
+</tr>
+<tr class="odd">
+<td>Petrol SUV</td>
+<td>0.08</td>
+<td>0.002</td>
+</tr>
+<tr class="even">
+<td>Diesel bus</td>
+<td>3.0</td>
+<td>0.020</td>
+</tr>
+<tr class="odd">
+<td>Heavy truck</td>
+<td>4.5</td>
+<td>0.035</td>
+</tr>
+</tbody>
+</table>
+<p>Note: real-world diesel car NO<span class="math inline">_x</span> often exceeds Euro 6 certification by 3–7× under urban driving conditions. Using certification factors systematically underpredicts canyon concentrations.</p>
+<p><strong>Mixed fleet emission factor</strong> for a fleet with fractions <span class="math inline">f_k</span> of each vehicle type:</p>
+<p><span class="math display">\text{EF}_{\text{fleet}} = \sum_k f_k \cdot \text{EF}_k</span></p>
+<h3 id="the-gaussian-plume-model" class="anchored">3.5 The Gaussian Plume Model</h3>
+<p>Beyond the immediate canyon, pollutants disperse into the urban boundary layer. For a continuous <strong>line source</strong> (a road) of emission rate <span class="math inline">q</span> [g m⁻¹ s⁻¹] (per unit road length), the time-averaged concentration at crosswind distance <span class="math inline">y</span> [m] and height <span class="math inline">z = 0</span> (ground level) is:</p>
+<p><span class="math display">C(y, 0) = \frac{\sqrt{2} \, q}{\sqrt{\pi} \, \sigma_z \, \bar{u}} \exp\!\left(-\frac{y^2}{2\sigma_y^2}\right) \exp\!\left(-\frac{H_s^2}{2\sigma_z^2}\right)</span></p>
+<p>For a <strong>point source</strong> at height <span class="math inline">H_s</span> and emission rate <span class="math inline">Q</span> [g s⁻¹], the ground-level centreline (<span class="math inline">y=0</span>) concentration at downwind distance <span class="math inline">x</span>:</p>
+<p><span class="math display">C(x, 0, 0) = \frac{Q}{\pi \sigma_y \sigma_z \bar{u}} \exp\!\left(-\frac{H_s^2}{2\sigma_z^2}\right)</span></p>
+<p>The dispersion coefficients <span class="math inline">\sigma_y(x)</span> and <span class="math inline">\sigma_z(x)</span> depend on downwind distance and atmospheric stability (Pasquill-Gifford classes A–F, from convective unstable to strongly stable). For <strong>urban neutral</strong> conditions (class D):</p>
+<p><span class="math display">\sigma_y = 0.22 \, x \, (1 + 0.0001x)^{-1/2}</span> <span class="math display">\sigma_z = 0.16 \, x \, (1 + 0.0001x)^{-1/2}</span></p>
+<p>(with <span class="math inline">x</span> in metres). For <strong>urban unstable</strong> (class B, sunny afternoon with surface heating):</p>
+<p><span class="math display">\sigma_y = 0.16 \, x \, (1 + 0.0001x)^{-1/2}</span> <span class="math display">\sigma_z = 0.12 \, x</span></p>
+<p>Unstable conditions have larger <span class="math inline">\sigma_z</span> — faster vertical mixing — giving lower ground-level concentrations at any given distance. <strong>Stable conditions</strong> (class F, calm clear nights) produce the highest ground-level concentrations because vertical mixing is suppressed.</p>
+<p>The centreline concentration at distance <span class="math inline">x</span> scales approximately as:</p>
+<p><span class="math display">C(x, 0, 0) \propto \frac{Q}{\sigma_y \sigma_z \bar{u}} \propto \frac{Q}{\bar{u} x^2}</span></p>
+<p>— a strong inverse-square decrease with distance that explains why doubling setback distance from a road reduces concentration by approximately 4×.</p>
+<h3 id="urban-boundary-layer-height" class="anchored">3.6 Urban Boundary Layer Height</h3>
+<p>The <strong>urban boundary layer</strong> (UBL) depth <span class="math inline">h_{\text{UBL}}</span> grows downwind over the city as turbulence and heat from the urban surface modify the atmosphere above:</p>
+<p><span class="math display">h_{\text{UBL}} \approx 0.4\sqrt{\frac{u_* x}{f_c}}</span></p>
+<p>where <span class="math inline">f_c \approx 10^{-4}</span> s⁻¹ is the Coriolis parameter and <span class="math inline">x</span> is fetch over the city. For <span class="math inline">u_* = 0.5</span> m s⁻¹ and <span class="math inline">x = 10</span> km:</p>
+<p><span class="math display">h_{\text{UBL}} = 0.4\sqrt{\frac{0.5 \times 10{,}000}{10^{-4}}} = 0.4\sqrt{5 \times 10^7} = 0.4 \times 7071 = 2828 \text{ m}</span></p>
+<p>The daytime UBL extends 2–3 km above the urban surface. Pollutants emitted at street level are eventually mixed through this layer — at the top of the UBL, urban-rural concentration contrasts are much smaller than at street level. The nighttime UBL is much shallower (100–500 m), which is why nighttime stable-atmosphere conditions produce maximum near-surface concentrations despite lower traffic volumes.</p>
+<h3 id="no₂-chemistry-primary-vs.-secondary" class="anchored">3.7 NO₂ Chemistry: Primary vs.&nbsp;Secondary</h3>
+<p>Vehicles emit primarily NO (nitric oxide), which is rapidly oxidised to NO₂ in the presence of ozone:</p>
+<p><span class="math display">\text{NO} + \text{O}_3 \to \text{NO}_2 + \text{O}_2</span></p>
+<p>In the photostationary state, the NO₂/NO ratio is:</p>
+<p><span class="math display">\frac{[\text{NO}_2]}{[\text{NO}]} = \frac{k_1[\text{O}_3]}{J_{\text{NO}_2}}</span></p>
+<p>where <span class="math inline">J_{\text{NO}_2} \approx 7 \times 10^{-3}</span> s⁻¹ is the daytime photolysis rate and <span class="math inline">k_1[\text{O}_3] \approx 2 \times 10^{-3}</span> s⁻¹ for <span class="math inline">[\text{O}_3] = 40</span> μg m⁻³. This gives <span class="math inline">[\text{NO}_2]/[\text{NO}] \approx 0.3</span> in daylight — about 23% of NO<span class="math inline">_x</span> is NO₂.</p>
+<p>At night, <span class="math inline">J_{\text{NO}_2} = 0</span> and all NO is eventually converted to NO₂, which is not photolysed back. Combined with stable nocturnal mixing, nighttime NO₂ concentrations in canyons can exceed daytime values despite lower traffic.</p>
+<hr>
+<h2 id="worked-example-by-hand" class="anchored">4. Worked Example by Hand</h2>
+<p><strong>Setting:</strong> A downtown Calgary street canyon. <span class="math inline">H = 35</span> m, <span class="math inline">W = 18</span> m (<span class="math inline">H/W = 1.94</span>, deep skimming flow). Morning peak hour traffic.</p>
+<p><strong>Given:</strong> - Traffic: 1400 veh hr⁻¹; fleet mix 55% petrol car, 35% diesel car, 10% diesel bus - Speed: 25 km hr⁻¹ - Wind at roof level: <span class="math inline">U_H = 4</span> m s⁻¹, <span class="math inline">z_0 = 1</span> m - Background NO₂: 20 μg m⁻³</p>
+<p><strong>Step 1: Fleet-averaged NO<span class="math inline">_x</span> emission factor</strong></p>
+<p><span class="math display">\text{EF}_{\text{fleet}} = 0.55(0.06) + 0.35(0.50) + 0.10(3.0) = 0.033 + 0.175 + 0.300 = 0.508 \text{ g km}^{-1}</span></p>
+<p><strong>Step 2: Emission rate per metre of road</strong></p>
+<p><span class="math display">Q = \frac{1400}{3600} \times 0.508 \times \frac{25}{1000} \times 10^6 = 0.3889 \times 0.508 \times 0.025 \times 10^6 = 4943 \text{ μg s}^{-1}\text{m}^{-1}</span></p>
+<p><strong>Step 3: Friction velocity and canyon ventilation</strong></p>
+<p><span class="math display">u_* = \frac{0.41 \times 4}{\ln(35/1)} = \frac{1.64}{\ln(35)} = \frac{1.64}{3.555} = 0.461 \text{ m s}^{-1}</span></p>
+<p><span class="math display">u_c = \frac{0.461}{(1.94)^{0.5}} = \frac{0.461}{1.393} = 0.331 \text{ m s}^{-1}</span></p>
+<p><strong>Step 4: Box model NO<span class="math inline">_x</span> concentration</strong></p>
+<p><span class="math display">C_{\text{NO}_x} = \frac{Q}{H \cdot u_c} = \frac{4943}{35 \times 0.331} = \frac{4943}{11.59} = 426 \text{ μg m}^{-3}</span></p>
+<p><strong>Step 5: NO₂ fraction</strong></p>
+<p>Daytime: primary NO₂ fraction ≈ 0.10 from direct diesel emissions; secondary conversion of NO to NO₂ brings total to ~25–30% of NO<span class="math inline">_x</span> at photostationary state:</p>
+<p><span class="math display">C_{\text{NO}_2} = 0.27 \times 426 + 20 = 115 + 20 = 135 \text{ μg m}^{-3}</span></p>
+<p>This exceeds the WHO 1-hour guideline of 100 μg m⁻³ and approaches the old EU hourly limit of 200 μg m⁻³. It is not atypical for deep diesel-traffic canyons in Canadian cities during peak hour.</p>
+<p><strong>Step 6: Effect of widening the street</strong> (reduce <span class="math inline">H/W</span> from 1.94 to 0.8)</p>
+<p>New <span class="math inline">W = 35/0.8 = 43.75</span> m — nearly 2.5× wider. This is usually not feasible in a built-up city centre.</p>
+<p><span class="math display">u_c' = \frac{0.461}{(0.8)^{0.5}} = \frac{0.461}{0.894} = 0.516 \text{ m s}^{-1}</span></p>
+<p><span class="math display">C' = \frac{4943}{35 \times 0.516} = \frac{4943}{18.06} = 274 \text{ μg m}^{-3} \quad \Rightarrow C_{\text{NO}_2}' \approx 94 \text{ μg m}^{-3}</span></p>
+<p>Below the WHO guideline — but at the cost of a 25 m street widening that would require demolishing the building frontage.</p>
+<hr>
+<h2 id="computational-implementation" class="anchored">5. Computational Implementation</h2>
+<pre><code>function canyon_box(Q_ug_s_m, H, W, U_H, z0=1.0):
+    u_star = 0.41 * U_H / log(H / z0)
+    u_c    = u_star / sqrt(H / W)
+    C      = Q_ug_s_m / (H * u_c)
+    return C, u_c
+
+function emission_rate(N_veh_hr, ef_g_km, speed_kph):
+    # Returns μg/s/m
+    return (N_veh_hr / 3600) * ef_g_km * (speed_kph / 1000) * 1e6
+
+function gaussian_centreline(Q_g_s, x, H_s, u_bar):
+    sigma_y = 0.22 * x * (1 + 0.0001*x)**(-0.5)
+    sigma_z = 0.16 * x * (1 + 0.0001*x)**(-0.5)
+    C = Q_g_s / (pi * sigma_y * sigma_z * u_bar)
+    C *= exp(-H_s**2 / (2 * sigma_z**2))
+    return C * 1e6  # to μg/m³</code></pre>
+<pre class="{pyodide}"><code>import numpy as np
+
+def canyon_box(Q, H, U_H, HW_ratio, z0=1.0):
+    u_star = 0.41 * U_H / np.log(H / z0)
+    u_c = u_star / np.sqrt(HW_ratio)
+    return Q / (H * u_c), u_c
+
+def emission_rate(N, ef, v):
+    return (N / 3600) * ef * (v / 1000) * 1e6  # μg/s/m
+
+def gaussian_cl(Q_g_s, x, Hs, u):
+    sy = 0.22 * x * (1 + 0.0001*x)**(-0.5)
+    sz = 0.16 * x * (1 + 0.0001*x)**(-0.5)
+    return Q_g_s / (np.pi * sy * sz * u) * np.exp(-Hs**2/(2*sz**2)) * 1e6
+
+# Calgary canyon
+ef_fleet = 0.55*0.06 + 0.35*0.50 + 0.10*3.0
+Q = emission_rate(1400, ef_fleet, 25)
+C, uc = canyon_box(Q, H=35, U_H=4, HW_ratio=1.94)
+C_NO2 = 0.27 * C + 20
+print(f"Fleet EF: {ef_fleet:.3f} g/km")
+print(f"Emission rate Q: {Q:.0f} μg/s/m")
+print(f"Canyon NOₓ: {C:.0f} μg/m³")
+print(f"Canyon NO₂: {C_NO2:.0f} μg/m³  (WHO 1-hr: 100 μg/m³)")
+
+# Gaussian plume downwind
+print("\nGaussian plume centreline (1 g/s source, u=3m/s, Hs=3m):")
+for x in [50, 100, 200, 500, 1000, 2000]:
+    c = gaussian_cl(1.0, x, 3, 3)
+    print(f"  x={x:5d}m: {c:.1f} μg/m³")</code></pre>
+<hr>
+<h2 id="visualization" class="anchored">6. Visualization</h2>
+<div data-viz="echarts" style="height:420px" data-options="{
+  &quot;title&quot;: {&quot;text&quot;: &quot;Canyon NO₂ Concentration vs Aspect Ratio and Wind Speed&quot;, &quot;textStyle&quot;: {&quot;fontSize&quot;: 14}},
+  &quot;tooltip&quot;: {&quot;trigger&quot;: &quot;axis&quot;},
+  &quot;legend&quot;: {&quot;data&quot;: [&quot;U_H = 2 m/s&quot;, &quot;U_H = 4 m/s&quot;, &quot;U_H = 6 m/s&quot;], &quot;bottom&quot;: 0},
+  &quot;xAxis&quot;: {&quot;name&quot;: &quot;Aspect ratio H/W&quot;, &quot;nameLocation&quot;: &quot;middle&quot;, &quot;nameGap&quot;: 30,
+    &quot;data&quot;: [0.3, 0.5, 0.7, 1.0, 1.5, 2.0, 2.5, 3.0]},
+  &quot;yAxis&quot;: {&quot;name&quot;: &quot;Canyon NO₂ (μg m⁻³, above background)&quot;, &quot;nameLocation&quot;: &quot;middle&quot;, &quot;nameGap&quot;: 55},
+  &quot;series&quot;: [
+    {&quot;name&quot;: &quot;U_H = 2 m/s&quot;, &quot;type&quot;: &quot;line&quot;, &quot;smooth&quot;: true,
+     &quot;data&quot;: [28, 42, 55, 75, 105, 135, 162, 188]},
+    {&quot;name&quot;: &quot;U_H = 4 m/s&quot;, &quot;type&quot;: &quot;line&quot;, &quot;smooth&quot;: true,
+     &quot;data&quot;: [14, 21, 27, 37, 52, 67, 81, 94]},
+    {&quot;name&quot;: &quot;U_H = 6 m/s&quot;, &quot;type&quot;: &quot;line&quot;, &quot;smooth&quot;: true,
+     &quot;data&quot;: [9, 14, 18, 25, 35, 45, 54, 63]}
+  ]
+}">
+
+</div>
+<p>Both deeper canyons (higher <span class="math inline">H/W</span>) and lower wind speeds increase canyon concentrations. The <span class="math inline">H/W</span> effect is the square-root of the ratio — going from <span class="math inline">H/W = 0.3</span> (wide street) to <span class="math inline">H/W = 3.0</span> (deep canyon) increases concentration by <span class="math inline">\sqrt{3.0/0.3} = \sqrt{10} = 3.16\times</span>. The wind speed effect is linear: halving wind speed doubles concentration. On calm days, both effects compound to produce the most severe air quality episodes.</p>
+<hr>
+<h2 id="interpretation" class="anchored">7. Interpretation</h2>
+<p>The box model reveals a simple and powerful hierarchy of interventions:</p>
+<p><strong>Reduce <span class="math inline">Q</span> (reduce emissions):</strong> Low-emission zones, electric vehicle mandates, congestion pricing. Each 10% reduction in fleet emission factor produces a 10% reduction in concentration — the most direct intervention.</p>
+<p><strong>Increase <span class="math inline">u_c</span> (increase ventilation):</strong> Street widening, building setbacks, creating gaps in building frontages. The <span class="math inline">\sqrt{H/W}</span> dependence means that doubling street width (<span class="math inline">H/W \to H/2W</span>) increases <span class="math inline">u_c</span> by <span class="math inline">\sqrt{2} \approx 1.41\times</span> and reduces concentration by the same factor. Street widening is expensive and land-consuming; building setbacks are more achievable at the planning stage.</p>
+<p><strong>Increase <span class="math inline">H</span> (increase dilution volume):</strong> Taller buildings at the same street width increase the canyon volume, diluting emissions. However, taller buildings also reduce sky view factor, worsening nocturnal cooling (Essay AJ1) — a trade-off that city planners routinely underweight.</p>
+<p><strong>Increase background dispersion:</strong> The Gaussian plume analysis shows that receptor distance matters enormously. Moving a school from 50 m to 200 m from a major road reduces concentration by approximately <span class="math inline">(200/50)^2 = 16\times</span> under typical conditions — the simplest and most effective mitigation when it can be achieved at the planning stage.</p>
+<hr>
+<h2 id="what-could-go-wrong" class="anchored">8. What Could Go Wrong?</h2>
+<p><strong>The box model ignores along-canyon variation.</strong> Real canyons have intersections, varying traffic, and wind directions that are rarely exactly perpendicular. Concentrations near intersections (where vehicles idle and accelerate) are 2–4× higher than mid-block. The box model produces a block-average; point measurements at intersections will exceed it.</p>
+<p><strong>Emission factors are highly uncertain.</strong> Real-world diesel NO<span class="math inline">_x</span> emissions frequently exceed certification by 3–7× in urban stop-start driving. Using Euro 6 certification factors can underpredict canyon NO<span class="math inline">_x</span> by a factor of 2–4. This is not a modelling failure — it is a regulatory failure in emissions certification that has only recently been acknowledged and is still not fully corrected.</p>
+<p><strong>Gaussian plume assumes flat, homogeneous terrain.</strong> Buildings create wakes, recirculation zones, and channelling effects that the Gaussian formula cannot represent. In the near field (within 1–2 building heights), building downwash can carry stack emissions directly to street level at concentrations orders of magnitude above the Gaussian prediction. Computational fluid dynamics (CFD) is required for accurate near-field assessment.</p>
+<p><strong>Secondary PM₂.₅ formation.</strong> Primary exhaust PM₂.₅ is only part of the urban particulate burden. Secondary PM₂.₅ forms downwind through gas-to-particle conversion of NO<span class="math inline">_x</span>, SO₂, and volatile organic compounds — a process that takes hours to days and scales with regional rather than local sources. Box models that consider only primary emissions miss this contribution, which can dominate total PM₂.₅ in clean-air cities with low primary emissions.</p>
+<hr>
+<h2 id="summary" class="anchored">9. Summary</h2>
+<p>Street canyon flow in the skimming regime (<span class="math inline">H/W &gt; 0.7</span>) traps vehicle exhaust in a recirculating vortex. The box model concentration <span class="math inline">C = Q/(H \cdot u_c)</span> reveals the three controllable parameters: emission rate <span class="math inline">Q</span>, canyon height <span class="math inline">H</span>, and ventilation velocity <span class="math inline">u_c \propto u_* (H/W)^{-0.5}</span>. Deep canyons with high-diesel traffic at low wind speed produce NO₂ concentrations that routinely exceed WHO guidelines by factors of 2–5.</p>
+<p>The Gaussian plume model extends the analysis beyond the canyon, showing that concentrations fall roughly as <span class="math inline">x^{-2}</span> with downwind distance — a strong argument for minimum setback distances between sensitive receptors and major roads. Stable nocturnal atmospheres suppress vertical mixing and produce maximum concentrations despite lower traffic volumes; this is why the worst air quality episodes typically occur on calm, cold winter nights rather than during morning rush hour.</p>
+<p><strong>Key equations:</strong></p>
+<p><span class="math display">u_c = u_* (H/W)^{-1/2}, \quad u_* = k_v U_H / \ln(H/z_0)</span></p>
+<p><span class="math display">C_{\text{canyon}} = Q / (H \cdot u_c) \quad \text{[box model]}</span></p>
+<p><span class="math display">C(x,0,0) = \frac{Q}{\pi\sigma_y\sigma_z\bar{u}} \exp\!\left(-\frac{H_s^2}{2\sigma_z^2}\right) \quad \text{[Gaussian plume]}</span></p>
+<hr>
+<h2 id="math-refresher" class="anchored">Math Refresher</h2>
+<p><strong>The Gaussian distribution in dispersion.</strong> Pollutant particles in turbulent flow undergo many independent small random displacements — up/down and left/right — as they travel downwind. By the central limit theorem, the sum of many independent random steps converges to a Gaussian distribution. The standard deviations <span class="math inline">\sigma_y</span> and <span class="math inline">\sigma_z</span> measure how wide the plume has spread; both grow with distance as turbulence accumulates more random displacements. The result: the Gaussian plume formula is not an empirical fit — it is the theoretical steady-state solution of the turbulent diffusion equation with constant wind and constant diffusivity.</p>
+<p><strong>Box model as flux balance.</strong> The box model equates the mass flux into the canyon (emission <span class="math inline">Q</span> μg s⁻¹ m⁻¹) with the mass flux out (ventilation <span class="math inline">C \cdot u_c \cdot H</span> μg m⁻³ × m s⁻¹ × m = μg s⁻¹ m⁻¹). At steady state these balance, giving <span class="math inline">C = Q/(u_c H)</span>. This is the same structure as every other flux-balance model in the curriculum: residence time × input rate = steady-state reservoir size. The canyon residence time is <span class="math inline">\tau = H/u_c</span> — the time to flush the canyon volume — and <span class="math inline">C = Q \tau / H</span>.</p>
+
+
+<footer class="wayward-footer">
+  <div class="wayward-footer__inner">
+    <div class="wayward-footer__brand">
+      <div class="wayward-footer__logo">WaywardHouse<span>.</span></div>
+      <p>Understanding how place, economy, and environment interact through analysis, modelling, and open tools.</p>
+    </div>
+
+    <nav class="wayward-footer__group" aria-labelledby="footer-reading">
+      <h2 id="footer-reading" class="anchored">Reading</h2>
+      <a href="../articles/">Articles</a>
+      <a href="../learn/">Learn</a>
+      <a href="../archive.html">Archive</a>
+      <a href="../start-here.html">Start Here</a>
+    </nav>
+
+    <nav class="wayward-footer__group" aria-labelledby="footer-site">
+      <h2 id="footer-site" class="anchored">Site</h2>
+      <a href="../start-here.html">Start Here</a>
+      <a href="../about.html">About</a>
+      <a href="../contact.html">Contact</a>
+    </nav>
+
+    <nav class="wayward-footer__group" aria-labelledby="footer-resources">
+      <h2 id="footer-resources" class="anchored">Resources</h2>
+      <a href="../topics/">All Topics</a>
+      <a href="../privacy.html">Privacy Policy</a>
+      <a href="../terms.html">Terms of Use</a>
+    </nav>
+  </div>
+</footer>
+
+<script type="module" src="../assets/dist/main.js"></script>
+<script type="module" src="../assets/js/core.js"></script>
+<script id="quarto-html-after-body" type="application/javascript">
+  window.document.addEventListener("DOMContentLoaded", function (event) {
+    const tabsets =  window.document.querySelectorAll(".panel-tabset-tabby")
+    tabsets.forEach(function(tabset) {
+      const tabby = new Tabby('#' + tabset.id);
+    });
+    const icon = "";
+    const anchorJS = new window.AnchorJS();
+    anchorJS.options = {
+      placement: 'right',
+      icon: icon
+    };
+    anchorJS.add('.anchored');
+    const isCodeAnnotation = (el) => {
+      for (const clz of el.classList) {
+        if (clz.startsWith('code-annotation-')) {                     
+          return true;
+        }
+      }
+      return false;
+    }
+    const onCopySuccess = function(e) {
+      // button target
+      const button = e.trigger;
+      // don't keep focus
+      button.blur();
+      // flash "checked"
+      button.classList.add('code-copy-button-checked');
+      var currentTitle = button.getAttribute("title");
+      button.setAttribute("title", "Copied!");
+      let tooltip;
+      if (window.bootstrap) {
+        button.setAttribute("data-bs-toggle", "tooltip");
+        button.setAttribute("data-bs-placement", "left");
+        button.setAttribute("data-bs-title", "Copied!");
+        tooltip = new bootstrap.Tooltip(button, 
+          { trigger: "manual", 
+            customClass: "code-copy-button-tooltip",
+            offset: [0, -8]});
+        tooltip.show();    
+      }
+      setTimeout(function() {
+        if (tooltip) {
+          tooltip.hide();
+          button.removeAttribute("data-bs-title");
+          button.removeAttribute("data-bs-toggle");
+          button.removeAttribute("data-bs-placement");
+        }
+        button.setAttribute("title", currentTitle);
+        button.classList.remove('code-copy-button-checked');
+      }, 1000);
+      // clear code selection
+      e.clearSelection();
+    }
+    const getTextToCopy = function(trigger) {
+      const outerScaffold = trigger.parentElement.cloneNode(true);
+      const codeEl = outerScaffold.querySelector('code');
+      for (const childEl of codeEl.children) {
+        if (isCodeAnnotation(childEl)) {
+          childEl.remove();
+        }
+      }
+      return codeEl.innerText;
+    }
+    const clipboard = new window.ClipboardJS('.code-copy-button:not([data-in-quarto-modal])', {
+      text: getTextToCopy
+    });
+    clipboard.on('success', onCopySuccess);
+    if (window.document.getElementById('quarto-embedded-source-code-modal')) {
+      const clipboardModal = new window.ClipboardJS('.code-copy-button[data-in-quarto-modal]', {
+        text: getTextToCopy,
+        container: window.document.getElementById('quarto-embedded-source-code-modal')
+      });
+      clipboardModal.on('success', onCopySuccess);
+    }
+      var localhostRegex = new RegExp(/^(?:http|https):\/\/localhost\:?[0-9]*\//);
+      var mailtoRegex = new RegExp(/^mailto:/);
+        var filterRegex = new RegExp('/' + window.location.host + '/');
+      var isInternal = (href) => {
+          return filterRegex.test(href) || localhostRegex.test(href) || mailtoRegex.test(href);
+      }
+      // Inspect non-navigation links and adorn them if external
+     var links = window.document.querySelectorAll('a[href]:not(.nav-link):not(.navbar-brand):not(.toc-action):not(.sidebar-link):not(.sidebar-item-toggle):not(.pagination-link):not(.no-external):not([aria-hidden]):not(.dropdown-item):not(.quarto-navigation-tool):not(.about-link)');
+      for (var i=0; i<links.length; i++) {
+        const link = links[i];
+        if (!isInternal(link.href)) {
+          // undo the damage that might have been done by quarto-nav.js in the case of
+          // links that we want to consider external
+          if (link.dataset.originalHref !== undefined) {
+            link.href = link.dataset.originalHref;
+          }
+        }
+      }
+    function tippyHover(el, contentFn, onTriggerFn, onUntriggerFn) {
+      const config = {
+        allowHTML: true,
+        maxWidth: 500,
+        delay: 100,
+        arrow: false,
+        appendTo: function(el) {
+            return el.parentElement;
+        },
+        interactive: true,
+        interactiveBorder: 10,
+        theme: 'light-border',
+        placement: 'bottom-start',
+      };
+      if (contentFn) {
+        config.content = contentFn;
+      }
+      if (onTriggerFn) {
+        config.onTrigger = onTriggerFn;
+      }
+      if (onUntriggerFn) {
+        config.onUntrigger = onUntriggerFn;
+      }
+      window.tippy(el, config); 
+    }
+    const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+    for (var i=0; i<noterefs.length; i++) {
+      const ref = noterefs[i];
+      tippyHover(ref, function() {
+        // use id or data attribute instead here
+        let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+        try { href = new URL(href).hash; } catch {}
+        const id = href.replace(/^#\/?/, "");
+        const note = window.document.getElementById(id);
+        if (note) {
+          return note.innerHTML;
+        } else {
+          return "";
+        }
+      });
+    }
+    const xrefs = window.document.querySelectorAll('a.quarto-xref');
+    const processXRef = (id, note) => {
+      // Strip column container classes
+      const stripColumnClz = (el) => {
+        el.classList.remove("page-full", "page-columns");
+        if (el.children) {
+          for (const child of el.children) {
+            stripColumnClz(child);
+          }
+        }
+      }
+      stripColumnClz(note)
+      if (id === null || id.startsWith('sec-')) {
+        // Special case sections, only their first couple elements
+        const container = document.createElement("div");
+        if (note.children && note.children.length > 2) {
+          container.appendChild(note.children[0].cloneNode(true));
+          for (let i = 1; i < note.children.length; i++) {
+            const child = note.children[i];
+            if (child.tagName === "P" && child.innerText === "") {
+              continue;
+            } else {
+              container.appendChild(child.cloneNode(true));
+              break;
+            }
+          }
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(container);
+          }
+          return container.innerHTML
+        } else {
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(note);
+          }
+          return note.innerHTML;
+        }
+      } else {
+        // Remove any anchor links if they are present
+        const anchorLink = note.querySelector('a.anchorjs-link');
+        if (anchorLink) {
+          anchorLink.remove();
+        }
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(note);
+        }
+        if (note.classList.contains("callout")) {
+          return note.outerHTML;
+        } else {
+          return note.innerHTML;
+        }
+      }
+    }
+    for (var i=0; i<xrefs.length; i++) {
+      const xref = xrefs[i];
+      tippyHover(xref, undefined, function(instance) {
+        instance.disable();
+        let url = xref.getAttribute('href');
+        let hash = undefined; 
+        if (url.startsWith('#')) {
+          hash = url;
+        } else {
+          try { hash = new URL(url).hash; } catch {}
+        }
+        if (hash) {
+          const id = hash.replace(/^#\/?/, "");
+          const note = window.document.getElementById(id);
+          if (note !== null) {
+            try {
+              const html = processXRef(id, note.cloneNode(true));
+              instance.setContent(html);
+            } finally {
+              instance.enable();
+              instance.show();
+            }
+          } else {
+            // See if we can fetch this
+            fetch(url.split('#')[0])
+            .then(res => res.text())
+            .then(html => {
+              const parser = new DOMParser();
+              const htmlDoc = parser.parseFromString(html, "text/html");
+              const note = htmlDoc.getElementById(id);
+              if (note !== null) {
+                const html = processXRef(id, note);
+                instance.setContent(html);
+              } 
+            }).finally(() => {
+              instance.enable();
+              instance.show();
+            });
+          }
+        } else {
+          // See if we can fetch a full url (with no hash to target)
+          // This is a special case and we should probably do some content thinning / targeting
+          fetch(url)
+          .then(res => res.text())
+          .then(html => {
+            const parser = new DOMParser();
+            const htmlDoc = parser.parseFromString(html, "text/html");
+            const note = htmlDoc.querySelector('main.content');
+            if (note !== null) {
+              // This should only happen for chapter cross references
+              // (since there is no id in the URL)
+              // remove the first header
+              if (note.children.length > 0 && note.children[0].tagName === "HEADER") {
+                note.children[0].remove();
+              }
+              const html = processXRef(null, note);
+              instance.setContent(html);
+            } 
+          }).finally(() => {
+            instance.enable();
+            instance.show();
+          });
+        }
+      }, function(instance) {
+      });
+    }
+        let selectedAnnoteEl;
+        const selectorForAnnotation = ( cell, annotation) => {
+          let cellAttr = 'data-code-cell="' + cell + '"';
+          let lineAttr = 'data-code-annotation="' +  annotation + '"';
+          const selector = 'span[' + cellAttr + '][' + lineAttr + ']';
+          return selector;
+        }
+        const selectCodeLines = (annoteEl) => {
+          const doc = window.document;
+          const targetCell = annoteEl.getAttribute("data-target-cell");
+          const targetAnnotation = annoteEl.getAttribute("data-target-annotation");
+          const annoteSpan = window.document.querySelector(selectorForAnnotation(targetCell, targetAnnotation));
+          const lines = annoteSpan.getAttribute("data-code-lines").split(",");
+          const lineIds = lines.map((line) => {
+            return targetCell + "-" + line;
+          })
+          let top = null;
+          let height = null;
+          let parent = null;
+          if (lineIds.length > 0) {
+              //compute the position of the single el (top and bottom and make a div)
+              const el = window.document.getElementById(lineIds[0]);
+              top = el.offsetTop;
+              height = el.offsetHeight;
+              parent = el.parentElement.parentElement;
+            if (lineIds.length > 1) {
+              const lastEl = window.document.getElementById(lineIds[lineIds.length - 1]);
+              const bottom = lastEl.offsetTop + lastEl.offsetHeight;
+              height = bottom - top;
+            }
+            if (top !== null && height !== null && parent !== null) {
+              // cook up a div (if necessary) and position it 
+              let div = window.document.getElementById("code-annotation-line-highlight");
+              if (div === null) {
+                div = window.document.createElement("div");
+                div.setAttribute("id", "code-annotation-line-highlight");
+                div.style.position = 'absolute';
+                parent.appendChild(div);
+              }
+              div.style.top = top - 2 + "px";
+              div.style.height = height + 4 + "px";
+              div.style.left = 0;
+              let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
+              if (gutterDiv === null) {
+                gutterDiv = window.document.createElement("div");
+                gutterDiv.setAttribute("id", "code-annotation-line-highlight-gutter");
+                gutterDiv.style.position = 'absolute';
+                const codeCell = window.document.getElementById(targetCell);
+                const gutter = codeCell.querySelector('.code-annotation-gutter');
+                gutter.appendChild(gutterDiv);
+              }
+              gutterDiv.style.top = top - 2 + "px";
+              gutterDiv.style.height = height + 4 + "px";
+            }
+            selectedAnnoteEl = annoteEl;
+          }
+        };
+        const unselectCodeLines = () => {
+          const elementsIds = ["code-annotation-line-highlight", "code-annotation-line-highlight-gutter"];
+          elementsIds.forEach((elId) => {
+            const div = window.document.getElementById(elId);
+            if (div) {
+              div.remove();
+            }
+          });
+          selectedAnnoteEl = undefined;
+        };
+          // Handle positioning of the toggle
+      window.addEventListener(
+        "resize",
+        throttle(() => {
+          elRect = undefined;
+          if (selectedAnnoteEl) {
+            selectCodeLines(selectedAnnoteEl);
+          }
+        }, 10)
+      );
+      function throttle(fn, ms) {
+      let throttle = false;
+      let timer;
+        return (...args) => {
+          if(!throttle) { // first call gets through
+              fn.apply(this, args);
+              throttle = true;
+          } else { // all the others get throttled
+              if(timer) clearTimeout(timer); // cancel #2
+              timer = setTimeout(() => {
+                fn.apply(this, args);
+                timer = throttle = false;
+              }, ms);
+          }
+        };
+      }
+        // Attach click handler to the DT
+        const annoteDls = window.document.querySelectorAll('dt[data-target-cell]');
+        for (const annoteDlNode of annoteDls) {
+          annoteDlNode.addEventListener('click', (event) => {
+            const clickedEl = event.target;
+            if (clickedEl !== selectedAnnoteEl) {
+              unselectCodeLines();
+              const activeEl = window.document.querySelector('dt[data-target-cell].code-annotation-active');
+              if (activeEl) {
+                activeEl.classList.remove('code-annotation-active');
+              }
+              selectCodeLines(clickedEl);
+              clickedEl.classList.add('code-annotation-active');
+            } else {
+              // Unselect the line
+              unselectCodeLines();
+              clickedEl.classList.remove('code-annotation-active');
+            }
+          });
+        }
+    const findCites = (el) => {
+      const parentEl = el.parentElement;
+      if (parentEl) {
+        const cites = parentEl.dataset.cites;
+        if (cites) {
+          return {
+            el,
+            cites: cites.split(' ')
+          };
+        } else {
+          return findCites(el.parentElement)
+        }
+      } else {
+        return undefined;
+      }
+    };
+    var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+    for (var i=0; i<bibliorefs.length; i++) {
+      const ref = bibliorefs[i];
+      const citeInfo = findCites(ref);
+      if (citeInfo) {
+        tippyHover(citeInfo.el, function() {
+          var popup = window.document.createElement('div');
+          citeInfo.cites.forEach(function(cite) {
+            var citeDiv = window.document.createElement('div');
+            citeDiv.classList.add('hanging-indent');
+            citeDiv.classList.add('csl-entry');
+            var biblioDiv = window.document.getElementById('ref-' + cite);
+            if (biblioDiv) {
+              citeDiv.innerHTML = biblioDiv.innerHTML;
+            }
+            popup.appendChild(citeDiv);
+          });
+          return popup.innerHTML;
+        });
+      }
+    }
+  });
+  </script>
+
+
+
+
+</body></html>
