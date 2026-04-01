@@ -1,0 +1,1136 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
+
+<meta charset="utf-8">
+<meta name="generator" content="quarto-1.9.36">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+
+<meta name="dcterms.date" content="2026-02-27">
+<meta name="description" content="How does urbanization affect flooding and how can green infrastructure help? Impervious surfaces increase runoff volume and peak flows requiring detention basins and low-impact development. This model derives rational method equations, implements SCS Curve Number analysis, demonstrates detention design, and evaluates green infrastructure effectiveness for urban stormwater management.">
+
+<title>Urban Flood modelling and Green Infrastructure – Computational Geography</title>
+<style>
+/* Default styles provided by pandoc.
+** See https://pandoc.org/MANUAL.html#variables-for-html for config info.
+*/
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: min(4vw, 1.5em);}
+div.column{flex: auto; overflow-x: auto;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+  width: 0.8em;
+  margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
+  vertical-align: middle;
+}
+</style>
+
+
+<script src="../site_libs/clipboard/clipboard.min.js"></script>
+<script src="../site_libs/quarto-html/tabby.min.js"></script>
+<script src="../site_libs/quarto-html/popper.min.js"></script>
+<script src="../site_libs/quarto-html/tippy.umd.min.js"></script>
+<script src="../site_libs/quarto-html/anchor.min.js"></script>
+<link href="../site_libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="../site_libs/quarto-html/light-border.css" rel="stylesheet">
+<link href="../site_libs/quarto-html/quarto-html-640605f58ae58ee79329c070719e555b.min.css" rel="stylesheet" append-hash="true" data-mode="light">
+<link href="../site_libs/quarto-html/quarto-syntax-highlighting-845c23b38eaddc0f92fda52bfe77a8c8.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<script>
+  (function () {
+    var s = localStorage.getItem('theme');
+    var dark = s !== null ? s === 'dark' : false;
+    document.documentElement.dataset.theme = dark ? 'dark' : 'light';
+    document.documentElement.dataset.brand = 'wayward';
+  })();
+</script>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:ital,wght@0,300;0,400;0,600;0,700;0,800;0,900;1,700;1,800&amp;family=Barlow:wght@300;400;500;600&amp;family=IBM+Plex+Mono:ital,wght@0,300;0,400;0,500;1,300&amp;family=Literata:ital,opsz,wght@0,7..72,300;0,7..72,400;0,7..72,500;1,7..72,300;1,7..72,400&amp;display=swap" rel="stylesheet">
+
+  <script>window.backupDefine = window.define; window.define = undefined;</script><script src="https://cdn.jsdelivr.net/npm/katex@latest/dist/katex.min.js"></script>
+  <script>document.addEventListener("DOMContentLoaded", function () {
+ var mathElements = document.getElementsByClassName("math");
+ var macros = [];
+ for (var i = 0; i < mathElements.length; i++) {
+  var texText = mathElements[i].firstChild;
+  if (mathElements[i].tagName == "SPAN") {
+   katex.render(texText.data, mathElements[i], {
+    displayMode: mathElements[i].classList.contains('display'),
+    throwOnError: false,
+    macros: macros,
+    fleqn: false
+   });
+}}});
+  </script>
+  <script>window.define = window.backupDefine; window.backupDefine = undefined;</script><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@latest/dist/katex.min.css">
+
+<script type="text/javascript">
+const typesetMath = (el) => {
+  if (window.MathJax) {
+    // MathJax Typeset
+    window.MathJax.typeset([el]);
+  } else if (window.katex) {
+    // KaTeX Render
+    var mathElements = el.getElementsByClassName("math");
+    var macros = [];
+    for (var i = 0; i < mathElements.length; i++) {
+      var texText = mathElements[i].firstChild;
+      if (mathElements[i].tagName == "SPAN" && texText && texText.data) {
+        window.katex.render(texText.data, mathElements[i], {
+          displayMode: mathElements[i].classList.contains('display'),
+          throwOnError: false,
+          macros: macros,
+          fleqn: false
+        });
+      }
+    }
+  }
+}
+window.Quarto = {
+  typesetMath
+};
+</script>
+
+<link rel="stylesheet" href="../assets/css/quarto-wayward.css">
+</head>
+
+<body class="reading-body tag-hash-math tag-hash-viz">
+
+
+<header id="title-block-header">
+<h1 class="title"><span class="chapter-title">Urban Flood modelling and Green Infrastructure</span></h1>
+<p class="subtitle">Runoff generation and mitigation in developed watersheds</p>
+
+<p class="date">2026-02-27</p>
+</header>
+
+<nav id="TOC" role="doc-toc">
+    <h2 id="toc-title">Table of contents</h2>
+   
+  <ul>
+  <li><a href="#the-question" id="toc-the-question">1. The Question</a></li>
+  <li><a href="#the-conceptual-model" id="toc-the-conceptual-model">2. The Conceptual Model</a>
+  <ul>
+  <li><a href="#rational-method" id="toc-rational-method">Rational Method</a></li>
+  <li><a href="#scs-curve-number-method" id="toc-scs-curve-number-method">SCS Curve Number Method</a></li>
+  <li><a href="#unit-hydrograph-theory" id="toc-unit-hydrograph-theory">Unit Hydrograph Theory</a></li>
+  </ul></li>
+  <li><a href="#building-the-mathematical-model" id="toc-building-the-mathematical-model">3. Building the Mathematical Model</a>
+  <ul>
+  <li><a href="#detention-basin-sizing" id="toc-detention-basin-sizing">Detention Basin Sizing</a></li>
+  <li><a href="#green-infrastructure-performance" id="toc-green-infrastructure-performance">Green Infrastructure Performance</a></li>
+  </ul></li>
+  <li><a href="#worked-example-by-hand" id="toc-worked-example-by-hand">4. Worked Example by Hand</a>
+  <ul>
+  <li><a href="#solution" id="toc-solution">Solution</a></li>
+  </ul></li>
+  <li><a href="#computational-implementation" id="toc-computational-implementation">5. Computational Implementation</a></li>
+  <li><a href="#interpretation" id="toc-interpretation">6. Interpretation</a>
+  <ul>
+  <li><a href="#stream-channel-impacts" id="toc-stream-channel-impacts">Stream Channel Impacts</a></li>
+  <li><a href="#water-quality-trading" id="toc-water-quality-trading">Water Quality Trading</a></li>
+  <li><a href="#regulatory-evolution" id="toc-regulatory-evolution">Regulatory Evolution</a></li>
+  </ul></li>
+  <li><a href="#what-could-go-wrong" id="toc-what-could-go-wrong">7. What Could Go Wrong?</a>
+  <ul>
+  <li><a href="#detention-basin-failures" id="toc-detention-basin-failures">Detention Basin Failures</a></li>
+  <li><a href="#green-infrastructure-challenges" id="toc-green-infrastructure-challenges">Green Infrastructure Challenges</a></li>
+  <li><a href="#maintenance-neglect" id="toc-maintenance-neglect">Maintenance Neglect</a></li>
+  </ul></li>
+  <li><a href="#extension-low-impact-development" id="toc-extension-low-impact-development">8. Extension: Low Impact Development</a></li>
+  <li><a href="#math-refresher-mass-balance" id="toc-math-refresher-mass-balance">9. Math Refresher: Mass Balance</a>
+  <ul>
+  <li><a href="#continuity-equation" id="toc-continuity-equation">Continuity Equation</a></li>
+  </ul></li>
+  <li><a href="#summary" id="toc-summary">Summary</a></li>
+  </ul>
+</nav>
+<p>When Hurricane Harvey stalled over Houston in August 2017 and delivered 1,220 mm of rain over four days, the flooding that followed was catastrophic — but not entirely surprising to hydrologists who had been tracking what Houston had done to its landscape. Between 1992 and 2017, the Brays Bayou watershed had gone from roughly 15% impervious surface to more than 53%. Every new parking lot, highway ramp, rooftop, and cleared lot had taken land that once absorbed and delayed rainfall and turned it into a surface that shed water almost instantly. Researchers estimated that the development alone — independent of the rainfall — had increased peak flood flows by 20–30%. Harvey overwhelmed engineered defences designed for a different city.</p>
+<p>The relationship between urbanisation and flooding is not mysterious; it follows directly from the physics of runoff generation. Rainfall that lands on soil infiltrates, evaporates, and moves slowly through the unsaturated zone. Rainfall that lands on concrete flows immediately to the nearest drain. The peak discharge from a post-development watershed can be three to five times higher than from the same area in its natural state, and it arrives sooner, leaving less time to evacuate or respond.</p>
+<p>Urban flood modelling quantifies this relationship. The rational method translates impervious fraction, catchment area, and design rainfall intensity into a peak discharge number. The SCS Curve Number method tracks runoff volume across mixed land covers. Hydrograph routing follows that water pulse as it moves through pipe networks, detention basins, and channels. Green infrastructure — bioswales, permeable pavement, rain gardens — works by recovering some of the infiltration and storage that development destroyed. This model builds all of that machinery from first principles, starting with a single parking lot and working outward to a full urban watershed.</p>
+<h2 id="the-question" class="anchored">1. The Question</h2>
+<p>How much will this parking lot increase downstream flooding?</p>
+<p><strong>Urban development problem:</strong></p>
+<p>Natural landscapes → impervious surfaces</p>
+<p><strong>Consequences:</strong> - <strong>Increased runoff volume:</strong> 50-90% more water reaches streams - <strong>Higher peak flows:</strong> 2-5× pre-development magnitudes - <strong>Faster response:</strong> Time to peak reduced from hours to minutes - <strong>Reduced infiltration:</strong> Groundwater recharge eliminated - <strong>Water quality degradation:</strong> Pollutant loading (oil, nutrients, sediment) - <strong>Stream erosion:</strong> Channel incision from increased energy</p>
+<p><strong>Before development (forest/grassland):</strong> - Rainfall → Infiltration (60-80%) - Interception by vegetation (10-20%) - Runoff (10-30%)</p>
+<p><strong>After development (urban):</strong> - Rainfall → Infiltration (5-15%) - Runoff (70-90%) - Direct conveyance to streams</p>
+<p><strong>Regulatory requirement:</strong></p>
+<p><strong>Zero-increase standard:</strong> Post-development peak ≤ pre-development peak</p>
+<p>Achieved through: - <strong>Detention basins</strong> (temporary storage) - <strong>Retention basins</strong> (permanent storage + infiltration) - <strong>Green infrastructure</strong> (distributed controls)</p>
+<p><strong>Applications:</strong> - Site development permits - Stormwater management plans - Municipal separate storm sewer systems (MS4) - Total Maximum Daily Load (TMDL) compliance - Green building certification (LEED)</p>
+<hr>
+<h2 id="the-conceptual-model" class="anchored">2. The Conceptual Model</h2>
+<h3 id="rational-method" class="anchored">Rational Method</h3>
+<p><strong>Peak discharge estimation:</strong></p>
+<p><span class="math display">Q = C \times I \times A</span></p>
+<p>Where: - <span class="math inline">Q</span> = peak discharge (m³/s or cfs) - <span class="math inline">C</span> = dimensionless runoff coefficient (0-1) - <span class="math inline">I</span> = rainfall intensity (mm/hr or in/hr) - <span class="math inline">A</span> = drainage area (ha or acres)</p>
+<p><strong>Unit conversion (SI):</strong></p>
+<p><span class="math display">Q \text{ (m}^3\text{/s)} = \frac{C \times I \text{ (mm/hr)} \times A \text{ (ha)}}{360}</span></p>
+<p><strong>Runoff coefficient <span class="math inline">C</span>:</strong></p>
+<p>Represents fraction of rainfall that becomes runoff.</p>
+<p><strong>Physical meaning:</strong></p>
+<p><span class="math inline">C = 0.1</span>: 10% runoff, 90% infiltrates (forest)<br>
+<span class="math inline">C = 0.9</span>: 90% runoff, 10% infiltrates (pavement)</p>
+<p><strong>Typical values:</strong></p>
+<table class="caption-top">
+<thead>
+<tr class="header">
+<th>Land use</th>
+<th>C range</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>Forest</td>
+<td>0.05-0.15</td>
+</tr>
+<tr class="even">
+<td>Grass/meadow</td>
+<td>0.10-0.25</td>
+</tr>
+<tr class="odd">
+<td>Residential (1/4 acre lots)</td>
+<td>0.30-0.50</td>
+</tr>
+<tr class="even">
+<td>Residential (apartments)</td>
+<td>0.50-0.70</td>
+</tr>
+<tr class="odd">
+<td>Commercial</td>
+<td>0.70-0.95</td>
+</tr>
+<tr class="even">
+<td>Industrial</td>
+<td>0.50-0.90</td>
+</tr>
+<tr class="odd">
+<td>Asphalt/concrete</td>
+<td>0.90-0.95</td>
+</tr>
+<tr class="even">
+<td>Roofs</td>
+<td>0.90-0.95</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Composite <span class="math inline">C</span>:</strong></p>
+<p>For mixed land use:</p>
+<p><span class="math display">C_{composite} = \frac{\sum C_i A_i}{\sum A_i}</span></p>
+<p><strong>Intensity <span class="math inline">I</span>:</strong></p>
+<p>From IDF curves (Model 68) at duration = time of concentration.</p>
+<p><strong>Time of concentration (<span class="math inline">t_c</span>):</strong></p>
+<p>Time for runoff from most distant point to reach outlet.</p>
+<p><strong>Kirpich equation:</strong></p>
+<p><span class="math display">t_c = 0.0078 L^{0.77} S^{-0.385}</span></p>
+<p>Where: - <span class="math inline">t_c</span> = time (min) - <span class="math inline">L</span> = longest flow path (m) - <span class="math inline">S</span> = slope (m/m)</p>
+<p><strong>Limitations:</strong> - Assumes uniform rainfall - Peak-only (no hydrograph) - Small watersheds (&lt;80 ha typical) - Steady-state flow</p>
+<h3 id="scs-curve-number-method" class="anchored">SCS Curve Number Method</h3>
+<p><strong>Runoff depth from rainfall depth:</strong></p>
+<p><span class="math display">Q = \frac{(P - I_a)^2}{P - I_a + S}</span></p>
+<p>Where: - <span class="math inline">Q</span> = runoff depth (mm) - <span class="math inline">P</span> = rainfall depth (mm) - <span class="math inline">I_a</span> = initial abstraction (interception, depression storage) - <span class="math inline">S</span> = potential maximum retention (mm)</p>
+<p><strong>Standard assumption:</strong></p>
+<p><span class="math display">I_a = 0.2S</span></p>
+<p><strong>Simplified equation:</strong></p>
+<p><span class="math display">Q = \frac{(P - 0.2S)^2}{P + 0.8S}</span></p>
+<p><strong>Curve Number (<span class="math inline">CN</span>):</strong></p>
+<p><span class="math display">S = \frac{25400}{CN} - 254</span> (mm)</p>
+<p>Or: <span class="math inline">S = \frac{1000}{CN} - 10</span> (inches)</p>
+<p><strong>CN ranges:</strong> 0 to 100</p>
+<p><strong>CN = 100:</strong> Impervious (S = 0, all rainfall becomes runoff)<br>
+<strong>CN = 0:</strong> Infinite retention (Q = 0, no runoff)</p>
+<p><strong>Typical values:</strong></p>
+<table class="caption-top">
+<thead>
+<tr class="header">
+<th>Land use</th>
+<th>Hydrologic soil group</th>
+<th></th>
+<th></th>
+<th></th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td></td>
+<td>A (sand)</td>
+<td>B (silt)</td>
+<td>C (clay loam)</td>
+<td>D (clay)</td>
+</tr>
+<tr class="even">
+<td>Forest (good)</td>
+<td>25-30</td>
+<td>55-60</td>
+<td>70-75</td>
+<td>77-83</td>
+</tr>
+<tr class="odd">
+<td>Pasture</td>
+<td>39-49</td>
+<td>61-69</td>
+<td>74-79</td>
+<td>80-84</td>
+</tr>
+<tr class="even">
+<td>Residential (1/4 acre)</td>
+<td>51-61</td>
+<td>68-75</td>
+<td>79-83</td>
+<td>84-87</td>
+</tr>
+<tr class="odd">
+<td>Commercial/business</td>
+<td>85-89</td>
+<td>89-92</td>
+<td>92-94</td>
+<td>93-95</td>
+</tr>
+<tr class="even">
+<td>Paved parking</td>
+<td>98</td>
+<td>98</td>
+<td>98</td>
+<td>98</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Composite CN:</strong></p>
+<p><span class="math display">CN_{composite} = \frac{\sum CN_i A_i}{\sum A_i}</span></p>
+<p><strong>Advantages over Rational:</strong> - Runoff volume (not just peak) - Accounts for soil type - Antecedent moisture conditions</p>
+<h3 id="unit-hydrograph-theory" class="anchored">Unit Hydrograph Theory</h3>
+<p><strong>Discharge over time</strong> (not just peak):</p>
+<p><strong>Unit hydrograph:</strong> Response to 1 unit (1 cm, 1 inch) of effective rainfall</p>
+<p><strong>SCS Dimensionless Unit Hydrograph:</strong></p>
+<p>Peak occurs at:</p>
+<p><span class="math display">t_p = \frac{\Delta t}{2} + t_{lag}</span></p>
+<p>Where: - <span class="math inline">\Delta t</span> = rainfall duration - <span class="math inline">t_{lag} = 0.6 \times t_c</span></p>
+<p><strong>Peak discharge:</strong></p>
+<p><span class="math display">q_p = \frac{C \times A}{t_p}</span></p>
+<p>Where <span class="math inline">C</span> = 2.08 (SI units)</p>
+<p><strong>Hydrograph shape:</strong> Triangular or curvilinear (SCS dimensionless)</p>
+<hr>
+<h2 id="building-the-mathematical-model" class="anchored">3. Building the Mathematical Model</h2>
+<h3 id="detention-basin-sizing" class="anchored">Detention Basin Sizing</h3>
+<p><strong>Objective:</strong></p>
+<p>Reduce post-development peak to ≤ pre-development peak.</p>
+<p><strong>Continuity equation:</strong></p>
+<p><span class="math display">\text{Inflow} - \text{Outflow} = \frac{dS}{dt}</span></p>
+<p>Where <span class="math inline">S</span> = storage volume</p>
+<p><strong>Simplified design:</strong></p>
+<p><span class="math display">V_{required} = (Q_{in} - Q_{out}) \times t_d</span></p>
+<p>Where: - <span class="math inline">Q_{in}</span> = post-development peak - <span class="math inline">Q_{out}</span> = allowable release rate (= <span class="math inline">Q_{pre}</span>) - <span class="math inline">t_d</span> = detention time (typically $2-3 t_c$)</p>
+<p><strong>More accurate (routing):</strong></p>
+<p>Solve modified Puls method:</p>
+<p><span class="math display">\frac{2S_2}{\Delta t} + O_2 = \frac{2S_1}{\Delta t} - O_1 + I_1 + I_2</span></p>
+<p>Where: - <span class="math inline">S</span> = storage - <span class="math inline">O</span> = outflow - <span class="math inline">I</span> = inflow - Subscripts 1, 2 = time steps</p>
+<p><strong>Stage-storage relationship:</strong></p>
+<p><span class="math display">V = A_{surface} \times d + \frac{1}{3}(A_{surface} - A_{bottom}) \times d</span></p>
+<p>(Approximate basin as truncated pyramid)</p>
+<p><strong>Stage-discharge (orifice):</strong></p>
+<p><span class="math display">Q = C_d A_{orifice} \sqrt{2gh}</span></p>
+<p>Where: - <span class="math inline">C_d \approx 0.6</span> (discharge coefficient) - <span class="math inline">A_{orifice}</span> = outlet area (m²) - <span class="math inline">h</span> = head (m)</p>
+<h3 id="green-infrastructure-performance" class="anchored">Green Infrastructure Performance</h3>
+<p><strong>Bioretention (rain garden):</strong></p>
+<p><strong>Design equation:</strong></p>
+<p><span class="math display">A_{bio} = \frac{A_{imperv} \times P \times (1 - C)}{n \times d}</span></p>
+<p>Where: - <span class="math inline">A_{imperv}</span> = contributing impervious area - <span class="math inline">P</span> = design storm depth - <span class="math inline">C</span> = runoff coefficient of impervious area - <span class="math inline">n</span> = media porosity (0.25-0.40) - <span class="math inline">d</span> = media depth (typically 0.6-1.2 m)</p>
+<p><strong>Drawdown time:</strong></p>
+<p><span class="math display">t = \frac{n \times d}{K}</span></p>
+<p>Where <span class="math inline">K</span> = infiltration rate (typically 25-150 mm/hr)</p>
+<p><strong>Design criteria:</strong> <span class="math inline">t &lt; 48</span> hours (mosquito breeding)</p>
+<p><strong>Permeable pavement:</strong></p>
+<p><strong>Infiltration capacity:</strong></p>
+<p>Must exceed design storm intensity:</p>
+<p><span class="math display">K_{pavement} &gt; I_{design}</span></p>
+<p>Typical: <span class="math inline">K = 200-1000</span> mm/hr (vs <span class="math inline">I_{10yr} = 50-100</span> mm/hr)</p>
+<p><strong>Void ratio:</strong> 15-40% (aggregate base)</p>
+<p><strong>Green roofs:</strong></p>
+<p><strong>Retention capacity:</strong></p>
+<p><span class="math display">R = d_{media} \times n \times \rho_w</span></p>
+<p>Where: - <span class="math inline">d_{media}</span> = 50-200 mm - <span class="math inline">n</span> = 0.30-0.45 - Results: 15-75 mm retention</p>
+<p><strong>Peak reduction:</strong> 50-90% for small storms (&lt;25 mm)</p>
+<hr>
+<h2 id="worked-example-by-hand" class="anchored">4. Worked Example by Hand</h2>
+<p><strong>Problem:</strong> Shopping center development and stormwater management</p>
+<p><strong>Site characteristics:</strong></p>
+<p><strong>Pre-development:</strong> - Area: 5 hectares - Land use: Grass/pasture - Soil: Hydrologic group B (silty loam) - Slope: 2% - Longest flow path: 350 m</p>
+<p><strong>Post-development:</strong> - Building: 1.5 ha (30%) - Parking: 2.5 ha (50%) - Landscaping: 1.0 ha (20%)</p>
+<p><strong>Design storm:</strong> 10-year, IDF equation: <span class="math inline">I = \frac{1200 T^{0.2}}{(D+10)^{0.8}}</span> (mm/hr)</p>
+<p><strong>Calculate:</strong> 1. Pre-development peak discharge 2. Post-development peak discharge 3. Required detention volume 4. Bioretention area needed</p>
+<h3 id="solution" class="anchored">Solution</h3>
+<p><strong>Step 1: Time of concentration (pre-development)</strong></p>
+<p>Kirpich equation:</p>
+<p><span class="math display">t_c = 0.0078 \times 350^{0.77} \times 0.02^{-0.385}</span></p>
+<p><span class="math display">= 0.0078 \times 54.1 \times 6.54 = 2.76 \text{ min}</span></p>
+<p>Round up: <span class="math inline">t_c = 5</span> min (minimum practical)</p>
+<p><strong>Step 2: Design intensity (10-year, 5-min)</strong></p>
+<p><span class="math display">I = \frac{1200 \times 10^{0.2}}{(5+10)^{0.8}} = \frac{1200 \times 1.585}{15^{0.8}} = \frac{1902}{10.1} = 188 \text{ mm/hr}</span></p>
+<p><strong>Step 3: Pre-development peak (Rational Method)</strong></p>
+<p>Grass/pasture, soil B: <span class="math inline">C = 0.20</span></p>
+<p><span class="math display">Q_{pre} = \frac{0.20 \times 188 \times 5}{360} = \frac{188}{360} = 0.522 \text{ m}^3\text{/s}</span></p>
+<p><strong>Step 4: Post-development composite <span class="math inline">C</span></strong></p>
+<p>Buildings (roof): <span class="math inline">C = 0.95</span><br>
+Parking (asphalt): <span class="math inline">C = 0.95</span><br>
+Landscaping: <span class="math inline">C = 0.25</span></p>
+<p><span class="math display">C_{comp} = \frac{0.95 \times 1.5 + 0.95 \times 2.5 + 0.25 \times 1.0}{5}</span></p>
+<p><span class="math display">= \frac{1.425 + 2.375 + 0.25}{5} = \frac{4.05}{5} = 0.81</span></p>
+<p><strong>Step 5: Post-development time of concentration</strong></p>
+<p>Paved surfaces reduce <span class="math inline">t_c</span>:</p>
+<p>Assume <span class="math inline">t_c = 8</span> min (sheet flow on pavement + pipe flow)</p>
+<p><strong>New intensity:</strong></p>
+<p><span class="math display">I = \frac{1200 \times 1.585}{(8+10)^{0.8}} = \frac{1902}{12.7} = 150 \text{ mm/hr}</span></p>
+<p><strong>Step 6: Post-development peak</strong></p>
+<p><span class="math display">Q_{post} = \frac{0.81 \times 150 \times 5}{360} = \frac{608}{360} = 1.69 \text{ m}^3\text{/s}</span></p>
+<p><strong>Step 7: Peak increase</strong></p>
+<p><span class="math display">\Delta Q = 1.69 - 0.52 = 1.17 \text{ m}^3\text{/s}</span></p>
+<p><strong>224% increase!</strong></p>
+<p><strong>Step 8: Detention volume required</strong></p>
+<p>Detention time: <span class="math inline">t_d = 30</span> min (approximate, routing required for exactness)</p>
+<p><span class="math display">V = (Q_{post} - Q_{pre}) \times t_d</span></p>
+<p><span class="math display">V = (1.69 - 0.52) \times 30 \times 60 = 1.17 \times 1800 = 2106 \text{ m}^3</span></p>
+<p><strong>Required storage: 2100 m³</strong></p>
+<p><strong>Basin dimensions (example):</strong></p>
+<p>Depth: 1.5 m<br>
+Bottom area: <span class="math inline">\frac{2100}{1.5 \times 1.5} = 933</span> m² (30 × 31 m)<br>
+Top area (with 3:1 side slopes): ~1200 m² (35 × 35 m)</p>
+<p><strong>Step 9: Bioretention alternative</strong></p>
+<p>Design to capture first 25 mm (water quality storm):</p>
+<p>Impervious area: $1.5 + 2.5 = 4$ ha</p>
+<p><span class="math display">A_{bio} = \frac{40000 \times 0.025 \times 0.9}{0.35 \times 0.9}</span></p>
+<p><span class="math display">= \frac{900}{0.315} = 2857 \text{ m}^2</span></p>
+<p><strong>Bioretention area: 2860 m² (6% of impervious area)</strong></p>
+<p>Typically distributed as: - Parking lot islands: 1200 m² - Perimeter gardens: 1000 m² - Roof runoff planters: 660 m²</p>
+<p><strong>Step 10: Combined approach</strong></p>
+<p>Bioretention handles frequent storms (&lt;25 mm).</p>
+<p>Detention handles rare storms (10-year design).</p>
+<p><strong>Reduced detention:</strong> With bioretention pre-treatment, detention can be 20-30% smaller.</p>
+<hr>
+<h2 id="computational-implementation" class="anchored">5. Computational Implementation</h2>
+<p>Below is an interactive urban hydrology calculator.</p>
+<div id="urban-hydro-viz" class="viz-container">
+<div class="controls">
+<pre><code>&lt;label&gt;
+  Site area (ha):
+  &lt;input type="range" id="site-area" min="1" max="20" step="1" value="5"&gt;
+  &lt;span id="area-val"&gt;5&lt;/span&gt;
+&lt;/label&gt;
+&lt;label&gt;
+  Imperviousness (%):
+  &lt;input type="range" id="imperv" min="10" max="95" step="5" value="70"&gt;
+  &lt;span id="imperv-val"&gt;70&lt;/span&gt;
+&lt;/label&gt;
+&lt;label&gt;
+  Design storm (years):
+  &lt;input type="range" id="return-period" min="2" max="100" step="1" value="10"&gt;
+  &lt;span id="rp-val"&gt;10&lt;/span&gt;
+&lt;/label&gt;
+&lt;label&gt;
+  Green infrastructure:
+  &lt;select id="gi-type"&gt;
+    &lt;option value="none"&gt;None&lt;/option&gt;
+    &lt;option value="bioretention"&gt;Bioretention&lt;/option&gt;
+    &lt;option value="permeable"&gt;Permeable pavement&lt;/option&gt;
+    &lt;option value="greenroof"&gt;Green roof&lt;/option&gt;
+  &lt;/select&gt;
+&lt;/label&gt;
+&lt;div class="hydro-info"&gt;
+  &lt;p&gt;&lt;strong&gt;Pre-dev Q:&lt;/strong&gt; &lt;span id="q-pre"&gt;--&lt;/span&gt; m³/s&lt;/p&gt;
+  &lt;p&gt;&lt;strong&gt;Post-dev Q:&lt;/strong&gt; &lt;span id="q-post"&gt;--&lt;/span&gt; m³/s&lt;/p&gt;
+  &lt;p&gt;&lt;strong&gt;Increase:&lt;/strong&gt; &lt;span id="increase"&gt;--&lt;/span&gt;%&lt;/p&gt;
+  &lt;p&gt;&lt;strong&gt;Detention volume:&lt;/strong&gt; &lt;span id="detention"&gt;--&lt;/span&gt; m³&lt;/p&gt;
+&lt;/div&gt;</code></pre>
+</div>
+<div id="hydro-canvas" style="height: 400px;">
+
+</div>
+</div>
+<script type="module">
+await new Promise(r => {
+  const c = () => typeof echarts !== 'undefined' ? r() : setTimeout(c, 50);
+  c();
+});
+
+(function() {
+  const chart = echarts.init(document.getElementById('hydro-canvas'));
+  let area = 5, imperv = 70, returnPeriod = 10, giType = 'none';
+  
+  function calcIntensity(T, D) {
+    return (1200 * Math.pow(T, 0.2)) / Math.pow(D + 10, 0.8);
+  }
+  
+  function render() {
+    const tcPre = 5; // min, natural
+    const tcPost = 8; // min, developed
+    
+    const iPre = calcIntensity(returnPeriod, tcPre);
+    const iPost = calcIntensity(returnPeriod, tcPost);
+    
+    const cPre = 0.20; // grass
+    let cPost = 0.15 * (1 - imperv/100) + 0.95 * (imperv/100);
+    
+    // Green infrastructure adjustments
+    if (giType === 'bioretention') {
+      cPost *= 0.85; // 15% reduction
+    } else if (giType === 'permeable') {
+      cPost *= 0.70; // 30% reduction
+    } else if (giType === 'greenroof') {
+      cPost *= 0.90; // 10% reduction
+    }
+    
+    const qPre = (cPre * iPre * area) / 360;
+    const qPost = (cPost * iPost * area) / 360;
+    const increase = ((qPost - qPre) / qPre * 100);
+    const detention = Math.max(0, (qPost - qPre) * 30 * 60);
+    
+    document.getElementById('q-pre').textContent = qPre.toFixed(2);
+    document.getElementById('q-post').textContent = qPost.toFixed(2);
+    document.getElementById('increase').textContent = increase.toFixed(0);
+    document.getElementById('detention').textContent = detention.toFixed(0);
+    
+    // Generate hydrographs
+    const times = [];
+    const preDev = [];
+    const postDev = [];
+    
+    for (let t = 0; t <= 120; t += 2) {
+      times.push(t);
+      
+      // Triangular hydrograph approximation
+      const tpPre = tcPre + 5;
+      const tpPost = tcPost + 3;
+      
+      let qPreT, qPostT;
+      
+      if (t < tpPre) {
+        qPreT = qPre * (t / tpPre);
+      } else {
+        qPreT = qPre * Math.max(0, 1 - (t - tpPre) / 30);
+      }
+      
+      if (t < tpPost) {
+        qPostT = qPost * (t / tpPost);
+      } else {
+        qPostT = qPost * Math.max(0, 1 - (t - tpPost) / 20);
+      }
+      
+      preDev.push(qPreT);
+      postDev.push(qPostT);
+    }
+    
+    chart.setOption({
+      title: {text: 'Development Impact on Runoff Hydrograph', left: 'center'},
+      tooltip: {trigger: 'axis'},
+      legend: {data: ['Pre-development', 'Post-development'], top: 30},
+      grid: {left: 80, right: 40, top: 70, bottom: 60},
+      xAxis: {
+        type: 'category',
+        data: times,
+        name: 'Time (minutes)',
+        nameLocation: 'middle',
+        nameGap: 30
+      },
+      yAxis: {
+        type: 'value',
+        name: 'Discharge (m³/s)',
+        nameLocation: 'middle',
+        nameGap: 50
+      },
+      series: [
+        {
+          name: 'Pre-development',
+          type: 'line',
+          data: preDev,
+          lineStyle: {color: '#66BB6A', width: 3},
+          areaStyle: {color: 'rgba(102, 187, 106, 0.3)'}
+        },
+        {
+          name: 'Post-development',
+          type: 'line',
+          data: postDev,
+          lineStyle: {color: '#F44336', width: 3},
+          areaStyle: {color: 'rgba(244, 67, 54, 0.3)'}
+        }
+      ]
+    });
+  }
+  
+  ['site-area', 'imperv', 'return-period'].forEach(id => {
+    document.getElementById(id).addEventListener('input', e => {
+      const val = +e.target.value;
+      if (id === 'site-area') {
+        area = val;
+        document.getElementById('area-val').textContent = val;
+      } else if (id === 'imperv') {
+        imperv = val;
+        document.getElementById('imperv-val').textContent = val;
+      } else {
+        returnPeriod = val;
+        document.getElementById('rp-val').textContent = val;
+      }
+      render();
+    });
+  });
+  
+  document.getElementById('gi-type').addEventListener('change', e => {
+    giType = e.target.value;
+    render();
+  });
+  
+  render();
+})();
+</script>
+<p><strong>Observations:</strong> - Post-development hydrograph peaks higher and faster - Green area (pre-dev) shows gradual response - Red area (post-dev) shows flashy response - Time to peak reduced by 30-50% - Total runoff volume increased significantly - Green infrastructure reduces both peak and volume - Detention storage needs proportional to shaded area between curves</p>
+<p><strong>Key insights:</strong> - Imperviousness directly controls runoff coefficient - Higher return periods amplify differences - Green infrastructure provides meaningful mitigation - Combined strategies most effective</p>
+<hr>
+<h2 id="interpretation" class="anchored">6. Interpretation</h2>
+<h3 id="stream-channel-impacts" class="anchored">Stream Channel Impacts</h3>
+<p><strong>Geomorphic consequences:</strong></p>
+<p><strong>Effective discharge</strong> (2-year flood) increased 2-5×.</p>
+<p><strong>Channel response:</strong> - Incision (downcutting) - Bank erosion - Bed coarsening (fines washed out) - Loss of pool-riffle structure</p>
+<p><strong>Timeline:</strong> Years to decades for equilibrium</p>
+<p><strong>Mitigation insufficient:</strong></p>
+<p>Traditional detention controls peaks but not duration.</p>
+<p><strong>Stream still receives</strong> elevated flows for longer periods.</p>
+<p><strong>Solution:</strong> Volume control + peak control</p>
+<h3 id="water-quality-trading" class="anchored">Water Quality Trading</h3>
+<p><strong>Total Maximum Daily Load (TMDL):</strong></p>
+<p>Regulatory limit on pollutant loading.</p>
+<p><strong>Urban runoff major contributor:</strong> - Nutrients (N, P) - Sediment - Bacteria - Metals (Zn, Cu from brake pads) - Hydrocarbons</p>
+<p><strong>Green infrastructure provides treatment:</strong></p>
+<p><strong>Bioretention removal:</strong> - Suspended solids: 80-90% - Phosphorus: 50-80% - Nitrogen: 30-60% - Metals: 60-90%</p>
+<p><strong>Permeable pavement:</strong> - Suspended solids: 70-95% - Metals: 50-80%</p>
+<p><strong>Cost comparison:</strong></p>
+<p>Traditional detention: $50-150/m³ storage<br>
+Bioretention: $200-400/m²<br>
+Permeable pavement: $25-75/m² premium over conventional</p>
+<p><strong>Benefits beyond storage:</strong> - Water quality treatment - Groundwater recharge - Urban heat island reduction - Aesthetics</p>
+<h3 id="regulatory-evolution" class="anchored">Regulatory Evolution</h3>
+<p><strong>Traditional approach (1980s-2000s):</strong></p>
+<p>Peak rate control only (Q_post ≤ Q_pre for design storm).</p>
+<p><strong>Modern approach (2010s+):</strong></p>
+<p><strong>Multi-objective:</strong> 1. Peak rate control (flooding) 2. Volume reduction (stream protection) 3. Water quality treatment (pollution) 4. Groundwater recharge (base flow)</p>
+<p><strong>Performance standards:</strong></p>
+<p>Retain first 25 mm on-site (runoff reduction).</p>
+<p>Treat 90% of average annual rainfall.</p>
+<p><strong>Green infrastructure mandates:</strong></p>
+<p>Some jurisdictions require GI for all new development.</p>
+<p>Philadelphia: Green City, Clean Waters ($2 billion GI program)</p>
+<hr>
+<h2 id="what-could-go-wrong" class="anchored">7. What Could Go Wrong?</h2>
+<h3 id="detention-basin-failures" class="anchored">Detention Basin Failures</h3>
+<p><strong>Outlet clogging:</strong></p>
+<p>Debris, sediment, ice block orifice.</p>
+<p><strong>Consequence:</strong> Overtopping, dam failure</p>
+<p><strong>Solution:</strong> - Trash racks - Multiple outlets (redundancy) - Regular maintenance</p>
+<p><strong>Improper sizing:</strong></p>
+<p>Used wrong storm (5-year vs 10-year).</p>
+<p>Used wrong IDF curve (outdated).</p>
+<p><strong>Consequence:</strong> Insufficient storage, downstream flooding</p>
+<p><strong>Solution:</strong> Third-party peer review, as-built verification</p>
+<h3 id="green-infrastructure-challenges" class="anchored">Green Infrastructure Challenges</h3>
+<p><strong>Soil clogging:</strong></p>
+<p>Bioretention media clogs over time (5-15 years).</p>
+<p><strong>Infiltration rate degrades:</strong> 50-90% reduction</p>
+<p><strong>Consequence:</strong> Ponding, bypassing, failure</p>
+<p><strong>Solution:</strong> - Pretreatment (grass filter, forebay) - Mulch replacement (annual) - Media replacement (every 10-20 years)</p>
+<p><strong>Winter performance:</strong></p>
+<p>Frozen soil reduces infiltration.</p>
+<p>Snowmelt + frozen ground = maximum runoff.</p>
+<p><strong>Underdrains freeze.</strong></p>
+<p><strong>Solution:</strong> - Deep frost-free outlets - Salt management (reduces freezing but damages plants)</p>
+<h3 id="maintenance-neglect" class="anchored">Maintenance Neglect</h3>
+<p><strong>Sediment accumulation:</strong></p>
+<p>Detention basins fill with sediment.</p>
+<p><strong>Volume reduced:</strong> 20-50% after 10 years (if unmaintained)</p>
+<p><strong>Solution:</strong> - Annual inspection - Sediment removal (5-10 year cycle) - Erosion control in watershed</p>
+<p><strong>Vegetation overgrowth:</strong></p>
+<p>Bioretention becomes overgrown, channelized.</p>
+<p><strong>Solution:</strong> - Annual weeding - Mulch refreshing - Plant replacement</p>
+<hr>
+<h2 id="extension-low-impact-development" class="anchored">8. Extension: Low Impact Development</h2>
+<p><strong>Paradigm shift:</strong></p>
+<p>From “manage runoff” to “prevent runoff generation”</p>
+<p><strong>Principles:</strong> 1. Minimize impervious area 2. Maximize infiltration 3. Distribute controls throughout site 4. Mimic pre-development hydrology</p>
+<p><strong>Techniques:</strong></p>
+<p><strong>Narrower streets:</strong> 6 m vs 9 m (40% less impervious)</p>
+<p><strong>Bioretention in parking islands:</strong> Treat runoff at source</p>
+<p><strong>Rain gardens:</strong> Residential-scale bioretention</p>
+<p><strong>Cisterns:</strong> Harvest roof runoff for irrigation (volume reduction)</p>
+<p><strong>Disconnected impervious:</strong> Route roof runoff to lawn (not street)</p>
+<p><strong>Performance:</strong></p>
+<p>Well-designed LID can achieve: - 80-95% runoff volume reduction (small storms) - 50-70% peak flow reduction - Near pre-development hydrology</p>
+<p><strong>Case study - Village Homes (Davis, CA):</strong></p>
+<p>Built 1975 with integrated LID.</p>
+<p>40 years later: No downstream flooding, despite upstream urbanization.</p>
+<hr>
+<h2 id="math-refresher-mass-balance" class="anchored">9. Math Refresher: Mass Balance</h2>
+<h3 id="continuity-equation" class="anchored">Continuity Equation</h3>
+<p><strong>Conservation of mass:</strong></p>
+<p><span class="math display">\text{Inflow} - \text{Outflow} = \frac{d(\text{Storage})}{dt}</span></p>
+<p><strong>Detention basin application:</strong></p>
+<p><span class="math display">I(t) - O(t) = \frac{dS}{dt}</span></p>
+<p><strong>Integrated over time step <span class="math inline">\Delta t</span>:</strong></p>
+<p><span class="math display">\frac{I_1 + I_2}{2} \Delta t - \frac{O_1 + O_2}{2} \Delta t = S_2 - S_1</span></p>
+<p><strong>Rearranged (Modified Puls):</strong></p>
+<p><span class="math display">\frac{2S_2}{\Delta t} + O_2 = \left(\frac{2S_1}{\Delta t} - O_1\right) + (I_1 + I_2)</span></p>
+<p><strong>Solution procedure:</strong></p>
+<ol type="1">
+<li>Known: <span class="math inline">S_1, O_1, I_1, I_2</span></li>
+<li>Compute right side</li>
+<li>Use stage-storage-discharge curves</li>
+<li>Solve for <span class="math inline">S_2, O_2</span></li>
+<li>Advance time step, repeat</li>
+</ol>
+<hr>
+<h2 id="summary" class="anchored">Summary</h2>
+<p>Urban development increases runoff 2-5× through impervious surfaces requiring stormwater management via detention and green infrastructure. Rational method estimates peak discharge from runoff coefficient intensity and area with coefficients ranging 0.1 (forest) to 0.95 (pavement). SCS Curve Number method calculates runoff volume from rainfall via CN values 25-98 depending on land use and soil type. Detention basins sized to reduce post-development peaks to pre-development levels typically requiring 1000-5000 m³ for commercial sites. Green infrastructure including bioretention permeable pavement and green roofs provides distributed volume reduction and water quality treatment with 50-90% pollutant removal. Low-impact development principles minimize impervious area and maximize infiltration achieving near pre-development hydrology. Critical for flood mitigation stream protection and water quality compliance in urbanizing watersheds requiring integrated multi-objective design.</p>
+<hr>
+
+
+<footer class="wayward-footer">
+  <div class="wayward-footer__inner">
+    <div class="wayward-footer__brand">
+      <div class="wayward-footer__logo">WaywardHouse<span>.</span></div>
+      <p>Understanding how place, economy, and environment interact through analysis, modelling, and open tools.</p>
+    </div>
+
+    <nav class="wayward-footer__group" aria-labelledby="footer-reading">
+      <h2 id="footer-reading" class="anchored">Reading</h2>
+      <a href="../articles/">Articles</a>
+      <a href="../learn/">Learn</a>
+      <a href="../archive.html">Archive</a>
+      <a href="../start-here.html">Start Here</a>
+    </nav>
+
+    <nav class="wayward-footer__group" aria-labelledby="footer-site">
+      <h2 id="footer-site" class="anchored">Site</h2>
+      <a href="../start-here.html">Start Here</a>
+      <a href="../about.html">About</a>
+      <a href="../contact.html">Contact</a>
+    </nav>
+
+    <nav class="wayward-footer__group" aria-labelledby="footer-resources">
+      <h2 id="footer-resources" class="anchored">Resources</h2>
+      <a href="../topics/">All Topics</a>
+      <a href="../privacy.html">Privacy Policy</a>
+      <a href="../terms.html">Terms of Use</a>
+    </nav>
+  </div>
+</footer>
+
+<script type="module" src="../assets/dist/main.js"></script>
+<script type="module" src="../assets/js/core.js"></script>
+<script id="quarto-html-after-body" type="application/javascript">
+  window.document.addEventListener("DOMContentLoaded", function (event) {
+    const tabsets =  window.document.querySelectorAll(".panel-tabset-tabby")
+    tabsets.forEach(function(tabset) {
+      const tabby = new Tabby('#' + tabset.id);
+    });
+    const icon = "";
+    const anchorJS = new window.AnchorJS();
+    anchorJS.options = {
+      placement: 'right',
+      icon: icon
+    };
+    anchorJS.add('.anchored');
+    const isCodeAnnotation = (el) => {
+      for (const clz of el.classList) {
+        if (clz.startsWith('code-annotation-')) {                     
+          return true;
+        }
+      }
+      return false;
+    }
+    const onCopySuccess = function(e) {
+      // button target
+      const button = e.trigger;
+      // don't keep focus
+      button.blur();
+      // flash "checked"
+      button.classList.add('code-copy-button-checked');
+      var currentTitle = button.getAttribute("title");
+      button.setAttribute("title", "Copied!");
+      let tooltip;
+      if (window.bootstrap) {
+        button.setAttribute("data-bs-toggle", "tooltip");
+        button.setAttribute("data-bs-placement", "left");
+        button.setAttribute("data-bs-title", "Copied!");
+        tooltip = new bootstrap.Tooltip(button, 
+          { trigger: "manual", 
+            customClass: "code-copy-button-tooltip",
+            offset: [0, -8]});
+        tooltip.show();    
+      }
+      setTimeout(function() {
+        if (tooltip) {
+          tooltip.hide();
+          button.removeAttribute("data-bs-title");
+          button.removeAttribute("data-bs-toggle");
+          button.removeAttribute("data-bs-placement");
+        }
+        button.setAttribute("title", currentTitle);
+        button.classList.remove('code-copy-button-checked');
+      }, 1000);
+      // clear code selection
+      e.clearSelection();
+    }
+    const getTextToCopy = function(trigger) {
+      const outerScaffold = trigger.parentElement.cloneNode(true);
+      const codeEl = outerScaffold.querySelector('code');
+      for (const childEl of codeEl.children) {
+        if (isCodeAnnotation(childEl)) {
+          childEl.remove();
+        }
+      }
+      return codeEl.innerText;
+    }
+    const clipboard = new window.ClipboardJS('.code-copy-button:not([data-in-quarto-modal])', {
+      text: getTextToCopy
+    });
+    clipboard.on('success', onCopySuccess);
+    if (window.document.getElementById('quarto-embedded-source-code-modal')) {
+      const clipboardModal = new window.ClipboardJS('.code-copy-button[data-in-quarto-modal]', {
+        text: getTextToCopy,
+        container: window.document.getElementById('quarto-embedded-source-code-modal')
+      });
+      clipboardModal.on('success', onCopySuccess);
+    }
+      var localhostRegex = new RegExp(/^(?:http|https):\/\/localhost\:?[0-9]*\//);
+      var mailtoRegex = new RegExp(/^mailto:/);
+        var filterRegex = new RegExp('/' + window.location.host + '/');
+      var isInternal = (href) => {
+          return filterRegex.test(href) || localhostRegex.test(href) || mailtoRegex.test(href);
+      }
+      // Inspect non-navigation links and adorn them if external
+     var links = window.document.querySelectorAll('a[href]:not(.nav-link):not(.navbar-brand):not(.toc-action):not(.sidebar-link):not(.sidebar-item-toggle):not(.pagination-link):not(.no-external):not([aria-hidden]):not(.dropdown-item):not(.quarto-navigation-tool):not(.about-link)');
+      for (var i=0; i<links.length; i++) {
+        const link = links[i];
+        if (!isInternal(link.href)) {
+          // undo the damage that might have been done by quarto-nav.js in the case of
+          // links that we want to consider external
+          if (link.dataset.originalHref !== undefined) {
+            link.href = link.dataset.originalHref;
+          }
+        }
+      }
+    function tippyHover(el, contentFn, onTriggerFn, onUntriggerFn) {
+      const config = {
+        allowHTML: true,
+        maxWidth: 500,
+        delay: 100,
+        arrow: false,
+        appendTo: function(el) {
+            return el.parentElement;
+        },
+        interactive: true,
+        interactiveBorder: 10,
+        theme: 'light-border',
+        placement: 'bottom-start',
+      };
+      if (contentFn) {
+        config.content = contentFn;
+      }
+      if (onTriggerFn) {
+        config.onTrigger = onTriggerFn;
+      }
+      if (onUntriggerFn) {
+        config.onUntrigger = onUntriggerFn;
+      }
+      window.tippy(el, config); 
+    }
+    const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+    for (var i=0; i<noterefs.length; i++) {
+      const ref = noterefs[i];
+      tippyHover(ref, function() {
+        // use id or data attribute instead here
+        let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+        try { href = new URL(href).hash; } catch {}
+        const id = href.replace(/^#\/?/, "");
+        const note = window.document.getElementById(id);
+        if (note) {
+          return note.innerHTML;
+        } else {
+          return "";
+        }
+      });
+    }
+    const xrefs = window.document.querySelectorAll('a.quarto-xref');
+    const processXRef = (id, note) => {
+      // Strip column container classes
+      const stripColumnClz = (el) => {
+        el.classList.remove("page-full", "page-columns");
+        if (el.children) {
+          for (const child of el.children) {
+            stripColumnClz(child);
+          }
+        }
+      }
+      stripColumnClz(note)
+      if (id === null || id.startsWith('sec-')) {
+        // Special case sections, only their first couple elements
+        const container = document.createElement("div");
+        if (note.children && note.children.length > 2) {
+          container.appendChild(note.children[0].cloneNode(true));
+          for (let i = 1; i < note.children.length; i++) {
+            const child = note.children[i];
+            if (child.tagName === "P" && child.innerText === "") {
+              continue;
+            } else {
+              container.appendChild(child.cloneNode(true));
+              break;
+            }
+          }
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(container);
+          }
+          return container.innerHTML
+        } else {
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(note);
+          }
+          return note.innerHTML;
+        }
+      } else {
+        // Remove any anchor links if they are present
+        const anchorLink = note.querySelector('a.anchorjs-link');
+        if (anchorLink) {
+          anchorLink.remove();
+        }
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(note);
+        }
+        if (note.classList.contains("callout")) {
+          return note.outerHTML;
+        } else {
+          return note.innerHTML;
+        }
+      }
+    }
+    for (var i=0; i<xrefs.length; i++) {
+      const xref = xrefs[i];
+      tippyHover(xref, undefined, function(instance) {
+        instance.disable();
+        let url = xref.getAttribute('href');
+        let hash = undefined; 
+        if (url.startsWith('#')) {
+          hash = url;
+        } else {
+          try { hash = new URL(url).hash; } catch {}
+        }
+        if (hash) {
+          const id = hash.replace(/^#\/?/, "");
+          const note = window.document.getElementById(id);
+          if (note !== null) {
+            try {
+              const html = processXRef(id, note.cloneNode(true));
+              instance.setContent(html);
+            } finally {
+              instance.enable();
+              instance.show();
+            }
+          } else {
+            // See if we can fetch this
+            fetch(url.split('#')[0])
+            .then(res => res.text())
+            .then(html => {
+              const parser = new DOMParser();
+              const htmlDoc = parser.parseFromString(html, "text/html");
+              const note = htmlDoc.getElementById(id);
+              if (note !== null) {
+                const html = processXRef(id, note);
+                instance.setContent(html);
+              } 
+            }).finally(() => {
+              instance.enable();
+              instance.show();
+            });
+          }
+        } else {
+          // See if we can fetch a full url (with no hash to target)
+          // This is a special case and we should probably do some content thinning / targeting
+          fetch(url)
+          .then(res => res.text())
+          .then(html => {
+            const parser = new DOMParser();
+            const htmlDoc = parser.parseFromString(html, "text/html");
+            const note = htmlDoc.querySelector('main.content');
+            if (note !== null) {
+              // This should only happen for chapter cross references
+              // (since there is no id in the URL)
+              // remove the first header
+              if (note.children.length > 0 && note.children[0].tagName === "HEADER") {
+                note.children[0].remove();
+              }
+              const html = processXRef(null, note);
+              instance.setContent(html);
+            } 
+          }).finally(() => {
+            instance.enable();
+            instance.show();
+          });
+        }
+      }, function(instance) {
+      });
+    }
+        let selectedAnnoteEl;
+        const selectorForAnnotation = ( cell, annotation) => {
+          let cellAttr = 'data-code-cell="' + cell + '"';
+          let lineAttr = 'data-code-annotation="' +  annotation + '"';
+          const selector = 'span[' + cellAttr + '][' + lineAttr + ']';
+          return selector;
+        }
+        const selectCodeLines = (annoteEl) => {
+          const doc = window.document;
+          const targetCell = annoteEl.getAttribute("data-target-cell");
+          const targetAnnotation = annoteEl.getAttribute("data-target-annotation");
+          const annoteSpan = window.document.querySelector(selectorForAnnotation(targetCell, targetAnnotation));
+          const lines = annoteSpan.getAttribute("data-code-lines").split(",");
+          const lineIds = lines.map((line) => {
+            return targetCell + "-" + line;
+          })
+          let top = null;
+          let height = null;
+          let parent = null;
+          if (lineIds.length > 0) {
+              //compute the position of the single el (top and bottom and make a div)
+              const el = window.document.getElementById(lineIds[0]);
+              top = el.offsetTop;
+              height = el.offsetHeight;
+              parent = el.parentElement.parentElement;
+            if (lineIds.length > 1) {
+              const lastEl = window.document.getElementById(lineIds[lineIds.length - 1]);
+              const bottom = lastEl.offsetTop + lastEl.offsetHeight;
+              height = bottom - top;
+            }
+            if (top !== null && height !== null && parent !== null) {
+              // cook up a div (if necessary) and position it 
+              let div = window.document.getElementById("code-annotation-line-highlight");
+              if (div === null) {
+                div = window.document.createElement("div");
+                div.setAttribute("id", "code-annotation-line-highlight");
+                div.style.position = 'absolute';
+                parent.appendChild(div);
+              }
+              div.style.top = top - 2 + "px";
+              div.style.height = height + 4 + "px";
+              div.style.left = 0;
+              let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
+              if (gutterDiv === null) {
+                gutterDiv = window.document.createElement("div");
+                gutterDiv.setAttribute("id", "code-annotation-line-highlight-gutter");
+                gutterDiv.style.position = 'absolute';
+                const codeCell = window.document.getElementById(targetCell);
+                const gutter = codeCell.querySelector('.code-annotation-gutter');
+                gutter.appendChild(gutterDiv);
+              }
+              gutterDiv.style.top = top - 2 + "px";
+              gutterDiv.style.height = height + 4 + "px";
+            }
+            selectedAnnoteEl = annoteEl;
+          }
+        };
+        const unselectCodeLines = () => {
+          const elementsIds = ["code-annotation-line-highlight", "code-annotation-line-highlight-gutter"];
+          elementsIds.forEach((elId) => {
+            const div = window.document.getElementById(elId);
+            if (div) {
+              div.remove();
+            }
+          });
+          selectedAnnoteEl = undefined;
+        };
+          // Handle positioning of the toggle
+      window.addEventListener(
+        "resize",
+        throttle(() => {
+          elRect = undefined;
+          if (selectedAnnoteEl) {
+            selectCodeLines(selectedAnnoteEl);
+          }
+        }, 10)
+      );
+      function throttle(fn, ms) {
+      let throttle = false;
+      let timer;
+        return (...args) => {
+          if(!throttle) { // first call gets through
+              fn.apply(this, args);
+              throttle = true;
+          } else { // all the others get throttled
+              if(timer) clearTimeout(timer); // cancel #2
+              timer = setTimeout(() => {
+                fn.apply(this, args);
+                timer = throttle = false;
+              }, ms);
+          }
+        };
+      }
+        // Attach click handler to the DT
+        const annoteDls = window.document.querySelectorAll('dt[data-target-cell]');
+        for (const annoteDlNode of annoteDls) {
+          annoteDlNode.addEventListener('click', (event) => {
+            const clickedEl = event.target;
+            if (clickedEl !== selectedAnnoteEl) {
+              unselectCodeLines();
+              const activeEl = window.document.querySelector('dt[data-target-cell].code-annotation-active');
+              if (activeEl) {
+                activeEl.classList.remove('code-annotation-active');
+              }
+              selectCodeLines(clickedEl);
+              clickedEl.classList.add('code-annotation-active');
+            } else {
+              // Unselect the line
+              unselectCodeLines();
+              clickedEl.classList.remove('code-annotation-active');
+            }
+          });
+        }
+    const findCites = (el) => {
+      const parentEl = el.parentElement;
+      if (parentEl) {
+        const cites = parentEl.dataset.cites;
+        if (cites) {
+          return {
+            el,
+            cites: cites.split(' ')
+          };
+        } else {
+          return findCites(el.parentElement)
+        }
+      } else {
+        return undefined;
+      }
+    };
+    var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+    for (var i=0; i<bibliorefs.length; i++) {
+      const ref = bibliorefs[i];
+      const citeInfo = findCites(ref);
+      if (citeInfo) {
+        tippyHover(citeInfo.el, function() {
+          var popup = window.document.createElement('div');
+          citeInfo.cites.forEach(function(cite) {
+            var citeDiv = window.document.createElement('div');
+            citeDiv.classList.add('hanging-indent');
+            citeDiv.classList.add('csl-entry');
+            var biblioDiv = window.document.getElementById('ref-' + cite);
+            if (biblioDiv) {
+              citeDiv.innerHTML = biblioDiv.innerHTML;
+            }
+            popup.appendChild(citeDiv);
+          });
+          return popup.innerHTML;
+        });
+      }
+    }
+  });
+  </script>
+
+
+
+
+</body></html>
