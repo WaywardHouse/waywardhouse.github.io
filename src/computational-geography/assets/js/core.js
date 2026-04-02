@@ -425,6 +425,53 @@ function addCopyButtons() {
   });
 }
 
+function shouldMountBackToTop() {
+  return Boolean(
+    document.body.classList.contains('page-reading') ||
+    document.body.classList.contains('reading-body') ||
+    document.querySelector('#essay-content, .post-main, #quarto-document-content')
+  );
+}
+
+function initBackToTop() {
+  if (!shouldMountBackToTop()) return;
+  if (document.querySelector('.back-to-top')) return;
+
+  const button = document.createElement('button');
+  button.type = 'button';
+  button.className = 'back-to-top';
+  button.setAttribute('aria-label', 'Back to top');
+  button.innerHTML = '<span aria-hidden="true">↑</span><span>Top</span>';
+
+  const prefersReduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  let ticking = false;
+
+  function updateVisibility() {
+    const scrolled = window.scrollY || document.documentElement.scrollTop || 0;
+    const longPage = document.documentElement.scrollHeight > window.innerHeight * 1.5;
+    button.classList.toggle('is-visible', longPage && scrolled > Math.max(420, window.innerHeight * 0.7));
+    ticking = false;
+  }
+
+  button.addEventListener('click', () => {
+    window.scrollTo({
+      top: 0,
+      behavior: prefersReduced ? 'auto' : 'smooth',
+    });
+  });
+
+  window.addEventListener('scroll', () => {
+    if (!ticking) {
+      requestAnimationFrame(updateVisibility);
+      ticking = true;
+    }
+  }, { passive: true });
+
+  window.addEventListener('resize', updateVisibility, { passive: true });
+  document.body.appendChild(button);
+  updateVisibility();
+}
+
 // ── Main init ─────────────────────────────────────────────────────────────────
 
 async function init() {
@@ -459,6 +506,7 @@ async function init() {
 
   initPostProgress();
   addCopyButtons();
+  initBackToTop();
   wireScrolly();
   await initStorytelling();
 }
