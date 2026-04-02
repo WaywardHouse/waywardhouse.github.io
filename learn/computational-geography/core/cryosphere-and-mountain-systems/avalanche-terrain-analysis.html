@@ -251,219 +251,220 @@ i=3  2960  2940  2910  2860  2810</code></pre>
 <hr>
 <h2 id="computational-implementation" class="anchored">5. Computational Implementation</h2>
 <p>Below is an interactive avalanche terrain classifier.</p>
-<div id="ava-terrain-viz" class="viz-container">
+<div class="viz-container" id="ava-terrain-viz">
 <div class="controls">
-<pre><code>&lt;label&gt;
-  Terrain complexity:
-  &lt;select id="terrain-type"&gt;
-    &lt;option value="simple"&gt;Simple (rolling terrain)&lt;/option&gt;
-    &lt;option value="moderate" selected&gt;Moderate (varied slopes)&lt;/option&gt;
-    &lt;option value="complex"&gt;Complex (steep alpine)&lt;/option&gt;
-  &lt;/select&gt;
-&lt;/label&gt;
-&lt;label&gt;
-  Show hazard zones only:
-  &lt;input type="checkbox" id="show-hazard-only"&gt;
-&lt;/label&gt;
-&lt;label&gt;
-  Show aspect:
-  &lt;input type="checkbox" id="show-aspect"&gt;
-&lt;/label&gt;
-&lt;div class="ava-info"&gt;
-  &lt;p&gt;&lt;strong&gt;Hazard distribution:&lt;/strong&gt;&lt;/p&gt;
-  &lt;p&gt;Non-avalanche: &lt;span id="pct-safe"&gt;--&lt;/span&gt;%&lt;/p&gt;
-  &lt;p&gt;Avalanche terrain: &lt;span id="pct-hazard"&gt;--&lt;/span&gt;%&lt;/p&gt;
-  &lt;p&gt;Extreme steep: &lt;span id="pct-extreme"&gt;--&lt;/span&gt;%&lt;/p&gt;
-&lt;/div&gt;</code></pre>
+<label>
+Terrain complexity:
+<select id="terrain-type">
+<option value="simple">Simple (rolling terrain)</option>
+<option value="moderate" selected="">Moderate (varied slopes)</option>
+<option value="complex">Complex (steep alpine)</option>
+</select>
+</label>
+<label>
+Show hazard zones only:
+<input type="checkbox" id="show-hazard-only">
+</label>
+<label>
+Show aspect:
+<input type="checkbox" id="show-aspect">
+</label>
+<div class="ava-info">
+<p><strong>Hazard distribution:</strong></p>
+<p>Non-avalanche: <span id="pct-safe">--</span>%</p>
+<p>Avalanche terrain: <span id="pct-hazard">--</span>%</p>
+<p>Extreme steep: <span id="pct-extreme">--</span>%</p>
+</div>
 </div>
 <div id="ava-terrain-canvas-container">
-<pre><code>&lt;canvas id="ava-terrain-canvas" width="700" height="350" style="border: 1px solid #ddd;"&gt;&lt;/canvas&gt;</code></pre>
+<canvas id="ava-terrain-canvas" width="700" height="350" style="border: 1px solid #ddd;"></canvas>
 </div>
 <div class="legend">
-<pre><code>&lt;p&gt;&lt;strong&gt;Colors:&lt;/strong&gt; 
-  &lt;span style="color: #2E7D32"&gt;■ Safe (&amp;lt;30°)&lt;/span&gt;
-  &lt;span style="color: #F57F17"&gt;■ Low (30-35°)&lt;/span&gt;
-  &lt;span style="color: #E64A19"&gt;■ Moderate (35-40°)&lt;/span&gt;
-  &lt;span style="color: #B71C1C"&gt;■ High (40-45°)&lt;/span&gt;
-  &lt;span style="color: #4A148C"&gt;■ Extreme (&amp;gt;45°)&lt;/span&gt;
-&lt;/p&gt;</code></pre>
+<p><strong>Colors:</strong> 
+<span style="color: #2E7D32">■ Safe (&lt;30°)</span>
+<span style="color: #F57F17">■ Low (30-35°)</span>
+<span style="color: #E64A19">■ Moderate (35-40°)</span>
+<span style="color: #B71C1C">■ High (40-45°)</span>
+<span style="color: #4A148C">■ Extreme (&gt;45°)</span>
+</p>
 </div>
 </div>
+
 <script type="module">
 (function() {
-  const canvas = document.getElementById('ava-terrain-canvas');
-  const ctx = canvas.getContext('2d');
+const canvas = document.getElementById('ava-terrain-canvas');
+const ctx = canvas.getContext('2d');
   
-  let terrainType = 'moderate';
-  let showHazardOnly = false;
-  let showAspect = false;
+let terrainType = 'moderate';
+let showHazardOnly = false;
+let showAspect = false;
   
-  const size = 50;
-  const cellSize = 7;
+const size = 50;
+const cellSize = 7;
   
-  function generateTerrain(type) {
-    const dem = [];
+function generateTerrain(type) {
+const dem = [];
     
-    for (let i = 0; i < size; i++) {
-      const row = [];
-      for (let j = 0; j < size; j++) {
-        let elev;
+for (let i = 0; i < size; i++) {
+const row = [];
+for (let j = 0; j < size; j++) {
+let elev;
         
-        if (type === 'simple') {
-          // Gentle rolling terrain
-          elev = 2500 - i * 5 + Math.sin(j / 8) * 50;
-        } else if (type === 'moderate') {
-          // Ridge with gullies
-          const ridgeEffect = Math.abs(j - size/2) < 10 ? 200 : 0;
-          elev = 2800 - i * 10 + ridgeEffect + Math.sin(j / 5) * 80;
-        } else {
-          // Complex alpine
-          const peakDist = Math.sqrt((i - size/3)**2 + (j - size/2)**2);
-          elev = 3000 - peakDist * 8 + Math.cos(i / 3) * 100;
-        }
+if (type === 'simple') {
+// Gentle rolling terrain
+elev = 2500 - i * 5 + Math.sin(j / 8) * 50;
+} else if (type === 'moderate') {
+// Ridge with gullies
+const ridgeEffect = Math.abs(j - size/2) < 10 ? 200 : 0;
+elev = 2800 - i * 10 + ridgeEffect + Math.sin(j / 5) * 80;
+} else {
+// Complex alpine
+const peakDist = Math.sqrt((i - size/3)**2 + (j - size/2)**2);
+elev = 3000 - peakDist * 8 + Math.cos(i / 3) * 100;
+}
         
-        row.push(elev);
-      }
-      dem.push(row);
-    }
+row.push(elev);
+}
+dem.push(row);
+}
     
-    return dem;
-  }
+return dem;
+}
   
-  function calculateSlope(dem, i, j) {
-    if (i === 0 || i === size-1 || j === 0 || j === size-1) {
-      return 0; // Edge cells
-    }
+function calculateSlope(dem, i, j) {
+if (i === 0 || i === size-1 || j === 0 || j === size-1) {
+return 0; // Edge cells
+}
     
-    const dzdx = (dem[i][j+1] - dem[i][j-1]) / (2 * cellSize);
-    const dzdy = (dem[i+1][j] - dem[i-1][j]) / (2 * cellSize);
+const dzdx = (dem[i][j+1] - dem[i][j-1]) / (2 * cellSize);
+const dzdy = (dem[i+1][j] - dem[i-1][j]) / (2 * cellSize);
     
-    const gradient = Math.sqrt(dzdx**2 + dzdy**2);
-    const slopeDeg = Math.atan(gradient) * 180 / Math.PI;
+const gradient = Math.sqrt(dzdx**2 + dzdy**2);
+const slopeDeg = Math.atan(gradient) * 180 / Math.PI;
     
-    return slopeDeg;
-  }
+return slopeDeg;
+}
   
-  function calculateAspect(dem, i, j) {
-    if (i === 0 || i === size-1 || j === 0 || j === size-1) {
-      return 0;
-    }
+function calculateAspect(dem, i, j) {
+if (i === 0 || i === size-1 || j === 0 || j === size-1) {
+return 0;
+}
     
-    const dzdx = (dem[i][j+1] - dem[i][j-1]) / (2 * cellSize);
-    const dzdy = (dem[i+1][j] - dem[i-1][j]) / (2 * cellSize);
+const dzdx = (dem[i][j+1] - dem[i][j-1]) / (2 * cellSize);
+const dzdy = (dem[i+1][j] - dem[i-1][j]) / (2 * cellSize);
     
-    let aspect = Math.atan2(dzdy, -dzdx) * 180 / Math.PI;
-    if (aspect < 0) aspect += 360;
+let aspect = Math.atan2(dzdy, -dzdx) * 180 / Math.PI;
+if (aspect < 0) aspect += 360;
     
-    return aspect;
-  }
+return aspect;
+}
   
-  function classifyHazard(slope) {
-    if (slope < 30) return 0;
-    if (slope < 35) return 1;
-    if (slope < 40) return 2;
-    if (slope < 45) return 3;
-    return 4;
-  }
+function classifyHazard(slope) {
+if (slope < 30) return 0;
+if (slope < 35) return 1;
+if (slope < 40) return 2;
+if (slope < 45) return 3;
+return 4;
+}
   
-  function getHazardColor(hazard) {
-    const colors = [
-      '#2E7D32', // Safe
-      '#F57F17', // Low
-      '#E64A19', // Moderate
-      '#B71C1C', // High
-      '#4A148C'  // Extreme
-    ];
-    return colors[hazard];
-  }
+function getHazardColor(hazard) {
+const colors = [
+'#2E7D32', // Safe
+'#F57F17', // Low
+'#E64A19', // Moderate
+'#B71C1C', // High
+'#4A148C'  // Extreme
+];
+return colors[hazard];
+}
   
-  function getAspectColor(aspect) {
-    // North = blue, South = red, East/West = yellow/green
-    const hue = aspect;
-    return `hsl(${hue}, 70%, 50%)`;
-  }
+function getAspectColor(aspect) {
+// North = blue, South = red, East/West = yellow/green
+const hue = aspect;
+return `hsl(${hue}, 70%, 50%)`;
+}
   
-  function render() {
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
+function render() {
+ctx.clearRect(0, 0, canvas.width, canvas.height);
     
-    const dem = generateTerrain(terrainType);
+const dem = generateTerrain(terrainType);
     
-    let counts = [0, 0, 0, 0, 0];
+let counts = [0, 0, 0, 0, 0];
     
-    // Left panel: Slope/Hazard
-    for (let i = 0; i < size; i++) {
-      for (let j = 0; j < size; j++) {
-        const slope = calculateSlope(dem, i, j);
-        const hazard = classifyHazard(slope);
+// Left panel: Slope/Hazard
+for (let i = 0; i < size; i++) {
+for (let j = 0; j < size; j++) {
+const slope = calculateSlope(dem, i, j);
+const hazard = classifyHazard(slope);
         
-        counts[hazard]++;
+counts[hazard]++;
         
-        if (showHazardOnly && hazard === 0) {
-          ctx.fillStyle = '#EEEEEE';
-        } else {
-          ctx.fillStyle = getHazardColor(hazard);
-        }
+if (showHazardOnly && hazard === 0) {
+ctx.fillStyle = '#EEEEEE';
+} else {
+ctx.fillStyle = getHazardColor(hazard);
+}
         
-        ctx.fillRect(10 + j * cellSize, 10 + i * cellSize, cellSize, cellSize);
-      }
-    }
+ctx.fillRect(10 + j * cellSize, 10 + i * cellSize, cellSize, cellSize);
+}
+}
     
-    // Right panel: Aspect (if enabled)
-    if (showAspect) {
-      for (let i = 0; i < size; i++) {
-        for (let j = 0; j < size; j++) {
-          const aspect = calculateAspect(dem, i, j);
-          const slope = calculateSlope(dem, i, j);
+// Right panel: Aspect (if enabled)
+if (showAspect) {
+for (let i = 0; i < size; i++) {
+for (let j = 0; j < size; j++) {
+const aspect = calculateAspect(dem, i, j);
+const slope = calculateSlope(dem, i, j);
           
-          if (slope >= 30) {
-            ctx.fillStyle = getAspectColor(aspect);
-          } else {
-            ctx.fillStyle = '#BDBDBD';
-          }
+if (slope >= 30) {
+ctx.fillStyle = getAspectColor(aspect);
+} else {
+ctx.fillStyle = '#BDBDBD';
+}
           
-          ctx.fillRect(10 + size * cellSize + 20 + j * cellSize, 
-                      10 + i * cellSize, cellSize, cellSize);
-        }
-      }
+ctx.fillRect(10 + size * cellSize + 20 + j * cellSize, 
+10 + i * cellSize, cellSize, cellSize);
+}
+}
       
-      // Label
-      ctx.fillStyle = '#2C3E50';
-      ctx.font = 'bold 12px sans-serif';
-      ctx.fillText('Slope Hazard', 15, size * cellSize + 30);
-      ctx.fillText('Aspect (>30°)', 10 + size * cellSize + 25, size * cellSize + 30);
-    } else {
-      ctx.fillStyle = '#2C3E50';
-      ctx.font = 'bold 12px sans-serif';
-      ctx.fillText('Avalanche Terrain Classification', 15, size * cellSize + 30);
-    }
+// Label
+ctx.fillStyle = '#2C3E50';
+ctx.font = 'bold 12px sans-serif';
+ctx.fillText('Slope Hazard', 15, size * cellSize + 30);
+ctx.fillText('Aspect (>30°)', 10 + size * cellSize + 25, size * cellSize + 30);
+} else {
+ctx.fillStyle = '#2C3E50';
+ctx.font = 'bold 12px sans-serif';
+ctx.fillText('Avalanche Terrain Classification', 15, size * cellSize + 30);
+}
     
-    // Statistics
-    const total = counts.reduce((a, b) => a + b, 0);
-    const pctSafe = (counts[0] / total * 100).toFixed(1);
-    const pctHazard = ((counts[1] + counts[2] + counts[3]) / total * 100).toFixed(1);
-    const pctExtreme = (counts[4] / total * 100).toFixed(1);
+// Statistics
+const total = counts.reduce((a, b) => a + b, 0);
+const pctSafe = (counts[0] / total * 100).toFixed(1);
+const pctHazard = ((counts[1] + counts[2] + counts[3]) / total * 100).toFixed(1);
+const pctExtreme = (counts[4] / total * 100).toFixed(1);
     
-    document.getElementById('pct-safe').textContent = pctSafe;
-    document.getElementById('pct-hazard').textContent = pctHazard;
-    document.getElementById('pct-extreme').textContent = pctExtreme;
-  }
+document.getElementById('pct-safe').textContent = pctSafe;
+document.getElementById('pct-hazard').textContent = pctHazard;
+document.getElementById('pct-extreme').textContent = pctExtreme;
+}
   
-  document.getElementById('terrain-type').addEventListener('change', (e) => {
-    terrainType = e.target.value;
-    render();
-  });
+document.getElementById('terrain-type').addEventListener('change', (e) => {
+terrainType = e.target.value;
+render();
+});
   
-  document.getElementById('show-hazard-only').addEventListener('change', (e) => {
-    showHazardOnly = e.target.checked;
-    render();
-  });
+document.getElementById('show-hazard-only').addEventListener('change', (e) => {
+showHazardOnly = e.target.checked;
+render();
+});
   
-  document.getElementById('show-aspect').addEventListener('change', (e) => {
-    showAspect = e.target.checked;
-    render();
-  });
+document.getElementById('show-aspect').addEventListener('change', (e) => {
+showAspect = e.target.checked;
+render();
+});
   
-  render();
+render();
 })();
 </script>
 <p><strong>Try this:</strong> - <strong>Simple terrain:</strong> Mostly green (safe slopes) - <strong>Moderate terrain:</strong> Mix of safe and hazard zones - <strong>Complex alpine:</strong> More red/purple (steep avalanche terrain) - <strong>Show hazard only:</strong> Gray out safe terrain, highlight danger zones - <strong>Show aspect:</strong> Right panel shows slope direction (N=blue, S=red, E=yellow) - <strong>Color code:</strong> Green=safe, Yellow/Orange/Red=avalanche terrain, Purple=extreme - Notice: Most avalanche terrain clusters in gullies and ridge flanks!</p>

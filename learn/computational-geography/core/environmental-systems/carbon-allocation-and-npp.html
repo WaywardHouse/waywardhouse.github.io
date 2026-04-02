@@ -232,244 +232,243 @@ Energy cost of synthesizing new tissue (proportional to NPP).</p>
 <hr>
 <h2 id="computational-implementation" class="anchored">5. Computational Implementation</h2>
 <p>Below is an interactive carbon allocation simulator.</p>
-<div id="carbon-alloc-viz" class="viz-container">
+<div class="viz-container" id="carbon-alloc-viz">
 <div class="controls">
-<pre><code>&lt;label&gt;
-  Ecosystem type:
-  &lt;select id="ecosystem-type"&gt;
-    &lt;option value="young-forest"&gt;Young Forest&lt;/option&gt;
-    &lt;option value="mature-forest" selected&gt;Mature Forest&lt;/option&gt;
-    &lt;option value="grassland"&gt;Grassland&lt;/option&gt;
-    &lt;option value="cropland"&gt;Annual Cropland&lt;/option&gt;
-  &lt;/select&gt;
-&lt;/label&gt;
-&lt;label&gt;
-  GPP (kg C/m²/year):
-  &lt;input type="range" id="gpp-slider" min="0.5" max="4" step="0.1" value="2.5"&gt;
-  &lt;span id="gpp-value"&gt;2.5&lt;/span&gt;
-&lt;/label&gt;
-&lt;label&gt;
-  Leaf allocation (aL):
-  &lt;input type="range" id="al-slider" min="0.1" max="0.6" step="0.05" value="0.25"&gt;
-  &lt;span id="al-value"&gt;0.25&lt;/span&gt;
-&lt;/label&gt;
-&lt;label&gt;
-  Wood allocation (aS):
-  &lt;input type="range" id="as-slider" min="0" max="0.7" step="0.05" value="0.50"&gt;
-  &lt;span id="as-value"&gt;0.50&lt;/span&gt;
-&lt;/label&gt;
-&lt;label&gt;
-  Simulation years:
-  &lt;input type="range" id="years-slider" min="10" max="200" step="10" value="100"&gt;
-  &lt;span id="years-value"&gt;100&lt;/span&gt; years
-&lt;/label&gt;
-&lt;div class="button-group"&gt;
-  &lt;button id="run-carbon-sim"&gt;Run Simulation&lt;/button&gt;
-&lt;/div&gt;</code></pre>
+<label>
+Ecosystem type:
+<select id="ecosystem-type">
+<option value="young-forest">Young Forest</option>
+<option value="mature-forest" selected="">Mature Forest</option>
+<option value="grassland">Grassland</option>
+<option value="cropland">Annual Cropland</option>
+</select>
+</label>
+<label>
+GPP (kg C/m²/year):
+<input type="range" id="gpp-slider" min="0.5" max="4" step="0.1" value="2.5">
+<span id="gpp-value">2.5</span>
+</label>
+<label>
+Leaf allocation (aL):
+<input type="range" id="al-slider" min="0.1" max="0.6" step="0.05" value="0.25">
+<span id="al-value">0.25</span>
+</label>
+<label>
+Wood allocation (aS):
+<input type="range" id="as-slider" min="0" max="0.7" step="0.05" value="0.50">
+<span id="as-value">0.50</span>
+</label>
+<label>
+Simulation years:
+<input type="range" id="years-slider" min="10" max="200" step="10" value="100">
+<span id="years-value">100</span> years
+</label>
+<div class="button-group">
+<button id="run-carbon-sim">Run Simulation</button>
+</div>
 </div>
 <div class="carbon-results">
-<pre><code>&lt;p&gt;&lt;strong&gt;NPP:&lt;/strong&gt; &lt;span id="npp-result"&gt;&lt;/span&gt; kg C/m²/year&lt;/p&gt;
-&lt;p&gt;&lt;strong&gt;R&lt;sub&gt;a&lt;/sub&gt;/GPP:&lt;/strong&gt; &lt;span id="ra-gpp-ratio"&gt;&lt;/span&gt;&lt;/p&gt;
-&lt;p&gt;&lt;strong&gt;Final total carbon:&lt;/strong&gt; &lt;span id="total-carbon"&gt;&lt;/span&gt; kg C/m²&lt;/p&gt;
-&lt;p&gt;&lt;strong&gt;Equilibrium reached:&lt;/strong&gt; &lt;span id="equilibrium-status"&gt;&lt;/span&gt;&lt;/p&gt;</code></pre>
+<p><strong>NPP:</strong> <span id="npp-result"></span> kg C/m²/year</p>
+<p><strong>R<sub>a</sub>/GPP:</strong> <span id="ra-gpp-ratio"></span></p>
+<p><strong>Final total carbon:</strong> <span id="total-carbon"></span> kg C/m²</p>
+<p><strong>Equilibrium reached:</strong> <span id="equilibrium-status"></span></p>
 </div>
-<div id="carbon-alloc-chart" style="width: 100%; height: 500px;">
+<div id="carbon-alloc-chart" style="width: 100%; height: 500px;"></div>
+</div>
 
-</div>
-</div>
 <script type="module">
 await new Promise(resolve => {
-  const checkECharts = () => {
-    if (typeof echarts !== 'undefined') resolve();
-    else setTimeout(checkECharts, 50);
-  };
-  checkECharts();
+const checkECharts = () => {
+if (typeof echarts !== 'undefined') resolve();
+else setTimeout(checkECharts, 50);
+};
+checkECharts();
 });
 
 (function() {
-  const chart = echarts.init(document.getElementById('carbon-alloc-chart'));
+const chart = echarts.init(document.getElementById('carbon-alloc-chart'));
   
-  const ecosystems = {
-    'young-forest': { aL: 0.30, aS: 0.40, aR: 0.30, kL: 1.0, kS: 0.02, kR: 1.0, rm: 0.3, rg: 0.25 },
-    'mature-forest': { aL: 0.25, aS: 0.50, aR: 0.25, kL: 1.0, kS: 0.02, kR: 1.0, rm: 0.4, rg: 0.25 },
-    'grassland': { aL: 0.40, aS: 0.00, aR: 0.60, kL: 1.0, kS: 0.0, kR: 1.0, rm: 0.25, rg: 0.20 },
-    'cropland': { aL: 0.50, aS: 0.10, aR: 0.40, kL: 2.0, kS: 2.0, kR: 2.0, rm: 0.2, rg: 0.20 }
-  };
+const ecosystems = {
+'young-forest': { aL: 0.30, aS: 0.40, aR: 0.30, kL: 1.0, kS: 0.02, kR: 1.0, rm: 0.3, rg: 0.25 },
+'mature-forest': { aL: 0.25, aS: 0.50, aR: 0.25, kL: 1.0, kS: 0.02, kR: 1.0, rm: 0.4, rg: 0.25 },
+'grassland': { aL: 0.40, aS: 0.00, aR: 0.60, kL: 1.0, kS: 0.0, kR: 1.0, rm: 0.25, rg: 0.20 },
+'cropland': { aL: 0.50, aS: 0.10, aR: 0.40, kL: 2.0, kS: 2.0, kR: 2.0, rm: 0.2, rg: 0.20 }
+};
   
-  let ecoType = 'mature-forest';
-  let GPP = 2.5;
-  let aL = 0.25;
-  let aS = 0.50;
-  let years = 100;
+let ecoType = 'mature-forest';
+let GPP = 2.5;
+let aL = 0.25;
+let aS = 0.50;
+let years = 100;
   
-  function runCarbonSim() {
-    const eco = ecosystems[ecoType];
-    const aR = 1 - aL - aS;
+function runCarbonSim() {
+const eco = ecosystems[ecoType];
+const aR = 1 - aL - aS;
     
-    // Calculate NPP (simplified: Ra = 0.45 * GPP typically)
-    const Rm = eco.rm * GPP; // Simplified
-    const Ra = (Rm + eco.rg * GPP) / (1 + eco.rg);
-    const NPP = GPP - Ra;
+// Calculate NPP (simplified: Ra = 0.45 * GPP typically)
+const Rm = eco.rm * GPP; // Simplified
+const Ra = (Rm + eco.rg * GPP) / (1 + eco.rg);
+const NPP = GPP - Ra;
     
-    // Initialize pools
-    let CL = 0.1;
-    let CS = 0.1;
-    let CR = 0.1;
+// Initialize pools
+let CL = 0.1;
+let CS = 0.1;
+let CR = 0.1;
     
-    const timeData = [];
-    const leafData = [];
-    const stemData = [];
-    const rootData = [];
-    const totalData = [];
+const timeData = [];
+const leafData = [];
+const stemData = [];
+const rootData = [];
+const totalData = [];
     
-    const dt = 0.1; // time step in years
+const dt = 0.1; // time step in years
     
-    for (let t = 0; t <= years; t += dt) {
-      // Record
-      if (t % 1 < dt) { // Record annually
-        timeData.push(t);
-        leafData.push(CL);
-        stemData.push(CS);
-        rootData.push(CR);
-        totalData.push(CL + CS + CR);
-      }
+for (let t = 0; t <= years; t += dt) {
+// Record
+if (t % 1 < dt) { // Record annually
+timeData.push(t);
+leafData.push(CL);
+stemData.push(CS);
+rootData.push(CR);
+totalData.push(CL + CS + CR);
+}
       
-      // Update pools
-      CL += (aL * NPP - eco.kL * CL) * dt;
-      CS += (aS * NPP - eco.kS * CS) * dt;
-      CR += (aR * NPP - eco.kR * CR) * dt;
+// Update pools
+CL += (aL * NPP - eco.kL * CL) * dt;
+CS += (aS * NPP - eco.kS * CS) * dt;
+CR += (aR * NPP - eco.kR * CR) * dt;
       
-      // Prevent negative
-      CL = Math.max(0, CL);
-      CS = Math.max(0, CS);
-      CR = Math.max(0, CR);
-    }
+// Prevent negative
+CL = Math.max(0, CL);
+CS = Math.max(0, CS);
+CR = Math.max(0, CR);
+}
     
-    const finalTotal = CL + CS + CR;
-    const steadyState = NPP * (aL/eco.kL + aS/eco.kS + aR/eco.kR);
-    const equilibrium = Math.abs(finalTotal - steadyState) / steadyState < 0.05;
+const finalTotal = CL + CS + CR;
+const steadyState = NPP * (aL/eco.kL + aS/eco.kS + aR/eco.kR);
+const equilibrium = Math.abs(finalTotal - steadyState) / steadyState < 0.05;
     
-    document.getElementById('npp-result').textContent = NPP.toFixed(2);
-    document.getElementById('ra-gpp-ratio').textContent = (Ra/GPP).toFixed(2);
-    document.getElementById('total-carbon').textContent = finalTotal.toFixed(1);
-    document.getElementById('equilibrium-status').textContent = equilibrium ? 'Yes' : 'No (still growing)';
+document.getElementById('npp-result').textContent = NPP.toFixed(2);
+document.getElementById('ra-gpp-ratio').textContent = (Ra/GPP).toFixed(2);
+document.getElementById('total-carbon').textContent = finalTotal.toFixed(1);
+document.getElementById('equilibrium-status').textContent = equilibrium ? 'Yes' : 'No (still growing)';
     
-    updateChart(timeData, leafData, stemData, rootData, totalData);
-  }
+updateChart(timeData, leafData, stemData, rootData, totalData);
+}
   
-  function updateChart(time, leaf, stem, root, total) {
-    const option = {
-      title: {
-        text: 'Carbon Pool Dynamics',
-        left: 'center'
-      },
-      tooltip: {
-        trigger: 'axis',
-        axisPointer: { type: 'cross' }
-      },
-      legend: {
-        data: ['Leaf Carbon', 'Stem Carbon', 'Root Carbon', 'Total Carbon'],
-        top: 30
-      },
-      grid: {
-        left: 80,
-        right: 40,
-        top: 80,
-        bottom: 60
-      },
-      xAxis: {
-        type: 'value',
-        name: 'Time (years)',
-        nameLocation: 'middle',
-        nameGap: 30
-      },
-      yAxis: {
-        type: 'value',
-        name: 'Carbon (kg C/m²)',
-        nameLocation: 'middle',
-        nameGap: 50
-      },
-      series: [
-        {
-          name: 'Leaf Carbon',
-          type: 'line',
-          data: time.map((t, i) => [t, leaf[i]]),
-          lineStyle: { color: '#2ECC71', width: 2 },
-          showSymbol: false
-        },
-        {
-          name: 'Stem Carbon',
-          type: 'line',
-          data: time.map((t, i) => [t, stem[i]]),
-          lineStyle: { color: '#8B4513', width: 2 },
-          showSymbol: false
-        },
-        {
-          name: 'Root Carbon',
-          type: 'line',
-          data: time.map((t, i) => [t, root[i]]),
-          lineStyle: { color: '#D35400', width: 2 },
-          showSymbol: false
-        },
-        {
-          name: 'Total Carbon',
-          type: 'line',
-          data: time.map((t, i) => [t, total[i]]),
-          lineStyle: { color: '#34495E', width: 3, type: 'dashed' },
-          showSymbol: false
-        }
-      ]
-    };
+function updateChart(time, leaf, stem, root, total) {
+const option = {
+title: {
+text: 'Carbon Pool Dynamics',
+left: 'center'
+},
+tooltip: {
+trigger: 'axis',
+axisPointer: { type: 'cross' }
+},
+legend: {
+data: ['Leaf Carbon', 'Stem Carbon', 'Root Carbon', 'Total Carbon'],
+top: 30
+},
+grid: {
+left: 80,
+right: 40,
+top: 80,
+bottom: 60
+},
+xAxis: {
+type: 'value',
+name: 'Time (years)',
+nameLocation: 'middle',
+nameGap: 30
+},
+yAxis: {
+type: 'value',
+name: 'Carbon (kg C/m²)',
+nameLocation: 'middle',
+nameGap: 50
+},
+series: [
+{
+name: 'Leaf Carbon',
+type: 'line',
+data: time.map((t, i) => [t, leaf[i]]),
+lineStyle: { color: '#2ECC71', width: 2 },
+showSymbol: false
+},
+{
+name: 'Stem Carbon',
+type: 'line',
+data: time.map((t, i) => [t, stem[i]]),
+lineStyle: { color: '#8B4513', width: 2 },
+showSymbol: false
+},
+{
+name: 'Root Carbon',
+type: 'line',
+data: time.map((t, i) => [t, root[i]]),
+lineStyle: { color: '#D35400', width: 2 },
+showSymbol: false
+},
+{
+name: 'Total Carbon',
+type: 'line',
+data: time.map((t, i) => [t, total[i]]),
+lineStyle: { color: '#34495E', width: 3, type: 'dashed' },
+showSymbol: false
+}
+]
+};
     
-    chart.setOption(option);
-  }
+chart.setOption(option);
+}
   
-  document.getElementById('ecosystem-type').addEventListener('change', (e) => {
-    ecoType = e.target.value;
-    const eco = ecosystems[ecoType];
-    aL = eco.aL;
-    aS = eco.aS;
-    document.getElementById('al-slider').value = aL;
-    document.getElementById('al-value').textContent = aL.toFixed(2);
-    document.getElementById('as-slider').value = aS;
-    document.getElementById('as-value').textContent = aS.toFixed(2);
-  });
+document.getElementById('ecosystem-type').addEventListener('change', (e) => {
+ecoType = e.target.value;
+const eco = ecosystems[ecoType];
+aL = eco.aL;
+aS = eco.aS;
+document.getElementById('al-slider').value = aL;
+document.getElementById('al-value').textContent = aL.toFixed(2);
+document.getElementById('as-slider').value = aS;
+document.getElementById('as-value').textContent = aS.toFixed(2);
+});
   
-  document.getElementById('gpp-slider').addEventListener('input', (e) => {
-    GPP = parseFloat(e.target.value);
-    document.getElementById('gpp-value').textContent = GPP.toFixed(1);
-  });
+document.getElementById('gpp-slider').addEventListener('input', (e) => {
+GPP = parseFloat(e.target.value);
+document.getElementById('gpp-value').textContent = GPP.toFixed(1);
+});
   
-  document.getElementById('al-slider').addEventListener('input', (e) => {
-    aL = parseFloat(e.target.value);
-    document.getElementById('al-value').textContent = aL.toFixed(2);
-    // Adjust aS to ensure sum <= 1
-    const aR_min = 0.1;
-    const aS_max = 1 - aL - aR_min;
-    if (aS > aS_max) {
-      aS = aS_max;
-      document.getElementById('as-slider').value = aS;
-      document.getElementById('as-value').textContent = aS.toFixed(2);
-    }
-  });
+document.getElementById('al-slider').addEventListener('input', (e) => {
+aL = parseFloat(e.target.value);
+document.getElementById('al-value').textContent = aL.toFixed(2);
+// Adjust aS to ensure sum <= 1
+const aR_min = 0.1;
+const aS_max = 1 - aL - aR_min;
+if (aS > aS_max) {
+aS = aS_max;
+document.getElementById('as-slider').value = aS;
+document.getElementById('as-value').textContent = aS.toFixed(2);
+}
+});
   
-  document.getElementById('as-slider').addEventListener('input', (e) => {
-    aS = parseFloat(e.target.value);
-    document.getElementById('as-value').textContent = aS.toFixed(2);
-  });
+document.getElementById('as-slider').addEventListener('input', (e) => {
+aS = parseFloat(e.target.value);
+document.getElementById('as-value').textContent = aS.toFixed(2);
+});
   
-  document.getElementById('years-slider').addEventListener('input', (e) => {
-    years = parseInt(e.target.value);
-    document.getElementById('years-value').textContent = years;
-  });
+document.getElementById('years-slider').addEventListener('input', (e) => {
+years = parseInt(e.target.value);
+document.getElementById('years-value').textContent = years;
+});
   
-  document.getElementById('run-carbon-sim').addEventListener('click', () => {
-    runCarbonSim();
-  });
+document.getElementById('run-carbon-sim').addEventListener('click', () => {
+runCarbonSim();
+});
   
-  runCarbonSim();
+runCarbonSim();
   
-  window.addEventListener('resize', () => chart.resize());
+window.addEventListener('resize', () => chart.resize());
 })();
 </script>
 <p><strong>Try this:</strong> - <strong>Young forest:</strong> Higher wood allocation → rapid stem growth - <strong>Mature forest:</strong> Stem carbon accumulates to ~30-40 kg C/m² over 100 years - <strong>Grassland:</strong> No wood allocation → only leaves and roots, reaches equilibrium quickly - <strong>Cropland:</strong> Annual harvest (high turnover) → low steady-state carbon - <strong>Increase GPP:</strong> More NPP → faster accumulation - Notice: Stems take decades to reach equilibrium (slow turnover), leaves equilibrate in ~2-3 years</p>

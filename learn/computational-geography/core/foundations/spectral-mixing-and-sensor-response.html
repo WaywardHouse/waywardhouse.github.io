@@ -206,256 +206,264 @@ window.Quarto = {
 <h3 id="part-a-spectral-mixing-explorer" class="anchored">Part A: Spectral mixing explorer</h3>
 <p>The chart below uses published reference spectra for green vegetation (grass) and bare dry soil across 400–900 nm.<a href="#fn3" class="footnote-ref" id="fnref3" role="doc-noteref"><sup>3</sup></a> Drag the slider to change the vegetation fraction and observe how the mixed spectrum evolves — and how the gap between linear and non-linear mixing varies across wavelengths.</p>
 <div class="model-controls">
-<label> Vegetation fraction f<sub>v</sub>: <strong id="fv-display">0.50</strong> <input type="range" id="fv-slider" min="0" max="1" step="0.01" value="0.50"> </label>
+<label>
+Vegetation fraction f<sub>v</sub>: <strong id="fv-display">0.50</strong>
+<input type="range" id="fv-slider" min="0" max="1" step="0.01" value="0.50">
+</label>
 <div id="mixing-mode-toggle" style="margin-top:0.5rem;">
-<pre><code>&lt;label style="margin-right:1rem;"&gt;
-  &lt;input type="radio" name="mixing" value="both" checked&gt; Both (linear + non-linear)
-&lt;/label&gt;
-&lt;label style="margin-right:1rem;"&gt;
-  &lt;input type="radio" name="mixing" value="linear"&gt; Linear only
-&lt;/label&gt;
-&lt;label&gt;
-  &lt;input type="radio" name="mixing" value="nonlinear"&gt; Non-linear only
-&lt;/label&gt;</code></pre>
+<label style="margin-right:1rem;">
+<input type="radio" name="mixing" value="both" checked=""> Both (linear + non-linear)
+</label>
+<label style="margin-right:1rem;">
+<input type="radio" name="mixing" value="linear"> Linear only
+</label>
+<label>
+<input type="radio" name="mixing" value="nonlinear"> Non-linear only
+</label>
 </div>
 </div>
-<div id="spectral-mix-chart" style="height:420px;">
+<div id="spectral-mix-chart" style="height:420px;"></div>
 
-</div>
 <script type="module">
 await new Promise(r => {
-  const c = () => typeof echarts !== 'undefined' ? r() : setTimeout(c, 50);
-  c();
+const c = () => typeof echarts !== 'undefined' ? r() : setTimeout(c, 50);
+c();
 });
 
 (function() {
-  // Reference spectra: wavelength (nm), vegetation reflectance, soil reflectance
-  // Based on USGS spectral library values for green grass and dry sandy loam
-  // Wavelengths: 400, 425, 450, 475, 500, 525, 550, 575, 600, 625, 650, 675,
-  //              700, 725, 750, 775, 800, 825, 850, 875, 900
-  const WL  = [400,425,450,475,500,525,550,575,600,625,650,675,700,725,750,775,800,825,850,875,900];
-  const VEG = [0.04,0.04,0.05,0.05,0.06,0.08,0.11,0.09,0.06,0.05,0.04,0.04,0.13,0.34,0.44,0.46,0.47,0.47,0.47,0.46,0.45];
-  const SOIL= [0.10,0.11,0.12,0.13,0.14,0.15,0.16,0.17,0.18,0.19,0.19,0.19,0.20,0.20,0.21,0.21,0.22,0.22,0.23,0.23,0.23];
+// Reference spectra: wavelength (nm), vegetation reflectance, soil reflectance
+// Based on USGS spectral library values for green grass and dry sandy loam
+// Wavelengths: 400, 425, 450, 475, 500, 525, 550, 575, 600, 625, 650, 675,
+//              700, 725, 750, 775, 800, 825, 850, 875, 900
+const WL  = [400,425,450,475,500,525,550,575,600,625,650,675,700,725,750,775,800,825,850,875,900];
+const VEG = [0.04,0.04,0.05,0.05,0.06,0.08,0.11,0.09,0.06,0.05,0.04,0.04,0.13,0.34,0.44,0.46,0.47,0.47,0.47,0.46,0.45];
+const SOIL= [0.10,0.11,0.12,0.13,0.14,0.15,0.16,0.17,0.18,0.19,0.19,0.19,0.20,0.20,0.21,0.21,0.22,0.22,0.23,0.23,0.23];
 
-  const el    = document.getElementById('spectral-mix-chart');
-  const chart = echarts.init(el, null, { renderer: 'canvas' });
+const el    = document.getElementById('spectral-mix-chart');
+const chart = echarts.init(el, null, { renderer: 'canvas' });
 
-  const textC  = getComputedStyle(document.documentElement).getPropertyValue('--text').trim()  || '#333';
-  const text2C = getComputedStyle(document.documentElement).getPropertyValue('--text-2').trim() || '#666';
+const textC  = getComputedStyle(document.documentElement).getPropertyValue('--text').trim()  || '#333';
+const text2C = getComputedStyle(document.documentElement).getPropertyValue('--text-2').trim() || '#666';
 
-  function computeMix(fv, mode) {
-    const linMix = WL.map((_, i) => +(fv * VEG[i] + (1 - fv) * SOIL[i]).toFixed(4));
-    const nlMix  = WL.map((_, i) => {
-      const lin = linMix[i];
-      const denom = 1 - VEG[i] * SOIL[i];
-      const delta = denom > 0
-        ? fv * (1 - fv) * (VEG[i] * SOIL[i] / denom) * 0.5
-        : 0;
-      return +(lin + delta).toFixed(4);
-    });
-    return { linMix, nlMix };
-  }
+function computeMix(fv, mode) {
+const linMix = WL.map((_, i) => +(fv * VEG[i] + (1 - fv) * SOIL[i]).toFixed(4));
+const nlMix  = WL.map((_, i) => {
+const lin = linMix[i];
+const denom = 1 - VEG[i] * SOIL[i];
+const delta = denom > 0
+? fv * (1 - fv) * (VEG[i] * SOIL[i] / denom) * 0.5
+: 0;
+return +(lin + delta).toFixed(4);
+});
+return { linMix, nlMix };
+}
 
-  function getOption(fv, mode) {
-    const { linMix, nlMix } = computeMix(fv, mode);
-    const series = [
-      { name: 'Vegetation', type: 'line', data: VEG,  lineStyle: { color: '#4a7c59', width: 2, type: 'dashed' }, itemStyle: { color: '#4a7c59' }, symbol: 'none' },
-      { name: 'Soil',       type: 'line', data: SOIL, lineStyle: { color: '#a07850', width: 2, type: 'dashed' }, itemStyle: { color: '#a07850' }, symbol: 'none' },
-    ];
-    if (mode === 'linear' || mode === 'both') {
-      series.push({ name: 'Mixed (linear)',     type: 'line', data: linMix, lineStyle: { color: '#4e8ac4', width: 2.5 }, itemStyle: { color: '#4e8ac4' }, symbol: 'none' });
-    }
-    if (mode === 'nonlinear' || mode === 'both') {
-      series.push({ name: 'Mixed (non-linear)', type: 'line', data: nlMix,  lineStyle: { color: '#d47c4e', width: 2.5 }, itemStyle: { color: '#d47c4e' }, symbol: 'none' });
-    }
-    return {
-      backgroundColor: 'transparent',
-      grid: { left: 55, right: 20, top: 40, bottom: 45 },
-      legend: { data: series.map(s => s.name), textStyle: { color: textC }, top: 8 },
-      tooltip: {
-        trigger: 'axis',
-        formatter: params => {
-          const wl = WL[params[0].dataIndex];
-          return `<b>${wl} nm</b><br/>` + params.map(p =>
-            `${p.marker}${p.seriesName}: ${(p.value * 100).toFixed(1)}%`
-          ).join('<br/>');
-        },
-      },
-      xAxis: {
-        type: 'category', data: WL.map(String),
-        name: 'Wavelength (nm)', nameLocation: 'middle', nameGap: 30,
-        axisLabel: { color: text2C, interval: 3 },
-        axisLine: { lineStyle: { color: text2C } },
-        splitLine: { show: false },
-        nameTextStyle: { color: text2C },
-      },
-      yAxis: {
-        type: 'value', name: 'Reflectance', nameLocation: 'middle', nameGap: 40,
-        min: 0, max: 0.55,
-        axisLabel: { color: text2C, formatter: v => (v * 100).toFixed(0) + '%' },
-        axisLine: { lineStyle: { color: text2C } },
-        splitLine: { lineStyle: { color: text2C, opacity: 0.15 } },
-        nameTextStyle: { color: text2C },
-      },
-      series,
-    };
-  }
+function getOption(fv, mode) {
+const { linMix, nlMix } = computeMix(fv, mode);
+const series = [
+{ name: 'Vegetation', type: 'line', data: VEG,  lineStyle: { color: '#4a7c59', width: 2, type: 'dashed' }, itemStyle: { color: '#4a7c59' }, symbol: 'none' },
+{ name: 'Soil',       type: 'line', data: SOIL, lineStyle: { color: '#a07850', width: 2, type: 'dashed' }, itemStyle: { color: '#a07850' }, symbol: 'none' },
+];
+if (mode === 'linear' || mode === 'both') {
+series.push({ name: 'Mixed (linear)',     type: 'line', data: linMix, lineStyle: { color: '#4e8ac4', width: 2.5 }, itemStyle: { color: '#4e8ac4' }, symbol: 'none' });
+}
+if (mode === 'nonlinear' || mode === 'both') {
+series.push({ name: 'Mixed (non-linear)', type: 'line', data: nlMix,  lineStyle: { color: '#d47c4e', width: 2.5 }, itemStyle: { color: '#d47c4e' }, symbol: 'none' });
+}
+return {
+backgroundColor: 'transparent',
+grid: { left: 55, right: 20, top: 40, bottom: 45 },
+legend: { data: series.map(s => s.name), textStyle: { color: textC }, top: 8 },
+tooltip: {
+trigger: 'axis',
+formatter: params => {
+const wl = WL[params[0].dataIndex];
+return `<b>${wl} nm</b><br/>` + params.map(p =>
+`${p.marker}${p.seriesName}: ${(p.value * 100).toFixed(1)}%`
+).join('<br/>');
+},
+},
+xAxis: {
+type: 'category', data: WL.map(String),
+name: 'Wavelength (nm)', nameLocation: 'middle', nameGap: 30,
+axisLabel: { color: text2C, interval: 3 },
+axisLine: { lineStyle: { color: text2C } },
+splitLine: { show: false },
+nameTextStyle: { color: text2C },
+},
+yAxis: {
+type: 'value', name: 'Reflectance', nameLocation: 'middle', nameGap: 40,
+min: 0, max: 0.55,
+axisLabel: { color: text2C, formatter: v => (v * 100).toFixed(0) + '%' },
+axisLine: { lineStyle: { color: text2C } },
+splitLine: { lineStyle: { color: text2C, opacity: 0.15 } },
+nameTextStyle: { color: text2C },
+},
+series,
+};
+}
 
-  let fv   = 0.5;
-  let mode = 'both';
+let fv   = 0.5;
+let mode = 'both';
 
-  chart.setOption(getOption(fv, mode));
+chart.setOption(getOption(fv, mode));
 
-  document.getElementById('fv-slider').addEventListener('input', e => {
-    fv = parseFloat(e.target.value);
-    document.getElementById('fv-display').textContent = fv.toFixed(2);
-    chart.setOption(getOption(fv, mode));
-  });
+document.getElementById('fv-slider').addEventListener('input', e => {
+fv = parseFloat(e.target.value);
+document.getElementById('fv-display').textContent = fv.toFixed(2);
+chart.setOption(getOption(fv, mode));
+});
 
-  document.querySelectorAll('input[name="mixing"]').forEach(r => {
-    r.addEventListener('change', e => {
-      mode = e.target.value;
-      chart.setOption(getOption(fv, mode));
-    });
-  });
+document.querySelectorAll('input[name="mixing"]').forEach(r => {
+r.addEventListener('change', e => {
+mode = e.target.value;
+chart.setOption(getOption(fv, mode));
+});
+});
 
-  const ro = new ResizeObserver(() => chart.resize());
-  ro.observe(el);
+const ro = new ResizeObserver(() => chart.resize());
+ro.observe(el);
 })();
 </script>
 <h3 id="part-b-sensor-bandpass-explorer" class="anchored">Part B: Sensor bandpass explorer</h3>
 <p>The second chart shows the same surface spectra with an adjustable sensor bandpass window. The shaded region indicates the wavelengths the sensor integrates over; the calculated mean reflectance values update in real time. This directly replicates the second Tcl/Tk tool from the 1997 paper.</p>
 <div class="model-controls">
-<label> Band lower limit: <strong id="band-lo-val">620</strong> nm <input type="range" id="band-lo" min="400" max="880" step="5" value="620"> </label> <label style="margin-top:0.5rem;"> Band upper limit: <strong id="band-hi-val">700</strong> nm <input type="range" id="band-hi" min="420" max="900" step="5" value="700"> </label>
+<label>
+Band lower limit: <strong id="band-lo-val">620</strong> nm
+<input type="range" id="band-lo" min="400" max="880" step="5" value="620">
+</label>
+<label style="margin-top:0.5rem;">
+Band upper limit: <strong id="band-hi-val">700</strong> nm
+<input type="range" id="band-hi" min="420" max="900" step="5" value="700">
+</label>
 <div class="flood-info" style="margin-top:0.75rem;">
-<pre><code>&lt;p&gt;&lt;strong&gt;Mean reflectance in band — Vegetation:&lt;/strong&gt; &lt;span id="band-veg"&gt;--&lt;/span&gt;&lt;/p&gt;
-&lt;p&gt;&lt;strong&gt;Mean reflectance in band — Soil:&lt;/strong&gt; &lt;span id="band-soil"&gt;--&lt;/span&gt;&lt;/p&gt;
-&lt;p&gt;&lt;strong&gt;Contrast (soil − veg):&lt;/strong&gt; &lt;span id="band-contrast"&gt;--&lt;/span&gt;&lt;/p&gt;</code></pre>
+<p><strong>Mean reflectance in band — Vegetation:</strong> <span id="band-veg">--</span></p>
+<p><strong>Mean reflectance in band — Soil:</strong> <span id="band-soil">--</span></p>
+<p><strong>Contrast (soil − veg):</strong> <span id="band-contrast">--</span></p>
 </div>
 </div>
-<div id="sensor-chart" style="height:380px;">
+<div id="sensor-chart" style="height:380px;"></div>
 
-</div>
 <script type="module">
 await new Promise(r => {
-  const c = () => typeof echarts !== 'undefined' ? r() : setTimeout(c, 50);
-  c();
+const c = () => typeof echarts !== 'undefined' ? r() : setTimeout(c, 50);
+c();
 });
 
 (function() {
-  const WL  = [400,425,450,475,500,525,550,575,600,625,650,675,700,725,750,775,800,825,850,875,900];
-  const VEG = [0.04,0.04,0.05,0.05,0.06,0.08,0.11,0.09,0.06,0.05,0.04,0.04,0.13,0.34,0.44,0.46,0.47,0.47,0.47,0.46,0.45];
-  const SOIL= [0.10,0.11,0.12,0.13,0.14,0.15,0.16,0.17,0.18,0.19,0.19,0.19,0.20,0.20,0.21,0.21,0.22,0.22,0.23,0.23,0.23];
+const WL  = [400,425,450,475,500,525,550,575,600,625,650,675,700,725,750,775,800,825,850,875,900];
+const VEG = [0.04,0.04,0.05,0.05,0.06,0.08,0.11,0.09,0.06,0.05,0.04,0.04,0.13,0.34,0.44,0.46,0.47,0.47,0.47,0.46,0.45];
+const SOIL= [0.10,0.11,0.12,0.13,0.14,0.15,0.16,0.17,0.18,0.19,0.19,0.19,0.20,0.20,0.21,0.21,0.22,0.22,0.23,0.23,0.23];
 
-  const el    = document.getElementById('sensor-chart');
-  const chart = echarts.init(el, null, { renderer: 'canvas' });
+const el    = document.getElementById('sensor-chart');
+const chart = echarts.init(el, null, { renderer: 'canvas' });
 
-  const textC  = getComputedStyle(document.documentElement).getPropertyValue('--text').trim()  || '#333';
-  const text2C = getComputedStyle(document.documentElement).getPropertyValue('--text-2').trim() || '#666';
+const textC  = getComputedStyle(document.documentElement).getPropertyValue('--text').trim()  || '#333';
+const text2C = getComputedStyle(document.documentElement).getPropertyValue('--text-2').trim() || '#666';
 
-  function bandStats(lo, hi) {
-    const inBand = WL.map((w, i) => w >= lo && w <= hi ? i : -1).filter(i => i >= 0);
-    if (inBand.length === 0) return { vegMean: 0, soilMean: 0 };
-    const vegMean  = inBand.reduce((s, i) => s + VEG[i],  0) / inBand.length;
-    const soilMean = inBand.reduce((s, i) => s + SOIL[i], 0) / inBand.length;
-    return { vegMean, soilMean };
-  }
+function bandStats(lo, hi) {
+const inBand = WL.map((w, i) => w >= lo && w <= hi ? i : -1).filter(i => i >= 0);
+if (inBand.length === 0) return { vegMean: 0, soilMean: 0 };
+const vegMean  = inBand.reduce((s, i) => s + VEG[i],  0) / inBand.length;
+const soilMean = inBand.reduce((s, i) => s + SOIL[i], 0) / inBand.length;
+return { vegMean, soilMean };
+}
 
-  function buildMarkArea(lo, hi) {
-    return {
-      silent: true,
-      itemStyle: { color: 'rgba(78,138,196,0.12)' },
-      data: [[ { xAxis: String(lo) }, { xAxis: String(hi) } ]],
-    };
-  }
+function buildMarkArea(lo, hi) {
+return {
+silent: true,
+itemStyle: { color: 'rgba(78,138,196,0.12)' },
+data: [[ { xAxis: String(lo) }, { xAxis: String(hi) } ]],
+};
+}
 
-  function getOption(lo, hi) {
-    return {
-      backgroundColor: 'transparent',
-      grid: { left: 55, right: 20, top: 40, bottom: 45 },
-      legend: {
-        data: ['Vegetation', 'Soil', 'Sensor bandpass'],
-        textStyle: { color: textC }, top: 8,
-      },
-      tooltip: {
-        trigger: 'axis',
-        formatter: params => {
-          const wl = WL[params[0].dataIndex];
-          return `<b>${wl} nm</b><br/>` + params.filter(p => p.seriesType === 'line').map(p =>
-            `${p.marker}${p.seriesName}: ${(p.value * 100).toFixed(1)}%`
-          ).join('<br/>');
-        },
-      },
-      xAxis: {
-        type: 'category', data: WL.map(String),
-        name: 'Wavelength (nm)', nameLocation: 'middle', nameGap: 30,
-        axisLabel: { color: text2C, interval: 3 },
-        axisLine: { lineStyle: { color: text2C } },
-        splitLine: { show: false },
-        nameTextStyle: { color: text2C },
-      },
-      yAxis: {
-        type: 'value', name: 'Reflectance', nameLocation: 'middle', nameGap: 40,
-        min: 0, max: 0.55,
-        axisLabel: { color: text2C, formatter: v => (v * 100).toFixed(0) + '%' },
-        axisLine: { lineStyle: { color: text2C } },
-        splitLine: { lineStyle: { color: text2C, opacity: 0.15 } },
-        nameTextStyle: { color: text2C },
-      },
-      series: [
-        {
-          name: 'Vegetation', type: 'line', data: VEG,
-          lineStyle: { color: '#4a7c59', width: 2.5 }, itemStyle: { color: '#4a7c59' }, symbol: 'none',
-          markArea: buildMarkArea(lo, hi),
-        },
-        {
-          name: 'Soil', type: 'line', data: SOIL,
-          lineStyle: { color: '#a07850', width: 2.5 }, itemStyle: { color: '#a07850' }, symbol: 'none',
-        },
-        // Invisible dummy series for legend entry on the bandpass shading
-        {
-          name: 'Sensor bandpass', type: 'line', data: [],
-          lineStyle: { color: 'rgba(78,138,196,0.5)', width: 8 },
-          itemStyle: { color: 'rgba(78,138,196,0.4)' }, symbol: 'none',
-        },
-      ],
-    };
-  }
+function getOption(lo, hi) {
+return {
+backgroundColor: 'transparent',
+grid: { left: 55, right: 20, top: 40, bottom: 45 },
+legend: {
+data: ['Vegetation', 'Soil', 'Sensor bandpass'],
+textStyle: { color: textC }, top: 8,
+},
+tooltip: {
+trigger: 'axis',
+formatter: params => {
+const wl = WL[params[0].dataIndex];
+return `<b>${wl} nm</b><br/>` + params.filter(p => p.seriesType === 'line').map(p =>
+`${p.marker}${p.seriesName}: ${(p.value * 100).toFixed(1)}%`
+).join('<br/>');
+},
+},
+xAxis: {
+type: 'category', data: WL.map(String),
+name: 'Wavelength (nm)', nameLocation: 'middle', nameGap: 30,
+axisLabel: { color: text2C, interval: 3 },
+axisLine: { lineStyle: { color: text2C } },
+splitLine: { show: false },
+nameTextStyle: { color: text2C },
+},
+yAxis: {
+type: 'value', name: 'Reflectance', nameLocation: 'middle', nameGap: 40,
+min: 0, max: 0.55,
+axisLabel: { color: text2C, formatter: v => (v * 100).toFixed(0) + '%' },
+axisLine: { lineStyle: { color: text2C } },
+splitLine: { lineStyle: { color: text2C, opacity: 0.15 } },
+nameTextStyle: { color: text2C },
+},
+series: [
+{
+name: 'Vegetation', type: 'line', data: VEG,
+lineStyle: { color: '#4a7c59', width: 2.5 }, itemStyle: { color: '#4a7c59' }, symbol: 'none',
+markArea: buildMarkArea(lo, hi),
+},
+{
+name: 'Soil', type: 'line', data: SOIL,
+lineStyle: { color: '#a07850', width: 2.5 }, itemStyle: { color: '#a07850' }, symbol: 'none',
+},
+// Invisible dummy series for legend entry on the bandpass shading
+{
+name: 'Sensor bandpass', type: 'line', data: [],
+lineStyle: { color: 'rgba(78,138,196,0.5)', width: 8 },
+itemStyle: { color: 'rgba(78,138,196,0.4)' }, symbol: 'none',
+},
+],
+};
+}
 
-  function updateStats(lo, hi) {
-    const { vegMean, soilMean } = bandStats(lo, hi);
-    document.getElementById('band-veg').textContent      = (vegMean  * 100).toFixed(1) + '%';
-    document.getElementById('band-soil').textContent     = (soilMean * 100).toFixed(1) + '%';
-    document.getElementById('band-contrast').textContent = ((soilMean - vegMean) * 100).toFixed(1) + ' percentage points';
-  }
+function updateStats(lo, hi) {
+const { vegMean, soilMean } = bandStats(lo, hi);
+document.getElementById('band-veg').textContent      = (vegMean  * 100).toFixed(1) + '%';
+document.getElementById('band-soil').textContent     = (soilMean * 100).toFixed(1) + '%';
+document.getElementById('band-contrast').textContent = ((soilMean - vegMean) * 100).toFixed(1) + ' percentage points';
+}
 
-  let lo = 620, hi = 700;
-  chart.setOption(getOption(lo, hi));
-  updateStats(lo, hi);
+let lo = 620, hi = 700;
+chart.setOption(getOption(lo, hi));
+updateStats(lo, hi);
 
-  function snap(val) {
-    // snap to nearest WL sample point
-    return WL.reduce((prev, w) => Math.abs(w - val) < Math.abs(prev - val) ? w : prev, WL[0]);
-  }
+function snap(val) {
+// snap to nearest WL sample point
+return WL.reduce((prev, w) => Math.abs(w - val) < Math.abs(prev - val) ? w : prev, WL[0]);
+}
 
-  document.getElementById('band-lo').addEventListener('input', e => {
-    lo = snap(parseInt(e.target.value));
-    if (lo >= hi) lo = hi - 25;
-    document.getElementById('band-lo-val').textContent = lo;
-    chart.setOption(getOption(lo, hi));
-    updateStats(lo, hi);
-  });
+document.getElementById('band-lo').addEventListener('input', e => {
+lo = snap(parseInt(e.target.value));
+if (lo >= hi) lo = hi - 25;
+document.getElementById('band-lo-val').textContent = lo;
+chart.setOption(getOption(lo, hi));
+updateStats(lo, hi);
+});
 
-  document.getElementById('band-hi').addEventListener('input', e => {
-    hi = snap(parseInt(e.target.value));
-    if (hi <= lo) hi = lo + 25;
-    document.getElementById('band-hi-val').textContent = hi;
-    chart.setOption(getOption(lo, hi));
-    updateStats(lo, hi);
-  });
+document.getElementById('band-hi').addEventListener('input', e => {
+hi = snap(parseInt(e.target.value));
+if (hi <= lo) hi = lo + 25;
+document.getElementById('band-hi-val').textContent = hi;
+chart.setOption(getOption(lo, hi));
+updateStats(lo, hi);
+});
 
-  const ro = new ResizeObserver(() => chart.resize());
-  ro.observe(el);
+const ro = new ResizeObserver(() => chart.resize());
+ro.observe(el);
 })();
 </script>
 <p><strong>Things to try:</strong> - Set the bandpass to 620–700 nm (Landsat Band 3, red). Note how vegetation reflectance is well below soil — strong contrast for vegetation detection. - Widen the band to 600–800 nm. The contrast shrinks as you average across the NIR rise. - Set the band to 750–900 nm (NIR). Vegetation reflectance now exceeds soil — the contrast reverses. - NDVI uses the ratio of NIR and red bands precisely because the contrasts point in opposite directions: vegetation is dark in red and bright in NIR, soil is intermediate in both.</p>

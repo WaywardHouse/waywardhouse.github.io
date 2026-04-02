@@ -265,212 +265,213 @@ Predicted at 2500m: 450mm</p>
 <hr>
 <h2 id="computational-implementation" class="anchored">5. Computational Implementation</h2>
 <p>Below is an interactive SWE estimation tool combining multiple sensors.</p>
-<div id="swe-est-viz" class="viz-container">
+<div class="viz-container" id="swe-est-viz">
 <div class="controls">
-<pre><code>&lt;label&gt;
-  SNOTEL low (mm):
-  &lt;input type="range" id="snotel-low" min="100" max="500" step="50" value="300"&gt;
-  &lt;span id="low-val"&gt;300&lt;/span&gt;
-&lt;/label&gt;
-&lt;label&gt;
-  SNOTEL mid (mm):
-  &lt;input type="range" id="snotel-mid" min="200" max="700" step="50" value="450"&gt;
-  &lt;span id="mid-val"&gt;450&lt;/span&gt;
-&lt;/label&gt;
-&lt;label&gt;
-  SNOTEL high (mm):
-  &lt;input type="range" id="snotel-high" min="300" max="900" step="50" value="600"&gt;
-  &lt;span id="high-val"&gt;600&lt;/span&gt;
-&lt;/label&gt;
-&lt;label&gt;
-  Microwave ΔTB (K):
-  &lt;input type="range" id="delta-tb" min="0" max="100" step="5" value="50"&gt;
-  &lt;span id="tb-val"&gt;50&lt;/span&gt;
-&lt;/label&gt;
-&lt;div class="swe-est-info"&gt;
-  &lt;p&gt;&lt;strong&gt;Basin avg SWE:&lt;/strong&gt; &lt;span id="basin-swe"&gt;--&lt;/span&gt; mm&lt;/p&gt;
-  &lt;p&gt;&lt;strong&gt;Total volume:&lt;/strong&gt; &lt;span id="total-volume"&gt;--&lt;/span&gt; million m³&lt;/p&gt;
-  &lt;p&gt;&lt;strong&gt;Uncertainty:&lt;/strong&gt; &lt;span id="uncertainty"&gt;--&lt;/span&gt;%&lt;/p&gt;
-&lt;/div&gt;</code></pre>
+<label>
+SNOTEL low (mm):
+<input type="range" id="snotel-low" min="100" max="500" step="50" value="300">
+<span id="low-val">300</span>
+</label>
+<label>
+SNOTEL mid (mm):
+<input type="range" id="snotel-mid" min="200" max="700" step="50" value="450">
+<span id="mid-val">450</span>
+</label>
+<label>
+SNOTEL high (mm):
+<input type="range" id="snotel-high" min="300" max="900" step="50" value="600">
+<span id="high-val">600</span>
+</label>
+<label>
+Microwave ΔTB (K):
+<input type="range" id="delta-tb" min="0" max="100" step="5" value="50">
+<span id="tb-val">50</span>
+</label>
+<div class="swe-est-info">
+<p><strong>Basin avg SWE:</strong> <span id="basin-swe">--</span> mm</p>
+<p><strong>Total volume:</strong> <span id="total-volume">--</span> million m³</p>
+<p><strong>Uncertainty:</strong> <span id="uncertainty">--</span>%</p>
+</div>
 </div>
 <div id="swe-est-canvas-container">
-<pre><code>&lt;canvas id="swe-est-canvas" width="700" height="400" style="border: 1px solid #ddd;"&gt;&lt;/canvas&gt;</code></pre>
+<canvas id="swe-est-canvas" width="700" height="400" style="border: 1px solid #ddd;"></canvas>
 </div>
 </div>
+
 <script type="module">
 await new Promise(resolve => {
-  const checkECharts = () => {
-    if (typeof echarts !== 'undefined') resolve();
-    else setTimeout(checkECharts, 50);
-  };
-  checkECharts();
+const checkECharts = () => {
+if (typeof echarts !== 'undefined') resolve();
+else setTimeout(checkECharts, 50);
+};
+checkECharts();
 });
 
 (function() {
-  const chart = echarts.init(document.getElementById('swe-est-canvas'));
+const chart = echarts.init(document.getElementById('swe-est-canvas'));
   
-  let sweHigh = 600;
-  let sweMid = 450;
-  let sweLow = 300;
-  let deltaTB = 50;
+let sweHigh = 600;
+let sweMid = 450;
+let sweLow = 300;
+let deltaTB = 50;
   
-  const basinArea = 500; // km²
+const basinArea = 500; // km²
   
-  function calculateSWE() {
-    // Elevation bands and their fractions
-    const bands = [
-      {elev: 2000, fraction: 0.20, name: 'Low (2000m)'},
-      {elev: 2400, fraction: 0.40, name: 'Mid (2400m)'},
-      {elev: 2800, fraction: 0.30, name: 'High (2800m)'},
-      {elev: 3100, fraction: 0.10, name: 'V.High (3100m)'}
-    ];
+function calculateSWE() {
+// Elevation bands and their fractions
+const bands = [
+{elev: 2000, fraction: 0.20, name: 'Low (2000m)'},
+{elev: 2400, fraction: 0.40, name: 'Mid (2400m)'},
+{elev: 2800, fraction: 0.30, name: 'High (2800m)'},
+{elev: 3100, fraction: 0.10, name: 'V.High (3100m)'}
+];
     
-    // Linear interpolation from SNOTEL
-    const gradient = (sweHigh - sweLow) / 1000; // per meter
+// Linear interpolation from SNOTEL
+const gradient = (sweHigh - sweLow) / 1000; // per meter
     
-    const bandSWE = bands.map(b => {
-      const swe = sweLow + gradient * (b.elev - 2000);
-      return {
-        ...b,
-        swe: swe,
-        contribution: swe * b.fraction
-      };
-    });
+const bandSWE = bands.map(b => {
+const swe = sweLow + gradient * (b.elev - 2000);
+return {
+...b,
+swe: swe,
+contribution: swe * b.fraction
+};
+});
     
-    const basinAvg = bandSWE.reduce((sum, b) => sum + b.contribution, 0);
+const basinAvg = bandSWE.reduce((sum, b) => sum + b.contribution, 0);
     
-    // Microwave estimate
-    const mwSWE = 1.59 * deltaTB;
+// Microwave estimate
+const mwSWE = 1.59 * deltaTB;
     
-    // Calculate uncertainty (simplified)
-    const uncertainty = 15; // percent
+// Calculate uncertainty (simplified)
+const uncertainty = 15; // percent
     
-    // Total volume
-    const volume = basinAvg * basinArea * 1e6 / 1e6; // million m³
+// Total volume
+const volume = basinAvg * basinArea * 1e6 / 1e6; // million m³
     
-    return {bandSWE, basinAvg, mwSWE, uncertainty, volume};
-  }
+return {bandSWE, basinAvg, mwSWE, uncertainty, volume};
+}
   
-  function render() {
-    const result = calculateSWE();
+function render() {
+const result = calculateSWE();
     
-    // Update display
-    document.getElementById('basin-swe').textContent = result.basinAvg.toFixed(0);
-    document.getElementById('total-volume').textContent = result.volume.toFixed(1);
-    document.getElementById('uncertainty').textContent = result.uncertainty;
+// Update display
+document.getElementById('basin-swe').textContent = result.basinAvg.toFixed(0);
+document.getElementById('total-volume').textContent = result.volume.toFixed(1);
+document.getElementById('uncertainty').textContent = result.uncertainty;
     
-    // Chart data
-    const elevData = [];
-    for (let elev = 2000; elev <= 3200; elev += 100) {
-      const gradient = (sweHigh - sweLow) / 1000;
-      const swe = sweLow + gradient * (elev - 2000);
-      elevData.push([elev, swe]);
-    }
+// Chart data
+const elevData = [];
+for (let elev = 2000; elev <= 3200; elev += 100) {
+const gradient = (sweHigh - sweLow) / 1000;
+const swe = sweLow + gradient * (elev - 2000);
+elevData.push([elev, swe]);
+}
     
-    const series = [
-      {
-        name: 'SWE vs Elevation',
-        type: 'line',
-        data: elevData,
-        lineStyle: {color: '#1976D2', width: 3},
-        smooth: true,
-        areaStyle: {color: 'rgba(25, 118, 210, 0.2)'}
-      },
-      {
-        name: 'SNOTEL Observations',
-        type: 'scatter',
-        data: [
-          [2000, sweLow],
-          [2500, sweMid],
-          [3000, sweHigh]
-        ],
-        symbolSize: 12,
-        itemStyle: {color: '#D32F2F'}
-      },
-      {
-        name: 'Microwave Estimate',
-        type: 'line',
-        data: [[2000, result.mwSWE], [3200, result.mwSWE]],
-        lineStyle: {color: '#F57C00', width: 2, type: 'dashed'},
-        showSymbol: false
-      },
-      {
-        name: 'Elevation Bands',
-        type: 'bar',
-        data: result.bandSWE.map(b => [b.elev, b.swe]),
-        itemStyle: {color: '#4CAF50', opacity: 0.5},
-        barWidth: 200,
-        z: -1
-      }
-    ];
+const series = [
+{
+name: 'SWE vs Elevation',
+type: 'line',
+data: elevData,
+lineStyle: {color: '#1976D2', width: 3},
+smooth: true,
+areaStyle: {color: 'rgba(25, 118, 210, 0.2)'}
+},
+{
+name: 'SNOTEL Observations',
+type: 'scatter',
+data: [
+[2000, sweLow],
+[2500, sweMid],
+[3000, sweHigh]
+],
+symbolSize: 12,
+itemStyle: {color: '#D32F2F'}
+},
+{
+name: 'Microwave Estimate',
+type: 'line',
+data: [[2000, result.mwSWE], [3200, result.mwSWE]],
+lineStyle: {color: '#F57C00', width: 2, type: 'dashed'},
+showSymbol: false
+},
+{
+name: 'Elevation Bands',
+type: 'bar',
+data: result.bandSWE.map(b => [b.elev, b.swe]),
+itemStyle: {color: '#4CAF50', opacity: 0.5},
+barWidth: 200,
+z: -1
+}
+];
     
-    const option = {
-      title: {
-        text: 'SWE Estimation - Multi-Sensor Integration',
-        left: 'center'
-      },
-      tooltip: {
-        trigger: 'axis',
-        axisPointer: {type: 'cross'}
-      },
-      legend: {
-        data: series.map(s => s.name),
-        top: 30
-      },
-      grid: {
-        left: 80,
-        right: 40,
-        top: 80,
-        bottom: 60
-      },
-      xAxis: {
-        type: 'value',
-        name: 'Elevation (m)',
-        nameLocation: 'middle',
-        nameGap: 30,
-        min: 1800,
-        max: 3200
-      },
-      yAxis: {
-        type: 'value',
-        name: 'SWE (mm)',
-        nameLocation: 'middle',
-        nameGap: 50,
-        min: 0
-      },
-      series: series
-    };
+const option = {
+title: {
+text: 'SWE Estimation - Multi-Sensor Integration',
+left: 'center'
+},
+tooltip: {
+trigger: 'axis',
+axisPointer: {type: 'cross'}
+},
+legend: {
+data: series.map(s => s.name),
+top: 30
+},
+grid: {
+left: 80,
+right: 40,
+top: 80,
+bottom: 60
+},
+xAxis: {
+type: 'value',
+name: 'Elevation (m)',
+nameLocation: 'middle',
+nameGap: 30,
+min: 1800,
+max: 3200
+},
+yAxis: {
+type: 'value',
+name: 'SWE (mm)',
+nameLocation: 'middle',
+nameGap: 50,
+min: 0
+},
+series: series
+};
     
-    chart.setOption(option, true);
-  }
+chart.setOption(option, true);
+}
   
-  document.getElementById('snotel-low').addEventListener('input', (e) => {
-    sweLow = parseFloat(e.target.value);
-    document.getElementById('low-val').textContent = sweLow;
-    render();
-  });
+document.getElementById('snotel-low').addEventListener('input', (e) => {
+sweLow = parseFloat(e.target.value);
+document.getElementById('low-val').textContent = sweLow;
+render();
+});
   
-  document.getElementById('snotel-mid').addEventListener('input', (e) => {
-    sweMid = parseFloat(e.target.value);
-    document.getElementById('mid-val').textContent = sweMid;
-    render();
-  });
+document.getElementById('snotel-mid').addEventListener('input', (e) => {
+sweMid = parseFloat(e.target.value);
+document.getElementById('mid-val').textContent = sweMid;
+render();
+});
   
-  document.getElementById('snotel-high').addEventListener('input', (e) => {
-    sweHigh = parseFloat(e.target.value);
-    document.getElementById('high-val').textContent = sweHigh;
-    render();
-  });
+document.getElementById('snotel-high').addEventListener('input', (e) => {
+sweHigh = parseFloat(e.target.value);
+document.getElementById('high-val').textContent = sweHigh;
+render();
+});
   
-  document.getElementById('delta-tb').addEventListener('input', (e) => {
-    deltaTB = parseFloat(e.target.value);
-    document.getElementById('tb-val').textContent = deltaTB;
-    render();
-  });
+document.getElementById('delta-tb').addEventListener('input', (e) => {
+deltaTB = parseFloat(e.target.value);
+document.getElementById('tb-val').textContent = deltaTB;
+render();
+});
   
-  render();
+render();
   
-  window.addEventListener('resize', () => chart.resize());
+window.addEventListener('resize', () => chart.resize());
 })();
 </script>
 <p><strong>Try this:</strong> - <strong>Red dots:</strong> SNOTEL station measurements - <strong>Blue line:</strong> Interpolated SWE-elevation relationship - <strong>Green bars:</strong> Elevation band SWE values - <strong>Orange dashed:</strong> Microwave satellite estimate (underestimates deep snow) - <strong>Adjust SNOTEL values:</strong> See gradient change - <strong>Microwave ΔTB:</strong> Higher = more snow detected (saturates ~150mm) - Notice: Microwave underestimates in deep snow (saturation issue) - Basin average combines elevation bands weighted by area</p>

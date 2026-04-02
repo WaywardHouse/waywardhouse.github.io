@@ -300,332 +300,333 @@ i=3    9    6    4    4</code></pre>
 <hr>
 <h2 id="computational-implementation" class="anchored">5. Computational Implementation</h2>
 <p>Below is an interactive cost-distance path finder.</p>
-<div id="costpath-viz" class="viz-container">
+<div class="viz-container" id="costpath-viz">
 <div class="controls">
-<pre><code>&lt;label&gt;
-  Cost type:
-  &lt;select id="cost-type"&gt;
-    &lt;option value="slope" selected&gt;Slope-based&lt;/option&gt;
-    &lt;option value="landcover"&gt;Land Cover&lt;/option&gt;
-    &lt;option value="random"&gt;Random Terrain&lt;/option&gt;
-  &lt;/select&gt;
-&lt;/label&gt;
-&lt;label&gt;
-  Connectivity:
-  &lt;select id="connectivity"&gt;
-    &lt;option value="4"&gt;4-neighbor&lt;/option&gt;
-    &lt;option value="8" selected&gt;8-neighbor&lt;/option&gt;
-  &lt;/select&gt;
-&lt;/label&gt;
-&lt;label&gt;
-  Show cost surface:
-  &lt;input type="checkbox" id="show-cost" checked&gt;
-&lt;/label&gt;
-&lt;label&gt;
-  Show accumulated cost:
-  &lt;input type="checkbox" id="show-accum"&gt;
-&lt;/label&gt;
-&lt;div class="path-info"&gt;
-  &lt;p&gt;&lt;strong&gt;Path length:&lt;/strong&gt; &lt;span id="path-length"&gt;--&lt;/span&gt; cells&lt;/p&gt;
-  &lt;p&gt;&lt;strong&gt;Total cost:&lt;/strong&gt; &lt;span id="total-cost"&gt;--&lt;/span&gt;&lt;/p&gt;
-  &lt;p&gt;&lt;strong&gt;Avg cost/cell:&lt;/strong&gt; &lt;span id="avg-cost"&gt;--&lt;/span&gt;&lt;/p&gt;
-&lt;/div&gt;</code></pre>
+<label>
+Cost type:
+<select id="cost-type">
+<option value="slope" selected="">Slope-based</option>
+<option value="landcover">Land Cover</option>
+<option value="random">Random Terrain</option>
+</select>
+</label>
+<label>
+Connectivity:
+<select id="connectivity">
+<option value="4">4-neighbor</option>
+<option value="8" selected="">8-neighbor</option>
+</select>
+</label>
+<label>
+Show cost surface:
+<input type="checkbox" id="show-cost" checked="">
+</label>
+<label>
+Show accumulated cost:
+<input type="checkbox" id="show-accum">
+</label>
+<div class="path-info">
+<p><strong>Path length:</strong> <span id="path-length">--</span> cells</p>
+<p><strong>Total cost:</strong> <span id="total-cost">--</span></p>
+<p><strong>Avg cost/cell:</strong> <span id="avg-cost">--</span></p>
+</div>
 </div>
 <div id="costpath-canvas-container">
-<pre><code>&lt;canvas id="costpath-canvas" width="600" height="600" style="border: 1px solid #ddd; cursor: crosshair;"&gt;&lt;/canvas&gt;</code></pre>
+<canvas id="costpath-canvas" width="600" height="600" style="border: 1px solid #ddd; cursor: crosshair;"></canvas>
 </div>
 <div class="instructions">
-<pre><code>&lt;p&gt;&lt;em&gt;Click to set start (green) and end (red) points, then path will compute automatically.&lt;/em&gt;&lt;/p&gt;</code></pre>
+<p><em>Click to set start (green) and end (red) points, then path will compute automatically.</em></p>
 </div>
 </div>
+
 <script type="module">
 (function() {
-  const canvas = document.getElementById('costpath-canvas');
-  const ctx = canvas.getContext('2d');
+const canvas = document.getElementById('costpath-canvas');
+const ctx = canvas.getContext('2d');
   
-  let costType = 'slope';
-  let connectivity = 8;
-  let showCost = true;
-  let showAccum = false;
+let costType = 'slope';
+let connectivity = 8;
+let showCost = true;
+let showAccum = false;
   
-  const size = 40;
-  const cellSize = 600 / size;
+const size = 40;
+const cellSize = 600 / size;
   
-  let startCell = null;
-  let endCell = null;
+let startCell = null;
+let endCell = null;
   
-  // Generate cost surfaces
-  const costs = {
-    slope: [],
-    landcover: [],
-    random: []
-  };
+// Generate cost surfaces
+const costs = {
+slope: [],
+landcover: [],
+random: []
+};
   
-  // Slope-based (hill in center)
-  for (let i = 0; i < size; i++) {
-    const row = [];
-    for (let j = 0; j < size; j++) {
-      const cx = size / 2, cy = size / 2;
-      const dist = Math.sqrt((i - cx) ** 2 + (j - cy) ** 2);
-      const elevation = 100 * Math.exp(-dist / 10);
-      const slope = Math.abs(elevation - 50) / 10;
-      row.push(1 + slope * 2);
-    }
-    costs.slope.push(row);
-  }
+// Slope-based (hill in center)
+for (let i = 0; i < size; i++) {
+const row = [];
+for (let j = 0; j < size; j++) {
+const cx = size / 2, cy = size / 2;
+const dist = Math.sqrt((i - cx) ** 2 + (j - cy) ** 2);
+const elevation = 100 * Math.exp(-dist / 10);
+const slope = Math.abs(elevation - 50) / 10;
+row.push(1 + slope * 2);
+}
+costs.slope.push(row);
+}
   
-  // Land cover (patches)
-  for (let i = 0; i < size; i++) {
-    const row = [];
-    for (let j = 0; j < size; j++) {
-      const noise = Math.sin(i / 5) * Math.cos(j / 5);
-      const cost = noise > 0 ? 1 : (noise > -0.5 ? 5 : 20);
-      row.push(cost);
-    }
-    costs.landcover.push(row);
-  }
+// Land cover (patches)
+for (let i = 0; i < size; i++) {
+const row = [];
+for (let j = 0; j < size; j++) {
+const noise = Math.sin(i / 5) * Math.cos(j / 5);
+const cost = noise > 0 ? 1 : (noise > -0.5 ? 5 : 20);
+row.push(cost);
+}
+costs.landcover.push(row);
+}
   
-  // Random
-  for (let i = 0; i < size; i++) {
-    const row = [];
-    for (let j = 0; j < size; j++) {
-      row.push(1 + Math.random() * 10);
-    }
-    costs.random.push(row);
-  }
+// Random
+for (let i = 0; i < size; i++) {
+const row = [];
+for (let j = 0; j < size; j++) {
+row.push(1 + Math.random() * 10);
+}
+costs.random.push(row);
+}
   
-  function getCost() {
-    return costs[costType];
-  }
+function getCost() {
+return costs[costType];
+}
   
-  function dijkstra(cost, start, end) {
-    const dist = Array(size).fill(null).map(() => Array(size).fill(Infinity));
-    const parent = Array(size).fill(null).map(() => Array(size).fill(null));
-    const visited = Array(size).fill(null).map(() => Array(size).fill(false));
+function dijkstra(cost, start, end) {
+const dist = Array(size).fill(null).map(() => Array(size).fill(Infinity));
+const parent = Array(size).fill(null).map(() => Array(size).fill(null));
+const visited = Array(size).fill(null).map(() => Array(size).fill(false));
     
-    dist[start.i][start.j] = 0;
+dist[start.i][start.j] = 0;
     
-    const queue = [{i: start.i, j: start.j, dist: 0}];
+const queue = [{i: start.i, j: start.j, dist: 0}];
     
-    const neighbors = connectivity === 4 ? 
-      [{di: -1, dj: 0}, {di: 1, dj: 0}, {di: 0, dj: -1}, {di: 0, dj: 1}] :
-      [{di: -1, dj: 0}, {di: 1, dj: 0}, {di: 0, dj: -1}, {di: 0, dj: 1},
-       {di: -1, dj: -1}, {di: -1, dj: 1}, {di: 1, dj: -1}, {di: 1, dj: 1}];
+const neighbors = connectivity === 4 ? 
+[{di: -1, dj: 0}, {di: 1, dj: 0}, {di: 0, dj: -1}, {di: 0, dj: 1}] :
+[{di: -1, dj: 0}, {di: 1, dj: 0}, {di: 0, dj: -1}, {di: 0, dj: 1},
+{di: -1, dj: -1}, {di: -1, dj: 1}, {di: 1, dj: -1}, {di: 1, dj: 1}];
     
-    while (queue.length > 0) {
-      // Find minimum
-      queue.sort((a, b) => a.dist - b.dist);
-      const u = queue.shift();
+while (queue.length > 0) {
+// Find minimum
+queue.sort((a, b) => a.dist - b.dist);
+const u = queue.shift();
       
-      if (visited[u.i][u.j]) continue;
-      visited[u.i][u.j] = true;
+if (visited[u.i][u.j]) continue;
+visited[u.i][u.j] = true;
       
-      if (u.i === end.i && u.j === end.j) break;
+if (u.i === end.i && u.j === end.j) break;
       
-      for (let {di, dj} of neighbors) {
-        const ni = u.i + di;
-        const nj = u.j + dj;
+for (let {di, dj} of neighbors) {
+const ni = u.i + di;
+const nj = u.j + dj;
         
-        if (ni < 0 || ni >= size || nj < 0 || nj >= size) continue;
-        if (visited[ni][nj]) continue;
+if (ni < 0 || ni >= size || nj < 0 || nj >= size) continue;
+if (visited[ni][nj]) continue;
         
-        const edgeDist = Math.sqrt(di * di + dj * dj);
-        const edgeCost = edgeDist * (cost[u.i][u.j] + cost[ni][nj]) / 2;
-        const newDist = dist[u.i][u.j] + edgeCost;
+const edgeDist = Math.sqrt(di * di + dj * dj);
+const edgeCost = edgeDist * (cost[u.i][u.j] + cost[ni][nj]) / 2;
+const newDist = dist[u.i][u.j] + edgeCost;
         
-        if (newDist < dist[ni][nj]) {
-          dist[ni][nj] = newDist;
-          parent[ni][nj] = {i: u.i, j: u.j};
-          queue.push({i: ni, j: nj, dist: newDist});
-        }
-      }
-    }
+if (newDist < dist[ni][nj]) {
+dist[ni][nj] = newDist;
+parent[ni][nj] = {i: u.i, j: u.j};
+queue.push({i: ni, j: nj, dist: newDist});
+}
+}
+}
     
-    return {dist, parent};
-  }
+return {dist, parent};
+}
   
-  function reconstructPath(parent, start, end) {
-    const path = [];
-    let current = {i: end.i, j: end.j};
+function reconstructPath(parent, start, end) {
+const path = [];
+let current = {i: end.i, j: end.j};
     
-    while (current) {
-      path.push(current);
-      if (current.i === start.i && current.j === start.j) break;
-      current = parent[current.i][current.j];
-    }
+while (current) {
+path.push(current);
+if (current.i === start.i && current.j === start.j) break;
+current = parent[current.i][current.j];
+}
     
-    return path.reverse();
-  }
+return path.reverse();
+}
   
-  function drawCostSurface(cost) {
-    let min = Infinity, max = -Infinity;
-    for (let row of cost) {
-      for (let val of row) {
-        min = Math.min(min, val);
-        max = Math.max(max, val);
-      }
-    }
+function drawCostSurface(cost) {
+let min = Infinity, max = -Infinity;
+for (let row of cost) {
+for (let val of row) {
+min = Math.min(min, val);
+max = Math.max(max, val);
+}
+}
     
-    for (let i = 0; i < size; i++) {
-      for (let j = 0; j < size; j++) {
-        const normalized = (cost[i][j] - min) / (max - min);
-        const gray = Math.floor(255 * (1 - normalized));
+for (let i = 0; i < size; i++) {
+for (let j = 0; j < size; j++) {
+const normalized = (cost[i][j] - min) / (max - min);
+const gray = Math.floor(255 * (1 - normalized));
         
-        ctx.fillStyle = `rgb(${gray}, ${gray}, ${gray})`;
-        ctx.fillRect(j * cellSize, i * cellSize, cellSize, cellSize);
-      }
-    }
-  }
+ctx.fillStyle = `rgb(${gray}, ${gray}, ${gray})`;
+ctx.fillRect(j * cellSize, i * cellSize, cellSize, cellSize);
+}
+}
+}
   
-  function drawAccumCost(dist) {
-    let min = Infinity, max = -Infinity;
-    for (let row of dist) {
-      for (let val of row) {
-        if (isFinite(val)) {
-          min = Math.min(min, val);
-          max = Math.max(max, val);
-        }
-      }
-    }
+function drawAccumCost(dist) {
+let min = Infinity, max = -Infinity;
+for (let row of dist) {
+for (let val of row) {
+if (isFinite(val)) {
+min = Math.min(min, val);
+max = Math.max(max, val);
+}
+}
+}
     
-    for (let i = 0; i < size; i++) {
-      for (let j = 0; j < size; j++) {
-        if (!isFinite(dist[i][j])) continue;
+for (let i = 0; i < size; i++) {
+for (let j = 0; j < size; j++) {
+if (!isFinite(dist[i][j])) continue;
         
-        const normalized = (dist[i][j] - min) / (max - min);
-        const hue = 240 * (1 - normalized); // Blue to red
+const normalized = (dist[i][j] - min) / (max - min);
+const hue = 240 * (1 - normalized); // Blue to red
         
-        ctx.fillStyle = `hsl(${hue}, 70%, 50%)`;
-        ctx.fillRect(j * cellSize, i * cellSize, cellSize, cellSize);
-      }
-    }
-  }
+ctx.fillStyle = `hsl(${hue}, 70%, 50%)`;
+ctx.fillRect(j * cellSize, i * cellSize, cellSize, cellSize);
+}
+}
+}
   
-  function drawPath(path) {
-    if (!path || path.length < 2) return;
+function drawPath(path) {
+if (!path || path.length < 2) return;
     
-    ctx.strokeStyle = '#F39C12';
-    ctx.lineWidth = 3;
-    ctx.lineCap = 'round';
-    ctx.lineJoin = 'round';
+ctx.strokeStyle = '#F39C12';
+ctx.lineWidth = 3;
+ctx.lineCap = 'round';
+ctx.lineJoin = 'round';
     
-    ctx.beginPath();
-    ctx.moveTo(
-      path[0].j * cellSize + cellSize / 2,
-      path[0].i * cellSize + cellSize / 2
-    );
+ctx.beginPath();
+ctx.moveTo(
+path[0].j * cellSize + cellSize / 2,
+path[0].i * cellSize + cellSize / 2
+);
     
-    for (let i = 1; i < path.length; i++) {
-      ctx.lineTo(
-        path[i].j * cellSize + cellSize / 2,
-        path[i].i * cellSize + cellSize / 2
-      );
-    }
+for (let i = 1; i < path.length; i++) {
+ctx.lineTo(
+path[i].j * cellSize + cellSize / 2,
+path[i].i * cellSize + cellSize / 2
+);
+}
     
-    ctx.stroke();
-  }
+ctx.stroke();
+}
   
-  function drawMarkers() {
-    if (startCell) {
-      ctx.fillStyle = '#2ECC71';
-      ctx.beginPath();
-      ctx.arc(
-        startCell.j * cellSize + cellSize / 2,
-        startCell.i * cellSize + cellSize / 2,
-        cellSize / 3, 0, 2 * Math.PI
-      );
-      ctx.fill();
-    }
+function drawMarkers() {
+if (startCell) {
+ctx.fillStyle = '#2ECC71';
+ctx.beginPath();
+ctx.arc(
+startCell.j * cellSize + cellSize / 2,
+startCell.i * cellSize + cellSize / 2,
+cellSize / 3, 0, 2 * Math.PI
+);
+ctx.fill();
+}
     
-    if (endCell) {
-      ctx.fillStyle = '#E74C3C';
-      ctx.beginPath();
-      ctx.arc(
-        endCell.j * cellSize + cellSize / 2,
-        endCell.i * cellSize + cellSize / 2,
-        cellSize / 3, 0, 2 * Math.PI
-      );
-      ctx.fill();
-    }
-  }
+if (endCell) {
+ctx.fillStyle = '#E74C3C';
+ctx.beginPath();
+ctx.arc(
+endCell.j * cellSize + cellSize / 2,
+endCell.i * cellSize + cellSize / 2,
+cellSize / 3, 0, 2 * Math.PI
+);
+ctx.fill();
+}
+}
   
-  function render() {
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
+function render() {
+ctx.clearRect(0, 0, canvas.width, canvas.height);
     
-    const cost = getCost();
+const cost = getCost();
     
-    if (showCost && !showAccum) {
-      drawCostSurface(cost);
-    }
+if (showCost && !showAccum) {
+drawCostSurface(cost);
+}
     
-    let path = null;
-    let totalCost = 0;
+let path = null;
+let totalCost = 0;
     
-    if (startCell && endCell) {
-      const {dist, parent} = dijkstra(cost, startCell, endCell);
+if (startCell && endCell) {
+const {dist, parent} = dijkstra(cost, startCell, endCell);
       
-      if (showAccum) {
-        drawAccumCost(dist);
-      }
+if (showAccum) {
+drawAccumCost(dist);
+}
       
-      path = reconstructPath(parent, startCell, endCell);
-      totalCost = dist[endCell.i][endCell.j];
+path = reconstructPath(parent, startCell, endCell);
+totalCost = dist[endCell.i][endCell.j];
       
-      drawPath(path);
+drawPath(path);
       
-      document.getElementById('path-length').textContent = path.length;
-      document.getElementById('total-cost').textContent = totalCost.toFixed(1);
-      document.getElementById('avg-cost').textContent = (totalCost / path.length).toFixed(2);
-    } else {
-      document.getElementById('path-length').textContent = '--';
-      document.getElementById('total-cost').textContent = '--';
-      document.getElementById('avg-cost').textContent = '--';
-    }
+document.getElementById('path-length').textContent = path.length;
+document.getElementById('total-cost').textContent = totalCost.toFixed(1);
+document.getElementById('avg-cost').textContent = (totalCost / path.length).toFixed(2);
+} else {
+document.getElementById('path-length').textContent = '--';
+document.getElementById('total-cost').textContent = '--';
+document.getElementById('avg-cost').textContent = '--';
+}
     
-    drawMarkers();
-  }
+drawMarkers();
+}
   
-  canvas.addEventListener('click', (e) => {
-    const rect = canvas.getBoundingClientRect();
-    const x = e.clientX - rect.left;
-    const y = e.clientY - rect.top;
+canvas.addEventListener('click', (e) => {
+const rect = canvas.getBoundingClientRect();
+const x = e.clientX - rect.left;
+const y = e.clientY - rect.top;
     
-    const j = Math.floor(x / cellSize);
-    const i = Math.floor(y / cellSize);
+const j = Math.floor(x / cellSize);
+const i = Math.floor(y / cellSize);
     
-    if (!startCell) {
-      startCell = {i, j};
-    } else if (!endCell) {
-      endCell = {i, j};
-    } else {
-      startCell = {i, j};
-      endCell = null;
-    }
+if (!startCell) {
+startCell = {i, j};
+} else if (!endCell) {
+endCell = {i, j};
+} else {
+startCell = {i, j};
+endCell = null;
+}
     
-    render();
-  });
+render();
+});
   
-  document.getElementById('cost-type').addEventListener('change', (e) => {
-    costType = e.target.value;
-    render();
-  });
+document.getElementById('cost-type').addEventListener('change', (e) => {
+costType = e.target.value;
+render();
+});
   
-  document.getElementById('connectivity').addEventListener('change', (e) => {
-    connectivity = parseInt(e.target.value);
-    render();
-  });
+document.getElementById('connectivity').addEventListener('change', (e) => {
+connectivity = parseInt(e.target.value);
+render();
+});
   
-  document.getElementById('show-cost').addEventListener('change', (e) => {
-    showCost = e.target.checked;
-    render();
-  });
+document.getElementById('show-cost').addEventListener('change', (e) => {
+showCost = e.target.checked;
+render();
+});
   
-  document.getElementById('show-accum').addEventListener('change', (e) => {
-    showAccum = e.target.checked;
-    render();
-  });
+document.getElementById('show-accum').addEventListener('change', (e) => {
+showAccum = e.target.checked;
+render();
+});
   
-  render();
+render();
 })();
 </script>
 <p><strong>Try this:</strong> - <strong>Click to set start (green) and end (red)</strong> - path computes automatically - <strong>Slope-based:</strong> Path avoids steep center (darker = higher cost) - <strong>Land cover:</strong> Path finds low-cost patches - <strong>8-neighbor vs 4-neighbor:</strong> Diagonal moves allowed vs cardinal only - <strong>Show accumulated cost:</strong> Blue (near start) to red (far) - distance from source - <strong>Path (orange):</strong> Follows minimum cost, not straight line - Notice: Path curves around high-cost areas even if that means longer distance!</p>

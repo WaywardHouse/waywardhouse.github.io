@@ -234,311 +234,312 @@ At <span class="math inline">B</span>: semicircle from <span class="math inline"
 <hr>
 <h2 id="computational-implementation" class="anchored">5. Computational Implementation</h2>
 <p>Below is an interactive buffer generator.</p>
-<div id="buffer-viz" class="viz-container">
+<div class="viz-container" id="buffer-viz">
 <div class="controls">
-<pre><code>&lt;label&gt;
-  Feature type:
-  &lt;select id="feature-type"&gt;
-    &lt;option value="point"&gt;Point&lt;/option&gt;
-    &lt;option value="line" selected&gt;Line&lt;/option&gt;
-    &lt;option value="polygon"&gt;Polygon&lt;/option&gt;
-  &lt;/select&gt;
-&lt;/label&gt;
-&lt;label&gt;
-  Buffer distance (pixels):
-  &lt;input type="range" id="buffer-distance" min="10" max="100" step="5" value="50"&gt;
-  &lt;span id="buffer-value"&gt;50&lt;/span&gt;
-&lt;/label&gt;
-&lt;label&gt;
-  Show construction:
-  &lt;input type="checkbox" id="show-construction" checked&gt;
-&lt;/label&gt;
-&lt;label&gt;
-  Buffer style:
-  &lt;select id="buffer-style"&gt;
-    &lt;option value="filled" selected&gt;Filled&lt;/option&gt;
-    &lt;option value="outline"&gt;Outline only&lt;/option&gt;
-  &lt;/select&gt;
-&lt;/label&gt;</code></pre>
+<label>
+Feature type:
+<select id="feature-type">
+<option value="point">Point</option>
+<option value="line" selected="">Line</option>
+<option value="polygon">Polygon</option>
+</select>
+</label>
+<label>
+Buffer distance (pixels):
+<input type="range" id="buffer-distance" min="10" max="100" step="5" value="50">
+<span id="buffer-value">50</span>
+</label>
+<label>
+Show construction:
+<input type="checkbox" id="show-construction" checked="">
+</label>
+<label>
+Buffer style:
+<select id="buffer-style">
+<option value="filled" selected="">Filled</option>
+<option value="outline">Outline only</option>
+</select>
+</label>
 </div>
 <div id="buffer-canvas-container">
-<pre><code>&lt;canvas id="buffer-canvas" width="600" height="500" style="border: 1px solid #ddd;"&gt;&lt;/canvas&gt;</code></pre>
+<canvas id="buffer-canvas" width="600" height="500" style="border: 1px solid #ddd;"></canvas>
 </div>
 <div class="buffer-info">
-<pre><code>&lt;p&gt;&lt;strong&gt;Buffer area:&lt;/strong&gt; &lt;span id="buffer-area"&gt;--&lt;/span&gt; px²&lt;/p&gt;
-&lt;p&gt;&lt;strong&gt;Buffer perimeter:&lt;/strong&gt; &lt;span id="buffer-perimeter"&gt;--&lt;/span&gt; px&lt;/p&gt;</code></pre>
+<p><strong>Buffer area:</strong> <span id="buffer-area">--</span> px²</p>
+<p><strong>Buffer perimeter:</strong> <span id="buffer-perimeter">--</span> px</p>
 </div>
 </div>
+
 <script type="module">
 (function() {
-  const canvas = document.getElementById('buffer-canvas');
-  const ctx = canvas.getContext('2d');
+const canvas = document.getElementById('buffer-canvas');
+const ctx = canvas.getContext('2d');
   
-  let featureType = 'line';
-  let bufferDist = 50;
-  let showConstruction = true;
-  let bufferStyle = 'filled';
+let featureType = 'line';
+let bufferDist = 50;
+let showConstruction = true;
+let bufferStyle = 'filled';
   
-  const features = {
-    point: {x: 300, y: 250},
-    line: [{x: 100, y: 400}, {x: 500, y: 100}],
-    polygon: [
-      {x: 200, y: 150}, {x: 400, y: 150},
-      {x: 450, y: 350}, {x: 150, y: 350}
-    ]
-  };
+const features = {
+point: {x: 300, y: 250},
+line: [{x: 100, y: 400}, {x: 500, y: 100}],
+polygon: [
+{x: 200, y: 150}, {x: 400, y: 150},
+{x: 450, y: 350}, {x: 150, y: 350}
+]
+};
   
-  function distance(p1, p2) {
-    return Math.sqrt((p2.x - p1.x) ** 2 + (p2.y - p1.y) ** 2);
-  }
+function distance(p1, p2) {
+return Math.sqrt((p2.x - p1.x) ** 2 + (p2.y - p1.y) ** 2);
+}
   
-  function normalize(v) {
-    const len = Math.sqrt(v.x ** 2 + v.y ** 2);
-    return {x: v.x / len, y: v.y / len};
-  }
+function normalize(v) {
+const len = Math.sqrt(v.x ** 2 + v.y ** 2);
+return {x: v.x / len, y: v.y / len};
+}
   
-  function perpendicular(v) {
-    return {x: -v.y, y: v.x};
-  }
+function perpendicular(v) {
+return {x: -v.y, y: v.x};
+}
   
-  function bufferPoint(center, radius, segments = 32) {
-    const points = [];
-    for (let i = 0; i <= segments; i++) {
-      const theta = (2 * Math.PI * i) / segments;
-      points.push({
-        x: center.x + radius * Math.cos(theta),
-        y: center.y + radius * Math.sin(theta)
-      });
-    }
-    return points;
-  }
+function bufferPoint(center, radius, segments = 32) {
+const points = [];
+for (let i = 0; i <= segments; i++) {
+const theta = (2 * Math.PI * i) / segments;
+points.push({
+x: center.x + radius * Math.cos(theta),
+y: center.y + radius * Math.sin(theta)
+});
+}
+return points;
+}
   
-  function bufferLine(p1, p2, dist, segments = 16) {
-    const dir = {x: p2.x - p1.x, y: p2.y - p1.y};
-    const len = Math.sqrt(dir.x ** 2 + dir.y ** 2);
-    const unit = {x: dir.x / len, y: dir.y / len};
-    const perp = {x: -unit.y, y: unit.x};
+function bufferLine(p1, p2, dist, segments = 16) {
+const dir = {x: p2.x - p1.x, y: p2.y - p1.y};
+const len = Math.sqrt(dir.x ** 2 + dir.y ** 2);
+const unit = {x: dir.x / len, y: dir.y / len};
+const perp = {x: -unit.y, y: unit.x};
     
-    // Offset edges
-    const A1 = {x: p1.x + perp.x * dist, y: p1.y + perp.y * dist};
-    const A2 = {x: p2.x + perp.x * dist, y: p2.y + perp.y * dist};
-    const B1 = {x: p1.x - perp.x * dist, y: p1.y - perp.y * dist};
-    const B2 = {x: p2.x - perp.x * dist, y: p2.y - perp.y * dist};
+// Offset edges
+const A1 = {x: p1.x + perp.x * dist, y: p1.y + perp.y * dist};
+const A2 = {x: p2.x + perp.x * dist, y: p2.y + perp.y * dist};
+const B1 = {x: p1.x - perp.x * dist, y: p1.y - perp.y * dist};
+const B2 = {x: p2.x - perp.x * dist, y: p2.y - perp.y * dist};
     
-    // Build buffer polygon
-    const buffer = [];
+// Build buffer polygon
+const buffer = [];
     
-    // Left edge
-    buffer.push(A1, A2);
+// Left edge
+buffer.push(A1, A2);
     
-    // Cap at p2
-    for (let i = 0; i <= segments / 2; i++) {
-      const theta = Math.PI * i / (segments / 2);
-      const angle = Math.atan2(perp.y, perp.x) + theta;
-      buffer.push({
-        x: p2.x + dist * Math.cos(angle),
-        y: p2.y + dist * Math.sin(angle)
-      });
-    }
+// Cap at p2
+for (let i = 0; i <= segments / 2; i++) {
+const theta = Math.PI * i / (segments / 2);
+const angle = Math.atan2(perp.y, perp.x) + theta;
+buffer.push({
+x: p2.x + dist * Math.cos(angle),
+y: p2.y + dist * Math.sin(angle)
+});
+}
     
-    // Right edge
-    buffer.push(B2, B1);
+// Right edge
+buffer.push(B2, B1);
     
-    // Cap at p1
-    for (let i = 0; i <= segments / 2; i++) {
-      const theta = Math.PI * i / (segments / 2);
-      const angle = Math.atan2(-perp.y, -perp.x) + theta;
-      buffer.push({
-        x: p1.x + dist * Math.cos(angle),
-        y: p1.y + dist * Math.sin(angle)
-      });
-    }
+// Cap at p1
+for (let i = 0; i <= segments / 2; i++) {
+const theta = Math.PI * i / (segments / 2);
+const angle = Math.atan2(-perp.y, -perp.x) + theta;
+buffer.push({
+x: p1.x + dist * Math.cos(angle),
+y: p1.y + dist * Math.sin(angle)
+});
+}
     
-    return {buffer, A1, A2, B1, B2};
-  }
+return {buffer, A1, A2, B1, B2};
+}
   
-  function bufferPolygon(polygon, dist, segments = 8) {
-    // Simplified: buffer each edge and merge (doesn't handle all edge cases)
-    const buffer = [];
+function bufferPolygon(polygon, dist, segments = 8) {
+// Simplified: buffer each edge and merge (doesn't handle all edge cases)
+const buffer = [];
     
-    for (let i = 0; i < polygon.length; i++) {
-      const p1 = polygon[i];
-      const p2 = polygon[(i + 1) % polygon.length];
+for (let i = 0; i < polygon.length; i++) {
+const p1 = polygon[i];
+const p2 = polygon[(i + 1) % polygon.length];
       
-      const dir = {x: p2.x - p1.x, y: p2.y - p1.y};
-      const len = Math.sqrt(dir.x ** 2 + dir.y ** 2);
-      const unit = {x: dir.x / len, y: dir.y / len};
-      const perp = {x: -unit.y, y: unit.x};
+const dir = {x: p2.x - p1.x, y: p2.y - p1.y};
+const len = Math.sqrt(dir.x ** 2 + dir.y ** 2);
+const unit = {x: dir.x / len, y: dir.y / len};
+const perp = {x: -unit.y, y: unit.x};
       
-      // Offset edge
-      const offset1 = {x: p1.x + perp.x * dist, y: p1.y + perp.y * dist};
-      const offset2 = {x: p2.x + perp.x * dist, y: p2.y + perp.y * dist};
+// Offset edge
+const offset1 = {x: p1.x + perp.x * dist, y: p1.y + perp.y * dist};
+const offset2 = {x: p2.x + perp.x * dist, y: p2.y + perp.y * dist};
       
-      buffer.push(offset1);
+buffer.push(offset1);
       
-      // Add arc at vertex
-      if (i < polygon.length - 1) {
-        const nextP = polygon[(i + 2) % polygon.length];
-        const nextDir = {x: nextP.x - p2.x, y: nextP.y - p2.y};
-        const nextLen = Math.sqrt(nextDir.x ** 2 + nextDir.y ** 2);
-        const nextUnit = {x: nextDir.x / nextLen, y: nextDir.y / nextLen};
-        const nextPerp = {x: -nextUnit.y, y: nextUnit.x};
+// Add arc at vertex
+if (i < polygon.length - 1) {
+const nextP = polygon[(i + 2) % polygon.length];
+const nextDir = {x: nextP.x - p2.x, y: nextP.y - p2.y};
+const nextLen = Math.sqrt(nextDir.x ** 2 + nextDir.y ** 2);
+const nextUnit = {x: nextDir.x / nextLen, y: nextDir.y / nextLen};
+const nextPerp = {x: -nextUnit.y, y: nextUnit.x};
         
-        const angle1 = Math.atan2(perp.y, perp.x);
-        const angle2 = Math.atan2(nextPerp.y, nextPerp.x);
-        let angleDiff = angle2 - angle1;
-        if (angleDiff < 0) angleDiff += 2 * Math.PI;
+const angle1 = Math.atan2(perp.y, perp.x);
+const angle2 = Math.atan2(nextPerp.y, nextPerp.x);
+let angleDiff = angle2 - angle1;
+if (angleDiff < 0) angleDiff += 2 * Math.PI;
         
-        for (let j = 1; j <= segments; j++) {
-          const t = j / segments;
-          const angle = angle1 + angleDiff * t;
-          buffer.push({
-            x: p2.x + dist * Math.cos(angle),
-            y: p2.y + dist * Math.sin(angle)
-          });
-        }
-      }
-    }
+for (let j = 1; j <= segments; j++) {
+const t = j / segments;
+const angle = angle1 + angleDiff * t;
+buffer.push({
+x: p2.x + dist * Math.cos(angle),
+y: p2.y + dist * Math.sin(angle)
+});
+}
+}
+}
     
-    return buffer;
-  }
+return buffer;
+}
   
-  function drawFeature(type) {
-    ctx.strokeStyle = '#2C3E50';
-    ctx.lineWidth = 3;
-    ctx.fillStyle = '#3498DB';
+function drawFeature(type) {
+ctx.strokeStyle = '#2C3E50';
+ctx.lineWidth = 3;
+ctx.fillStyle = '#3498DB';
     
-    if (type === 'point') {
-      const p = features.point;
-      ctx.beginPath();
-      ctx.arc(p.x, p.y, 6, 0, 2 * Math.PI);
-      ctx.fill();
-      ctx.stroke();
-    } else if (type === 'line') {
-      const line = features.line;
-      ctx.beginPath();
-      ctx.moveTo(line[0].x, line[0].y);
-      ctx.lineTo(line[1].x, line[1].y);
-      ctx.stroke();
+if (type === 'point') {
+const p = features.point;
+ctx.beginPath();
+ctx.arc(p.x, p.y, 6, 0, 2 * Math.PI);
+ctx.fill();
+ctx.stroke();
+} else if (type === 'line') {
+const line = features.line;
+ctx.beginPath();
+ctx.moveTo(line[0].x, line[0].y);
+ctx.lineTo(line[1].x, line[1].y);
+ctx.stroke();
       
-      // Draw endpoints
-      for (let p of line) {
-        ctx.beginPath();
-        ctx.arc(p.x, p.y, 5, 0, 2 * Math.PI);
-        ctx.fill();
-      }
-    } else {
-      const poly = features.polygon;
-      ctx.beginPath();
-      ctx.moveTo(poly[0].x, poly[0].y);
-      for (let i = 1; i < poly.length; i++) {
-        ctx.lineTo(poly[i].x, poly[i].y);
-      }
-      ctx.closePath();
-      ctx.stroke();
+// Draw endpoints
+for (let p of line) {
+ctx.beginPath();
+ctx.arc(p.x, p.y, 5, 0, 2 * Math.PI);
+ctx.fill();
+}
+} else {
+const poly = features.polygon;
+ctx.beginPath();
+ctx.moveTo(poly[0].x, poly[0].y);
+for (let i = 1; i < poly.length; i++) {
+ctx.lineTo(poly[i].x, poly[i].y);
+}
+ctx.closePath();
+ctx.stroke();
       
-      for (let p of poly) {
-        ctx.beginPath();
-        ctx.arc(p.x, p.y, 4, 0, 2 * Math.PI);
-        ctx.fill();
-      }
-    }
-  }
+for (let p of poly) {
+ctx.beginPath();
+ctx.arc(p.x, p.y, 4, 0, 2 * Math.PI);
+ctx.fill();
+}
+}
+}
   
-  function drawBuffer() {
-    let buffer, area = 0, perimeter = 0;
-    let construction = null;
+function drawBuffer() {
+let buffer, area = 0, perimeter = 0;
+let construction = null;
     
-    if (featureType === 'point') {
-      buffer = bufferPoint(features.point, bufferDist);
-      area = Math.PI * bufferDist ** 2;
-      perimeter = 2 * Math.PI * bufferDist;
-    } else if (featureType === 'line') {
-      const result = bufferLine(features.line[0], features.line[1], bufferDist);
-      buffer = result.buffer;
-      construction = {A1: result.A1, A2: result.A2, B1: result.B1, B2: result.B2};
+if (featureType === 'point') {
+buffer = bufferPoint(features.point, bufferDist);
+area = Math.PI * bufferDist ** 2;
+perimeter = 2 * Math.PI * bufferDist;
+} else if (featureType === 'line') {
+const result = bufferLine(features.line[0], features.line[1], bufferDist);
+buffer = result.buffer;
+construction = {A1: result.A1, A2: result.A2, B1: result.B1, B2: result.B2};
       
-      const lineLen = distance(features.line[0], features.line[1]);
-      area = Math.PI * bufferDist ** 2 + 2 * bufferDist * lineLen;
-      perimeter = 2 * (lineLen + Math.PI * bufferDist);
-    } else {
-      buffer = bufferPolygon(features.polygon, bufferDist);
-      // Area calculation omitted (complex)
-    }
+const lineLen = distance(features.line[0], features.line[1]);
+area = Math.PI * bufferDist ** 2 + 2 * bufferDist * lineLen;
+perimeter = 2 * (lineLen + Math.PI * bufferDist);
+} else {
+buffer = bufferPolygon(features.polygon, bufferDist);
+// Area calculation omitted (complex)
+}
     
-    // Draw buffer
-    if (bufferStyle === 'filled') {
-      ctx.fillStyle = 'rgba(46, 204, 113, 0.3)';
-      ctx.strokeStyle = '#27AE60';
-    } else {
-      ctx.strokeStyle = '#27AE60';
-    }
+// Draw buffer
+if (bufferStyle === 'filled') {
+ctx.fillStyle = 'rgba(46, 204, 113, 0.3)';
+ctx.strokeStyle = '#27AE60';
+} else {
+ctx.strokeStyle = '#27AE60';
+}
     
-    ctx.lineWidth = 2;
-    ctx.beginPath();
-    ctx.moveTo(buffer[0].x, buffer[0].y);
-    for (let i = 1; i < buffer.length; i++) {
-      ctx.lineTo(buffer[i].x, buffer[i].y);
-    }
-    ctx.closePath();
+ctx.lineWidth = 2;
+ctx.beginPath();
+ctx.moveTo(buffer[0].x, buffer[0].y);
+for (let i = 1; i < buffer.length; i++) {
+ctx.lineTo(buffer[i].x, buffer[i].y);
+}
+ctx.closePath();
     
-    if (bufferStyle === 'filled') {
-      ctx.fill();
-    }
-    ctx.stroke();
+if (bufferStyle === 'filled') {
+ctx.fill();
+}
+ctx.stroke();
     
-    // Draw construction lines
-    if (showConstruction && construction) {
-      ctx.strokeStyle = '#95A5A6';
-      ctx.lineWidth = 1;
-      ctx.setLineDash([5, 5]);
+// Draw construction lines
+if (showConstruction && construction) {
+ctx.strokeStyle = '#95A5A6';
+ctx.lineWidth = 1;
+ctx.setLineDash([5, 5]);
       
-      // Parallel edges
-      ctx.beginPath();
-      ctx.moveTo(construction.A1.x, construction.A1.y);
-      ctx.lineTo(construction.A2.x, construction.A2.y);
-      ctx.stroke();
+// Parallel edges
+ctx.beginPath();
+ctx.moveTo(construction.A1.x, construction.A1.y);
+ctx.lineTo(construction.A2.x, construction.A2.y);
+ctx.stroke();
       
-      ctx.beginPath();
-      ctx.moveTo(construction.B1.x, construction.B1.y);
-      ctx.lineTo(construction.B2.x, construction.B2.y);
-      ctx.stroke();
+ctx.beginPath();
+ctx.moveTo(construction.B1.x, construction.B1.y);
+ctx.lineTo(construction.B2.x, construction.B2.y);
+ctx.stroke();
       
-      ctx.setLineDash([]);
-    }
+ctx.setLineDash([]);
+}
     
-    document.getElementById('buffer-area').textContent = area.toFixed(0);
-    document.getElementById('buffer-perimeter').textContent = perimeter.toFixed(0);
-  }
+document.getElementById('buffer-area').textContent = area.toFixed(0);
+document.getElementById('buffer-perimeter').textContent = perimeter.toFixed(0);
+}
   
-  function render() {
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-    drawBuffer();
-    drawFeature(featureType);
-  }
+function render() {
+ctx.clearRect(0, 0, canvas.width, canvas.height);
+drawBuffer();
+drawFeature(featureType);
+}
   
-  document.getElementById('feature-type').addEventListener('change', (e) => {
-    featureType = e.target.value;
-    render();
-  });
+document.getElementById('feature-type').addEventListener('change', (e) => {
+featureType = e.target.value;
+render();
+});
   
-  document.getElementById('buffer-distance').addEventListener('input', (e) => {
-    bufferDist = parseFloat(e.target.value);
-    document.getElementById('buffer-value').textContent = bufferDist;
-    render();
-  });
+document.getElementById('buffer-distance').addEventListener('input', (e) => {
+bufferDist = parseFloat(e.target.value);
+document.getElementById('buffer-value').textContent = bufferDist;
+render();
+});
   
-  document.getElementById('show-construction').addEventListener('change', (e) => {
-    showConstruction = e.target.checked;
-    render();
-  });
+document.getElementById('show-construction').addEventListener('change', (e) => {
+showConstruction = e.target.checked;
+render();
+});
   
-  document.getElementById('buffer-style').addEventListener('change', (e) => {
-    bufferStyle = e.target.value;
-    render();
-  });
+document.getElementById('buffer-style').addEventListener('change', (e) => {
+bufferStyle = e.target.value;
+render();
+});
   
-  render();
+render();
 })();
 </script>
 <p><strong>Try this:</strong> - <strong>Point buffer:</strong> Perfect circle around point - <strong>Line buffer:</strong> “Stadium” shape with semicircular caps - <strong>Polygon buffer:</strong> Offset boundary with rounded corners - <strong>Show construction:</strong> See the parallel edges and perpendicular offsets - <strong>Adjust distance:</strong> Watch buffer grow/shrink - Notice: Line buffer = rectangle + two semicircles (area formula confirms)</p>

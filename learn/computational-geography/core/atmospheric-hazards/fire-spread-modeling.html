@@ -276,196 +276,197 @@ window.Quarto = {
 <hr>
 <h2 id="computational-implementation" class="anchored">5. Computational Implementation</h2>
 <p>Below is an interactive fire spread simulator.</p>
-<div id="spread-viz" class="viz-container">
+<div class="viz-container" id="spread-viz">
 <div class="controls">
-<pre><code>&lt;label&gt;
-  Wind speed (km/h):
-  &lt;input type="range" id="wind" min="0" max="60" step="5" value="20"&gt;
-  &lt;span id="wind-val"&gt;20&lt;/span&gt;
-&lt;/label&gt;
-&lt;label&gt;
-  Slope (°):
-  &lt;input type="range" id="slope" min="0" max="30" step="5" value="10"&gt;
-  &lt;span id="slope-val"&gt;10&lt;/span&gt;
-&lt;/label&gt;
-&lt;label&gt;
-  Fuel moisture (%):
-  &lt;input type="range" id="moisture" min="4" max="20" step="2" value="8"&gt;
-  &lt;span id="moist-val"&gt;8&lt;/span&gt;
-&lt;/label&gt;
-&lt;label&gt;
-  Time elapsed (hours):
-  &lt;input type="range" id="time" min="1" max="12" step="1" value="4"&gt;
-  &lt;span id="time-val"&gt;4&lt;/span&gt;
-&lt;/label&gt;
-&lt;div class="spread-info"&gt;
-  &lt;p&gt;&lt;strong&gt;Head ROS:&lt;/strong&gt; &lt;span id="ros-head"&gt;--&lt;/span&gt; m/min&lt;/p&gt;
-  &lt;p&gt;&lt;strong&gt;Fire area:&lt;/strong&gt; &lt;span id="fire-area"&gt;--&lt;/span&gt; ha&lt;/p&gt;
-  &lt;p&gt;&lt;strong&gt;Fireline intensity:&lt;/strong&gt; &lt;span id="intensity"&gt;--&lt;/span&gt; kW/m&lt;/p&gt;
-  &lt;p&gt;&lt;strong&gt;Suppression:&lt;/strong&gt; &lt;span id="suppression"&gt;--&lt;/span&gt;&lt;/p&gt;
-&lt;/div&gt;</code></pre>
+<label>
+Wind speed (km/h):
+<input type="range" id="wind" min="0" max="60" step="5" value="20">
+<span id="wind-val">20</span>
+</label>
+<label>
+Slope (°):
+<input type="range" id="slope" min="0" max="30" step="5" value="10">
+<span id="slope-val">10</span>
+</label>
+<label>
+Fuel moisture (%):
+<input type="range" id="moisture" min="4" max="20" step="2" value="8">
+<span id="moist-val">8</span>
+</label>
+<label>
+Time elapsed (hours):
+<input type="range" id="time" min="1" max="12" step="1" value="4">
+<span id="time-val">4</span>
+</label>
+<div class="spread-info">
+<p><strong>Head ROS:</strong> <span id="ros-head">--</span> m/min</p>
+<p><strong>Fire area:</strong> <span id="fire-area">--</span> ha</p>
+<p><strong>Fireline intensity:</strong> <span id="intensity">--</span> kW/m</p>
+<p><strong>Suppression:</strong> <span id="suppression">--</span></p>
+</div>
 </div>
 <div id="spread-canvas-container">
-<pre><code>&lt;canvas id="spread-canvas" width="700" height="400" style="border: 1px solid #ddd;"&gt;&lt;/canvas&gt;</code></pre>
+<canvas id="spread-canvas" width="700" height="400" style="border: 1px solid #ddd;"></canvas>
 </div>
 </div>
+
 <script type="module">
 (function() {
-  const canvas = document.getElementById('spread-canvas');
-  const ctx = canvas.getContext('2d');
+const canvas = document.getElementById('spread-canvas');
+const ctx = canvas.getContext('2d');
   
-  let wind = 20;
-  let slope = 10;
-  let moisture = 8;
-  let time = 4;
+let wind = 20;
+let slope = 10;
+let moisture = 8;
+let time = 4;
   
-  function calculateSpread() {
-    const windMS = wind / 3.6;
+function calculateSpread() {
+const windMS = wind / 3.6;
     
-    // Wind and slope coefficients
-    const PhiW = 0.15 * Math.pow(windMS, 1.5);
-    const slopeRad = slope * Math.PI / 180;
-    const PhiS = 5.275 * Math.pow(0.01, -0.3) * Math.pow(Math.tan(slopeRad), 2);
+// Wind and slope coefficients
+const PhiW = 0.15 * Math.pow(windMS, 1.5);
+const slopeRad = slope * Math.PI / 180;
+const PhiS = 5.275 * Math.pow(0.01, -0.3) * Math.pow(Math.tan(slopeRad), 2);
     
-    // Moisture effect (simplified)
-    const moistureFactor = Math.max(0.1, 1 - moisture / 30);
+// Moisture effect (simplified)
+const moistureFactor = Math.max(0.1, 1 - moisture / 30);
     
-    // ROS head fire
-    const baseROS = 2.0; // m/min for standard grass
-    const ROShead = baseROS * (1 + PhiW + PhiS) * moistureFactor;
+// ROS head fire
+const baseROS = 2.0; // m/min for standard grass
+const ROShead = baseROS * (1 + PhiW + PhiS) * moistureFactor;
     
-    // Backing fire
-    const ROSback = ROShead * 0.1;
+// Backing fire
+const ROSback = ROShead * 0.1;
     
-    // Ellipse parameters
-    const a = (ROShead + ROSback) / 2;
-    const LB = 3;
-    const b = a / LB;
+// Ellipse parameters
+const a = (ROShead + ROSback) / 2;
+const LB = 3;
+const b = a / LB;
     
-    // Area at time
-    const aT = a * time * 60; // meters
-    const bT = b * time * 60;
-    const area = Math.PI * aT * bT / 10000; // hectares
+// Area at time
+const aT = a * time * 60; // meters
+const bT = b * time * 60;
+const area = Math.PI * aT * bT / 10000; // hectares
     
-    // Fireline intensity
-    const fuelLoad = 0.5; // kg/m²
-    const heatContent = 18600; // kJ/kg
-    const intensity = heatContent * fuelLoad * (ROShead / 60); // kW/m
+// Fireline intensity
+const fuelLoad = 0.5; // kg/m²
+const heatContent = 18600; // kJ/kg
+const intensity = heatContent * fuelLoad * (ROShead / 60); // kW/m
     
-    let suppression;
-    if (intensity < 500) suppression = 'Direct attack possible';
-    else if (intensity < 2000) suppression = 'Indirect attack';
-    else if (intensity < 4000) suppression = 'Very difficult';
-    else suppression = 'Ineffective';
+let suppression;
+if (intensity < 500) suppression = 'Direct attack possible';
+else if (intensity < 2000) suppression = 'Indirect attack';
+else if (intensity < 4000) suppression = 'Very difficult';
+else suppression = 'Ineffective';
     
-    return {ROShead, aT, bT, area, intensity, suppression};
-  }
+return {ROShead, aT, bT, area, intensity, suppression};
+}
   
-  function render() {
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
+function render() {
+ctx.clearRect(0, 0, canvas.width, canvas.height);
     
-    const result = calculateSpread();
+const result = calculateSpread();
     
-    document.getElementById('ros-head').textContent = result.ROShead.toFixed(1);
-    document.getElementById('fire-area').textContent = result.area.toFixed(0);
-    document.getElementById('intensity').textContent = result.intensity.toFixed(0);
-    document.getElementById('suppression').textContent = result.suppression;
+document.getElementById('ros-head').textContent = result.ROShead.toFixed(1);
+document.getElementById('fire-area').textContent = result.area.toFixed(0);
+document.getElementById('intensity').textContent = result.intensity.toFixed(0);
+document.getElementById('suppression').textContent = result.suppression;
     
-    // Draw fire perimeter (ellipse)
-    const centerX = 200;
-    const centerY = 300;
+// Draw fire perimeter (ellipse)
+const centerX = 200;
+const centerY = 300;
     
-    // Wind arrow
-    ctx.strokeStyle = '#2196F3';
-    ctx.lineWidth = 3;
-    ctx.beginPath();
-    ctx.moveTo(50, 50);
-    ctx.lineTo(100, 50);
-    ctx.stroke();
+// Wind arrow
+ctx.strokeStyle = '#2196F3';
+ctx.lineWidth = 3;
+ctx.beginPath();
+ctx.moveTo(50, 50);
+ctx.lineTo(100, 50);
+ctx.stroke();
     
-    // Arrow head
-    ctx.beginPath();
-    ctx.moveTo(100, 50);
-    ctx.lineTo(90, 45);
-    ctx.lineTo(90, 55);
-    ctx.closePath();
-    ctx.fillStyle = '#2196F3';
-    ctx.fill();
+// Arrow head
+ctx.beginPath();
+ctx.moveTo(100, 50);
+ctx.lineTo(90, 45);
+ctx.lineTo(90, 55);
+ctx.closePath();
+ctx.fillStyle = '#2196F3';
+ctx.fill();
     
-    ctx.fillStyle = '#263238';
-    ctx.font = '12px sans-serif';
-    ctx.fillText(`Wind ${wind} km/h`, 50, 70);
+ctx.fillStyle = '#263238';
+ctx.font = '12px sans-serif';
+ctx.fillText(`Wind ${wind} km/h`, 50, 70);
     
-    // Slope indicator
-    ctx.fillText(`Slope ${slope}°`, 50, 90);
+// Slope indicator
+ctx.fillText(`Slope ${slope}°`, 50, 90);
     
-    // Scale for visualization (scale down for canvas)
-    const scale = 0.15;
-    const a = result.aT * scale;
-    const b = result.bT * scale;
+// Scale for visualization (scale down for canvas)
+const scale = 0.15;
+const a = result.aT * scale;
+const b = result.bT * scale;
     
-    // Fire perimeter (ellipse)
-    ctx.strokeStyle = '#F44336';
-    ctx.fillStyle = 'rgba(244, 67, 54, 0.2)';
-    ctx.lineWidth = 3;
-    ctx.beginPath();
-    ctx.ellipse(centerX, centerY, a, b, 0, 0, 2 * Math.PI);
-    ctx.fill();
-    ctx.stroke();
+// Fire perimeter (ellipse)
+ctx.strokeStyle = '#F44336';
+ctx.fillStyle = 'rgba(244, 67, 54, 0.2)';
+ctx.lineWidth = 3;
+ctx.beginPath();
+ctx.ellipse(centerX, centerY, a, b, 0, 0, 2 * Math.PI);
+ctx.fill();
+ctx.stroke();
     
-    // Ignition point
-    ctx.fillStyle = '#000';
-    ctx.beginPath();
-    ctx.arc(centerX, centerY, 5, 0, 2 * Math.PI);
-    ctx.fill();
+// Ignition point
+ctx.fillStyle = '#000';
+ctx.beginPath();
+ctx.arc(centerX, centerY, 5, 0, 2 * Math.PI);
+ctx.fill();
     
-    // Direction labels
-    ctx.fillStyle = '#263238';
-    ctx.font = 'bold 14px sans-serif';
-    ctx.fillText('Head Fire', centerX - 30, centerY - a - 10);
-    ctx.fillText('Backing Fire', centerX - 40, centerY + a + 20);
-    ctx.fillText('Flank', centerX - b - 40, centerY);
+// Direction labels
+ctx.fillStyle = '#263238';
+ctx.font = 'bold 14px sans-serif';
+ctx.fillText('Head Fire', centerX - 30, centerY - a - 10);
+ctx.fillText('Backing Fire', centerX - 40, centerY + a + 20);
+ctx.fillText('Flank', centerX - b - 40, centerY);
     
-    // Scale bar
-    const scaleBarLength = 100; // pixels
-    const scaleMeters = scaleBarLength / scale;
-    ctx.strokeStyle = '#000';
-    ctx.lineWidth = 2;
-    ctx.beginPath();
-    ctx.moveTo(500, 370);
-    ctx.lineTo(600, 370);
-    ctx.stroke();
+// Scale bar
+const scaleBarLength = 100; // pixels
+const scaleMeters = scaleBarLength / scale;
+ctx.strokeStyle = '#000';
+ctx.lineWidth = 2;
+ctx.beginPath();
+ctx.moveTo(500, 370);
+ctx.lineTo(600, 370);
+ctx.stroke();
     
-    ctx.fillStyle = '#000';
-    ctx.font = '11px sans-serif';
-    ctx.fillText(`${scaleMeters.toFixed(0)} m`, 530, 385);
-  }
+ctx.fillStyle = '#000';
+ctx.font = '11px sans-serif';
+ctx.fillText(`${scaleMeters.toFixed(0)} m`, 530, 385);
+}
   
-  document.getElementById('wind').addEventListener('input', (e) => {
-    wind = parseFloat(e.target.value);
-    document.getElementById('wind-val').textContent = wind;
-    render();
-  });
+document.getElementById('wind').addEventListener('input', (e) => {
+wind = parseFloat(e.target.value);
+document.getElementById('wind-val').textContent = wind;
+render();
+});
   
-  document.getElementById('slope').addEventListener('input', (e) => {
-    slope = parseFloat(e.target.value);
-    document.getElementById('slope-val').textContent = slope;
-    render();
-  });
+document.getElementById('slope').addEventListener('input', (e) => {
+slope = parseFloat(e.target.value);
+document.getElementById('slope-val').textContent = slope;
+render();
+});
   
-  document.getElementById('moisture').addEventListener('input', (e) => {
-    moisture = parseFloat(e.target.value);
-    document.getElementById('moist-val').textContent = moisture;
-    render();
-  });
+document.getElementById('moisture').addEventListener('input', (e) => {
+moisture = parseFloat(e.target.value);
+document.getElementById('moist-val').textContent = moisture;
+render();
+});
   
-  document.getElementById('time').addEventListener('input', (e) => {
-    time = parseFloat(e.target.value);
-    document.getElementById('time-val').textContent = time;
-    render();
-  });
+document.getElementById('time').addEventListener('input', (e) => {
+time = parseFloat(e.target.value);
+document.getElementById('time-val').textContent = time;
+render();
+});
   
-  render();
+render();
 })();
 </script>
 <p><strong>Observations:</strong> - Fire spreads fastest downwind (head fire) - Elliptical shape elongated in wind direction - Higher wind dramatically increases spread rate - Slope amplifies spread when aligned with wind - Low moisture enables rapid spread - Fireline intensity determines suppression feasibility</p>

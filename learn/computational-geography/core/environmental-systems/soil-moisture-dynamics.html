@@ -320,286 +320,285 @@ No stress: <span class="math inline">K_s = 1</span><br>
 <hr>
 <h2 id="computational-implementation" class="anchored">5. Computational Implementation</h2>
 <p>Below is an interactive soil moisture simulator.</p>
-<div id="soil-moisture-viz" class="viz-container">
+<div class="viz-container" id="soil-moisture-viz">
 <div class="controls">
-<pre><code>&lt;label&gt;
-  Soil type:
-  &lt;select id="soil-type-sm"&gt;
-    &lt;option value="sand"&gt;Sandy Soil&lt;/option&gt;
-    &lt;option value="loam" selected&gt;Loam&lt;/option&gt;
-    &lt;option value="clay"&gt;Clay&lt;/option&gt;
-  &lt;/select&gt;
-&lt;/label&gt;
-&lt;label&gt;
-  Root zone depth (m):
-  &lt;input type="range" id="depth-slider" min="0.5" max="2" step="0.1" value="1"&gt;
-  &lt;span id="depth-value"&gt;1.0&lt;/span&gt; m
-&lt;/label&gt;
-&lt;label&gt;
-  Growing season:
-  &lt;select id="season-select"&gt;
-    &lt;option value="wet"&gt;Wet Season (frequent rain)&lt;/option&gt;
-    &lt;option value="normal" selected&gt;Normal Season&lt;/option&gt;
-    &lt;option value="dry"&gt;Dry Season (drought)&lt;/option&gt;
-  &lt;/select&gt;
-&lt;/label&gt;
-&lt;div class="button-group"&gt;
-  &lt;button id="run-simulation"&gt;Run 90-Day Simulation&lt;/button&gt;
-  &lt;button id="add-rain"&gt;Add 30mm Rain Event&lt;/button&gt;
-&lt;/div&gt;</code></pre>
+<label>
+Soil type:
+<select id="soil-type-sm">
+<option value="sand">Sandy Soil</option>
+<option value="loam" selected="">Loam</option>
+<option value="clay">Clay</option>
+</select>
+</label>
+<label>
+Root zone depth (m):
+<input type="range" id="depth-slider" min="0.5" max="2" step="0.1" value="1">
+<span id="depth-value">1.0</span> m
+</label>
+<label>
+Growing season:
+<select id="season-select">
+<option value="wet">Wet Season (frequent rain)</option>
+<option value="normal" selected="">Normal Season</option>
+<option value="dry">Dry Season (drought)</option>
+</select>
+</label>
+<div class="button-group">
+<button id="run-simulation">Run 90-Day Simulation</button>
+<button id="add-rain">Add 30mm Rain Event</button>
+</div>
 </div>
 <div class="sm-results">
-<pre><code>&lt;p&gt;&lt;strong&gt;Current moisture:&lt;/strong&gt; &lt;span id="current-s"&gt;&lt;/span&gt; mm&lt;/p&gt;
-&lt;p&gt;&lt;strong&gt;Field capacity:&lt;/strong&gt; &lt;span id="fc-display"&gt;&lt;/span&gt; mm&lt;/p&gt;
-&lt;p&gt;&lt;strong&gt;Wilting point:&lt;/strong&gt; &lt;span id="wp-display"&gt;&lt;/span&gt; mm&lt;/p&gt;
-&lt;p&gt;&lt;strong&gt;Water stress (Ks):&lt;/strong&gt; &lt;span id="ks-display"&gt;&lt;/span&gt;&lt;/p&gt;
-&lt;p&gt;&lt;strong&gt;Plant available water:&lt;/strong&gt; &lt;span id="paw-display"&gt;&lt;/span&gt; mm&lt;/p&gt;</code></pre>
+<p><strong>Current moisture:</strong> <span id="current-s"></span> mm</p>
+<p><strong>Field capacity:</strong> <span id="fc-display"></span> mm</p>
+<p><strong>Wilting point:</strong> <span id="wp-display"></span> mm</p>
+<p><strong>Water stress (Ks):</strong> <span id="ks-display"></span></p>
+<p><strong>Plant available water:</strong> <span id="paw-display"></span> mm</p>
 </div>
-<div id="soil-moisture-chart" style="width: 100%; height: 500px;">
+<div id="soil-moisture-chart" style="width: 100%; height: 500px;"></div>
+</div>
 
-</div>
-</div>
 <script type="module">
 await new Promise(resolve => {
-  const checkECharts = () => {
-    if (typeof echarts !== 'undefined') resolve();
-    else setTimeout(checkECharts, 50);
-  };
-  checkECharts();
+const checkECharts = () => {
+if (typeof echarts !== 'undefined') resolve();
+else setTimeout(checkECharts, 50);
+};
+checkECharts();
 });
 
 (function() {
-  const chart = echarts.init(document.getElementById('soil-moisture-chart'));
+const chart = echarts.init(document.getElementById('soil-moisture-chart'));
   
-  const soilTypes = {
-    sand: { fc: 0.15, wp: 0.05, sat: 0.40, kd: 1.0, name: 'Sandy Soil' },
-    loam: { fc: 0.30, wp: 0.12, sat: 0.45, kd: 0.3, name: 'Loam' },
-    clay: { fc: 0.35, wp: 0.20, sat: 0.50, kd: 0.1, name: 'Clay' }
-  };
+const soilTypes = {
+sand: { fc: 0.15, wp: 0.05, sat: 0.40, kd: 1.0, name: 'Sandy Soil' },
+loam: { fc: 0.30, wp: 0.12, sat: 0.45, kd: 0.3, name: 'Loam' },
+clay: { fc: 0.35, wp: 0.20, sat: 0.50, kd: 0.1, name: 'Clay' }
+};
   
-  const seasons = {
-    wet: { pFreq: 0.4, pAmount: 15, etMean: 3 },
-    normal: { pFreq: 0.2, pAmount: 12, etMean: 5 },
-    dry: { pFreq: 0.05, pAmount: 8, etMean: 6 }
-  };
+const seasons = {
+wet: { pFreq: 0.4, pAmount: 15, etMean: 3 },
+normal: { pFreq: 0.2, pAmount: 12, etMean: 5 },
+dry: { pFreq: 0.05, pAmount: 8, etMean: 6 }
+};
   
-  let soilType = 'loam';
-  let depth = 1.0;
-  let season = 'normal';
+let soilType = 'loam';
+let depth = 1.0;
+let season = 'normal';
   
-  let timeData = [];
-  let moistureData = [];
-  let fcData = [];
-  let wpData = [];
-  let critData = [];
-  let ksData = [];
+let timeData = [];
+let moistureData = [];
+let fcData = [];
+let wpData = [];
+let critData = [];
+let ksData = [];
   
-  function runSimulation() {
-    const soil = soilTypes[soilType];
-    const climate = seasons[season];
+function runSimulation() {
+const soil = soilTypes[soilType];
+const climate = seasons[season];
     
-    // Convert volumetric to depth (mm)
-    const S_fc = soil.fc * depth * 1000;
-    const S_wp = soil.wp * depth * 1000;
-    const S_sat = soil.sat * depth * 1000;
-    const S_crit = S_wp + 0.6 * (S_fc - S_wp); // Stress begins at 60% depletion
+// Convert volumetric to depth (mm)
+const S_fc = soil.fc * depth * 1000;
+const S_wp = soil.wp * depth * 1000;
+const S_sat = soil.sat * depth * 1000;
+const S_crit = S_wp + 0.6 * (S_fc - S_wp); // Stress begins at 60% depletion
     
-    let S = S_fc * 0.8; // Start at 80% of FC
+let S = S_fc * 0.8; // Start at 80% of FC
     
-    timeData = [];
-    moistureData = [];
-    fcData = [];
-    wpData = [];
-    critData = [];
-    ksData = [];
+timeData = [];
+moistureData = [];
+fcData = [];
+wpData = [];
+critData = [];
+ksData = [];
     
-    for (let day = 0; day <= 90; day++) {
-      // Precipitation (random)
-      const P = Math.random() < climate.pFreq ? climate.pAmount : 0;
+for (let day = 0; day <= 90; day++) {
+// Precipitation (random)
+const P = Math.random() < climate.pFreq ? climate.pAmount : 0;
       
-      // Potential ET (varies slightly)
-      const ET_pot = climate.etMean + (Math.random() - 0.5) * 2;
+// Potential ET (varies slightly)
+const ET_pot = climate.etMean + (Math.random() - 0.5) * 2;
       
-      // Water stress factor
-      let Ks = 1;
-      if (S < S_crit) {
-        Ks = Math.max(0, (S - S_wp) / (S_crit - S_wp));
-      }
+// Water stress factor
+let Ks = 1;
+if (S < S_crit) {
+Ks = Math.max(0, (S - S_wp) / (S_crit - S_wp));
+}
       
-      // Actual ET
-      const ET_act = Ks * ET_pot;
+// Actual ET
+const ET_act = Ks * ET_pot;
       
-      // Update storage
-      S = S + P - ET_act;
+// Update storage
+S = S + P - ET_act;
       
-      // Drainage
-      if (S > S_fc) {
-        const D = soil.kd * (S - S_fc);
-        S = S - D;
-      }
+// Drainage
+if (S > S_fc) {
+const D = soil.kd * (S - S_fc);
+S = S - D;
+}
       
-      // Runoff (saturation excess)
-      if (S > S_sat) {
-        S = S_sat;
-      }
+// Runoff (saturation excess)
+if (S > S_sat) {
+S = S_sat;
+}
       
-      // Enforce lower bound
-      if (S < 0) S = 0;
+// Enforce lower bound
+if (S < 0) S = 0;
       
-      // Record
-      timeData.push(day);
-      moistureData.push(S);
-      fcData.push(S_fc);
-      wpData.push(S_wp);
-      critData.push(S_crit);
-      ksData.push(Ks);
-    }
+// Record
+timeData.push(day);
+moistureData.push(S);
+fcData.push(S_fc);
+wpData.push(S_wp);
+critData.push(S_crit);
+ksData.push(Ks);
+}
     
-    updateDisplay(S, S_fc, S_wp, S_fc - S_wp, ksData[ksData.length - 1]);
-    updateChart();
-  }
+updateDisplay(S, S_fc, S_wp, S_fc - S_wp, ksData[ksData.length - 1]);
+updateChart();
+}
   
-  function updateDisplay(S, fc, wp, paw, ks) {
-    document.getElementById('current-s').textContent = S.toFixed(0);
-    document.getElementById('fc-display').textContent = fc.toFixed(0);
-    document.getElementById('wp-display').textContent = wp.toFixed(0);
-    document.getElementById('ks-display').textContent = ks.toFixed(2);
-    document.getElementById('paw-display').textContent = paw.toFixed(0);
-  }
+function updateDisplay(S, fc, wp, paw, ks) {
+document.getElementById('current-s').textContent = S.toFixed(0);
+document.getElementById('fc-display').textContent = fc.toFixed(0);
+document.getElementById('wp-display').textContent = wp.toFixed(0);
+document.getElementById('ks-display').textContent = ks.toFixed(2);
+document.getElementById('paw-display').textContent = paw.toFixed(0);
+}
   
-  function updateChart() {
-    const option = {
-      title: {
-        text: 'Soil Moisture Dynamics (90 days)',
-        left: 'center'
-      },
-      tooltip: {
-        trigger: 'axis',
-        axisPointer: { type: 'cross' }
-      },
-      legend: {
-        data: ['Soil Moisture', 'Field Capacity', 'Critical Point', 'Wilting Point'],
-        top: 30
-      },
-      grid: [
-        { left: 80, right: 40, top: 80, height: '50%' },
-        { left: 80, right: 40, top: '65%', height: '25%' }
-      ],
-      xAxis: [
-        { type: 'value', name: 'Day', gridIndex: 0 },
-        { type: 'value', gridIndex: 1 }
-      ],
-      yAxis: [
-        { 
-          type: 'value', 
-          name: 'Soil Moisture (mm)', 
-          nameLocation: 'middle',
-          nameGap: 50,
-          gridIndex: 0
-        },
-        {
-          type: 'value',
-          name: 'Stress (Ks)',
-          min: 0,
-          max: 1,
-          nameLocation: 'middle',
-          nameGap: 40,
-          gridIndex: 1
-        }
-      ],
-      series: [
-        {
-          name: 'Soil Moisture',
-          type: 'line',
-          data: timeData.map((t, i) => [t, moistureData[i]]),
-          lineStyle: { color: '#3498DB', width: 2 },
-          showSymbol: false,
-          xAxisIndex: 0,
-          yAxisIndex: 0
-        },
-        {
-          name: 'Field Capacity',
-          type: 'line',
-          data: timeData.map((t, i) => [t, fcData[i]]),
-          lineStyle: { color: '#2ECC71', width: 1, type: 'dashed' },
-          showSymbol: false,
-          xAxisIndex: 0,
-          yAxisIndex: 0
-        },
-        {
-          name: 'Critical Point',
-          type: 'line',
-          data: timeData.map((t, i) => [t, critData[i]]),
-          lineStyle: { color: '#F39C12', width: 1, type: 'dashed' },
-          showSymbol: false,
-          xAxisIndex: 0,
-          yAxisIndex: 0
-        },
-        {
-          name: 'Wilting Point',
-          type: 'line',
-          data: timeData.map((t, i) => [t, wpData[i]]),
-          lineStyle: { color: '#E74C3C', width: 1, type: 'dashed' },
-          showSymbol: false,
-          xAxisIndex: 0,
-          yAxisIndex: 0,
-          areaStyle: {
-            color: 'rgba(231, 76, 60, 0.1)'
-          }
-        },
-        {
-          name: 'Water Stress',
-          type: 'line',
-          data: timeData.map((t, i) => [t, ksData[i]]),
-          lineStyle: { color: '#9B59B6', width: 2 },
-          showSymbol: false,
-          xAxisIndex: 1,
-          yAxisIndex: 1,
-          areaStyle: {
-            color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
-              { offset: 0, color: 'rgba(155, 89, 182, 0.3)' },
-              { offset: 1, color: 'rgba(155, 89, 182, 0)' }
-            ])
-          }
-        }
-      ]
-    };
+function updateChart() {
+const option = {
+title: {
+text: 'Soil Moisture Dynamics (90 days)',
+left: 'center'
+},
+tooltip: {
+trigger: 'axis',
+axisPointer: { type: 'cross' }
+},
+legend: {
+data: ['Soil Moisture', 'Field Capacity', 'Critical Point', 'Wilting Point'],
+top: 30
+},
+grid: [
+{ left: 80, right: 40, top: 80, height: '50%' },
+{ left: 80, right: 40, top: '65%', height: '25%' }
+],
+xAxis: [
+{ type: 'value', name: 'Day', gridIndex: 0 },
+{ type: 'value', gridIndex: 1 }
+],
+yAxis: [
+{ 
+type: 'value', 
+name: 'Soil Moisture (mm)', 
+nameLocation: 'middle',
+nameGap: 50,
+gridIndex: 0
+},
+{
+type: 'value',
+name: 'Stress (Ks)',
+min: 0,
+max: 1,
+nameLocation: 'middle',
+nameGap: 40,
+gridIndex: 1
+}
+],
+series: [
+{
+name: 'Soil Moisture',
+type: 'line',
+data: timeData.map((t, i) => [t, moistureData[i]]),
+lineStyle: { color: '#3498DB', width: 2 },
+showSymbol: false,
+xAxisIndex: 0,
+yAxisIndex: 0
+},
+{
+name: 'Field Capacity',
+type: 'line',
+data: timeData.map((t, i) => [t, fcData[i]]),
+lineStyle: { color: '#2ECC71', width: 1, type: 'dashed' },
+showSymbol: false,
+xAxisIndex: 0,
+yAxisIndex: 0
+},
+{
+name: 'Critical Point',
+type: 'line',
+data: timeData.map((t, i) => [t, critData[i]]),
+lineStyle: { color: '#F39C12', width: 1, type: 'dashed' },
+showSymbol: false,
+xAxisIndex: 0,
+yAxisIndex: 0
+},
+{
+name: 'Wilting Point',
+type: 'line',
+data: timeData.map((t, i) => [t, wpData[i]]),
+lineStyle: { color: '#E74C3C', width: 1, type: 'dashed' },
+showSymbol: false,
+xAxisIndex: 0,
+yAxisIndex: 0,
+areaStyle: {
+color: 'rgba(231, 76, 60, 0.1)'
+}
+},
+{
+name: 'Water Stress',
+type: 'line',
+data: timeData.map((t, i) => [t, ksData[i]]),
+lineStyle: { color: '#9B59B6', width: 2 },
+showSymbol: false,
+xAxisIndex: 1,
+yAxisIndex: 1,
+areaStyle: {
+color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
+{ offset: 0, color: 'rgba(155, 89, 182, 0.3)' },
+{ offset: 1, color: 'rgba(155, 89, 182, 0)' }
+])
+}
+}
+]
+};
     
-    chart.setOption(option);
-  }
+chart.setOption(option);
+}
   
-  document.getElementById('soil-type-sm').addEventListener('change', (e) => {
-    soilType = e.target.value;
-  });
+document.getElementById('soil-type-sm').addEventListener('change', (e) => {
+soilType = e.target.value;
+});
   
-  document.getElementById('depth-slider').addEventListener('input', (e) => {
-    depth = parseFloat(e.target.value);
-    document.getElementById('depth-value').textContent = depth.toFixed(1);
-  });
+document.getElementById('depth-slider').addEventListener('input', (e) => {
+depth = parseFloat(e.target.value);
+document.getElementById('depth-value').textContent = depth.toFixed(1);
+});
   
-  document.getElementById('season-select').addEventListener('change', (e) => {
-    season = e.target.value;
-  });
+document.getElementById('season-select').addEventListener('change', (e) => {
+season = e.target.value;
+});
   
-  document.getElementById('run-simulation').addEventListener('click', () => {
-    runSimulation();
-  });
+document.getElementById('run-simulation').addEventListener('click', () => {
+runSimulation();
+});
   
-  document.getElementById('add-rain').addEventListener('click', () => {
-    if (moistureData.length > 0) {
-      const lastIdx = moistureData.length - 1;
-      const soil = soilTypes[soilType];
-      const S_fc = soil.fc * depth * 1000;
-      let newS = moistureData[lastIdx] + 30;
-      if (newS > S_fc) newS = S_fc;
-      moistureData[lastIdx] = newS;
-      updateChart();
-    }
-  });
+document.getElementById('add-rain').addEventListener('click', () => {
+if (moistureData.length > 0) {
+const lastIdx = moistureData.length - 1;
+const soil = soilTypes[soilType];
+const S_fc = soil.fc * depth * 1000;
+let newS = moistureData[lastIdx] + 30;
+if (newS > S_fc) newS = S_fc;
+moistureData[lastIdx] = newS;
+updateChart();
+}
+});
   
-  runSimulation();
+runSimulation();
   
-  window.addEventListener('resize', () => chart.resize());
+window.addEventListener('resize', () => chart.resize());
 })();
 </script>
 <p><strong>Try this:</strong> - <strong>Dry season:</strong> Watch moisture decline steadily, stress increases - <strong>Wet season:</strong> Frequent rain keeps moisture near field capacity - <strong>Sandy soil:</strong> Low water holding capacity, dries quickly - <strong>Clay soil:</strong> High capacity, but also higher wilting point - <strong>Add rain event:</strong> See immediate moisture spike - Notice: When moisture drops below critical point (orange line), stress factor (Ks) decreases</p>

@@ -328,173 +328,172 @@ The contrast between adding the same amount each step and multiplying by the sam
 <hr>
 <h2 id="computational-implementation" class="anchored">7. Computational Implementation</h2>
 <p>Below is an interactive model comparing <strong>analytical</strong> (exact formula) vs.&nbsp;<strong>numerical</strong> (step-by-step simulation) solutions.</p>
-<div id="exponential-model-viz" class="viz-container">
+<div class="viz-container" id="exponential-model-viz">
 <div class="controls">
-<pre><code>&lt;label&gt;
-  Initial value ($N_0$):
-  &lt;input type="range" id="n0-slider" min="10" max="200" step="10" value="100"&gt;
-  &lt;span id="n0-value"&gt;100&lt;/span&gt;
-&lt;/label&gt;
-&lt;label&gt;
-  Growth rate ($r$ per year):
-  &lt;input type="range" id="r-slider" min="-0.2" max="0.2" step="0.01" value="0.05"&gt;
-  &lt;span id="r-value"&gt;0.05&lt;/span&gt;
-&lt;/label&gt;
-&lt;label&gt;
-  Time step (Δt):
-  &lt;input type="range" id="dt-slider" min="0.1" max="2" step="0.1" value="0.5"&gt;
-  &lt;span id="dt-value"&gt;0.5&lt;/span&gt; years
-&lt;/label&gt;</code></pre>
+<label>
+Initial value ($N_0$):
+<input type="range" id="n0-slider" min="10" max="200" step="10" value="100">
+<span id="n0-value">100</span>
+</label>
+<label>
+Growth rate ($r$ per year):
+<input type="range" id="r-slider" min="-0.2" max="0.2" step="0.01" value="0.05">
+<span id="r-value">0.05</span>
+</label>
+<label>
+Time step (Δt):
+<input type="range" id="dt-slider" min="0.1" max="2" step="0.1" value="0.5">
+<span id="dt-value">0.5</span> years
+</label>
 </div>
-<div id="exponential-chart" style="width: 100%; height: 500px;">
-
-</div>
+<div id="exponential-chart" style="width: 100%; height: 500px;"></div>
 <div class="info-panel">
-<pre><code>&lt;p&gt;&lt;strong&gt;Analytical solution:&lt;/strong&gt; $N(t) = N_0 e^{rt}$ (smooth curve)&lt;/p&gt;
-&lt;p&gt;&lt;strong&gt;Numerical solution:&lt;/strong&gt; $N_{i+1} = N_i + r N_i \Delta t$ (stepped)&lt;/p&gt;
-&lt;p&gt;As Δt → 0, the numerical solution converges to the analytical one.&lt;/p&gt;</code></pre>
+<p><strong>Analytical solution:</strong> $N(t) = N_0 e^{rt}$ (smooth curve)</p>
+<p><strong>Numerical solution:</strong> $N_{i+1} = N_i + r N_i \Delta t$ (stepped)</p>
+<p>As Δt → 0, the numerical solution converges to the analytical one.</p>
 </div>
 </div>
+
 <script type="module">
 // Wait for core.js to load ECharts
 await new Promise(resolve => {
-  const checkECharts = () => {
-    if (typeof echarts !== 'undefined') resolve();
-    else setTimeout(checkECharts, 50);
-  };
-  checkECharts();
+const checkECharts = () => {
+if (typeof echarts !== 'undefined') resolve();
+else setTimeout(checkECharts, 50);
+};
+checkECharts();
 });
 
 // Exponential growth visualization
 (function() {
-  const chart = echarts.init(document.getElementById('exponential-chart'));
+const chart = echarts.init(document.getElementById('exponential-chart'));
   
-  let N0 = 100;
-  let r = 0.05;
-  let dt = 0.5;
-  const tMax = 50;
+let N0 = 100;
+let r = 0.05;
+let dt = 0.5;
+const tMax = 50;
   
-  function analytical(t, N0, r) {
-    return N0 * Math.exp(r * t);
-  }
+function analytical(t, N0, r) {
+return N0 * Math.exp(r * t);
+}
   
-  function numerical(N0, r, dt, tMax) {
-    const result = [{t: 0, N: N0}];
-    let N = N0;
-    let t = 0;
+function numerical(N0, r, dt, tMax) {
+const result = [{t: 0, N: N0}];
+let N = N0;
+let t = 0;
     
-    while (t < tMax) {
-      t += dt;
-      N = N + r * N * dt;
-      result.push({t, N});
-    }
+while (t < tMax) {
+t += dt;
+N = N + r * N * dt;
+result.push({t, N});
+}
     
-    return result;
-  }
+return result;
+}
   
-  function updateChart() {
-    // Analytical solution
-    const analyticalData = [];
-    for (let t = 0; t <= tMax; t += 0.5) {
-      analyticalData.push([t, analytical(t, N0, r)]);
-    }
+function updateChart() {
+// Analytical solution
+const analyticalData = [];
+for (let t = 0; t <= tMax; t += 0.5) {
+analyticalData.push([t, analytical(t, N0, r)]);
+}
     
-    // Numerical solution
-    const numericalResult = numerical(N0, r, dt, tMax);
-    const numericalData = numericalResult.map(pt => [pt.t, pt.N]);
+// Numerical solution
+const numericalResult = numerical(N0, r, dt, tMax);
+const numericalData = numericalResult.map(pt => [pt.t, pt.N]);
     
-    const option = {
-      title: {
-        text: `Exponential ${r >= 0 ? 'Growth' : 'Decay'}: N₀ = ${N0}, r = ${r.toFixed(3)}/yr`,
-        left: 'center'
-      },
-      tooltip: {
-        trigger: 'axis',
-        formatter: function(params) {
-          let result = `t = ${params[0].value[0].toFixed(1)} years<br/>`;
-          params.forEach(param => {
-            result += `${param.seriesName}: ${param.value[1].toFixed(2)}<br/>`;
-          });
-          return result;
-        }
-      },
-      legend: {
-        data: ['Analytical', 'Numerical (Δt=' + dt + ')'],
-        top: 30
-      },
-      grid: {
-        left: 60,
-        right: 40,
-        top: 80,
-        bottom: 60
-      },
-      xAxis: {
-        type: 'value',
-        name: 'Time (years)',
-        nameLocation: 'middle',
-        nameGap: 30,
-        min: 0,
-        max: tMax
-      },
-      yAxis: {
-        type: 'value',
-        name: 'N(t)',
-        nameLocation: 'middle',
-        nameGap: 50,
-        min: 0
-      },
-      series: [
-        {
-          name: 'Analytical',
-          data: analyticalData,
-          type: 'line',
-          smooth: false,
-          lineStyle: {
-            color: '#F0177A',
-            width: 3
-          },
-          showSymbol: false
-        },
-        {
-          name: 'Numerical (Δt=' + dt + ')',
-          data: numericalData,
-          type: 'line',
-          smooth: false,
-          lineStyle: {
-            color: '#00A8E8',
-            width: 2,
-            type: 'dashed'
-          },
-          symbol: 'circle',
-          symbolSize: 4
-        }
-      ]
-    };
+const option = {
+title: {
+text: `Exponential ${r >= 0 ? 'Growth' : 'Decay'}: N₀ = ${N0}, r = ${r.toFixed(3)}/yr`,
+left: 'center'
+},
+tooltip: {
+trigger: 'axis',
+formatter: function(params) {
+let result = `t = ${params[0].value[0].toFixed(1)} years<br/>`;
+params.forEach(param => {
+result += `${param.seriesName}: ${param.value[1].toFixed(2)}<br/>`;
+});
+return result;
+}
+},
+legend: {
+data: ['Analytical', 'Numerical (Δt=' + dt + ')'],
+top: 30
+},
+grid: {
+left: 60,
+right: 40,
+top: 80,
+bottom: 60
+},
+xAxis: {
+type: 'value',
+name: 'Time (years)',
+nameLocation: 'middle',
+nameGap: 30,
+min: 0,
+max: tMax
+},
+yAxis: {
+type: 'value',
+name: 'N(t)',
+nameLocation: 'middle',
+nameGap: 50,
+min: 0
+},
+series: [
+{
+name: 'Analytical',
+data: analyticalData,
+type: 'line',
+smooth: false,
+lineStyle: {
+color: '#F0177A',
+width: 3
+},
+showSymbol: false
+},
+{
+name: 'Numerical (Δt=' + dt + ')',
+data: numericalData,
+type: 'line',
+smooth: false,
+lineStyle: {
+color: '#00A8E8',
+width: 2,
+type: 'dashed'
+},
+symbol: 'circle',
+symbolSize: 4
+}
+]
+};
     
-    chart.setOption(option);
-  }
+chart.setOption(option);
+}
   
-  document.getElementById('n0-slider').addEventListener('input', (e) => {
-    N0 = parseFloat(e.target.value);
-    document.getElementById('n0-value').textContent = N0;
-    updateChart();
-  });
+document.getElementById('n0-slider').addEventListener('input', (e) => {
+N0 = parseFloat(e.target.value);
+document.getElementById('n0-value').textContent = N0;
+updateChart();
+});
   
-  document.getElementById('r-slider').addEventListener('input', (e) => {
-    r = parseFloat(e.target.value);
-    document.getElementById('r-value').textContent = r.toFixed(3);
-    updateChart();
-  });
+document.getElementById('r-slider').addEventListener('input', (e) => {
+r = parseFloat(e.target.value);
+document.getElementById('r-value').textContent = r.toFixed(3);
+updateChart();
+});
   
-  document.getElementById('dt-slider').addEventListener('input', (e) => {
-    dt = parseFloat(e.target.value);
-    document.getElementById('dt-value').textContent = dt.toFixed(1);
-    updateChart();
-  });
+document.getElementById('dt-slider').addEventListener('input', (e) => {
+dt = parseFloat(e.target.value);
+document.getElementById('dt-value').textContent = dt.toFixed(1);
+updateChart();
+});
   
-  updateChart();
+updateChart();
   
-  window.addEventListener('resize', () => chart.resize());
+window.addEventListener('resize', () => chart.resize());
 })();
 </script>
 <p><strong>Try this:</strong> - Set <span class="math inline">r = 0.1</span> (10% growth). Watch the curve steepen. - Set <span class="math inline">r = -0.1</span> (decay). The curve drops toward zero but never quite reaches it. - Reduce Δt to 0.1. The numerical solution gets closer to the analytical curve. - Set <span class="math inline">r = 0</span> (no growth). Both solutions are flat lines.</p>

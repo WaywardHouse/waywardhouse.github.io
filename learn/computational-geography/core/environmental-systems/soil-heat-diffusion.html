@@ -295,223 +295,222 @@ Heat flux is proportional to the temperature gradient:</p>
 <hr>
 <h2 id="computational-implementation" class="anchored">5. Computational Implementation</h2>
 <p>Below is an interactive soil temperature profile simulator.</p>
-<div id="soil-temp-viz" class="viz-container">
+<div class="viz-container" id="soil-temp-viz">
 <div class="controls">
-<pre><code>&lt;label&gt;
-  Soil type:
-  &lt;select id="soil-type"&gt;
-    &lt;option value="dry-sand"&gt;Dry Sand (α=0.3)&lt;/option&gt;
-    &lt;option value="moist-sand" selected&gt;Moist Sand (α=0.6)&lt;/option&gt;
-    &lt;option value="clay"&gt;Clay (α=0.4)&lt;/option&gt;
-    &lt;option value="peat"&gt;Peat (α=0.1)&lt;/option&gt;
-  &lt;/select&gt;
-&lt;/label&gt;
-&lt;label&gt;
-  Surface temperature amplitude (°C):
-  &lt;input type="range" id="amplitude-slider" min="5" max="20" step="1" value="10"&gt;
-  &lt;span id="amplitude-value"&gt;10&lt;/span&gt; °C
-&lt;/label&gt;
-&lt;label&gt;
-  Mean temperature (°C):
-  &lt;input type="range" id="mean-temp-slider" min="5" max="25" step="1" value="15"&gt;
-  &lt;span id="mean-temp-value"&gt;15&lt;/span&gt; °C
-&lt;/label&gt;
-&lt;label&gt;
-  Time of day (hours):
-  &lt;input type="range" id="time-slider" min="0" max="24" step="0.5" value="12"&gt;
-  &lt;span id="time-value"&gt;12.0&lt;/span&gt; h
-&lt;/label&gt;
-&lt;div class="button-group"&gt;
-  &lt;button id="animate-toggle"&gt;Animate Daily Cycle&lt;/button&gt;
-&lt;/div&gt;</code></pre>
+<label>
+Soil type:
+<select id="soil-type">
+<option value="dry-sand">Dry Sand (α=0.3)</option>
+<option value="moist-sand" selected="">Moist Sand (α=0.6)</option>
+<option value="clay">Clay (α=0.4)</option>
+<option value="peat">Peat (α=0.1)</option>
+</select>
+</label>
+<label>
+Surface temperature amplitude (°C):
+<input type="range" id="amplitude-slider" min="5" max="20" step="1" value="10">
+<span id="amplitude-value">10</span> °C
+</label>
+<label>
+Mean temperature (°C):
+<input type="range" id="mean-temp-slider" min="5" max="25" step="1" value="15">
+<span id="mean-temp-value">15</span> °C
+</label>
+<label>
+Time of day (hours):
+<input type="range" id="time-slider" min="0" max="24" step="0.5" value="12">
+<span id="time-value">12.0</span> h
+</label>
+<div class="button-group">
+<button id="animate-toggle">Animate Daily Cycle</button>
+</div>
 </div>
 <div class="soil-info">
-<pre><code>&lt;p&gt;&lt;strong&gt;Damping depth:&lt;/strong&gt; &lt;span id="damping-depth"&gt;&lt;/span&gt; cm&lt;/p&gt;
-&lt;p&gt;&lt;strong&gt;Temperature at 50 cm:&lt;/strong&gt; &lt;span id="temp-50cm"&gt;&lt;/span&gt; °C&lt;/p&gt;</code></pre>
+<p><strong>Damping depth:</strong> <span id="damping-depth"></span> cm</p>
+<p><strong>Temperature at 50 cm:</strong> <span id="temp-50cm"></span> °C</p>
 </div>
-<div id="soil-temp-chart" style="width: 100%; height: 500px;">
+<div id="soil-temp-chart" style="width: 100%; height: 500px;"></div>
+</div>
 
-</div>
-</div>
 <script type="module">
 await new Promise(resolve => {
-  const checkECharts = () => {
-    if (typeof echarts !== 'undefined') resolve();
-    else setTimeout(checkECharts, 50);
-  };
-  checkECharts();
+const checkECharts = () => {
+if (typeof echarts !== 'undefined') resolve();
+else setTimeout(checkECharts, 50);
+};
+checkECharts();
 });
 
 (function() {
-  const chart = echarts.init(document.getElementById('soil-temp-chart'));
+const chart = echarts.init(document.getElementById('soil-temp-chart'));
   
-  const soils = {
-    'dry-sand': { alpha: 0.3e-6, name: 'Dry Sand' },
-    'moist-sand': { alpha: 0.6e-6, name: 'Moist Sand' },
-    'clay': { alpha: 0.4e-6, name: 'Clay' },
-    'peat': { alpha: 0.1e-6, name: 'Peat' }
-  };
+const soils = {
+'dry-sand': { alpha: 0.3e-6, name: 'Dry Sand' },
+'moist-sand': { alpha: 0.6e-6, name: 'Moist Sand' },
+'clay': { alpha: 0.4e-6, name: 'Clay' },
+'peat': { alpha: 0.1e-6, name: 'Peat' }
+};
   
-  let soilType = 'moist-sand';
-  let amplitude = 10;
-  let meanTemp = 15;
-  let timeOfDay = 12;
-  let animating = false;
-  let animationInterval = null;
+let soilType = 'moist-sand';
+let amplitude = 10;
+let meanTemp = 15;
+let timeOfDay = 12;
+let animating = false;
+let animationInterval = null;
   
-  const P = 86400; // seconds (daily period)
-  const omega = 2 * Math.PI / P;
+const P = 86400; // seconds (daily period)
+const omega = 2 * Math.PI / P;
   
-  function dampingDepth(alpha) {
-    return Math.sqrt(2 * alpha / omega);
-  }
+function dampingDepth(alpha) {
+return Math.sqrt(2 * alpha / omega);
+}
   
-  function soilTemperature(z, t, alpha, Tm, A0) {
-    const d = dampingDepth(alpha);
-    const tSeconds = t * 3600; // convert hours to seconds
-    const phase = omega * tSeconds - z / d;
-    return Tm + A0 * Math.exp(-z / d) * Math.sin(phase);
-  }
+function soilTemperature(z, t, alpha, Tm, A0) {
+const d = dampingDepth(alpha);
+const tSeconds = t * 3600; // convert hours to seconds
+const phase = omega * tSeconds - z / d;
+return Tm + A0 * Math.exp(-z / d) * Math.sin(phase);
+}
   
-  function updateChart() {
-    const alpha = soils[soilType].alpha;
-    const d = dampingDepth(alpha);
+function updateChart() {
+const alpha = soils[soilType].alpha;
+const d = dampingDepth(alpha);
     
-    // Generate temperature profile
-    const depths = [];
-    const temps = [];
+// Generate temperature profile
+const depths = [];
+const temps = [];
     
-    for (let z = 0; z <= 2; z += 0.02) {
-      depths.push(z);
-      temps.push(soilTemperature(z, timeOfDay, alpha, meanTemp, amplitude));
-    }
+for (let z = 0; z <= 2; z += 0.02) {
+depths.push(z);
+temps.push(soilTemperature(z, timeOfDay, alpha, meanTemp, amplitude));
+}
     
-    // Temperature at 50 cm
-    const temp50 = soilTemperature(0.5, timeOfDay, alpha, meanTemp, amplitude);
+// Temperature at 50 cm
+const temp50 = soilTemperature(0.5, timeOfDay, alpha, meanTemp, amplitude);
     
-    document.getElementById('damping-depth').textContent = (d * 100).toFixed(1);
-    document.getElementById('temp-50cm').textContent = temp50.toFixed(1);
+document.getElementById('damping-depth').textContent = (d * 100).toFixed(1);
+document.getElementById('temp-50cm').textContent = temp50.toFixed(1);
     
-    const option = {
-      title: {
-        text: `Soil Temperature Profile (${timeOfDay.toFixed(1)} hours)`,
-        left: 'center'
-      },
-      tooltip: {
-        trigger: 'axis',
-        axisPointer: { type: 'cross' }
-      },
-      grid: {
-        left: 80,
-        right: 40,
-        top: 60,
-        bottom: 60
-      },
-      xAxis: {
-        type: 'value',
-        name: 'Temperature (°C)',
-        nameLocation: 'middle',
-        nameGap: 30,
-        min: meanTemp - amplitude - 2,
-        max: meanTemp + amplitude + 2
-      },
-      yAxis: {
-        type: 'value',
-        name: 'Depth (m)',
-        nameLocation: 'middle',
-        nameGap: 50,
-        inverse: true,
-        min: 0,
-        max: 2
-      },
-      series: [
-        {
-          type: 'line',
-          data: temps.map((t, i) => [t, depths[i]]),
-          lineStyle: {
-            color: '#E74C3C',
-            width: 3
-          },
-          showSymbol: false,
-          markLine: {
-            silent: true,
-            symbol: 'none',
-            data: [
-              {
-                xAxis: meanTemp,
-                lineStyle: { type: 'dashed', color: '#95A5A6' },
-                label: { formatter: 'Mean', position: 'end' }
-              }
-            ]
-          },
-          markPoint: {
-            data: [
-              {
-                coord: [soilTemperature(0, timeOfDay, alpha, meanTemp, amplitude), 0],
-                symbol: 'circle',
-                symbolSize: 10,
-                itemStyle: { color: '#F39C12' },
-                label: { show: true, formatter: 'Surface', position: 'right' }
-              },
-              {
-                coord: [temp50, 0.5],
-                symbol: 'circle',
-                symbolSize: 8,
-                itemStyle: { color: '#3498DB' },
-                label: { show: true, formatter: '50 cm', position: 'right' }
-              }
-            ]
-          }
-        }
-      ]
-    };
+const option = {
+title: {
+text: `Soil Temperature Profile (${timeOfDay.toFixed(1)} hours)`,
+left: 'center'
+},
+tooltip: {
+trigger: 'axis',
+axisPointer: { type: 'cross' }
+},
+grid: {
+left: 80,
+right: 40,
+top: 60,
+bottom: 60
+},
+xAxis: {
+type: 'value',
+name: 'Temperature (°C)',
+nameLocation: 'middle',
+nameGap: 30,
+min: meanTemp - amplitude - 2,
+max: meanTemp + amplitude + 2
+},
+yAxis: {
+type: 'value',
+name: 'Depth (m)',
+nameLocation: 'middle',
+nameGap: 50,
+inverse: true,
+min: 0,
+max: 2
+},
+series: [
+{
+type: 'line',
+data: temps.map((t, i) => [t, depths[i]]),
+lineStyle: {
+color: '#E74C3C',
+width: 3
+},
+showSymbol: false,
+markLine: {
+silent: true,
+symbol: 'none',
+data: [
+{
+xAxis: meanTemp,
+lineStyle: { type: 'dashed', color: '#95A5A6' },
+label: { formatter: 'Mean', position: 'end' }
+}
+]
+},
+markPoint: {
+data: [
+{
+coord: [soilTemperature(0, timeOfDay, alpha, meanTemp, amplitude), 0],
+symbol: 'circle',
+symbolSize: 10,
+itemStyle: { color: '#F39C12' },
+label: { show: true, formatter: 'Surface', position: 'right' }
+},
+{
+coord: [temp50, 0.5],
+symbol: 'circle',
+symbolSize: 8,
+itemStyle: { color: '#3498DB' },
+label: { show: true, formatter: '50 cm', position: 'right' }
+}
+]
+}
+}
+]
+};
     
-    chart.setOption(option);
-  }
+chart.setOption(option);
+}
   
-  document.getElementById('soil-type').addEventListener('change', (e) => {
-    soilType = e.target.value;
-    updateChart();
-  });
+document.getElementById('soil-type').addEventListener('change', (e) => {
+soilType = e.target.value;
+updateChart();
+});
   
-  document.getElementById('amplitude-slider').addEventListener('input', (e) => {
-    amplitude = parseFloat(e.target.value);
-    document.getElementById('amplitude-value').textContent = amplitude;
-    updateChart();
-  });
+document.getElementById('amplitude-slider').addEventListener('input', (e) => {
+amplitude = parseFloat(e.target.value);
+document.getElementById('amplitude-value').textContent = amplitude;
+updateChart();
+});
   
-  document.getElementById('mean-temp-slider').addEventListener('input', (e) => {
-    meanTemp = parseFloat(e.target.value);
-    document.getElementById('mean-temp-value').textContent = meanTemp;
-    updateChart();
-  });
+document.getElementById('mean-temp-slider').addEventListener('input', (e) => {
+meanTemp = parseFloat(e.target.value);
+document.getElementById('mean-temp-value').textContent = meanTemp;
+updateChart();
+});
   
-  document.getElementById('time-slider').addEventListener('input', (e) => {
-    timeOfDay = parseFloat(e.target.value);
-    document.getElementById('time-value').textContent = timeOfDay.toFixed(1);
-    updateChart();
-  });
+document.getElementById('time-slider').addEventListener('input', (e) => {
+timeOfDay = parseFloat(e.target.value);
+document.getElementById('time-value').textContent = timeOfDay.toFixed(1);
+updateChart();
+});
   
-  document.getElementById('animate-toggle').addEventListener('click', (e) => {
-    if (animating) {
-      clearInterval(animationInterval);
-      e.target.textContent = 'Animate Daily Cycle';
-      animating = false;
-    } else {
-      animationInterval = setInterval(() => {
-        timeOfDay = (timeOfDay + 0.25) % 24;
-        document.getElementById('time-slider').value = timeOfDay;
-        document.getElementById('time-value').textContent = timeOfDay.toFixed(1);
-        updateChart();
-      }, 100);
-      e.target.textContent = 'Stop Animation';
-      animating = true;
-    }
-  });
+document.getElementById('animate-toggle').addEventListener('click', (e) => {
+if (animating) {
+clearInterval(animationInterval);
+e.target.textContent = 'Animate Daily Cycle';
+animating = false;
+} else {
+animationInterval = setInterval(() => {
+timeOfDay = (timeOfDay + 0.25) % 24;
+document.getElementById('time-slider').value = timeOfDay;
+document.getElementById('time-value').textContent = timeOfDay.toFixed(1);
+updateChart();
+}, 100);
+e.target.textContent = 'Stop Animation';
+animating = true;
+}
+});
   
-  updateChart();
+updateChart();
   
-  window.addEventListener('resize', () => chart.resize());
+window.addEventListener('resize', () => chart.resize());
 })();
 </script>
 <p><strong>Try this:</strong> - <strong>Animate the daily cycle:</strong> Watch the temperature wave propagate downward - <strong>Switch to peat:</strong> Low diffusivity → shallow damping depth → surface insulation - <strong>Switch to moist sand:</strong> Higher diffusivity → deeper penetration - <strong>Observe phase lag:</strong> Surface peaks at noon, but 50 cm peaks hours later - <strong>Notice damping:</strong> Temperature swing decreases rapidly with depth</p>

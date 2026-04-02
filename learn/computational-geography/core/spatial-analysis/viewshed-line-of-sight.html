@@ -269,272 +269,273 @@ Angle: <span class="math inline">\alpha = \arctan(-2/42.4) = -2.70°</span></p>
 <hr>
 <h2 id="computational-implementation" class="anchored">5. Computational Implementation</h2>
 <p>Below is an interactive viewshed simulator.</p>
-<div id="viewshed-viz" class="viz-container">
+<div class="viz-container" id="viewshed-viz">
 <div class="controls">
-<pre><code>&lt;label&gt;
-  Observer height (m):
-  &lt;input type="range" id="obs-height" min="0" max="20" step="1" value="5"&gt;
-  &lt;span id="obs-height-val"&gt;5&lt;/span&gt; m
-&lt;/label&gt;
-&lt;label&gt;
-  Target height (m):
-  &lt;input type="range" id="target-height" min="0" max="5" step="0.5" value="1.7"&gt;
-  &lt;span id="target-height-val"&gt;1.7&lt;/span&gt; m
-&lt;/label&gt;
-&lt;label&gt;
-  Show terrain:
-  &lt;input type="checkbox" id="show-terrain" checked&gt;
-&lt;/label&gt;
-&lt;label&gt;
-  Show 3D profile:
-  &lt;input type="checkbox" id="show-profile"&gt;
-&lt;/label&gt;</code></pre>
+<label>
+Observer height (m):
+<input type="range" id="obs-height" min="0" max="20" step="1" value="5">
+<span id="obs-height-val">5</span> m
+</label>
+<label>
+Target height (m):
+<input type="range" id="target-height" min="0" max="5" step="0.5" value="1.7">
+<span id="target-height-val">1.7</span> m
+</label>
+<label>
+Show terrain:
+<input type="checkbox" id="show-terrain" checked="">
+</label>
+<label>
+Show 3D profile:
+<input type="checkbox" id="show-profile">
+</label>
 </div>
 <div id="viewshed-canvas-container">
-<pre><code>&lt;canvas id="viewshed-canvas" width="700" height="350" style="border: 1px solid #ddd;"&gt;&lt;/canvas&gt;</code></pre>
+<canvas id="viewshed-canvas" width="700" height="350" style="border: 1px solid #ddd;"></canvas>
 </div>
 <div class="viewshed-info">
-<pre><code>&lt;p&gt;&lt;strong&gt;Visible cells:&lt;/strong&gt; &lt;span id="visible-count"&gt;--&lt;/span&gt;&lt;/p&gt;
-&lt;p&gt;&lt;strong&gt;Total cells:&lt;/strong&gt; &lt;span id="total-cells"&gt;--&lt;/span&gt;&lt;/p&gt;
-&lt;p&gt;&lt;strong&gt;Visibility:&lt;/strong&gt; &lt;span id="visibility-pct"&gt;--&lt;/span&gt;%&lt;/p&gt;</code></pre>
+<p><strong>Visible cells:</strong> <span id="visible-count">--</span></p>
+<p><strong>Total cells:</strong> <span id="total-cells">--</span></p>
+<p><strong>Visibility:</strong> <span id="visibility-pct">--</span>%</p>
 </div>
 </div>
+
 <script type="module">
 (function() {
-  const canvas = document.getElementById('viewshed-canvas');
-  const ctx = canvas.getContext('2d');
+const canvas = document.getElementById('viewshed-canvas');
+const ctx = canvas.getContext('2d');
   
-  let obsHeight = 5;
-  let targetHeight = 1.7;
-  let showTerrain = true;
-  let showProfile = false;
+let obsHeight = 5;
+let targetHeight = 1.7;
+let showTerrain = true;
+let showProfile = false;
   
-  const size = 30;
-  const cellSize = 10; // pixels
+const size = 30;
+const cellSize = 10; // pixels
   
-  // Generate terrain with hill in center
-  const terrain = [];
-  for (let i = 0; i < size; i++) {
-    const row = [];
-    for (let j = 0; j < size; j++) {
-      const cx = size / 2, cy = size / 2;
-      const dist = Math.sqrt((i - cx) ** 2 + (j - cy) ** 2);
-      const elevation = 50 + 30 * Math.exp(-dist / 8) - dist * 0.5;
-      row.push(Math.max(0, elevation));
-    }
-    terrain.push(row);
-  }
+// Generate terrain with hill in center
+const terrain = [];
+for (let i = 0; i < size; i++) {
+const row = [];
+for (let j = 0; j < size; j++) {
+const cx = size / 2, cy = size / 2;
+const dist = Math.sqrt((i - cx) ** 2 + (j - cy) ** 2);
+const elevation = 50 + 30 * Math.exp(-dist / 8) - dist * 0.5;
+row.push(Math.max(0, elevation));
+}
+terrain.push(row);
+}
   
-  const obsI = Math.floor(size / 2);
-  const obsJ = Math.floor(size / 2);
+const obsI = Math.floor(size / 2);
+const obsJ = Math.floor(size / 2);
   
-  function lineOfSight(i0, j0, z0, i1, j1, z1) {
-    const di = i1 - i0;
-    const dj = j1 - j0;
-    const steps = Math.max(Math.abs(di), Math.abs(dj));
+function lineOfSight(i0, j0, z0, i1, j1, z1) {
+const di = i1 - i0;
+const dj = j1 - j0;
+const steps = Math.max(Math.abs(di), Math.abs(dj));
     
-    if (steps === 0) return true;
+if (steps === 0) return true;
     
-    for (let step = 1; step < steps; step++) {
-      const t = step / steps;
-      const i = Math.round(i0 + t * di);
-      const j = Math.round(j0 + t * dj);
+for (let step = 1; step < steps; step++) {
+const t = step / steps;
+const i = Math.round(i0 + t * di);
+const j = Math.round(j0 + t * dj);
       
-      if (i < 0 || i >= size || j < 0 || j >= size) continue;
+if (i < 0 || i >= size || j < 0 || j >= size) continue;
       
-      const zLine = z0 + t * (z1 - z0);
-      const zTerrain = terrain[i][j];
+const zLine = z0 + t * (z1 - z0);
+const zTerrain = terrain[i][j];
       
-      if (zLine < zTerrain) {
-        return false; // Blocked
-      }
-    }
+if (zLine < zTerrain) {
+return false; // Blocked
+}
+}
     
-    return true;
-  }
+return true;
+}
   
-  function computeViewshed() {
-    const viewshed = [];
-    const zObs = terrain[obsI][obsJ] + obsHeight;
+function computeViewshed() {
+const viewshed = [];
+const zObs = terrain[obsI][obsJ] + obsHeight;
     
-    let visibleCount = 0;
+let visibleCount = 0;
     
-    for (let i = 0; i < size; i++) {
-      const row = [];
-      for (let j = 0; j < size; j++) {
-        const zTarget = terrain[i][j] + targetHeight;
-        const visible = lineOfSight(obsI, obsJ, zObs, i, j, zTarget);
-        row.push(visible);
-        if (visible) visibleCount++;
-      }
-      viewshed.push(row);
-    }
+for (let i = 0; i < size; i++) {
+const row = [];
+for (let j = 0; j < size; j++) {
+const zTarget = terrain[i][j] + targetHeight;
+const visible = lineOfSight(obsI, obsJ, zObs, i, j, zTarget);
+row.push(visible);
+if (visible) visibleCount++;
+}
+viewshed.push(row);
+}
     
-    return {viewshed, visibleCount};
-  }
+return {viewshed, visibleCount};
+}
   
-  function drawTerrain(x, y, width, height) {
-    const cellW = width / size;
-    const cellH = height / size;
+function drawTerrain(x, y, width, height) {
+const cellW = width / size;
+const cellH = height / size;
     
-    let min = Infinity, max = -Infinity;
-    for (let row of terrain) {
-      for (let val of row) {
-        min = Math.min(min, val);
-        max = Math.max(max, val);
-      }
-    }
+let min = Infinity, max = -Infinity;
+for (let row of terrain) {
+for (let val of row) {
+min = Math.min(min, val);
+max = Math.max(max, val);
+}
+}
     
-    for (let i = 0; i < size; i++) {
-      for (let j = 0; j < size; j++) {
-        const normalized = (terrain[i][j] - min) / (max - min);
-        const gray = Math.floor(100 + 155 * normalized);
+for (let i = 0; i < size; i++) {
+for (let j = 0; j < size; j++) {
+const normalized = (terrain[i][j] - min) / (max - min);
+const gray = Math.floor(100 + 155 * normalized);
         
-        ctx.fillStyle = `rgb(${gray}, ${gray}, ${gray})`;
-        ctx.fillRect(x + j * cellW, y + i * cellH, cellW, cellH);
-      }
-    }
-  }
+ctx.fillStyle = `rgb(${gray}, ${gray}, ${gray})`;
+ctx.fillRect(x + j * cellW, y + i * cellH, cellW, cellH);
+}
+}
+}
   
-  function drawViewshed(viewshed, x, y, width, height) {
-    const cellW = width / size;
-    const cellH = height / size;
+function drawViewshed(viewshed, x, y, width, height) {
+const cellW = width / size;
+const cellH = height / size;
     
-    for (let i = 0; i < size; i++) {
-      for (let j = 0; j < size; j++) {
-        if (i === obsI && j === obsJ) {
-          // Observer location
-          ctx.fillStyle = '#E74C3C';
-          ctx.fillRect(x + j * cellW, y + i * cellH, cellW, cellH);
+for (let i = 0; i < size; i++) {
+for (let j = 0; j < size; j++) {
+if (i === obsI && j === obsJ) {
+// Observer location
+ctx.fillStyle = '#E74C3C';
+ctx.fillRect(x + j * cellW, y + i * cellH, cellW, cellH);
           
-          // Observer marker
-          ctx.fillStyle = '#FFF';
-          ctx.beginPath();
-          ctx.arc(
-            x + j * cellW + cellW/2,
-            y + i * cellH + cellH/2,
-            cellW/3, 0, 2 * Math.PI
-          );
-          ctx.fill();
-        } else {
-          const alpha = viewshed[i][j] ? 0.6 : 0.1;
-          const color = viewshed[i][j] ? '46, 204, 113' : '52, 73, 94';
-          ctx.fillStyle = `rgba(${color}, ${alpha})`;
-          ctx.fillRect(x + j * cellW, y + i * cellH, cellW, cellH);
-        }
-      }
-    }
-  }
+// Observer marker
+ctx.fillStyle = '#FFF';
+ctx.beginPath();
+ctx.arc(
+x + j * cellW + cellW/2,
+y + i * cellH + cellH/2,
+cellW/3, 0, 2 * Math.PI
+);
+ctx.fill();
+} else {
+const alpha = viewshed[i][j] ? 0.6 : 0.1;
+const color = viewshed[i][j] ? '46, 204, 113' : '52, 73, 94';
+ctx.fillStyle = `rgba(${color}, ${alpha})`;
+ctx.fillRect(x + j * cellW, y + i * cellH, cellW, cellH);
+}
+}
+}
+}
   
-  function drawProfile(x, y, width, height) {
-    // Draw elevation profile along east direction
-    const profile = [];
-    const zObs = terrain[obsI][obsJ] + obsHeight;
+function drawProfile(x, y, width, height) {
+// Draw elevation profile along east direction
+const profile = [];
+const zObs = terrain[obsI][obsJ] + obsHeight;
     
-    for (let j = 0; j < size; j++) {
-      profile.push({
-        terrain: terrain[obsI][j],
-        target: terrain[obsI][j] + targetHeight
-      });
-    }
+for (let j = 0; j < size; j++) {
+profile.push({
+terrain: terrain[obsI][j],
+target: terrain[obsI][j] + targetHeight
+});
+}
     
-    const min = 0;
-    const max = Math.max(...profile.map(p => p.terrain)) + obsHeight;
-    const xScale = width / size;
-    const yScale = height / (max - min);
+const min = 0;
+const max = Math.max(...profile.map(p => p.terrain)) + obsHeight;
+const xScale = width / size;
+const yScale = height / (max - min);
     
-    // Draw terrain profile
-    ctx.strokeStyle = '#8B4513';
-    ctx.lineWidth = 2;
-    ctx.beginPath();
-    for (let j = 0; j < size; j++) {
-      const px = x + j * xScale;
-      const py = y + height - (profile[j].terrain - min) * yScale;
-      if (j === 0) ctx.moveTo(px, py);
-      else ctx.lineTo(px, py);
-    }
-    ctx.stroke();
+// Draw terrain profile
+ctx.strokeStyle = '#8B4513';
+ctx.lineWidth = 2;
+ctx.beginPath();
+for (let j = 0; j < size; j++) {
+const px = x + j * xScale;
+const py = y + height - (profile[j].terrain - min) * yScale;
+if (j === 0) ctx.moveTo(px, py);
+else ctx.lineTo(px, py);
+}
+ctx.stroke();
     
-    // Draw sightlines
-    ctx.strokeStyle = 'rgba(46, 204, 113, 0.3)';
-    ctx.lineWidth = 1;
-    for (let j = 0; j < size; j++) {
-      if (j === obsJ) continue;
+// Draw sightlines
+ctx.strokeStyle = 'rgba(46, 204, 113, 0.3)';
+ctx.lineWidth = 1;
+for (let j = 0; j < size; j++) {
+if (j === obsJ) continue;
       
-      const x0 = x + obsJ * xScale;
-      const y0 = y + height - (zObs - min) * yScale;
-      const x1 = x + j * xScale;
-      const y1 = y + height - (profile[j].target - min) * yScale;
+const x0 = x + obsJ * xScale;
+const y0 = y + height - (zObs - min) * yScale;
+const x1 = x + j * xScale;
+const y1 = y + height - (profile[j].target - min) * yScale;
       
-      ctx.beginPath();
-      ctx.moveTo(x0, y0);
-      ctx.lineTo(x1, y1);
-      ctx.stroke();
-    }
+ctx.beginPath();
+ctx.moveTo(x0, y0);
+ctx.lineTo(x1, y1);
+ctx.stroke();
+}
     
-    // Observer point
-    ctx.fillStyle = '#E74C3C';
-    ctx.beginPath();
-    ctx.arc(
-      x + obsJ * xScale,
-      y + height - (zObs - min) * yScale,
-      5, 0, 2 * Math.PI
-    );
-    ctx.fill();
+// Observer point
+ctx.fillStyle = '#E74C3C';
+ctx.beginPath();
+ctx.arc(
+x + obsJ * xScale,
+y + height - (zObs - min) * yScale,
+5, 0, 2 * Math.PI
+);
+ctx.fill();
     
-    // Label
-    ctx.fillStyle = '#2C3E50';
-    ctx.font = 'bold 12px sans-serif';
-    ctx.fillText('Elevation Profile (East)', x + 5, y + 15);
-  }
+// Label
+ctx.fillStyle = '#2C3E50';
+ctx.font = 'bold 12px sans-serif';
+ctx.fillText('Elevation Profile (East)', x + 5, y + 15);
+}
   
-  function render() {
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
+function render() {
+ctx.clearRect(0, 0, canvas.width, canvas.height);
     
-    const {viewshed, visibleCount} = computeViewshed();
+const {viewshed, visibleCount} = computeViewshed();
     
-    if (showTerrain) {
-      drawTerrain(20, 20, 300, 300);
-    }
+if (showTerrain) {
+drawTerrain(20, 20, 300, 300);
+}
     
-    drawViewshed(viewshed, 20, 20, 300, 300);
+drawViewshed(viewshed, 20, 20, 300, 300);
     
-    if (showProfile) {
-      drawProfile(370, 50, 300, 250);
-    }
+if (showProfile) {
+drawProfile(370, 50, 300, 250);
+}
     
-    // Stats
-    const totalCells = size * size;
-    const pct = (visibleCount / totalCells * 100).toFixed(1);
+// Stats
+const totalCells = size * size;
+const pct = (visibleCount / totalCells * 100).toFixed(1);
     
-    document.getElementById('visible-count').textContent = visibleCount;
-    document.getElementById('total-cells').textContent = totalCells;
-    document.getElementById('visibility-pct').textContent = pct;
-  }
+document.getElementById('visible-count').textContent = visibleCount;
+document.getElementById('total-cells').textContent = totalCells;
+document.getElementById('visibility-pct').textContent = pct;
+}
   
-  document.getElementById('obs-height').addEventListener('input', (e) => {
-    obsHeight = parseFloat(e.target.value);
-    document.getElementById('obs-height-val').textContent = obsHeight;
-    render();
-  });
+document.getElementById('obs-height').addEventListener('input', (e) => {
+obsHeight = parseFloat(e.target.value);
+document.getElementById('obs-height-val').textContent = obsHeight;
+render();
+});
   
-  document.getElementById('target-height').addEventListener('input', (e) => {
-    targetHeight = parseFloat(e.target.value);
-    document.getElementById('target-height-val').textContent = targetHeight;
-    render();
-  });
+document.getElementById('target-height').addEventListener('input', (e) => {
+targetHeight = parseFloat(e.target.value);
+document.getElementById('target-height-val').textContent = targetHeight;
+render();
+});
   
-  document.getElementById('show-terrain').addEventListener('change', (e) => {
-    showTerrain = e.target.checked;
-    render();
-  });
+document.getElementById('show-terrain').addEventListener('change', (e) => {
+showTerrain = e.target.checked;
+render();
+});
   
-  document.getElementById('show-profile').addEventListener('change', (e) => {
-    showProfile = e.target.checked;
-    render();
-  });
+document.getElementById('show-profile').addEventListener('change', (e) => {
+showProfile = e.target.checked;
+render();
+});
   
-  render();
+render();
 })();
 </script>
 <p><strong>Try this:</strong> - <strong>Increase observer height:</strong> See more terrain (taller tower = bigger viewshed) - <strong>Increase target height:</strong> People standing visible farther than ground - <strong>Show 3D profile:</strong> See elevation cross-section with sightlines - <strong>Green areas:</strong> Visible from observer (red dot) - <strong>Dark areas:</strong> Blocked by intervening terrain - Notice: Higher observer = exponentially more visibility</p>

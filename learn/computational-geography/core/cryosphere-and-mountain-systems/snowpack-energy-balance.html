@@ -260,282 +260,283 @@ window.Quarto = {
 <hr>
 <h2 id="computational-implementation" class="anchored">5. Computational Implementation</h2>
 <p>Below is an interactive snowpack energy balance calculator.</p>
-<div id="snowpack-viz" class="viz-container">
+<div class="viz-container" id="snowpack-viz">
 <div class="controls">
-<pre><code>&lt;label&gt;
-  Solar radiation (W/m²):
-  &lt;input type="range" id="solar-rad" min="0" max="1000" step="50" value="600"&gt;
-  &lt;span id="solar-val"&gt;600&lt;/span&gt;
-&lt;/label&gt;
-&lt;label&gt;
-  Snow albedo:
-  &lt;input type="range" id="albedo" min="0.4" max="0.95" step="0.05" value="0.75"&gt;
-  &lt;span id="albedo-val"&gt;0.75&lt;/span&gt;
-&lt;/label&gt;
-&lt;label&gt;
-  Air temperature (°C):
-  &lt;input type="range" id="air-temp" min="-20" max="15" step="1" value="5"&gt;
-  &lt;span id="air-temp-val"&gt;5&lt;/span&gt;
-&lt;/label&gt;
-&lt;label&gt;
-  Wind speed (m/s):
-  &lt;input type="range" id="wind-speed" min="0" max="10" step="0.5" value="3"&gt;
-  &lt;span id="wind-val"&gt;3.0&lt;/span&gt;
-&lt;/label&gt;
-&lt;label&gt;
-  Cloud cover (%):
-  &lt;input type="range" id="cloud-cover" min="0" max="100" step="10" value="20"&gt;
-  &lt;span id="cloud-val"&gt;20&lt;/span&gt;
-&lt;/label&gt;</code></pre>
+<label>
+Solar radiation (W/m²):
+<input type="range" id="solar-rad" min="0" max="1000" step="50" value="600">
+<span id="solar-val">600</span>
+</label>
+<label>
+Snow albedo:
+<input type="range" id="albedo" min="0.4" max="0.95" step="0.05" value="0.75">
+<span id="albedo-val">0.75</span>
+</label>
+<label>
+Air temperature (°C):
+<input type="range" id="air-temp" min="-20" max="15" step="1" value="5">
+<span id="air-temp-val">5</span>
+</label>
+<label>
+Wind speed (m/s):
+<input type="range" id="wind-speed" min="0" max="10" step="0.5" value="3">
+<span id="wind-val">3.0</span>
+</label>
+<label>
+Cloud cover (%):
+<input type="range" id="cloud-cover" min="0" max="100" step="10" value="20">
+<span id="cloud-val">20</span>
+</label>
 </div>
 <div id="snowpack-canvas-container">
-<pre><code>&lt;canvas id="snowpack-canvas" width="700" height="400" style="border: 1px solid #ddd;"&gt;&lt;/canvas&gt;</code></pre>
+<canvas id="snowpack-canvas" width="700" height="400" style="border: 1px solid #ddd;"></canvas>
 </div>
 <div class="snowpack-info">
-<pre><code>&lt;p&gt;&lt;strong&gt;Net energy:&lt;/strong&gt; &lt;span id="net-energy"&gt;--&lt;/span&gt; W/m²&lt;/p&gt;
-&lt;p&gt;&lt;strong&gt;Melt rate:&lt;/strong&gt; &lt;span id="melt-rate"&gt;--&lt;/span&gt; mm/hour&lt;/p&gt;
-&lt;p&gt;&lt;strong&gt;Status:&lt;/strong&gt; &lt;span id="snow-status"&gt;--&lt;/span&gt;&lt;/p&gt;</code></pre>
+<p><strong>Net energy:</strong> <span id="net-energy">--</span> W/m²</p>
+<p><strong>Melt rate:</strong> <span id="melt-rate">--</span> mm/hour</p>
+<p><strong>Status:</strong> <span id="snow-status">--</span></p>
 </div>
 </div>
+
 <script type="module">
 (function() {
-  const canvas = document.getElementById('snowpack-canvas');
-  const ctx = canvas.getContext('2d');
+const canvas = document.getElementById('snowpack-canvas');
+const ctx = canvas.getContext('2d');
   
-  let solarRad = 600;
-  let albedo = 0.75;
-  let airTemp = 5;
-  let windSpeed = 3.0;
-  let cloudCover = 0.2;
+let solarRad = 600;
+let albedo = 0.75;
+let airTemp = 5;
+let windSpeed = 3.0;
+let cloudCover = 0.2;
   
-  const sigma = 5.67e-8; // Stefan-Boltzmann
-  const Lf = 334000; // Latent heat of fusion (J/kg)
-  const rhoWater = 1000; // Water density (kg/m³)
+const sigma = 5.67e-8; // Stefan-Boltzmann
+const Lf = 334000; // Latent heat of fusion (J/kg)
+const rhoWater = 1000; // Water density (kg/m³)
   
-  function calculateEnergyBalance() {
-    const Tsurface = 273.15; // Snow at 0°C
-    const Tair = airTemp + 273.15;
+function calculateEnergyBalance() {
+const Tsurface = 273.15; // Snow at 0°C
+const Tair = airTemp + 273.15;
     
-    // Shortwave
-    const QswDown = solarRad;
-    const QswUp = albedo * QswDown;
-    const QswNet = QswDown - QswUp;
+// Shortwave
+const QswDown = solarRad;
+const QswUp = albedo * QswDown;
+const QswNet = QswDown - QswUp;
     
-    // Longwave
-    const vaporPressure = 611 * Math.exp(17.27 * airTemp / (airTemp + 237.3));
-    const epsAtmClear = 0.605 + 0.048 * Math.sqrt(vaporPressure);
-    const epsAtm = epsAtmClear + 0.26 * cloudCover;
+// Longwave
+const vaporPressure = 611 * Math.exp(17.27 * airTemp / (airTemp + 237.3));
+const epsAtmClear = 0.605 + 0.048 * Math.sqrt(vaporPressure);
+const epsAtm = epsAtmClear + 0.26 * cloudCover;
     
-    const QlwDown = epsAtm * sigma * Math.pow(Tair, 4);
-    const QlwUp = 0.98 * sigma * Math.pow(Tsurface, 4);
-    const QlwNet = QlwDown - QlwUp;
+const QlwDown = epsAtm * sigma * Math.pow(Tair, 4);
+const QlwUp = 0.98 * sigma * Math.pow(Tsurface, 4);
+const QlwNet = QlwDown - QlwUp;
     
-    // Sensible heat
-    const rhoAir = 1.25;
-    const cp = 1005;
-    const CH = 0.002;
-    const QH = rhoAir * cp * CH * windSpeed * (Tair - Tsurface);
+// Sensible heat
+const rhoAir = 1.25;
+const cp = 1005;
+const CH = 0.002;
+const QH = rhoAir * cp * CH * windSpeed * (Tair - Tsurface);
     
-    // Latent heat (simplified, assume small)
-    const QE = 0;
+// Latent heat (simplified, assume small)
+const QE = 0;
     
-    // Ground heat (assume constant small input)
-    const QG = 10;
+// Ground heat (assume constant small input)
+const QG = 10;
     
-    // Net energy
-    const Qnet = QswNet + QlwNet + QH + QE + QG;
+// Net energy
+const Qnet = QswNet + QlwNet + QH + QE + QG;
     
-    // Melt rate
-    let meltRate = 0;
-    let status = '';
+// Melt rate
+let meltRate = 0;
+let status = '';
     
-    if (Qnet > 0) {
-      meltRate = (Qnet / (Lf * rhoWater)) * 3600 * 1000; // mm/hour
-      status = 'MELTING';
-    } else if (Qnet < 0) {
-      status = 'Cooling/Refreezing';
-    } else {
-      status = 'Stable at 0°C';
-    }
+if (Qnet > 0) {
+meltRate = (Qnet / (Lf * rhoWater)) * 3600 * 1000; // mm/hour
+status = 'MELTING';
+} else if (Qnet < 0) {
+status = 'Cooling/Refreezing';
+} else {
+status = 'Stable at 0°C';
+}
     
-    return {
-      QswNet, QlwNet, QH, QE, QG, Qnet,
-      QswDown, QswUp, QlwDown, QlwUp,
-      meltRate, status
-    };
-  }
+return {
+QswNet, QlwNet, QH, QE, QG, Qnet,
+QswDown, QswUp, QlwDown, QlwUp,
+meltRate, status
+};
+}
   
-  function drawEnergyFluxes(result) {
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
+function drawEnergyFluxes(result) {
+ctx.clearRect(0, 0, canvas.width, canvas.height);
     
-    const centerX = 350;
-    const centerY = 200;
-    const snowWidth = 200;
-    const snowHeight = 40;
+const centerX = 350;
+const centerY = 200;
+const snowWidth = 200;
+const snowHeight = 40;
     
-    // Draw snow surface
-    ctx.fillStyle = '#ECEFF1';
-    ctx.strokeStyle = '#90A4AE';
-    ctx.lineWidth = 2;
-    ctx.fillRect(centerX - snowWidth/2, centerY - snowHeight/2, 
-                 snowWidth, snowHeight);
-    ctx.strokeRect(centerX - snowWidth/2, centerY - snowHeight/2, 
-                   snowWidth, snowHeight);
+// Draw snow surface
+ctx.fillStyle = '#ECEFF1';
+ctx.strokeStyle = '#90A4AE';
+ctx.lineWidth = 2;
+ctx.fillRect(centerX - snowWidth/2, centerY - snowHeight/2, 
+snowWidth, snowHeight);
+ctx.strokeRect(centerX - snowWidth/2, centerY - snowHeight/2, 
+snowWidth, snowHeight);
     
-    // Label
-    ctx.fillStyle = '#37474F';
-    ctx.font = 'bold 14px sans-serif';
-    ctx.textAlign = 'center';
-    ctx.fillText('Snow Surface (0°C)', centerX, centerY + 5);
+// Label
+ctx.fillStyle = '#37474F';
+ctx.font = 'bold 14px sans-serif';
+ctx.textAlign = 'center';
+ctx.fillText('Snow Surface (0°C)', centerX, centerY + 5);
     
-    // Draw energy fluxes as arrows
-    const arrowY = centerY - snowHeight/2;
-    const scale = 0.3; // pixels per W/m²
+// Draw energy fluxes as arrows
+const arrowY = centerY - snowHeight/2;
+const scale = 0.3; // pixels per W/m²
     
-    // Shortwave down (yellow)
-    drawArrow(centerX - 120, arrowY - 80, centerX - 120, arrowY, 
-              '#FDD835', result.QswDown, 'SW↓');
+// Shortwave down (yellow)
+drawArrow(centerX - 120, arrowY - 80, centerX - 120, arrowY, 
+'#FDD835', result.QswDown, 'SW↓');
     
-    // Shortwave up (yellow dashed)
-    drawArrow(centerX - 60, arrowY, centerX - 60, arrowY - 50, 
-              '#FDD835', result.QswUp, 'SW↑', true);
+// Shortwave up (yellow dashed)
+drawArrow(centerX - 60, arrowY, centerX - 60, arrowY - 50, 
+'#FDD835', result.QswUp, 'SW↑', true);
     
-    // Longwave down (orange)
-    drawArrow(centerX, arrowY - 80, centerX, arrowY, 
-              '#FF6F00', result.QlwDown, 'LW↓');
+// Longwave down (orange)
+drawArrow(centerX, arrowY - 80, centerX, arrowY, 
+'#FF6F00', result.QlwDown, 'LW↓');
     
-    // Longwave up (orange dashed)
-    drawArrow(centerX + 60, arrowY, centerX + 60, arrowY - 70, 
-              '#FF6F00', result.QlwUp, 'LW↑', true);
+// Longwave up (orange dashed)
+drawArrow(centerX + 60, arrowY, centerX + 60, arrowY - 70, 
+'#FF6F00', result.QlwUp, 'LW↑', true);
     
-    // Sensible heat
-    if (result.QH > 0) {
-      drawArrow(centerX + 120, arrowY - 40, centerX + 120, arrowY, 
-                '#E53935', result.QH, 'QH');
-    } else {
-      drawArrow(centerX + 120, arrowY, centerX + 120, arrowY - 40, 
-                '#1E88E5', Math.abs(result.QH), 'QH', true);
-    }
+// Sensible heat
+if (result.QH > 0) {
+drawArrow(centerX + 120, arrowY - 40, centerX + 120, arrowY, 
+'#E53935', result.QH, 'QH');
+} else {
+drawArrow(centerX + 120, arrowY, centerX + 120, arrowY - 40, 
+'#1E88E5', Math.abs(result.QH), 'QH', true);
+}
     
-    // Ground heat (from below)
-    drawArrow(centerX - 120, centerY + snowHeight/2 + 40, 
-              centerX - 120, centerY + snowHeight/2, 
-              '#8D6E63', result.QG, 'QG');
+// Ground heat (from below)
+drawArrow(centerX - 120, centerY + snowHeight/2 + 40, 
+centerX - 120, centerY + snowHeight/2, 
+'#8D6E63', result.QG, 'QG');
     
-    // Net energy display
-    const netX = 50;
-    const netY = 350;
+// Net energy display
+const netX = 50;
+const netY = 350;
     
-    ctx.fillStyle = '#263238';
-    ctx.font = '12px sans-serif';
-    ctx.textAlign = 'left';
-    ctx.fillText(`SW net: ${result.QswNet.toFixed(0)} W/m²`, netX, netY);
-    ctx.fillText(`LW net: ${result.QlwNet.toFixed(0)} W/m²`, netX, netY + 20);
-    ctx.fillText(`Sensible: ${result.QH.toFixed(0)} W/m²`, netX, netY + 40);
-    ctx.fillText(`Ground: ${result.QG.toFixed(0)} W/m²`, netX, netY + 60);
+ctx.fillStyle = '#263238';
+ctx.font = '12px sans-serif';
+ctx.textAlign = 'left';
+ctx.fillText(`SW net: ${result.QswNet.toFixed(0)} W/m²`, netX, netY);
+ctx.fillText(`LW net: ${result.QlwNet.toFixed(0)} W/m²`, netX, netY + 20);
+ctx.fillText(`Sensible: ${result.QH.toFixed(0)} W/m²`, netX, netY + 40);
+ctx.fillText(`Ground: ${result.QG.toFixed(0)} W/m²`, netX, netY + 60);
     
-    ctx.font = 'bold 14px sans-serif';
-    const netColor = result.Qnet > 0 ? '#D32F2F' : '#1976D2';
-    ctx.fillStyle = netColor;
-    ctx.fillText(`NET: ${result.Qnet.toFixed(0)} W/m²`, netX, netY + 90);
-  }
+ctx.font = 'bold 14px sans-serif';
+const netColor = result.Qnet > 0 ? '#D32F2F' : '#1976D2';
+ctx.fillStyle = netColor;
+ctx.fillText(`NET: ${result.Qnet.toFixed(0)} W/m²`, netX, netY + 90);
+}
   
-  function drawArrow(x1, y1, x2, y2, color, magnitude, label, dashed = false) {
-    const length = Math.abs(y2 - y1);
-    const maxLength = 100;
-    const scaledLength = Math.min(length, Math.abs(magnitude) * 0.15);
+function drawArrow(x1, y1, x2, y2, color, magnitude, label, dashed = false) {
+const length = Math.abs(y2 - y1);
+const maxLength = 100;
+const scaledLength = Math.min(length, Math.abs(magnitude) * 0.15);
     
-    if (y2 < y1) {
-      y2 = y1 - scaledLength;
-    } else {
-      y2 = y1 + scaledLength;
-    }
+if (y2 < y1) {
+y2 = y1 - scaledLength;
+} else {
+y2 = y1 + scaledLength;
+}
     
-    ctx.strokeStyle = color;
-    ctx.fillStyle = color;
-    ctx.lineWidth = 3;
+ctx.strokeStyle = color;
+ctx.fillStyle = color;
+ctx.lineWidth = 3;
     
-    if (dashed) {
-      ctx.setLineDash([5, 5]);
-    } else {
-      ctx.setLineDash([]);
-    }
+if (dashed) {
+ctx.setLineDash([5, 5]);
+} else {
+ctx.setLineDash([]);
+}
     
-    // Arrow shaft
-    ctx.beginPath();
-    ctx.moveTo(x1, y1);
-    ctx.lineTo(x2, y2);
-    ctx.stroke();
+// Arrow shaft
+ctx.beginPath();
+ctx.moveTo(x1, y1);
+ctx.lineTo(x2, y2);
+ctx.stroke();
     
-    // Arrow head
-    const headSize = 8;
-    const angle = Math.atan2(y2 - y1, x2 - x1);
+// Arrow head
+const headSize = 8;
+const angle = Math.atan2(y2 - y1, x2 - x1);
     
-    ctx.beginPath();
-    ctx.moveTo(x2, y2);
-    ctx.lineTo(x2 - headSize * Math.cos(angle - Math.PI/6),
-               y2 - headSize * Math.sin(angle - Math.PI/6));
-    ctx.lineTo(x2 - headSize * Math.cos(angle + Math.PI/6),
-               y2 - headSize * Math.sin(angle + Math.PI/6));
-    ctx.closePath();
-    ctx.fill();
+ctx.beginPath();
+ctx.moveTo(x2, y2);
+ctx.lineTo(x2 - headSize * Math.cos(angle - Math.PI/6),
+y2 - headSize * Math.sin(angle - Math.PI/6));
+ctx.lineTo(x2 - headSize * Math.cos(angle + Math.PI/6),
+y2 - headSize * Math.sin(angle + Math.PI/6));
+ctx.closePath();
+ctx.fill();
     
-    ctx.setLineDash([]);
+ctx.setLineDash([]);
     
-    // Label
-    ctx.fillStyle = '#263238';
-    ctx.font = '11px sans-serif';
-    ctx.textAlign = 'center';
-    ctx.fillText(label, x1, y1 - 10);
-    ctx.fillText(`${Math.abs(magnitude).toFixed(0)}`, x1, y1 + (y2 > y1 ? scaledLength + 20 : -5));
-  }
+// Label
+ctx.fillStyle = '#263238';
+ctx.font = '11px sans-serif';
+ctx.textAlign = 'center';
+ctx.fillText(label, x1, y1 - 10);
+ctx.fillText(`${Math.abs(magnitude).toFixed(0)}`, x1, y1 + (y2 > y1 ? scaledLength + 20 : -5));
+}
   
-  function render() {
-    const result = calculateEnergyBalance();
+function render() {
+const result = calculateEnergyBalance();
     
-    drawEnergyFluxes(result);
+drawEnergyFluxes(result);
     
-    document.getElementById('net-energy').textContent = result.Qnet.toFixed(1);
-    document.getElementById('melt-rate').textContent = 
-      result.meltRate > 0 ? result.meltRate.toFixed(2) : '0.00';
-    document.getElementById('snow-status').textContent = result.status;
+document.getElementById('net-energy').textContent = result.Qnet.toFixed(1);
+document.getElementById('melt-rate').textContent = 
+result.meltRate > 0 ? result.meltRate.toFixed(2) : '0.00';
+document.getElementById('snow-status').textContent = result.status;
     
-    const statusEl = document.getElementById('snow-status');
-    statusEl.style.color = result.Qnet > 0 ? '#D32F2F' : '#1976D2';
-    statusEl.style.fontWeight = 'bold';
-  }
+const statusEl = document.getElementById('snow-status');
+statusEl.style.color = result.Qnet > 0 ? '#D32F2F' : '#1976D2';
+statusEl.style.fontWeight = 'bold';
+}
   
-  document.getElementById('solar-rad').addEventListener('input', (e) => {
-    solarRad = parseFloat(e.target.value);
-    document.getElementById('solar-val').textContent = solarRad;
-    render();
-  });
+document.getElementById('solar-rad').addEventListener('input', (e) => {
+solarRad = parseFloat(e.target.value);
+document.getElementById('solar-val').textContent = solarRad;
+render();
+});
   
-  document.getElementById('albedo').addEventListener('input', (e) => {
-    albedo = parseFloat(e.target.value);
-    document.getElementById('albedo-val').textContent = albedo.toFixed(2);
-    render();
-  });
+document.getElementById('albedo').addEventListener('input', (e) => {
+albedo = parseFloat(e.target.value);
+document.getElementById('albedo-val').textContent = albedo.toFixed(2);
+render();
+});
   
-  document.getElementById('air-temp').addEventListener('input', (e) => {
-    airTemp = parseFloat(e.target.value);
-    document.getElementById('air-temp-val').textContent = airTemp;
-    render();
-  });
+document.getElementById('air-temp').addEventListener('input', (e) => {
+airTemp = parseFloat(e.target.value);
+document.getElementById('air-temp-val').textContent = airTemp;
+render();
+});
   
-  document.getElementById('wind-speed').addEventListener('input', (e) => {
-    windSpeed = parseFloat(e.target.value);
-    document.getElementById('wind-val').textContent = windSpeed.toFixed(1);
-    render();
-  });
+document.getElementById('wind-speed').addEventListener('input', (e) => {
+windSpeed = parseFloat(e.target.value);
+document.getElementById('wind-val').textContent = windSpeed.toFixed(1);
+render();
+});
   
-  document.getElementById('cloud-cover').addEventListener('input', (e) => {
-    cloudCover = parseFloat(e.target.value) / 100;
-    document.getElementById('cloud-val').textContent = (cloudCover * 100).toFixed(0);
-    render();
-  });
+document.getElementById('cloud-cover').addEventListener('input', (e) => {
+cloudCover = parseFloat(e.target.value) / 100;
+document.getElementById('cloud-val').textContent = (cloudCover * 100).toFixed(0);
+render();
+});
   
-  render();
+render();
 })();
 </script>
 <p><strong>Try this:</strong> - <strong>High solar + low albedo:</strong> Fast melt (dirty/old snow) - <strong>High albedo:</strong> Most solar reflected, slow melt (fresh snow) - <strong>Increase clouds:</strong> More longwave input → warmer conditions - <strong>Increase wind:</strong> Stronger sensible heat transfer - <strong>Cold air temp:</strong> Can still melt with strong solar! - Watch arrows scale with energy magnitude - Solid arrows = energy input, Dashed arrows = energy output</p>

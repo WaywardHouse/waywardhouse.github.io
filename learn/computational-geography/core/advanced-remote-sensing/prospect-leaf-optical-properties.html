@@ -232,207 +232,215 @@ window.Quarto = {
 <li><strong>Structure (N):</strong> increasing N spreads light over more scattering surfaces, raising NIR reflectance and reducing transmittance</li>
 </ul>
 <div class="model-controls">
-<label>Chlorophyll a+b C<sub>ab</sub>: <strong id="cab-val">40</strong> µg cm⁻² <input type="range" id="cab" min="5" max="80" step="1" value="40"></label> <label>Carotenoids C<sub>ar</sub>: <strong id="car-val">8</strong> µg cm⁻² <input type="range" id="car" min="0" max="20" step="0.5" value="8"></label> <label>Water C<sub>w</sub>: <strong id="cw-val">0.013</strong> cm <input type="range" id="cw" min="0.002" max="0.05" step="0.001" value="0.013"></label> <label>Dry matter C<sub>m</sub>: <strong id="cm-val">0.009</strong> g cm⁻² <input type="range" id="cm" min="0.002" max="0.020" step="0.001" value="0.009"></label> <label>Leaf structure N: <strong id="n-val">1.5</strong> <input type="range" id="n-param" min="1.0" max="3.5" step="0.1" value="1.5"></label>
+<label>Chlorophyll a+b C<sub>ab</sub>: <strong id="cab-val">40</strong> µg cm⁻²
+<input type="range" id="cab" min="5" max="80" step="1" value="40"></label>
+<label>Carotenoids C<sub>ar</sub>: <strong id="car-val">8</strong> µg cm⁻²
+<input type="range" id="car" min="0" max="20" step="0.5" value="8"></label>
+<label>Water C<sub>w</sub>: <strong id="cw-val">0.013</strong> cm
+<input type="range" id="cw" min="0.002" max="0.05" step="0.001" value="0.013"></label>
+<label>Dry matter C<sub>m</sub>: <strong id="cm-val">0.009</strong> g cm⁻²
+<input type="range" id="cm" min="0.002" max="0.020" step="0.001" value="0.009"></label>
+<label>Leaf structure N: <strong id="n-val">1.5</strong>
+<input type="range" id="n-param" min="1.0" max="3.5" step="0.1" value="1.5"></label>
 <div class="flood-info" style="margin-top:0.75rem;">
-<pre><code>&lt;p&gt;&lt;strong&gt;Red-edge position (approx.):&lt;/strong&gt; &lt;span id="red-edge"&gt;--&lt;/span&gt; nm&lt;/p&gt;
-&lt;p&gt;&lt;strong&gt;NDVI (800 nm / 670 nm):&lt;/strong&gt; &lt;span id="ndvi-val"&gt;--&lt;/span&gt;&lt;/p&gt;</code></pre>
+<p><strong>Red-edge position (approx.):</strong> <span id="red-edge">--</span> nm</p>
+<p><strong>NDVI (800 nm / 670 nm):</strong> <span id="ndvi-val">--</span></p>
 </div>
 </div>
-<div id="prospect-chart" style="height:460px;">
+<div id="prospect-chart" style="height:460px;"></div>
 
-</div>
 <script type="module">
 await new Promise(r => {
-  const c = () => typeof echarts !== 'undefined' ? r() : setTimeout(c, 50);
-  c();
+const c = () => typeof echarts !== 'undefined' ? r() : setTimeout(c, 50);
+c();
 });
 
 (function() {
-  // Wavelengths 400-900 nm in 10 nm steps (51 values)
-  const WL = Array.from({length: 51}, (_, i) => 400 + i * 10);
+// Wavelengths 400-900 nm in 10 nm steps (51 values)
+const WL = Array.from({length: 51}, (_, i) => 400 + i * 10);
 
-  // Specific absorption coefficients (cm² µg⁻¹ or cm² g⁻¹ / cm g⁻¹)
-  // Derived from Jacquemoud et al. PROSPECT-5 published coefficients,
-  // resampled to 10 nm. k_ab, k_ar: cm² µg⁻¹; k_w: cm g⁻¹; k_m: cm² g⁻¹
-  const K_AB = [
-    0.0674,0.0670,0.0430,0.0220,0.0100,0.0060,0.0040,0.0030,0.0025,0.0022,
-    0.0019,0.0018,0.0018,0.0017,0.0018,0.0019,0.0021,0.0024,0.0029,0.0038,
-    0.0058,0.0114,0.0247,0.0516,0.0737,0.0580,0.0256,0.0073,0.0018,0.0007,
-    0.0004,0.0003,0.0002,0.0002,0.0002,0.0002,0.0001,0.0001,0.0001,0.0001,
-    0.0001,0.0001,0.0001,0.0001,0.0001,0.0001,0.0001,0.0001,0.0001,0.0001,0.0001
-  ];
-  const K_AR = [
-    0.0180,0.0230,0.0320,0.0380,0.0320,0.0180,0.0070,0.0020,0.0006,0.0003,
-    0.0001,0.0001,0.0001,0.0001,0.0001,0.0001,0.0001,0.0001,0.0001,0.0001,
-    0.0001,0.0001,0.0001,0.0001,0.0008,0.0006,0.0003,0.0001,0.0001,0.0001,
-    0.0001,0.0001,0.0001,0.0001,0.0001,0.0001,0.0001,0.0001,0.0001,0.0001,
-    0.0001,0.0001,0.0001,0.0001,0.0001,0.0001,0.0001,0.0001,0.0001,0.0001,0.0001
-  ];
-  const K_W = [
-    0.0020,0.0019,0.0018,0.0018,0.0017,0.0017,0.0017,0.0017,0.0018,0.0020,
-    0.0021,0.0022,0.0024,0.0027,0.0031,0.0036,0.0041,0.0047,0.0051,0.0054,
-    0.0055,0.0055,0.0054,0.0053,0.0041,0.0032,0.0025,0.0021,0.0019,0.0018,
-    0.0018,0.0018,0.0019,0.0020,0.0023,0.0028,0.0036,0.0048,0.0063,0.0082,
-    0.0108,0.0145,0.0196,0.0260,0.0339,0.0432,0.0538,0.0655,0.0781,0.0914,0.1057
-  ];
-  const K_M = [
-    0.0082,0.0075,0.0068,0.0063,0.0059,0.0056,0.0053,0.0052,0.0051,0.0050,
-    0.0050,0.0050,0.0050,0.0051,0.0052,0.0053,0.0055,0.0057,0.0059,0.0061,
-    0.0063,0.0065,0.0067,0.0066,0.0065,0.0063,0.0060,0.0056,0.0051,0.0046,
-    0.0040,0.0035,0.0030,0.0026,0.0022,0.0019,0.0016,0.0014,0.0013,0.0012,
-    0.0011,0.0010,0.0010,0.0010,0.0009,0.0009,0.0009,0.0009,0.0008,0.0008,0.0008
-  ];
+// Specific absorption coefficients (cm² µg⁻¹ or cm² g⁻¹ / cm g⁻¹)
+// Derived from Jacquemoud et al. PROSPECT-5 published coefficients,
+// resampled to 10 nm. k_ab, k_ar: cm² µg⁻¹; k_w: cm g⁻¹; k_m: cm² g⁻¹
+const K_AB = [
+0.0674,0.0670,0.0430,0.0220,0.0100,0.0060,0.0040,0.0030,0.0025,0.0022,
+0.0019,0.0018,0.0018,0.0017,0.0018,0.0019,0.0021,0.0024,0.0029,0.0038,
+0.0058,0.0114,0.0247,0.0516,0.0737,0.0580,0.0256,0.0073,0.0018,0.0007,
+0.0004,0.0003,0.0002,0.0002,0.0002,0.0002,0.0001,0.0001,0.0001,0.0001,
+0.0001,0.0001,0.0001,0.0001,0.0001,0.0001,0.0001,0.0001,0.0001,0.0001,0.0001
+];
+const K_AR = [
+0.0180,0.0230,0.0320,0.0380,0.0320,0.0180,0.0070,0.0020,0.0006,0.0003,
+0.0001,0.0001,0.0001,0.0001,0.0001,0.0001,0.0001,0.0001,0.0001,0.0001,
+0.0001,0.0001,0.0001,0.0001,0.0008,0.0006,0.0003,0.0001,0.0001,0.0001,
+0.0001,0.0001,0.0001,0.0001,0.0001,0.0001,0.0001,0.0001,0.0001,0.0001,
+0.0001,0.0001,0.0001,0.0001,0.0001,0.0001,0.0001,0.0001,0.0001,0.0001,0.0001
+];
+const K_W = [
+0.0020,0.0019,0.0018,0.0018,0.0017,0.0017,0.0017,0.0017,0.0018,0.0020,
+0.0021,0.0022,0.0024,0.0027,0.0031,0.0036,0.0041,0.0047,0.0051,0.0054,
+0.0055,0.0055,0.0054,0.0053,0.0041,0.0032,0.0025,0.0021,0.0019,0.0018,
+0.0018,0.0018,0.0019,0.0020,0.0023,0.0028,0.0036,0.0048,0.0063,0.0082,
+0.0108,0.0145,0.0196,0.0260,0.0339,0.0432,0.0538,0.0655,0.0781,0.0914,0.1057
+];
+const K_M = [
+0.0082,0.0075,0.0068,0.0063,0.0059,0.0056,0.0053,0.0052,0.0051,0.0050,
+0.0050,0.0050,0.0050,0.0051,0.0052,0.0053,0.0055,0.0057,0.0059,0.0061,
+0.0063,0.0065,0.0067,0.0066,0.0065,0.0063,0.0060,0.0056,0.0051,0.0046,
+0.0040,0.0035,0.0030,0.0026,0.0022,0.0019,0.0016,0.0014,0.0013,0.0012,
+0.0011,0.0010,0.0010,0.0010,0.0009,0.0009,0.0009,0.0009,0.0008,0.0008,0.0008
+];
 
-  // Refractive index of leaf material (simplified, ~1.40 across VIS-NIR)
-  const N_REF = 1.40;
-  const ALPHA = Math.pow((N_REF - 1) / (N_REF + 1), 2); // Fresnel surface reflectance ~0.0278
+// Refractive index of leaf material (simplified, ~1.40 across VIS-NIR)
+const N_REF = 1.40;
+const ALPHA = Math.pow((N_REF - 1) / (N_REF + 1), 2); // Fresnel surface reflectance ~0.0278
 
-  // Exponential integral E1(x) approximation (Abramowitz & Stegun 5.1.56)
-  function E1(x) {
-    if (x <= 0) return Infinity;
-    if (x < 1) {
-      return -Math.log(x) - 0.57721566 + x * (0.99999193 + x * (-0.24991055 +
-        x * (0.05519968 + x * (-0.00976004 + x * 0.00107857))));
-    }
-    const t = x + 4.0 - 1.5 / (x + 4.0 - 1.0 / (x + 4.0));
-    return Math.exp(-x) / t;
-  }
+// Exponential integral E1(x) approximation (Abramowitz & Stegun 5.1.56)
+function E1(x) {
+if (x <= 0) return Infinity;
+if (x < 1) {
+return -Math.log(x) - 0.57721566 + x * (0.99999193 + x * (-0.24991055 +
+x * (0.05519968 + x * (-0.00976004 + x * 0.00107857))));
+}
+const t = x + 4.0 - 1.5 / (x + 4.0 - 1.0 / (x + 4.0));
+return Math.exp(-x) / t;
+}
 
-  // Single-layer transmittance (PROSPECT plate model)
-  function tau1(k) {
-    if (k <= 0) return 1.0;
-    if (k > 50)  return 0.0;
-    return (1 - k) * Math.exp(-k) + k * k * E1(k);
-  }
+// Single-layer transmittance (PROSPECT plate model)
+function tau1(k) {
+if (k <= 0) return 1.0;
+if (k > 50)  return 0.0;
+return (1 - k) * Math.exp(-k) + k * k * E1(k);
+}
 
-  // Adding method: combine two identical layers with reflectance r, transmittance t
-  // Returns {r: combined reflectance, t: combined transmittance}
-  function addLayers(r, t) {
-    const denom = 1 - r * r;
-    return {
-      r: r + (t * t * r) / denom,
-      t: (t * t) / denom,
-    };
-  }
+// Adding method: combine two identical layers with reflectance r, transmittance t
+// Returns {r: combined reflectance, t: combined transmittance}
+function addLayers(r, t) {
+const denom = 1 - r * r;
+return {
+r: r + (t * t * r) / denom,
+t: (t * t) / denom,
+};
+}
 
-  // Compound N layers (N may be non-integer — interpolate between floor and ceil)
-  function prospect(Cab, Car, Cw, Cm, N) {
-    const R = [], T = [];
-    for (let i = 0; i < WL.length; i++) {
-      const k = (Cab * K_AB[i] + Car * K_AR[i] + Cw * K_W[i] + Cm * K_M[i]) / N;
-      const t = tau1(k) * (1 - ALPHA);  // transmittance through one plate interior, past exit surface
-      const r = ALPHA + (1 - ALPHA) * ALPHA * tau1(k);  // single-plate reflectance (front surface + back-scattered)
+// Compound N layers (N may be non-integer — interpolate between floor and ceil)
+function prospect(Cab, Car, Cw, Cm, N) {
+const R = [], T = [];
+for (let i = 0; i < WL.length; i++) {
+const k = (Cab * K_AB[i] + Car * K_AR[i] + Cw * K_W[i] + Cm * K_M[i]) / N;
+const t = tau1(k) * (1 - ALPHA);  // transmittance through one plate interior, past exit surface
+const r = ALPHA + (1 - ALPHA) * ALPHA * tau1(k);  // single-plate reflectance (front surface + back-scattered)
 
-      // Compound floor(N) layers
-      let nf = Math.floor(N);
-      let layer = {r, t};
-      for (let j = 1; j < nf; j++) layer = addLayers(layer.r, layer.t);
+// Compound floor(N) layers
+let nf = Math.floor(N);
+let layer = {r, t};
+for (let j = 1; j < nf; j++) layer = addLayers(layer.r, layer.t);
 
-      // If N is non-integer, interpolate with one extra layer
-      if (N !== nf) {
-        const next = addLayers(layer.r, layer.t);
-        const frac = N - nf;
-        R.push(layer.r * (1 - frac) + next.r * frac);
-        T.push(layer.t * (1 - frac) + next.t * frac);
-      } else {
-        R.push(layer.r);
-        T.push(layer.t);
-      }
-    }
-    return {R, T};
-  }
+// If N is non-integer, interpolate with one extra layer
+if (N !== nf) {
+const next = addLayers(layer.r, layer.t);
+const frac = N - nf;
+R.push(layer.r * (1 - frac) + next.r * frac);
+T.push(layer.t * (1 - frac) + next.t * frac);
+} else {
+R.push(layer.r);
+T.push(layer.t);
+}
+}
+return {R, T};
+}
 
-  const el    = document.getElementById('prospect-chart');
-  const chart = echarts.init(el, null, {renderer: 'canvas'});
-  const textC  = getComputedStyle(document.documentElement).getPropertyValue('--text').trim()  || '#333';
-  const text2C = getComputedStyle(document.documentElement).getPropertyValue('--text-2').trim() || '#666';
+const el    = document.getElementById('prospect-chart');
+const chart = echarts.init(el, null, {renderer: 'canvas'});
+const textC  = getComputedStyle(document.documentElement).getPropertyValue('--text').trim()  || '#333';
+const text2C = getComputedStyle(document.documentElement).getPropertyValue('--text-2').trim() || '#666';
 
-  function getOption(R, T) {
-    return {
-      backgroundColor: 'transparent',
-      grid: {left: 55, right: 20, top: 40, bottom: 45},
-      legend: {data: ['Reflectance', 'Transmittance', 'Absorptance'], textStyle: {color: textC}, top: 8},
-      tooltip: {
-        trigger: 'axis',
-        formatter: p => {
-          const wl = WL[p[0].dataIndex];
-          return `<b>${wl} nm</b><br/>` + p.map(s =>
-            `${s.marker}${s.seriesName}: ${(s.value * 100).toFixed(1)}%`
-          ).join('<br/>');
-        },
-      },
-      xAxis: {
-        type: 'category', data: WL.map(String),
-        name: 'Wavelength (nm)', nameLocation: 'middle', nameGap: 30,
-        axisLabel: {color: text2C, interval: 4},
-        axisLine: {lineStyle: {color: text2C}},
-        splitLine: {show: false},
-        nameTextStyle: {color: text2C},
-      },
-      yAxis: {
-        type: 'value', name: 'Fraction', nameLocation: 'middle', nameGap: 40,
-        min: 0, max: 1,
-        axisLabel: {color: text2C, formatter: v => (v * 100).toFixed(0) + '%'},
-        axisLine: {lineStyle: {color: text2C}},
-        splitLine: {lineStyle: {color: text2C, opacity: 0.15}},
-        nameTextStyle: {color: text2C},
-      },
-      series: [
-        {name: 'Reflectance',   type: 'line', data: R,
-         lineStyle: {color: '#4e8ac4', width: 2.5}, itemStyle: {color: '#4e8ac4'}, symbol: 'none',
-         areaStyle: {color: 'rgba(78,138,196,0.08)'}},
-        {name: 'Transmittance', type: 'line', data: T,
-         lineStyle: {color: '#4a7c59', width: 2.5}, itemStyle: {color: '#4a7c59'}, symbol: 'none',
-         areaStyle: {color: 'rgba(74,124,89,0.08)'}},
-        {name: 'Absorptance',   type: 'line',
-         data: R.map((r, i) => +(1 - r - T[i]).toFixed(4)),
-         lineStyle: {color: '#d47c4e', width: 2.5}, itemStyle: {color: '#d47c4e'}, symbol: 'none',
-         areaStyle: {color: 'rgba(212,124,78,0.08)'}},
-      ],
-    };
-  }
+function getOption(R, T) {
+return {
+backgroundColor: 'transparent',
+grid: {left: 55, right: 20, top: 40, bottom: 45},
+legend: {data: ['Reflectance', 'Transmittance', 'Absorptance'], textStyle: {color: textC}, top: 8},
+tooltip: {
+trigger: 'axis',
+formatter: p => {
+const wl = WL[p[0].dataIndex];
+return `<b>${wl} nm</b><br/>` + p.map(s =>
+`${s.marker}${s.seriesName}: ${(s.value * 100).toFixed(1)}%`
+).join('<br/>');
+},
+},
+xAxis: {
+type: 'category', data: WL.map(String),
+name: 'Wavelength (nm)', nameLocation: 'middle', nameGap: 30,
+axisLabel: {color: text2C, interval: 4},
+axisLine: {lineStyle: {color: text2C}},
+splitLine: {show: false},
+nameTextStyle: {color: text2C},
+},
+yAxis: {
+type: 'value', name: 'Fraction', nameLocation: 'middle', nameGap: 40,
+min: 0, max: 1,
+axisLabel: {color: text2C, formatter: v => (v * 100).toFixed(0) + '%'},
+axisLine: {lineStyle: {color: text2C}},
+splitLine: {lineStyle: {color: text2C, opacity: 0.15}},
+nameTextStyle: {color: text2C},
+},
+series: [
+{name: 'Reflectance',   type: 'line', data: R,
+lineStyle: {color: '#4e8ac4', width: 2.5}, itemStyle: {color: '#4e8ac4'}, symbol: 'none',
+areaStyle: {color: 'rgba(78,138,196,0.08)'}},
+{name: 'Transmittance', type: 'line', data: T,
+lineStyle: {color: '#4a7c59', width: 2.5}, itemStyle: {color: '#4a7c59'}, symbol: 'none',
+areaStyle: {color: 'rgba(74,124,89,0.08)'}},
+{name: 'Absorptance',   type: 'line',
+data: R.map((r, i) => +(1 - r - T[i]).toFixed(4)),
+lineStyle: {color: '#d47c4e', width: 2.5}, itemStyle: {color: '#d47c4e'}, symbol: 'none',
+areaStyle: {color: 'rgba(212,124,78,0.08)'}},
+],
+};
+}
 
-  function redEdge(R) {
-    // Find wavelength of steepest rise between 670-740 nm (max dR/dλ)
-    let maxGrad = -Infinity, maxIdx = 27;
-    for (let i = 27; i <= 34; i++) {  // 670-740 nm
-      const grad = R[i+1] - R[i];
-      if (grad > maxGrad) { maxGrad = grad; maxIdx = i; }
-    }
-    return WL[maxIdx] + 5;  // centre of 10nm bin
-  }
+function redEdge(R) {
+// Find wavelength of steepest rise between 670-740 nm (max dR/dλ)
+let maxGrad = -Infinity, maxIdx = 27;
+for (let i = 27; i <= 34; i++) {  // 670-740 nm
+const grad = R[i+1] - R[i];
+if (grad > maxGrad) { maxGrad = grad; maxIdx = i; }
+}
+return WL[maxIdx] + 5;  // centre of 10nm bin
+}
 
-  function ndvi(R) {
-    const nir = R[40];  // 800 nm
-    const red = R[27];  // 670 nm
-    return ((nir - red) / (nir + red)).toFixed(3);
-  }
+function ndvi(R) {
+const nir = R[40];  // 800 nm
+const red = R[27];  // 670 nm
+return ((nir - red) / (nir + red)).toFixed(3);
+}
 
-  function update() {
-    const Cab = +document.getElementById('cab').value;
-    const Car = +document.getElementById('car').value;
-    const Cw  = +document.getElementById('cw').value;
-    const Cm  = +document.getElementById('cm').value;
-    const N   = +document.getElementById('n-param').value;
-    document.getElementById('cab-val').textContent = Cab;
-    document.getElementById('car-val').textContent = Car;
-    document.getElementById('cw-val').textContent  = Cw.toFixed(3);
-    document.getElementById('cm-val').textContent  = Cm.toFixed(3);
-    document.getElementById('n-val').textContent   = N.toFixed(1);
-    const {R, T} = prospect(Cab, Car, Cw, Cm, N);
-    chart.setOption(getOption(R, T));
-    document.getElementById('red-edge').textContent = redEdge(R);
-    document.getElementById('ndvi-val').textContent = ndvi(R);
-  }
+function update() {
+const Cab = +document.getElementById('cab').value;
+const Car = +document.getElementById('car').value;
+const Cw  = +document.getElementById('cw').value;
+const Cm  = +document.getElementById('cm').value;
+const N   = +document.getElementById('n-param').value;
+document.getElementById('cab-val').textContent = Cab;
+document.getElementById('car-val').textContent = Car;
+document.getElementById('cw-val').textContent  = Cw.toFixed(3);
+document.getElementById('cm-val').textContent  = Cm.toFixed(3);
+document.getElementById('n-val').textContent   = N.toFixed(1);
+const {R, T} = prospect(Cab, Car, Cw, Cm, N);
+chart.setOption(getOption(R, T));
+document.getElementById('red-edge').textContent = redEdge(R);
+document.getElementById('ndvi-val').textContent = ndvi(R);
+}
 
-  ['cab','car','cw','cm','n-param'].forEach(id =>
-    document.getElementById(id).addEventListener('input', update)
-  );
+['cab','car','cw','cm','n-param'].forEach(id =>
+document.getElementById(id).addEventListener('input', update)
+);
 
-  update();
+update();
 
-  const ro = new ResizeObserver(() => chart.resize());
-  ro.observe(el);
+const ro = new ResizeObserver(() => chart.resize());
+ro.observe(el);
 })();
 </script>
 <hr>

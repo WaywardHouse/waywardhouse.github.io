@@ -264,242 +264,243 @@ window.Quarto = {
 <hr>
 <h2 id="computational-implementation" class="anchored">5. Computational Implementation</h2>
 <p>Below is an interactive permafrost thaw simulator.</p>
-<div id="permafrost-viz" class="viz-container">
+<div class="viz-container" id="permafrost-viz">
 <div class="controls">
-<pre><code>&lt;label&gt;
-  Mean summer temperature (°C):
-  &lt;input type="range" id="summer-temp" min="5" max="20" step="1" value="10"&gt;
-  &lt;span id="temp-val"&gt;10&lt;/span&gt;
-&lt;/label&gt;
-&lt;label&gt;
-  Ice content (%):
-  &lt;input type="range" id="ice-content" min="20" max="80" step="5" value="55"&gt;
-  &lt;span id="ice-val"&gt;55&lt;/span&gt;
-&lt;/label&gt;
-&lt;label&gt;
-  Porosity (%):
-  &lt;input type="range" id="porosity" min="25" max="50" step="5" value="35"&gt;
-  &lt;span id="porosity-val"&gt;35&lt;/span&gt;
-&lt;/label&gt;
-&lt;label&gt;
-  Climate scenario:
-  &lt;select id="climate-scenario"&gt;
-    &lt;option value="current"&gt;Current (baseline)&lt;/option&gt;
-    &lt;option value="rcp45"&gt;RCP 4.5 (+2°C by 2100)&lt;/option&gt;
-    &lt;option value="rcp85" selected&gt;RCP 8.5 (+4°C by 2100)&lt;/option&gt;
-  &lt;/select&gt;
-&lt;/label&gt;
-&lt;div class="permafrost-info"&gt;
-  &lt;p&gt;&lt;strong&gt;Active layer depth:&lt;/strong&gt; &lt;span id="alt-depth"&gt;--&lt;/span&gt; m&lt;/p&gt;
-  &lt;p&gt;&lt;strong&gt;Thaw settlement:&lt;/strong&gt; &lt;span id="settlement"&gt;--&lt;/span&gt; mm&lt;/p&gt;
-  &lt;p&gt;&lt;strong&gt;Status:&lt;/strong&gt; &lt;span id="permafrost-status"&gt;--&lt;/span&gt;&lt;/p&gt;
-  &lt;p&gt;&lt;strong&gt;Years to 3m thaw:&lt;/strong&gt; &lt;span id="years-to-thaw"&gt;--&lt;/span&gt;&lt;/p&gt;
-&lt;/div&gt;</code></pre>
+<label>
+Mean summer temperature (°C):
+<input type="range" id="summer-temp" min="5" max="20" step="1" value="10">
+<span id="temp-val">10</span>
+</label>
+<label>
+Ice content (%):
+<input type="range" id="ice-content" min="20" max="80" step="5" value="55">
+<span id="ice-val">55</span>
+</label>
+<label>
+Porosity (%):
+<input type="range" id="porosity" min="25" max="50" step="5" value="35">
+<span id="porosity-val">35</span>
+</label>
+<label>
+Climate scenario:
+<select id="climate-scenario">
+<option value="current">Current (baseline)</option>
+<option value="rcp45">RCP 4.5 (+2°C by 2100)</option>
+<option value="rcp85" selected="">RCP 8.5 (+4°C by 2100)</option>
+</select>
+</label>
+<div class="permafrost-info">
+<p><strong>Active layer depth:</strong> <span id="alt-depth">--</span> m</p>
+<p><strong>Thaw settlement:</strong> <span id="settlement">--</span> mm</p>
+<p><strong>Status:</strong> <span id="permafrost-status">--</span></p>
+<p><strong>Years to 3m thaw:</strong> <span id="years-to-thaw">--</span></p>
+</div>
 </div>
 <div id="permafrost-canvas-container">
-<pre><code>&lt;canvas id="permafrost-canvas" width="700" height="400" style="border: 1px solid #ddd;"&gt;&lt;/canvas&gt;</code></pre>
+<canvas id="permafrost-canvas" width="700" height="400" style="border: 1px solid #ddd;"></canvas>
 </div>
 </div>
+
 <script type="module">
 await new Promise(resolve => {
-  const checkECharts = () => {
-    if (typeof echarts !== 'undefined') resolve();
-    else setTimeout(checkECharts, 50);
-  };
-  checkECharts();
+const checkECharts = () => {
+if (typeof echarts !== 'undefined') resolve();
+else setTimeout(checkECharts, 50);
+};
+checkECharts();
 });
 
 (function() {
-  const chart = echarts.init(document.getElementById('permafrost-canvas'));
+const chart = echarts.init(document.getElementById('permafrost-canvas'));
   
-  let summerTemp = 10;
-  let iceContent = 0.55;
-  let porosity = 0.35;
-  let scenario = 'rcp85';
+let summerTemp = 10;
+let iceContent = 0.55;
+let porosity = 0.35;
+let scenario = 'rcp85';
   
-  const k = 0.025; // thaw coefficient
-  const summerDays = 120;
+const k = 0.025; // thaw coefficient
+const summerDays = 120;
   
-  function calculatePermafrost() {
-    // TDD calculation
-    const TDD = Math.max(0, summerTemp) * summerDays;
+function calculatePermafrost() {
+// TDD calculation
+const TDD = Math.max(0, summerTemp) * summerDays;
     
-    // Active layer thickness
-    const ALT = k * Math.sqrt(TDD);
+// Active layer thickness
+const ALT = k * Math.sqrt(TDD);
     
-    // Excess ice
-    const excessIce = Math.max(0, iceContent - porosity);
+// Excess ice
+const excessIce = Math.max(0, iceContent - porosity);
     
-    // Thaw strain
-    const thawStrain = excessIce / (1 - excessIce);
+// Thaw strain
+const thawStrain = excessIce / (1 - excessIce);
     
-    // Settlement (for newly thawed layer)
-    const settlement = ALT * thawStrain * 1000; // mm
+// Settlement (for newly thawed layer)
+const settlement = ALT * thawStrain * 1000; // mm
     
-    // Status
-    let status;
-    if (summerTemp < 5) status = 'Stable permafrost';
-    else if (summerTemp < 10) status = 'Marginal permafrost';
-    else if (summerTemp < 15) status = 'Degrading permafrost';
-    else status = 'Permafrost loss';
+// Status
+let status;
+if (summerTemp < 5) status = 'Stable permafrost';
+else if (summerTemp < 10) status = 'Marginal permafrost';
+else if (summerTemp < 15) status = 'Degrading permafrost';
+else status = 'Permafrost loss';
     
-    // Years to 3m thaw (simplified)
-    const warmingRate = scenario === 'current' ? 0 : 
-                       scenario === 'rcp45' ? 0.025 : 0.05; // °C/year
+// Years to 3m thaw (simplified)
+const warmingRate = scenario === 'current' ? 0 : 
+scenario === 'rcp45' ? 0.025 : 0.05; // °C/year
     
-    const targetTemp = 15; // temp for 3m thaw
-    const yearsToThaw = warmingRate > 0 ? 
-      Math.max(0, (targetTemp - summerTemp) / warmingRate) : 999;
+const targetTemp = 15; // temp for 3m thaw
+const yearsToThaw = warmingRate > 0 ? 
+Math.max(0, (targetTemp - summerTemp) / warmingRate) : 999;
     
-    return {ALT, settlement, status, yearsToThaw, TDD, thawStrain};
-  }
+return {ALT, settlement, status, yearsToThaw, TDD, thawStrain};
+}
   
-  function generateTimeSeries() {
-    const years = 100;
-    const data = [];
+function generateTimeSeries() {
+const years = 100;
+const data = [];
     
-    const warmingRate = scenario === 'current' ? 0 : 
-                       scenario === 'rcp45' ? 0.02 : 0.04;
+const warmingRate = scenario === 'current' ? 0 : 
+scenario === 'rcp45' ? 0.02 : 0.04;
     
-    for (let year = 0; year <= years; year++) {
-      const temp = summerTemp + warmingRate * year;
-      const TDD = Math.max(0, temp) * summerDays;
-      const ALT = k * Math.sqrt(TDD);
+for (let year = 0; year <= years; year++) {
+const temp = summerTemp + warmingRate * year;
+const TDD = Math.max(0, temp) * summerDays;
+const ALT = k * Math.sqrt(TDD);
       
-      data.push([year, ALT]);
-    }
+data.push([year, ALT]);
+}
     
-    return data;
-  }
+return data;
+}
   
-  function render() {
-    const result = calculatePermafrost();
+function render() {
+const result = calculatePermafrost();
     
-    document.getElementById('alt-depth').textContent = result.ALT.toFixed(2);
-    document.getElementById('settlement').textContent = result.settlement.toFixed(0);
-    document.getElementById('permafrost-status').textContent = result.status;
-    document.getElementById('years-to-thaw').textContent = 
-      result.yearsToThaw < 200 ? result.yearsToThaw.toFixed(0) : '>200';
+document.getElementById('alt-depth').textContent = result.ALT.toFixed(2);
+document.getElementById('settlement').textContent = result.settlement.toFixed(0);
+document.getElementById('permafrost-status').textContent = result.status;
+document.getElementById('years-to-thaw').textContent = 
+result.yearsToThaw < 200 ? result.yearsToThaw.toFixed(0) : '>200';
     
-    const statusEl = document.getElementById('permafrost-status');
-    if (result.status.includes('Stable')) statusEl.style.color = '#2E7D32';
-    else if (result.status.includes('Marginal')) statusEl.style.color = '#F57F17';
-    else if (result.status.includes('Degrading')) statusEl.style.color = '#E64A19';
-    else statusEl.style.color = '#B71C1C';
+const statusEl = document.getElementById('permafrost-status');
+if (result.status.includes('Stable')) statusEl.style.color = '#2E7D32';
+else if (result.status.includes('Marginal')) statusEl.style.color = '#F57F17';
+else if (result.status.includes('Degrading')) statusEl.style.color = '#E64A19';
+else statusEl.style.color = '#B71C1C';
     
-    const timeSeries = generateTimeSeries();
+const timeSeries = generateTimeSeries();
     
-    const series = [
-      {
-        name: 'Active Layer Thickness',
-        type: 'line',
-        data: timeSeries,
-        lineStyle: {color: '#1976D2', width: 3},
-        areaStyle: {
-          color: {
-            type: 'linear',
-            x: 0, y: 0, x2: 0, y2: 1,
-            colorStops: [
-              {offset: 0, color: 'rgba(244, 67, 54, 0.4)'},
-              {offset: 0.5, color: 'rgba(255, 193, 7, 0.4)'},
-              {offset: 1, color: 'rgba(33, 150, 243, 0.4)'}
-            ]
-          }
-        }
-      },
-      {
-        name: '3m Threshold',
-        type: 'line',
-        data: [[0, 3], [100, 3]],
-        lineStyle: {color: '#D32F2F', width: 2, type: 'dashed'},
-        markLine: {
-          silent: true,
-          label: {formatter: 'Permafrost base (3m)', position: 'insideEndTop'}
-        }
-      },
-      {
-        name: 'Current Year',
-        type: 'scatter',
-        data: [[0, result.ALT]],
-        symbolSize: 15,
-        itemStyle: {color: '#E91E63'},
-        label: {
-          show: true,
-          formatter: 'Now',
-          position: 'top',
-          color: '#E91E63',
-          fontWeight: 'bold'
-        }
-      }
-    ];
+const series = [
+{
+name: 'Active Layer Thickness',
+type: 'line',
+data: timeSeries,
+lineStyle: {color: '#1976D2', width: 3},
+areaStyle: {
+color: {
+type: 'linear',
+x: 0, y: 0, x2: 0, y2: 1,
+colorStops: [
+{offset: 0, color: 'rgba(244, 67, 54, 0.4)'},
+{offset: 0.5, color: 'rgba(255, 193, 7, 0.4)'},
+{offset: 1, color: 'rgba(33, 150, 243, 0.4)'}
+]
+}
+}
+},
+{
+name: '3m Threshold',
+type: 'line',
+data: [[0, 3], [100, 3]],
+lineStyle: {color: '#D32F2F', width: 2, type: 'dashed'},
+markLine: {
+silent: true,
+label: {formatter: 'Permafrost base (3m)', position: 'insideEndTop'}
+}
+},
+{
+name: 'Current Year',
+type: 'scatter',
+data: [[0, result.ALT]],
+symbolSize: 15,
+itemStyle: {color: '#E91E63'},
+label: {
+show: true,
+formatter: 'Now',
+position: 'top',
+color: '#E91E63',
+fontWeight: 'bold'
+}
+}
+];
     
-    const option = {
-      title: {
-        text: `Active Layer Evolution (${scenario.toUpperCase()})`,
-        left: 'center'
-      },
-      tooltip: {
-        trigger: 'axis',
-        axisPointer: {type: 'cross'}
-      },
-      legend: {
-        data: ['Active Layer Thickness', '3m Threshold', 'Current Year'],
-        top: 30
-      },
-      grid: {
-        left: 80,
-        right: 40,
-        top: 80,
-        bottom: 60
-      },
-      xAxis: {
-        type: 'value',
-        name: 'Years from present',
-        nameLocation: 'middle',
-        nameGap: 30,
-        min: 0,
-        max: 100
-      },
-      yAxis: {
-        type: 'value',
-        name: 'Active Layer Depth (m)',
-        nameLocation: 'middle',
-        nameGap: 50,
-        min: 0,
-        max: 4
-      },
-      series: series
-    };
+const option = {
+title: {
+text: `Active Layer Evolution (${scenario.toUpperCase()})`,
+left: 'center'
+},
+tooltip: {
+trigger: 'axis',
+axisPointer: {type: 'cross'}
+},
+legend: {
+data: ['Active Layer Thickness', '3m Threshold', 'Current Year'],
+top: 30
+},
+grid: {
+left: 80,
+right: 40,
+top: 80,
+bottom: 60
+},
+xAxis: {
+type: 'value',
+name: 'Years from present',
+nameLocation: 'middle',
+nameGap: 30,
+min: 0,
+max: 100
+},
+yAxis: {
+type: 'value',
+name: 'Active Layer Depth (m)',
+nameLocation: 'middle',
+nameGap: 50,
+min: 0,
+max: 4
+},
+series: series
+};
     
-    chart.setOption(option, true);
-  }
+chart.setOption(option, true);
+}
   
-  document.getElementById('summer-temp').addEventListener('input', (e) => {
-    summerTemp = parseFloat(e.target.value);
-    document.getElementById('temp-val').textContent = summerTemp;
-    render();
-  });
+document.getElementById('summer-temp').addEventListener('input', (e) => {
+summerTemp = parseFloat(e.target.value);
+document.getElementById('temp-val').textContent = summerTemp;
+render();
+});
   
-  document.getElementById('ice-content').addEventListener('input', (e) => {
-    iceContent = parseFloat(e.target.value) / 100;
-    document.getElementById('ice-val').textContent = e.target.value;
-    render();
-  });
+document.getElementById('ice-content').addEventListener('input', (e) => {
+iceContent = parseFloat(e.target.value) / 100;
+document.getElementById('ice-val').textContent = e.target.value;
+render();
+});
   
-  document.getElementById('porosity').addEventListener('input', (e) => {
-    porosity = parseFloat(e.target.value) / 100;
-    document.getElementById('porosity-val').textContent = e.target.value;
-    render();
-  });
+document.getElementById('porosity').addEventListener('input', (e) => {
+porosity = parseFloat(e.target.value) / 100;
+document.getElementById('porosity-val').textContent = e.target.value;
+render();
+});
   
-  document.getElementById('climate-scenario').addEventListener('change', (e) => {
-    scenario = e.target.value;
-    render();
-  });
+document.getElementById('climate-scenario').addEventListener('change', (e) => {
+scenario = e.target.value;
+render();
+});
   
-  render();
+render();
   
-  window.addEventListener('resize', () => chart.resize());
+window.addEventListener('resize', () => chart.resize());
 })();
 </script>
 <p><strong>Observations:</strong> - Higher summer temperature increases active layer thickness - RCP 8.5 scenario shows accelerating thaw over century - High ice content produces greater settlement - 3m threshold marks approximate permafrost base at shallow sites - Current trajectory suggests complete thaw within decades at many sites - Settlement proportional to excess ice volume</p>

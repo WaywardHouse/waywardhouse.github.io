@@ -227,224 +227,223 @@ window.Quarto = {
 <hr>
 <h2 id="computational-implementation" class="anchored">5. Computational Implementation</h2>
 <p>Below is an interactive ground track simulator.</p>
-<div id="groundtrack-viz" class="viz-container">
+<div class="viz-container" id="groundtrack-viz">
 <div class="controls">
-<pre><code>&lt;label&gt;
-  Altitude (km):
-  &lt;input type="range" id="alt-gt-slider" min="200" max="1500" step="50" value="600"&gt;
-  &lt;span id="alt-gt-value"&gt;600&lt;/span&gt; km
-&lt;/label&gt;
-&lt;label&gt;
-  Inclination (degrees):
-  &lt;input type="range" id="inc-slider" min="0" max="98" step="1" value="51"&gt;
-  &lt;span id="inc-value"&gt;51&lt;/span&gt;°
-&lt;/label&gt;
-&lt;label&gt;
-  Number of orbits to show:
-  &lt;input type="range" id="orbits-slider" min="1" max="16" step="1" value="4"&gt;
-  &lt;span id="orbits-value"&gt;4&lt;/span&gt;
-&lt;/label&gt;
-&lt;div class="button-group"&gt;
-  &lt;button id="preset-iss"&gt;ISS (400 km, 51.6°)&lt;/button&gt;
-  &lt;button id="preset-polar"&gt;Polar (800 km, 90°)&lt;/button&gt;
-  &lt;button id="preset-sso"&gt;SSO (800 km, 98°)&lt;/button&gt;
-&lt;/div&gt;</code></pre>
+<label>
+Altitude (km):
+<input type="range" id="alt-gt-slider" min="200" max="1500" step="50" value="600">
+<span id="alt-gt-value">600</span> km
+</label>
+<label>
+Inclination (degrees):
+<input type="range" id="inc-slider" min="0" max="98" step="1" value="51">
+<span id="inc-value">51</span>°
+</label>
+<label>
+Number of orbits to show:
+<input type="range" id="orbits-slider" min="1" max="16" step="1" value="4">
+<span id="orbits-value">4</span>
+</label>
+<div class="button-group">
+<button id="preset-iss">ISS (400 km, 51.6°)</button>
+<button id="preset-polar">Polar (800 km, 90°)</button>
+<button id="preset-sso">SSO (800 km, 98°)</button>
 </div>
-<div id="groundtrack-chart" style="width: 100%; height: 600px;">
-
 </div>
+<div id="groundtrack-chart" style="width: 100%; height: 600px;"></div>
 <div class="info-panel">
-<pre><code>&lt;p id="gt-info"&gt;&lt;/p&gt;</code></pre>
+<p id="gt-info"></p>
 </div>
 </div>
+
 <script type="module">
 while (!window.echarts) await new Promise(r => setTimeout(r, 50));
 
 (function() {
-  const chart = window.echarts.init(document.getElementById('groundtrack-chart'));
+const chart = window.echarts.init(document.getElementById('groundtrack-chart'));
   
-  const R_earth = 6371; // km
-  const mu = 398600; // km^3/s^2
-  const omega_earth = 360 / 86164; // deg/s
+const R_earth = 6371; // km
+const mu = 398600; // km^3/s^2
+const omega_earth = 360 / 86164; // deg/s
   
-  let altitude = 600;
-  let inclination = 51;
-  let numOrbits = 4;
+let altitude = 600;
+let inclination = 51;
+let numOrbits = 4;
   
-  function deg2rad(deg) { return deg * Math.PI / 180; }
-  function rad2deg(rad) { return rad * 180 / Math.PI; }
+function deg2rad(deg) { return deg * Math.PI / 180; }
+function rad2deg(rad) { return rad * 180 / Math.PI; }
   
-  function calculateGroundTrack(h, inc, nOrbits) {
-    const r = R_earth + h;
-    const T = 2 * Math.PI * Math.sqrt(r**3 / mu); // seconds
+function calculateGroundTrack(h, inc, nOrbits) {
+const r = R_earth + h;
+const T = 2 * Math.PI * Math.sqrt(r**3 / mu); // seconds
     
-    const tracks = [];
-    const inc_rad = deg2rad(inc);
-    const dt = T / 100; // 100 points per orbit
+const tracks = [];
+const inc_rad = deg2rad(inc);
+const dt = T / 100; // 100 points per orbit
     
-    for (let orbit = 0; orbit < nOrbits; orbit++) {
-      const track = [];
+for (let orbit = 0; orbit < nOrbits; orbit++) {
+const track = [];
       
-      for (let step = 0; step <= 100; step++) {
-        const t = orbit * T + step * dt;
-        const nu = (2 * Math.PI / T) * t; // true anomaly
+for (let step = 0; step <= 100; step++) {
+const t = orbit * T + step * dt;
+const nu = (2 * Math.PI / T) * t; // true anomaly
         
-        // Position in orbital plane
-        const x_orb = r * Math.cos(nu);
-        const y_orb = r * Math.sin(nu);
+// Position in orbital plane
+const x_orb = r * Math.cos(nu);
+const y_orb = r * Math.sin(nu);
         
-        // Convert to equatorial frame (inclination rotation)
-        const x_eq = x_orb;
-        const y_eq = y_orb * Math.cos(inc_rad);
-        const z_eq = y_orb * Math.sin(inc_rad);
+// Convert to equatorial frame (inclination rotation)
+const x_eq = x_orb;
+const y_eq = y_orb * Math.cos(inc_rad);
+const z_eq = y_orb * Math.sin(inc_rad);
         
-        // Account for Earth's rotation (ascending node regresses)
-        const lambda_node = -omega_earth * t; // degrees
-        const lambda_rad = deg2rad(lambda_node);
+// Account for Earth's rotation (ascending node regresses)
+const lambda_node = -omega_earth * t; // degrees
+const lambda_rad = deg2rad(lambda_node);
         
-        // Rotate around z-axis
-        const x_rot = x_eq * Math.cos(lambda_rad) - y_eq * Math.sin(lambda_rad);
-        const y_rot = x_eq * Math.sin(lambda_rad) + y_eq * Math.cos(lambda_rad);
-        const z_rot = z_eq;
+// Rotate around z-axis
+const x_rot = x_eq * Math.cos(lambda_rad) - y_eq * Math.sin(lambda_rad);
+const y_rot = x_eq * Math.sin(lambda_rad) + y_eq * Math.cos(lambda_rad);
+const z_rot = z_eq;
         
-        // Convert to lat/lon
-        const lat = rad2deg(Math.asin(z_rot / r));
-        const lon = rad2deg(Math.atan2(y_rot, x_rot));
+// Convert to lat/lon
+const lat = rad2deg(Math.asin(z_rot / r));
+const lon = rad2deg(Math.atan2(y_rot, x_rot));
         
-        track.push([lon, lat]);
-      }
+track.push([lon, lat]);
+}
       
-      tracks.push(track);
-    }
+tracks.push(track);
+}
     
-    return {tracks, period: T};
-  }
+return {tracks, period: T};
+}
   
-  function updateChart() {
-    const result = calculateGroundTrack(altitude, inclination, numOrbits);
-    const westwardShift = 360 * (result.period / 86164);
+function updateChart() {
+const result = calculateGroundTrack(altitude, inclination, numOrbits);
+const westwardShift = 360 * (result.period / 86164);
     
-    document.getElementById('gt-info').innerHTML = 
-      `<strong>Period:</strong> ${(result.period/60).toFixed(1)} min | ` +
-      `<strong>Westward shift:</strong> ${westwardShift.toFixed(1)}° per orbit | ` +
-      `<strong>Max latitude:</strong> ±${inclination}°`;
+document.getElementById('gt-info').innerHTML = 
+`<strong>Period:</strong> ${(result.period/60).toFixed(1)} min | ` +
+`<strong>Westward shift:</strong> ${westwardShift.toFixed(1)}° per orbit | ` +
+`<strong>Max latitude:</strong> ±${inclination}°`;
     
-    const series = result.tracks.map((track, i) => ({
-      type: 'line',
-      data: track,
-      lineStyle: {
-        color: `hsl(${320 + i * 20}, 100%, ${60 - i * 5}%)`,
-        width: 2
-      },
-      showSymbol: false,
-      silent: true
-    }));
+const series = result.tracks.map((track, i) => ({
+type: 'line',
+data: track,
+lineStyle: {
+color: `hsl(${320 + i * 20}, 100%, ${60 - i * 5}%)`,
+width: 2
+},
+showSymbol: false,
+silent: true
+}));
 
-    // Reference lines: equator and ±inclination latitude bounds
-    const markLines = {
-      silent: true,
-      symbol: 'none',
-      lineStyle: { type: 'dashed', color: '#aaa', width: 1 },
-      data: [
-        { yAxis: 0, name: 'Equator' },
-        { yAxis:  inclination, name: `+${inclination}° (coverage limit)` },
-        { yAxis: -inclination, name: `-${inclination}°` }
-      ]
-    };
-    if (series.length > 0) series[0].markLine = markLines;
+// Reference lines: equator and ±inclination latitude bounds
+const markLines = {
+silent: true,
+symbol: 'none',
+lineStyle: { type: 'dashed', color: '#aaa', width: 1 },
+data: [
+{ yAxis: 0, name: 'Equator' },
+{ yAxis:  inclination, name: `+${inclination}° (coverage limit)` },
+{ yAxis: -inclination, name: `-${inclination}°` }
+]
+};
+if (series.length > 0) series[0].markLine = markLines;
 
-    const option = {
-      title: {
-        text: `Ground Track: ${altitude} km, ${inclination}° inclination`,
-        left: 'center'
-      },
-      grid: { top: 50, bottom: 60, left: 65, right: 20 },
-      xAxis: {
-        type: 'value',
-        name: 'Longitude (°)',
-        nameLocation: 'middle',
-        nameGap: 28,
-        min: -180,
-        max: 180,
-        interval: 60,
-        axisLabel: { formatter: (v) => `${v}°` }
-      },
-      yAxis: {
-        type: 'value',
-        name: 'Latitude (°)',
-        nameLocation: 'middle',
-        nameGap: 45,
-        min: -90,
-        max: 90,
-        interval: 30,
-        axisLabel: { formatter: (v) => `${v}°` }
-      },
-      series: series
-    };
+const option = {
+title: {
+text: `Ground Track: ${altitude} km, ${inclination}° inclination`,
+left: 'center'
+},
+grid: { top: 50, bottom: 60, left: 65, right: 20 },
+xAxis: {
+type: 'value',
+name: 'Longitude (°)',
+nameLocation: 'middle',
+nameGap: 28,
+min: -180,
+max: 180,
+interval: 60,
+axisLabel: { formatter: (v) => `${v}°` }
+},
+yAxis: {
+type: 'value',
+name: 'Latitude (°)',
+nameLocation: 'middle',
+nameGap: 45,
+min: -90,
+max: 90,
+interval: 30,
+axisLabel: { formatter: (v) => `${v}°` }
+},
+series: series
+};
     
-    chart.setOption(option);
-  }
+chart.setOption(option);
+}
   
-  document.getElementById('alt-gt-slider').addEventListener('input', (e) => {
-    altitude = parseFloat(e.target.value);
-    document.getElementById('alt-gt-value').textContent = altitude;
-    updateChart();
-  });
+document.getElementById('alt-gt-slider').addEventListener('input', (e) => {
+altitude = parseFloat(e.target.value);
+document.getElementById('alt-gt-value').textContent = altitude;
+updateChart();
+});
   
-  document.getElementById('inc-slider').addEventListener('input', (e) => {
-    inclination = parseFloat(e.target.value);
-    document.getElementById('inc-value').textContent = inclination;
-    updateChart();
-  });
+document.getElementById('inc-slider').addEventListener('input', (e) => {
+inclination = parseFloat(e.target.value);
+document.getElementById('inc-value').textContent = inclination;
+updateChart();
+});
   
-  document.getElementById('orbits-slider').addEventListener('input', (e) => {
-    numOrbits = parseInt(e.target.value);
-    document.getElementById('orbits-value').textContent = numOrbits;
-    updateChart();
-  });
+document.getElementById('orbits-slider').addEventListener('input', (e) => {
+numOrbits = parseInt(e.target.value);
+document.getElementById('orbits-value').textContent = numOrbits;
+updateChart();
+});
   
-  document.getElementById('preset-iss').addEventListener('click', () => {
-    altitude = 400;
-    inclination = 51.6;
-    numOrbits = 4;
-    document.getElementById('alt-gt-slider').value = 400;
-    document.getElementById('alt-gt-value').textContent = 400;
-    document.getElementById('inc-slider').value = 51.6;
-    document.getElementById('inc-value').textContent = 51.6;
-    document.getElementById('orbits-slider').value = 4;
-    document.getElementById('orbits-value').textContent = 4;
-    updateChart();
-  });
+document.getElementById('preset-iss').addEventListener('click', () => {
+altitude = 400;
+inclination = 51.6;
+numOrbits = 4;
+document.getElementById('alt-gt-slider').value = 400;
+document.getElementById('alt-gt-value').textContent = 400;
+document.getElementById('inc-slider').value = 51.6;
+document.getElementById('inc-value').textContent = 51.6;
+document.getElementById('orbits-slider').value = 4;
+document.getElementById('orbits-value').textContent = 4;
+updateChart();
+});
   
-  document.getElementById('preset-polar').addEventListener('click', () => {
-    altitude = 800;
-    inclination = 90;
-    numOrbits = 8;
-    document.getElementById('alt-gt-slider').value = 800;
-    document.getElementById('alt-gt-value').textContent = 800;
-    document.getElementById('inc-slider').value = 90;
-    document.getElementById('inc-value').textContent = 90;
-    document.getElementById('orbits-slider').value = 8;
-    document.getElementById('orbits-value').textContent = 8;
-    updateChart();
-  });
+document.getElementById('preset-polar').addEventListener('click', () => {
+altitude = 800;
+inclination = 90;
+numOrbits = 8;
+document.getElementById('alt-gt-slider').value = 800;
+document.getElementById('alt-gt-value').textContent = 800;
+document.getElementById('inc-slider').value = 90;
+document.getElementById('inc-value').textContent = 90;
+document.getElementById('orbits-slider').value = 8;
+document.getElementById('orbits-value').textContent = 8;
+updateChart();
+});
   
-  document.getElementById('preset-sso').addEventListener('click', () => {
-    altitude = 800;
-    inclination = 98;
-    numOrbits = 8;
-    document.getElementById('alt-gt-slider').value = 800;
-    document.getElementById('alt-gt-value').textContent = 800;
-    document.getElementById('inc-slider').value = 98;
-    document.getElementById('inc-value').textContent = 98;
-    document.getElementById('orbits-slider').value = 8;
-    document.getElementById('orbits-value').textContent = 8;
-    updateChart();
-  });
+document.getElementById('preset-sso').addEventListener('click', () => {
+altitude = 800;
+inclination = 98;
+numOrbits = 8;
+document.getElementById('alt-gt-slider').value = 800;
+document.getElementById('alt-gt-value').textContent = 800;
+document.getElementById('inc-slider').value = 98;
+document.getElementById('inc-value').textContent = 98;
+document.getElementById('orbits-slider').value = 8;
+document.getElementById('orbits-value').textContent = 8;
+updateChart();
+});
   
-  updateChart();
+updateChart();
   
-  window.addEventListener('resize', () => chart.resize());
+window.addEventListener('resize', () => chart.resize());
 })();
 </script>
 <p><strong>Try this:</strong> - <strong>ISS preset:</strong> 51.6° inclination means it reaches ±51.6° latitude (no polar coverage) - <strong>Polar preset:</strong> 90° inclination gives global coverage, passes over both poles - <strong>SSO preset:</strong> 98° inclination (retrograde) — ground track repeats after ~14 orbits - Increase number of orbits: See the westward shift accumulate - Notice: Lower inclinations create tighter sinusoidal patterns</p>

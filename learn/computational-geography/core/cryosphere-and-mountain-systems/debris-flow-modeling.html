@@ -247,242 +247,243 @@ window.Quarto = {
 <hr>
 <h2 id="computational-implementation" class="anchored">5. Computational Implementation</h2>
 <p>Below is an interactive debris flow simulator.</p>
-<div id="debris-viz" class="viz-container">
+<div class="viz-container" id="debris-viz">
 <div class="controls">
-<pre><code>&lt;label&gt;
-  Volume (m³):
-  &lt;input type="range" id="volume" min="1000" max="100000" step="5000" value="10000"&gt;
-  &lt;span id="vol-val"&gt;10000&lt;/span&gt;
-&lt;/label&gt;
-&lt;label&gt;
-  Vertical drop (m):
-  &lt;input type="range" id="vert-drop" min="200" max="1500" step="100" value="800"&gt;
-  &lt;span id="drop-val"&gt;800&lt;/span&gt;
-&lt;/label&gt;
-&lt;label&gt;
-  Channel slope (°):
-  &lt;input type="range" id="channel-slope" min="5" max="35" step="5" value="15"&gt;
-  &lt;span id="slope-val"&gt;15&lt;/span&gt;
-&lt;/label&gt;
-&lt;label&gt;
-  Friction coefficient:
-  &lt;input type="range" id="friction" min="0.1" max="0.4" step="0.05" value="0.15"&gt;
-  &lt;span id="friction-val"&gt;0.15&lt;/span&gt;
-&lt;/label&gt;
-&lt;div class="debris-info"&gt;
-  &lt;p&gt;&lt;strong&gt;Travel angle:&lt;/strong&gt; &lt;span id="travel-angle"&gt;--&lt;/span&gt;°&lt;/p&gt;
-  &lt;p&gt;&lt;strong&gt;Runout distance:&lt;/strong&gt; &lt;span id="runout-dist"&gt;--&lt;/span&gt; m&lt;/p&gt;
-  &lt;p&gt;&lt;strong&gt;Peak velocity:&lt;/strong&gt; &lt;span id="peak-vel"&gt;--&lt;/span&gt; m/s&lt;/p&gt;
-  &lt;p&gt;&lt;strong&gt;Impact force:&lt;/strong&gt; &lt;span id="impact-force"&gt;--&lt;/span&gt; kN&lt;/p&gt;
-&lt;/div&gt;</code></pre>
+<label>
+Volume (m³):
+<input type="range" id="volume" min="1000" max="100000" step="5000" value="10000">
+<span id="vol-val">10000</span>
+</label>
+<label>
+Vertical drop (m):
+<input type="range" id="vert-drop" min="200" max="1500" step="100" value="800">
+<span id="drop-val">800</span>
+</label>
+<label>
+Channel slope (°):
+<input type="range" id="channel-slope" min="5" max="35" step="5" value="15">
+<span id="slope-val">15</span>
+</label>
+<label>
+Friction coefficient:
+<input type="range" id="friction" min="0.1" max="0.4" step="0.05" value="0.15">
+<span id="friction-val">0.15</span>
+</label>
+<div class="debris-info">
+<p><strong>Travel angle:</strong> <span id="travel-angle">--</span>°</p>
+<p><strong>Runout distance:</strong> <span id="runout-dist">--</span> m</p>
+<p><strong>Peak velocity:</strong> <span id="peak-vel">--</span> m/s</p>
+<p><strong>Impact force:</strong> <span id="impact-force">--</span> kN</p>
+</div>
 </div>
 <div id="debris-canvas-container">
-<pre><code>&lt;canvas id="debris-canvas" width="700" height="400" style="border: 1px solid #ddd;"&gt;&lt;/canvas&gt;</code></pre>
+<canvas id="debris-canvas" width="700" height="400" style="border: 1px solid #ddd;"></canvas>
 </div>
 </div>
+
 <script type="module">
 await new Promise(resolve => {
-  const checkECharts = () => {
-    if (typeof echarts !== 'undefined') resolve();
-    else setTimeout(checkECharts, 50);
-  };
-  checkECharts();
+const checkECharts = () => {
+if (typeof echarts !== 'undefined') resolve();
+else setTimeout(checkECharts, 50);
+};
+checkECharts();
 });
 
 (function() {
-  const chart = echarts.init(document.getElementById('debris-canvas'));
+const chart = echarts.init(document.getElementById('debris-canvas'));
   
-  let volume = 10000;
-  let vertDrop = 800;
-  let channelSlope = 15;
-  let friction = 0.15;
+let volume = 10000;
+let vertDrop = 800;
+let channelSlope = 15;
+let friction = 0.15;
   
-  function calculateDebrisFlow() {
-    // Travel angle with volume correction
-    const alpha = 20 - 2 * Math.log10(volume);
-    const alphaRad = alpha * Math.PI / 180;
+function calculateDebrisFlow() {
+// Travel angle with volume correction
+const alpha = 20 - 2 * Math.log10(volume);
+const alphaRad = alpha * Math.PI / 180;
     
-    // Runout distance
-    const runout = vertDrop / Math.tan(alphaRad);
+// Runout distance
+const runout = vertDrop / Math.tan(alphaRad);
     
-    // Peak velocity (simplified Voellmy)
-    const thetaRad = channelSlope * Math.PI / 180;
-    const h = 3; // assumed depth
-    const g = 9.81;
+// Peak velocity (simplified Voellmy)
+const thetaRad = channelSlope * Math.PI / 180;
+const h = 3; // assumed depth
+const g = 9.81;
     
-    const numerator = h * (Math.sin(thetaRad) - friction * Math.cos(thetaRad));
-    const velocity = Math.sqrt(g * numerator / 0.05); // turbulent coef adjusted
+const numerator = h * (Math.sin(thetaRad) - friction * Math.cos(thetaRad));
+const velocity = Math.sqrt(g * numerator / 0.05); // turbulent coef adjusted
     
-    // Impact force
-    const rho = 2000; // kg/m³
-    const Cd = 1.5;
-    const A = 15; // m² (assumed structure)
-    const force = 0.5 * Cd * rho * velocity * velocity * A / 1000; // kN
+// Impact force
+const rho = 2000; // kg/m³
+const Cd = 1.5;
+const A = 15; // m² (assumed structure)
+const force = 0.5 * Cd * rho * velocity * velocity * A / 1000; // kN
     
-    return {alpha, runout, velocity, force};
-  }
+return {alpha, runout, velocity, force};
+}
   
-  function generateProfile() {
-    const result = calculateDebrisFlow();
-    const profile = [];
+function generateProfile() {
+const result = calculateDebrisFlow();
+const profile = [];
     
-    // Simplified 3-segment profile
-    const initLen = 300; // initiation zone
-    const transLen = result.runout - 300 - 500; // transport
-    const depLen = 500; // deposition
+// Simplified 3-segment profile
+const initLen = 300; // initiation zone
+const transLen = result.runout - 300 - 500; // transport
+const depLen = 500; // deposition
     
-    const initSlope = 30 * Math.PI / 180;
-    const transSlope = channelSlope * Math.PI / 180;
-    const depSlope = 5 * Math.PI / 180;
+const initSlope = 30 * Math.PI / 180;
+const transSlope = channelSlope * Math.PI / 180;
+const depSlope = 5 * Math.PI / 180;
     
-    let elev = 2000;
-    let dist = 0;
+let elev = 2000;
+let dist = 0;
     
-    // Initiation
-    for (let i = 0; i <= 10; i++) {
-      const d = i * initLen / 10;
-      const e = elev - d * Math.tan(initSlope);
-      profile.push([dist + d, e]);
-    }
+// Initiation
+for (let i = 0; i <= 10; i++) {
+const d = i * initLen / 10;
+const e = elev - d * Math.tan(initSlope);
+profile.push([dist + d, e]);
+}
     
-    elev = profile[profile.length-1][1];
-    dist = initLen;
+elev = profile[profile.length-1][1];
+dist = initLen;
     
-    // Transport
-    for (let i = 0; i <= 20; i++) {
-      const d = i * transLen / 20;
-      const e = elev - d * Math.tan(transSlope);
-      profile.push([dist + d, e]);
-    }
+// Transport
+for (let i = 0; i <= 20; i++) {
+const d = i * transLen / 20;
+const e = elev - d * Math.tan(transSlope);
+profile.push([dist + d, e]);
+}
     
-    elev = profile[profile.length-1][1];
-    dist = initLen + transLen;
+elev = profile[profile.length-1][1];
+dist = initLen + transLen;
     
-    // Deposition
-    for (let i = 0; i <= 10; i++) {
-      const d = i * depLen / 10;
-      const e = elev - d * Math.tan(depSlope);
-      profile.push([dist + d, Math.max(e, 1000)]); // min elevation
-    }
+// Deposition
+for (let i = 0; i <= 10; i++) {
+const d = i * depLen / 10;
+const e = elev - d * Math.tan(depSlope);
+profile.push([dist + d, Math.max(e, 1000)]); // min elevation
+}
     
-    return profile;
-  }
+return profile;
+}
   
-  function render() {
-    const result = calculateDebrisFlow();
+function render() {
+const result = calculateDebrisFlow();
     
-    document.getElementById('travel-angle').textContent = result.alpha.toFixed(1);
-    document.getElementById('runout-dist').textContent = result.runout.toFixed(0);
-    document.getElementById('peak-vel').textContent = result.velocity.toFixed(1);
-    document.getElementById('impact-force').textContent = result.force.toFixed(0);
+document.getElementById('travel-angle').textContent = result.alpha.toFixed(1);
+document.getElementById('runout-dist').textContent = result.runout.toFixed(0);
+document.getElementById('peak-vel').textContent = result.velocity.toFixed(1);
+document.getElementById('impact-force').textContent = result.force.toFixed(0);
     
-    const profile = generateProfile();
-    const runoutLine = [
-      [0, 2000],
-      [result.runout, 2000 - vertDrop]
-    ];
+const profile = generateProfile();
+const runoutLine = [
+[0, 2000],
+[result.runout, 2000 - vertDrop]
+];
     
-    const series = [
-      {
-        name: 'Channel Profile',
-        type: 'line',
-        data: profile,
-        lineStyle: {color: '#8D6E63', width: 3},
-        areaStyle: {color: 'rgba(141, 110, 99, 0.3)'}
-      },
-      {
-        name: 'Travel Angle',
-        type: 'line',
-        data: runoutLine,
-        lineStyle: {color: '#D32F2F', width: 2, type: 'dashed'},
-        markLine: {
-          silent: true,
-          label: {formatter: `α = ${result.alpha.toFixed(1)}°`}
-        }
-      },
-      {
-        name: 'Runout Zone',
-        type: 'scatter',
-        data: [[result.runout, 2000 - vertDrop]],
-        symbolSize: 20,
-        itemStyle: {color: '#F44336'},
-        label: {
-          show: true,
-          formatter: 'Stop',
-          position: 'top',
-          color: '#F44336',
-          fontWeight: 'bold'
-        }
-      }
-    ];
+const series = [
+{
+name: 'Channel Profile',
+type: 'line',
+data: profile,
+lineStyle: {color: '#8D6E63', width: 3},
+areaStyle: {color: 'rgba(141, 110, 99, 0.3)'}
+},
+{
+name: 'Travel Angle',
+type: 'line',
+data: runoutLine,
+lineStyle: {color: '#D32F2F', width: 2, type: 'dashed'},
+markLine: {
+silent: true,
+label: {formatter: `α = ${result.alpha.toFixed(1)}°`}
+}
+},
+{
+name: 'Runout Zone',
+type: 'scatter',
+data: [[result.runout, 2000 - vertDrop]],
+symbolSize: 20,
+itemStyle: {color: '#F44336'},
+label: {
+show: true,
+formatter: 'Stop',
+position: 'top',
+color: '#F44336',
+fontWeight: 'bold'
+}
+}
+];
     
-    const option = {
-      title: {
-        text: 'Debris Flow Profile & Runout',
-        left: 'center'
-      },
-      tooltip: {
-        trigger: 'axis',
-        axisPointer: {type: 'cross'}
-      },
-      legend: {
-        data: ['Channel Profile', 'Travel Angle', 'Runout Zone'],
-        top: 30
-      },
-      grid: {
-        left: 80,
-        right: 40,
-        top: 80,
-        bottom: 60
-      },
-      xAxis: {
-        type: 'value',
-        name: 'Distance (m)',
-        nameLocation: 'middle',
-        nameGap: 30,
-        min: 0
-      },
-      yAxis: {
-        type: 'value',
-        name: 'Elevation (m)',
-        nameLocation: 'middle',
-        nameGap: 50,
-        min: 1000,
-        max: 2100
-      },
-      series: series
-    };
+const option = {
+title: {
+text: 'Debris Flow Profile & Runout',
+left: 'center'
+},
+tooltip: {
+trigger: 'axis',
+axisPointer: {type: 'cross'}
+},
+legend: {
+data: ['Channel Profile', 'Travel Angle', 'Runout Zone'],
+top: 30
+},
+grid: {
+left: 80,
+right: 40,
+top: 80,
+bottom: 60
+},
+xAxis: {
+type: 'value',
+name: 'Distance (m)',
+nameLocation: 'middle',
+nameGap: 30,
+min: 0
+},
+yAxis: {
+type: 'value',
+name: 'Elevation (m)',
+nameLocation: 'middle',
+nameGap: 50,
+min: 1000,
+max: 2100
+},
+series: series
+};
     
-    chart.setOption(option, true);
-  }
+chart.setOption(option, true);
+}
   
-  document.getElementById('volume').addEventListener('input', (e) => {
-    volume = parseFloat(e.target.value);
-    document.getElementById('vol-val').textContent = volume;
-    render();
-  });
+document.getElementById('volume').addEventListener('input', (e) => {
+volume = parseFloat(e.target.value);
+document.getElementById('vol-val').textContent = volume;
+render();
+});
   
-  document.getElementById('vert-drop').addEventListener('input', (e) => {
-    vertDrop = parseFloat(e.target.value);
-    document.getElementById('drop-val').textContent = vertDrop;
-    render();
-  });
+document.getElementById('vert-drop').addEventListener('input', (e) => {
+vertDrop = parseFloat(e.target.value);
+document.getElementById('drop-val').textContent = vertDrop;
+render();
+});
   
-  document.getElementById('channel-slope').addEventListener('input', (e) => {
-    channelSlope = parseFloat(e.target.value);
-    document.getElementById('slope-val').textContent = channelSlope;
-    render();
-  });
+document.getElementById('channel-slope').addEventListener('input', (e) => {
+channelSlope = parseFloat(e.target.value);
+document.getElementById('slope-val').textContent = channelSlope;
+render();
+});
   
-  document.getElementById('friction').addEventListener('input', (e) => {
-    friction = parseFloat(e.target.value);
-    document.getElementById('friction-val').textContent = friction.toFixed(2);
-    render();
-  });
+document.getElementById('friction').addEventListener('input', (e) => {
+friction = parseFloat(e.target.value);
+document.getElementById('friction-val').textContent = friction.toFixed(2);
+render();
+});
   
-  render();
+render();
   
-  window.addEventListener('resize', () => chart.resize());
+window.addEventListener('resize', () => chart.resize());
 })();
 </script>
 <p><strong>Try this:</strong> - <strong>Larger volume:</strong> Lower travel angle, longer runout - <strong>More vertical drop:</strong> Longer runout (more energy) - <strong>Steeper channel:</strong> Higher velocity - <strong>Higher friction:</strong> Shorter runout, lower velocity - <strong>Brown area:</strong> Channel profile (initiation → transport → deposition) - <strong>Red dashed:</strong> Travel angle from source to runout limit - <strong>Red point:</strong> Predicted stop location - Notice: Doubling volume adds ~500m to runout (logarithmic relationship)!</p>

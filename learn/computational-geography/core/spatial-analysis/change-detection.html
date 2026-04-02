@@ -276,257 +276,258 @@ window.Quarto = {
 <hr>
 <h2 id="computational-implementation" class="anchored">5. Computational Implementation</h2>
 <p>Below is an interactive change detection demo.</p>
-<div id="change-viz" class="viz-container">
+<div class="viz-container" id="change-viz">
 <div class="controls">
-<pre><code>&lt;label&gt;
-  Change detection method:
-  &lt;select id="change-method"&gt;
-    &lt;option value="ndvi-diff" selected&gt;NDVI Differencing&lt;/option&gt;
-    &lt;option value="image-diff"&gt;Image Differencing (NIR)&lt;/option&gt;
-    &lt;option value="cva"&gt;Change Vector Analysis&lt;/option&gt;
-  &lt;/select&gt;
-&lt;/label&gt;
-&lt;label&gt;
-  Change threshold:
-  &lt;input type="range" id="change-threshold" min="0.1" max="0.5" step="0.05" value="0.2"&gt;
-  &lt;span id="threshold-value"&gt;0.20&lt;/span&gt;
-&lt;/label&gt;
-&lt;label&gt;
-  Show change areas only:
-  &lt;input type="checkbox" id="show-change-only"&gt;
-&lt;/label&gt;
-&lt;div class="change-info"&gt;
-  &lt;p&gt;&lt;strong&gt;Total pixels:&lt;/strong&gt; &lt;span id="total-pixels"&gt;--&lt;/span&gt;&lt;/p&gt;
-  &lt;p&gt;&lt;strong&gt;Changed pixels:&lt;/strong&gt; &lt;span id="changed-pixels"&gt;--&lt;/span&gt;&lt;/p&gt;
-  &lt;p&gt;&lt;strong&gt;Change rate:&lt;/strong&gt; &lt;span id="change-rate"&gt;--&lt;/span&gt;%&lt;/p&gt;
-&lt;/div&gt;</code></pre>
+<label>
+Change detection method:
+<select id="change-method">
+<option value="ndvi-diff" selected="">NDVI Differencing</option>
+<option value="image-diff">Image Differencing (NIR)</option>
+<option value="cva">Change Vector Analysis</option>
+</select>
+</label>
+<label>
+Change threshold:
+<input type="range" id="change-threshold" min="0.1" max="0.5" step="0.05" value="0.2">
+<span id="threshold-value">0.20</span>
+</label>
+<label>
+Show change areas only:
+<input type="checkbox" id="show-change-only">
+</label>
+<div class="change-info">
+<p><strong>Total pixels:</strong> <span id="total-pixels">--</span></p>
+<p><strong>Changed pixels:</strong> <span id="changed-pixels">--</span></p>
+<p><strong>Change rate:</strong> <span id="change-rate">--</span>%</p>
+</div>
 </div>
 <div id="change-canvas-container">
-<pre><code>&lt;canvas id="change-canvas" width="700" height="350" style="border: 1px solid #ddd;"&gt;&lt;/canvas&gt;</code></pre>
+<canvas id="change-canvas" width="700" height="350" style="border: 1px solid #ddd;"></canvas>
 </div>
 </div>
+
 <script type="module">
 (function() {
-  const canvas = document.getElementById('change-canvas');
-  const ctx = canvas.getContext('2d');
+const canvas = document.getElementById('change-canvas');
+const ctx = canvas.getContext('2d');
   
-  let method = 'ndvi-diff';
-  let threshold = 0.2;
-  let showChangeOnly = false;
+let method = 'ndvi-diff';
+let threshold = 0.2;
+let showChangeOnly = false;
   
-  const size = 50;
-  const cellSize = 7;
+const size = 50;
+const cellSize = 7;
   
-  // Generate synthetic bi-temporal imagery
-  const time1 = {red: [], nir: []};
-  const time2 = {red: [], nir: []};
+// Generate synthetic bi-temporal imagery
+const time1 = {red: [], nir: []};
+const time2 = {red: [], nir: []};
   
-  // Create forest with clearcut region
-  for (let i = 0; i < size; i++) {
-    const rowRed1 = [], rowNIR1 = [];
-    const rowRed2 = [], rowNIR2 = [];
+// Create forest with clearcut region
+for (let i = 0; i < size; i++) {
+const rowRed1 = [], rowNIR1 = [];
+const rowRed2 = [], rowNIR2 = [];
     
-    for (let j = 0; j < size; j++) {
-      // Time 1: All forest
-      const base = 0.05 + Math.random() * 0.03;
-      rowRed1.push(base);
-      rowNIR1.push(0.40 + Math.random() * 0.05);
+for (let j = 0; j < size; j++) {
+// Time 1: All forest
+const base = 0.05 + Math.random() * 0.03;
+rowRed1.push(base);
+rowNIR1.push(0.40 + Math.random() * 0.05);
       
-      // Time 2: Clearcut in specific region
-      const inClearcut = (i > 15 && i < 35 && j > 20 && j < 40);
+// Time 2: Clearcut in specific region
+const inClearcut = (i > 15 && i < 35 && j > 20 && j < 40);
       
-      if (inClearcut) {
-        // Deforested: high red, low NIR
-        rowRed2.push(0.25 + Math.random() * 0.05);
-        rowNIR2.push(0.15 + Math.random() * 0.05);
-      } else {
-        // Stable forest
-        rowRed2.push(base);
-        rowNIR2.push(0.40 + Math.random() * 0.05);
-      }
-    }
+if (inClearcut) {
+// Deforested: high red, low NIR
+rowRed2.push(0.25 + Math.random() * 0.05);
+rowNIR2.push(0.15 + Math.random() * 0.05);
+} else {
+// Stable forest
+rowRed2.push(base);
+rowNIR2.push(0.40 + Math.random() * 0.05);
+}
+}
     
-    time1.red.push(rowRed1);
-    time1.nir.push(rowNIR1);
-    time2.red.push(rowRed2);
-    time2.nir.push(rowNIR2);
-  }
+time1.red.push(rowRed1);
+time1.nir.push(rowNIR1);
+time2.red.push(rowRed2);
+time2.nir.push(rowNIR2);
+}
   
-  function computeNDVI(red, nir) {
-    const ndvi = [];
-    for (let i = 0; i < size; i++) {
-      const row = [];
-      for (let j = 0; j < size; j++) {
-        const val = (nir[i][j] - red[i][j]) / (nir[i][j] + red[i][j]);
-        row.push(val);
-      }
-      ndvi.push(row);
-    }
-    return ndvi;
-  }
+function computeNDVI(red, nir) {
+const ndvi = [];
+for (let i = 0; i < size; i++) {
+const row = [];
+for (let j = 0; j < size; j++) {
+const val = (nir[i][j] - red[i][j]) / (nir[i][j] + red[i][j]);
+row.push(val);
+}
+ndvi.push(row);
+}
+return ndvi;
+}
   
-  function detectChangeNDVI(thresh) {
-    const ndvi1 = computeNDVI(time1.red, time1.nir);
-    const ndvi2 = computeNDVI(time2.red, time2.nir);
+function detectChangeNDVI(thresh) {
+const ndvi1 = computeNDVI(time1.red, time1.nir);
+const ndvi2 = computeNDVI(time2.red, time2.nir);
     
-    const change = [];
-    let changedCount = 0;
+const change = [];
+let changedCount = 0;
     
-    for (let i = 0; i < size; i++) {
-      const row = [];
-      for (let j = 0; j < size; j++) {
-        const diff = ndvi2[i][j] - ndvi1[i][j];
-        const changed = Math.abs(diff) > thresh;
-        row.push({changed, magnitude: diff});
-        if (changed) changedCount++;
-      }
-      change.push(row);
-    }
+for (let i = 0; i < size; i++) {
+const row = [];
+for (let j = 0; j < size; j++) {
+const diff = ndvi2[i][j] - ndvi1[i][j];
+const changed = Math.abs(diff) > thresh;
+row.push({changed, magnitude: diff});
+if (changed) changedCount++;
+}
+change.push(row);
+}
     
-    return {change, changedCount};
-  }
+return {change, changedCount};
+}
   
-  function detectChangeImageDiff(thresh) {
-    const change = [];
-    let changedCount = 0;
+function detectChangeImageDiff(thresh) {
+const change = [];
+let changedCount = 0;
     
-    for (let i = 0; i < size; i++) {
-      const row = [];
-      for (let j = 0; j < size; j++) {
-        const diff = time2.nir[i][j] - time1.nir[i][j];
-        const changed = Math.abs(diff) > thresh;
-        row.push({changed, magnitude: diff});
-        if (changed) changedCount++;
-      }
-      change.push(row);
-    }
+for (let i = 0; i < size; i++) {
+const row = [];
+for (let j = 0; j < size; j++) {
+const diff = time2.nir[i][j] - time1.nir[i][j];
+const changed = Math.abs(diff) > thresh;
+row.push({changed, magnitude: diff});
+if (changed) changedCount++;
+}
+change.push(row);
+}
     
-    return {change, changedCount};
-  }
+return {change, changedCount};
+}
   
-  function detectChangeCVA(thresh) {
-    const change = [];
-    let changedCount = 0;
+function detectChangeCVA(thresh) {
+const change = [];
+let changedCount = 0;
     
-    for (let i = 0; i < size; i++) {
-      const row = [];
-      for (let j = 0; j < size; j++) {
-        const dRed = time2.red[i][j] - time1.red[i][j];
-        const dNIR = time2.nir[i][j] - time1.nir[i][j];
-        const magnitude = Math.sqrt(dRed**2 + dNIR**2);
-        const changed = magnitude > thresh;
-        row.push({changed, magnitude});
-        if (changed) changedCount++;
-      }
-      change.push(row);
-    }
+for (let i = 0; i < size; i++) {
+const row = [];
+for (let j = 0; j < size; j++) {
+const dRed = time2.red[i][j] - time1.red[i][j];
+const dNIR = time2.nir[i][j] - time1.nir[i][j];
+const magnitude = Math.sqrt(dRed**2 + dNIR**2);
+const changed = magnitude > thresh;
+row.push({changed, magnitude});
+if (changed) changedCount++;
+}
+change.push(row);
+}
     
-    return {change, changedCount};
-  }
+return {change, changedCount};
+}
   
-  function drawImage(data, x, y, title) {
-    const ndvi = computeNDVI(data.red, data.nir);
+function drawImage(data, x, y, title) {
+const ndvi = computeNDVI(data.red, data.nir);
     
-    for (let i = 0; i < size; i++) {
-      for (let j = 0; j < size; j++) {
-        const val = ndvi[i][j];
-        const green = Math.floor(255 * val);
-        ctx.fillStyle = `rgb(100, ${green}, 100)`;
-        ctx.fillRect(x + j * cellSize, y + i * cellSize, cellSize, cellSize);
-      }
-    }
+for (let i = 0; i < size; i++) {
+for (let j = 0; j < size; j++) {
+const val = ndvi[i][j];
+const green = Math.floor(255 * val);
+ctx.fillStyle = `rgb(100, ${green}, 100)`;
+ctx.fillRect(x + j * cellSize, y + i * cellSize, cellSize, cellSize);
+}
+}
     
-    // Title
-    ctx.fillStyle = '#2C3E50';
-    ctx.font = 'bold 12px sans-serif';
-    ctx.fillText(title, x + 5, y - 5);
-  }
+// Title
+ctx.fillStyle = '#2C3E50';
+ctx.font = 'bold 12px sans-serif';
+ctx.fillText(title, x + 5, y - 5);
+}
   
-  function drawChange(changeData, x, y, title) {
-    const {change, changedCount} = changeData;
+function drawChange(changeData, x, y, title) {
+const {change, changedCount} = changeData;
     
-    for (let i = 0; i < size; i++) {
-      for (let j = 0; j < size; j++) {
-        if (showChangeOnly && !change[i][j].changed) {
-          ctx.fillStyle = '#FFFFFF';
-        } else if (change[i][j].changed) {
-          // Color by magnitude
-          const mag = change[i][j].magnitude;
-          if (mag < 0) {
-            // Loss (red)
-            const intensity = Math.min(255, Math.floor(Math.abs(mag) * 400));
-            ctx.fillStyle = `rgb(${intensity}, 0, 0)`;
-          } else {
-            // Gain (green)
-            const intensity = Math.min(255, Math.floor(mag * 400));
-            ctx.fillStyle = `rgb(0, ${intensity}, 0)`;
-          }
-        } else {
-          // No change (gray)
-          ctx.fillStyle = '#CCCCCC';
-        }
+for (let i = 0; i < size; i++) {
+for (let j = 0; j < size; j++) {
+if (showChangeOnly && !change[i][j].changed) {
+ctx.fillStyle = '#FFFFFF';
+} else if (change[i][j].changed) {
+// Color by magnitude
+const mag = change[i][j].magnitude;
+if (mag < 0) {
+// Loss (red)
+const intensity = Math.min(255, Math.floor(Math.abs(mag) * 400));
+ctx.fillStyle = `rgb(${intensity}, 0, 0)`;
+} else {
+// Gain (green)
+const intensity = Math.min(255, Math.floor(mag * 400));
+ctx.fillStyle = `rgb(0, ${intensity}, 0)`;
+}
+} else {
+// No change (gray)
+ctx.fillStyle = '#CCCCCC';
+}
         
-        ctx.fillRect(x + j * cellSize, y + i * cellSize, cellSize, cellSize);
-      }
-    }
+ctx.fillRect(x + j * cellSize, y + i * cellSize, cellSize, cellSize);
+}
+}
     
-    // Stats
-    const totalPixels = size * size;
-    const changeRate = (changedCount / totalPixels * 100).toFixed(1);
+// Stats
+const totalPixels = size * size;
+const changeRate = (changedCount / totalPixels * 100).toFixed(1);
     
-    document.getElementById('total-pixels').textContent = totalPixels;
-    document.getElementById('changed-pixels').textContent = changedCount;
-    document.getElementById('change-rate').textContent = changeRate;
+document.getElementById('total-pixels').textContent = totalPixels;
+document.getElementById('changed-pixels').textContent = changedCount;
+document.getElementById('change-rate').textContent = changeRate;
     
-    // Title
-    ctx.fillStyle = '#2C3E50';
-    ctx.font = 'bold 12px sans-serif';
-    ctx.fillText(title, x + 5, y - 5);
-  }
+// Title
+ctx.fillStyle = '#2C3E50';
+ctx.font = 'bold 12px sans-serif';
+ctx.fillText(title, x + 5, y - 5);
+}
   
-  function render() {
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
+function render() {
+ctx.clearRect(0, 0, canvas.width, canvas.height);
     
-    // Top row: Time 1 and Time 2
-    drawImage(time1, 10, 30, 'Time 1 (2015)');
-    drawImage(time2, 10 + size * cellSize + 20, 30, 'Time 2 (2020)');
+// Top row: Time 1 and Time 2
+drawImage(time1, 10, 30, 'Time 1 (2015)');
+drawImage(time2, 10 + size * cellSize + 20, 30, 'Time 2 (2020)');
     
-    // Bottom row: Change detection
-    let changeData;
-    if (method === 'ndvi-diff') {
-      changeData = detectChangeNDVI(threshold);
-    } else if (method === 'image-diff') {
-      changeData = detectChangeImageDiff(threshold);
-    } else {
-      changeData = detectChangeCVA(threshold);
-    }
+// Bottom row: Change detection
+let changeData;
+if (method === 'ndvi-diff') {
+changeData = detectChangeNDVI(threshold);
+} else if (method === 'image-diff') {
+changeData = detectChangeImageDiff(threshold);
+} else {
+changeData = detectChangeCVA(threshold);
+}
     
-    drawChange(changeData, 10 + (size * cellSize + 20) * 2, 30, 
-               `Change Map (${method})`);
+drawChange(changeData, 10 + (size * cellSize + 20) * 2, 30, 
+`Change Map (${method})`);
     
-    // Legend
-    ctx.fillStyle = '#2C3E50';
-    ctx.font = '11px sans-serif';
-    ctx.fillText('Red = Loss | Green = Gain | Gray = No change', 10, 20);
-  }
+// Legend
+ctx.fillStyle = '#2C3E50';
+ctx.font = '11px sans-serif';
+ctx.fillText('Red = Loss | Green = Gain | Gray = No change', 10, 20);
+}
   
-  document.getElementById('change-method').addEventListener('change', (e) => {
-    method = e.target.value;
-    render();
-  });
+document.getElementById('change-method').addEventListener('change', (e) => {
+method = e.target.value;
+render();
+});
   
-  document.getElementById('change-threshold').addEventListener('input', (e) => {
-    threshold = parseFloat(e.target.value);
-    document.getElementById('threshold-value').textContent = threshold.toFixed(2);
-    render();
-  });
+document.getElementById('change-threshold').addEventListener('input', (e) => {
+threshold = parseFloat(e.target.value);
+document.getElementById('threshold-value').textContent = threshold.toFixed(2);
+render();
+});
   
-  document.getElementById('show-change-only').addEventListener('change', (e) => {
-    showChangeOnly = e.target.checked;
-    render();
-  });
+document.getElementById('show-change-only').addEventListener('change', (e) => {
+showChangeOnly = e.target.checked;
+render();
+});
   
-  render();
+render();
 })();
 </script>
 <p><strong>Try this:</strong> - <strong>NDVI differencing:</strong> Most sensitive to vegetation change - <strong>Image differencing:</strong> Simple NIR band comparison - <strong>Change vector analysis:</strong> Uses both Red and NIR together - <strong>Adjust threshold:</strong> Higher = only major changes detected - <strong>Show change only:</strong> Isolates just the changed areas (red/green) - <strong>Time 1:</strong> All forest (uniformly green) - <strong>Time 2:</strong> Clearcut region visible (less green) - <strong>Change map:</strong> Red shows deforestation area clearly!</p>

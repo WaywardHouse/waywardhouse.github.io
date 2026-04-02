@@ -260,235 +260,234 @@ At cold temperatures (-20°C): <span class="math inline">\Gamma_s \approx 7</spa
 <hr>
 <h2 id="computational-implementation" class="anchored">5. Computational Implementation</h2>
 <p>Below is an interactive atmospheric profile simulator.</p>
-<div id="atmos-profile-viz" class="viz-container">
+<div class="viz-container" id="atmos-profile-viz">
 <div class="controls">
-<pre><code>&lt;label&gt;
-  Surface temperature (°C):
-  &lt;input type="range" id="surf-t-slider" min="10" max="35" step="1" value="25"&gt;
-  &lt;span id="surf-t-value"&gt;25&lt;/span&gt; °C
-&lt;/label&gt;
-&lt;label&gt;
-  Surface dew point (°C):
-  &lt;input type="range" id="dew-slider" min="5" max="30" step="1" value="15"&gt;
-  &lt;span id="dew-value"&gt;15&lt;/span&gt; °C
-&lt;/label&gt;
-&lt;label&gt;
-  Environmental lapse rate (K/km):
-  &lt;input type="range" id="lapse-slider" min="2" max="15" step="0.5" value="6.5"&gt;
-  &lt;span id="lapse-value"&gt;6.5&lt;/span&gt; K/km
-&lt;/label&gt;
-&lt;label&gt;
-  Time of day:
-  &lt;select id="time-of-day"&gt;
-    &lt;option value="day"&gt;Daytime (unstable)&lt;/option&gt;
-    &lt;option value="neutral" selected&gt;Neutral&lt;/option&gt;
-    &lt;option value="night"&gt;Night (inversion)&lt;/option&gt;
-  &lt;/select&gt;
-&lt;/label&gt;</code></pre>
+<label>
+Surface temperature (°C):
+<input type="range" id="surf-t-slider" min="10" max="35" step="1" value="25">
+<span id="surf-t-value">25</span> °C
+</label>
+<label>
+Surface dew point (°C):
+<input type="range" id="dew-slider" min="5" max="30" step="1" value="15">
+<span id="dew-value">15</span> °C
+</label>
+<label>
+Environmental lapse rate (K/km):
+<input type="range" id="lapse-slider" min="2" max="15" step="0.5" value="6.5">
+<span id="lapse-value">6.5</span> K/km
+</label>
+<label>
+Time of day:
+<select id="time-of-day">
+<option value="day">Daytime (unstable)</option>
+<option value="neutral" selected="">Neutral</option>
+<option value="night">Night (inversion)</option>
+</select>
+</label>
 </div>
 <div class="atmos-results">
-<pre><code>&lt;p&gt;&lt;strong&gt;Cloud base (LCL):&lt;/strong&gt; &lt;span id="lcl-display"&gt;&lt;/span&gt; m&lt;/p&gt;
-&lt;p&gt;&lt;strong&gt;Stability:&lt;/strong&gt; &lt;span id="stability-display"&gt;&lt;/span&gt;&lt;/p&gt;
-&lt;p&gt;&lt;strong&gt;Parcel at 1 km:&lt;/strong&gt; &lt;span id="parcel-1km"&gt;&lt;/span&gt; °C&lt;/p&gt;</code></pre>
+<p><strong>Cloud base (LCL):</strong> <span id="lcl-display"></span> m</p>
+<p><strong>Stability:</strong> <span id="stability-display"></span></p>
+<p><strong>Parcel at 1 km:</strong> <span id="parcel-1km"></span> °C</p>
 </div>
-<div id="atmos-profile-chart" style="width: 100%; height: 500px;">
+<div id="atmos-profile-chart" style="width: 100%; height: 500px;"></div>
+</div>
 
-</div>
-</div>
 <script type="module">
 await new Promise(resolve => {
-  const checkECharts = () => {
-    if (typeof echarts !== 'undefined') resolve();
-    else setTimeout(checkECharts, 50);
-  };
-  checkECharts();
+const checkECharts = () => {
+if (typeof echarts !== 'undefined') resolve();
+else setTimeout(checkECharts, 50);
+};
+checkECharts();
 });
 
 (function() {
-  const chart = echarts.init(document.getElementById('atmos-profile-chart'));
+const chart = echarts.init(document.getElementById('atmos-profile-chart'));
   
-  let surfT = 25;
-  let dewT = 15;
-  let lapseRate = 6.5;
-  let timeOfDay = 'neutral';
+let surfT = 25;
+let dewT = 15;
+let lapseRate = 6.5;
+let timeOfDay = 'neutral';
   
-  const gamma_d = 9.8; // K/km
-  const gamma_s = 6.0; // K/km (approximate)
+const gamma_d = 9.8; // K/km
+const gamma_s = 6.0; // K/km (approximate)
   
-  function updateCalculation() {
-    // Adjust lapse rate for time of day
-    let actualLapse = lapseRate;
-    if (timeOfDay === 'day') {
-      actualLapse = Math.min(lapseRate * 1.3, 12); // More unstable
-    } else if (timeOfDay === 'night') {
-      actualLapse = Math.max(lapseRate * 0.5, -2); // Inversion possible
-    }
+function updateCalculation() {
+// Adjust lapse rate for time of day
+let actualLapse = lapseRate;
+if (timeOfDay === 'day') {
+actualLapse = Math.min(lapseRate * 1.3, 12); // More unstable
+} else if (timeOfDay === 'night') {
+actualLapse = Math.max(lapseRate * 0.5, -2); // Inversion possible
+}
     
-    // Cloud base (LCL)
-    const lcl = 125 * (surfT - dewT);
+// Cloud base (LCL)
+const lcl = 125 * (surfT - dewT);
     
-    // Generate profiles
-    const heights = [];
-    const envTemps = [];
-    const dryAdiabat = [];
-    const satAdiabat = [];
-    const dewPoints = [];
+// Generate profiles
+const heights = [];
+const envTemps = [];
+const dryAdiabat = [];
+const satAdiabat = [];
+const dewPoints = [];
     
-    for (let z = 0; z <= 5000; z += 50) {
-      const zKm = z / 1000;
-      heights.push(z);
+for (let z = 0; z <= 5000; z += 50) {
+const zKm = z / 1000;
+heights.push(z);
       
-      // Environmental temperature
-      const Tenv = surfT - actualLapse * zKm;
-      envTemps.push(Tenv);
+// Environmental temperature
+const Tenv = surfT - actualLapse * zKm;
+envTemps.push(Tenv);
       
-      // Dry adiabat from surface
-      const Tdry = surfT - gamma_d * zKm;
-      dryAdiabat.push(Tdry);
+// Dry adiabat from surface
+const Tdry = surfT - gamma_d * zKm;
+dryAdiabat.push(Tdry);
       
-      // Saturated adiabat from LCL
-      if (z < lcl) {
-        satAdiabat.push(null);
-      } else {
-        const T_lcl = surfT - gamma_d * (lcl / 1000);
-        const Tsat = T_lcl - gamma_s * ((z - lcl) / 1000);
-        satAdiabat.push(Tsat);
-      }
+// Saturated adiabat from LCL
+if (z < lcl) {
+satAdiabat.push(null);
+} else {
+const T_lcl = surfT - gamma_d * (lcl / 1000);
+const Tsat = T_lcl - gamma_s * ((z - lcl) / 1000);
+satAdiabat.push(Tsat);
+}
       
-      // Dew point (decreases with height, roughly 2 K/km)
-      const Td = dewT - 2 * zKm;
-      dewPoints.push(Td);
-    }
+// Dew point (decreases with height, roughly 2 K/km)
+const Td = dewT - 2 * zKm;
+dewPoints.push(Td);
+}
     
-    // Stability assessment
-    let stability;
-    if (actualLapse > gamma_d) {
-      stability = 'Absolutely Unstable (Γ > Γd)';
-    } else if (actualLapse > gamma_s) {
-      stability = 'Conditionally Unstable (Γs < Γ < Γd)';
-    } else if (actualLapse > 0) {
-      stability = 'Stable (Γ < Γs)';
-    } else {
-      stability = 'Inversion (Γ < 0)';
-    }
+// Stability assessment
+let stability;
+if (actualLapse > gamma_d) {
+stability = 'Absolutely Unstable (Γ > Γd)';
+} else if (actualLapse > gamma_s) {
+stability = 'Conditionally Unstable (Γs < Γ < Γd)';
+} else if (actualLapse > 0) {
+stability = 'Stable (Γ < Γs)';
+} else {
+stability = 'Inversion (Γ < 0)';
+}
     
-    const parcel1km = surfT - gamma_d * 1;
+const parcel1km = surfT - gamma_d * 1;
     
-    document.getElementById('lcl-display').textContent = lcl > 0 ? lcl.toFixed(0) : 'N/A';
-    document.getElementById('stability-display').textContent = stability;
-    document.getElementById('parcel-1km').textContent = parcel1km.toFixed(1);
+document.getElementById('lcl-display').textContent = lcl > 0 ? lcl.toFixed(0) : 'N/A';
+document.getElementById('stability-display').textContent = stability;
+document.getElementById('parcel-1km').textContent = parcel1km.toFixed(1);
     
-    updateChart(heights, envTemps, dryAdiabat, satAdiabat, dewPoints, lcl);
-  }
+updateChart(heights, envTemps, dryAdiabat, satAdiabat, dewPoints, lcl);
+}
   
-  function updateChart(heights, env, dry, sat, dew, lcl) {
-    const option = {
-      title: {
-        text: 'Atmospheric Temperature Profile',
-        left: 'center'
-      },
-      tooltip: {
-        trigger: 'axis',
-        axisPointer: { type: 'cross' }
-      },
-      legend: {
-        data: ['Environment', 'Dry Adiabat', 'Sat Adiabat', 'Dew Point'],
-        top: 30
-      },
-      grid: {
-        left: 80,
-        right: 40,
-        top: 80,
-        bottom: 60
-      },
-      xAxis: {
-        type: 'value',
-        name: 'Temperature (°C)',
-        nameLocation: 'middle',
-        nameGap: 30,
-        min: -10,
-        max: 40
-      },
-      yAxis: {
-        type: 'value',
-        name: 'Height (m)',
-        nameLocation: 'middle',
-        nameGap: 50,
-        min: 0,
-        max: 5000
-      },
-      series: [
-        {
-          name: 'Environment',
-          type: 'line',
-          data: env.map((t, i) => [t, heights[i]]),
-          lineStyle: { color: '#E74C3C', width: 3 },
-          showSymbol: false
-        },
-        {
-          name: 'Dry Adiabat',
-          type: 'line',
-          data: dry.map((t, i) => [t, heights[i]]),
-          lineStyle: { color: '#3498DB', width: 2, type: 'dashed' },
-          showSymbol: false
-        },
-        {
-          name: 'Sat Adiabat',
-          type: 'line',
-          data: sat.map((t, i) => t !== null ? [t, heights[i]] : null).filter(x => x),
-          lineStyle: { color: '#2ECC71', width: 2, type: 'dashed' },
-          showSymbol: false
-        },
-        {
-          name: 'Dew Point',
-          type: 'line',
-          data: dew.map((t, i) => [t, heights[i]]),
-          lineStyle: { color: '#9B59B6', width: 2, type: 'dotted' },
-          showSymbol: false,
-          markLine: {
-            silent: true,
-            symbol: 'none',
-            data: lcl > 0 ? [
-              {
-                yAxis: lcl,
-                lineStyle: { type: 'solid', color: '#95A5A6' },
-                label: { formatter: 'LCL (cloud base)', position: 'end' }
-              }
-            ] : []
-          }
-        }
-      ]
-    };
+function updateChart(heights, env, dry, sat, dew, lcl) {
+const option = {
+title: {
+text: 'Atmospheric Temperature Profile',
+left: 'center'
+},
+tooltip: {
+trigger: 'axis',
+axisPointer: { type: 'cross' }
+},
+legend: {
+data: ['Environment', 'Dry Adiabat', 'Sat Adiabat', 'Dew Point'],
+top: 30
+},
+grid: {
+left: 80,
+right: 40,
+top: 80,
+bottom: 60
+},
+xAxis: {
+type: 'value',
+name: 'Temperature (°C)',
+nameLocation: 'middle',
+nameGap: 30,
+min: -10,
+max: 40
+},
+yAxis: {
+type: 'value',
+name: 'Height (m)',
+nameLocation: 'middle',
+nameGap: 50,
+min: 0,
+max: 5000
+},
+series: [
+{
+name: 'Environment',
+type: 'line',
+data: env.map((t, i) => [t, heights[i]]),
+lineStyle: { color: '#E74C3C', width: 3 },
+showSymbol: false
+},
+{
+name: 'Dry Adiabat',
+type: 'line',
+data: dry.map((t, i) => [t, heights[i]]),
+lineStyle: { color: '#3498DB', width: 2, type: 'dashed' },
+showSymbol: false
+},
+{
+name: 'Sat Adiabat',
+type: 'line',
+data: sat.map((t, i) => t !== null ? [t, heights[i]] : null).filter(x => x),
+lineStyle: { color: '#2ECC71', width: 2, type: 'dashed' },
+showSymbol: false
+},
+{
+name: 'Dew Point',
+type: 'line',
+data: dew.map((t, i) => [t, heights[i]]),
+lineStyle: { color: '#9B59B6', width: 2, type: 'dotted' },
+showSymbol: false,
+markLine: {
+silent: true,
+symbol: 'none',
+data: lcl > 0 ? [
+{
+yAxis: lcl,
+lineStyle: { type: 'solid', color: '#95A5A6' },
+label: { formatter: 'LCL (cloud base)', position: 'end' }
+}
+] : []
+}
+}
+]
+};
     
-    chart.setOption(option);
-  }
+chart.setOption(option);
+}
   
-  document.getElementById('surf-t-slider').addEventListener('input', (e) => {
-    surfT = parseFloat(e.target.value);
-    document.getElementById('surf-t-value').textContent = surfT;
-    updateCalculation();
-  });
+document.getElementById('surf-t-slider').addEventListener('input', (e) => {
+surfT = parseFloat(e.target.value);
+document.getElementById('surf-t-value').textContent = surfT;
+updateCalculation();
+});
   
-  document.getElementById('dew-slider').addEventListener('input', (e) => {
-    dewT = parseFloat(e.target.value);
-    document.getElementById('dew-value').textContent = dewT;
-    updateCalculation();
-  });
+document.getElementById('dew-slider').addEventListener('input', (e) => {
+dewT = parseFloat(e.target.value);
+document.getElementById('dew-value').textContent = dewT;
+updateCalculation();
+});
   
-  document.getElementById('lapse-slider').addEventListener('input', (e) => {
-    lapseRate = parseFloat(e.target.value);
-    document.getElementById('lapse-value').textContent = lapseRate.toFixed(1);
-    updateCalculation();
-  });
+document.getElementById('lapse-slider').addEventListener('input', (e) => {
+lapseRate = parseFloat(e.target.value);
+document.getElementById('lapse-value').textContent = lapseRate.toFixed(1);
+updateCalculation();
+});
   
-  document.getElementById('time-of-day').addEventListener('change', (e) => {
-    timeOfDay = e.target.value;
-    updateCalculation();
-  });
+document.getElementById('time-of-day').addEventListener('change', (e) => {
+timeOfDay = e.target.value;
+updateCalculation();
+});
   
-  updateCalculation();
+updateCalculation();
   
-  window.addEventListener('resize', () => chart.resize());
+window.addEventListener('resize', () => chart.resize());
 })();
 </script>
 <p><strong>Try this:</strong> - <strong>Nighttime inversion:</strong> Temperature increases with height → extremely stable - <strong>Daytime unstable:</strong> High lapse rate (&gt; 10 K/km) → dry adiabat to left of environment → rising parcel stays warmer - <strong>Dew point spread:</strong> When temperature curve crosses dew point → cloud forms - <strong>LCL marker:</strong> Shows cloud base height - Notice: Saturated adiabat (green) has gentler slope than dry adiabat (latent heat release)</p>

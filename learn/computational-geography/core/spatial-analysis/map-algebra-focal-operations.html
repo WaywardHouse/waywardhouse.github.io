@@ -287,268 +287,269 @@ i=3  13   15   17   19</code></pre>
 <hr>
 <h2 id="computational-implementation" class="anchored">5. Computational Implementation</h2>
 <p>Below is an interactive map algebra demonstration.</p>
-<div id="mapalgebra-viz" class="viz-container">
+<div class="viz-container" id="mapalgebra-viz">
 <div class="controls">
-<pre><code>&lt;label&gt;
-  Operation type:
-  &lt;select id="operation-type"&gt;
-    &lt;option value="local"&gt;Local (Cell-by-Cell)&lt;/option&gt;
-    &lt;option value="focal" selected&gt;Focal (Neighborhood)&lt;/option&gt;
-  &lt;/select&gt;
-&lt;/label&gt;
-&lt;label id="local-op-label" style="display:none;"&gt;
-  Local operation:
-  &lt;select id="local-operation"&gt;
-    &lt;option value="add"&gt;Add (A + B)&lt;/option&gt;
-    &lt;option value="subtract"&gt;Subtract (A - B)&lt;/option&gt;
-    &lt;option value="multiply"&gt;Multiply (A × B)&lt;/option&gt;
-    &lt;option value="ndvi"&gt;NDVI-like ((A - B) / (A + B))&lt;/option&gt;
-  &lt;/select&gt;
-&lt;/label&gt;
-&lt;label id="focal-op-label"&gt;
-  Focal kernel:
-  &lt;select id="focal-kernel"&gt;
-    &lt;option value="mean" selected&gt;Mean (3×3)&lt;/option&gt;
-    &lt;option value="gaussian"&gt;Gaussian (3×3)&lt;/option&gt;
-    &lt;option value="sobel"&gt;Sobel Edge Detection&lt;/option&gt;
-    &lt;option value="laplacian"&gt;Laplacian&lt;/option&gt;
-  &lt;/select&gt;
-&lt;/label&gt;
-&lt;label&gt;
-  Show kernel weights:
-  &lt;input type="checkbox" id="show-kernel"&gt;
-&lt;/label&gt;</code></pre>
+<label>
+Operation type:
+<select id="operation-type">
+<option value="local">Local (Cell-by-Cell)</option>
+<option value="focal" selected="">Focal (Neighborhood)</option>
+</select>
+</label>
+<label id="local-op-label" style="display:none;">
+Local operation:
+<select id="local-operation">
+<option value="add">Add (A + B)</option>
+<option value="subtract">Subtract (A - B)</option>
+<option value="multiply">Multiply (A × B)</option>
+<option value="ndvi">NDVI-like ((A - B) / (A + B))</option>
+</select>
+</label>
+<label id="focal-op-label">
+Focal kernel:
+<select id="focal-kernel">
+<option value="mean" selected="">Mean (3×3)</option>
+<option value="gaussian">Gaussian (3×3)</option>
+<option value="sobel">Sobel Edge Detection</option>
+<option value="laplacian">Laplacian</option>
+</select>
+</label>
+<label>
+Show kernel weights:
+<input type="checkbox" id="show-kernel">
+</label>
 </div>
 <div class="mapalgebra-display">
-<pre><code>&lt;div id="kernel-display" style="display:none; margin: 10px 0; font-family: monospace; white-space: pre;"&gt;&lt;/div&gt;</code></pre>
+<div id="kernel-display" style="display:none; margin: 10px 0; font-family: monospace; white-space: pre;"></div>
 </div>
 <div id="mapalgebra-canvas-container">
-<pre><code>&lt;canvas id="mapalgebra-canvas" width="700" height="350" style="border: 1px solid #ddd;"&gt;&lt;/canvas&gt;</code></pre>
+<canvas id="mapalgebra-canvas" width="700" height="350" style="border: 1px solid #ddd;"></canvas>
 </div>
 </div>
+
 <script type="module">
 (function() {
-  const canvas = document.getElementById('mapalgebra-canvas');
-  const ctx = canvas.getContext('2d');
+const canvas = document.getElementById('mapalgebra-canvas');
+const ctx = canvas.getContext('2d');
   
-  let opType = 'focal';
-  let localOp = 'add';
-  let focalKernel = 'mean';
-  let showKernel = false;
+let opType = 'focal';
+let localOp = 'add';
+let focalKernel = 'mean';
+let showKernel = false;
   
-  const size = 20;
+const size = 20;
   
-  // Generate test rasters
-  const rasterA = [];
-  const rasterB = [];
-  for (let i = 0; i < size; i++) {
-    const rowA = [];
-    const rowB = [];
-    for (let j = 0; j < size; j++) {
-      // Gradient pattern for A
-      rowA.push(100 + i * 5 + j * 3 + Math.random() * 20 - 10);
-      // Different pattern for B
-      rowB.push(50 + Math.sin(i / 3) * 30 + Math.cos(j / 3) * 30);
-    }
-    rasterA.push(rowA);
-    rasterB.push(rowB);
-  }
+// Generate test rasters
+const rasterA = [];
+const rasterB = [];
+for (let i = 0; i < size; i++) {
+const rowA = [];
+const rowB = [];
+for (let j = 0; j < size; j++) {
+// Gradient pattern for A
+rowA.push(100 + i * 5 + j * 3 + Math.random() * 20 - 10);
+// Different pattern for B
+rowB.push(50 + Math.sin(i / 3) * 30 + Math.cos(j / 3) * 30);
+}
+rasterA.push(rowA);
+rasterB.push(rowB);
+}
   
-  const kernels = {
-    mean: [
-      [1/9, 1/9, 1/9],
-      [1/9, 1/9, 1/9],
-      [1/9, 1/9, 1/9]
-    ],
-    gaussian: [
-      [1/16, 2/16, 1/16],
-      [2/16, 4/16, 2/16],
-      [1/16, 2/16, 1/16]
-    ],
-    sobel: [ // Returns magnitude
-      [-1, 0, 1],
-      [-2, 0, 2],
-      [-1, 0, 1]
-    ],
-    laplacian: [
-      [0, 1, 0],
-      [1, -4, 1],
-      [0, 1, 0]
-    ]
-  };
+const kernels = {
+mean: [
+[1/9, 1/9, 1/9],
+[1/9, 1/9, 1/9],
+[1/9, 1/9, 1/9]
+],
+gaussian: [
+[1/16, 2/16, 1/16],
+[2/16, 4/16, 2/16],
+[1/16, 2/16, 1/16]
+],
+sobel: [ // Returns magnitude
+[-1, 0, 1],
+[-2, 0, 2],
+[-1, 0, 1]
+],
+laplacian: [
+[0, 1, 0],
+[1, -4, 1],
+[0, 1, 0]
+]
+};
   
-  function convolve(data, kernel) {
-    const result = [];
-    const ksize = Math.floor(kernel.length / 2);
+function convolve(data, kernel) {
+const result = [];
+const ksize = Math.floor(kernel.length / 2);
     
-    for (let i = 0; i < data.length; i++) {
-      const row = [];
-      for (let j = 0; j < data[0].length; j++) {
-        let sum = 0;
-        let count = 0;
+for (let i = 0; i < data.length; i++) {
+const row = [];
+for (let j = 0; j < data[0].length; j++) {
+let sum = 0;
+let count = 0;
         
-        for (let ki = -ksize; ki <= ksize; ki++) {
-          for (let kj = -ksize; kj <= ksize; kj++) {
-            const ii = i + ki;
-            const jj = j + kj;
+for (let ki = -ksize; ki <= ksize; ki++) {
+for (let kj = -ksize; kj <= ksize; kj++) {
+const ii = i + ki;
+const jj = j + kj;
             
-            if (ii >= 0 && ii < data.length && jj >= 0 && jj < data[0].length) {
-              sum += data[ii][jj] * kernel[ki + ksize][kj + ksize];
-              count++;
-            }
-          }
-        }
+if (ii >= 0 && ii < data.length && jj >= 0 && jj < data[0].length) {
+sum += data[ii][jj] * kernel[ki + ksize][kj + ksize];
+count++;
+}
+}
+}
         
-        row.push(sum);
-      }
-      result.push(row);
-    }
+row.push(sum);
+}
+result.push(row);
+}
     
-    return result;
-  }
+return result;
+}
   
-  function sobelMagnitude(data) {
-    const kx = [[-1, 0, 1], [-2, 0, 2], [-1, 0, 1]];
-    const ky = [[-1, -2, -1], [0, 0, 0], [1, 2, 1]];
+function sobelMagnitude(data) {
+const kx = [[-1, 0, 1], [-2, 0, 2], [-1, 0, 1]];
+const ky = [[-1, -2, -1], [0, 0, 0], [1, 2, 1]];
     
-    const gx = convolve(data, kx);
-    const gy = convolve(data, ky);
+const gx = convolve(data, kx);
+const gy = convolve(data, ky);
     
-    const result = [];
-    for (let i = 0; i < gx.length; i++) {
-      const row = [];
-      for (let j = 0; j < gx[0].length; j++) {
-        row.push(Math.sqrt(gx[i][j] ** 2 + gy[i][j] ** 2));
-      }
-      result.push(row);
-    }
+const result = [];
+for (let i = 0; i < gx.length; i++) {
+const row = [];
+for (let j = 0; j < gx[0].length; j++) {
+row.push(Math.sqrt(gx[i][j] ** 2 + gy[i][j] ** 2));
+}
+result.push(row);
+}
     
-    return result;
-  }
+return result;
+}
   
-  function localOperation(dataA, dataB, op) {
-    const result = [];
-    for (let i = 0; i < dataA.length; i++) {
-      const row = [];
-      for (let j = 0; j < dataA[0].length; j++) {
-        const a = dataA[i][j];
-        const b = dataB[i][j];
+function localOperation(dataA, dataB, op) {
+const result = [];
+for (let i = 0; i < dataA.length; i++) {
+const row = [];
+for (let j = 0; j < dataA[0].length; j++) {
+const a = dataA[i][j];
+const b = dataB[i][j];
         
-        let value;
-        if (op === 'add') value = a + b;
-        else if (op === 'subtract') value = a - b;
-        else if (op === 'multiply') value = a * b;
-        else if (op === 'ndvi') value = (a - b) / (a + b);
+let value;
+if (op === 'add') value = a + b;
+else if (op === 'subtract') value = a - b;
+else if (op === 'multiply') value = a * b;
+else if (op === 'ndvi') value = (a - b) / (a + b);
         
-        row.push(value);
-      }
-      result.push(row);
-    }
-    return result;
-  }
+row.push(value);
+}
+result.push(row);
+}
+return result;
+}
   
-  function drawRaster(data, x, y, width, height, title) {
-    const cellW = width / data[0].length;
-    const cellH = height / data.length;
+function drawRaster(data, x, y, width, height, title) {
+const cellW = width / data[0].length;
+const cellH = height / data.length;
     
-    // Find min/max
-    let min = Infinity, max = -Infinity;
-    for (let row of data) {
-      for (let val of row) {
-        if (isFinite(val)) {
-          min = Math.min(min, val);
-          max = Math.max(max, val);
-        }
-      }
-    }
+// Find min/max
+let min = Infinity, max = -Infinity;
+for (let row of data) {
+for (let val of row) {
+if (isFinite(val)) {
+min = Math.min(min, val);
+max = Math.max(max, val);
+}
+}
+}
     
-    // Draw cells
-    for (let i = 0; i < data.length; i++) {
-      for (let j = 0; j < data[0].length; j++) {
-        const value = data[i][j];
-        if (!isFinite(value)) continue;
+// Draw cells
+for (let i = 0; i < data.length; i++) {
+for (let j = 0; j < data[0].length; j++) {
+const value = data[i][j];
+if (!isFinite(value)) continue;
         
-        const normalized = (value - min) / (max - min);
-        const gray = Math.floor(255 * normalized);
+const normalized = (value - min) / (max - min);
+const gray = Math.floor(255 * normalized);
         
-        ctx.fillStyle = `rgb(${gray}, ${gray}, ${gray})`;
-        ctx.fillRect(x + j * cellW, y + i * cellH, cellW, cellH);
-      }
-    }
+ctx.fillStyle = `rgb(${gray}, ${gray}, ${gray})`;
+ctx.fillRect(x + j * cellW, y + i * cellH, cellW, cellH);
+}
+}
     
-    // Title
-    ctx.fillStyle = '#2C3E50';
-    ctx.font = 'bold 12px sans-serif';
-    ctx.fillText(title, x + 5, y - 5);
-  }
+// Title
+ctx.fillStyle = '#2C3E50';
+ctx.font = 'bold 12px sans-serif';
+ctx.fillText(title, x + 5, y - 5);
+}
   
-  function displayKernel(kernel) {
-    let text = 'Kernel:\n';
-    for (let row of kernel) {
-      text += row.map(v => v.toFixed(3).padStart(7)).join(' ') + '\n';
-    }
-    document.getElementById('kernel-display').textContent = text;
-  }
+function displayKernel(kernel) {
+let text = 'Kernel:\n';
+for (let row of kernel) {
+text += row.map(v => v.toFixed(3).padStart(7)).join(' ') + '\n';
+}
+document.getElementById('kernel-display').textContent = text;
+}
   
-  function render() {
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
+function render() {
+ctx.clearRect(0, 0, canvas.width, canvas.height);
     
-    let result;
+let result;
     
-    if (opType === 'local') {
-      result = localOperation(rasterA, rasterB, localOp);
-      drawRaster(rasterA, 20, 40, 150, 150, 'Input A');
-      drawRaster(rasterB, 190, 40, 150, 150, 'Input B');
-      drawRaster(result, 360, 40, 150, 150, 'Result');
-    } else {
-      // Focal operation
-      if (focalKernel === 'sobel') {
-        result = sobelMagnitude(rasterA);
-      } else {
-        result = convolve(rasterA, kernels[focalKernel]);
-      }
+if (opType === 'local') {
+result = localOperation(rasterA, rasterB, localOp);
+drawRaster(rasterA, 20, 40, 150, 150, 'Input A');
+drawRaster(rasterB, 190, 40, 150, 150, 'Input B');
+drawRaster(result, 360, 40, 150, 150, 'Result');
+} else {
+// Focal operation
+if (focalKernel === 'sobel') {
+result = sobelMagnitude(rasterA);
+} else {
+result = convolve(rasterA, kernels[focalKernel]);
+}
       
-      drawRaster(rasterA, 50, 40, 250, 250, 'Input');
-      drawRaster(result, 350, 40, 250, 250, 
-                  `Output (${focalKernel})`);
+drawRaster(rasterA, 50, 40, 250, 250, 'Input');
+drawRaster(result, 350, 40, 250, 250, 
+`Output (${focalKernel})`);
       
-      if (showKernel && kernels[focalKernel]) {
-        displayKernel(kernels[focalKernel]);
-        document.getElementById('kernel-display').style.display = 'block';
-      } else {
-        document.getElementById('kernel-display').style.display = 'none';
-      }
-    }
-  }
+if (showKernel && kernels[focalKernel]) {
+displayKernel(kernels[focalKernel]);
+document.getElementById('kernel-display').style.display = 'block';
+} else {
+document.getElementById('kernel-display').style.display = 'none';
+}
+}
+}
   
-  document.getElementById('operation-type').addEventListener('change', (e) => {
-    opType = e.target.value;
-    if (opType === 'local') {
-      document.getElementById('local-op-label').style.display = 'block';
-      document.getElementById('focal-op-label').style.display = 'none';
-    } else {
-      document.getElementById('local-op-label').style.display = 'none';
-      document.getElementById('focal-op-label').style.display = 'block';
-    }
-    render();
-  });
+document.getElementById('operation-type').addEventListener('change', (e) => {
+opType = e.target.value;
+if (opType === 'local') {
+document.getElementById('local-op-label').style.display = 'block';
+document.getElementById('focal-op-label').style.display = 'none';
+} else {
+document.getElementById('local-op-label').style.display = 'none';
+document.getElementById('focal-op-label').style.display = 'block';
+}
+render();
+});
   
-  document.getElementById('local-operation').addEventListener('change', (e) => {
-    localOp = e.target.value;
-    render();
-  });
+document.getElementById('local-operation').addEventListener('change', (e) => {
+localOp = e.target.value;
+render();
+});
   
-  document.getElementById('focal-kernel').addEventListener('change', (e) => {
-    focalKernel = e.target.value;
-    render();
-  });
+document.getElementById('focal-kernel').addEventListener('change', (e) => {
+focalKernel = e.target.value;
+render();
+});
   
-  document.getElementById('show-kernel').addEventListener('change', (e) => {
-    showKernel = e.target.checked;
-    render();
-  });
+document.getElementById('show-kernel').addEventListener('change', (e) => {
+showKernel = e.target.checked;
+render();
+});
   
-  render();
+render();
 })();
 </script>
 <p><strong>Try this:</strong> - <strong>Mean filter:</strong> Smooths the noisy gradient pattern - <strong>Gaussian:</strong> Smoother than mean, better edge preservation - <strong>Sobel:</strong> Highlights edges (bright = steep gradient) - <strong>Laplacian:</strong> Detects rapid changes (edges appear as white/black pairs) - <strong>Local operations:</strong> Try different combinations of inputs - <strong>Show kernel:</strong> See the actual weight matrices</p>

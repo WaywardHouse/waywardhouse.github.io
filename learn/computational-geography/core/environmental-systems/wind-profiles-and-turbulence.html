@@ -321,222 +321,221 @@ Keep the physical picture in mind: surfaces drag on moving air, so wind is slowe
 <hr>
 <h2 id="computational-implementation" class="anchored">5. Computational Implementation</h2>
 <p>Below is an interactive wind profile simulator.</p>
-<div id="wind-profile-viz" class="viz-container">
+<div class="viz-container" id="wind-profile-viz">
 <div class="controls">
-<pre><code>&lt;label&gt;
-  Surface type:
-  &lt;select id="surface-type-wind"&gt;
-    &lt;option value="ocean"&gt;Open Ocean (z₀=0.0002 m)&lt;/option&gt;
-    &lt;option value="snow"&gt;Snow (z₀=0.003 m)&lt;/option&gt;
-    &lt;option value="grass" selected&gt;Grassland (z₀=0.03 m)&lt;/option&gt;
-    &lt;option value="crops"&gt;Crops (z₀=0.10 m)&lt;/option&gt;
-    &lt;option value="forest"&gt;Forest (z₀=1.5 m)&lt;/option&gt;
-  &lt;/select&gt;
-&lt;/label&gt;
-&lt;label&gt;
-  Wind speed at 10 m (m/s):
-  &lt;input type="range" id="wind-ref-slider" min="2" max="20" step="1" value="8"&gt;
-  &lt;span id="wind-ref-value"&gt;8&lt;/span&gt; m/s
-&lt;/label&gt;
-&lt;label&gt;
-  Custom roughness length (m):
-  &lt;input type="range" id="z0-slider" min="-4" max="0.5" step="0.1" value="-1.52"&gt;
-  &lt;span id="z0-value"&gt;0.03&lt;/span&gt; m
-&lt;/label&gt;
-&lt;div class="button-group"&gt;
-  &lt;button id="toggle-log-scale"&gt;Toggle Log Scale&lt;/button&gt;
-&lt;/div&gt;</code></pre>
+<label>
+Surface type:
+<select id="surface-type-wind">
+<option value="ocean">Open Ocean (z₀=0.0002 m)</option>
+<option value="snow">Snow (z₀=0.003 m)</option>
+<option value="grass" selected="">Grassland (z₀=0.03 m)</option>
+<option value="crops">Crops (z₀=0.10 m)</option>
+<option value="forest">Forest (z₀=1.5 m)</option>
+</select>
+</label>
+<label>
+Wind speed at 10 m (m/s):
+<input type="range" id="wind-ref-slider" min="2" max="20" step="1" value="8">
+<span id="wind-ref-value">8</span> m/s
+</label>
+<label>
+Custom roughness length (m):
+<input type="range" id="z0-slider" min="-4" max="0.5" step="0.1" value="-1.52">
+<span id="z0-value">0.03</span> m
+</label>
+<div class="button-group">
+<button id="toggle-log-scale">Toggle Log Scale</button>
+</div>
 </div>
 <div class="wind-results">
-<pre><code>&lt;p&gt;&lt;strong&gt;Friction velocity (u*):&lt;/strong&gt; &lt;span id="ustar-display"&gt;&lt;/span&gt; m/s&lt;/p&gt;
-&lt;p&gt;&lt;strong&gt;Wind at 2 m:&lt;/strong&gt; &lt;span id="wind-2m"&gt;&lt;/span&gt; m/s&lt;/p&gt;
-&lt;p&gt;&lt;strong&gt;Wind at 50 m:&lt;/strong&gt; &lt;span id="wind-50m"&gt;&lt;/span&gt; m/s&lt;/p&gt;
-&lt;p&gt;&lt;strong&gt;10m/2m ratio:&lt;/strong&gt; &lt;span id="wind-ratio"&gt;&lt;/span&gt;&lt;/p&gt;</code></pre>
+<p><strong>Friction velocity (u*):</strong> <span id="ustar-display"></span> m/s</p>
+<p><strong>Wind at 2 m:</strong> <span id="wind-2m"></span> m/s</p>
+<p><strong>Wind at 50 m:</strong> <span id="wind-50m"></span> m/s</p>
+<p><strong>10m/2m ratio:</strong> <span id="wind-ratio"></span></p>
 </div>
-<div id="wind-profile-chart" style="width: 100%; height: 500px;">
+<div id="wind-profile-chart" style="width: 100%; height: 500px;"></div>
+</div>
 
-</div>
-</div>
 <script type="module">
 await new Promise(resolve => {
-  const checkECharts = () => {
-    if (typeof echarts !== 'undefined') resolve();
-    else setTimeout(checkECharts, 50);
-  };
-  checkECharts();
+const checkECharts = () => {
+if (typeof echarts !== 'undefined') resolve();
+else setTimeout(checkECharts, 50);
+};
+checkECharts();
 });
 
 (function() {
-  const chart = echarts.init(document.getElementById('wind-profile-chart'));
+const chart = echarts.init(document.getElementById('wind-profile-chart'));
   
-  const surfaces = {
-    ocean: { z0: 0.0002, name: 'Open Ocean' },
-    snow: { z0: 0.003, name: 'Snow' },
-    grass: { z0: 0.03, name: 'Grassland' },
-    crops: { z0: 0.10, name: 'Crops' },
-    forest: { z0: 1.5, name: 'Forest' }
-  };
+const surfaces = {
+ocean: { z0: 0.0002, name: 'Open Ocean' },
+snow: { z0: 0.003, name: 'Snow' },
+grass: { z0: 0.03, name: 'Grassland' },
+crops: { z0: 0.10, name: 'Crops' },
+forest: { z0: 1.5, name: 'Forest' }
+};
   
-  let surfaceType = 'grass';
-  let u10 = 8;
-  let z0 = 0.03;
-  let logScale = false;
+let surfaceType = 'grass';
+let u10 = 8;
+let z0 = 0.03;
+let logScale = false;
   
-  const k = 0.41; // von Karman constant
+const k = 0.41; // von Karman constant
   
-  function windSpeed(z, ustar, z0) {
-    if (z <= z0) return 0;
-    return (ustar / k) * Math.log(z / z0);
-  }
+function windSpeed(z, ustar, z0) {
+if (z <= z0) return 0;
+return (ustar / k) * Math.log(z / z0);
+}
   
-  function frictionVelocity(u_ref, z_ref, z0) {
-    return (k * u_ref) / Math.log(z_ref / z0);
-  }
+function frictionVelocity(u_ref, z_ref, z0) {
+return (k * u_ref) / Math.log(z_ref / z0);
+}
   
-  function updateCalculation() {
-    const ustar = frictionVelocity(u10, 10, z0);
-    const u2m = windSpeed(2, ustar, z0);
-    const u50m = windSpeed(50, ustar, z0);
-    const ratio = u10 / u2m;
+function updateCalculation() {
+const ustar = frictionVelocity(u10, 10, z0);
+const u2m = windSpeed(2, ustar, z0);
+const u50m = windSpeed(50, ustar, z0);
+const ratio = u10 / u2m;
     
-    document.getElementById('ustar-display').textContent = ustar.toFixed(2);
-    document.getElementById('wind-2m').textContent = u2m.toFixed(1);
-    document.getElementById('wind-50m').textContent = u50m.toFixed(1);
-    document.getElementById('wind-ratio').textContent = ratio.toFixed(2);
+document.getElementById('ustar-display').textContent = ustar.toFixed(2);
+document.getElementById('wind-2m').textContent = u2m.toFixed(1);
+document.getElementById('wind-50m').textContent = u50m.toFixed(1);
+document.getElementById('wind-ratio').textContent = ratio.toFixed(2);
     
-    updateChart(ustar);
-  }
+updateChart(ustar);
+}
   
-  function updateChart(ustar) {
-    // Generate wind profile
-    const heights = [];
-    const winds = [];
+function updateChart(ustar) {
+// Generate wind profile
+const heights = [];
+const winds = [];
     
-    const minHeight = Math.max(z0 * 1.1, 0.1);
-    const maxHeight = 100;
-    const nPoints = 100;
+const minHeight = Math.max(z0 * 1.1, 0.1);
+const maxHeight = 100;
+const nPoints = 100;
     
-    for (let i = 0; i < nPoints; i++) {
-      const z = minHeight * Math.pow(maxHeight / minHeight, i / (nPoints - 1));
-      heights.push(z);
-      winds.push(windSpeed(z, ustar, z0));
-    }
+for (let i = 0; i < nPoints; i++) {
+const z = minHeight * Math.pow(maxHeight / minHeight, i / (nPoints - 1));
+heights.push(z);
+winds.push(windSpeed(z, ustar, z0));
+}
     
-    const option = {
-      title: {
-        text: 'Wind Profile (Logarithmic Law)',
-        left: 'center'
-      },
-      tooltip: {
-        trigger: 'axis',
-        axisPointer: { type: 'cross' },
-        formatter: (params) => {
-          const z = params[0].value[1];
-          const u = params[0].value[0];
-          return `Height: ${z.toFixed(1)} m<br/>Wind: ${u.toFixed(2)} m/s`;
-        }
-      },
-      grid: {
-        left: 80,
-        right: 40,
-        top: 60,
-        bottom: 60
-      },
-      xAxis: {
-        type: 'value',
-        name: 'Wind Speed (m/s)',
-        nameLocation: 'middle',
-        nameGap: 30,
-        min: 0
-      },
-      yAxis: {
-        type: logScale ? 'log' : 'value',
-        name: 'Height (m)',
-        nameLocation: 'middle',
-        nameGap: 50,
-        min: logScale ? minHeight : 0,
-        max: maxHeight
-      },
-      series: [
-        {
-          type: 'line',
-          data: winds.map((u, i) => [u, heights[i]]),
-          lineStyle: {
-            color: '#3498DB',
-            width: 3
-          },
-          showSymbol: false,
-          markPoint: {
-            data: [
-              {
-                coord: [u10, 10],
-                symbol: 'circle',
-                symbolSize: 10,
-                itemStyle: { color: '#E74C3C' },
-                label: { show: true, formatter: '10 m ref', position: 'right' }
-              },
-              {
-                coord: [windSpeed(2, ustar, z0), 2],
-                symbol: 'circle',
-                symbolSize: 8,
-                itemStyle: { color: '#F39C12' },
-                label: { show: true, formatter: '2 m', position: 'right' }
-              },
-              {
-                coord: [0, z0],
-                symbol: 'circle',
-                symbolSize: 8,
-                itemStyle: { color: '#2ECC71' },
-                label: { show: true, formatter: 'z₀', position: 'right' }
-              }
-            ]
-          },
-          markLine: {
-            silent: true,
-            symbol: 'none',
-            data: [
-              {
-                yAxis: z0,
-                lineStyle: { type: 'dashed', color: '#2ECC71' },
-                label: { formatter: 'Roughness length' }
-              }
-            ]
-          }
-        }
-      ]
-    };
+const option = {
+title: {
+text: 'Wind Profile (Logarithmic Law)',
+left: 'center'
+},
+tooltip: {
+trigger: 'axis',
+axisPointer: { type: 'cross' },
+formatter: (params) => {
+const z = params[0].value[1];
+const u = params[0].value[0];
+return `Height: ${z.toFixed(1)} m<br/>Wind: ${u.toFixed(2)} m/s`;
+}
+},
+grid: {
+left: 80,
+right: 40,
+top: 60,
+bottom: 60
+},
+xAxis: {
+type: 'value',
+name: 'Wind Speed (m/s)',
+nameLocation: 'middle',
+nameGap: 30,
+min: 0
+},
+yAxis: {
+type: logScale ? 'log' : 'value',
+name: 'Height (m)',
+nameLocation: 'middle',
+nameGap: 50,
+min: logScale ? minHeight : 0,
+max: maxHeight
+},
+series: [
+{
+type: 'line',
+data: winds.map((u, i) => [u, heights[i]]),
+lineStyle: {
+color: '#3498DB',
+width: 3
+},
+showSymbol: false,
+markPoint: {
+data: [
+{
+coord: [u10, 10],
+symbol: 'circle',
+symbolSize: 10,
+itemStyle: { color: '#E74C3C' },
+label: { show: true, formatter: '10 m ref', position: 'right' }
+},
+{
+coord: [windSpeed(2, ustar, z0), 2],
+symbol: 'circle',
+symbolSize: 8,
+itemStyle: { color: '#F39C12' },
+label: { show: true, formatter: '2 m', position: 'right' }
+},
+{
+coord: [0, z0],
+symbol: 'circle',
+symbolSize: 8,
+itemStyle: { color: '#2ECC71' },
+label: { show: true, formatter: 'z₀', position: 'right' }
+}
+]
+},
+markLine: {
+silent: true,
+symbol: 'none',
+data: [
+{
+yAxis: z0,
+lineStyle: { type: 'dashed', color: '#2ECC71' },
+label: { formatter: 'Roughness length' }
+}
+]
+}
+}
+]
+};
     
-    chart.setOption(option);
-  }
+chart.setOption(option);
+}
   
-  document.getElementById('surface-type-wind').addEventListener('change', (e) => {
-    surfaceType = e.target.value;
-    z0 = surfaces[surfaceType].z0;
-    document.getElementById('z0-slider').value = Math.log10(z0);
-    document.getElementById('z0-value').textContent = z0.toFixed(4);
-    updateCalculation();
-  });
+document.getElementById('surface-type-wind').addEventListener('change', (e) => {
+surfaceType = e.target.value;
+z0 = surfaces[surfaceType].z0;
+document.getElementById('z0-slider').value = Math.log10(z0);
+document.getElementById('z0-value').textContent = z0.toFixed(4);
+updateCalculation();
+});
   
-  document.getElementById('wind-ref-slider').addEventListener('input', (e) => {
-    u10 = parseFloat(e.target.value);
-    document.getElementById('wind-ref-value').textContent = u10;
-    updateCalculation();
-  });
+document.getElementById('wind-ref-slider').addEventListener('input', (e) => {
+u10 = parseFloat(e.target.value);
+document.getElementById('wind-ref-value').textContent = u10;
+updateCalculation();
+});
   
-  document.getElementById('z0-slider').addEventListener('input', (e) => {
-    z0 = Math.pow(10, parseFloat(e.target.value));
-    document.getElementById('z0-value').textContent = z0.toFixed(4);
-    updateCalculation();
-  });
+document.getElementById('z0-slider').addEventListener('input', (e) => {
+z0 = Math.pow(10, parseFloat(e.target.value));
+document.getElementById('z0-value').textContent = z0.toFixed(4);
+updateCalculation();
+});
   
-  document.getElementById('toggle-log-scale').addEventListener('click', () => {
-    logScale = !logScale;
-    updateCalculation();
-  });
+document.getElementById('toggle-log-scale').addEventListener('click', () => {
+logScale = !logScale;
+updateCalculation();
+});
   
-  updateCalculation();
+updateCalculation();
   
-  window.addEventListener('resize', () => chart.resize());
+window.addEventListener('resize', () => chart.resize());
 })();
 </script>
 <p><strong>Try this:</strong> - <strong>Switch to ocean:</strong> Very smooth → wind increases rapidly with height - <strong>Switch to forest:</strong> Very rough → wind increases slowly, high z₀ - <strong>Toggle log scale:</strong> On log-height axis, profile becomes a straight line (proof it’s logarithmic) - <strong>Increase reference wind:</strong> Friction velocity increases proportionally - Notice: Rougher surfaces have lower wind speeds at all heights for same reference wind</p>

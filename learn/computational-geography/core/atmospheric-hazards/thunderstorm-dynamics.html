@@ -287,221 +287,222 @@ window.Quarto = {
 <hr>
 <h2 id="computational-implementation" class="anchored">5. Computational Implementation</h2>
 <p>Below is an interactive severe weather parameter simulator.</p>
-<div id="severe-viz" class="viz-container">
+<div class="viz-container" id="severe-viz">
 <div class="controls">
-<pre><code>&lt;label&gt;
-  Surface temperature (°C):
-  &lt;input type="range" id="surface-temp" min="20" max="38" step="1" value="30"&gt;
-  &lt;span id="temp-val"&gt;30&lt;/span&gt;
-&lt;/label&gt;
-&lt;label&gt;
-  Surface dew point (°C):
-  &lt;input type="range" id="dew-point" min="10" max="28" step="1" value="22"&gt;
-  &lt;span id="dewpt-val"&gt;22&lt;/span&gt;
-&lt;/label&gt;
-&lt;label&gt;
-  Mid-level temperature (°C):
-  &lt;input type="range" id="mid-temp" min="-15" max="-5" step="1" value="-10"&gt;
-  &lt;span id="midtemp-val"&gt;-10&lt;/span&gt;
-&lt;/label&gt;
-&lt;label&gt;
-  Bulk shear 0-6km (m/s):
-  &lt;input type="range" id="shear" min="5" max="35" step="2.5" value="15"&gt;
-  &lt;span id="shear-val"&gt;15&lt;/span&gt;
-&lt;/label&gt;
-&lt;div class="severe-info"&gt;
-  &lt;p&gt;&lt;strong&gt;CAPE:&lt;/strong&gt; &lt;span id="cape"&gt;--&lt;/span&gt; J/kg&lt;/p&gt;
-  &lt;p&gt;&lt;strong&gt;Max updraft:&lt;/strong&gt; &lt;span id="updraft"&gt;--&lt;/span&gt; m/s&lt;/p&gt;
-  &lt;p&gt;&lt;strong&gt;Severe potential:&lt;/strong&gt; &lt;span id="potential"&gt;--&lt;/span&gt;&lt;/p&gt;
-  &lt;p&gt;&lt;strong&gt;Storm type:&lt;/strong&gt; &lt;span id="storm-type"&gt;--&lt;/span&gt;&lt;/p&gt;
-&lt;/div&gt;</code></pre>
+<label>
+Surface temperature (°C):
+<input type="range" id="surface-temp" min="20" max="38" step="1" value="30">
+<span id="temp-val">30</span>
+</label>
+<label>
+Surface dew point (°C):
+<input type="range" id="dew-point" min="10" max="28" step="1" value="22">
+<span id="dewpt-val">22</span>
+</label>
+<label>
+Mid-level temperature (°C):
+<input type="range" id="mid-temp" min="-15" max="-5" step="1" value="-10">
+<span id="midtemp-val">-10</span>
+</label>
+<label>
+Bulk shear 0-6km (m/s):
+<input type="range" id="shear" min="5" max="35" step="2.5" value="15">
+<span id="shear-val">15</span>
+</label>
+<div class="severe-info">
+<p><strong>CAPE:</strong> <span id="cape">--</span> J/kg</p>
+<p><strong>Max updraft:</strong> <span id="updraft">--</span> m/s</p>
+<p><strong>Severe potential:</strong> <span id="potential">--</span></p>
+<p><strong>Storm type:</strong> <span id="storm-type">--</span></p>
+</div>
 </div>
 <div id="severe-canvas-container">
-<pre><code>&lt;canvas id="severe-canvas" width="700" height="400" style="border: 1px solid #ddd;"&gt;&lt;/canvas&gt;</code></pre>
+<canvas id="severe-canvas" width="700" height="400" style="border: 1px solid #ddd;"></canvas>
 </div>
 </div>
+
 <script type="module">
 await new Promise(resolve => {
-  const checkECharts = () => {
-    if (typeof echarts !== 'undefined') resolve();
-    else setTimeout(checkECharts, 50);
-  };
-  checkECharts();
+const checkECharts = () => {
+if (typeof echarts !== 'undefined') resolve();
+else setTimeout(checkECharts, 50);
+};
+checkECharts();
 });
 
 (function() {
-  const chart = echarts.init(document.getElementById('severe-canvas'));
+const chart = echarts.init(document.getElementById('severe-canvas'));
   
-  let surfaceTemp = 30;
-  let dewPoint = 22;
-  let midTemp = -10;
-  let shear = 15;
+let surfaceTemp = 30;
+let dewPoint = 22;
+let midTemp = -10;
+let shear = 15;
   
-  function calculateCAPE() {
-    // Simplified CAPE calculation
-    const LCL = 125 * (surfaceTemp - dewPoint);
-    const avgBuoyancy = (surfaceTemp - midTemp - 35) / 273; // Simplified
-    const depth = 11000; // meters
+function calculateCAPE() {
+// Simplified CAPE calculation
+const LCL = 125 * (surfaceTemp - dewPoint);
+const avgBuoyancy = (surfaceTemp - midTemp - 35) / 273; // Simplified
+const depth = 11000; // meters
     
-    const CAPE = 9.81 * avgBuoyancy * depth;
-    const maxUpdraft = Math.sqrt(2 * Math.max(0, CAPE));
+const CAPE = 9.81 * avgBuoyancy * depth;
+const maxUpdraft = Math.sqrt(2 * Math.max(0, CAPE));
     
-    return {CAPE: Math.max(0, CAPE), maxUpdraft, LCL};
-  }
+return {CAPE: Math.max(0, CAPE), maxUpdraft, LCL};
+}
   
-  function assessSeverePotential() {
-    const {CAPE, maxUpdraft} = calculateCAPE();
+function assessSeverePotential() {
+const {CAPE, maxUpdraft} = calculateCAPE();
     
-    let potential, stormType, color;
+let potential, stormType, color;
     
-    if (CAPE > 2500 && shear > 20) {
-      potential = 'HIGH - Significant severe';
-      stormType = 'Supercells';
-      color = '#B71C1C';
-    } else if (CAPE > 1500 && shear > 15) {
-      potential = 'MODERATE - Severe likely';
-      stormType = 'Organized multicells';
-      color = '#E64A19';
-    } else if (CAPE > 1000 && shear > 10) {
-      potential = 'SLIGHT - Isolated severe';
-      stormType = 'Multicells';
-      color = '#F57F17';
-    } else if (CAPE > 500) {
-      potential = 'MARGINAL - General storms';
-      stormType = 'Pulse/disorganized';
-      color = '#FFA726';
-    } else {
-      potential = 'LOW - Limited activity';
-      stormType = 'Weak/none';
-      color = '#66BB6A';
-    }
+if (CAPE > 2500 && shear > 20) {
+potential = 'HIGH - Significant severe';
+stormType = 'Supercells';
+color = '#B71C1C';
+} else if (CAPE > 1500 && shear > 15) {
+potential = 'MODERATE - Severe likely';
+stormType = 'Organized multicells';
+color = '#E64A19';
+} else if (CAPE > 1000 && shear > 10) {
+potential = 'SLIGHT - Isolated severe';
+stormType = 'Multicells';
+color = '#F57F17';
+} else if (CAPE > 500) {
+potential = 'MARGINAL - General storms';
+stormType = 'Pulse/disorganized';
+color = '#FFA726';
+} else {
+potential = 'LOW - Limited activity';
+stormType = 'Weak/none';
+color = '#66BB6A';
+}
     
-    return {potential, stormType, color};
-  }
+return {potential, stormType, color};
+}
   
-  function generateHodograph() {
-    // Simplified hodograph (wind profile)
-    const data = [];
+function generateHodograph() {
+// Simplified hodograph (wind profile)
+const data = [];
     
-    // Surface
-    data.push({u: 0, v: 0, z: 0});
+// Surface
+data.push({u: 0, v: 0, z: 0});
     
-    // Sample points
-    const baseU = shear * 0.5;
-    const baseV = -10;
+// Sample points
+const baseU = shear * 0.5;
+const baseV = -10;
     
-    for (let z = 1; z <= 6; z++) {
-      const u = baseU * (z / 6);
-      const v = baseV + shear * 0.5 * (z / 6);
-      data.push({u, v, z});
-    }
+for (let z = 1; z <= 6; z++) {
+const u = baseU * (z / 6);
+const v = baseV + shear * 0.5 * (z / 6);
+data.push({u, v, z});
+}
     
-    return data;
-  }
+return data;
+}
   
-  function render() {
-    const {CAPE, maxUpdraft} = calculateCAPE();
-    const {potential, stormType, color} = assessSeverePotential();
+function render() {
+const {CAPE, maxUpdraft} = calculateCAPE();
+const {potential, stormType, color} = assessSeverePotential();
     
-    document.getElementById('cape').textContent = CAPE.toFixed(0);
-    document.getElementById('updraft').textContent = maxUpdraft.toFixed(0);
-    document.getElementById('potential').textContent = potential;
-    document.getElementById('potential').style.color = color;
-    document.getElementById('storm-type').textContent = stormType;
+document.getElementById('cape').textContent = CAPE.toFixed(0);
+document.getElementById('updraft').textContent = maxUpdraft.toFixed(0);
+document.getElementById('potential').textContent = potential;
+document.getElementById('potential').style.color = color;
+document.getElementById('storm-type').textContent = stormType;
     
-    const hodograph = generateHodograph();
+const hodograph = generateHodograph();
     
-    const series = [
-      {
-        name: 'Wind Profile (Hodograph)',
-        type: 'line',
-        data: hodograph.map(d => [d.u, d.v]),
-        lineStyle: {color: '#2196F3', width: 3},
-        symbol: 'circle',
-        symbolSize: 8,
-        label: {
-          show: true,
-          formatter: (params) => `${hodograph[params.dataIndex].z}km`,
-          position: 'top'
-        }
-      },
-      {
-        name: 'Shear Vector',
-        type: 'line',
-        data: [[0, 0], [hodograph[6].u, hodograph[6].v]],
-        lineStyle: {color: '#F44336', width: 2, type: 'dashed'},
-        symbol: 'arrow',
-        symbolSize: 15
-      }
-    ];
+const series = [
+{
+name: 'Wind Profile (Hodograph)',
+type: 'line',
+data: hodograph.map(d => [d.u, d.v]),
+lineStyle: {color: '#2196F3', width: 3},
+symbol: 'circle',
+symbolSize: 8,
+label: {
+show: true,
+formatter: (params) => `${hodograph[params.dataIndex].z}km`,
+position: 'top'
+}
+},
+{
+name: 'Shear Vector',
+type: 'line',
+data: [[0, 0], [hodograph[6].u, hodograph[6].v]],
+lineStyle: {color: '#F44336', width: 2, type: 'dashed'},
+symbol: 'arrow',
+symbolSize: 15
+}
+];
     
-    const option = {
-      title: {
-        text: 'Hodograph (Wind Profile)',
-        left: 'center'
-      },
-      tooltip: {
-        trigger: 'item'
-      },
-      legend: {
-        data: ['Wind Profile (Hodograph)', 'Shear Vector'],
-        top: 30
-      },
-      grid: {
-        left: 80,
-        right: 40,
-        top: 80,
-        bottom: 60
-      },
-      xAxis: {
-        type: 'value',
-        name: 'U-component (m/s)',
-        nameLocation: 'middle',
-        nameGap: 30,
-        min: -20,
-        max: 20
-      },
-      yAxis: {
-        type: 'value',
-        name: 'V-component (m/s)',
-        nameLocation: 'middle',
-        nameGap: 50,
-        min: -20,
-        max: 20
-      },
-      series: series
-    };
+const option = {
+title: {
+text: 'Hodograph (Wind Profile)',
+left: 'center'
+},
+tooltip: {
+trigger: 'item'
+},
+legend: {
+data: ['Wind Profile (Hodograph)', 'Shear Vector'],
+top: 30
+},
+grid: {
+left: 80,
+right: 40,
+top: 80,
+bottom: 60
+},
+xAxis: {
+type: 'value',
+name: 'U-component (m/s)',
+nameLocation: 'middle',
+nameGap: 30,
+min: -20,
+max: 20
+},
+yAxis: {
+type: 'value',
+name: 'V-component (m/s)',
+nameLocation: 'middle',
+nameGap: 50,
+min: -20,
+max: 20
+},
+series: series
+};
     
-    chart.setOption(option, true);
-  }
+chart.setOption(option, true);
+}
   
-  document.getElementById('surface-temp').addEventListener('input', (e) => {
-    surfaceTemp = parseFloat(e.target.value);
-    document.getElementById('temp-val').textContent = surfaceTemp;
-    render();
-  });
+document.getElementById('surface-temp').addEventListener('input', (e) => {
+surfaceTemp = parseFloat(e.target.value);
+document.getElementById('temp-val').textContent = surfaceTemp;
+render();
+});
   
-  document.getElementById('dew-point').addEventListener('input', (e) => {
-    dewPoint = parseFloat(e.target.value);
-    document.getElementById('dewpt-val').textContent = dewPoint;
-    render();
-  });
+document.getElementById('dew-point').addEventListener('input', (e) => {
+dewPoint = parseFloat(e.target.value);
+document.getElementById('dewpt-val').textContent = dewPoint;
+render();
+});
   
-  document.getElementById('mid-temp').addEventListener('input', (e) => {
-    midTemp = parseFloat(e.target.value);
-    document.getElementById('midtemp-val').textContent = midTemp;
-    render();
-  });
+document.getElementById('mid-temp').addEventListener('input', (e) => {
+midTemp = parseFloat(e.target.value);
+document.getElementById('midtemp-val').textContent = midTemp;
+render();
+});
   
-  document.getElementById('shear').addEventListener('input', (e) => {
-    shear = parseFloat(e.target.value);
-    document.getElementById('shear-val').textContent = shear;
-    render();
-  });
+document.getElementById('shear').addEventListener('input', (e) => {
+shear = parseFloat(e.target.value);
+document.getElementById('shear-val').textContent = shear;
+render();
+});
   
-  render();
+render();
   
-  window.addEventListener('resize', () => chart.resize());
+window.addEventListener('resize', () => chart.resize());
 })();
 </script>
 <p><strong>Observations:</strong> - CAPE increases with surface warmth and mid-level cooling - High moisture (small T-Td spread) increases CAPE - Shear determines storm organization and severity - Combination of high CAPE and strong shear = supercells - Hodograph shows wind turning with height (directional shear) - Straight hodograph = less favorable for rotation</p>

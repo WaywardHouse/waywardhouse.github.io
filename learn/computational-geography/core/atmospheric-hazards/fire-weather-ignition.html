@@ -272,243 +272,244 @@ window.Quarto = {
 <hr>
 <h2 id="computational-implementation" class="anchored">5. Computational Implementation</h2>
 <p>Below is an interactive fire weather simulator.</p>
-<div id="fire-viz" class="viz-container">
+<div class="viz-container" id="fire-viz">
 <div class="controls">
-<pre><code>&lt;label&gt;
-  Temperature (°C):
-  &lt;input type="range" id="temperature" min="15" max="45" step="1" value="30"&gt;
-  &lt;span id="temp-val"&gt;30&lt;/span&gt;
-&lt;/label&gt;
-&lt;label&gt;
-  Relative Humidity (%):
-  &lt;input type="range" id="humidity" min="10" max="80" step="5" value="30"&gt;
-  &lt;span id="humid-val"&gt;30&lt;/span&gt;
-&lt;/label&gt;
-&lt;label&gt;
-  Wind Speed (km/h):
-  &lt;input type="range" id="wind-speed" min="0" max="60" step="5" value="20"&gt;
-  &lt;span id="wind-val"&gt;20&lt;/span&gt;
-&lt;/label&gt;
-&lt;label&gt;
-  Days since rain:
-  &lt;input type="range" id="days-dry" min="0" max="30" step="1" value="7"&gt;
-  &lt;span id="dry-val"&gt;7&lt;/span&gt;
-&lt;/label&gt;
-&lt;div class="fire-info"&gt;
-  &lt;p&gt;&lt;strong&gt;VPD:&lt;/strong&gt; &lt;span id="vpd"&gt;--&lt;/span&gt; kPa&lt;/p&gt;
-  &lt;p&gt;&lt;strong&gt;1-hr fuel MC:&lt;/strong&gt; &lt;span id="fuel-mc"&gt;--&lt;/span&gt;%&lt;/p&gt;
-  &lt;p&gt;&lt;strong&gt;FFMC:&lt;/strong&gt; &lt;span id="ffmc"&gt;--&lt;/span&gt;&lt;/p&gt;
-  &lt;p&gt;&lt;strong&gt;Fire danger:&lt;/strong&gt; &lt;span id="danger-level"&gt;--&lt;/span&gt;&lt;/p&gt;
-&lt;/div&gt;</code></pre>
+<label>
+Temperature (°C):
+<input type="range" id="temperature" min="15" max="45" step="1" value="30">
+<span id="temp-val">30</span>
+</label>
+<label>
+Relative Humidity (%):
+<input type="range" id="humidity" min="10" max="80" step="5" value="30">
+<span id="humid-val">30</span>
+</label>
+<label>
+Wind Speed (km/h):
+<input type="range" id="wind-speed" min="0" max="60" step="5" value="20">
+<span id="wind-val">20</span>
+</label>
+<label>
+Days since rain:
+<input type="range" id="days-dry" min="0" max="30" step="1" value="7">
+<span id="dry-val">7</span>
+</label>
+<div class="fire-info">
+<p><strong>VPD:</strong> <span id="vpd">--</span> kPa</p>
+<p><strong>1-hr fuel MC:</strong> <span id="fuel-mc">--</span>%</p>
+<p><strong>FFMC:</strong> <span id="ffmc">--</span></p>
+<p><strong>Fire danger:</strong> <span id="danger-level">--</span></p>
+</div>
 </div>
 <div id="fire-canvas-container">
-<pre><code>&lt;canvas id="fire-canvas" width="700" height="400" style="border: 1px solid #ddd;"&gt;&lt;/canvas&gt;</code></pre>
+<canvas id="fire-canvas" width="700" height="400" style="border: 1px solid #ddd;"></canvas>
 </div>
 </div>
+
 <script type="module">
 await new Promise(resolve => {
-  const checkECharts = () => {
-    if (typeof echarts !== 'undefined') resolve();
-    else setTimeout(checkECharts, 50);
-  };
-  checkECharts();
+const checkECharts = () => {
+if (typeof echarts !== 'undefined') resolve();
+else setTimeout(checkECharts, 50);
+};
+checkECharts();
 });
 
 (function() {
-  const chart = echarts.init(document.getElementById('fire-canvas'));
+const chart = echarts.init(document.getElementById('fire-canvas'));
   
-  let temperature = 30;
-  let humidity = 30;
-  let windSpeed = 20;
-  let daysDry = 7;
+let temperature = 30;
+let humidity = 30;
+let windSpeed = 20;
+let daysDry = 7;
   
-  function calculateFireWeather() {
-    // EMC
-    const EMC = 0.03 + 0.2626 * Math.pow(humidity, 0.935) - 0.00104 * temperature;
+function calculateFireWeather() {
+// EMC
+const EMC = 0.03 + 0.2626 * Math.pow(humidity, 0.935) - 0.00104 * temperature;
     
-    // VPD
-    const es = 0.611 * Math.exp((17.27 * temperature) / (temperature + 237.3));
-    const ea = (humidity / 100) * es;
-    const VPD = es - ea;
+// VPD
+const es = 0.611 * Math.exp((17.27 * temperature) / (temperature + 237.3));
+const ea = (humidity / 100) * es;
+const VPD = es - ea;
     
-    // 1-hour fuel moisture (starting at 15%, approach EMC over days)
-    const initialMC = 15;
-    const tau = 1; // 1-hour fuel
-    const hours = daysDry * 24;
-    const fuelMC = EMC + (initialMC - EMC) * Math.exp(-hours / tau);
+// 1-hour fuel moisture (starting at 15%, approach EMC over days)
+const initialMC = 15;
+const tau = 1; // 1-hour fuel
+const hours = daysDry * 24;
+const fuelMC = EMC + (initialMC - EMC) * Math.exp(-hours / tau);
     
-    // FFMC
-    const FFMC = 59.5 * (250 - fuelMC) / (147.2 + fuelMC);
+// FFMC
+const FFMC = 59.5 * (250 - fuelMC) / (147.2 + fuelMC);
     
-    // ISI
-    const ISI = 0.208 * FFMC * (1 + windSpeed / 10);
+// ISI
+const ISI = 0.208 * FFMC * (1 + windSpeed / 10);
     
-    // Danger level
-    let dangerLevel, dangerColor;
-    if (FFMC > 92 && VPD > 3.5 && windSpeed > 25) {
-      dangerLevel = 'EXTREME';
-      dangerColor = '#B71C1C';
-    } else if (FFMC > 88 || VPD > 3) {
-      dangerLevel = 'Very High';
-      dangerColor = '#E64A19';
-    } else if (FFMC > 84 || VPD > 2) {
-      dangerLevel = 'High';
-      dangerColor = '#F57F17';
-    } else if (FFMC > 80) {
-      dangerLevel = 'Moderate';
-      dangerColor = '#FFA726';
-    } else {
-      dangerLevel = 'Low';
-      dangerColor = '#66BB6A';
-    }
+// Danger level
+let dangerLevel, dangerColor;
+if (FFMC > 92 && VPD > 3.5 && windSpeed > 25) {
+dangerLevel = 'EXTREME';
+dangerColor = '#B71C1C';
+} else if (FFMC > 88 || VPD > 3) {
+dangerLevel = 'Very High';
+dangerColor = '#E64A19';
+} else if (FFMC > 84 || VPD > 2) {
+dangerLevel = 'High';
+dangerColor = '#F57F17';
+} else if (FFMC > 80) {
+dangerLevel = 'Moderate';
+dangerColor = '#FFA726';
+} else {
+dangerLevel = 'Low';
+dangerColor = '#66BB6A';
+}
     
-    return {EMC, VPD, fuelMC, FFMC, ISI, dangerLevel, dangerColor};
-  }
+return {EMC, VPD, fuelMC, FFMC, ISI, dangerLevel, dangerColor};
+}
   
-  function generateDiurnalCycle() {
-    const data = [];
+function generateDiurnalCycle() {
+const data = [];
     
-    for (let hour = 0; hour < 24; hour++) {
-      // Diurnal temperature variation
-      const T = temperature + 8 * Math.sin((hour - 6) * Math.PI / 12);
+for (let hour = 0; hour < 24; hour++) {
+// Diurnal temperature variation
+const T = temperature + 8 * Math.sin((hour - 6) * Math.PI / 12);
       
-      // Diurnal humidity variation (inverse of temp)
-      const H = humidity + 20 * Math.sin((hour - 18) * Math.PI / 12);
+// Diurnal humidity variation (inverse of temp)
+const H = humidity + 20 * Math.sin((hour - 18) * Math.PI / 12);
       
-      // Calculate VPD for this hour
-      const es = 0.611 * Math.exp((17.27 * T) / (T + 237.3));
-      const ea = (H / 100) * es;
-      const VPD = es - ea;
+// Calculate VPD for this hour
+const es = 0.611 * Math.exp((17.27 * T) / (T + 237.3));
+const ea = (H / 100) * es;
+const VPD = es - ea;
       
-      // Calculate EMC
-      const EMC = 0.03 + 0.2626 * Math.pow(H, 0.935) - 0.00104 * T;
+// Calculate EMC
+const EMC = 0.03 + 0.2626 * Math.pow(H, 0.935) - 0.00104 * T;
       
-      data.push({hour, T, H, VPD, EMC});
-    }
+data.push({hour, T, H, VPD, EMC});
+}
     
-    return data;
-  }
+return data;
+}
   
-  function render() {
-    const result = calculateFireWeather();
+function render() {
+const result = calculateFireWeather();
     
-    document.getElementById('vpd').textContent = result.VPD.toFixed(2);
-    document.getElementById('fuel-mc').textContent = result.fuelMC.toFixed(1);
-    document.getElementById('ffmc').textContent = result.FFMC.toFixed(0);
-    document.getElementById('danger-level').textContent = result.dangerLevel;
-    document.getElementById('danger-level').style.color = result.dangerColor;
+document.getElementById('vpd').textContent = result.VPD.toFixed(2);
+document.getElementById('fuel-mc').textContent = result.fuelMC.toFixed(1);
+document.getElementById('ffmc').textContent = result.FFMC.toFixed(0);
+document.getElementById('danger-level').textContent = result.dangerLevel;
+document.getElementById('danger-level').style.color = result.dangerColor;
     
-    const diurnalData = generateDiurnalCycle();
+const diurnalData = generateDiurnalCycle();
     
-    const series = [
-      {
-        name: 'VPD (kPa)',
-        type: 'line',
-        data: diurnalData.map(d => [d.hour, d.VPD]),
-        lineStyle: {color: '#F44336', width: 3},
-        yAxisIndex: 0
-      },
-      {
-        name: 'Fuel MC (%)',
-        type: 'line',
-        data: diurnalData.map(d => [d.hour, d.EMC]),
-        lineStyle: {color: '#2196F3', width: 3},
-        yAxisIndex: 1
-      },
-      {
-        name: 'Current Time',
-        type: 'line',
-        data: [[14, 0], [14, 8]],
-        lineStyle: {color: '#4CAF50', width: 2, type: 'dashed'},
-        markLine: {
-          silent: true,
-          data: [{xAxis: 14}],
-          label: {formatter: 'Peak danger', position: 'insideEndTop'}
-        },
-        yAxisIndex: 0
-      }
-    ];
+const series = [
+{
+name: 'VPD (kPa)',
+type: 'line',
+data: diurnalData.map(d => [d.hour, d.VPD]),
+lineStyle: {color: '#F44336', width: 3},
+yAxisIndex: 0
+},
+{
+name: 'Fuel MC (%)',
+type: 'line',
+data: diurnalData.map(d => [d.hour, d.EMC]),
+lineStyle: {color: '#2196F3', width: 3},
+yAxisIndex: 1
+},
+{
+name: 'Current Time',
+type: 'line',
+data: [[14, 0], [14, 8]],
+lineStyle: {color: '#4CAF50', width: 2, type: 'dashed'},
+markLine: {
+silent: true,
+data: [{xAxis: 14}],
+label: {formatter: 'Peak danger', position: 'insideEndTop'}
+},
+yAxisIndex: 0
+}
+];
     
-    const option = {
-      title: {
-        text: 'Fire Weather Diurnal Cycle',
-        left: 'center'
-      },
-      tooltip: {
-        trigger: 'axis',
-        axisPointer: {type: 'cross'}
-      },
-      legend: {
-        data: ['VPD (kPa)', 'Fuel MC (%)', 'Current Time'],
-        top: 30
-      },
-      grid: {
-        left: 80,
-        right: 80,
-        top: 80,
-        bottom: 60
-      },
-      xAxis: {
-        type: 'value',
-        name: 'Hour of Day',
-        nameLocation: 'middle',
-        nameGap: 30,
-        min: 0,
-        max: 23,
-        interval: 3
-      },
-      yAxis: [
-        {
-          type: 'value',
-          name: 'VPD (kPa)',
-          nameLocation: 'middle',
-          nameGap: 50,
-          min: 0,
-          max: 8
-        },
-        {
-          type: 'value',
-          name: 'Fuel MC (%)',
-          nameLocation: 'middle',
-          nameGap: 50,
-          position: 'right',
-          min: 0,
-          max: 20
-        }
-      ],
-      series: series
-    };
+const option = {
+title: {
+text: 'Fire Weather Diurnal Cycle',
+left: 'center'
+},
+tooltip: {
+trigger: 'axis',
+axisPointer: {type: 'cross'}
+},
+legend: {
+data: ['VPD (kPa)', 'Fuel MC (%)', 'Current Time'],
+top: 30
+},
+grid: {
+left: 80,
+right: 80,
+top: 80,
+bottom: 60
+},
+xAxis: {
+type: 'value',
+name: 'Hour of Day',
+nameLocation: 'middle',
+nameGap: 30,
+min: 0,
+max: 23,
+interval: 3
+},
+yAxis: [
+{
+type: 'value',
+name: 'VPD (kPa)',
+nameLocation: 'middle',
+nameGap: 50,
+min: 0,
+max: 8
+},
+{
+type: 'value',
+name: 'Fuel MC (%)',
+nameLocation: 'middle',
+nameGap: 50,
+position: 'right',
+min: 0,
+max: 20
+}
+],
+series: series
+};
     
-    chart.setOption(option, true);
-  }
+chart.setOption(option, true);
+}
   
-  document.getElementById('temperature').addEventListener('input', (e) => {
-    temperature = parseFloat(e.target.value);
-    document.getElementById('temp-val').textContent = temperature;
-    render();
-  });
+document.getElementById('temperature').addEventListener('input', (e) => {
+temperature = parseFloat(e.target.value);
+document.getElementById('temp-val').textContent = temperature;
+render();
+});
   
-  document.getElementById('humidity').addEventListener('input', (e) => {
-    humidity = parseFloat(e.target.value);
-    document.getElementById('humid-val').textContent = humidity;
-    render();
-  });
+document.getElementById('humidity').addEventListener('input', (e) => {
+humidity = parseFloat(e.target.value);
+document.getElementById('humid-val').textContent = humidity;
+render();
+});
   
-  document.getElementById('wind-speed').addEventListener('input', (e) => {
-    windSpeed = parseFloat(e.target.value);
-    document.getElementById('wind-val').textContent = windSpeed;
-    render();
-  });
+document.getElementById('wind-speed').addEventListener('input', (e) => {
+windSpeed = parseFloat(e.target.value);
+document.getElementById('wind-val').textContent = windSpeed;
+render();
+});
   
-  document.getElementById('days-dry').addEventListener('input', (e) => {
-    daysDry = parseFloat(e.target.value);
-    document.getElementById('dry-val').textContent = daysDry;
-    render();
-  });
+document.getElementById('days-dry').addEventListener('input', (e) => {
+daysDry = parseFloat(e.target.value);
+document.getElementById('dry-val').textContent = daysDry;
+render();
+});
   
-  render();
+render();
   
-  window.addEventListener('resize', () => chart.resize());
+window.addEventListener('resize', () => chart.resize());
 })();
 </script>
 <p><strong>Observations:</strong> - VPD peaks in afternoon when temperature highest and humidity lowest - Fuel moisture content reaches minimum in afternoon - Fire danger typically greatest 2-4 PM - Extended dry periods drive fuel moisture to dangerous levels - Red line (VPD): Atmospheric drying power - Blue line (Fuel MC): Equilibrium moisture content - Green dashed: Peak danger period</p>

@@ -419,167 +419,166 @@ window.Quarto = {
 <hr>
 <h2 id="computational-implementation" class="anchored">5. Computational Implementation</h2>
 <p>Below is interactive flood frequency analyzer.</p>
-<div id="flood-freq-viz" class="viz-container">
+<div class="viz-container" id="flood-freq-viz">
 <div class="controls">
-<pre><code>&lt;label&gt;
-  Record length (years):
-  &lt;input type="range" id="record-length" min="10" max="100" step="5" value="30"&gt;
-  &lt;span id="length-val"&gt;30&lt;/span&gt;
-&lt;/label&gt;
-&lt;label&gt;
-  Skew coefficient:
-  &lt;input type="range" id="skew" min="-0.5" max="1.5" step="0.1" value="0.2"&gt;
-  &lt;span id="skew-val"&gt;0.2&lt;/span&gt;
-&lt;/label&gt;
-&lt;label&gt;
-  Mean flow (log cms):
-  &lt;input type="range" id="mean-log" min="2.0" max="3.5" step="0.1" value="2.7"&gt;
-  &lt;span id="mean-val"&gt;2.7&lt;/span&gt;
-&lt;/label&gt;
-&lt;div class="flood-info"&gt;
-  &lt;p&gt;&lt;strong&gt;Q₁₀:&lt;/strong&gt; &lt;span id="q10"&gt;--&lt;/span&gt; m³/s&lt;/p&gt;
-  &lt;p&gt;&lt;strong&gt;Q₅₀:&lt;/strong&gt; &lt;span id="q50"&gt;--&lt;/span&gt; m³/s&lt;/p&gt;
-  &lt;p&gt;&lt;strong&gt;Q₁₀₀:&lt;/strong&gt; &lt;span id="q100"&gt;--&lt;/span&gt; m³/s&lt;/p&gt;
-  &lt;p&gt;&lt;strong&gt;CI width (Q₁₀₀):&lt;/strong&gt; ±&lt;span id="ci-width"&gt;--&lt;/span&gt;%&lt;/p&gt;
-&lt;/div&gt;</code></pre>
+<label>
+Record length (years):
+<input type="range" id="record-length" min="10" max="100" step="5" value="30">
+<span id="length-val">30</span>
+</label>
+<label>
+Skew coefficient:
+<input type="range" id="skew" min="-0.5" max="1.5" step="0.1" value="0.2">
+<span id="skew-val">0.2</span>
+</label>
+<label>
+Mean flow (log cms):
+<input type="range" id="mean-log" min="2.0" max="3.5" step="0.1" value="2.7">
+<span id="mean-val">2.7</span>
+</label>
+<div class="flood-info">
+<p><strong>Q₁₀:</strong> <span id="q10">--</span> m³/s</p>
+<p><strong>Q₅₀:</strong> <span id="q50">--</span> m³/s</p>
+<p><strong>Q₁₀₀:</strong> <span id="q100">--</span> m³/s</p>
+<p><strong>CI width (Q₁₀₀):</strong> ±<span id="ci-width">--</span>%</p>
 </div>
-<div id="flood-canvas" style="height: 400px;">
+</div>
+<div id="flood-canvas" style="height: 400px;"></div>
+</div>
 
-</div>
-</div>
 <script type="module">
 await new Promise(r => {
-  const c = () => typeof echarts !== 'undefined' ? r() : setTimeout(c, 50);
-  c();
+const c = () => typeof echarts !== 'undefined' ? r() : setTimeout(c, 50);
+c();
 });
 
 (function() {
-  const chart = echarts.init(document.getElementById('flood-canvas'));
-  let recordLength = 30, skew = 0.3, meanLog = 2.7;
-  const stdLog = 0.15;
+const chart = echarts.init(document.getElementById('flood-canvas'));
+let recordLength = 30, skew = 0.3, meanLog = 2.7;
+const stdLog = 0.15;
 
-  // K_T table: rows = return period T, cols = skew G
-  // Source: USGS Bulletin 17C, Appendix 3
-  const T_VALS = [2, 5, 10, 25, 50, 100, 200];
-  const G_VALS = [-0.5, 0.0, 0.5, 1.0, 1.5];
-  const K_TABLE = [
-  //  G: -0.5   0.0   0.5   1.0   1.5
-       [0.03,  0.00, -0.05,-0.16,-0.29], // T=2
-       [0.84,  0.84,  0.83,  0.76,  0.69], // T=5
-       [1.34,  1.28,  1.16,  1.00,  0.82], // T=10
-       [1.91,  1.75,  1.52,  1.25,  0.97], // T=25
-       [2.28,  2.05,  1.77,  1.45,  1.13], // T=50
-       [2.63,  2.33,  1.99,  1.62,  1.27], // T=100
-       [2.97,  2.58,  2.18,  1.76,  1.38], // T=200
-  ];
+// K_T table: rows = return period T, cols = skew G
+// Source: USGS Bulletin 17C, Appendix 3
+const T_VALS = [2, 5, 10, 25, 50, 100, 200];
+const G_VALS = [-0.5, 0.0, 0.5, 1.0, 1.5];
+const K_TABLE = [
+//  G: -0.5   0.0   0.5   1.0   1.5
+[0.03,  0.00, -0.05,-0.16,-0.29], // T=2
+[0.84,  0.84,  0.83,  0.76,  0.69], // T=5
+[1.34,  1.28,  1.16,  1.00,  0.82], // T=10
+[1.91,  1.75,  1.52,  1.25,  0.97], // T=25
+[2.28,  2.05,  1.77,  1.45,  1.13], // T=50
+[2.63,  2.33,  1.99,  1.62,  1.27], // T=100
+[2.97,  2.58,  2.18,  1.76,  1.38], // T=200
+];
 
-  // Bilinear interpolation in (log T, G) space
-  function getK(G, T) {
-    const Gc = Math.max(G_VALS[0], Math.min(G_VALS[G_VALS.length-1], G));
-    const Tc = Math.max(T_VALS[0], Math.min(T_VALS[T_VALS.length-1], T));
-    const logT = Math.log(Tc);
+// Bilinear interpolation in (log T, G) space
+function getK(G, T) {
+const Gc = Math.max(G_VALS[0], Math.min(G_VALS[G_VALS.length-1], G));
+const Tc = Math.max(T_VALS[0], Math.min(T_VALS[T_VALS.length-1], T));
+const logT = Math.log(Tc);
 
-    // Find G bracket
-    let gi = G_VALS.length - 2;
-    for (let i = 0; i < G_VALS.length - 1; i++) {
-      if (Gc <= G_VALS[i+1]) { gi = i; break; }
-    }
-    const gFrac = (Gc - G_VALS[gi]) / (G_VALS[gi+1] - G_VALS[gi]);
+// Find G bracket
+let gi = G_VALS.length - 2;
+for (let i = 0; i < G_VALS.length - 1; i++) {
+if (Gc <= G_VALS[i+1]) { gi = i; break; }
+}
+const gFrac = (Gc - G_VALS[gi]) / (G_VALS[gi+1] - G_VALS[gi]);
 
-    // Find T bracket (log space)
-    let ti = T_VALS.length - 2;
-    for (let i = 0; i < T_VALS.length - 1; i++) {
-      if (Tc <= T_VALS[i+1]) { ti = i; break; }
-    }
-    const logT1 = Math.log(T_VALS[ti]);
-    const logT2 = Math.log(T_VALS[ti+1]);
-    const tFrac = (logT - logT1) / (logT2 - logT1);
+// Find T bracket (log space)
+let ti = T_VALS.length - 2;
+for (let i = 0; i < T_VALS.length - 1; i++) {
+if (Tc <= T_VALS[i+1]) { ti = i; break; }
+}
+const logT1 = Math.log(T_VALS[ti]);
+const logT2 = Math.log(T_VALS[ti+1]);
+const tFrac = (logT - logT1) / (logT2 - logT1);
 
-    // Bilinear interpolation
-    const k00 = K_TABLE[ti][gi];
-    const k01 = K_TABLE[ti][gi+1];
-    const k10 = K_TABLE[ti+1][gi];
-    const k11 = K_TABLE[ti+1][gi+1];
-    return (k00*(1-tFrac)*(1-gFrac) + k10*tFrac*(1-gFrac) +
-            k01*(1-tFrac)*gFrac    + k11*tFrac*gFrac);
-  }
+// Bilinear interpolation
+const k00 = K_TABLE[ti][gi];
+const k01 = K_TABLE[ti][gi+1];
+const k10 = K_TABLE[ti+1][gi];
+const k11 = K_TABLE[ti+1][gi+1];
+return (k00*(1-tFrac)*(1-gFrac) + k10*tFrac*(1-gFrac) +
+k01*(1-tFrac)*gFrac    + k11*tFrac*gFrac);
+}
 
-  function render() {
-    const k10  = getK(skew, 10);
-    const k50  = getK(skew, 50);
-    const k100 = getK(skew, 100);
+function render() {
+const k10  = getK(skew, 10);
+const k50  = getK(skew, 50);
+const k100 = getK(skew, 100);
 
-    const q10  = Math.pow(10, meanLog + k10  * stdLog);
-    const q50  = Math.pow(10, meanLog + k50  * stdLog);
-    const q100 = Math.pow(10, meanLog + k100 * stdLog);
-    const se100 = stdLog * Math.sqrt((1 + k100*k100/2) / recordLength);
-    const ciWidth = Math.round((1.96 * se100 / (meanLog + k100*stdLog)) * 100);
+const q10  = Math.pow(10, meanLog + k10  * stdLog);
+const q50  = Math.pow(10, meanLog + k50  * stdLog);
+const q100 = Math.pow(10, meanLog + k100 * stdLog);
+const se100 = stdLog * Math.sqrt((1 + k100*k100/2) / recordLength);
+const ciWidth = Math.round((1.96 * se100 / (meanLog + k100*stdLog)) * 100);
 
-    document.getElementById('q10').textContent  = q10.toFixed(0);
-    document.getElementById('q50').textContent  = q50.toFixed(0);
-    document.getElementById('q100').textContent = q100.toFixed(0);
-    document.getElementById('ci-width').textContent = ciWidth;
+document.getElementById('q10').textContent  = q10.toFixed(0);
+document.getElementById('q50').textContent  = q50.toFixed(0);
+document.getElementById('q100').textContent = q100.toFixed(0);
+document.getElementById('ci-width').textContent = ciWidth;
 
-    const pts = [], upper = [], lower = [];
-    for (let t = 2; t <= 200; t *= 1.08) {
-      const k  = getK(skew, t);
-      const y  = meanLog + k * stdLog;
-      const se = stdLog * Math.sqrt((1 + k*k/2) / recordLength);
-      pts.push([t, Math.pow(10, y)]);
-      upper.push([t, Math.pow(10, y + 1.96*se)]);
-      lower.push([t, Math.pow(10, y - 1.96*se)]);
-    }
+const pts = [], upper = [], lower = [];
+for (let t = 2; t <= 200; t *= 1.08) {
+const k  = getK(skew, t);
+const y  = meanLog + k * stdLog;
+const se = stdLog * Math.sqrt((1 + k*k/2) / recordLength);
+pts.push([t, Math.pow(10, y)]);
+upper.push([t, Math.pow(10, y + 1.96*se)]);
+lower.push([t, Math.pow(10, y - 1.96*se)]);
+}
 
-    chart.setOption({
-      backgroundColor: 'transparent',
-      title: {
-        text: 'Flood Frequency Curve — Log-Pearson Type III',
-        left: 'center',
-        textStyle: {color: 'var(--text)', fontSize: 14, fontWeight: 'normal'},
-      },
-      tooltip: {trigger: 'axis', formatter: p => `T = ${p[0].data[0].toFixed(1)} yr<br>Q = ${p[0].data[1].toFixed(0)} m³/s`},
-      legend: {bottom: 0, textStyle: {color: 'var(--text-2)'}},
-      grid: {left: 70, right: 30, top: 55, bottom: 50},
-      xAxis: {
-        type: 'log',
-        name: 'Return period (years)',
-        nameLocation: 'middle',
-        nameGap: 30,
-        nameTextStyle: {color: 'var(--text-2)'},
-        min: 2, max: 200,
-        axisLabel: {color: 'var(--text-2)'},
-      },
-      yAxis: {
-        type: 'log',
-        name: 'Discharge (m³/s)',
-        nameLocation: 'middle',
-        nameGap: 55,
-        nameTextStyle: {color: 'var(--text-2)'},
-        axisLabel: {color: 'var(--text-2)'},
-      },
-      series: [
-        {name: 'Fitted curve', type: 'line', showSymbol: false, data: pts,
-          lineStyle: {color: '#4e8ac4', width: 2.5}},
-        {name: '95% CI', type: 'line', showSymbol: false, data: upper,
-          lineStyle: {color: '#4e8ac4', width: 1, type: 'dashed'}, itemStyle: {color: '#4e8ac4'}},
-        {name: '95% CI (lower)', type: 'line', showSymbol: false, data: lower,
-          lineStyle: {color: '#4e8ac4', width: 1, type: 'dashed'}, legend: {show: false},
-          itemStyle: {color: '#4e8ac4'}},
-      ]
-    });
-  }
+chart.setOption({
+backgroundColor: 'transparent',
+title: {
+text: 'Flood Frequency Curve — Log-Pearson Type III',
+left: 'center',
+textStyle: {color: 'var(--text)', fontSize: 14, fontWeight: 'normal'},
+},
+tooltip: {trigger: 'axis', formatter: p => `T = ${p[0].data[0].toFixed(1)} yr<br>Q = ${p[0].data[1].toFixed(0)} m³/s`},
+legend: {bottom: 0, textStyle: {color: 'var(--text-2)'}},
+grid: {left: 70, right: 30, top: 55, bottom: 50},
+xAxis: {
+type: 'log',
+name: 'Return period (years)',
+nameLocation: 'middle',
+nameGap: 30,
+nameTextStyle: {color: 'var(--text-2)'},
+min: 2, max: 200,
+axisLabel: {color: 'var(--text-2)'},
+},
+yAxis: {
+type: 'log',
+name: 'Discharge (m³/s)',
+nameLocation: 'middle',
+nameGap: 55,
+nameTextStyle: {color: 'var(--text-2)'},
+axisLabel: {color: 'var(--text-2)'},
+},
+series: [
+{name: 'Fitted curve', type: 'line', showSymbol: false, data: pts,
+lineStyle: {color: '#4e8ac4', width: 2.5}},
+{name: '95% CI', type: 'line', showSymbol: false, data: upper,
+lineStyle: {color: '#4e8ac4', width: 1, type: 'dashed'}, itemStyle: {color: '#4e8ac4'}},
+{name: '95% CI (lower)', type: 'line', showSymbol: false, data: lower,
+lineStyle: {color: '#4e8ac4', width: 1, type: 'dashed'}, legend: {show: false},
+itemStyle: {color: '#4e8ac4'}},
+]
+});
+}
 
-  ['record-length', 'skew', 'mean-log'].forEach(id => {
-    document.getElementById(id).addEventListener('input', e => {
-      const v = +e.target.value;
-      if (id === 'record-length') { recordLength = v; document.getElementById('length-val').textContent = v; }
-      else if (id === 'skew')     { skew = v;         document.getElementById('skew-val').textContent  = v; }
-      else                        { meanLog = v;       document.getElementById('mean-val').textContent  = v; }
-      render();
-    });
-  });
+['record-length', 'skew', 'mean-log'].forEach(id => {
+document.getElementById(id).addEventListener('input', e => {
+const v = +e.target.value;
+if (id === 'record-length') { recordLength = v; document.getElementById('length-val').textContent = v; }
+else if (id === 'skew')     { skew = v;         document.getElementById('skew-val').textContent  = v; }
+else                        { meanLog = v;       document.getElementById('mean-val').textContent  = v; }
+render();
+});
+});
 
-  render();
+render();
 })();
 </script>
 <hr>

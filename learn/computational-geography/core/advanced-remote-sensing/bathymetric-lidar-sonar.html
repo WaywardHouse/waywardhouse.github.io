@@ -276,239 +276,240 @@ window.Quarto = {
 <hr>
 <h2 id="computational-implementation" class="anchored">5. Computational Implementation</h2>
 <p>Below is an interactive bathymetric mapping simulator.</p>
-<div id="bathy-viz" class="viz-container">
+<div class="viz-container" id="bathy-viz">
 <div class="controls">
-<pre><code>&lt;label&gt;
-  Technology:
-  &lt;select id="tech-type"&gt;
-    &lt;option value="lidar"&gt;Bathymetric LiDAR&lt;/option&gt;
-    &lt;option value="sonar"&gt;Multibeam Sonar&lt;/option&gt;
-  &lt;/select&gt;
-&lt;/label&gt;
-&lt;label&gt;
-  Water clarity (Secchi depth, m):
-  &lt;input type="range" id="clarity" min="1" max="30" step="1" value="15"&gt;
-  &lt;span id="clarity-val"&gt;15&lt;/span&gt;
-&lt;/label&gt;
-&lt;label&gt;
-  Bottom type:
-  &lt;select id="bottom-type"&gt;
-    &lt;option value="sand"&gt;Sand (bright)&lt;/option&gt;
-    &lt;option value="mud"&gt;Mud (dark)&lt;/option&gt;
-    &lt;option value="rock"&gt;Rock (variable)&lt;/option&gt;
-    &lt;option value="seagrass"&gt;Seagrass&lt;/option&gt;
-  &lt;/select&gt;
-&lt;/label&gt;
-&lt;div class="bathy-info"&gt;
-  &lt;p&gt;&lt;strong&gt;Max measurable depth:&lt;/strong&gt; &lt;span id="max-depth"&gt;--&lt;/span&gt; m&lt;/p&gt;
-  &lt;p&gt;&lt;strong&gt;Swath width:&lt;/strong&gt; &lt;span id="swath-width"&gt;--&lt;/span&gt; m&lt;/p&gt;
-  &lt;p&gt;&lt;strong&gt;Points measured:&lt;/strong&gt; &lt;span id="point-count"&gt;--&lt;/span&gt;&lt;/p&gt;
-  &lt;p&gt;&lt;strong&gt;Mean depth:&lt;/strong&gt; &lt;span id="mean-depth"&gt;--&lt;/span&gt; m&lt;/p&gt;
-&lt;/div&gt;</code></pre>
+<label>
+Technology:
+<select id="tech-type">
+<option value="lidar">Bathymetric LiDAR</option>
+<option value="sonar">Multibeam Sonar</option>
+</select>
+</label>
+<label>
+Water clarity (Secchi depth, m):
+<input type="range" id="clarity" min="1" max="30" step="1" value="15">
+<span id="clarity-val">15</span>
+</label>
+<label>
+Bottom type:
+<select id="bottom-type">
+<option value="sand">Sand (bright)</option>
+<option value="mud">Mud (dark)</option>
+<option value="rock">Rock (variable)</option>
+<option value="seagrass">Seagrass</option>
+</select>
+</label>
+<div class="bathy-info">
+<p><strong>Max measurable depth:</strong> <span id="max-depth">--</span> m</p>
+<p><strong>Swath width:</strong> <span id="swath-width">--</span> m</p>
+<p><strong>Points measured:</strong> <span id="point-count">--</span></p>
+<p><strong>Mean depth:</strong> <span id="mean-depth">--</span> m</p>
+</div>
 </div>
 <div id="bathy-canvas-container">
-<pre><code>&lt;canvas id="bathy-canvas" width="700" height="400" style="border: 1px solid #ddd;"&gt;&lt;/canvas&gt;</code></pre>
+<canvas id="bathy-canvas" width="700" height="400" style="border: 1px solid #ddd;"></canvas>
 </div>
 </div>
+
 <script type="module">
 await new Promise(resolve => {
-  const checkECharts = () => {
-    if (typeof echarts !== 'undefined') resolve();
-    else setTimeout(checkECharts, 50);
-  };
-  checkECharts();
+const checkECharts = () => {
+if (typeof echarts !== 'undefined') resolve();
+else setTimeout(checkECharts, 50);
+};
+checkECharts();
 });
 
 (function() {
-  const chart = echarts.init(document.getElementById('bathy-canvas'));
+const chart = echarts.init(document.getElementById('bathy-canvas'));
   
-  let techType = 'lidar';
-  let clarity = 15; // Secchi depth in meters
-  let bottomType = 'sand';
+let techType = 'lidar';
+let clarity = 15; // Secchi depth in meters
+let bottomType = 'sand';
   
-  const bottomReflectance = {
-    sand: 0.40,
-    mud: 0.10,
-    rock: 0.25,
-    seagrass: 0.15
-  };
+const bottomReflectance = {
+sand: 0.40,
+mud: 0.10,
+rock: 0.25,
+seagrass: 0.15
+};
   
-  function generateBathymetry() {
-    const profile = [];
-    const xRange = 1000; // meters across
-    const nPoints = 100;
+function generateBathymetry() {
+const profile = [];
+const xRange = 1000; // meters across
+const nPoints = 100;
     
-    for (let i = 0; i <= nPoints; i++) {
-      const x = i * xRange / nPoints;
+for (let i = 0; i <= nPoints; i++) {
+const x = i * xRange / nPoints;
       
-      // Synthetic bathymetry profile
-      let depth = 10 + x / 50 + Math.sin(x / 100) * 8 + Math.sin(x / 30) * 3;
+// Synthetic bathymetry profile
+let depth = 10 + x / 50 + Math.sin(x / 100) * 8 + Math.sin(x / 30) * 3;
       
-      // Add reef or bank feature
-      if (x > 300 && x < 500) {
-        depth = depth - 15 + (x - 300) / 50;
-      }
+// Add reef or bank feature
+if (x > 300 && x < 500) {
+depth = depth - 15 + (x - 300) / 50;
+}
       
-      depth = Math.max(1, depth); // Minimum 1m
+depth = Math.max(1, depth); // Minimum 1m
       
-      profile.push({x, depth});
-    }
+profile.push({x, depth});
+}
     
-    return profile;
-  }
+return profile;
+}
   
-  function calculateMaxDepth() {
-    // Attenuation coefficient from Secchi depth
-    const K = 1.7 / clarity; // Empirical relationship
+function calculateMaxDepth() {
+// Attenuation coefficient from Secchi depth
+const K = 1.7 / clarity; // Empirical relationship
     
-    const R = bottomReflectance[bottomType];
+const R = bottomReflectance[bottomType];
     
-    // Max depth where SNR = 3
-    const SNR_threshold = 3;
-    const I0 = 1000; // Arbitrary units
+// Max depth where SNR = 3
+const SNR_threshold = 3;
+const I0 = 1000; // Arbitrary units
     
-    const maxDepth = Math.log(I0 * R / SNR_threshold) / (2 * K);
+const maxDepth = Math.log(I0 * R / SNR_threshold) / (2 * K);
     
-    return Math.min(maxDepth, techType === 'lidar' ? 50 : 5000);
-  }
+return Math.min(maxDepth, techType === 'lidar' ? 50 : 5000);
+}
   
-  function filterProfile(profile, maxDepth) {
-    return profile.map(p => {
-      if (techType === 'lidar' && p.depth > maxDepth) {
-        return {...p, depth: null}; // No return
-      }
-      return p;
-    }).filter(p => p.depth !== null);
-  }
+function filterProfile(profile, maxDepth) {
+return profile.map(p => {
+if (techType === 'lidar' && p.depth > maxDepth) {
+return {...p, depth: null}; // No return
+}
+return p;
+}).filter(p => p.depth !== null);
+}
   
-  function calculateSwath(profile) {
-    const avgDepth = profile.reduce((sum, p) => sum + p.depth, 0) / profile.length;
+function calculateSwath(profile) {
+const avgDepth = profile.reduce((sum, p) => sum + p.depth, 0) / profile.length;
     
-    if (techType === 'lidar') {
-      return avgDepth * 2; // Rough estimate for ALB swath
-    } else {
-      return avgDepth * 4; // Multibeam typical
-    }
-  }
+if (techType === 'lidar') {
+return avgDepth * 2; // Rough estimate for ALB swath
+} else {
+return avgDepth * 4; // Multibeam typical
+}
+}
   
-  function render() {
-    const fullProfile = generateBathymetry();
-    const maxDepth = calculateMaxDepth();
-    const profile = filterProfile(fullProfile, maxDepth);
-    const swathWidth = calculateSwath(profile);
-    const meanDepth = profile.reduce((sum, p) => sum + p.depth, 0) / profile.length;
+function render() {
+const fullProfile = generateBathymetry();
+const maxDepth = calculateMaxDepth();
+const profile = filterProfile(fullProfile, maxDepth);
+const swathWidth = calculateSwath(profile);
+const meanDepth = profile.reduce((sum, p) => sum + p.depth, 0) / profile.length;
     
-    document.getElementById('max-depth').textContent = maxDepth.toFixed(1);
-    document.getElementById('swath-width').textContent = swathWidth.toFixed(0);
-    document.getElementById('point-count').textContent = profile.length;
-    document.getElementById('mean-depth').textContent = meanDepth.toFixed(1);
+document.getElementById('max-depth').textContent = maxDepth.toFixed(1);
+document.getElementById('swath-width').textContent = swathWidth.toFixed(0);
+document.getElementById('point-count').textContent = profile.length;
+document.getElementById('mean-depth').textContent = meanDepth.toFixed(1);
     
-    const series = [
-      {
-        name: 'Water surface',
-        type: 'line',
-        data: [[0, 0], [1000, 0]],
-        lineStyle: {color: '#1976D2', width: 2},
-        areaStyle: {color: 'rgba(25, 118, 210, 0.3)'},
-        z: 10
-      },
-      {
-        name: 'Measured bottom',
-        type: 'line',
-        data: profile.map(p => [p.x, -p.depth]),
-        lineStyle: {color: '#8D6E63', width: 2},
-        areaStyle: {color: 'rgba(141, 110, 99, 0.5)'},
-        smooth: true
-      }
-    ];
+const series = [
+{
+name: 'Water surface',
+type: 'line',
+data: [[0, 0], [1000, 0]],
+lineStyle: {color: '#1976D2', width: 2},
+areaStyle: {color: 'rgba(25, 118, 210, 0.3)'},
+z: 10
+},
+{
+name: 'Measured bottom',
+type: 'line',
+data: profile.map(p => [p.x, -p.depth]),
+lineStyle: {color: '#8D6E63', width: 2},
+areaStyle: {color: 'rgba(141, 110, 99, 0.5)'},
+smooth: true
+}
+];
     
-    // Show data gaps for LiDAR in deep/turbid water
-    if (techType === 'lidar') {
-      const gaps = fullProfile.filter(p => p.depth > maxDepth);
-      if (gaps.length > 0) {
-        series.push({
-          name: 'No data (too deep/turbid)',
-          type: 'line',
-          data: gaps.map(p => [p.x, -p.depth]),
-          lineStyle: {color: '#F44336', width: 2, type: 'dashed'},
-          showSymbol: false
-        });
-      }
-    }
+// Show data gaps for LiDAR in deep/turbid water
+if (techType === 'lidar') {
+const gaps = fullProfile.filter(p => p.depth > maxDepth);
+if (gaps.length > 0) {
+series.push({
+name: 'No data (too deep/turbid)',
+type: 'line',
+data: gaps.map(p => [p.x, -p.depth]),
+lineStyle: {color: '#F44336', width: 2, type: 'dashed'},
+showSymbol: false
+});
+}
+}
     
-    // Max depth line
-    series.push({
-      name: 'Max measurable depth',
-      type: 'line',
-      data: [[0, -maxDepth], [1000, -maxDepth]],
-      lineStyle: {color: '#FF9800', width: 2, type: 'dotted'},
-      markLine: {
-        silent: true,
-        label: {formatter: `${maxDepth.toFixed(0)}m limit`}
-      }
-    });
+// Max depth line
+series.push({
+name: 'Max measurable depth',
+type: 'line',
+data: [[0, -maxDepth], [1000, -maxDepth]],
+lineStyle: {color: '#FF9800', width: 2, type: 'dotted'},
+markLine: {
+silent: true,
+label: {formatter: `${maxDepth.toFixed(0)}m limit`}
+}
+});
     
-    const option = {
-      title: {
-        text: `Bathymetric Profile - ${techType === 'lidar' ? 'LiDAR' : 'Sonar'}`,
-        left: 'center'
-      },
-      tooltip: {
-        trigger: 'axis',
-        axisPointer: {type: 'cross'}
-      },
-      legend: {
-        data: series.map(s => s.name),
-        top: 30,
-        type: 'scroll'
-      },
-      grid: {
-        left: 80,
-        right: 40,
-        top: 80,
-        bottom: 60
-      },
-      xAxis: {
-        type: 'value',
-        name: 'Distance (m)',
-        nameLocation: 'middle',
-        nameGap: 30,
-        min: 0,
-        max: 1000
-      },
-      yAxis: {
-        type: 'value',
-        name: 'Elevation (m)',
-        nameLocation: 'middle',
-        nameGap: 50,
-        max: 5,
-        min: -60
-      },
-      series: series
-    };
+const option = {
+title: {
+text: `Bathymetric Profile - ${techType === 'lidar' ? 'LiDAR' : 'Sonar'}`,
+left: 'center'
+},
+tooltip: {
+trigger: 'axis',
+axisPointer: {type: 'cross'}
+},
+legend: {
+data: series.map(s => s.name),
+top: 30,
+type: 'scroll'
+},
+grid: {
+left: 80,
+right: 40,
+top: 80,
+bottom: 60
+},
+xAxis: {
+type: 'value',
+name: 'Distance (m)',
+nameLocation: 'middle',
+nameGap: 30,
+min: 0,
+max: 1000
+},
+yAxis: {
+type: 'value',
+name: 'Elevation (m)',
+nameLocation: 'middle',
+nameGap: 50,
+max: 5,
+min: -60
+},
+series: series
+};
     
-    chart.setOption(option, true);
-  }
+chart.setOption(option, true);
+}
   
-  document.getElementById('tech-type').addEventListener('change', (e) => {
-    techType = e.target.value;
-    render();
-  });
+document.getElementById('tech-type').addEventListener('change', (e) => {
+techType = e.target.value;
+render();
+});
   
-  document.getElementById('clarity').addEventListener('input', (e) => {
-    clarity = parseFloat(e.target.value);
-    document.getElementById('clarity-val').textContent = clarity;
-    render();
-  });
+document.getElementById('clarity').addEventListener('input', (e) => {
+clarity = parseFloat(e.target.value);
+document.getElementById('clarity-val').textContent = clarity;
+render();
+});
   
-  document.getElementById('bottom-type').addEventListener('change', (e) => {
-    bottomType = e.target.value;
-    render();
-  });
+document.getElementById('bottom-type').addEventListener('change', (e) => {
+bottomType = e.target.value;
+render();
+});
   
-  render();
+render();
   
-  window.addEventListener('resize', () => chart.resize());
+window.addEventListener('resize', () => chart.resize());
 })();
 </script>
 <p><strong>Observations:</strong> - Blue area represents water column - Brown area shows measured seafloor - Orange dotted line marks maximum measurable depth - LiDAR limited by water clarity (turbidity) - Sonar works in deep/turbid water but from vessel - Clear water (high Secchi) enables deeper LiDAR penetration - Bright bottoms (sand) return stronger signal than dark (mud) - Data gaps occur where depth exceeds technology limits</p>

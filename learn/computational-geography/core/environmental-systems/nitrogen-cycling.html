@@ -268,240 +268,239 @@ NO₃⁻ → N₂, N₂O (anaerobic, waterlogged soils)</p>
 <hr>
 <h2 id="computational-implementation" class="anchored">5. Computational Implementation</h2>
 <p>Below is an interactive nitrogen cycle simulator.</p>
-<div id="n-cycle-viz" class="viz-container">
+<div class="viz-container" id="n-cycle-viz">
 <div class="controls">
-<pre><code>&lt;label&gt;
-  Ecosystem type:
-  &lt;select id="ecosystem-n"&gt;
-    &lt;option value="forest-unfertilized"&gt;Natural Forest&lt;/option&gt;
-    &lt;option value="grassland"&gt;Grassland&lt;/option&gt;
-    &lt;option value="crop-unfertilized" selected&gt;Crop (no fertilizer)&lt;/option&gt;
-    &lt;option value="crop-fertilized"&gt;Crop (fertilized)&lt;/option&gt;
-  &lt;/select&gt;
-&lt;/label&gt;
-&lt;label&gt;
-  Fertilizer addition (kg N/m²/year):
-  &lt;input type="range" id="fertilizer-slider" min="0" max="0.05" step="0.005" value="0"&gt;
-  &lt;span id="fertilizer-value"&gt;0.00&lt;/span&gt;
-&lt;/label&gt;
-&lt;label&gt;
-  Soil C:N ratio:
-  &lt;input type="range" id="cn-slider" min="8" max="20" step="1" value="12"&gt;
-  &lt;span id="cn-value"&gt;12&lt;/span&gt;
-&lt;/label&gt;
-&lt;label&gt;
-  Simulation years:
-  &lt;input type="range" id="years-n-slider" min="10" max="50" step="5" value="20"&gt;
-  &lt;span id="years-n-value"&gt;20&lt;/span&gt; years
-&lt;/label&gt;
-&lt;div class="button-group"&gt;
-  &lt;button id="run-n-sim"&gt;Run Simulation&lt;/button&gt;
-&lt;/div&gt;</code></pre>
+<label>
+Ecosystem type:
+<select id="ecosystem-n">
+<option value="forest-unfertilized">Natural Forest</option>
+<option value="grassland">Grassland</option>
+<option value="crop-unfertilized" selected="">Crop (no fertilizer)</option>
+<option value="crop-fertilized">Crop (fertilized)</option>
+</select>
+</label>
+<label>
+Fertilizer addition (kg N/m²/year):
+<input type="range" id="fertilizer-slider" min="0" max="0.05" step="0.005" value="0">
+<span id="fertilizer-value">0.00</span>
+</label>
+<label>
+Soil C:N ratio:
+<input type="range" id="cn-slider" min="8" max="20" step="1" value="12">
+<span id="cn-value">12</span>
+</label>
+<label>
+Simulation years:
+<input type="range" id="years-n-slider" min="10" max="50" step="5" value="20">
+<span id="years-n-value">20</span> years
+</label>
+<div class="button-group">
+<button id="run-n-sim">Run Simulation</button>
+</div>
 </div>
 <div class="n-results">
-<pre><code>&lt;p&gt;&lt;strong&gt;Mineral N:&lt;/strong&gt; &lt;span id="mineral-n"&gt;&lt;/span&gt; mg N/L&lt;/p&gt;
-&lt;p&gt;&lt;strong&gt;Plant N uptake:&lt;/strong&gt; &lt;span id="n-uptake"&gt;&lt;/span&gt; kg N/m²/year&lt;/p&gt;
-&lt;p&gt;&lt;strong&gt;NPP (N-limited):&lt;/strong&gt; &lt;span id="npp-n-limited"&gt;&lt;/span&gt; kg C/m²/year&lt;/p&gt;
-&lt;p&gt;&lt;strong&gt;Leaching loss:&lt;/strong&gt; &lt;span id="leaching-loss"&gt;&lt;/span&gt; kg N/m²/year&lt;/p&gt;</code></pre>
+<p><strong>Mineral N:</strong> <span id="mineral-n"></span> mg N/L</p>
+<p><strong>Plant N uptake:</strong> <span id="n-uptake"></span> kg N/m²/year</p>
+<p><strong>NPP (N-limited):</strong> <span id="npp-n-limited"></span> kg C/m²/year</p>
+<p><strong>Leaching loss:</strong> <span id="leaching-loss"></span> kg N/m²/year</p>
 </div>
-<div id="n-cycle-chart" style="width: 100%; height: 500px;">
+<div id="n-cycle-chart" style="width: 100%; height: 500px;"></div>
+</div>
 
-</div>
-</div>
 <script type="module">
 await new Promise(resolve => {
-  const checkECharts = () => {
-    if (typeof echarts !== 'undefined') resolve();
-    else setTimeout(checkECharts, 50);
-  };
-  checkECharts();
+const checkECharts = () => {
+if (typeof echarts !== 'undefined') resolve();
+else setTimeout(checkECharts, 50);
+};
+checkECharts();
 });
 
 (function() {
-  const chart = echarts.init(document.getElementById('n-cycle-chart'));
+const chart = echarts.init(document.getElementById('n-cycle-chart'));
   
-  const ecosystems = {
-    'forest-unfertilized': { SOM_N: 8, decomp: 0.03, Umax: 0.02, CN_plant: 30 },
-    'grassland': { SOM_N: 5, decomp: 0.05, Umax: 0.025, CN_plant: 25 },
-    'crop-unfertilized': { SOM_N: 3, decomp: 0.08, Umax: 0.03, CN_plant: 20 },
-    'crop-fertilized': { SOM_N: 3, decomp: 0.08, Umax: 0.04, CN_plant: 20 }
-  };
+const ecosystems = {
+'forest-unfertilized': { SOM_N: 8, decomp: 0.03, Umax: 0.02, CN_plant: 30 },
+'grassland': { SOM_N: 5, decomp: 0.05, Umax: 0.025, CN_plant: 25 },
+'crop-unfertilized': { SOM_N: 3, decomp: 0.08, Umax: 0.03, CN_plant: 20 },
+'crop-fertilized': { SOM_N: 3, decomp: 0.08, Umax: 0.04, CN_plant: 20 }
+};
   
-  let ecoType = 'crop-unfertilized';
-  let fertilizer = 0;
-  let soilCN = 12;
-  let years = 20;
+let ecoType = 'crop-unfertilized';
+let fertilizer = 0;
+let soilCN = 12;
+let years = 20;
   
-  const Km = 5; // mg N/L
-  const kNitr = 0.5; // day^-1 -> ~180/year
-  const leachRate = 0.1; // fraction of NO3 lost per year
+const Km = 5; // mg N/L
+const kNitr = 0.5; // day^-1 -> ~180/year
+const leachRate = 0.1; // fraction of NO3 lost per year
   
-  function runNSim() {
-    const eco = ecosystems[ecoType];
+function runNSim() {
+const eco = ecosystems[ecoType];
     
-    // Initialize pools (kg N/m²)
-    let SOM_N = eco.SOM_N;
-    let NH4 = 0.001;  // kg N/m²
-    let NO3 = 0.002;  // kg N/m²
-    let Plant_N = 0.1;
+// Initialize pools (kg N/m²)
+let SOM_N = eco.SOM_N;
+let NH4 = 0.001;  // kg N/m²
+let NO3 = 0.002;  // kg N/m²
+let Plant_N = 0.1;
     
-    const timeData = [];
-    const mineralNData = [];
-    const plantNData = [];
-    const nppData = [];
+const timeData = [];
+const mineralNData = [];
+const plantNData = [];
+const nppData = [];
     
-    const dt = 0.1;
+const dt = 0.1;
     
-    for (let t = 0; t <= years; t += dt) {
-      if (t % 0.5 < dt) {
-        // Convert to concentration for display (mg N/L, assume 1m depth, 0.3 porosity)
-        const mineralN_conc = (NH4 + NO3) / 0.3 * 1000; // rough conversion
+for (let t = 0; t <= years; t += dt) {
+if (t % 0.5 < dt) {
+// Convert to concentration for display (mg N/L, assume 1m depth, 0.3 porosity)
+const mineralN_conc = (NH4 + NO3) / 0.3 * 1000; // rough conversion
         
-        timeData.push(t);
-        mineralNData.push(mineralN_conc);
-        plantNData.push(Plant_N);
+timeData.push(t);
+mineralNData.push(mineralN_conc);
+plantNData.push(Plant_N);
         
-        // Calculate NPP from N
-        const NPP_from_N = (NH4 + NO3) > 0 ? 
-          Math.min(2.0, Plant_N * eco.CN_plant * 0.3) : 0; // simplified
-        nppData.push(NPP_from_N);
-      }
+// Calculate NPP from N
+const NPP_from_N = (NH4 + NO3) > 0 ? 
+Math.min(2.0, Plant_N * eco.CN_plant * 0.3) : 0; // simplified
+nppData.push(NPP_from_N);
+}
       
-      // Mineralization
-      const SOM_C = SOM_N * soilCN;
-      const mineralization = eco.decomp * SOM_C / soilCN;
+// Mineralization
+const SOM_C = SOM_N * soilCN;
+const mineralization = eco.decomp * SOM_C / soilCN;
       
-      // Nitrification
-      const nitrification = kNitr * NH4 * dt;
+// Nitrification
+const nitrification = kNitr * NH4 * dt;
       
-      // Plant uptake (Michaelis-Menten)
-      const totalN_kgm2 = NH4 + NO3;
-      const N_conc_mgL = totalN_kgm2 / 0.3 * 1000;
-      const uptake = eco.Umax * (N_conc_mgL / (Km + N_conc_mgL)) * dt;
+// Plant uptake (Michaelis-Menten)
+const totalN_kgm2 = NH4 + NO3;
+const N_conc_mgL = totalN_kgm2 / 0.3 * 1000;
+const uptake = eco.Umax * (N_conc_mgL / (Km + N_conc_mgL)) * dt;
       
-      // Leaching (NO3 only)
-      const leaching = leachRate * NO3 * dt;
+// Leaching (NO3 only)
+const leaching = leachRate * NO3 * dt;
       
-      // Update pools
-      NH4 += (mineralization + fertilizer) * dt - nitrification - uptake * 0.5;
-      NO3 += nitrification - uptake * 0.5 - leaching;
-      Plant_N += uptake;
-      SOM_N -= mineralization * dt;
+// Update pools
+NH4 += (mineralization + fertilizer) * dt - nitrification - uptake * 0.5;
+NO3 += nitrification - uptake * 0.5 - leaching;
+Plant_N += uptake;
+SOM_N -= mineralization * dt;
       
-      // Plant N turnover (leaves/roots die)
-      const plant_turnover = 0.3 * Plant_N * dt;
-      Plant_N -= plant_turnover;
-      SOM_N += plant_turnover;
+// Plant N turnover (leaves/roots die)
+const plant_turnover = 0.3 * Plant_N * dt;
+Plant_N -= plant_turnover;
+SOM_N += plant_turnover;
       
-      // Bounds
-      NH4 = Math.max(0, NH4);
-      NO3 = Math.max(0, NO3);
-      SOM_N = Math.max(1, SOM_N);
-      Plant_N = Math.max(0.05, Plant_N);
-    }
+// Bounds
+NH4 = Math.max(0, NH4);
+NO3 = Math.max(0, NO3);
+SOM_N = Math.max(1, SOM_N);
+Plant_N = Math.max(0.05, Plant_N);
+}
     
-    const finalMineralN = (NH4 + NO3) / 0.3 * 1000;
-    const finalUptake = eco.Umax * (finalMineralN / (Km + finalMineralN));
-    const finalNPP = finalUptake * eco.CN_plant;
-    const finalLeaching = leachRate * NO3;
+const finalMineralN = (NH4 + NO3) / 0.3 * 1000;
+const finalUptake = eco.Umax * (finalMineralN / (Km + finalMineralN));
+const finalNPP = finalUptake * eco.CN_plant;
+const finalLeaching = leachRate * NO3;
     
-    document.getElementById('mineral-n').textContent = finalMineralN.toFixed(1);
-    document.getElementById('n-uptake').textContent = (finalUptake).toFixed(3);
-    document.getElementById('npp-n-limited').textContent = finalNPP.toFixed(2);
-    document.getElementById('leaching-loss').textContent = (finalLeaching).toFixed(4);
+document.getElementById('mineral-n').textContent = finalMineralN.toFixed(1);
+document.getElementById('n-uptake').textContent = (finalUptake).toFixed(3);
+document.getElementById('npp-n-limited').textContent = finalNPP.toFixed(2);
+document.getElementById('leaching-loss').textContent = (finalLeaching).toFixed(4);
     
-    updateChart(timeData, mineralNData, plantNData, nppData);
-  }
+updateChart(timeData, mineralNData, plantNData, nppData);
+}
   
-  function updateChart(time, mineralN, plantN, npp) {
-    const option = {
-      title: {
-        text: 'Nitrogen Cycle Dynamics',
-        left: 'center'
-      },
-      tooltip: {
-        trigger: 'axis',
-        axisPointer: { type: 'cross' }
-      },
-      legend: {
-        data: ['Mineral N', 'Plant N', 'NPP'],
-        top: 30
-      },
-      grid: [
-        { left: 80, right: '52%', top: 80, bottom: 60 },
-        { left: '52%', right: 40, top: 80, bottom: 60 }
-      ],
-      xAxis: [
-        { type: 'value', name: 'Time (years)', gridIndex: 0, nameLocation: 'middle', nameGap: 30 },
-        { type: 'value', gridIndex: 1, nameLocation: 'middle', nameGap: 30 }
-      ],
-      yAxis: [
-        { 
-          type: 'value', 
-          name: 'Mineral N (mg/L)', 
-          gridIndex: 0,
-          nameLocation: 'middle',
-          nameGap: 50
-        },
-        {
-          type: 'value',
-          name: 'NPP (kg C/m²/yr)',
-          gridIndex: 1,
-          nameLocation: 'middle',
-          nameGap: 50
-        }
-      ],
-      series: [
-        {
-          name: 'Mineral N',
-          type: 'line',
-          data: time.map((t, i) => [t, mineralN[i]]),
-          lineStyle: { color: '#3498DB', width: 2 },
-          showSymbol: false,
-          xAxisIndex: 0,
-          yAxisIndex: 0
-        },
-        {
-          name: 'NPP',
-          type: 'line',
-          data: time.map((t, i) => [t, npp[i]]),
-          lineStyle: { color: '#2ECC71', width: 2 },
-          showSymbol: false,
-          xAxisIndex: 1,
-          yAxisIndex: 1
-        }
-      ]
-    };
+function updateChart(time, mineralN, plantN, npp) {
+const option = {
+title: {
+text: 'Nitrogen Cycle Dynamics',
+left: 'center'
+},
+tooltip: {
+trigger: 'axis',
+axisPointer: { type: 'cross' }
+},
+legend: {
+data: ['Mineral N', 'Plant N', 'NPP'],
+top: 30
+},
+grid: [
+{ left: 80, right: '52%', top: 80, bottom: 60 },
+{ left: '52%', right: 40, top: 80, bottom: 60 }
+],
+xAxis: [
+{ type: 'value', name: 'Time (years)', gridIndex: 0, nameLocation: 'middle', nameGap: 30 },
+{ type: 'value', gridIndex: 1, nameLocation: 'middle', nameGap: 30 }
+],
+yAxis: [
+{ 
+type: 'value', 
+name: 'Mineral N (mg/L)', 
+gridIndex: 0,
+nameLocation: 'middle',
+nameGap: 50
+},
+{
+type: 'value',
+name: 'NPP (kg C/m²/yr)',
+gridIndex: 1,
+nameLocation: 'middle',
+nameGap: 50
+}
+],
+series: [
+{
+name: 'Mineral N',
+type: 'line',
+data: time.map((t, i) => [t, mineralN[i]]),
+lineStyle: { color: '#3498DB', width: 2 },
+showSymbol: false,
+xAxisIndex: 0,
+yAxisIndex: 0
+},
+{
+name: 'NPP',
+type: 'line',
+data: time.map((t, i) => [t, npp[i]]),
+lineStyle: { color: '#2ECC71', width: 2 },
+showSymbol: false,
+xAxisIndex: 1,
+yAxisIndex: 1
+}
+]
+};
     
-    chart.setOption(option);
-  }
+chart.setOption(option);
+}
   
-  document.getElementById('ecosystem-n').addEventListener('change', (e) => {
-    ecoType = e.target.value;
-  });
+document.getElementById('ecosystem-n').addEventListener('change', (e) => {
+ecoType = e.target.value;
+});
   
-  document.getElementById('fertilizer-slider').addEventListener('input', (e) => {
-    fertilizer = parseFloat(e.target.value);
-    document.getElementById('fertilizer-value').textContent = fertilizer.toFixed(3);
-  });
+document.getElementById('fertilizer-slider').addEventListener('input', (e) => {
+fertilizer = parseFloat(e.target.value);
+document.getElementById('fertilizer-value').textContent = fertilizer.toFixed(3);
+});
   
-  document.getElementById('cn-slider').addEventListener('input', (e) => {
-    soilCN = parseInt(e.target.value);
-    document.getElementById('cn-value').textContent = soilCN;
-  });
+document.getElementById('cn-slider').addEventListener('input', (e) => {
+soilCN = parseInt(e.target.value);
+document.getElementById('cn-value').textContent = soilCN;
+});
   
-  document.getElementById('years-n-slider').addEventListener('input', (e) => {
-    years = parseInt(e.target.value);
-    document.getElementById('years-n-value').textContent = years;
-  });
+document.getElementById('years-n-slider').addEventListener('input', (e) => {
+years = parseInt(e.target.value);
+document.getElementById('years-n-value').textContent = years;
+});
   
-  document.getElementById('run-n-sim').addEventListener('click', () => {
-    runNSim();
-  });
+document.getElementById('run-n-sim').addEventListener('click', () => {
+runNSim();
+});
   
-  runNSim();
+runNSim();
   
-  window.addEventListener('resize', () => chart.resize());
+window.addEventListener('resize', () => chart.resize());
 })();
 </script>
 <p><strong>Try this:</strong> - <strong>Add fertilizer:</strong> Mineral N increases → uptake increases → NPP increases - <strong>Natural forest:</strong> Low decomposition → low mineralization → N-limited - <strong>Fertilized crop:</strong> High mineral N → near-maximum uptake → high NPP - <strong>High C:N ratio:</strong> Less N released per unit C decomposed → lower mineralization - Notice: NPP tracks mineral N availability with Michaelis-Menten saturation</p>

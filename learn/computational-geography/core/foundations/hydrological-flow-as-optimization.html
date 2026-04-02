@@ -312,266 +312,265 @@ Row 4:  16      15      14      13      12</code></pre>
 <hr>
 <h2 id="computational-implementation" class="anchored">5. Computational Implementation</h2>
 <p>Below is an interactive flow routing visualization.</p>
-<div id="flow-routing-viz" class="viz-container">
+<div class="viz-container" id="flow-routing-viz">
 <div class="controls">
-<pre><code>&lt;label&gt;
-  Terrain type:
-  &lt;select id="terrain-flow-select"&gt;
-    &lt;option value="plane"&gt;Tilted plane&lt;/option&gt;
-    &lt;option value="valley"&gt;Valley&lt;/option&gt;
-    &lt;option value="ridge"&gt;Ridge&lt;/option&gt;
-    &lt;option value="cone"&gt;Cone (radial)&lt;/option&gt;
-    &lt;option value="crater"&gt;Crater (sink)&lt;/option&gt;
-  &lt;/select&gt;
-&lt;/label&gt;
-&lt;label&gt;
-  Display mode:
-  &lt;select id="display-flow-select"&gt;
-    &lt;option value="elevation"&gt;Elevation&lt;/option&gt;
-    &lt;option value="flow-direction"&gt;Flow direction (arrows)&lt;/option&gt;
-    &lt;option value="accumulation"&gt;Flow accumulation&lt;/option&gt;
-  &lt;/select&gt;
-&lt;/label&gt;
-&lt;label&gt;
-  Grid size:
-  &lt;input type="range" id="grid-flow-slider" min="20" max="50" step="10" value="30"&gt;
-  &lt;span id="grid-flow-value"&gt;30&lt;/span&gt; × 30
-&lt;/label&gt;</code></pre>
+<label>
+Terrain type:
+<select id="terrain-flow-select">
+<option value="plane">Tilted plane</option>
+<option value="valley">Valley</option>
+<option value="ridge">Ridge</option>
+<option value="cone">Cone (radial)</option>
+<option value="crater">Crater (sink)</option>
+</select>
+</label>
+<label>
+Display mode:
+<select id="display-flow-select">
+<option value="elevation">Elevation</option>
+<option value="flow-direction">Flow direction (arrows)</option>
+<option value="accumulation">Flow accumulation</option>
+</select>
+</label>
+<label>
+Grid size:
+<input type="range" id="grid-flow-slider" min="20" max="50" step="10" value="30">
+<span id="grid-flow-value">30</span> × 30
+</label>
 </div>
-<div id="flow-chart" style="width: 100%; height: 600px;">
-
-</div>
+<div id="flow-chart" style="width: 100%; height: 600px;"></div>
 <div class="info-panel">
-<pre><code>&lt;p id="flow-stats"&gt;&lt;/p&gt;</code></pre>
+<p id="flow-stats"></p>
 </div>
 </div>
+
 <script type="module">
 await new Promise(resolve => {
-  const checkECharts = () => {
-    if (typeof echarts !== 'undefined') resolve();
-    else setTimeout(checkECharts, 50);
-  };
-  checkECharts();
+const checkECharts = () => {
+if (typeof echarts !== 'undefined') resolve();
+else setTimeout(checkECharts, 50);
+};
+checkECharts();
 });
 
 (function() {
-  const chart = echarts.init(document.getElementById('flow-chart'));
+const chart = echarts.init(document.getElementById('flow-chart'));
   
-  let terrainType = 'plane';
-  let displayMode = 'elevation';
-  let gridSize = 30;
+let terrainType = 'plane';
+let displayMode = 'elevation';
+let gridSize = 30;
   
-  function generateDEM(type, size) {
-    const z = [];
-    const extent = 100;
-    const step = extent / size;
+function generateDEM(type, size) {
+const z = [];
+const extent = 100;
+const step = extent / size;
     
-    for (let i = 0; i < size; i++) {
-      z[i] = [];
-      for (let j = 0; j < size; j++) {
-        const x = (j - size/2) * step;
-        const y = (i - size/2) * step;
+for (let i = 0; i < size; i++) {
+z[i] = [];
+for (let j = 0; j < size; j++) {
+const x = (j - size/2) * step;
+const y = (i - size/2) * step;
         
-        switch(type) {
-          case 'plane':
-            z[i][j] = 50 + x * 0.3 + y * 0.2;
-            break;
-          case 'valley':
-            z[i][j] = Math.abs(y) * 0.5 + x * 0.1;
-            break;
-          case 'ridge':
-            z[i][j] = 50 - Math.abs(x) * 0.5 + y * 0.1;
-            break;
-          case 'cone':
-            z[i][j] = 60 - Math.sqrt(x*x + y*y) * 0.4;
-            break;
-          case 'crater':
-            const r = Math.sqrt(x*x + y*y);
-            z[i][j] = r < 30 ? r * 0.5 : 50 - (r - 30) * 0.3;
-            break;
-        }
-      }
-    }
-    return z;
-  }
+switch(type) {
+case 'plane':
+z[i][j] = 50 + x * 0.3 + y * 0.2;
+break;
+case 'valley':
+z[i][j] = Math.abs(y) * 0.5 + x * 0.1;
+break;
+case 'ridge':
+z[i][j] = 50 - Math.abs(x) * 0.5 + y * 0.1;
+break;
+case 'cone':
+z[i][j] = 60 - Math.sqrt(x*x + y*y) * 0.4;
+break;
+case 'crater':
+const r = Math.sqrt(x*x + y*y);
+z[i][j] = r < 30 ? r * 0.5 : 50 - (r - 30) * 0.3;
+break;
+}
+}
+}
+return z;
+}
   
-  function computeFlowDirection(z, cellSize) {
-    const size = z.length;
-    const flowDir = [];
-    const directions = [
-      [-1, -1, Math.sqrt(2)], [-1, 0, 1], [-1, 1, Math.sqrt(2)],
-      [0, -1, 1],                         [0, 1, 1],
-      [1, -1, Math.sqrt(2)],  [1, 0, 1],  [1, 1, Math.sqrt(2)]
-    ];
+function computeFlowDirection(z, cellSize) {
+const size = z.length;
+const flowDir = [];
+const directions = [
+[-1, -1, Math.sqrt(2)], [-1, 0, 1], [-1, 1, Math.sqrt(2)],
+[0, -1, 1],                         [0, 1, 1],
+[1, -1, Math.sqrt(2)],  [1, 0, 1],  [1, 1, Math.sqrt(2)]
+];
     
-    for (let i = 0; i < size; i++) {
-      flowDir[i] = [];
-      for (let j = 0; j < size; j++) {
-        let maxSlope = -Infinity;
-        let bestDir = null;
+for (let i = 0; i < size; i++) {
+flowDir[i] = [];
+for (let j = 0; j < size; j++) {
+let maxSlope = -Infinity;
+let bestDir = null;
         
-        for (let d = 0; d < directions.length; d++) {
-          const ni = i + directions[d][0];
-          const nj = j + directions[d][1];
-          const dist = directions[d][2] * cellSize;
+for (let d = 0; d < directions.length; d++) {
+const ni = i + directions[d][0];
+const nj = j + directions[d][1];
+const dist = directions[d][2] * cellSize;
           
-          if (ni >= 0 && ni < size && nj >= 0 && nj < size) {
-            const slope = (z[i][j] - z[ni][nj]) / dist;
-            if (slope > maxSlope) {
-              maxSlope = slope;
-              bestDir = d;
-            }
-          }
-        }
+if (ni >= 0 && ni < size && nj >= 0 && nj < size) {
+const slope = (z[i][j] - z[ni][nj]) / dist;
+if (slope > maxSlope) {
+maxSlope = slope;
+bestDir = d;
+}
+}
+}
         
-        flowDir[i][j] = bestDir !== null ? bestDir : -1; // -1 = sink
-      }
-    }
+flowDir[i][j] = bestDir !== null ? bestDir : -1; // -1 = sink
+}
+}
     
-    return flowDir;
-  }
+return flowDir;
+}
   
-  function computeFlowAccumulation(z, flowDir) {
-    const size = z.length;
-    const acc = Array(size).fill(0).map(() => Array(size).fill(1));
-    const directions = [
-      [-1, -1], [-1, 0], [-1, 1],
-      [0, -1],           [0, 1],
-      [1, -1],  [1, 0],  [1, 1]
-    ];
+function computeFlowAccumulation(z, flowDir) {
+const size = z.length;
+const acc = Array(size).fill(0).map(() => Array(size).fill(1));
+const directions = [
+[-1, -1], [-1, 0], [-1, 1],
+[0, -1],           [0, 1],
+[1, -1],  [1, 0],  [1, 1]
+];
     
-    // Create sorted list of cells by elevation (high to low)
-    const cells = [];
-    for (let i = 0; i < size; i++) {
-      for (let j = 0; j < size; j++) {
-        cells.push({i, j, z: z[i][j]});
-      }
-    }
-    cells.sort((a, b) => b.z - a.z);
+// Create sorted list of cells by elevation (high to low)
+const cells = [];
+for (let i = 0; i < size; i++) {
+for (let j = 0; j < size; j++) {
+cells.push({i, j, z: z[i][j]});
+}
+}
+cells.sort((a, b) => b.z - a.z);
     
-    // Process from high to low
-    for (const cell of cells) {
-      const {i, j} = cell;
-      const dir = flowDir[i][j];
+// Process from high to low
+for (const cell of cells) {
+const {i, j} = cell;
+const dir = flowDir[i][j];
       
-      if (dir !== -1) {
-        const ni = i + directions[dir][0];
-        const nj = j + directions[dir][1];
-        if (ni >= 0 && ni < size && nj >= 0 && nj < size) {
-          acc[ni][nj] += acc[i][j];
-        }
-      }
-    }
+if (dir !== -1) {
+const ni = i + directions[dir][0];
+const nj = j + directions[dir][1];
+if (ni >= 0 && ni < size && nj >= 0 && nj < size) {
+acc[ni][nj] += acc[i][j];
+}
+}
+}
     
-    return acc;
-  }
+return acc;
+}
   
-  function updateChart() {
-    const z = generateDEM(terrainType, gridSize);
-    const cellSize = 100 / gridSize;
-    const flowDir = computeFlowDirection(z, cellSize);
-    const acc = computeFlowAccumulation(z, flowDir);
+function updateChart() {
+const z = generateDEM(terrainType, gridSize);
+const cellSize = 100 / gridSize;
+const flowDir = computeFlowDirection(z, cellSize);
+const acc = computeFlowAccumulation(z, flowDir);
     
-    let data = [];
-    let option = {};
+let data = [];
+let option = {};
     
-    if (displayMode === 'elevation') {
-      for (let i = 0; i < gridSize; i++) {
-        for (let j = 0; j < gridSize; j++) {
-          data.push([j, gridSize - 1 - i, z[i][j]]);
-        }
-      }
+if (displayMode === 'elevation') {
+for (let i = 0; i < gridSize; i++) {
+for (let j = 0; j < gridSize; j++) {
+data.push([j, gridSize - 1 - i, z[i][j]]);
+}
+}
       
-      option = {
-        title: { text: `Elevation: ${terrainType}`, left: 'center' },
-        tooltip: { position: 'top' },
-        grid: { left: 60, right: 60, top: 60, bottom: 60 },
-        xAxis: { type: 'category', show: false },
-        yAxis: { type: 'category', show: false },
-        visualMap: {
-          min: Math.min(...data.map(d => d[2])),
-          max: Math.max(...data.map(d => d[2])),
-          calculable: true,
-          orient: 'horizontal',
-          left: 'center',
-          bottom: 10,
-          inRange: {
-            color: ['#313695', '#74add1', '#e0f3f8', '#ffffbf', '#fee090', '#f46d43', '#a50026']
-          }
-        },
-        series: [{
-          type: 'heatmap',
-          data: data,
-          label: { show: false }
-        }]
-      };
+option = {
+title: { text: `Elevation: ${terrainType}`, left: 'center' },
+tooltip: { position: 'top' },
+grid: { left: 60, right: 60, top: 60, bottom: 60 },
+xAxis: { type: 'category', show: false },
+yAxis: { type: 'category', show: false },
+visualMap: {
+min: Math.min(...data.map(d => d[2])),
+max: Math.max(...data.map(d => d[2])),
+calculable: true,
+orient: 'horizontal',
+left: 'center',
+bottom: 10,
+inRange: {
+color: ['#313695', '#74add1', '#e0f3f8', '#ffffbf', '#fee090', '#f46d43', '#a50026']
+}
+},
+series: [{
+type: 'heatmap',
+data: data,
+label: { show: false }
+}]
+};
       
-    } else if (displayMode === 'accumulation') {
-      const maxAcc = Math.max(...acc.flat());
-      for (let i = 0; i < gridSize; i++) {
-        for (let j = 0; j < gridSize; j++) {
-          data.push([j, gridSize - 1 - i, Math.log10(acc[i][j] + 1)]);
-        }
-      }
+} else if (displayMode === 'accumulation') {
+const maxAcc = Math.max(...acc.flat());
+for (let i = 0; i < gridSize; i++) {
+for (let j = 0; j < gridSize; j++) {
+data.push([j, gridSize - 1 - i, Math.log10(acc[i][j] + 1)]);
+}
+}
       
-      document.getElementById('flow-stats').innerHTML = 
-        `<strong>Max accumulation:</strong> ${maxAcc.toFixed(0)} cells`;
+document.getElementById('flow-stats').innerHTML = 
+`<strong>Max accumulation:</strong> ${maxAcc.toFixed(0)} cells`;
       
-      option = {
-        title: { text: `Flow Accumulation (log scale): ${terrainType}`, left: 'center' },
-        tooltip: { 
-          position: 'top',
-          formatter: params => {
-            const i = gridSize - 1 - params.value[1];
-            const j = params.value[0];
-            return `Flow accumulation: ${acc[i][j].toFixed(0)} cells`;
-          }
-        },
-        grid: { left: 60, right: 60, top: 60, bottom: 60 },
-        xAxis: { type: 'category', show: false },
-        yAxis: { type: 'category', show: false },
-        visualMap: {
-          min: 0,
-          max: Math.log10(maxAcc + 1),
-          calculable: true,
-          orient: 'horizontal',
-          left: 'center',
-          bottom: 10,
-          text: ['High', 'Low'],
-          inRange: {
-            color: ['#ffffcc', '#c7e9b4', '#7fcdbb', '#41b6c4', '#2c7fb8', '#253494']
-          }
-        },
-        series: [{
-          type: 'heatmap',
-          data: data,
-          label: { show: false }
-        }]
-      };
-    }
+option = {
+title: { text: `Flow Accumulation (log scale): ${terrainType}`, left: 'center' },
+tooltip: { 
+position: 'top',
+formatter: params => {
+const i = gridSize - 1 - params.value[1];
+const j = params.value[0];
+return `Flow accumulation: ${acc[i][j].toFixed(0)} cells`;
+}
+},
+grid: { left: 60, right: 60, top: 60, bottom: 60 },
+xAxis: { type: 'category', show: false },
+yAxis: { type: 'category', show: false },
+visualMap: {
+min: 0,
+max: Math.log10(maxAcc + 1),
+calculable: true,
+orient: 'horizontal',
+left: 'center',
+bottom: 10,
+text: ['High', 'Low'],
+inRange: {
+color: ['#ffffcc', '#c7e9b4', '#7fcdbb', '#41b6c4', '#2c7fb8', '#253494']
+}
+},
+series: [{
+type: 'heatmap',
+data: data,
+label: { show: false }
+}]
+};
+}
     
-    chart.setOption(option);
-  }
+chart.setOption(option);
+}
   
-  document.getElementById('terrain-flow-select').addEventListener('change', (e) => {
-    terrainType = e.target.value;
-    updateChart();
-  });
+document.getElementById('terrain-flow-select').addEventListener('change', (e) => {
+terrainType = e.target.value;
+updateChart();
+});
   
-  document.getElementById('display-flow-select').addEventListener('change', (e) => {
-    displayMode = e.target.value;
-    updateChart();
-  });
+document.getElementById('display-flow-select').addEventListener('change', (e) => {
+displayMode = e.target.value;
+updateChart();
+});
   
-  document.getElementById('grid-flow-slider').addEventListener('input', (e) => {
-    gridSize = parseInt(e.target.value);
-    document.getElementById('grid-flow-value').textContent = gridSize;
-    updateChart();
-  });
+document.getElementById('grid-flow-slider').addEventListener('input', (e) => {
+gridSize = parseInt(e.target.value);
+document.getElementById('grid-flow-value').textContent = gridSize;
+updateChart();
+});
   
-  updateChart();
+updateChart();
   
-  window.addEventListener('resize', () => chart.resize());
+window.addEventListener('resize', () => chart.resize());
 })();
 </script>
 <p><strong>Try this:</strong> - <strong>Plane:</strong> Uniform flow direction; accumulation increases downslope - <strong>Valley:</strong> Flow converges to valley axis; high accumulation along the channel - <strong>Ridge:</strong> Flow diverges from ridgeline; low accumulation on the crest - <strong>Cone:</strong> Radial flow from peak; accumulation low everywhere - <strong>Crater:</strong> Flow converges to the center (sink); high accumulation in the crater</p>

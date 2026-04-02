@@ -285,256 +285,255 @@ W/W_{\text{opt}} &amp; \text{if } W &lt; W_{\text{opt}} \\
 <hr>
 <h2 id="computational-implementation" class="anchored">5. Computational Implementation</h2>
 <p>Below is an interactive decomposition simulator.</p>
-<div id="decomp-viz" class="viz-container">
+<div class="viz-container" id="decomp-viz">
 <div class="controls">
-<pre><code>&lt;label&gt;
-  Ecosystem type:
-  &lt;select id="ecosystem-decomp"&gt;
-    &lt;option value="tropical"&gt;Tropical Forest&lt;/option&gt;
-    &lt;option value="temperate" selected&gt;Temperate Forest&lt;/option&gt;
-    &lt;option value="boreal"&gt;Boreal Forest&lt;/option&gt;
-    &lt;option value="grassland"&gt;Grassland&lt;/option&gt;
-    &lt;option value="desert"&gt;Desert&lt;/option&gt;
-  &lt;/select&gt;
-&lt;/label&gt;
-&lt;label&gt;
-  Litterfall rate (kg C/m²/year):
-  &lt;input type="range" id="litterfall-slider" min="0.1" max="1.0" step="0.05" value="0.4"&gt;
-  &lt;span id="litterfall-value"&gt;0.4&lt;/span&gt;
-&lt;/label&gt;
-&lt;label&gt;
-  Temperature (°C):
-  &lt;input type="range" id="temp-decomp-slider" min="0" max="30" step="1" value="15"&gt;
-  &lt;span id="temp-decomp-value"&gt;15&lt;/span&gt; °C
-&lt;/label&gt;
-&lt;label&gt;
-  Soil moisture (0-1):
-  &lt;input type="range" id="moisture-slider" min="0" max="1" step="0.05" value="0.6"&gt;
-  &lt;span id="moisture-value"&gt;0.6&lt;/span&gt;
-&lt;/label&gt;
-&lt;label&gt;
-  Simulation years:
-  &lt;input type="range" id="years-decomp-slider" min="50" max="500" step="50" value="200"&gt;
-  &lt;span id="years-decomp-value"&gt;200&lt;/span&gt; years
-&lt;/label&gt;
-&lt;div class="button-group"&gt;
-  &lt;button id="run-decomp-sim"&gt;Run Simulation&lt;/button&gt;
-&lt;/div&gt;</code></pre>
+<label>
+Ecosystem type:
+<select id="ecosystem-decomp">
+<option value="tropical">Tropical Forest</option>
+<option value="temperate" selected="">Temperate Forest</option>
+<option value="boreal">Boreal Forest</option>
+<option value="grassland">Grassland</option>
+<option value="desert">Desert</option>
+</select>
+</label>
+<label>
+Litterfall rate (kg C/m²/year):
+<input type="range" id="litterfall-slider" min="0.1" max="1.0" step="0.05" value="0.4">
+<span id="litterfall-value">0.4</span>
+</label>
+<label>
+Temperature (°C):
+<input type="range" id="temp-decomp-slider" min="0" max="30" step="1" value="15">
+<span id="temp-decomp-value">15</span> °C
+</label>
+<label>
+Soil moisture (0-1):
+<input type="range" id="moisture-slider" min="0" max="1" step="0.05" value="0.6">
+<span id="moisture-value">0.6</span>
+</label>
+<label>
+Simulation years:
+<input type="range" id="years-decomp-slider" min="50" max="500" step="50" value="200">
+<span id="years-decomp-value">200</span> years
+</label>
+<div class="button-group">
+<button id="run-decomp-sim">Run Simulation</button>
+</div>
 </div>
 <div class="decomp-results">
-<pre><code>&lt;p&gt;&lt;strong&gt;Total soil C:&lt;/strong&gt; &lt;span id="total-soil-c"&gt;&lt;/span&gt; kg C/m²&lt;/p&gt;
-&lt;p&gt;&lt;strong&gt;Slow SOM fraction:&lt;/strong&gt; &lt;span id="slow-fraction"&gt;&lt;/span&gt;%&lt;/p&gt;
-&lt;p&gt;&lt;strong&gt;R&lt;sub&gt;h&lt;/sub&gt;:&lt;/strong&gt; &lt;span id="rh-result"&gt;&lt;/span&gt; kg C/m²/year&lt;/p&gt;
-&lt;p&gt;&lt;strong&gt;Mean residence time:&lt;/strong&gt; &lt;span id="mrt-result"&gt;&lt;/span&gt; years&lt;/p&gt;</code></pre>
+<p><strong>Total soil C:</strong> <span id="total-soil-c"></span> kg C/m²</p>
+<p><strong>Slow SOM fraction:</strong> <span id="slow-fraction"></span>%</p>
+<p><strong>R<sub>h</sub>:</strong> <span id="rh-result"></span> kg C/m²/year</p>
+<p><strong>Mean residence time:</strong> <span id="mrt-result"></span> years</p>
 </div>
-<div id="decomp-chart" style="width: 100%; height: 500px;">
+<div id="decomp-chart" style="width: 100%; height: 500px;"></div>
+</div>
 
-</div>
-</div>
 <script type="module">
 await new Promise(resolve => {
-  const checkECharts = () => {
-    if (typeof echarts !== 'undefined') resolve();
-    else setTimeout(checkECharts, 50);
-  };
-  checkECharts();
+const checkECharts = () => {
+if (typeof echarts !== 'undefined') resolve();
+else setTimeout(checkECharts, 50);
+};
+checkECharts();
 });
 
 (function() {
-  const chart = echarts.init(document.getElementById('decomp-chart'));
+const chart = echarts.init(document.getElementById('decomp-chart'));
   
-  const ecosystems = {
-    tropical: { kL: 2.0, kA: 0.20, kS: 0.01, fLA: 0.3, fAS: 0.2, temp: 25 },
-    temperate: { kL: 1.0, kA: 0.10, kS: 0.005, fLA: 0.4, fAS: 0.3, temp: 15 },
-    boreal: { kL: 0.3, kA: 0.05, kS: 0.002, fLA: 0.5, fAS: 0.4, temp: 5 },
-    grassland: { kL: 1.5, kA: 0.15, kS: 0.008, fLA: 0.35, fAS: 0.25, temp: 18 },
-    desert: { kL: 0.1, kA: 0.02, kS: 0.001, fLA: 0.3, fAS: 0.2, temp: 22 }
-  };
+const ecosystems = {
+tropical: { kL: 2.0, kA: 0.20, kS: 0.01, fLA: 0.3, fAS: 0.2, temp: 25 },
+temperate: { kL: 1.0, kA: 0.10, kS: 0.005, fLA: 0.4, fAS: 0.3, temp: 15 },
+boreal: { kL: 0.3, kA: 0.05, kS: 0.002, fLA: 0.5, fAS: 0.4, temp: 5 },
+grassland: { kL: 1.5, kA: 0.15, kS: 0.008, fLA: 0.35, fAS: 0.25, temp: 18 },
+desert: { kL: 0.1, kA: 0.02, kS: 0.001, fLA: 0.3, fAS: 0.2, temp: 22 }
+};
   
-  let ecoType = 'temperate';
-  let litterfall = 0.4;
-  let temperature = 15;
-  let moisture = 0.6;
-  let years = 200;
+let ecoType = 'temperate';
+let litterfall = 0.4;
+let temperature = 15;
+let moisture = 0.6;
+let years = 200;
   
-  const Q10 = 2.0;
-  const Wopt = 0.6;
+const Q10 = 2.0;
+const Wopt = 0.6;
   
-  function temperatureFactor(T) {
-    return Math.pow(Q10, (T - 20) / 10);
-  }
+function temperatureFactor(T) {
+return Math.pow(Q10, (T - 20) / 10);
+}
   
-  function moistureFactor(W) {
-    if (W < Wopt) {
-      return W / Wopt;
-    } else if (W <= 1.0) {
-      return (1 - W) / (1 - Wopt);
-    }
-    return 0;
-  }
+function moistureFactor(W) {
+if (W < Wopt) {
+return W / Wopt;
+} else if (W <= 1.0) {
+return (1 - W) / (1 - Wopt);
+}
+return 0;
+}
   
-  function runDecompSim() {
-    const eco = ecosystems[ecoType];
+function runDecompSim() {
+const eco = ecosystems[ecoType];
     
-    // Adjust decay rates for temperature and moisture
-    const Tfactor = temperatureFactor(temperature);
-    const Wfactor = moistureFactor(moisture);
-    const envFactor = Tfactor * Wfactor;
+// Adjust decay rates for temperature and moisture
+const Tfactor = temperatureFactor(temperature);
+const Wfactor = moistureFactor(moisture);
+const envFactor = Tfactor * Wfactor;
     
-    const kL = eco.kL * envFactor;
-    const kA = eco.kA * envFactor;
-    const kS = eco.kS * envFactor;
+const kL = eco.kL * envFactor;
+const kA = eco.kA * envFactor;
+const kS = eco.kS * envFactor;
     
-    // Initialize pools
-    let CL = 0.1;
-    let CA = 0.1;
-    let CS = 0.1;
+// Initialize pools
+let CL = 0.1;
+let CA = 0.1;
+let CS = 0.1;
     
-    const timeData = [];
-    const litterData = [];
-    const activeData = [];
-    const slowData = [];
-    const totalData = [];
+const timeData = [];
+const litterData = [];
+const activeData = [];
+const slowData = [];
+const totalData = [];
     
-    const dt = 0.5;
+const dt = 0.5;
     
-    for (let t = 0; t <= years; t += dt) {
-      if (t % 5 < dt) {
-        timeData.push(t);
-        litterData.push(CL);
-        activeData.push(CA);
-        slowData.push(CS);
-        totalData.push(CL + CA + CS);
-      }
+for (let t = 0; t <= years; t += dt) {
+if (t % 5 < dt) {
+timeData.push(t);
+litterData.push(CL);
+activeData.push(CA);
+slowData.push(CS);
+totalData.push(CL + CA + CS);
+}
       
-      // Update pools
-      const dCL = litterfall - kL * CL;
-      const dCA = eco.fLA * kL * CL - kA * CA;
-      const dCS = eco.fAS * kA * CA - kS * CS;
+// Update pools
+const dCL = litterfall - kL * CL;
+const dCA = eco.fLA * kL * CL - kA * CA;
+const dCS = eco.fAS * kA * CA - kS * CS;
       
-      CL += dCL * dt;
-      CA += dCA * dt;
-      CS += dCS * dt;
+CL += dCL * dt;
+CA += dCA * dt;
+CS += dCS * dt;
       
-      CL = Math.max(0, CL);
-      CA = Math.max(0, CA);
-      CS = Math.max(0, CS);
-    }
+CL = Math.max(0, CL);
+CA = Math.max(0, CA);
+CS = Math.max(0, CS);
+}
     
-    const totalC = CL + CA + CS;
-    const slowFrac = (CS / totalC) * 100;
-    const Rh = kL * CL + kA * CA + kS * CS;
-    const MRT = totalC / litterfall; // Mean residence time
+const totalC = CL + CA + CS;
+const slowFrac = (CS / totalC) * 100;
+const Rh = kL * CL + kA * CA + kS * CS;
+const MRT = totalC / litterfall; // Mean residence time
     
-    document.getElementById('total-soil-c').textContent = totalC.toFixed(1);
-    document.getElementById('slow-fraction').textContent = slowFrac.toFixed(0);
-    document.getElementById('rh-result').textContent = Rh.toFixed(2);
-    document.getElementById('mrt-result').textContent = MRT.toFixed(0);
+document.getElementById('total-soil-c').textContent = totalC.toFixed(1);
+document.getElementById('slow-fraction').textContent = slowFrac.toFixed(0);
+document.getElementById('rh-result').textContent = Rh.toFixed(2);
+document.getElementById('mrt-result').textContent = MRT.toFixed(0);
     
-    updateChart(timeData, litterData, activeData, slowData, totalData);
-  }
+updateChart(timeData, litterData, activeData, slowData, totalData);
+}
   
-  function updateChart(time, litter, active, slow, total) {
-    const option = {
-      title: {
-        text: 'Soil Carbon Pool Dynamics',
-        left: 'center'
-      },
-      tooltip: {
-        trigger: 'axis',
-        axisPointer: { type: 'cross' }
-      },
-      legend: {
-        data: ['Litter', 'Active SOM', 'Slow SOM', 'Total'],
-        top: 30
-      },
-      grid: {
-        left: 80,
-        right: 40,
-        top: 80,
-        bottom: 60
-      },
-      xAxis: {
-        type: 'value',
-        name: 'Time (years)',
-        nameLocation: 'middle',
-        nameGap: 30
-      },
-      yAxis: {
-        type: 'value',
-        name: 'Carbon (kg C/m²)',
-        nameLocation: 'middle',
-        nameGap: 50
-      },
-      series: [
-        {
-          name: 'Litter',
-          type: 'line',
-          data: time.map((t, i) => [t, litter[i]]),
-          lineStyle: { color: '#F39C12', width: 2 },
-          showSymbol: false
-        },
-        {
-          name: 'Active SOM',
-          type: 'line',
-          data: time.map((t, i) => [t, active[i]]),
-          lineStyle: { color: '#E67E22', width: 2 },
-          showSymbol: false
-        },
-        {
-          name: 'Slow SOM',
-          type: 'line',
-          data: time.map((t, i) => [t, slow[i]]),
-          lineStyle: { color: '#8B4513', width: 2 },
-          showSymbol: false
-        },
-        {
-          name: 'Total',
-          type: 'line',
-          data: time.map((t, i) => [t, total[i]]),
-          lineStyle: { color: '#2C3E50', width: 3, type: 'dashed' },
-          showSymbol: false
-        }
-      ]
-    };
+function updateChart(time, litter, active, slow, total) {
+const option = {
+title: {
+text: 'Soil Carbon Pool Dynamics',
+left: 'center'
+},
+tooltip: {
+trigger: 'axis',
+axisPointer: { type: 'cross' }
+},
+legend: {
+data: ['Litter', 'Active SOM', 'Slow SOM', 'Total'],
+top: 30
+},
+grid: {
+left: 80,
+right: 40,
+top: 80,
+bottom: 60
+},
+xAxis: {
+type: 'value',
+name: 'Time (years)',
+nameLocation: 'middle',
+nameGap: 30
+},
+yAxis: {
+type: 'value',
+name: 'Carbon (kg C/m²)',
+nameLocation: 'middle',
+nameGap: 50
+},
+series: [
+{
+name: 'Litter',
+type: 'line',
+data: time.map((t, i) => [t, litter[i]]),
+lineStyle: { color: '#F39C12', width: 2 },
+showSymbol: false
+},
+{
+name: 'Active SOM',
+type: 'line',
+data: time.map((t, i) => [t, active[i]]),
+lineStyle: { color: '#E67E22', width: 2 },
+showSymbol: false
+},
+{
+name: 'Slow SOM',
+type: 'line',
+data: time.map((t, i) => [t, slow[i]]),
+lineStyle: { color: '#8B4513', width: 2 },
+showSymbol: false
+},
+{
+name: 'Total',
+type: 'line',
+data: time.map((t, i) => [t, total[i]]),
+lineStyle: { color: '#2C3E50', width: 3, type: 'dashed' },
+showSymbol: false
+}
+]
+};
     
-    chart.setOption(option);
-  }
+chart.setOption(option);
+}
   
-  document.getElementById('ecosystem-decomp').addEventListener('change', (e) => {
-    ecoType = e.target.value;
-    temperature = ecosystems[ecoType].temp;
-    document.getElementById('temp-decomp-slider').value = temperature;
-    document.getElementById('temp-decomp-value').textContent = temperature;
-  });
+document.getElementById('ecosystem-decomp').addEventListener('change', (e) => {
+ecoType = e.target.value;
+temperature = ecosystems[ecoType].temp;
+document.getElementById('temp-decomp-slider').value = temperature;
+document.getElementById('temp-decomp-value').textContent = temperature;
+});
   
-  document.getElementById('litterfall-slider').addEventListener('input', (e) => {
-    litterfall = parseFloat(e.target.value);
-    document.getElementById('litterfall-value').textContent = litterfall.toFixed(2);
-  });
+document.getElementById('litterfall-slider').addEventListener('input', (e) => {
+litterfall = parseFloat(e.target.value);
+document.getElementById('litterfall-value').textContent = litterfall.toFixed(2);
+});
   
-  document.getElementById('temp-decomp-slider').addEventListener('input', (e) => {
-    temperature = parseFloat(e.target.value);
-    document.getElementById('temp-decomp-value').textContent = temperature;
-  });
+document.getElementById('temp-decomp-slider').addEventListener('input', (e) => {
+temperature = parseFloat(e.target.value);
+document.getElementById('temp-decomp-value').textContent = temperature;
+});
   
-  document.getElementById('moisture-slider').addEventListener('input', (e) => {
-    moisture = parseFloat(e.target.value);
-    document.getElementById('moisture-value').textContent = moisture.toFixed(2);
-  });
+document.getElementById('moisture-slider').addEventListener('input', (e) => {
+moisture = parseFloat(e.target.value);
+document.getElementById('moisture-value').textContent = moisture.toFixed(2);
+});
   
-  document.getElementById('years-decomp-slider').addEventListener('input', (e) => {
-    years = parseInt(e.target.value);
-    document.getElementById('years-decomp-value').textContent = years;
-  });
+document.getElementById('years-decomp-slider').addEventListener('input', (e) => {
+years = parseInt(e.target.value);
+document.getElementById('years-decomp-value').textContent = years;
+});
   
-  document.getElementById('run-decomp-sim').addEventListener('click', () => {
-    runDecompSim();
-  });
+document.getElementById('run-decomp-sim').addEventListener('click', () => {
+runDecompSim();
+});
   
-  runDecompSim();
+runDecompSim();
   
-  window.addEventListener('resize', () => chart.resize());
+window.addEventListener('resize', () => chart.resize());
 })();
 </script>
 <p><strong>Try this:</strong> - <strong>Tropical forest:</strong> High temperature → fast decomposition → low soil carbon accumulation - <strong>Boreal forest:</strong> Low temperature → slow decomposition → huge soil carbon stores (peat) - <strong>Desert:</strong> Dry conditions (low moisture) → very slow decomposition - <strong>Increase temperature:</strong> Speeds all decay rates → reduces equilibrium carbon - <strong>Increase litterfall:</strong> More inputs → higher steady-state carbon - Notice: Slow SOM takes centuries to equilibrate, dominates total carbon</p>

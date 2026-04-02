@@ -272,188 +272,189 @@ Month 13 (Jan 2023): Gravity anomaly = -30 μGal</p>
 <hr>
 <h2 id="computational-implementation" class="anchored">5. Computational Implementation</h2>
 <p>Below is an interactive GRACE data simulator.</p>
-<div id="grace-viz" class="viz-container">
+<div class="viz-container" id="grace-viz">
 <div class="controls">
-<pre><code>&lt;label&gt;
-  Region:
-  &lt;select id="region"&gt;
-    &lt;option value="greenland" selected&gt;Greenland Ice Sheet&lt;/option&gt;
-    &lt;option value="amazon"&gt;Amazon Basin&lt;/option&gt;
-    &lt;option value="california"&gt;California&lt;/option&gt;
-    &lt;option value="ganges"&gt;Ganges Basin (India)&lt;/option&gt;
-  &lt;/select&gt;
-&lt;/label&gt;
-&lt;label&gt;
-  Time range (years):
-  &lt;input type="range" id="time-range" min="1" max="20" step="1" value="10"&gt;
-  &lt;span id="time-val"&gt;10&lt;/span&gt;
-&lt;/label&gt;
-&lt;div class="grace-info"&gt;
-  &lt;p&gt;&lt;strong&gt;Linear trend:&lt;/strong&gt; &lt;span id="trend"&gt;--&lt;/span&gt; cm/year&lt;/p&gt;
-  &lt;p&gt;&lt;strong&gt;Seasonal amplitude:&lt;/strong&gt; &lt;span id="seasonal"&gt;--&lt;/span&gt; cm&lt;/p&gt;
-  &lt;p&gt;&lt;strong&gt;Total change:&lt;/strong&gt; &lt;span id="total-change"&gt;--&lt;/span&gt; m&lt;/p&gt;
-  &lt;p&gt;&lt;strong&gt;Mass change rate:&lt;/strong&gt; &lt;span id="mass-rate"&gt;--&lt;/span&gt; Gt/year&lt;/p&gt;
-&lt;/div&gt;</code></pre>
+<label>
+Region:
+<select id="region">
+<option value="greenland" selected="">Greenland Ice Sheet</option>
+<option value="amazon">Amazon Basin</option>
+<option value="california">California</option>
+<option value="ganges">Ganges Basin (India)</option>
+</select>
+</label>
+<label>
+Time range (years):
+<input type="range" id="time-range" min="1" max="20" step="1" value="10">
+<span id="time-val">10</span>
+</label>
+<div class="grace-info">
+<p><strong>Linear trend:</strong> <span id="trend">--</span> cm/year</p>
+<p><strong>Seasonal amplitude:</strong> <span id="seasonal">--</span> cm</p>
+<p><strong>Total change:</strong> <span id="total-change">--</span> m</p>
+<p><strong>Mass change rate:</strong> <span id="mass-rate">--</span> Gt/year</p>
+</div>
 </div>
 <div id="grace-canvas-container">
-<pre><code>&lt;canvas id="grace-canvas" width="700" height="400" style="border: 1px solid #ddd;"&gt;&lt;/canvas&gt;</code></pre>
+<canvas id="grace-canvas" width="700" height="400" style="border: 1px solid #ddd;"></canvas>
 </div>
 </div>
+
 <script type="module">
 await new Promise(resolve => {
-  const checkECharts = () => {
-    if (typeof echarts !== 'undefined') resolve();
-    else setTimeout(checkECharts, 50);
-  };
-  checkECharts();
+const checkECharts = () => {
+if (typeof echarts !== 'undefined') resolve();
+else setTimeout(checkECharts, 50);
+};
+checkECharts();
 });
 
 (function() {
-  const chart = echarts.init(document.getElementById('grace-canvas'));
+const chart = echarts.init(document.getElementById('grace-canvas'));
   
-  let region = 'greenland';
-  let timeRange = 10;
+let region = 'greenland';
+let timeRange = 10;
   
-  const regionParams = {
-    'greenland': {
-      trend: -25, // cm/year
-      seasonal: 8,
-      area: 1.71e12, // m²
-      name: 'Greenland Ice Sheet'
-    },
-    'amazon': {
-      trend: 0,
-      seasonal: 15,
-      area: 5.5e12,
-      name: 'Amazon Basin'
-    },
-    'california': {
-      trend: -3,
-      seasonal: 20,
-      area: 4e11,
-      name: 'California'
-    },
-    'ganges': {
-      trend: -4,
-      seasonal: 25,
-      area: 1e12,
-      name: 'Ganges Basin'
-    }
-  };
+const regionParams = {
+'greenland': {
+trend: -25, // cm/year
+seasonal: 8,
+area: 1.71e12, // m²
+name: 'Greenland Ice Sheet'
+},
+'amazon': {
+trend: 0,
+seasonal: 15,
+area: 5.5e12,
+name: 'Amazon Basin'
+},
+'california': {
+trend: -3,
+seasonal: 20,
+area: 4e11,
+name: 'California'
+},
+'ganges': {
+trend: -4,
+seasonal: 25,
+area: 1e12,
+name: 'Ganges Basin'
+}
+};
   
-  function generateTimeSeries() {
-    const params = regionParams[region];
-    const data = [];
-    const nMonths = timeRange * 12;
+function generateTimeSeries() {
+const params = regionParams[region];
+const data = [];
+const nMonths = timeRange * 12;
     
-    for (let month = 0; month < nMonths; month++) {
-      const year = month / 12;
+for (let month = 0; month < nMonths; month++) {
+const year = month / 12;
       
-      // Linear trend
-      const trend = params.trend * year / 100; // m
+// Linear trend
+const trend = params.trend * year / 100; // m
       
-      // Seasonal (annual + semi-annual)
-      const annual = params.seasonal/100 * Math.sin(2 * Math.PI * month / 12);
-      const semiannual = params.seasonal/200 * Math.sin(4 * Math.PI * month / 12);
-      const seasonal = annual + semiannual;
+// Seasonal (annual + semi-annual)
+const annual = params.seasonal/100 * Math.sin(2 * Math.PI * month / 12);
+const semiannual = params.seasonal/200 * Math.sin(4 * Math.PI * month / 12);
+const seasonal = annual + semiannual;
       
-      // Noise
-      const noise = (Math.random() - 0.5) * 0.03; // ±3 cm
+// Noise
+const noise = (Math.random() - 0.5) * 0.03; // ±3 cm
       
-      const value = trend + seasonal + noise;
-      data.push([year, value]);
-    }
+const value = trend + seasonal + noise;
+data.push([year, value]);
+}
     
-    return data;
-  }
+return data;
+}
   
-  function render() {
-    const params = regionParams[region];
-    const data = generateTimeSeries();
+function render() {
+const params = regionParams[region];
+const data = generateTimeSeries();
     
-    // Calculate statistics
-    const trend = params.trend;
-    const seasonal = params.seasonal;
-    const totalChange = trend * timeRange / 100;
+// Calculate statistics
+const trend = params.trend;
+const seasonal = params.seasonal;
+const totalChange = trend * timeRange / 100;
     
-    // Mass rate (Gt/year)
-    const massRate = trend / 100 * params.area * 1000 / 1e12; // Convert to Gt
+// Mass rate (Gt/year)
+const massRate = trend / 100 * params.area * 1000 / 1e12; // Convert to Gt
     
-    document.getElementById('trend').textContent = trend.toFixed(1);
-    document.getElementById('seasonal').textContent = seasonal.toFixed(0);
-    document.getElementById('total-change').textContent = totalChange.toFixed(2);
-    document.getElementById('mass-rate').textContent = massRate.toFixed(0);
+document.getElementById('trend').textContent = trend.toFixed(1);
+document.getElementById('seasonal').textContent = seasonal.toFixed(0);
+document.getElementById('total-change').textContent = totalChange.toFixed(2);
+document.getElementById('mass-rate').textContent = massRate.toFixed(0);
     
-    const series = [
-      {
-        name: 'Water Equivalent Thickness',
-        type: 'line',
-        data: data,
-        lineStyle: {color: '#2196F3', width: 2},
-        showSymbol: false
-      },
-      {
-        name: 'Linear Trend',
-        type: 'line',
-        data: [[0, 0], [timeRange, totalChange]],
-        lineStyle: {color: '#F44336', width: 2, type: 'dashed'},
-        showSymbol: false
-      }
-    ];
+const series = [
+{
+name: 'Water Equivalent Thickness',
+type: 'line',
+data: data,
+lineStyle: {color: '#2196F3', width: 2},
+showSymbol: false
+},
+{
+name: 'Linear Trend',
+type: 'line',
+data: [[0, 0], [timeRange, totalChange]],
+lineStyle: {color: '#F44336', width: 2, type: 'dashed'},
+showSymbol: false
+}
+];
     
-    const option = {
-      title: {
-        text: `GRACE: ${params.name}`,
-        left: 'center'
-      },
-      tooltip: {
-        trigger: 'axis',
-        axisPointer: {type: 'cross'}
-      },
-      legend: {
-        data: ['Water Equivalent Thickness', 'Linear Trend'],
-        top: 30
-      },
-      grid: {
-        left: 80,
-        right: 40,
-        top: 80,
-        bottom: 60
-      },
-      xAxis: {
-        type: 'value',
-        name: 'Years',
-        nameLocation: 'middle',
-        nameGap: 30,
-        min: 0,
-        max: timeRange
-      },
-      yAxis: {
-        type: 'value',
-        name: 'Water Equivalent Thickness (m)',
-        nameLocation: 'middle',
-        nameGap: 50
-      },
-      series: series
-    };
+const option = {
+title: {
+text: `GRACE: ${params.name}`,
+left: 'center'
+},
+tooltip: {
+trigger: 'axis',
+axisPointer: {type: 'cross'}
+},
+legend: {
+data: ['Water Equivalent Thickness', 'Linear Trend'],
+top: 30
+},
+grid: {
+left: 80,
+right: 40,
+top: 80,
+bottom: 60
+},
+xAxis: {
+type: 'value',
+name: 'Years',
+nameLocation: 'middle',
+nameGap: 30,
+min: 0,
+max: timeRange
+},
+yAxis: {
+type: 'value',
+name: 'Water Equivalent Thickness (m)',
+nameLocation: 'middle',
+nameGap: 50
+},
+series: series
+};
     
-    chart.setOption(option, true);
-  }
+chart.setOption(option, true);
+}
   
-  document.getElementById('region').addEventListener('change', (e) => {
-    region = e.target.value;
-    render();
-  });
+document.getElementById('region').addEventListener('change', (e) => {
+region = e.target.value;
+render();
+});
   
-  document.getElementById('time-range').addEventListener('input', (e) => {
-    timeRange = parseFloat(e.target.value);
-    document.getElementById('time-val').textContent = timeRange;
-    render();
-  });
+document.getElementById('time-range').addEventListener('input', (e) => {
+timeRange = parseFloat(e.target.value);
+document.getElementById('time-val').textContent = timeRange;
+render();
+});
   
-  render();
+render();
   
-  window.addEventListener('resize', () => chart.resize());
+window.addEventListener('resize', () => chart.resize());
 })();
 </script>
 <p><strong>Observations:</strong> - Greenland shows strong negative trend (ice loss: -280 Gt/year) - Amazon shows large seasonal variations (wet/dry seasons) - California shows drought signal with seasonal variation - Ganges shows groundwater depletion trend - Blue line: actual GRACE signal (trend + seasonal + noise) - Red dashed: linear trend component - Seasonal variations evident as annual oscillations</p>

@@ -246,231 +246,232 @@ window.Quarto = {
 <hr>
 <h2 id="computational-implementation" class="anchored">5. Computational Implementation</h2>
 <p>Below is an interactive glacial chemistry simulator.</p>
-<div id="chem-viz" class="viz-container">
+<div class="viz-container" id="chem-viz">
 <div class="controls">
-<pre><code>&lt;label&gt;
-  Time of day (hour):
-  &lt;input type="range" id="hour" min="0" max="23" step="1" value="12"&gt;
-  &lt;span id="hour-val"&gt;12&lt;/span&gt;:00
-&lt;/label&gt;
-&lt;label&gt;
-  Season:
-  &lt;select id="season"&gt;
-    &lt;option value="summer" selected&gt;Summer (high melt)&lt;/option&gt;
-    &lt;option value="spring"&gt;Spring (moderate)&lt;/option&gt;
-    &lt;option value="fall"&gt;Fall (low melt)&lt;/option&gt;
-  &lt;/select&gt;
-&lt;/label&gt;
-&lt;label&gt;
-  Bedrock type:
-  &lt;select id="bedrock"&gt;
-    &lt;option value="carbonate"&gt;Carbonate (limestone)&lt;/option&gt;
-    &lt;option value="mixed" selected&gt;Mixed lithology&lt;/option&gt;
-    &lt;option value="silicate"&gt;Silicate (granite)&lt;/option&gt;
-  &lt;/select&gt;
-&lt;/label&gt;
-&lt;div class="chem-info"&gt;
-  &lt;p&gt;&lt;strong&gt;Discharge:&lt;/strong&gt; &lt;span id="discharge"&gt;--&lt;/span&gt; m³/s&lt;/p&gt;
-  &lt;p&gt;&lt;strong&gt;TDS:&lt;/strong&gt; &lt;span id="tds"&gt;--&lt;/span&gt; mg/L&lt;/p&gt;
-  &lt;p&gt;&lt;strong&gt;Subglacial %:&lt;/strong&gt; &lt;span id="sub-pct"&gt;--&lt;/span&gt;%&lt;/p&gt;
-  &lt;p&gt;&lt;strong&gt;SSC:&lt;/strong&gt; &lt;span id="ssc"&gt;--&lt;/span&gt; mg/L&lt;/p&gt;
-&lt;/div&gt;</code></pre>
+<label>
+Time of day (hour):
+<input type="range" id="hour" min="0" max="23" step="1" value="12">
+<span id="hour-val">12</span>:00
+</label>
+<label>
+Season:
+<select id="season">
+<option value="summer" selected="">Summer (high melt)</option>
+<option value="spring">Spring (moderate)</option>
+<option value="fall">Fall (low melt)</option>
+</select>
+</label>
+<label>
+Bedrock type:
+<select id="bedrock">
+<option value="carbonate">Carbonate (limestone)</option>
+<option value="mixed" selected="">Mixed lithology</option>
+<option value="silicate">Silicate (granite)</option>
+</select>
+</label>
+<div class="chem-info">
+<p><strong>Discharge:</strong> <span id="discharge">--</span> m³/s</p>
+<p><strong>TDS:</strong> <span id="tds">--</span> mg/L</p>
+<p><strong>Subglacial %:</strong> <span id="sub-pct">--</span>%</p>
+<p><strong>SSC:</strong> <span id="ssc">--</span> mg/L</p>
+</div>
 </div>
 <div id="chem-canvas-container">
-<pre><code>&lt;canvas id="chem-canvas" width="700" height="400" style="border: 1px solid #ddd;"&gt;&lt;/canvas&gt;</code></pre>
+<canvas id="chem-canvas" width="700" height="400" style="border: 1px solid #ddd;"></canvas>
 </div>
 </div>
+
 <script type="module">
 await new Promise(resolve => {
-  const checkECharts = () => {
-    if (typeof echarts !== 'undefined') resolve();
-    else setTimeout(checkECharts, 50);
-  };
-  checkECharts();
+const checkECharts = () => {
+if (typeof echarts !== 'undefined') resolve();
+else setTimeout(checkECharts, 50);
+};
+checkECharts();
 });
 
 (function() {
-  const chart = echarts.init(document.getElementById('chem-canvas'));
+const chart = echarts.init(document.getElementById('chem-canvas'));
   
-  let hour = 12;
-  let season = 'summer';
-  let bedrock = 'mixed';
+let hour = 12;
+let season = 'summer';
+let bedrock = 'mixed';
   
-  function calculateChemistry() {
-    // Discharge varies diurnally
-    const baseDischarge = season === 'summer' ? 5 : season === 'spring' ? 2 : 0.5;
-    const diurnalFactor = 0.5 + 0.5 * Math.sin((hour - 6) * Math.PI / 12);
-    const discharge = baseDischarge * diurnalFactor;
+function calculateChemistry() {
+// Discharge varies diurnally
+const baseDischarge = season === 'summer' ? 5 : season === 'spring' ? 2 : 0.5;
+const diurnalFactor = 0.5 + 0.5 * Math.sin((hour - 6) * Math.PI / 12);
+const discharge = baseDischarge * diurnalFactor;
     
-    // Endmembers
-    const supraglacialTDS = 10;
-    const subglacialTDS = bedrock === 'carbonate' ? 1200 : bedrock === 'silicate' ? 400 : 800;
+// Endmembers
+const supraglacialTDS = 10;
+const subglacialTDS = bedrock === 'carbonate' ? 1200 : bedrock === 'silicate' ? 400 : 800;
     
-    // Mixing: high discharge = more supraglacial
-    const maxDischarge = baseDischarge * 1.5;
-    const supraFraction = Math.min(0.95, 0.3 + 0.6 * (discharge / maxDischarge));
-    const subFraction = 1 - supraFraction;
+// Mixing: high discharge = more supraglacial
+const maxDischarge = baseDischarge * 1.5;
+const supraFraction = Math.min(0.95, 0.3 + 0.6 * (discharge / maxDischarge));
+const subFraction = 1 - supraFraction;
     
-    // Stream TDS
-    const TDS = supraFraction * supraglacialTDS + subFraction * subglacialTDS;
+// Stream TDS
+const TDS = supraFraction * supraglacialTDS + subFraction * subglacialTDS;
     
-    // Suspended sediment (power law)
-    const SSC = 50 * Math.pow(discharge, 0.6);
+// Suspended sediment (power law)
+const SSC = 50 * Math.pow(discharge, 0.6);
     
-    return {
-      discharge,
-      TDS,
-      subFraction,
-      supraFraction,
-      SSC
-    };
-  }
+return {
+discharge,
+TDS,
+subFraction,
+supraFraction,
+SSC
+};
+}
   
-  function generateDiurnalCycle() {
-    const data = [];
+function generateDiurnalCycle() {
+const data = [];
     
-    for (let h = 0; h < 24; h++) {
-      hour = h;
-      const result = calculateChemistry();
-      data.push({
-        hour: h,
-        discharge: result.discharge,
-        TDS: result.TDS,
-        subFraction: result.subFraction * 100,
-        SSC: result.SSC
-      });
-    }
+for (let h = 0; h < 24; h++) {
+hour = h;
+const result = calculateChemistry();
+data.push({
+hour: h,
+discharge: result.discharge,
+TDS: result.TDS,
+subFraction: result.subFraction * 100,
+SSC: result.SSC
+});
+}
     
-    return data;
-  }
+return data;
+}
   
-  function render() {
-    const current = calculateChemistry();
+function render() {
+const current = calculateChemistry();
     
-    document.getElementById('discharge').textContent = current.discharge.toFixed(2);
-    document.getElementById('tds').textContent = current.TDS.toFixed(0);
-    document.getElementById('sub-pct').textContent = (current.subFraction * 100).toFixed(0);
-    document.getElementById('ssc').textContent = current.SSC.toFixed(0);
+document.getElementById('discharge').textContent = current.discharge.toFixed(2);
+document.getElementById('tds').textContent = current.TDS.toFixed(0);
+document.getElementById('sub-pct').textContent = (current.subFraction * 100).toFixed(0);
+document.getElementById('ssc').textContent = current.SSC.toFixed(0);
     
-    const cycleData = generateDiurnalCycle();
+const cycleData = generateDiurnalCycle();
     
-    const series = [
-      {
-        name: 'Discharge',
-        type: 'line',
-        data: cycleData.map(d => [d.hour, d.discharge]),
-        lineStyle: {color: '#2196F3', width: 2},
-        areaStyle: {color: 'rgba(33, 150, 243, 0.2)'},
-        yAxisIndex: 0
-      },
-      {
-        name: 'TDS',
-        type: 'line',
-        data: cycleData.map(d => [d.hour, d.TDS]),
-        lineStyle: {color: '#4CAF50', width: 2},
-        yAxisIndex: 1
-      },
-      {
-        name: 'Subglacial %',
-        type: 'line',
-        data: cycleData.map(d => [d.hour, d.subFraction]),
-        lineStyle: {color: '#FF9800', width: 2, type: 'dashed'},
-        yAxisIndex: 2
-      },
-      {
-        name: 'Current Time',
-        type: 'line',
-        data: [[hour, 0], [hour, 100]],
-        lineStyle: {color: '#F44336', width: 3, type: 'dotted'},
-        markLine: {
-          silent: true,
-          lineStyle: {color: '#F44336', width: 2},
-          data: [{xAxis: hour}],
-          label: {formatter: 'Now', position: 'insideEndTop'}
-        },
-        yAxisIndex: 2
-      }
-    ];
+const series = [
+{
+name: 'Discharge',
+type: 'line',
+data: cycleData.map(d => [d.hour, d.discharge]),
+lineStyle: {color: '#2196F3', width: 2},
+areaStyle: {color: 'rgba(33, 150, 243, 0.2)'},
+yAxisIndex: 0
+},
+{
+name: 'TDS',
+type: 'line',
+data: cycleData.map(d => [d.hour, d.TDS]),
+lineStyle: {color: '#4CAF50', width: 2},
+yAxisIndex: 1
+},
+{
+name: 'Subglacial %',
+type: 'line',
+data: cycleData.map(d => [d.hour, d.subFraction]),
+lineStyle: {color: '#FF9800', width: 2, type: 'dashed'},
+yAxisIndex: 2
+},
+{
+name: 'Current Time',
+type: 'line',
+data: [[hour, 0], [hour, 100]],
+lineStyle: {color: '#F44336', width: 3, type: 'dotted'},
+markLine: {
+silent: true,
+lineStyle: {color: '#F44336', width: 2},
+data: [{xAxis: hour}],
+label: {formatter: 'Now', position: 'insideEndTop'}
+},
+yAxisIndex: 2
+}
+];
     
-    const option = {
-      title: {
-        text: 'Glacial Meltwater Chemistry - Diurnal Cycle',
-        left: 'center'
-      },
-      tooltip: {
-        trigger: 'axis',
-        axisPointer: {type: 'cross'}
-      },
-      legend: {
-        data: ['Discharge', 'TDS', 'Subglacial %', 'Current Time'],
-        top: 30
-      },
-      grid: {
-        left: 80,
-        right: 120,
-        top: 80,
-        bottom: 60
-      },
-      xAxis: {
-        type: 'value',
-        name: 'Hour of Day',
-        nameLocation: 'middle',
-        nameGap: 30,
-        min: 0,
-        max: 23,
-        interval: 3
-      },
-      yAxis: [
-        {
-          type: 'value',
-          name: 'Discharge (m³/s)',
-          nameLocation: 'middle',
-          nameGap: 50,
-          position: 'left'
-        },
-        {
-          type: 'value',
-          name: 'TDS (mg/L)',
-          nameLocation: 'middle',
-          nameGap: 50,
-          position: 'left',
-          offset: 60
-        },
-        {
-          type: 'value',
-          name: 'Subglacial %',
-          nameLocation: 'middle',
-          nameGap: 50,
-          position: 'right',
-          min: 0,
-          max: 100
-        }
-      ],
-      series: series
-    };
+const option = {
+title: {
+text: 'Glacial Meltwater Chemistry - Diurnal Cycle',
+left: 'center'
+},
+tooltip: {
+trigger: 'axis',
+axisPointer: {type: 'cross'}
+},
+legend: {
+data: ['Discharge', 'TDS', 'Subglacial %', 'Current Time'],
+top: 30
+},
+grid: {
+left: 80,
+right: 120,
+top: 80,
+bottom: 60
+},
+xAxis: {
+type: 'value',
+name: 'Hour of Day',
+nameLocation: 'middle',
+nameGap: 30,
+min: 0,
+max: 23,
+interval: 3
+},
+yAxis: [
+{
+type: 'value',
+name: 'Discharge (m³/s)',
+nameLocation: 'middle',
+nameGap: 50,
+position: 'left'
+},
+{
+type: 'value',
+name: 'TDS (mg/L)',
+nameLocation: 'middle',
+nameGap: 50,
+position: 'left',
+offset: 60
+},
+{
+type: 'value',
+name: 'Subglacial %',
+nameLocation: 'middle',
+nameGap: 50,
+position: 'right',
+min: 0,
+max: 100
+}
+],
+series: series
+};
     
-    chart.setOption(option, true);
-  }
+chart.setOption(option, true);
+}
   
-  document.getElementById('hour').addEventListener('input', (e) => {
-    hour = parseInt(e.target.value);
-    document.getElementById('hour-val').textContent = hour;
-    render();
-  });
+document.getElementById('hour').addEventListener('input', (e) => {
+hour = parseInt(e.target.value);
+document.getElementById('hour-val').textContent = hour;
+render();
+});
   
-  document.getElementById('season').addEventListener('change', (e) => {
-    season = e.target.value;
-    render();
-  });
+document.getElementById('season').addEventListener('change', (e) => {
+season = e.target.value;
+render();
+});
   
-  document.getElementById('bedrock').addEventListener('change', (e) => {
-    bedrock = e.target.value;
-    render();
-  });
+document.getElementById('bedrock').addEventListener('change', (e) => {
+bedrock = e.target.value;
+render();
+});
   
-  render();
+render();
   
-  window.addEventListener('resize', () => chart.resize());
+window.addEventListener('resize', () => chart.resize());
 })();
 </script>
 <p><strong>Try this:</strong> - <strong>Slide through day:</strong> See discharge peak at noon (blue), TDS minimum (green) - <strong>Summer vs Fall:</strong> Higher discharge in summer, more dilution - <strong>Carbonate bedrock:</strong> Very high TDS (limestone dissolves rapidly) - <strong>Silicate bedrock:</strong> Lower TDS (granite dissolves slowly) - <strong>Blue area:</strong> Discharge (peaks afternoon) - <strong>Green line:</strong> Total dissolved solids (inverse relationship!) - <strong>Orange dashed:</strong> Subglacial contribution % (higher at night) - <strong>Red vertical:</strong> Current time marker - Notice: High flow = low concentration (dilution), low flow = high concentration (subglacial dominates)!</p>

@@ -232,6 +232,12 @@ function updateThemeMeta(theme) {
 function injectWaywardChrome() {
   const path = currentPath();
   const body = document.body;
+  if (body.classList.contains('nav-sidebar') || document.getElementById('quarto-sidebar')) {
+    if (isHomeLikePath(path)) body.classList.add('page-home');
+    if (path.startsWith('/learn/')) body.classList.add('page-learn');
+    return;
+  }
+
   const existingHeader = document.querySelector('.wayward-header');
   const existingFooter = document.querySelector('.wayward-footer');
   const existingMain = document.querySelector('.wayward-main');
@@ -299,31 +305,6 @@ function injectWaywardChrome() {
       const toggleSpan = toggle.querySelector('span');
       if (toggleSpan) toggleSpan.textContent = label;
     });
-  }
-
-  if (body.classList.contains('nav-sidebar') || document.getElementById('quarto-sidebar')) {
-    const quartoContent = document.getElementById('quarto-content');
-    const quartoDocument = document.getElementById('quarto-document-content');
-
-    if (existingHeader && quartoContent && existingHeader.closest('#quarto-document-content')) {
-      body.insertBefore(existingHeader, quartoContent);
-    }
-
-    if (existingFooter && quartoContent && existingFooter.closest('#quarto-document-content')) {
-      const firstScript = Array.from(body.children).find((node) => node.tagName === 'SCRIPT');
-      if (firstScript) {
-        body.insertBefore(existingFooter, firstScript);
-      } else {
-        body.appendChild(existingFooter);
-      }
-    }
-
-    if (quartoDocument) {
-      quartoDocument.querySelector('.wayward-header')?.remove();
-      quartoDocument.querySelector('.wayward-footer')?.remove();
-    }
-
-    return;
   }
 
   if (existingHeader && existingFooter && existingMain) return;

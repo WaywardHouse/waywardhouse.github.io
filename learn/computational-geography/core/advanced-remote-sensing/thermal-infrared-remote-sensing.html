@@ -256,244 +256,245 @@ window.Quarto = {
 <hr>
 <h2 id="computational-implementation" class="anchored">5. Computational Implementation</h2>
 <p>Below is an interactive thermal remote sensing simulator.</p>
-<div id="thermal-viz" class="viz-container">
+<div class="viz-container" id="thermal-viz">
 <div class="controls">
-<pre><code>&lt;label&gt;
-  Surface type:
-  &lt;select id="surface-type"&gt;
-    &lt;option value="water"&gt;Water&lt;/option&gt;
-    &lt;option value="vegetation"&gt;Vegetation&lt;/option&gt;
-    &lt;option value="soil-wet"&gt;Soil (wet)&lt;/option&gt;
-    &lt;option value="soil-dry"&gt;Soil (dry)&lt;/option&gt;
-    &lt;option value="asphalt"&gt;Asphalt&lt;/option&gt;
-    &lt;option value="concrete"&gt;Concrete&lt;/option&gt;
-    &lt;option value="metal"&gt;Metal roof&lt;/option&gt;
-  &lt;/select&gt;
-&lt;/label&gt;
-&lt;label&gt;
-  Air temperature (°C):
-  &lt;input type="range" id="air-temp" min="15" max="35" step="1" value="25"&gt;
-  &lt;span id="air-val"&gt;25&lt;/span&gt;
-&lt;/label&gt;
-&lt;label&gt;
-  Solar radiation (W/m²):
-  &lt;input type="range" id="solar-rad" min="0" max="1000" step="50" value="600"&gt;
-  &lt;span id="solar-val"&gt;600&lt;/span&gt;
-&lt;/label&gt;
-&lt;label&gt;
-  Time of day:
-  &lt;input type="range" id="time-hour" min="0" max="23" step="1" value="12"&gt;
-  &lt;span id="time-val"&gt;12&lt;/span&gt;:00
-&lt;/label&gt;
-&lt;div class="thermal-info"&gt;
-  &lt;p&gt;&lt;strong&gt;Surface temp:&lt;/strong&gt; &lt;span id="surf-temp"&gt;--&lt;/span&gt; °C&lt;/p&gt;
-  &lt;p&gt;&lt;strong&gt;Brightness temp:&lt;/strong&gt; &lt;span id="bright-temp"&gt;--&lt;/span&gt; K&lt;/p&gt;
-  &lt;p&gt;&lt;strong&gt;Emissivity:&lt;/strong&gt; &lt;span id="emissivity"&gt;--&lt;/span&gt;&lt;/p&gt;
-  &lt;p&gt;&lt;strong&gt;Net radiation:&lt;/strong&gt; &lt;span id="net-rad"&gt;--&lt;/span&gt; W/m²&lt;/p&gt;
-  &lt;p&gt;&lt;strong&gt;Sensible heat:&lt;/strong&gt; &lt;span id="sens-heat"&gt;--&lt;/span&gt; W/m²&lt;/p&gt;
-  &lt;p&gt;&lt;strong&gt;Latent heat:&lt;/strong&gt; &lt;span id="lat-heat"&gt;--&lt;/span&gt; W/m²&lt;/p&gt;
-&lt;/div&gt;</code></pre>
+<label>
+Surface type:
+<select id="surface-type">
+<option value="water">Water</option>
+<option value="vegetation">Vegetation</option>
+<option value="soil-wet">Soil (wet)</option>
+<option value="soil-dry">Soil (dry)</option>
+<option value="asphalt">Asphalt</option>
+<option value="concrete">Concrete</option>
+<option value="metal">Metal roof</option>
+</select>
+</label>
+<label>
+Air temperature (°C):
+<input type="range" id="air-temp" min="15" max="35" step="1" value="25">
+<span id="air-val">25</span>
+</label>
+<label>
+Solar radiation (W/m²):
+<input type="range" id="solar-rad" min="0" max="1000" step="50" value="600">
+<span id="solar-val">600</span>
+</label>
+<label>
+Time of day:
+<input type="range" id="time-hour" min="0" max="23" step="1" value="12">
+<span id="time-val">12</span>:00
+</label>
+<div class="thermal-info">
+<p><strong>Surface temp:</strong> <span id="surf-temp">--</span> °C</p>
+<p><strong>Brightness temp:</strong> <span id="bright-temp">--</span> K</p>
+<p><strong>Emissivity:</strong> <span id="emissivity">--</span></p>
+<p><strong>Net radiation:</strong> <span id="net-rad">--</span> W/m²</p>
+<p><strong>Sensible heat:</strong> <span id="sens-heat">--</span> W/m²</p>
+<p><strong>Latent heat:</strong> <span id="lat-heat">--</span> W/m²</p>
+</div>
 </div>
 <div id="thermal-canvas-container">
-<pre><code>&lt;canvas id="thermal-canvas" width="700" height="400" style="border: 1px solid #ddd;"&gt;&lt;/canvas&gt;</code></pre>
+<canvas id="thermal-canvas" width="700" height="400" style="border: 1px solid #ddd;"></canvas>
 </div>
 </div>
+
 <script type="module">
 await new Promise(resolve => {
-  const checkECharts = () => {
-    if (typeof echarts !== 'undefined') resolve();
-    else setTimeout(checkECharts, 50);
-  };
-  checkECharts();
+const checkECharts = () => {
+if (typeof echarts !== 'undefined') resolve();
+else setTimeout(checkECharts, 50);
+};
+checkECharts();
 });
 
 (function() {
-  const chart = echarts.init(document.getElementById('thermal-canvas'));
+const chart = echarts.init(document.getElementById('thermal-canvas'));
   
-  let surfaceType = 'vegetation';
-  let airTemp = 25;
-  let solarRad = 600;
-  let timeHour = 12;
+let surfaceType = 'vegetation';
+let airTemp = 25;
+let solarRad = 600;
+let timeHour = 12;
   
-  const surfaceProps = {
-    water: {emissivity: 0.98, albedo: 0.06, name: 'Water'},
-    vegetation: {emissivity: 0.97, albedo: 0.20, name: 'Vegetation'},
-    'soil-wet': {emissivity: 0.96, albedo: 0.15, name: 'Soil (wet)'},
-    'soil-dry': {emissivity: 0.93, albedo: 0.25, name: 'Soil (dry)'},
-    asphalt: {emissivity: 0.95, albedo: 0.08, name: 'Asphalt'},
-    concrete: {emissivity: 0.90, albedo: 0.30, name: 'Concrete'},
-    metal: {emissivity: 0.15, albedo: 0.60, name: 'Metal roof'}
-  };
+const surfaceProps = {
+water: {emissivity: 0.98, albedo: 0.06, name: 'Water'},
+vegetation: {emissivity: 0.97, albedo: 0.20, name: 'Vegetation'},
+'soil-wet': {emissivity: 0.96, albedo: 0.15, name: 'Soil (wet)'},
+'soil-dry': {emissivity: 0.93, albedo: 0.25, name: 'Soil (dry)'},
+asphalt: {emissivity: 0.95, albedo: 0.08, name: 'Asphalt'},
+concrete: {emissivity: 0.90, albedo: 0.30, name: 'Concrete'},
+metal: {emissivity: 0.15, albedo: 0.60, name: 'Metal roof'}
+};
   
-  function calculateThermal() {
-    const props = surfaceProps[surfaceType];
-    const emis = props.emissivity;
-    const albedo = props.albedo;
+function calculateThermal() {
+const props = surfaceProps[surfaceType];
+const emis = props.emissivity;
+const albedo = props.albedo;
     
-    // Net radiation (simplified)
-    const Rsw = (1 - albedo) * solarRad;
-    const sigma = 5.67e-8;
-    const Rlw_down = 0.85 * sigma * Math.pow(airTemp + 273.15, 4);
+// Net radiation (simplified)
+const Rsw = (1 - albedo) * solarRad;
+const sigma = 5.67e-8;
+const Rlw_down = 0.85 * sigma * Math.pow(airTemp + 273.15, 4);
     
-    // Surface temperature estimation (energy balance)
-    const Tair_K = airTemp + 273.15;
+// Surface temperature estimation (energy balance)
+const Tair_K = airTemp + 273.15;
     
-    // Simplified: Ts increases with absorbed radiation, decreases with cooling
-    const radiativeHeating = (Rsw + Rlw_down) / 100;
-    const coolingFactor = emis * 5;
-    const Ts_K = Tair_K + radiativeHeating / coolingFactor;
-    const Ts_C = Ts_K - 273.15;
+// Simplified: Ts increases with absorbed radiation, decreases with cooling
+const radiativeHeating = (Rsw + Rlw_down) / 100;
+const coolingFactor = emis * 5;
+const Ts_K = Tair_K + radiativeHeating / coolingFactor;
+const Ts_C = Ts_K - 273.15;
     
-    // Brightness temperature (what sensor measures)
-    const Tb_K = Ts_K * Math.pow(emis, 0.25);
+// Brightness temperature (what sensor measures)
+const Tb_K = Ts_K * Math.pow(emis, 0.25);
     
-    // Energy fluxes
-    const Rn = Rsw + Rlw_down - emis * sigma * Math.pow(Ts_K, 4);
-    const G = 0.1 * Rn; // ground heat flux
+// Energy fluxes
+const Rn = Rsw + Rlw_down - emis * sigma * Math.pow(Ts_K, 4);
+const G = 0.1 * Rn; // ground heat flux
     
-    // Sensible heat (simplified)
-    const H = 20 * (Ts_C - airTemp);
+// Sensible heat (simplified)
+const H = 20 * (Ts_C - airTemp);
     
-    // Latent heat (residual)
-    const LE = Math.max(0, Rn - H - G);
+// Latent heat (residual)
+const LE = Math.max(0, Rn - H - G);
     
-    return {
-      Ts_C, Tb_K, emis, Rn, H, LE, props
-    };
-  }
+return {
+Ts_C, Tb_K, emis, Rn, H, LE, props
+};
+}
   
-  function generateDiurnalCycle() {
-    const data = [];
+function generateDiurnalCycle() {
+const data = [];
     
-    for (let hour = 0; hour < 24; hour++) {
-      timeHour = hour;
+for (let hour = 0; hour < 24; hour++) {
+timeHour = hour;
       
-      // Solar radiation varies with time
-      const solarFactor = Math.max(0, Math.sin((hour - 6) * Math.PI / 12));
-      solarRad = 800 * solarFactor;
+// Solar radiation varies with time
+const solarFactor = Math.max(0, Math.sin((hour - 6) * Math.PI / 12));
+solarRad = 800 * solarFactor;
       
-      const result = calculateThermal();
-      data.push({
-        hour,
-        Ts: result.Ts_C,
-        Ta: airTemp
-      });
-    }
+const result = calculateThermal();
+data.push({
+hour,
+Ts: result.Ts_C,
+Ta: airTemp
+});
+}
     
-    // Reset
-    timeHour = parseInt(document.getElementById('time-hour').value);
-    solarRad = parseInt(document.getElementById('solar-rad').value);
+// Reset
+timeHour = parseInt(document.getElementById('time-hour').value);
+solarRad = parseInt(document.getElementById('solar-rad').value);
     
-    return data;
-  }
+return data;
+}
   
-  function render() {
-    const result = calculateThermal();
+function render() {
+const result = calculateThermal();
     
-    document.getElementById('surf-temp').textContent = result.Ts_C.toFixed(1);
-    document.getElementById('bright-temp').textContent = result.Tb_K.toFixed(1);
-    document.getElementById('emissivity').textContent = result.emis.toFixed(2);
-    document.getElementById('net-rad').textContent = result.Rn.toFixed(0);
-    document.getElementById('sens-heat').textContent = result.H.toFixed(0);
-    document.getElementById('lat-heat').textContent = result.LE.toFixed(0);
+document.getElementById('surf-temp').textContent = result.Ts_C.toFixed(1);
+document.getElementById('bright-temp').textContent = result.Tb_K.toFixed(1);
+document.getElementById('emissivity').textContent = result.emis.toFixed(2);
+document.getElementById('net-rad').textContent = result.Rn.toFixed(0);
+document.getElementById('sens-heat').textContent = result.H.toFixed(0);
+document.getElementById('lat-heat').textContent = result.LE.toFixed(0);
     
-    const diurnal = generateDiurnalCycle();
+const diurnal = generateDiurnalCycle();
     
-    const series = [
-      {
-        name: 'Surface Temperature',
-        type: 'line',
-        data: diurnal.map(d => [d.hour, d.Ts]),
-        lineStyle: {color: '#D32F2F', width: 3},
-        areaStyle: {color: 'rgba(211, 47, 47, 0.2)'}
-      },
-      {
-        name: 'Air Temperature',
-        type: 'line',
-        data: diurnal.map(d => [d.hour, d.Ta]),
-        lineStyle: {color: '#1976D2', width: 2, type: 'dashed'}
-      },
-      {
-        name: 'Current Time',
-        type: 'scatter',
-        data: [[timeHour, result.Ts_C]],
-        symbolSize: 15,
-        itemStyle: {color: '#E91E63'},
-        label: {
-          show: true,
-          formatter: 'Now',
-          position: 'top',
-          fontWeight: 'bold'
-        }
-      }
-    ];
+const series = [
+{
+name: 'Surface Temperature',
+type: 'line',
+data: diurnal.map(d => [d.hour, d.Ts]),
+lineStyle: {color: '#D32F2F', width: 3},
+areaStyle: {color: 'rgba(211, 47, 47, 0.2)'}
+},
+{
+name: 'Air Temperature',
+type: 'line',
+data: diurnal.map(d => [d.hour, d.Ta]),
+lineStyle: {color: '#1976D2', width: 2, type: 'dashed'}
+},
+{
+name: 'Current Time',
+type: 'scatter',
+data: [[timeHour, result.Ts_C]],
+symbolSize: 15,
+itemStyle: {color: '#E91E63'},
+label: {
+show: true,
+formatter: 'Now',
+position: 'top',
+fontWeight: 'bold'
+}
+}
+];
     
-    const option = {
-      title: {
-        text: `Diurnal Temperature Cycle - ${result.props.name}`,
-        left: 'center'
-      },
-      tooltip: {
-        trigger: 'axis',
-        axisPointer: {type: 'cross'}
-      },
-      legend: {
-        data: ['Surface Temperature', 'Air Temperature', 'Current Time'],
-        top: 30
-      },
-      grid: {
-        left: 80,
-        right: 40,
-        top: 80,
-        bottom: 60
-      },
-      xAxis: {
-        type: 'value',
-        name: 'Hour of Day',
-        nameLocation: 'middle',
-        nameGap: 30,
-        min: 0,
-        max: 23,
-        interval: 3
-      },
-      yAxis: {
-        type: 'value',
-        name: 'Temperature (°C)',
-        nameLocation: 'middle',
-        nameGap: 50
-      },
-      series: series
-    };
+const option = {
+title: {
+text: `Diurnal Temperature Cycle - ${result.props.name}`,
+left: 'center'
+},
+tooltip: {
+trigger: 'axis',
+axisPointer: {type: 'cross'}
+},
+legend: {
+data: ['Surface Temperature', 'Air Temperature', 'Current Time'],
+top: 30
+},
+grid: {
+left: 80,
+right: 40,
+top: 80,
+bottom: 60
+},
+xAxis: {
+type: 'value',
+name: 'Hour of Day',
+nameLocation: 'middle',
+nameGap: 30,
+min: 0,
+max: 23,
+interval: 3
+},
+yAxis: {
+type: 'value',
+name: 'Temperature (°C)',
+nameLocation: 'middle',
+nameGap: 50
+},
+series: series
+};
     
-    chart.setOption(option, true);
-  }
+chart.setOption(option, true);
+}
   
-  document.getElementById('surface-type').addEventListener('change', (e) => {
-    surfaceType = e.target.value;
-    render();
-  });
+document.getElementById('surface-type').addEventListener('change', (e) => {
+surfaceType = e.target.value;
+render();
+});
   
-  document.getElementById('air-temp').addEventListener('input', (e) => {
-    airTemp = parseFloat(e.target.value);
-    document.getElementById('air-val').textContent = airTemp;
-    render();
-  });
+document.getElementById('air-temp').addEventListener('input', (e) => {
+airTemp = parseFloat(e.target.value);
+document.getElementById('air-val').textContent = airTemp;
+render();
+});
   
-  document.getElementById('solar-rad').addEventListener('input', (e) => {
-    solarRad = parseFloat(e.target.value);
-    document.getElementById('solar-val').textContent = solarRad;
-    render();
-  });
+document.getElementById('solar-rad').addEventListener('input', (e) => {
+solarRad = parseFloat(e.target.value);
+document.getElementById('solar-val').textContent = solarRad;
+render();
+});
   
-  document.getElementById('time-hour').addEventListener('input', (e) => {
-    timeHour = parseInt(e.target.value);
-    document.getElementById('time-val').textContent = timeHour;
-    render();
-  });
+document.getElementById('time-hour').addEventListener('input', (e) => {
+timeHour = parseInt(e.target.value);
+document.getElementById('time-val').textContent = timeHour;
+render();
+});
   
-  render();
+render();
   
-  window.addEventListener('resize', () => chart.resize());
+window.addEventListener('resize', () => chart.resize());
 })();
 </script>
 <p><strong>Observations:</strong> - Red line shows surface temperature varying through day - Blue dashed line shows constant air temperature for reference - Surface temperature peaks in afternoon, not at noon (thermal inertia) - Asphalt reaches much higher temperatures than vegetation - Metal roofs show extreme temperatures due to low emissivity - Water shows minimal temperature variation (high thermal capacity) - Temperature difference (Ts - Ta) drives sensible heat flux - Energy partitioning varies by surface type affecting local climate</p>

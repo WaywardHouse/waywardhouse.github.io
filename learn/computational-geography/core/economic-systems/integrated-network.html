@@ -731,55 +731,54 @@ Destination              Market   Tariff   Quality   Netback
   Ontario (Sarnia)        68.00     4.50     14.00     49.50</code></pre>
 <h2 id="run-it-yourself" class="anchored">Run it yourself</h2>
 <p>Two experiments illuminate the most important structural features of the network. First, set <code>HARD→CUSH</code> to 0 and observe the exact effect on Gulf max-flow: the theorem guarantees a reduction of precisely 590 Mbbl/day, no more, no less. Second, increase <code>EDMT→BURN</code> to 1,200 and observe that Pacific capacity grows by 310 Mbbl/day while Gulf capacity is unchanged — the two corridors share upstream capacity but not downstream bottlenecks.</p>
-<div class="pyodide-cell">
-<pre><code class="language-python">from collections import defaultdict, deque
+<div class="pyodide-cell"><pre><code class="language-python">from collections import defaultdict, deque
 
 # ── Simplified Edmonds-Karp ────────────────────────────────────────────────
 def bfs(graph, s, t, parent):
-    visited = {s}
-    q = deque([s])
-    while q:
-        u = q.popleft()
-        for v, cap in graph[u].items():
-            if v not in visited and cap &gt; 0:
-                visited.add(v); parent[v] = u; q.append(v)
-                if v == t: return True
-    return False
+visited = {s}
+q = deque([s])
+while q:
+u = q.popleft()
+for v, cap in graph[u].items():
+if v not in visited and cap &gt; 0:
+visited.add(v); parent[v] = u; q.append(v)
+if v == t: return True
+return False
 
 def max_flow(cap, s, t):
-    r = defaultdict(lambda: defaultdict(float))
-    for u, nbrs in cap.items():
-        for v, c in nbrs.items(): r[u][v] += c
-    flow = 0
-    while True:
-        p = {}
-        if not bfs(r, s, t, p): break
-        f = float('inf'); v = t
-        while v != s: u = p[v]; f = min(f, r[u][v]); v = u
-        v = t
-        while v != s: u = p[v]; r[u][v] -= f; r[v][u] += f; v = u
-        flow += f
-    return flow
+r = defaultdict(lambda: defaultdict(float))
+for u, nbrs in cap.items():
+for v, c in nbrs.items(): r[u][v] += c
+flow = 0
+while True:
+p = {}
+if not bfs(r, s, t, p): break
+f = float('inf'); v = t
+while v != s: u = p[v]; f = min(f, r[u][v]); v = u
+v = t
+while v != s: u = p[v]; r[u][v] -= f; r[v][u] += f; v = u
+flow += f
+return flow
 
 # ── Network capacities (Mbbl/day) — change these ──────────────────────────
 # Try: set HARD→CUSH to 0 (Keystone cancelled) and see effect on Gulf flows
 # Try: increase EDMT→BURN to 1200 (another TMX-scale project) and check Pacific max-flow
 
 NET = {
-    "PROD": {"EDMT": 3800, "HARD": 3800},
-    "EDMT": {"HARD": 3500, "BURN": 890},      # &lt;- Try BURN: 890 → 1200
-    "HARD": {"SUPR": 2850, "CUSH": 590},      # &lt;- Try CUSH: 590 → 0
-    "SUPR": {"GULF": 2850, "SARN": 500},
-    "CUSH": {"GULF": 590},
-    "BURN": {"PCFC": 890},
-    "GULF": {}, "SARN": {}, "PCFC": {},
+"PROD": {"EDMT": 3800, "HARD": 3800},
+"EDMT": {"HARD": 3500, "BURN": 890},      # &lt;- Try BURN: 890 → 1200
+"HARD": {"SUPR": 2850, "CUSH": 590},      # &lt;- Try CUSH: 590 → 0
+"SUPR": {"GULF": 2850, "SARN": 500},
+"CUSH": {"GULF": 590},
+"BURN": {"PCFC": 890},
+"GULF": {}, "SARN": {}, "PCFC": {},
 }
 
 # Max flow to each destination
 print("Max-flow from Alberta production to each market sink:")
 for sink in ["GULF", "SARN", "PCFC"]:
-    mf = max_flow(NET, "PROD", sink)
-    print(f"  → {sink}: {mf:,.0f} Mbbl/day")
+mf = max_flow(NET, "PROD", sink)
+print(f"  → {sink}: {mf:,.0f} Mbbl/day")
 
 # Aggregate (all sinks via supersink)
 SUPER = {k: dict(v) for k, v in NET.items()}
@@ -791,14 +790,13 @@ print(f"\nTotal network export capacity: {total:,.0f} Mbbl/day")
 print("\nNetback price surface (USD/bbl):")
 print(f"{'Route':&lt;24} {'Market':&gt;8} {'Tariff':&gt;8} {'Quality':&gt;9} {'Netback':&gt;9}")
 for dest, mkt, tar, qual in [
-    ("Gulf Coast (Keystone)", 70.0,  8.0, 14.0),
-    ("Gulf Coast (Mainline)", 70.0,  5.0, 14.0),
-    ("Pacific / TMX",         74.0, 11.0, 10.0),
-    ("Ontario (Sarnia)",      68.0,  4.5, 14.0),
+("Gulf Coast (Keystone)", 70.0,  8.0, 14.0),
+("Gulf Coast (Mainline)", 70.0,  5.0, 14.0),
+("Pacific / TMX",         74.0, 11.0, 10.0),
+("Ontario (Sarnia)",      68.0,  4.5, 14.0),
 ]:
-    print(f"  {dest:&lt;22} {mkt:&gt;8.2f} {tar:&gt;8.2f} {qual:&gt;9.2f} {mkt-tar-qual:&gt;9.2f}")
-</code></pre>
-</div>
+print(f"  {dest:&lt;22} {mkt:&gt;8.2f} {tar:&gt;8.2f} {qual:&gt;9.2f} {mkt-tar-qual:&gt;9.2f}")
+</code></pre></div>
 <h2 id="where-next" class="anchored">Where next?</h2>
 <p>The five essays in this cluster have moved from individual pipe hydraulics — the pressure drop across a 30-inch steel pipe carrying dilbit at 2 m/s — through commodity-specific flow equations, to the integrated capacity network that carries Alberta’s hydrocarbons to continental and Pacific markets.</p>
 <p>The system is larger, more capable, and more structurally concentrated than either side of the political debate about pipelines typically acknowledges. What the mathematics reveals is not a case for or against pipeline investment. It is a precise description of what the existing network can and cannot do: its maximum throughput to each market, its binding bottleneck cuts, the node whose failure would be most consequential, and the netback price each route offers at any given market condition.</p>

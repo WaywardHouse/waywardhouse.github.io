@@ -254,263 +254,264 @@ window.Quarto = {
 <hr>
 <h2 id="computational-implementation" class="anchored">5. Computational Implementation</h2>
 <p>Below is an interactive slope stability calculator.</p>
-<div id="stability-viz" class="viz-container">
+<div class="viz-container" id="stability-viz">
 <div class="controls">
-<pre><code>&lt;label&gt;
-  Slope angle (°):
-  &lt;input type="range" id="slope-angle" min="10" max="50" step="1" value="30"&gt;
-  &lt;span id="angle-val"&gt;30&lt;/span&gt;°
-&lt;/label&gt;
-&lt;label&gt;
-  Friction angle φ (°):
-  &lt;input type="range" id="friction-angle" min="20" max="45" step="1" value="35"&gt;
-  &lt;span id="friction-val"&gt;35&lt;/span&gt;°
-&lt;/label&gt;
-&lt;label&gt;
-  Cohesion (kPa):
-  &lt;input type="range" id="cohesion" min="0" max="20" step="1" value="5"&gt;
-  &lt;span id="cohesion-val"&gt;5&lt;/span&gt;
-&lt;/label&gt;
-&lt;label&gt;
-  Water table depth (m):
-  &lt;input type="range" id="water-depth" min="0" max="3" step="0.5" value="3"&gt;
-  &lt;span id="water-val"&gt;3.0&lt;/span&gt; (3m = dry)
-&lt;/label&gt;
-&lt;label&gt;
-  Seismic coefficient:
-  &lt;input type="range" id="seismic" min="0" max="0.3" step="0.05" value="0"&gt;
-  &lt;span id="seismic-val"&gt;0.00&lt;/span&gt;
-&lt;/label&gt;
-&lt;div class="stability-info"&gt;
-  &lt;p&gt;&lt;strong&gt;Factor of Safety:&lt;/strong&gt; &lt;span id="fs-value"&gt;--&lt;/span&gt;&lt;/p&gt;
-  &lt;p&gt;&lt;strong&gt;Status:&lt;/strong&gt; &lt;span id="stability-status"&gt;--&lt;/span&gt;&lt;/p&gt;
-  &lt;p&gt;&lt;strong&gt;Driving stress:&lt;/strong&gt; &lt;span id="tau-drive"&gt;--&lt;/span&gt; kPa&lt;/p&gt;
-  &lt;p&gt;&lt;strong&gt;Resisting stress:&lt;/strong&gt; &lt;span id="tau-resist"&gt;--&lt;/span&gt; kPa&lt;/p&gt;
-&lt;/div&gt;</code></pre>
+<label>
+Slope angle (°):
+<input type="range" id="slope-angle" min="10" max="50" step="1" value="30">
+<span id="angle-val">30</span>°
+</label>
+<label>
+Friction angle φ (°):
+<input type="range" id="friction-angle" min="20" max="45" step="1" value="35">
+<span id="friction-val">35</span>°
+</label>
+<label>
+Cohesion (kPa):
+<input type="range" id="cohesion" min="0" max="20" step="1" value="5">
+<span id="cohesion-val">5</span>
+</label>
+<label>
+Water table depth (m):
+<input type="range" id="water-depth" min="0" max="3" step="0.5" value="3">
+<span id="water-val">3.0</span> (3m = dry)
+</label>
+<label>
+Seismic coefficient:
+<input type="range" id="seismic" min="0" max="0.3" step="0.05" value="0">
+<span id="seismic-val">0.00</span>
+</label>
+<div class="stability-info">
+<p><strong>Factor of Safety:</strong> <span id="fs-value">--</span></p>
+<p><strong>Status:</strong> <span id="stability-status">--</span></p>
+<p><strong>Driving stress:</strong> <span id="tau-drive">--</span> kPa</p>
+<p><strong>Resisting stress:</strong> <span id="tau-resist">--</span> kPa</p>
+</div>
 </div>
 <div id="stability-canvas-container">
-<pre><code>&lt;canvas id="stability-canvas" width="700" height="400" style="border: 1px solid #ddd;"&gt;&lt;/canvas&gt;</code></pre>
+<canvas id="stability-canvas" width="700" height="400" style="border: 1px solid #ddd;"></canvas>
 </div>
 </div>
+
 <script type="module">
 await new Promise(resolve => {
-  const checkECharts = () => {
-    if (typeof echarts !== 'undefined') resolve();
-    else setTimeout(checkECharts, 50);
-  };
-  checkECharts();
+const checkECharts = () => {
+if (typeof echarts !== 'undefined') resolve();
+else setTimeout(checkECharts, 50);
+};
+checkECharts();
 });
 
 (function() {
-  const chart = echarts.init(document.getElementById('stability-canvas'));
+const chart = echarts.init(document.getElementById('stability-canvas'));
   
-  let slopeAngle = 30;
-  let frictionAngle = 35;
-  let cohesion = 5;
-  let waterDepth = 3;
-  let seismicCoef = 0;
+let slopeAngle = 30;
+let frictionAngle = 35;
+let cohesion = 5;
+let waterDepth = 3;
+let seismicCoef = 0;
   
-  const z = 3; // depth to failure (m)
-  const gamma = 18; // unit weight (kN/m³)
-  const gammaW = 9.81; // water unit weight
+const z = 3; // depth to failure (m)
+const gamma = 18; // unit weight (kN/m³)
+const gammaW = 9.81; // water unit weight
   
-  function calculateStability() {
-    const thetaRad = slopeAngle * Math.PI / 180;
-    const phiRad = frictionAngle * Math.PI / 180;
+function calculateStability() {
+const thetaRad = slopeAngle * Math.PI / 180;
+const phiRad = frictionAngle * Math.PI / 180;
     
-    const sinTheta = Math.sin(thetaRad);
-    const cosTheta = Math.cos(thetaRad);
-    const tanPhi = Math.tan(phiRad);
+const sinTheta = Math.sin(thetaRad);
+const cosTheta = Math.cos(thetaRad);
+const tanPhi = Math.tan(phiRad);
     
-    // Effective stress
-    let gammaPrime = gamma;
-    if (waterDepth < z) {
-      // Partially saturated
-      const satFraction = (z - waterDepth) / z;
-      gammaPrime = gamma - satFraction * gammaW;
-    }
+// Effective stress
+let gammaPrime = gamma;
+if (waterDepth < z) {
+// Partially saturated
+const satFraction = (z - waterDepth) / z;
+gammaPrime = gamma - satFraction * gammaW;
+}
     
-    const sigma = gammaPrime * z * cosTheta * cosTheta;
+const sigma = gammaPrime * z * cosTheta * cosTheta;
     
-    // Driving stress
-    const tauDrive = gamma * z * (sinTheta + seismicCoef * cosTheta) * cosTheta;
+// Driving stress
+const tauDrive = gamma * z * (sinTheta + seismicCoef * cosTheta) * cosTheta;
     
-    // Resisting stress
-    const tauResist = cohesion + sigma * tanPhi;
+// Resisting stress
+const tauResist = cohesion + sigma * tanPhi;
     
-    // Factor of Safety
-    const FS = tauResist / tauDrive;
+// Factor of Safety
+const FS = tauResist / tauDrive;
     
-    let status;
-    if (FS > 1.5) status = 'Stable';
-    else if (FS > 1.2) status = 'Marginally Stable';
-    else if (FS > 1.0) status = 'Critical';
-    else status = 'FAILURE';
+let status;
+if (FS > 1.5) status = 'Stable';
+else if (FS > 1.2) status = 'Marginally Stable';
+else if (FS > 1.0) status = 'Critical';
+else status = 'FAILURE';
     
-    return {FS, status, tauDrive, tauResist, sigma};
-  }
+return {FS, status, tauDrive, tauResist, sigma};
+}
   
-  function generateFSvsAngle() {
-    const data = [];
+function generateFSvsAngle() {
+const data = [];
     
-    for (let angle = 10; angle <= 50; angle += 1) {
-      slopeAngle = angle;
-      const result = calculateStability();
-      data.push([angle, result.FS]);
-    }
+for (let angle = 10; angle <= 50; angle += 1) {
+slopeAngle = angle;
+const result = calculateStability();
+data.push([angle, result.FS]);
+}
     
-    slopeAngle = parseFloat(document.getElementById('slope-angle').value);
-    return data;
-  }
+slopeAngle = parseFloat(document.getElementById('slope-angle').value);
+return data;
+}
   
-  function render() {
-    const result = calculateStability();
+function render() {
+const result = calculateStability();
     
-    document.getElementById('fs-value').textContent = result.FS.toFixed(2);
-    document.getElementById('stability-status').textContent = result.status;
-    document.getElementById('tau-drive').textContent = result.tauDrive.toFixed(1);
-    document.getElementById('tau-resist').textContent = result.tauResist.toFixed(1);
+document.getElementById('fs-value').textContent = result.FS.toFixed(2);
+document.getElementById('stability-status').textContent = result.status;
+document.getElementById('tau-drive').textContent = result.tauDrive.toFixed(1);
+document.getElementById('tau-resist').textContent = result.tauResist.toFixed(1);
     
-    const statusEl = document.getElementById('stability-status');
-    if (result.status === 'Stable') statusEl.style.color = '#2E7D32';
-    else if (result.status.includes('Marginal')) statusEl.style.color = '#F57F17';
-    else if (result.status === 'Critical') statusEl.style.color = '#E64A19';
-    else statusEl.style.color = '#B71C1C';
+const statusEl = document.getElementById('stability-status');
+if (result.status === 'Stable') statusEl.style.color = '#2E7D32';
+else if (result.status.includes('Marginal')) statusEl.style.color = '#F57F17';
+else if (result.status === 'Critical') statusEl.style.color = '#E64A19';
+else statusEl.style.color = '#B71C1C';
     
-    const fsData = generateFSvsAngle();
+const fsData = generateFSvsAngle();
     
-    const series = [
-      {
-        name: 'Factor of Safety',
-        type: 'line',
-        data: fsData,
-        lineStyle: {color: '#1976D2', width: 3},
-        areaStyle: {
-          color: {
-            type: 'linear',
-            x: 0, y: 0, x2: 0, y2: 1,
-            colorStops: [
-              {offset: 0, color: 'rgba(76, 175, 80, 0.3)'},
-              {offset: 0.5, color: 'rgba(255, 193, 7, 0.3)'},
-              {offset: 1, color: 'rgba(244, 67, 54, 0.3)'}
-            ]
-          }
-        }
-      },
-      {
-        name: 'FS = 1.0 (Failure)',
-        type: 'line',
-        data: [[10, 1.0], [50, 1.0]],
-        lineStyle: {color: '#D32F2F', width: 2, type: 'dashed'},
-        markLine: {
-          silent: true,
-          lineStyle: {color: '#D32F2F', width: 2, type: 'dashed'},
-          data: [{yAxis: 1.0}],
-          label: {formatter: 'Failure threshold', position: 'insideEndTop'}
-        }
-      },
-      {
-        name: 'FS = 1.5 (Design)',
-        type: 'line',
-        data: [[10, 1.5], [50, 1.5]],
-        lineStyle: {color: '#FF9800', width: 2, type: 'dotted'},
-        markLine: {
-          silent: true,
-          lineStyle: {color: '#FF9800', width: 2, type: 'dotted'},
-          data: [{yAxis: 1.5}],
-          label: {formatter: 'Design criterion', position: 'insideEndTop'}
-        }
-      },
-      {
-        name: 'Current Slope',
-        type: 'scatter',
-        data: [[slopeAngle, result.FS]],
-        symbolSize: 15,
-        itemStyle: {color: '#E91E63'},
-        label: {
-          show: true,
-          formatter: `${slopeAngle}°`,
-          position: 'top',
-          color: '#E91E63',
-          fontWeight: 'bold'
-        }
-      }
-    ];
+const series = [
+{
+name: 'Factor of Safety',
+type: 'line',
+data: fsData,
+lineStyle: {color: '#1976D2', width: 3},
+areaStyle: {
+color: {
+type: 'linear',
+x: 0, y: 0, x2: 0, y2: 1,
+colorStops: [
+{offset: 0, color: 'rgba(76, 175, 80, 0.3)'},
+{offset: 0.5, color: 'rgba(255, 193, 7, 0.3)'},
+{offset: 1, color: 'rgba(244, 67, 54, 0.3)'}
+]
+}
+}
+},
+{
+name: 'FS = 1.0 (Failure)',
+type: 'line',
+data: [[10, 1.0], [50, 1.0]],
+lineStyle: {color: '#D32F2F', width: 2, type: 'dashed'},
+markLine: {
+silent: true,
+lineStyle: {color: '#D32F2F', width: 2, type: 'dashed'},
+data: [{yAxis: 1.0}],
+label: {formatter: 'Failure threshold', position: 'insideEndTop'}
+}
+},
+{
+name: 'FS = 1.5 (Design)',
+type: 'line',
+data: [[10, 1.5], [50, 1.5]],
+lineStyle: {color: '#FF9800', width: 2, type: 'dotted'},
+markLine: {
+silent: true,
+lineStyle: {color: '#FF9800', width: 2, type: 'dotted'},
+data: [{yAxis: 1.5}],
+label: {formatter: 'Design criterion', position: 'insideEndTop'}
+}
+},
+{
+name: 'Current Slope',
+type: 'scatter',
+data: [[slopeAngle, result.FS]],
+symbolSize: 15,
+itemStyle: {color: '#E91E63'},
+label: {
+show: true,
+formatter: `${slopeAngle}°`,
+position: 'top',
+color: '#E91E63',
+fontWeight: 'bold'
+}
+}
+];
     
-    const option = {
-      title: {
-        text: 'Factor of Safety vs Slope Angle',
-        left: 'center'
-      },
-      tooltip: {
-        trigger: 'axis',
-        axisPointer: {type: 'cross'}
-      },
-      legend: {
-        data: ['Factor of Safety', 'FS = 1.0 (Failure)', 'FS = 1.5 (Design)', 'Current Slope'],
-        top: 30
-      },
-      grid: {
-        left: 80,
-        right: 40,
-        top: 80,
-        bottom: 60
-      },
-      xAxis: {
-        type: 'value',
-        name: 'Slope Angle (degrees)',
-        nameLocation: 'middle',
-        nameGap: 30,
-        min: 10,
-        max: 50
-      },
-      yAxis: {
-        type: 'value',
-        name: 'Factor of Safety',
-        nameLocation: 'middle',
-        nameGap: 50,
-        min: 0,
-        max: 3
-      },
-      series: series
-    };
+const option = {
+title: {
+text: 'Factor of Safety vs Slope Angle',
+left: 'center'
+},
+tooltip: {
+trigger: 'axis',
+axisPointer: {type: 'cross'}
+},
+legend: {
+data: ['Factor of Safety', 'FS = 1.0 (Failure)', 'FS = 1.5 (Design)', 'Current Slope'],
+top: 30
+},
+grid: {
+left: 80,
+right: 40,
+top: 80,
+bottom: 60
+},
+xAxis: {
+type: 'value',
+name: 'Slope Angle (degrees)',
+nameLocation: 'middle',
+nameGap: 30,
+min: 10,
+max: 50
+},
+yAxis: {
+type: 'value',
+name: 'Factor of Safety',
+nameLocation: 'middle',
+nameGap: 50,
+min: 0,
+max: 3
+},
+series: series
+};
     
-    chart.setOption(option, true);
-  }
+chart.setOption(option, true);
+}
   
-  document.getElementById('slope-angle').addEventListener('input', (e) => {
-    slopeAngle = parseFloat(e.target.value);
-    document.getElementById('angle-val').textContent = slopeAngle;
-    render();
-  });
+document.getElementById('slope-angle').addEventListener('input', (e) => {
+slopeAngle = parseFloat(e.target.value);
+document.getElementById('angle-val').textContent = slopeAngle;
+render();
+});
   
-  document.getElementById('friction-angle').addEventListener('input', (e) => {
-    frictionAngle = parseFloat(e.target.value);
-    document.getElementById('friction-val').textContent = frictionAngle;
-    render();
-  });
+document.getElementById('friction-angle').addEventListener('input', (e) => {
+frictionAngle = parseFloat(e.target.value);
+document.getElementById('friction-val').textContent = frictionAngle;
+render();
+});
   
-  document.getElementById('cohesion').addEventListener('input', (e) => {
-    cohesion = parseFloat(e.target.value);
-    document.getElementById('cohesion-val').textContent = cohesion;
-    render();
-  });
+document.getElementById('cohesion').addEventListener('input', (e) => {
+cohesion = parseFloat(e.target.value);
+document.getElementById('cohesion-val').textContent = cohesion;
+render();
+});
   
-  document.getElementById('water-depth').addEventListener('input', (e) => {
-    waterDepth = parseFloat(e.target.value);
-    document.getElementById('water-val').textContent = waterDepth.toFixed(1);
-    render();
-  });
+document.getElementById('water-depth').addEventListener('input', (e) => {
+waterDepth = parseFloat(e.target.value);
+document.getElementById('water-val').textContent = waterDepth.toFixed(1);
+render();
+});
   
-  document.getElementById('seismic').addEventListener('input', (e) => {
-    seismicCoef = parseFloat(e.target.value);
-    document.getElementById('seismic-val').textContent = seismicCoef.toFixed(2);
-    render();
-  });
+document.getElementById('seismic').addEventListener('input', (e) => {
+seismicCoef = parseFloat(e.target.value);
+document.getElementById('seismic-val').textContent = seismicCoef.toFixed(2);
+render();
+});
   
-  render();
+render();
   
-  window.addEventListener('resize', () => chart.resize());
+window.addEventListener('resize', () => chart.resize());
 })();
 </script>
 <p><strong>Try this:</strong> - <strong>Increase slope angle:</strong> FS drops (steeper = less stable) - <strong>Lower water table (0m = saturated):</strong> FS drops dramatically! - <strong>Add seismic loading:</strong> FS drops further - <strong>Increase friction angle:</strong> Higher FS (stronger soil) - <strong>Add cohesion:</strong> Raises FS curve (especially at steep angles) - <strong>Green area:</strong> Stable (FS &gt; 1.5) - <strong>Yellow area:</strong> Marginal (FS 1.0-1.5) - <strong>Red area:</strong> Failure (FS &lt; 1.0) - <strong>Pink dot:</strong> Current slope condition - Watch FS cross failure threshold!</p>

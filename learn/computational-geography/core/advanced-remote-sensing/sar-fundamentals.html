@@ -279,214 +279,215 @@ Weak HV → not volume scattering</p>
 <hr>
 <h2 id="computational-implementation" class="anchored">5. Computational Implementation</h2>
 <p>Below is an interactive SAR simulator.</p>
-<div id="sar-viz" class="viz-container">
+<div class="viz-container" id="sar-viz">
 <div class="controls">
-<pre><code>&lt;label&gt;
-  Wavelength band:
-  &lt;select id="wavelength-band"&gt;
-    &lt;option value="x"&gt;X-band (3 cm)&lt;/option&gt;
-    &lt;option value="c" selected&gt;C-band (6 cm)&lt;/option&gt;
-    &lt;option value="l"&gt;L-band (24 cm)&lt;/option&gt;
-  &lt;/select&gt;
-&lt;/label&gt;
-&lt;label&gt;
-  Scene type:
-  &lt;select id="scene-type"&gt;
-    &lt;option value="water"&gt;Open water&lt;/option&gt;
-    &lt;option value="urban" selected&gt;Urban area&lt;/option&gt;
-    &lt;option value="forest"&gt;Forest&lt;/option&gt;
-    &lt;option value="agriculture"&gt;Agriculture&lt;/option&gt;
-  &lt;/select&gt;
-&lt;/label&gt;
-&lt;label&gt;
-  Incidence angle (°):
-  &lt;input type="range" id="incidence-angle" min="20" max="60" step="5" value="35"&gt;
-  &lt;span id="angle-val"&gt;35&lt;/span&gt;
-&lt;/label&gt;
-&lt;div class="sar-info"&gt;
-  &lt;p&gt;&lt;strong&gt;Range resolution:&lt;/strong&gt; &lt;span id="range-res"&gt;--&lt;/span&gt; m&lt;/p&gt;
-  &lt;p&gt;&lt;strong&gt;Azimuth resolution:&lt;/strong&gt; &lt;span id="azimuth-res"&gt;--&lt;/span&gt; m&lt;/p&gt;
-  &lt;p&gt;&lt;strong&gt;Backscatter (HH):&lt;/strong&gt; &lt;span id="backscatter-hh"&gt;--&lt;/span&gt; dB&lt;/p&gt;
-  &lt;p&gt;&lt;strong&gt;Backscatter (VV):&lt;/strong&gt; &lt;span id="backscatter-vv"&gt;--&lt;/span&gt; dB&lt;/p&gt;
-  &lt;p&gt;&lt;strong&gt;Scattering type:&lt;/strong&gt; &lt;span id="scatter-type"&gt;--&lt;/span&gt;&lt;/p&gt;
-&lt;/div&gt;</code></pre>
+<label>
+Wavelength band:
+<select id="wavelength-band">
+<option value="x">X-band (3 cm)</option>
+<option value="c" selected="">C-band (6 cm)</option>
+<option value="l">L-band (24 cm)</option>
+</select>
+</label>
+<label>
+Scene type:
+<select id="scene-type">
+<option value="water">Open water</option>
+<option value="urban" selected="">Urban area</option>
+<option value="forest">Forest</option>
+<option value="agriculture">Agriculture</option>
+</select>
+</label>
+<label>
+Incidence angle (°):
+<input type="range" id="incidence-angle" min="20" max="60" step="5" value="35">
+<span id="angle-val">35</span>
+</label>
+<div class="sar-info">
+<p><strong>Range resolution:</strong> <span id="range-res">--</span> m</p>
+<p><strong>Azimuth resolution:</strong> <span id="azimuth-res">--</span> m</p>
+<p><strong>Backscatter (HH):</strong> <span id="backscatter-hh">--</span> dB</p>
+<p><strong>Backscatter (VV):</strong> <span id="backscatter-vv">--</span> dB</p>
+<p><strong>Scattering type:</strong> <span id="scatter-type">--</span></p>
+</div>
 </div>
 <div id="sar-canvas-container">
-<pre><code>&lt;canvas id="sar-canvas" width="700" height="400" style="border: 1px solid #ddd;"&gt;&lt;/canvas&gt;</code></pre>
+<canvas id="sar-canvas" width="700" height="400" style="border: 1px solid #ddd;"></canvas>
 </div>
 </div>
+
 <script type="module">
 (function() {
-  const canvas = document.getElementById('sar-canvas');
-  const ctx = canvas.getContext('2d');
+const canvas = document.getElementById('sar-canvas');
+const ctx = canvas.getContext('2d');
   
-  let wavelengthBand = 'c';
-  let sceneType = 'urban';
-  let incidenceAngle = 35;
+let wavelengthBand = 'c';
+let sceneType = 'urban';
+let incidenceAngle = 35;
   
-  const bands = {
-    'x': {wavelength: 0.03, name: 'X-band', bandwidth: 150e6},
-    'c': {wavelength: 0.056, name: 'C-band', bandwidth: 100e6},
-    'l': {wavelength: 0.24, name: 'L-band', bandwidth: 50e6}
-  };
+const bands = {
+'x': {wavelength: 0.03, name: 'X-band', bandwidth: 150e6},
+'c': {wavelength: 0.056, name: 'C-band', bandwidth: 100e6},
+'l': {wavelength: 0.24, name: 'L-band', bandwidth: 50e6}
+};
   
-  function getBackscatter(scene, angle) {
-    // Simplified backscatter models (angle-dependent)
-    const angleRad = angle * Math.PI / 180;
-    const cosTheta = Math.cos(angleRad);
+function getBackscatter(scene, angle) {
+// Simplified backscatter models (angle-dependent)
+const angleRad = angle * Math.PI / 180;
+const cosTheta = Math.cos(angleRad);
     
-    const models = {
-      'water': {
-        hh: -25 + 10 * (1 - cosTheta),
-        vv: -23 + 10 * (1 - cosTheta),
-        type: 'Surface (specular)'
-      },
-      'urban': {
-        hh: 5 - 15 * (1 - cosTheta),
-        vv: 3 - 15 * (1 - cosTheta),
-        type: 'Double-bounce (dihedral)'
-      },
-      'forest': {
-        hh: -10,
-        vv: -12,
-        type: 'Volume (multiple scatter)'
-      },
-      'agriculture': {
-        hh: -8 - 5 * Math.sin(angleRad),
-        vv: -10 - 5 * Math.sin(angleRad),
-        type: 'Surface (diffuse)'
-      }
-    };
+const models = {
+'water': {
+hh: -25 + 10 * (1 - cosTheta),
+vv: -23 + 10 * (1 - cosTheta),
+type: 'Surface (specular)'
+},
+'urban': {
+hh: 5 - 15 * (1 - cosTheta),
+vv: 3 - 15 * (1 - cosTheta),
+type: 'Double-bounce (dihedral)'
+},
+'forest': {
+hh: -10,
+vv: -12,
+type: 'Volume (multiple scatter)'
+},
+'agriculture': {
+hh: -8 - 5 * Math.sin(angleRad),
+vv: -10 - 5 * Math.sin(angleRad),
+type: 'Surface (diffuse)'
+}
+};
     
-    return models[scene];
-  }
+return models[scene];
+}
   
-  function render() {
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
+function render() {
+ctx.clearRect(0, 0, canvas.width, canvas.height);
     
-    const band = bands[wavelengthBand];
-    const c = 3e8;
+const band = bands[wavelengthBand];
+const c = 3e8;
     
-    // Calculate resolutions
-    const rangeRes = c / (2 * band.bandwidth);
-    const antennaLength = 12; // m
-    const azimuthRes = antennaLength / 2;
+// Calculate resolutions
+const rangeRes = c / (2 * band.bandwidth);
+const antennaLength = 12; // m
+const azimuthRes = antennaLength / 2;
     
-    const backscatter = getBackscatter(sceneType, incidenceAngle);
+const backscatter = getBackscatter(sceneType, incidenceAngle);
     
-    // Update display
-    document.getElementById('range-res').textContent = rangeRes.toFixed(1);
-    document.getElementById('azimuth-res').textContent = azimuthRes.toFixed(1);
-    document.getElementById('backscatter-hh').textContent = backscatter.hh.toFixed(1);
-    document.getElementById('backscatter-vv').textContent = backscatter.vv.toFixed(1);
-    document.getElementById('scatter-type').textContent = backscatter.type;
+// Update display
+document.getElementById('range-res').textContent = rangeRes.toFixed(1);
+document.getElementById('azimuth-res').textContent = azimuthRes.toFixed(1);
+document.getElementById('backscatter-hh').textContent = backscatter.hh.toFixed(1);
+document.getElementById('backscatter-vv').textContent = backscatter.vv.toFixed(1);
+document.getElementById('scatter-type').textContent = backscatter.type;
     
-    // Draw SAR geometry
-    const satX = 100;
-    const satY = 50;
-    const targetX = 500;
-    const targetY = 300;
+// Draw SAR geometry
+const satX = 100;
+const satY = 50;
+const targetX = 500;
+const targetY = 300;
     
-    // Satellite
-    ctx.fillStyle = '#424242';
-    ctx.fillRect(satX - 15, satY - 10, 30, 20);
-    ctx.fillStyle = '#1976D2';
-    ctx.fillRect(satX + 15, satY - 5, 30, 10); // Solar panel
-    ctx.fillRect(satX - 45, satY - 5, 30, 10);
+// Satellite
+ctx.fillStyle = '#424242';
+ctx.fillRect(satX - 15, satY - 10, 30, 20);
+ctx.fillStyle = '#1976D2';
+ctx.fillRect(satX + 15, satY - 5, 30, 10); // Solar panel
+ctx.fillRect(satX - 45, satY - 5, 30, 10);
     
-    ctx.fillStyle = '#263238';
-    ctx.font = '12px sans-serif';
-    ctx.fillText('SAR Satellite', satX - 20, satY - 15);
+ctx.fillStyle = '#263238';
+ctx.font = '12px sans-serif';
+ctx.fillText('SAR Satellite', satX - 20, satY - 15);
     
-    // Radar beam
-    ctx.strokeStyle = '#FFC107';
-    ctx.lineWidth = 3;
-    ctx.setLineDash([10, 5]);
-    ctx.beginPath();
-    ctx.moveTo(satX, satY + 10);
-    ctx.lineTo(targetX, targetY);
-    ctx.stroke();
-    ctx.setLineDash([]);
+// Radar beam
+ctx.strokeStyle = '#FFC107';
+ctx.lineWidth = 3;
+ctx.setLineDash([10, 5]);
+ctx.beginPath();
+ctx.moveTo(satX, satY + 10);
+ctx.lineTo(targetX, targetY);
+ctx.stroke();
+ctx.setLineDash([]);
     
-    // Incidence angle arc
-    ctx.strokeStyle = '#F44336';
-    ctx.lineWidth = 1;
-    ctx.beginPath();
-    const nadirX = satX;
-    const nadirY = targetY;
-    ctx.moveTo(nadirX, satY + 10);
-    ctx.lineTo(nadirX, nadirY);
-    ctx.stroke();
+// Incidence angle arc
+ctx.strokeStyle = '#F44336';
+ctx.lineWidth = 1;
+ctx.beginPath();
+const nadirX = satX;
+const nadirY = targetY;
+ctx.moveTo(nadirX, satY + 10);
+ctx.lineTo(nadirX, nadirY);
+ctx.stroke();
     
-    // Angle arc
-    ctx.beginPath();
-    ctx.arc(satX, satY + 10, 50, Math.PI / 2, Math.PI / 2 + incidenceAngle * Math.PI / 180);
-    ctx.stroke();
+// Angle arc
+ctx.beginPath();
+ctx.arc(satX, satY + 10, 50, Math.PI / 2, Math.PI / 2 + incidenceAngle * Math.PI / 180);
+ctx.stroke();
     
-    ctx.fillText(`θ = ${incidenceAngle}°`, satX + 20, satY + 40);
+ctx.fillText(`θ = ${incidenceAngle}°`, satX + 20, satY + 40);
     
-    // Target/ground
-    const groundY = targetY + 20;
-    ctx.fillStyle = '#8D6E63';
-    ctx.fillRect(0, groundY, canvas.width, canvas.height - groundY);
+// Target/ground
+const groundY = targetY + 20;
+ctx.fillStyle = '#8D6E63';
+ctx.fillRect(0, groundY, canvas.width, canvas.height - groundY);
     
-    // Target representation based on type
-    if (sceneType === 'urban') {
-      // Buildings
-      ctx.fillStyle = '#757575';
-      ctx.fillRect(targetX - 20, targetY - 30, 15, 30);
-      ctx.fillRect(targetX + 5, targetY - 40, 20, 40);
-      ctx.fillRect(targetX + 30, targetY - 25, 15, 25);
-    } else if (sceneType === 'forest') {
-      // Trees
-      ctx.fillStyle = '#4CAF50';
-      for (let i = 0; i < 5; i++) {
-        const tx = targetX - 30 + i * 15;
-        ctx.beginPath();
-        ctx.arc(tx, targetY - 15, 8, 0, 2 * Math.PI);
-        ctx.fill();
-      }
-    } else if (sceneType === 'water') {
-      // Water surface
-      ctx.fillStyle = '#2196F3';
-      ctx.globalAlpha = 0.3;
-      ctx.fillRect(targetX - 50, targetY - 5, 100, 5);
-      ctx.globalAlpha = 1.0;
-    } else {
-      // Agriculture
-      ctx.fillStyle = '#CDDC39';
-      ctx.fillRect(targetX - 40, targetY - 10, 80, 10);
-    }
+// Target representation based on type
+if (sceneType === 'urban') {
+// Buildings
+ctx.fillStyle = '#757575';
+ctx.fillRect(targetX - 20, targetY - 30, 15, 30);
+ctx.fillRect(targetX + 5, targetY - 40, 20, 40);
+ctx.fillRect(targetX + 30, targetY - 25, 15, 25);
+} else if (sceneType === 'forest') {
+// Trees
+ctx.fillStyle = '#4CAF50';
+for (let i = 0; i < 5; i++) {
+const tx = targetX - 30 + i * 15;
+ctx.beginPath();
+ctx.arc(tx, targetY - 15, 8, 0, 2 * Math.PI);
+ctx.fill();
+}
+} else if (sceneType === 'water') {
+// Water surface
+ctx.fillStyle = '#2196F3';
+ctx.globalAlpha = 0.3;
+ctx.fillRect(targetX - 50, targetY - 5, 100, 5);
+ctx.globalAlpha = 1.0;
+} else {
+// Agriculture
+ctx.fillStyle = '#CDDC39';
+ctx.fillRect(targetX - 40, targetY - 10, 80, 10);
+}
     
-    // Backscatter visualization (brightness)
-    const brightness = Math.max(0, Math.min(255, (backscatter.hh + 30) / 40 * 255));
-    ctx.fillStyle = `rgb(${brightness}, ${brightness}, ${brightness})`;
-    ctx.fillRect(600, 50, 80, 80);
-    ctx.strokeStyle = '#000';
-    ctx.strokeRect(600, 50, 80, 80);
-    ctx.fillStyle = '#263238';
-    ctx.fillText('SAR Image', 605, 145);
-    ctx.fillText(`${brightness > 200 ? 'Bright' : brightness > 100 ? 'Moderate' : 'Dark'}`,
-                 610, 160);
-  }
+// Backscatter visualization (brightness)
+const brightness = Math.max(0, Math.min(255, (backscatter.hh + 30) / 40 * 255));
+ctx.fillStyle = `rgb(${brightness}, ${brightness}, ${brightness})`;
+ctx.fillRect(600, 50, 80, 80);
+ctx.strokeStyle = '#000';
+ctx.strokeRect(600, 50, 80, 80);
+ctx.fillStyle = '#263238';
+ctx.fillText('SAR Image', 605, 145);
+ctx.fillText(`${brightness > 200 ? 'Bright' : brightness > 100 ? 'Moderate' : 'Dark'}`,
+610, 160);
+}
   
-  document.getElementById('wavelength-band').addEventListener('change', (e) => {
-    wavelengthBand = e.target.value;
-    render();
-  });
+document.getElementById('wavelength-band').addEventListener('change', (e) => {
+wavelengthBand = e.target.value;
+render();
+});
   
-  document.getElementById('scene-type').addEventListener('change', (e) => {
-    sceneType = e.target.value;
-    render();
-  });
+document.getElementById('scene-type').addEventListener('change', (e) => {
+sceneType = e.target.value;
+render();
+});
   
-  document.getElementById('incidence-angle').addEventListener('input', (e) => {
-    incidenceAngle = parseFloat(e.target.value);
-    document.getElementById('angle-val').textContent = incidenceAngle;
-    render();
-  });
+document.getElementById('incidence-angle').addEventListener('input', (e) => {
+incidenceAngle = parseFloat(e.target.value);
+document.getElementById('angle-val').textContent = incidenceAngle;
+render();
+});
   
-  render();
+render();
 })();
 </script>
 <p><strong>Observations:</strong> - Urban areas show strong backscatter (bright in SAR images) - Water appears dark (specular reflection away from sensor) - Forest shows moderate backscatter with volume scattering - Incidence angle affects backscatter magnitude - Resolution independent of range (synthetic aperture advantage) - Different wavelengths penetrate differently</p>

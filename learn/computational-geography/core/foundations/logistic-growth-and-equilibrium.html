@@ -323,242 +323,239 @@ An equilibrium is <strong>unstable</strong> if small perturbations grow away fro
 <hr>
 <h2 id="computational-implementation" class="anchored">6. Computational Implementation</h2>
 <p>Below is an interactive model with phase plot visualization.</p>
-<div id="logistic-model-viz" class="viz-container">
+<div class="viz-container" id="logistic-model-viz">
 <div class="controls">
-<pre><code>&lt;label&gt;
-  Initial population ($N_0$):
-  &lt;input type="range" id="n0-logistic-slider" min="10" max="990" step="10" value="50"&gt;
-  &lt;span id="n0-logistic-value"&gt;50&lt;/span&gt;
-&lt;/label&gt;
-&lt;label&gt;
-  Carrying capacity ($K$):
-  &lt;input type="range" id="k-slider" min="100" max="1000" step="50" value="500"&gt;
-  &lt;span id="k-value"&gt;500&lt;/span&gt;
-&lt;/label&gt;
-&lt;label&gt;
-  Growth rate ($r$ per year):
-  &lt;input type="range" id="r-logistic-slider" min="0.1" max="1.0" step="0.05" value="0.4"&gt;
-  &lt;span id="r-logistic-value"&gt;0.40&lt;/span&gt;
-&lt;/label&gt;</code></pre>
+<label>
+Initial population ($N_0$):
+<input type="range" id="n0-logistic-slider" min="10" max="990" step="10" value="50">
+<span id="n0-logistic-value">50</span>
+</label>
+<label>
+Carrying capacity ($K$):
+<input type="range" id="k-slider" min="100" max="1000" step="50" value="500">
+<span id="k-value">500</span>
+</label>
+<label>
+Growth rate ($r$ per year):
+<input type="range" id="r-logistic-slider" min="0.1" max="1.0" step="0.05" value="0.4">
+<span id="r-logistic-value">0.40</span>
+</label>
 </div>
-<div id="logistic-chart" style="width: 100%; height: 500px;">
+<div id="logistic-chart" style="width: 100%; height: 500px;"></div>
+<div id="phase-chart" style="width: 100%; height: 400px; margin-top: 20px;"></div>
+</div>
 
-</div>
-<div id="phase-chart" style="width: 100%; height: 400px; margin-top: 20px;">
-
-</div>
-</div>
 <script type="module">
 // Wait for core.js to load ECharts
 await new Promise(resolve => {
-  const checkECharts = () => {
-    if (typeof echarts !== 'undefined') resolve();
-    else setTimeout(checkECharts, 50);
-  };
-  checkECharts();
+const checkECharts = () => {
+if (typeof echarts !== 'undefined') resolve();
+else setTimeout(checkECharts, 50);
+};
+checkECharts();
 });
 
 // Logistic growth visualization
 (function() {
-  const timeChart = echarts.init(document.getElementById('logistic-chart'));
-  const phaseChart = echarts.init(document.getElementById('phase-chart'));
+const timeChart = echarts.init(document.getElementById('logistic-chart'));
+const phaseChart = echarts.init(document.getElementById('phase-chart'));
   
-  let N0 = 50;
-  let K = 500;
-  let r = 0.4;
-  const tMax = 30;
-  const dt = 0.1;
+let N0 = 50;
+let K = 500;
+let r = 0.4;
+const tMax = 30;
+const dt = 0.1;
   
-  function logisticDerivative(N, r, K) {
-    return r * N * (1 - N / K);
-  }
+function logisticDerivative(N, r, K) {
+return r * N * (1 - N / K);
+}
   
-  function numericalSolution(N0, r, K, dt, tMax) {
-    const result = [{t: 0, N: N0}];
-    let N = N0;
-    let t = 0;
+function numericalSolution(N0, r, K, dt, tMax) {
+const result = [{t: 0, N: N0}];
+let N = N0;
+let t = 0;
     
-    while (t < tMax) {
-      const dNdt = logisticDerivative(N, r, K);
-      N = N + dNdt * dt;
-      t += dt;
+while (t < tMax) {
+const dNdt = logisticDerivative(N, r, K);
+N = N + dNdt * dt;
+t += dt;
       
-      if (t % 1 < dt) { // Store every 1 year
-        result.push({t: Math.round(t), N});
-      }
-    }
+if (t % 1 < dt) { // Store every 1 year
+result.push({t: Math.round(t), N});
+}
+}
     
-    return result;
-  }
+return result;
+}
   
-  function updateCharts() {
-    // Time series
-    const timeSeries = numericalSolution(N0, r, K, dt, tMax);
-    const timeData = timeSeries.map(pt => [pt.t, pt.N]);
+function updateCharts() {
+// Time series
+const timeSeries = numericalSolution(N0, r, K, dt, tMax);
+const timeData = timeSeries.map(pt => [pt.t, pt.N]);
     
-    const timeOption = {
-      title: {
-        text: `Logistic Growth: N₀ = ${N0}, K = ${K}, r = ${r.toFixed(2)}`,
-        left: 'center'
-      },
-      tooltip: {
-        trigger: 'axis',
-        formatter: params => {
-          return `Year ${params[0].value[0]}<br/>N = ${params[0].value[1].toFixed(1)}`;
-        }
-      },
-      grid: {
-        left: 60,
-        right: 40,
-        top: 60,
-        bottom: 60
-      },
-      xAxis: {
-        type: 'value',
-        name: 'Time (years)',
-        nameLocation: 'middle',
-        nameGap: 30,
-        min: 0,
-        max: tMax
-      },
-      yAxis: {
-        type: 'value',
-        name: 'Population N(t)',
-        nameLocation: 'middle',
-        nameGap: 50,
-        min: 0,
-        max: Math.max(K * 1.2, N0 * 1.2)
-      },
-      series: [
-        {
-          data: timeData,
-          type: 'line',
-          smooth: true,
-          lineStyle: {
-            color: '#F0177A',
-            width: 3
-          },
-          showSymbol: false,
-          markLine: {
-            silent: true,
-            symbol: 'none',
-            lineStyle: {
-              color: '#666',
-              type: 'dashed'
-            },
-            data: [
-              {yAxis: K, label: {formatter: 'K = ' + K, position: 'end'}}
-            ]
-          }
-        }
-      ]
-    };
+const timeOption = {
+title: {
+text: `Logistic Growth: N₀ = ${N0}, K = ${K}, r = ${r.toFixed(2)}`,
+left: 'center'
+},
+tooltip: {
+trigger: 'axis',
+formatter: params => {
+return `Year ${params[0].value[0]}<br/>N = ${params[0].value[1].toFixed(1)}`;
+}
+},
+grid: {
+left: 60,
+right: 40,
+top: 60,
+bottom: 60
+},
+xAxis: {
+type: 'value',
+name: 'Time (years)',
+nameLocation: 'middle',
+nameGap: 30,
+min: 0,
+max: tMax
+},
+yAxis: {
+type: 'value',
+name: 'Population N(t)',
+nameLocation: 'middle',
+nameGap: 50,
+min: 0,
+max: Math.max(K * 1.2, N0 * 1.2)
+},
+series: [
+{
+data: timeData,
+type: 'line',
+smooth: true,
+lineStyle: {
+color: '#F0177A',
+width: 3
+},
+showSymbol: false,
+markLine: {
+silent: true,
+symbol: 'none',
+lineStyle: {
+color: '#666',
+type: 'dashed'
+},
+data: [
+{yAxis: K, label: {formatter: 'K = ' + K, position: 'end'}}
+]
+}
+}
+]
+};
     
-    // Phase plot: dN/dt vs N
-    const phaseData = [];
-    for (let N = 0; N <= K * 1.2; N += 5) {
-      const dNdt = logisticDerivative(N, r, K);
-      phaseData.push([N, dNdt]);
-    }
+// Phase plot: dN/dt vs N
+const phaseData = [];
+for (let N = 0; N <= K * 1.2; N += 5) {
+const dNdt = logisticDerivative(N, r, K);
+phaseData.push([N, dNdt]);
+}
     
-    const currentRate = logisticDerivative(N0, r, K);
+const currentRate = logisticDerivative(N0, r, K);
     
-    const phaseOption = {
-      title: {
-        text: 'Phase Plot: Growth Rate vs. Population',
-        left: 'center'
-      },
-      tooltip: {
-        trigger: 'axis',
-        formatter: params => {
-          return `N = ${params[0].value[0].toFixed(0)}<br/>dN/dt = ${params[0].value[1].toFixed(2)}`;
-        }
-      },
-      grid: {
-        left: 60,
-        right: 40,
-        top: 60,
-        bottom: 80
-      },
-      xAxis: {
-        type: 'value',
-        name: 'Population (N)',
-        nameLocation: 'middle',
-        nameGap: 30,
-        min: 0,
-        max: K * 1.2
-      },
-      yAxis: {
-        type: 'value',
-        name: 'Growth Rate (dN/dt)',
-        nameLocation: 'middle',
-        nameGap: 50
-      },
-      series: [
-        {
-          data: phaseData,
-          type: 'line',
-          smooth: false,
-          lineStyle: {
-            color: '#00A8E8',
-            width: 3
-          },
-          showSymbol: false,
-          markPoint: {
-            symbol: 'circle',
-            symbolSize: 10,
-            itemStyle: {
-              color: '#F0177A'
-            },
-            data: [
-              {coord: [N0, currentRate], label: {formatter: 'N₀', position: 'top'}}
-            ]
-          },
-          markLine: {
-            silent: true,
-            symbol: 'none',
-            lineStyle: {
-              color: '#666',
-              type: 'dashed'
-            },
-            data: [
-              {xAxis: K, label: {formatter: 'K', position: 'end'}},
-              {xAxis: 0, label: {formatter: 'N=0', position: 'start'}},
-              {yAxis: 0}
-            ]
-          }
-        }
-      ]
-    };
+const phaseOption = {
+title: {
+text: 'Phase Plot: Growth Rate vs. Population',
+left: 'center'
+},
+tooltip: {
+trigger: 'axis',
+formatter: params => {
+return `N = ${params[0].value[0].toFixed(0)}<br/>dN/dt = ${params[0].value[1].toFixed(2)}`;
+}
+},
+grid: {
+left: 60,
+right: 40,
+top: 60,
+bottom: 80
+},
+xAxis: {
+type: 'value',
+name: 'Population (N)',
+nameLocation: 'middle',
+nameGap: 30,
+min: 0,
+max: K * 1.2
+},
+yAxis: {
+type: 'value',
+name: 'Growth Rate (dN/dt)',
+nameLocation: 'middle',
+nameGap: 50
+},
+series: [
+{
+data: phaseData,
+type: 'line',
+smooth: false,
+lineStyle: {
+color: '#00A8E8',
+width: 3
+},
+showSymbol: false,
+markPoint: {
+symbol: 'circle',
+symbolSize: 10,
+itemStyle: {
+color: '#F0177A'
+},
+data: [
+{coord: [N0, currentRate], label: {formatter: 'N₀', position: 'top'}}
+]
+},
+markLine: {
+silent: true,
+symbol: 'none',
+lineStyle: {
+color: '#666',
+type: 'dashed'
+},
+data: [
+{xAxis: K, label: {formatter: 'K', position: 'end'}},
+{xAxis: 0, label: {formatter: 'N=0', position: 'start'}},
+{yAxis: 0}
+]
+}
+}
+]
+};
     
-    timeChart.setOption(timeOption);
-    phaseChart.setOption(phaseOption);
-  }
+timeChart.setOption(timeOption);
+phaseChart.setOption(phaseOption);
+}
   
-  document.getElementById('n0-logistic-slider').addEventListener('input', (e) => {
-    N0 = parseFloat(e.target.value);
-    document.getElementById('n0-logistic-value').textContent = N0;
-    updateCharts();
-  });
+document.getElementById('n0-logistic-slider').addEventListener('input', (e) => {
+N0 = parseFloat(e.target.value);
+document.getElementById('n0-logistic-value').textContent = N0;
+updateCharts();
+});
   
-  document.getElementById('k-slider').addEventListener('input', (e) => {
-    K = parseFloat(e.target.value);
-    document.getElementById('k-value').textContent = K;
-    updateCharts();
-  });
+document.getElementById('k-slider').addEventListener('input', (e) => {
+K = parseFloat(e.target.value);
+document.getElementById('k-value').textContent = K;
+updateCharts();
+});
   
-  document.getElementById('r-logistic-slider').addEventListener('input', (e) => {
-    r = parseFloat(e.target.value);
-    document.getElementById('r-logistic-value').textContent = r.toFixed(2);
-    updateCharts();
-  });
+document.getElementById('r-logistic-slider').addEventListener('input', (e) => {
+r = parseFloat(e.target.value);
+document.getElementById('r-logistic-value').textContent = r.toFixed(2);
+updateCharts();
+});
   
-  updateCharts();
+updateCharts();
   
-  window.addEventListener('resize', () => {
-    timeChart.resize();
-    phaseChart.resize();
-  });
+window.addEventListener('resize', () => {
+timeChart.resize();
+phaseChart.resize();
+});
 })();
 </script>
 <p><strong>Try this:</strong></p>

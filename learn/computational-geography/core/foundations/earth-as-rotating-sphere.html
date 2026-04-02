@@ -248,236 +248,235 @@ window.Quarto = {
 <hr>
 <h2 id="computational-implementation" class="anchored">6. Computational Implementation</h2>
 <p>Below is an interactive 3D visualization of Earth with controllable rotation.</p>
-<div id="earth-viz" class="viz-container">
+<div class="viz-container" id="earth-viz">
 <div class="controls">
-<pre><code>&lt;label&gt;
-  Latitude:
-  &lt;input type="range" id="lat-slider" min="-90" max="90" step="5" value="40"&gt;
-  &lt;span id="lat-value"&gt;40&lt;/span&gt;°
-&lt;/label&gt;
-&lt;label&gt;
-  Longitude:
-  &lt;input type="range" id="lon-slider" min="-180" max="180" step="5" value="0"&gt;
-  &lt;span id="lon-value"&gt;0&lt;/span&gt;°
-&lt;/label&gt;
-&lt;label&gt;
-  Rotation speed:
-  &lt;input type="range" id="rot-slider" min="0" max="5" step="0.5" value="1"&gt;
-  &lt;span id="rot-value"&gt;1.0&lt;/span&gt;× real time
-&lt;/label&gt;
-&lt;div class="button-group"&gt;
-  &lt;button id="toggle-rotation"&gt;Pause Rotation&lt;/button&gt;
-  &lt;button id="reset-view"&gt;Reset View&lt;/button&gt;
-&lt;/div&gt;</code></pre>
+<label>
+Latitude:
+<input type="range" id="lat-slider" min="-90" max="90" step="5" value="40">
+<span id="lat-value">40</span>°
+</label>
+<label>
+Longitude:
+<input type="range" id="lon-slider" min="-180" max="180" step="5" value="0">
+<span id="lon-value">0</span>°
+</label>
+<label>
+Rotation speed:
+<input type="range" id="rot-slider" min="0" max="5" step="0.5" value="1">
+<span id="rot-value">1.0</span>× real time
+</label>
+<div class="button-group">
+<button id="toggle-rotation">Pause Rotation</button>
+<button id="reset-view">Reset View</button>
 </div>
-<div id="earth-3d-chart" style="width: 100%; height: 600px;">
-
 </div>
+<div id="earth-3d-chart" style="width: 100%; height: 600px;"></div>
 <div class="info-panel">
-<pre><code>&lt;p id="earth-coords"&gt;&lt;/p&gt;</code></pre>
+<p id="earth-coords"></p>
 </div>
 </div>
+
 <script type="module">
 await new Promise(resolve => {
-  const check = () => {
-    const echartsReady = typeof echarts !== 'undefined';
-    const glNeeded = document.body.classList.contains('tag-hash-gl');
-    if (echartsReady && (!glNeeded || window.__echartsGL)) resolve();
-    else setTimeout(check, 50);
-  };
-  check();
+const check = () => {
+const echartsReady = typeof echarts !== 'undefined';
+const glNeeded = document.body.classList.contains('tag-hash-gl');
+if (echartsReady && (!glNeeded || window.__echartsGL)) resolve();
+else setTimeout(check, 50);
+};
+check();
 });
 
 (function() {
-  const chart = echarts.init(document.getElementById('earth-3d-chart'));
+const chart = echarts.init(document.getElementById('earth-3d-chart'));
   
-  let lat = 40;
-  let lon = 0;
-  let rotSpeed = 1;
-  let rotating = true;
-  let currentRotation = 0;
+let lat = 40;
+let lon = 0;
+let rotSpeed = 1;
+let rotating = true;
+let currentRotation = 0;
   
-  const R = 6371; // km
+const R = 6371; // km
   
-  function deg2rad(deg) { return deg * Math.PI / 180; }
-  function rad2deg(rad) { return rad * 180 / Math.PI; }
+function deg2rad(deg) { return deg * Math.PI / 180; }
+function rad2deg(rad) { return rad * 180 / Math.PI; }
   
-  function latLonToCartesian(lat, lon, r) {
-    const latRad = deg2rad(lat);
-    const lonRad = deg2rad(lon);
+function latLonToCartesian(lat, lon, r) {
+const latRad = deg2rad(lat);
+const lonRad = deg2rad(lon);
     
-    return {
-      x: r * Math.cos(latRad) * Math.cos(lonRad),
-      y: r * Math.cos(latRad) * Math.sin(lonRad),
-      z: r * Math.sin(latRad)
-    };
-  }
+return {
+x: r * Math.cos(latRad) * Math.cos(lonRad),
+y: r * Math.cos(latRad) * Math.sin(lonRad),
+z: r * Math.sin(latRad)
+};
+}
   
-  function generateSphere(res) {
-    const data = [];
+function generateSphere(res) {
+const data = [];
     
-    for (let i = 0; i <= res; i++) {
-      for (let j = 0; j <= res * 2; j++) {
-        const lat = -90 + (i / res) * 180;
-        const lon = -180 + (j / (res * 2)) * 360;
-        const pos = latLonToCartesian(lat, lon, R);
+for (let i = 0; i <= res; i++) {
+for (let j = 0; j <= res * 2; j++) {
+const lat = -90 + (i / res) * 180;
+const lon = -180 + (j / (res * 2)) * 360;
+const pos = latLonToCartesian(lat, lon, R);
         
-        // Color based on latitude (simple blue gradient)
-        const colorValue = (lat + 90) / 180;
+// Color based on latitude (simple blue gradient)
+const colorValue = (lat + 90) / 180;
         
-        data.push({
-          value: [pos.x, pos.y, pos.z],
-          itemStyle: {
-            color: `rgb(${100 * colorValue}, ${150 * colorValue}, ${200 + 55 * colorValue})`
-          }
-        });
-      }
-    }
+data.push({
+value: [pos.x, pos.y, pos.z],
+itemStyle: {
+color: `rgb(${100 * colorValue}, ${150 * colorValue}, ${200 + 55 * colorValue})`
+}
+});
+}
+}
     
-    return data;
-  }
+return data;
+}
   
-  function generateGraticule() {
-    const lines = [];
+function generateGraticule() {
+const lines = [];
     
-    // Meridians (lines of longitude)
-    for (let lon = -180; lon <= 180; lon += 30) {
-      const lineData = [];
-      for (let lat = -90; lat <= 90; lat += 5) {
-        const pos = latLonToCartesian(lat, lon + currentRotation, R * 1.01);
-        lineData.push([pos.x, pos.y, pos.z]);
-      }
-      lines.push(lineData);
-    }
+// Meridians (lines of longitude)
+for (let lon = -180; lon <= 180; lon += 30) {
+const lineData = [];
+for (let lat = -90; lat <= 90; lat += 5) {
+const pos = latLonToCartesian(lat, lon + currentRotation, R * 1.01);
+lineData.push([pos.x, pos.y, pos.z]);
+}
+lines.push(lineData);
+}
     
-    // Parallels (lines of latitude)
-    for (let lat = -60; lat <= 60; lat += 30) {
-      const lineData = [];
-      for (let lon = -180; lon <= 180; lon += 5) {
-        const pos = latLonToCartesian(lat, lon + currentRotation, R * 1.01);
-        lineData.push([pos.x, pos.y, pos.z]);
-      }
-      lines.push(lineData);
-    }
+// Parallels (lines of latitude)
+for (let lat = -60; lat <= 60; lat += 30) {
+const lineData = [];
+for (let lon = -180; lon <= 180; lon += 5) {
+const pos = latLonToCartesian(lat, lon + currentRotation, R * 1.01);
+lineData.push([pos.x, pos.y, pos.z]);
+}
+lines.push(lineData);
+}
     
-    return lines;
-  }
+return lines;
+}
   
-  function updateChart() {
-    const markerPos = latLonToCartesian(lat, lon + currentRotation, R * 1.05);
-    const graticule = generateGraticule();
+function updateChart() {
+const markerPos = latLonToCartesian(lat, lon + currentRotation, R * 1.05);
+const graticule = generateGraticule();
     
-    const coords = latLonToCartesian(lat, lon + currentRotation, R);
-    document.getElementById('earth-coords').innerHTML = 
-      `<strong>Current position:</strong> (${lat}°, ${((lon + currentRotation) % 360).toFixed(1)}°) | ` +
-      `<strong>Cartesian:</strong> (${coords.x.toFixed(0)}, ${coords.y.toFixed(0)}, ${coords.z.toFixed(0)}) km`;
+const coords = latLonToCartesian(lat, lon + currentRotation, R);
+document.getElementById('earth-coords').innerHTML = 
+`<strong>Current position:</strong> (${lat}°, ${((lon + currentRotation) % 360).toFixed(1)}°) | ` +
+`<strong>Cartesian:</strong> (${coords.x.toFixed(0)}, ${coords.y.toFixed(0)}, ${coords.z.toFixed(0)}) km`;
     
-    const option = {
-      title: {
-        text: 'Earth as a Rotating Sphere',
-        left: 'center'
-      },
-      tooltip: {},
-      xAxis3D: { type: 'value', min: -R * 1.5, max: R * 1.5, name: 'X (km)' },
-      yAxis3D: { type: 'value', min: -R * 1.5, max: R * 1.5, name: 'Y (km)' },
-      zAxis3D: { type: 'value', min: -R * 1.5, max: R * 1.5, name: 'Z (km)' },
-      grid3D: {
-        viewControl: {
-          autoRotate: false,
-          distance: 200
-        },
-        light: {
-          main: {
-            intensity: 1.2,
-            shadow: true
-          },
-          ambient: {
-            intensity: 0.5
-          }
-        }
-      },
-      series: [
-        {
-          type: 'scatter3D',
-          data: generateSphere(20),
-          symbolSize: 8,
-          itemStyle: {
-            opacity: 0.8
-          }
-        },
-        {
-          type: 'scatter3D',
-          data: [[markerPos.x, markerPos.y, markerPos.z]],
-          symbolSize: 20,
-          itemStyle: {
-            color: '#F0177A'
-          },
-          label: {
-            show: true,
-            formatter: `(${lat}°, ${lon}°)`,
-            position: 'top',
-            distance: 10,
-            textStyle: {
-              fontSize: 14,
-              color: '#F0177A'
-            }
-          }
-        },
-        ...graticule.map(line => ({
-          type: 'line3D',
-          data: line,
-          lineStyle: {
-            color: '#888',
-            width: 1,
-            opacity: 0.3
-          }
-        }))
-      ]
-    };
+const option = {
+title: {
+text: 'Earth as a Rotating Sphere',
+left: 'center'
+},
+tooltip: {},
+xAxis3D: { type: 'value', min: -R * 1.5, max: R * 1.5, name: 'X (km)' },
+yAxis3D: { type: 'value', min: -R * 1.5, max: R * 1.5, name: 'Y (km)' },
+zAxis3D: { type: 'value', min: -R * 1.5, max: R * 1.5, name: 'Z (km)' },
+grid3D: {
+viewControl: {
+autoRotate: false,
+distance: 200
+},
+light: {
+main: {
+intensity: 1.2,
+shadow: true
+},
+ambient: {
+intensity: 0.5
+}
+}
+},
+series: [
+{
+type: 'scatter3D',
+data: generateSphere(20),
+symbolSize: 8,
+itemStyle: {
+opacity: 0.8
+}
+},
+{
+type: 'scatter3D',
+data: [[markerPos.x, markerPos.y, markerPos.z]],
+symbolSize: 20,
+itemStyle: {
+color: '#F0177A'
+},
+label: {
+show: true,
+formatter: `(${lat}°, ${lon}°)`,
+position: 'top',
+distance: 10,
+textStyle: {
+fontSize: 14,
+color: '#F0177A'
+}
+}
+},
+...graticule.map(line => ({
+type: 'line3D',
+data: line,
+lineStyle: {
+color: '#888',
+width: 1,
+opacity: 0.3
+}
+}))
+]
+};
     
-    chart.setOption(option);
-  }
+chart.setOption(option);
+}
   
-  function rotateEarth() {
-    if (rotating && rotSpeed > 0) {
-      currentRotation += rotSpeed * 0.5;
-      if (currentRotation >= 360) currentRotation -= 360;
-      updateChart();
-    }
-  }
+function rotateEarth() {
+if (rotating && rotSpeed > 0) {
+currentRotation += rotSpeed * 0.5;
+if (currentRotation >= 360) currentRotation -= 360;
+updateChart();
+}
+}
   
-  setInterval(rotateEarth, 100);
+setInterval(rotateEarth, 100);
   
-  document.getElementById('lat-slider').addEventListener('input', (e) => {
-    lat = parseFloat(e.target.value);
-    document.getElementById('lat-value').textContent = lat;
-    updateChart();
-  });
+document.getElementById('lat-slider').addEventListener('input', (e) => {
+lat = parseFloat(e.target.value);
+document.getElementById('lat-value').textContent = lat;
+updateChart();
+});
   
-  document.getElementById('lon-slider').addEventListener('input', (e) => {
-    lon = parseFloat(e.target.value);
-    document.getElementById('lon-value').textContent = lon;
-    updateChart();
-  });
+document.getElementById('lon-slider').addEventListener('input', (e) => {
+lon = parseFloat(e.target.value);
+document.getElementById('lon-value').textContent = lon;
+updateChart();
+});
   
-  document.getElementById('rot-slider').addEventListener('input', (e) => {
-    rotSpeed = parseFloat(e.target.value);
-    document.getElementById('rot-value').textContent = rotSpeed.toFixed(1);
-  });
+document.getElementById('rot-slider').addEventListener('input', (e) => {
+rotSpeed = parseFloat(e.target.value);
+document.getElementById('rot-value').textContent = rotSpeed.toFixed(1);
+});
   
-  document.getElementById('toggle-rotation').addEventListener('click', (e) => {
-    rotating = !rotating;
-    e.target.textContent = rotating ? 'Pause Rotation' : 'Resume Rotation';
-  });
+document.getElementById('toggle-rotation').addEventListener('click', (e) => {
+rotating = !rotating;
+e.target.textContent = rotating ? 'Pause Rotation' : 'Resume Rotation';
+});
   
-  document.getElementById('reset-view').addEventListener('click', () => {
-    currentRotation = 0;
-    updateChart();
-  });
+document.getElementById('reset-view').addEventListener('click', () => {
+currentRotation = 0;
+updateChart();
+});
   
-  updateChart();
+updateChart();
   
-  window.addEventListener('resize', () => chart.resize());
+window.addEventListener('resize', () => chart.resize());
 })();
 </script>
 <p><strong>Try this:</strong> - Watch the pink marker move as Earth rotates - Change latitude: See how the z-coordinate changes - Change longitude: Initial position in the x-y plane - Set rotation speed to 0: Freeze the Earth - The graticule (grid lines) shows meridians and parallels</p>

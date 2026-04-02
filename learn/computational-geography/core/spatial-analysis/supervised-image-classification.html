@@ -289,346 +289,347 @@ window.Quarto = {
 <hr>
 <h2 id="computational-implementation" class="anchored">5. Computational Implementation</h2>
 <p>Below is an interactive image classification demo.</p>
-<div id="classify-viz" class="viz-container">
+<div class="viz-container" id="classify-viz">
 <div class="controls">
-<pre><code>&lt;label&gt;
-  Classification method:
-  &lt;select id="class-method"&gt;
-    &lt;option value="maximum-likelihood" selected&gt;Maximum Likelihood&lt;/option&gt;
-    &lt;option value="knn"&gt;K-Nearest Neighbors (k=5)&lt;/option&gt;
-    &lt;option value="minimum-distance"&gt;Minimum Distance&lt;/option&gt;
-  &lt;/select&gt;
-&lt;/label&gt;
-&lt;label&gt;
-  Show feature space:
-  &lt;input type="checkbox" id="show-feature-space" checked&gt;
-&lt;/label&gt;
-&lt;label&gt;
-  Show training samples:
-  &lt;input type="checkbox" id="show-training" checked&gt;
-&lt;/label&gt;
-&lt;div class="classify-info"&gt;
-  &lt;p&gt;&lt;strong&gt;Classes:&lt;/strong&gt; Water (blue), Vegetation (green), Urban (gray), Bare soil (brown)&lt;/p&gt;
-  &lt;p&gt;&lt;strong&gt;Overall accuracy:&lt;/strong&gt; &lt;span id="overall-accuracy"&gt;--&lt;/span&gt;%&lt;/p&gt;
-&lt;/div&gt;</code></pre>
+<label>
+Classification method:
+<select id="class-method">
+<option value="maximum-likelihood" selected="">Maximum Likelihood</option>
+<option value="knn">K-Nearest Neighbors (k=5)</option>
+<option value="minimum-distance">Minimum Distance</option>
+</select>
+</label>
+<label>
+Show feature space:
+<input type="checkbox" id="show-feature-space" checked="">
+</label>
+<label>
+Show training samples:
+<input type="checkbox" id="show-training" checked="">
+</label>
+<div class="classify-info">
+<p><strong>Classes:</strong> Water (blue), Vegetation (green), Urban (gray), Bare soil (brown)</p>
+<p><strong>Overall accuracy:</strong> <span id="overall-accuracy">--</span>%</p>
+</div>
 </div>
 <div id="classify-canvas-container">
-<pre><code>&lt;canvas id="classify-canvas" width="700" height="350" style="border: 1px solid #ddd;"&gt;&lt;/canvas&gt;</code></pre>
+<canvas id="classify-canvas" width="700" height="350" style="border: 1px solid #ddd;"></canvas>
 </div>
 </div>
+
 <script type="module">
 (function() {
-  const canvas = document.getElementById('classify-canvas');
-  const ctx = canvas.getContext('2d');
+const canvas = document.getElementById('classify-canvas');
+const ctx = canvas.getContext('2d');
   
-  let method = 'maximum-likelihood';
-  let showFeatureSpace = true;
-  let showTraining = true;
+let method = 'maximum-likelihood';
+let showFeatureSpace = true;
+let showTraining = true;
   
-  const size = 50;
-  const cellSize = 7;
+const size = 50;
+const cellSize = 7;
   
-  // Generate synthetic multispectral image (2 bands: Red, NIR)
-  const image = {red: [], nir: []};
+// Generate synthetic multispectral image (2 bands: Red, NIR)
+const image = {red: [], nir: []};
   
-  for (let i = 0; i < size; i++) {
-    const rowRed = [], rowNIR = [];
-    for (let j = 0; j < size; j++) {
-      const cx1 = 15, cy1 = 15; // Water
-      const cx2 = 35, cy2 = 15; // Vegetation
-      const cx3 = 15, cy3 = 35; // Urban
-      const cx4 = 35, cy4 = 35; // Soil
+for (let i = 0; i < size; i++) {
+const rowRed = [], rowNIR = [];
+for (let j = 0; j < size; j++) {
+const cx1 = 15, cy1 = 15; // Water
+const cx2 = 35, cy2 = 15; // Vegetation
+const cx3 = 15, cy3 = 35; // Urban
+const cx4 = 35, cy4 = 35; // Soil
       
-      const d1 = Math.sqrt((i - cx1)**2 + (j - cy1)**2);
-      const d2 = Math.sqrt((i - cx2)**2 + (j - cy2)**2);
-      const d3 = Math.sqrt((i - cx3)**2 + (j - cy3)**2);
-      const d4 = Math.sqrt((i - cx4)**2 + (j - cy4)**2);
+const d1 = Math.sqrt((i - cx1)**2 + (j - cy1)**2);
+const d2 = Math.sqrt((i - cx2)**2 + (j - cy2)**2);
+const d3 = Math.sqrt((i - cx3)**2 + (j - cy3)**2);
+const d4 = Math.sqrt((i - cx4)**2 + (j - cy4)**2);
       
-      const w1 = Math.exp(-d1/8);
-      const w2 = Math.exp(-d2/8);
-      const w3 = Math.exp(-d3/8);
-      const w4 = Math.exp(-d4/8);
+const w1 = Math.exp(-d1/8);
+const w2 = Math.exp(-d2/8);
+const w3 = Math.exp(-d3/8);
+const w4 = Math.exp(-d4/8);
       
-      // Water: low NIR, low red
-      // Veg: low red, high NIR
-      // Urban: moderate both
-      // Soil: moderate-high both
+// Water: low NIR, low red
+// Veg: low red, high NIR
+// Urban: moderate both
+// Soil: moderate-high both
       
-      const red = (0.05 * w1 + 0.08 * w2 + 0.20 * w3 + 0.30 * w4) / (w1+w2+w3+w4) + Math.random()*0.02;
-      const nir = (0.05 * w1 + 0.45 * w2 + 0.20 * w3 + 0.35 * w4) / (w1+w2+w3+w4) + Math.random()*0.02;
+const red = (0.05 * w1 + 0.08 * w2 + 0.20 * w3 + 0.30 * w4) / (w1+w2+w3+w4) + Math.random()*0.02;
+const nir = (0.05 * w1 + 0.45 * w2 + 0.20 * w3 + 0.35 * w4) / (w1+w2+w3+w4) + Math.random()*0.02;
       
-      rowRed.push(red);
-      rowNIR.push(nir);
-    }
-    image.red.push(rowRed);
-    image.nir.push(rowNIR);
-  }
+rowRed.push(red);
+rowNIR.push(nir);
+}
+image.red.push(rowRed);
+image.nir.push(rowNIR);
+}
   
-  // Training samples
-  const training = {
-    water: {red: [], nir: []},
-    veg: {red: [], nir: []},
-    urban: {red: [], nir: []},
-    soil: {red: [], nir: []}
-  };
+// Training samples
+const training = {
+water: {red: [], nir: []},
+veg: {red: [], nir: []},
+urban: {red: [], nir: []},
+soil: {red: [], nir: []}
+};
   
-  // Sample from known regions
-  for (let i = 12; i < 18; i++) {
-    for (let j = 12; j < 18; j++) {
-      training.water.red.push(image.red[i][j]);
-      training.water.nir.push(image.nir[i][j]);
-    }
-  }
+// Sample from known regions
+for (let i = 12; i < 18; i++) {
+for (let j = 12; j < 18; j++) {
+training.water.red.push(image.red[i][j]);
+training.water.nir.push(image.nir[i][j]);
+}
+}
   
-  for (let i = 32; i < 38; i++) {
-    for (let j = 12; j < 18; j++) {
-      training.veg.red.push(image.red[i][j]);
-      training.veg.nir.push(image.nir[i][j]);
-    }
-  }
+for (let i = 32; i < 38; i++) {
+for (let j = 12; j < 18; j++) {
+training.veg.red.push(image.red[i][j]);
+training.veg.nir.push(image.nir[i][j]);
+}
+}
   
-  for (let i = 12; i < 18; i++) {
-    for (let j = 32; j < 38; j++) {
-      training.urban.red.push(image.red[i][j]);
-      training.urban.nir.push(image.nir[i][j]);
-    }
-  }
+for (let i = 12; i < 18; i++) {
+for (let j = 32; j < 38; j++) {
+training.urban.red.push(image.red[i][j]);
+training.urban.nir.push(image.nir[i][j]);
+}
+}
   
-  for (let i = 32; i < 38; i++) {
-    for (let j = 32; j < 38; j++) {
-      training.soil.red.push(image.red[i][j]);
-      training.soil.nir.push(image.nir[i][j]);
-    }
-  }
+for (let i = 32; i < 38; i++) {
+for (let j = 32; j < 38; j++) {
+training.soil.red.push(image.red[i][j]);
+training.soil.nir.push(image.nir[i][j]);
+}
+}
   
-  function mean(arr) {
-    return arr.reduce((s, v) => s + v, 0) / arr.length;
-  }
+function mean(arr) {
+return arr.reduce((s, v) => s + v, 0) / arr.length;
+}
   
-  function variance(arr, mu) {
-    return arr.reduce((s, v) => s + (v - mu)**2, 0) / arr.length;
-  }
+function variance(arr, mu) {
+return arr.reduce((s, v) => s + (v - mu)**2, 0) / arr.length;
+}
   
-  function getSignatures() {
-    const sigs = {};
+function getSignatures() {
+const sigs = {};
     
-    for (let [cls, data] of Object.entries(training)) {
-      sigs[cls] = {
-        muRed: mean(data.red),
-        muNIR: mean(data.nir),
-        varRed: variance(data.red, mean(data.red)),
-        varNIR: variance(data.nir, mean(data.nir))
-      };
-    }
+for (let [cls, data] of Object.entries(training)) {
+sigs[cls] = {
+muRed: mean(data.red),
+muNIR: mean(data.nir),
+varRed: variance(data.red, mean(data.red)),
+varNIR: variance(data.nir, mean(data.nir))
+};
+}
     
-    return sigs;
-  }
+return sigs;
+}
   
-  function mahalanobisDistance(red, nir, sig) {
-    const dRed = (red - sig.muRed) / Math.sqrt(sig.varRed);
-    const dNIR = (nir - sig.muNIR) / Math.sqrt(sig.varNIR);
-    return Math.sqrt(dRed**2 + dNIR**2);
-  }
+function mahalanobisDistance(red, nir, sig) {
+const dRed = (red - sig.muRed) / Math.sqrt(sig.varRed);
+const dNIR = (nir - sig.muNIR) / Math.sqrt(sig.varNIR);
+return Math.sqrt(dRed**2 + dNIR**2);
+}
   
-  function classifyML(red, nir, sigs) {
-    let minDist = Infinity;
-    let bestClass = 'water';
+function classifyML(red, nir, sigs) {
+let minDist = Infinity;
+let bestClass = 'water';
     
-    for (let [cls, sig] of Object.entries(sigs)) {
-      const dist = mahalanobisDistance(red, nir, sig);
-      if (dist < minDist) {
-        minDist = dist;
-        bestClass = cls;
-      }
-    }
+for (let [cls, sig] of Object.entries(sigs)) {
+const dist = mahalanobisDistance(red, nir, sig);
+if (dist < minDist) {
+minDist = dist;
+bestClass = cls;
+}
+}
     
-    return bestClass;
-  }
+return bestClass;
+}
   
-  function classifyKNN(red, nir, k = 5) {
-    const distances = [];
+function classifyKNN(red, nir, k = 5) {
+const distances = [];
     
-    for (let [cls, data] of Object.entries(training)) {
-      for (let i = 0; i < data.red.length; i++) {
-        const dist = Math.sqrt((red - data.red[i])**2 + (nir - data.nir[i])**2);
-        distances.push({cls, dist});
-      }
-    }
+for (let [cls, data] of Object.entries(training)) {
+for (let i = 0; i < data.red.length; i++) {
+const dist = Math.sqrt((red - data.red[i])**2 + (nir - data.nir[i])**2);
+distances.push({cls, dist});
+}
+}
     
-    distances.sort((a, b) => a.dist - b.dist);
-    const neighbors = distances.slice(0, k);
+distances.sort((a, b) => a.dist - b.dist);
+const neighbors = distances.slice(0, k);
     
-    const votes = {};
-    for (let {cls} of neighbors) {
-      votes[cls] = (votes[cls] || 0) + 1;
-    }
+const votes = {};
+for (let {cls} of neighbors) {
+votes[cls] = (votes[cls] || 0) + 1;
+}
     
-    return Object.entries(votes).sort((a, b) => b[1] - a[1])[0][0];
-  }
+return Object.entries(votes).sort((a, b) => b[1] - a[1])[0][0];
+}
   
-  function classifyMinDist(red, nir, sigs) {
-    let minDist = Infinity;
-    let bestClass = 'water';
+function classifyMinDist(red, nir, sigs) {
+let minDist = Infinity;
+let bestClass = 'water';
     
-    for (let [cls, sig] of Object.entries(sigs)) {
-      const dist = Math.sqrt((red - sig.muRed)**2 + (nir - sig.muNIR)**2);
-      if (dist < minDist) {
-        minDist = dist;
-        bestClass = cls;
-      }
-    }
+for (let [cls, sig] of Object.entries(sigs)) {
+const dist = Math.sqrt((red - sig.muRed)**2 + (nir - sig.muNIR)**2);
+if (dist < minDist) {
+minDist = dist;
+bestClass = cls;
+}
+}
     
-    return bestClass;
-  }
+return bestClass;
+}
   
-  function classifyImage() {
-    const sigs = getSignatures();
-    const classified = [];
+function classifyImage() {
+const sigs = getSignatures();
+const classified = [];
     
-    for (let i = 0; i < size; i++) {
-      const row = [];
-      for (let j = 0; j < size; j++) {
-        const red = image.red[i][j];
-        const nir = image.nir[i][j];
+for (let i = 0; i < size; i++) {
+const row = [];
+for (let j = 0; j < size; j++) {
+const red = image.red[i][j];
+const nir = image.nir[i][j];
         
-        let cls;
-        if (method === 'maximum-likelihood') {
-          cls = classifyML(red, nir, sigs);
-        } else if (method === 'knn') {
-          cls = classifyKNN(red, nir, 5);
-        } else {
-          cls = classifyMinDist(red, nir, sigs);
-        }
+let cls;
+if (method === 'maximum-likelihood') {
+cls = classifyML(red, nir, sigs);
+} else if (method === 'knn') {
+cls = classifyKNN(red, nir, 5);
+} else {
+cls = classifyMinDist(red, nir, sigs);
+}
         
-        row.push(cls);
-      }
-      classified.push(row);
-    }
+row.push(cls);
+}
+classified.push(row);
+}
     
-    return classified;
-  }
+return classified;
+}
   
-  const classColors = {
-    water: '#3498DB',
-    veg: '#27AE60',
-    urban: '#7F8C8D',
-    soil: '#D35400'
-  };
+const classColors = {
+water: '#3498DB',
+veg: '#27AE60',
+urban: '#7F8C8D',
+soil: '#D35400'
+};
   
-  function drawClassified(classified, x, y) {
-    for (let i = 0; i < size; i++) {
-      for (let j = 0; j < size; j++) {
-        ctx.fillStyle = classColors[classified[i][j]];
-        ctx.fillRect(x + j * cellSize, y + i * cellSize, cellSize, cellSize);
-      }
-    }
+function drawClassified(classified, x, y) {
+for (let i = 0; i < size; i++) {
+for (let j = 0; j < size; j++) {
+ctx.fillStyle = classColors[classified[i][j]];
+ctx.fillRect(x + j * cellSize, y + i * cellSize, cellSize, cellSize);
+}
+}
     
-    // Overlay training samples
-    if (showTraining) {
-      ctx.strokeStyle = '#FFF';
-      ctx.lineWidth = 2;
-      ctx.strokeRect(x + 12 * cellSize, y + 12 * cellSize, 6 * cellSize, 6 * cellSize);
-      ctx.strokeRect(x + 32 * cellSize, y + 12 * cellSize, 6 * cellSize, 6 * cellSize);
-      ctx.strokeRect(x + 12 * cellSize, y + 32 * cellSize, 6 * cellSize, 6 * cellSize);
-      ctx.strokeRect(x + 32 * cellSize, y + 32 * cellSize, 6 * cellSize, 6 * cellSize);
-    }
-  }
+// Overlay training samples
+if (showTraining) {
+ctx.strokeStyle = '#FFF';
+ctx.lineWidth = 2;
+ctx.strokeRect(x + 12 * cellSize, y + 12 * cellSize, 6 * cellSize, 6 * cellSize);
+ctx.strokeRect(x + 32 * cellSize, y + 12 * cellSize, 6 * cellSize, 6 * cellSize);
+ctx.strokeRect(x + 12 * cellSize, y + 32 * cellSize, 6 * cellSize, 6 * cellSize);
+ctx.strokeRect(x + 32 * cellSize, y + 32 * cellSize, 6 * cellSize, 6 * cellSize);
+}
+}
   
-  function drawFeatureSpace(x, y, width, height) {
-    const sigs = getSignatures();
+function drawFeatureSpace(x, y, width, height) {
+const sigs = getSignatures();
     
-    // Axes
-    ctx.strokeStyle = '#34495E';
-    ctx.lineWidth = 2;
-    ctx.beginPath();
-    ctx.moveTo(x + 30, y + height - 30);
-    ctx.lineTo(x + width - 10, y + height - 30);
-    ctx.moveTo(x + 30, y + height - 30);
-    ctx.lineTo(x + 30, y + 10);
-    ctx.stroke();
+// Axes
+ctx.strokeStyle = '#34495E';
+ctx.lineWidth = 2;
+ctx.beginPath();
+ctx.moveTo(x + 30, y + height - 30);
+ctx.lineTo(x + width - 10, y + height - 30);
+ctx.moveTo(x + 30, y + height - 30);
+ctx.lineTo(x + 30, y + 10);
+ctx.stroke();
     
-    // Labels
-    ctx.fillStyle = '#2C3E50';
-    ctx.font = '12px sans-serif';
-    ctx.fillText('Red →', x + width - 50, y + height - 10);
-    ctx.save();
-    ctx.translate(x + 15, y + height/2);
-    ctx.rotate(-Math.PI/2);
-    ctx.fillText('NIR →', 0, 0);
-    ctx.restore();
+// Labels
+ctx.fillStyle = '#2C3E50';
+ctx.font = '12px sans-serif';
+ctx.fillText('Red →', x + width - 50, y + height - 10);
+ctx.save();
+ctx.translate(x + 15, y + height/2);
+ctx.rotate(-Math.PI/2);
+ctx.fillText('NIR →', 0, 0);
+ctx.restore();
     
-    // Plot training samples
-    const xScale = (width - 50) / 0.5;
-    const yScale = (height - 50) / 0.5;
+// Plot training samples
+const xScale = (width - 50) / 0.5;
+const yScale = (height - 50) / 0.5;
     
-    for (let [cls, data] of Object.entries(training)) {
-      ctx.fillStyle = classColors[cls];
-      for (let i = 0; i < data.red.length; i++) {
-        const px = x + 30 + data.red[i] * xScale;
-        const py = y + height - 30 - data.nir[i] * yScale;
-        ctx.beginPath();
-        ctx.arc(px, py, 2, 0, 2 * Math.PI);
-        ctx.fill();
-      }
-    }
+for (let [cls, data] of Object.entries(training)) {
+ctx.fillStyle = classColors[cls];
+for (let i = 0; i < data.red.length; i++) {
+const px = x + 30 + data.red[i] * xScale;
+const py = y + height - 30 - data.nir[i] * yScale;
+ctx.beginPath();
+ctx.arc(px, py, 2, 0, 2 * Math.PI);
+ctx.fill();
+}
+}
     
-    // Plot class means
-    for (let [cls, sig] of Object.entries(sigs)) {
-      const px = x + 30 + sig.muRed * xScale;
-      const py = y + height - 30 - sig.muNIR * yScale;
+// Plot class means
+for (let [cls, sig] of Object.entries(sigs)) {
+const px = x + 30 + sig.muRed * xScale;
+const py = y + height - 30 - sig.muNIR * yScale;
       
-      ctx.fillStyle = classColors[cls];
-      ctx.strokeStyle = '#FFF';
-      ctx.lineWidth = 2;
-      ctx.beginPath();
-      ctx.arc(px, py, 5, 0, 2 * Math.PI);
-      ctx.fill();
-      ctx.stroke();
-    }
+ctx.fillStyle = classColors[cls];
+ctx.strokeStyle = '#FFF';
+ctx.lineWidth = 2;
+ctx.beginPath();
+ctx.arc(px, py, 5, 0, 2 * Math.PI);
+ctx.fill();
+ctx.stroke();
+}
     
-    // Title
-    ctx.fillStyle = '#2C3E50';
-    ctx.font = 'bold 12px sans-serif';
-    ctx.fillText('Feature Space (Red vs NIR)', x + 10, y + 15);
-  }
+// Title
+ctx.fillStyle = '#2C3E50';
+ctx.font = 'bold 12px sans-serif';
+ctx.fillText('Feature Space (Red vs NIR)', x + 10, y + 15);
+}
   
-  function render() {
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
+function render() {
+ctx.clearRect(0, 0, canvas.width, canvas.height);
     
-    const classified = classifyImage();
+const classified = classifyImage();
     
-    // Left: Classified image
-    drawClassified(classified, 10, 10);
-    ctx.fillStyle = '#2C3E50';
-    ctx.font = 'bold 12px sans-serif';
-    ctx.fillText('Classified Image', 15, 25);
+// Left: Classified image
+drawClassified(classified, 10, 10);
+ctx.fillStyle = '#2C3E50';
+ctx.font = 'bold 12px sans-serif';
+ctx.fillText('Classified Image', 15, 25);
     
-    // Right: Feature space
-    if (showFeatureSpace) {
-      drawFeatureSpace(10 + size * cellSize + 20, 10, 330, 330);
-    }
+// Right: Feature space
+if (showFeatureSpace) {
+drawFeatureSpace(10 + size * cellSize + 20, 10, 330, 330);
+}
     
-    // Compute accuracy (simplified - compare to synthetic truth)
-    // In real case, use independent validation samples
-    document.getElementById('overall-accuracy').textContent = '~85-95';
-  }
+// Compute accuracy (simplified - compare to synthetic truth)
+// In real case, use independent validation samples
+document.getElementById('overall-accuracy').textContent = '~85-95';
+}
   
-  document.getElementById('class-method').addEventListener('change', (e) => {
-    method = e.target.value;
-    render();
-  });
+document.getElementById('class-method').addEventListener('change', (e) => {
+method = e.target.value;
+render();
+});
   
-  document.getElementById('show-feature-space').addEventListener('change', (e) => {
-    showFeatureSpace = e.target.checked;
-    render();
-  });
+document.getElementById('show-feature-space').addEventListener('change', (e) => {
+showFeatureSpace = e.target.checked;
+render();
+});
   
-  document.getElementById('show-training').addEventListener('change', (e) => {
-    showTraining = e.target.checked;
-    render();
-  });
+document.getElementById('show-training').addEventListener('change', (e) => {
+showTraining = e.target.checked;
+render();
+});
   
-  render();
+render();
 })();
 </script>
 <p><strong>Try this:</strong> - <strong>Maximum likelihood:</strong> Statistical classification based on class distributions - <strong>K-nearest neighbors:</strong> Non-parametric, uses nearest training samples - <strong>Minimum distance:</strong> Simplest method, distance to class means - <strong>Feature space plot:</strong> Shows class separation in Red-NIR space - <strong>Training samples:</strong> White boxes show training regions - <strong>Color legend:</strong> Blue (water), Green (vegetation), Gray (urban), Brown (soil) - Notice: Classes cluster in feature space—high NIR separates vegetation!</p>

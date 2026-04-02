@@ -339,252 +339,253 @@ i=3   1    2    3    3</code></pre>
 <hr>
 <h2 id="computational-implementation" class="anchored">5. Computational Implementation</h2>
 <p>Below is an interactive raster classification tool.</p>
-<div id="classify-viz" class="viz-container">
+<div class="viz-container" id="classify-viz">
 <div class="controls">
-<pre><code>&lt;label&gt;
-  Classification method:
-  &lt;select id="class-method"&gt;
-    &lt;option value="equal-interval" selected&gt;Equal Interval&lt;/option&gt;
-    &lt;option value="quantile"&gt;Quantile (Equal Count)&lt;/option&gt;
-    &lt;option value="std-dev"&gt;Standard Deviation&lt;/option&gt;
-    &lt;option value="manual"&gt;Manual Thresholds&lt;/option&gt;
-  &lt;/select&gt;
-&lt;/label&gt;
-&lt;label&gt;
-  Number of classes:
-  &lt;input type="range" id="n-classes" min="2" max="8" step="1" value="5"&gt;
-  &lt;span id="n-classes-value"&gt;5&lt;/span&gt;
-&lt;/label&gt;
-&lt;div id="manual-controls" style="display:none;"&gt;
-  &lt;label&gt;
-    Threshold 1:
-    &lt;input type="range" id="manual-t1" min="0" max="100" step="5" value="30"&gt;
-    &lt;span id="manual-t1-val"&gt;30&lt;/span&gt;
-  &lt;/label&gt;
-  &lt;label&gt;
-    Threshold 2:
-    &lt;input type="range" id="manual-t2" min="0" max="100" step="5" value="60"&gt;
-    &lt;span id="manual-t2-val"&gt;60&lt;/span&gt;
-  &lt;/label&gt;
-&lt;/div&gt;
-&lt;label&gt;
-  Show histogram:
-  &lt;input type="checkbox" id="show-histogram" checked&gt;
-&lt;/label&gt;</code></pre>
+<label>
+Classification method:
+<select id="class-method">
+<option value="equal-interval" selected="">Equal Interval</option>
+<option value="quantile">Quantile (Equal Count)</option>
+<option value="std-dev">Standard Deviation</option>
+<option value="manual">Manual Thresholds</option>
+</select>
+</label>
+<label>
+Number of classes:
+<input type="range" id="n-classes" min="2" max="8" step="1" value="5">
+<span id="n-classes-value">5</span>
+</label>
+<div id="manual-controls" style="display:none;">
+<label>
+Threshold 1:
+<input type="range" id="manual-t1" min="0" max="100" step="5" value="30">
+<span id="manual-t1-val">30</span>
+</label>
+<label>
+Threshold 2:
+<input type="range" id="manual-t2" min="0" max="100" step="5" value="60">
+<span id="manual-t2-val">60</span>
+</label>
+</div>
+<label>
+Show histogram:
+<input type="checkbox" id="show-histogram" checked="">
+</label>
 </div>
 <div id="classify-canvas-container">
-<pre><code>&lt;canvas id="classify-canvas" width="700" height="400" style="border: 1px solid #ddd;"&gt;&lt;/canvas&gt;</code></pre>
+<canvas id="classify-canvas" width="700" height="400" style="border: 1px solid #ddd;"></canvas>
 </div>
 <div class="classify-info">
-<pre><code>&lt;p id="class-distribution"&gt;&lt;/p&gt;</code></pre>
+<p id="class-distribution"></p>
 </div>
 </div>
+
 <script type="module">
 (function() {
-  const canvas = document.getElementById('classify-canvas');
-  const ctx = canvas.getContext('2d');
+const canvas = document.getElementById('classify-canvas');
+const ctx = canvas.getContext('2d');
   
-  let method = 'equal-interval';
-  let nClasses = 5;
-  let showHistogram = true;
-  let manualT1 = 30;
-  let manualT2 = 60;
+let method = 'equal-interval';
+let nClasses = 5;
+let showHistogram = true;
+let manualT1 = 30;
+let manualT2 = 60;
   
-  const size = 40;
-  const data = [];
+const size = 40;
+const data = [];
   
-  // Generate test data with interesting distribution
-  for (let i = 0; i < size; i++) {
-    const row = [];
-    for (let j = 0; j < size; j++) {
-      // Multi-modal distribution
-      const cx1 = 15, cy1 = 15;
-      const cx2 = 25, cy2 = 25;
-      const d1 = Math.sqrt((i - cx1) ** 2 + (j - cy1) ** 2);
-      const d2 = Math.sqrt((i - cx2) ** 2 + (j - cy2) ** 2);
-      const value = 30 * Math.exp(-d1 / 8) + 70 * Math.exp(-d2 / 6) + Math.random() * 10;
-      row.push(value);
-    }
-    data.push(row);
-  }
+// Generate test data with interesting distribution
+for (let i = 0; i < size; i++) {
+const row = [];
+for (let j = 0; j < size; j++) {
+// Multi-modal distribution
+const cx1 = 15, cy1 = 15;
+const cx2 = 25, cy2 = 25;
+const d1 = Math.sqrt((i - cx1) ** 2 + (j - cy1) ** 2);
+const d2 = Math.sqrt((i - cx2) ** 2 + (j - cy2) ** 2);
+const value = 30 * Math.exp(-d1 / 8) + 70 * Math.exp(-d2 / 6) + Math.random() * 10;
+row.push(value);
+}
+data.push(row);
+}
   
-  function getBreakpoints(flatData, method, n) {
-    const sorted = [...flatData].sort((a, b) => a - b);
-    const min = sorted[0];
-    const max = sorted[sorted.length - 1];
+function getBreakpoints(flatData, method, n) {
+const sorted = [...flatData].sort((a, b) => a - b);
+const min = sorted[0];
+const max = sorted[sorted.length - 1];
     
-    if (method === 'equal-interval') {
-      const breaks = [min];
-      const width = (max - min) / n;
-      for (let i = 1; i < n; i++) {
-        breaks.push(min + i * width);
-      }
-      breaks.push(max + 1);
-      return breaks;
+if (method === 'equal-interval') {
+const breaks = [min];
+const width = (max - min) / n;
+for (let i = 1; i < n; i++) {
+breaks.push(min + i * width);
+}
+breaks.push(max + 1);
+return breaks;
       
-    } else if (method === 'quantile') {
-      const breaks = [min];
-      for (let i = 1; i < n; i++) {
-        const idx = Math.floor(sorted.length * i / n);
-        breaks.push(sorted[idx]);
-      }
-      breaks.push(max + 1);
-      return breaks;
+} else if (method === 'quantile') {
+const breaks = [min];
+for (let i = 1; i < n; i++) {
+const idx = Math.floor(sorted.length * i / n);
+breaks.push(sorted[idx]);
+}
+breaks.push(max + 1);
+return breaks;
       
-    } else if (method === 'std-dev') {
-      const mean = flatData.reduce((s, v) => s + v, 0) / flatData.length;
-      const variance = flatData.reduce((s, v) => s + (v - mean) ** 2, 0) / flatData.length;
-      const std = Math.sqrt(variance);
+} else if (method === 'std-dev') {
+const mean = flatData.reduce((s, v) => s + v, 0) / flatData.length;
+const variance = flatData.reduce((s, v) => s + (v - mean) ** 2, 0) / flatData.length;
+const std = Math.sqrt(variance);
       
-      const breaks = [];
-      for (let i = -2; i <= 2; i++) {
-        breaks.push(mean + i * std);
-      }
-      return breaks.sort((a, b) => a - b);
+const breaks = [];
+for (let i = -2; i <= 2; i++) {
+breaks.push(mean + i * std);
+}
+return breaks.sort((a, b) => a - b);
       
-    } else if (method === 'manual') {
-      return [min, manualT1, manualT2, max + 1];
-    }
-  }
+} else if (method === 'manual') {
+return [min, manualT1, manualT2, max + 1];
+}
+}
   
-  function classify(value, breaks) {
-    for (let i = 0; i < breaks.length - 1; i++) {
-      if (value >= breaks[i] && value < breaks[i + 1]) {
-        return i;
-      }
-    }
-    return breaks.length - 2;
-  }
+function classify(value, breaks) {
+for (let i = 0; i < breaks.length - 1; i++) {
+if (value >= breaks[i] && value < breaks[i + 1]) {
+return i;
+}
+}
+return breaks.length - 2;
+}
   
-  function drawClassified(data, breaks, x, y, width, height) {
-    const cellW = width / data[0].length;
-    const cellH = height / data.length;
+function drawClassified(data, breaks, x, y, width, height) {
+const cellW = width / data[0].length;
+const cellH = height / data.length;
     
-    const colors = [
-      '#3498DB', '#2ECC71', '#F39C12', '#E74C3C', '#9B59B6',
-      '#1ABC9C', '#34495E', '#E67E22'
-    ];
+const colors = [
+'#3498DB', '#2ECC71', '#F39C12', '#E74C3C', '#9B59B6',
+'#1ABC9C', '#34495E', '#E67E22'
+];
     
-    const classCounts = new Array(breaks.length - 1).fill(0);
+const classCounts = new Array(breaks.length - 1).fill(0);
     
-    for (let i = 0; i < data.length; i++) {
-      for (let j = 0; j < data[0].length; j++) {
-        const classId = classify(data[i][j], breaks);
-        classCounts[classId]++;
+for (let i = 0; i < data.length; i++) {
+for (let j = 0; j < data[0].length; j++) {
+const classId = classify(data[i][j], breaks);
+classCounts[classId]++;
         
-        ctx.fillStyle = colors[classId % colors.length];
-        ctx.fillRect(x + j * cellW, y + i * cellH, cellW, cellH);
-      }
-    }
+ctx.fillStyle = colors[classId % colors.length];
+ctx.fillRect(x + j * cellW, y + i * cellH, cellW, cellH);
+}
+}
     
-    // Update distribution
-    let distText = '<strong>Class Distribution:</strong><br>';
-    for (let i = 0; i < classCounts.length; i++) {
-      const pct = (classCounts[i] / (data.length * data[0].length) * 100).toFixed(1);
-      distText += `Class ${i + 1}: ${classCounts[i]} cells (${pct}%)<br>`;
-    }
-    document.getElementById('class-distribution').innerHTML = distText;
-  }
+// Update distribution
+let distText = '<strong>Class Distribution:</strong><br>';
+for (let i = 0; i < classCounts.length; i++) {
+const pct = (classCounts[i] / (data.length * data[0].length) * 100).toFixed(1);
+distText += `Class ${i + 1}: ${classCounts[i]} cells (${pct}%)<br>`;
+}
+document.getElementById('class-distribution').innerHTML = distText;
+}
   
-  function drawHistogram(flatData, breaks, x, y, width, height) {
-    const nBins = 30;
-    const min = Math.min(...flatData);
-    const max = Math.max(...flatData);
-    const binWidth = (max - min) / nBins;
+function drawHistogram(flatData, breaks, x, y, width, height) {
+const nBins = 30;
+const min = Math.min(...flatData);
+const max = Math.max(...flatData);
+const binWidth = (max - min) / nBins;
     
-    const bins = new Array(nBins).fill(0);
-    for (let value of flatData) {
-      const binIdx = Math.min(Math.floor((value - min) / binWidth), nBins - 1);
-      bins[binIdx]++;
-    }
+const bins = new Array(nBins).fill(0);
+for (let value of flatData) {
+const binIdx = Math.min(Math.floor((value - min) / binWidth), nBins - 1);
+bins[binIdx]++;
+}
     
-    const maxCount = Math.max(...bins);
-    const barWidth = width / nBins;
+const maxCount = Math.max(...bins);
+const barWidth = width / nBins;
     
-    // Draw bars
-    ctx.fillStyle = '#BDC3C7';
-    for (let i = 0; i < nBins; i++) {
-      const barHeight = (bins[i] / maxCount) * height;
-      ctx.fillRect(
-        x + i * barWidth,
-        y + height - barHeight,
-        barWidth - 1,
-        barHeight
-      );
-    }
+// Draw bars
+ctx.fillStyle = '#BDC3C7';
+for (let i = 0; i < nBins; i++) {
+const barHeight = (bins[i] / maxCount) * height;
+ctx.fillRect(
+x + i * barWidth,
+y + height - barHeight,
+barWidth - 1,
+barHeight
+);
+}
     
-    // Draw breakpoint lines
-    ctx.strokeStyle = '#E74C3C';
-    ctx.lineWidth = 2;
-    for (let i = 1; i < breaks.length - 1; i++) {
-      const xPos = x + ((breaks[i] - min) / (max - min)) * width;
-      ctx.beginPath();
-      ctx.moveTo(xPos, y);
-      ctx.lineTo(xPos, y + height);
-      ctx.stroke();
-    }
+// Draw breakpoint lines
+ctx.strokeStyle = '#E74C3C';
+ctx.lineWidth = 2;
+for (let i = 1; i < breaks.length - 1; i++) {
+const xPos = x + ((breaks[i] - min) / (max - min)) * width;
+ctx.beginPath();
+ctx.moveTo(xPos, y);
+ctx.lineTo(xPos, y + height);
+ctx.stroke();
+}
     
-    // Label
-    ctx.fillStyle = '#2C3E50';
-    ctx.font = 'bold 12px sans-serif';
-    ctx.fillText('Value Distribution', x + 5, y + 15);
-  }
+// Label
+ctx.fillStyle = '#2C3E50';
+ctx.font = 'bold 12px sans-serif';
+ctx.fillText('Value Distribution', x + 5, y + 15);
+}
   
-  function render() {
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
+function render() {
+ctx.clearRect(0, 0, canvas.width, canvas.height);
     
-    const flatData = data.flat();
-    const breaks = getBreakpoints(flatData, method, nClasses);
+const flatData = data.flat();
+const breaks = getBreakpoints(flatData, method, nClasses);
     
-    drawClassified(data, breaks, 20, 20, 300, 300, 'Classified');
+drawClassified(data, breaks, 20, 20, 300, 300, 'Classified');
     
-    if (showHistogram) {
-      drawHistogram(flatData, breaks, 350, 50, 320, 250);
-    }
+if (showHistogram) {
+drawHistogram(flatData, breaks, 350, 50, 320, 250);
+}
     
-    // Title
-    ctx.fillStyle = '#2C3E50';
-    ctx.font = 'bold 14px sans-serif';
-    ctx.fillText(`Method: ${method}, Classes: ${breaks.length - 1}`, 20, 340);
-  }
+// Title
+ctx.fillStyle = '#2C3E50';
+ctx.font = 'bold 14px sans-serif';
+ctx.fillText(`Method: ${method}, Classes: ${breaks.length - 1}`, 20, 340);
+}
   
-  document.getElementById('class-method').addEventListener('change', (e) => {
-    method = e.target.value;
-    if (method === 'manual') {
-      document.getElementById('manual-controls').style.display = 'block';
-      nClasses = 3;
-      document.getElementById('n-classes').value = 3;
-      document.getElementById('n-classes-value').textContent = 3;
-    } else {
-      document.getElementById('manual-controls').style.display = 'none';
-    }
-    render();
-  });
+document.getElementById('class-method').addEventListener('change', (e) => {
+method = e.target.value;
+if (method === 'manual') {
+document.getElementById('manual-controls').style.display = 'block';
+nClasses = 3;
+document.getElementById('n-classes').value = 3;
+document.getElementById('n-classes-value').textContent = 3;
+} else {
+document.getElementById('manual-controls').style.display = 'none';
+}
+render();
+});
   
-  document.getElementById('n-classes').addEventListener('input', (e) => {
-    nClasses = parseInt(e.target.value);
-    document.getElementById('n-classes-value').textContent = nClasses;
-    render();
-  });
+document.getElementById('n-classes').addEventListener('input', (e) => {
+nClasses = parseInt(e.target.value);
+document.getElementById('n-classes-value').textContent = nClasses;
+render();
+});
   
-  document.getElementById('manual-t1').addEventListener('input', (e) => {
-    manualT1 = parseFloat(e.target.value);
-    document.getElementById('manual-t1-val').textContent = manualT1;
-    render();
-  });
+document.getElementById('manual-t1').addEventListener('input', (e) => {
+manualT1 = parseFloat(e.target.value);
+document.getElementById('manual-t1-val').textContent = manualT1;
+render();
+});
   
-  document.getElementById('manual-t2').addEventListener('input', (e) => {
-    manualT2 = parseFloat(e.target.value);
-    document.getElementById('manual-t2-val').textContent = manualT2;
-    render();
-  });
+document.getElementById('manual-t2').addEventListener('input', (e) => {
+manualT2 = parseFloat(e.target.value);
+document.getElementById('manual-t2-val').textContent = manualT2;
+render();
+});
   
-  document.getElementById('show-histogram').addEventListener('change', (e) => {
-    showHistogram = e.target.checked;
-    render();
-  });
+document.getElementById('show-histogram').addEventListener('change', (e) => {
+showHistogram = e.target.checked;
+render();
+});
   
-  render();
+render();
 })();
 </script>
 <p><strong>Try this:</strong> - <strong>Equal interval:</strong> Fixed-width bins (may be unbalanced) - <strong>Quantile:</strong> Balanced class sizes (breaks at data percentiles) - <strong>Standard deviation:</strong> Statistical bins (assumes normal distribution) - <strong>Manual:</strong> Set your own thresholds (red lines on histogram) - <strong>Adjust class count:</strong> See how distribution changes - <strong>Histogram:</strong> Red lines show where breaks occur in data</p>

@@ -305,298 +305,299 @@ a(T_{\text{air}} - T_{\text{melt}}) &amp; \text{if } T_{\text{air}} &gt; T_{\tex
 <hr>
 <h2 id="computational-implementation" class="anchored">5. Computational Implementation</h2>
 <p>Below is an interactive snow accumulation/melt simulator.</p>
-<div id="snow-sim-viz" class="viz-container">
+<div class="viz-container" id="snow-sim-viz">
 <div class="controls">
-<pre><code>&lt;label&gt;
-  Degree-day factor (mm/°C/day):
-  &lt;input type="range" id="ddf" min="1" max="6" step="0.5" value="3"&gt;
-  &lt;span id="ddf-val"&gt;3.0&lt;/span&gt;
-&lt;/label&gt;
-&lt;label&gt;
-  Elevation (m):
-  &lt;input type="range" id="elevation" min="1000" max="3000" step="200" value="2000"&gt;
-  &lt;span id="elev-val"&gt;2000&lt;/span&gt;
-&lt;/label&gt;
-&lt;label&gt;
-  Winter precipitation (%):
-  &lt;input type="range" id="winter-precip" min="50" max="150" step="10" value="100"&gt;
-  &lt;span id="precip-val"&gt;100&lt;/span&gt;%
-&lt;/label&gt;
-&lt;label&gt;
-  Show components:
-  &lt;input type="checkbox" id="show-precip" checked&gt; Precipitation
-  &lt;input type="checkbox" id="show-melt" checked&gt; Melt
-&lt;/label&gt;</code></pre>
+<label>
+Degree-day factor (mm/°C/day):
+<input type="range" id="ddf" min="1" max="6" step="0.5" value="3">
+<span id="ddf-val">3.0</span>
+</label>
+<label>
+Elevation (m):
+<input type="range" id="elevation" min="1000" max="3000" step="200" value="2000">
+<span id="elev-val">2000</span>
+</label>
+<label>
+Winter precipitation (%):
+<input type="range" id="winter-precip" min="50" max="150" step="10" value="100">
+<span id="precip-val">100</span>%
+</label>
+<label>
+Show components:
+<input type="checkbox" id="show-precip" checked=""> Precipitation
+<input type="checkbox" id="show-melt" checked=""> Melt
+</label>
 </div>
 <div id="snow-sim-canvas-container">
-<pre><code>&lt;canvas id="snow-sim-canvas" width="700" height="400" style="border: 1px solid #ddd;"&gt;&lt;/canvas&gt;</code></pre>
+<canvas id="snow-sim-canvas" width="700" height="400" style="border: 1px solid #ddd;"></canvas>
 </div>
 <div class="snow-sim-info">
-<pre><code>&lt;p&gt;&lt;strong&gt;Peak SWE:&lt;/strong&gt; &lt;span id="peak-swe"&gt;--&lt;/span&gt; mm&lt;/p&gt;
-&lt;p&gt;&lt;strong&gt;Peak date:&lt;/strong&gt; &lt;span id="peak-date"&gt;--&lt;/span&gt;&lt;/p&gt;
-&lt;p&gt;&lt;strong&gt;Snow-free date:&lt;/strong&gt; &lt;span id="snow-free"&gt;--&lt;/span&gt;&lt;/p&gt;
-&lt;p&gt;&lt;strong&gt;Total melt:&lt;/strong&gt; &lt;span id="total-melt"&gt;--&lt;/span&gt; mm&lt;/p&gt;</code></pre>
+<p><strong>Peak SWE:</strong> <span id="peak-swe">--</span> mm</p>
+<p><strong>Peak date:</strong> <span id="peak-date">--</span></p>
+<p><strong>Snow-free date:</strong> <span id="snow-free">--</span></p>
+<p><strong>Total melt:</strong> <span id="total-melt">--</span> mm</p>
 </div>
 </div>
+
 <script type="module">
 await new Promise(resolve => {
-  const checkECharts = () => {
-    if (typeof echarts !== 'undefined') resolve();
-    else setTimeout(checkECharts, 50);
-  };
-  checkECharts();
+const checkECharts = () => {
+if (typeof echarts !== 'undefined') resolve();
+else setTimeout(checkECharts, 50);
+};
+checkECharts();
 });
 
 (function() {
-  const chart = echarts.init(document.getElementById('snow-sim-canvas'));
+const chart = echarts.init(document.getElementById('snow-sim-canvas'));
   
-  let ddf = 3.0;
-  let elevation = 2000;
-  let precipScale = 1.0;
-  let showPrecip = true;
-  let showMelt = true;
+let ddf = 3.0;
+let elevation = 2000;
+let precipScale = 1.0;
+let showPrecip = true;
+let showMelt = true;
   
-  function generateWeatherData(elev, precip) {
-    // Temperature lapse rate: -6.5°C per 1000m
-    const baseTempOffset = (elev - 1500) / 1000 * (-6.5);
+function generateWeatherData(elev, precip) {
+// Temperature lapse rate: -6.5°C per 1000m
+const baseTempOffset = (elev - 1500) / 1000 * (-6.5);
     
-    // Monthly climate (Oct-Sep)
-    const months = [
-      {name: 'Oct', days: 31, baseTemp: 8, basePrecip: 40},
-      {name: 'Nov', days: 30, baseTemp: 2, basePrecip: 60},
-      {name: 'Dec', days: 31, baseTemp: -3, basePrecip: 90},
-      {name: 'Jan', days: 31, baseTemp: -6, basePrecip: 100},
-      {name: 'Feb', days: 28, baseTemp: -4, basePrecip: 90},
-      {name: 'Mar', days: 31, baseTemp: 0, basePrecip: 70},
-      {name: 'Apr', days: 30, baseTemp: 5, basePrecip: 50},
-      {name: 'May', days: 31, baseTemp: 10, basePrecip: 40},
-      {name: 'Jun', days: 30, baseTemp: 15, basePrecip: 30},
-      {name: 'Jul', days: 31, baseTemp: 18, basePrecip: 20},
-      {name: 'Aug', days: 31, baseTemp: 17, basePrecip: 25},
-      {name: 'Sep', days: 30, baseTemp: 12, basePrecip: 35}
-    ];
+// Monthly climate (Oct-Sep)
+const months = [
+{name: 'Oct', days: 31, baseTemp: 8, basePrecip: 40},
+{name: 'Nov', days: 30, baseTemp: 2, basePrecip: 60},
+{name: 'Dec', days: 31, baseTemp: -3, basePrecip: 90},
+{name: 'Jan', days: 31, baseTemp: -6, basePrecip: 100},
+{name: 'Feb', days: 28, baseTemp: -4, basePrecip: 90},
+{name: 'Mar', days: 31, baseTemp: 0, basePrecip: 70},
+{name: 'Apr', days: 30, baseTemp: 5, basePrecip: 50},
+{name: 'May', days: 31, baseTemp: 10, basePrecip: 40},
+{name: 'Jun', days: 30, baseTemp: 15, basePrecip: 30},
+{name: 'Jul', days: 31, baseTemp: 18, basePrecip: 20},
+{name: 'Aug', days: 31, baseTemp: 17, basePrecip: 25},
+{name: 'Sep', days: 30, baseTemp: 12, basePrecip: 35}
+];
     
-    const daily = [];
-    let doy = 0;
+const daily = [];
+let doy = 0;
     
-    for (let month of months) {
-      const temp = month.baseTemp + baseTempOffset;
-      const precipPerDay = (month.basePrecip * precip) / month.days;
+for (let month of months) {
+const temp = month.baseTemp + baseTempOffset;
+const precipPerDay = (month.basePrecip * precip) / month.days;
       
-      for (let day = 0; day < month.days; day++) {
-        // Add daily variation
-        const tempVar = (Math.random() - 0.5) * 6;
-        const precipVar = Math.random() < 0.3 ? precipPerDay * 2 : precipPerDay * 0.5;
+for (let day = 0; day < month.days; day++) {
+// Add daily variation
+const tempVar = (Math.random() - 0.5) * 6;
+const precipVar = Math.random() < 0.3 ? precipPerDay * 2 : precipPerDay * 0.5;
         
-        daily.push({
-          doy: doy,
-          month: month.name,
-          temp: temp + tempVar,
-          precip: precipVar
-        });
+daily.push({
+doy: doy,
+month: month.name,
+temp: temp + tempVar,
+precip: precipVar
+});
         
-        doy++;
-      }
-    }
+doy++;
+}
+}
     
-    return daily;
-  }
+return daily;
+}
   
-  function simulateSWE(weather, degreeDay) {
-    let swe = 0;
-    const results = [];
-    let peakSWE = 0;
-    let peakDate = '';
-    let snowFreeDate = '';
-    let totalMelt = 0;
+function simulateSWE(weather, degreeDay) {
+let swe = 0;
+const results = [];
+let peakSWE = 0;
+let peakDate = '';
+let snowFreeDate = '';
+let totalMelt = 0;
     
-    for (let i = 0; i < weather.length; i++) {
-      const day = weather[i];
+for (let i = 0; i < weather.length; i++) {
+const day = weather[i];
       
-      // Precipitation
-      let snowfall = 0;
-      if (day.temp <= 0) {
-        snowfall = day.precip;
-      }
+// Precipitation
+let snowfall = 0;
+if (day.temp <= 0) {
+snowfall = day.precip;
+}
       
-      // Melt
-      let melt = 0;
-      if (day.temp > 0 && swe > 0) {
-        melt = degreeDay * day.temp;
-        melt = Math.min(melt, swe); // Can't melt more than available
-        totalMelt += melt;
-      }
+// Melt
+let melt = 0;
+if (day.temp > 0 && swe > 0) {
+melt = degreeDay * day.temp;
+melt = Math.min(melt, swe); // Can't melt more than available
+totalMelt += melt;
+}
       
-      // Update SWE
-      swe = swe + snowfall - melt;
+// Update SWE
+swe = swe + snowfall - melt;
       
-      // Track peak
-      if (swe > peakSWE) {
-        peakSWE = swe;
-        peakDate = `${day.month} ${day.doy % 30 + 1}`;
-      }
+// Track peak
+if (swe > peakSWE) {
+peakSWE = swe;
+peakDate = `${day.month} ${day.doy % 30 + 1}`;
+}
       
-      // Track snow-free
-      if (swe === 0 && peakSWE > 0 && !snowFreeDate && i > 180) {
-        snowFreeDate = `${day.month} ${day.doy % 30 + 1}`;
-      }
+// Track snow-free
+if (swe === 0 && peakSWE > 0 && !snowFreeDate && i > 180) {
+snowFreeDate = `${day.month} ${day.doy % 30 + 1}`;
+}
       
-      results.push({
-        doy: day.doy,
-        month: day.month,
-        swe: swe,
-        snowfall: snowfall,
-        melt: melt,
-        temp: day.temp
-      });
-    }
+results.push({
+doy: day.doy,
+month: day.month,
+swe: swe,
+snowfall: snowfall,
+melt: melt,
+temp: day.temp
+});
+}
     
-    return {results, peakSWE, peakDate, snowFreeDate, totalMelt};
-  }
+return {results, peakSWE, peakDate, snowFreeDate, totalMelt};
+}
   
-  function render() {
-    const weather = generateWeatherData(elevation, precipScale);
-    const {results, peakSWE, peakDate, snowFreeDate, totalMelt} = simulateSWE(weather, ddf);
+function render() {
+const weather = generateWeatherData(elevation, precipScale);
+const {results, peakSWE, peakDate, snowFreeDate, totalMelt} = simulateSWE(weather, ddf);
     
-    // Update stats
-    document.getElementById('peak-swe').textContent = peakSWE.toFixed(0);
-    document.getElementById('peak-date').textContent = peakDate;
-    document.getElementById('snow-free').textContent = snowFreeDate || 'Snow persists';
-    document.getElementById('total-melt').textContent = totalMelt.toFixed(0);
+// Update stats
+document.getElementById('peak-swe').textContent = peakSWE.toFixed(0);
+document.getElementById('peak-date').textContent = peakDate;
+document.getElementById('snow-free').textContent = snowFreeDate || 'Snow persists';
+document.getElementById('total-melt').textContent = totalMelt.toFixed(0);
     
-    // Prepare series
-    const series = [];
+// Prepare series
+const series = [];
     
-    // SWE
-    series.push({
-      name: 'SWE',
-      type: 'line',
-      data: results.map(d => [d.doy, d.swe]),
-      areaStyle: {color: 'rgba(224, 242, 254, 0.8)'},
-      lineStyle: {color: '#1976D2', width: 2},
-      smooth: true
-    });
+// SWE
+series.push({
+name: 'SWE',
+type: 'line',
+data: results.map(d => [d.doy, d.swe]),
+areaStyle: {color: 'rgba(224, 242, 254, 0.8)'},
+lineStyle: {color: '#1976D2', width: 2},
+smooth: true
+});
     
-    if (showPrecip) {
-      series.push({
-        name: 'Snowfall',
-        type: 'bar',
-        data: results.map(d => [d.doy, d.snowfall]),
-        itemStyle: {color: '#90CAF9'},
-        barWidth: 2,
-        yAxisIndex: 1
-      });
-    }
+if (showPrecip) {
+series.push({
+name: 'Snowfall',
+type: 'bar',
+data: results.map(d => [d.doy, d.snowfall]),
+itemStyle: {color: '#90CAF9'},
+barWidth: 2,
+yAxisIndex: 1
+});
+}
     
-    if (showMelt) {
-      series.push({
-        name: 'Melt',
-        type: 'bar',
-        data: results.map(d => [d.doy, -d.melt]),
-        itemStyle: {color: '#FFAB91'},
-        barWidth: 2,
-        yAxisIndex: 1
-      });
-    }
+if (showMelt) {
+series.push({
+name: 'Melt',
+type: 'bar',
+data: results.map(d => [d.doy, -d.melt]),
+itemStyle: {color: '#FFAB91'},
+barWidth: 2,
+yAxisIndex: 1
+});
+}
     
-    // Temperature (right axis)
-    series.push({
-      name: 'Temperature',
-      type: 'line',
-      data: results.map(d => [d.doy, d.temp]),
-      lineStyle: {color: '#F44336', width: 1, type: 'dashed'},
-      yAxisIndex: 2,
-      showSymbol: false
-    });
+// Temperature (right axis)
+series.push({
+name: 'Temperature',
+type: 'line',
+data: results.map(d => [d.doy, d.temp]),
+lineStyle: {color: '#F44336', width: 1, type: 'dashed'},
+yAxisIndex: 2,
+showSymbol: false
+});
     
-    const option = {
-      title: {
-        text: 'Snow Accumulation & Melt Simulation',
-        left: 'center'
-      },
-      tooltip: {
-        trigger: 'axis',
-        axisPointer: {type: 'cross'}
-      },
-      legend: {
-        data: series.map(s => s.name),
-        top: 30
-      },
-      grid: {
-        left: 80,
-        right: 80,
-        top: 80,
-        bottom: 60
-      },
-      xAxis: {
-        type: 'value',
-        name: 'Day of Water Year (Oct 1 = 0)',
-        nameLocation: 'middle',
-        nameGap: 30,
-        min: 0,
-        max: 365
-      },
-      yAxis: [
-        {
-          type: 'value',
-          name: 'SWE (mm)',
-          nameLocation: 'middle',
-          nameGap: 50,
-          min: 0
-        },
-        {
-          type: 'value',
-          name: 'Precip/Melt (mm/day)',
-          nameLocation: 'middle',
-          nameGap: 50,
-          position: 'left',
-          offset: 60
-        },
-        {
-          type: 'value',
-          name: 'Temperature (°C)',
-          nameLocation: 'middle',
-          nameGap: 50,
-          position: 'right'
-        }
-      ],
-      series: series
-    };
+const option = {
+title: {
+text: 'Snow Accumulation & Melt Simulation',
+left: 'center'
+},
+tooltip: {
+trigger: 'axis',
+axisPointer: {type: 'cross'}
+},
+legend: {
+data: series.map(s => s.name),
+top: 30
+},
+grid: {
+left: 80,
+right: 80,
+top: 80,
+bottom: 60
+},
+xAxis: {
+type: 'value',
+name: 'Day of Water Year (Oct 1 = 0)',
+nameLocation: 'middle',
+nameGap: 30,
+min: 0,
+max: 365
+},
+yAxis: [
+{
+type: 'value',
+name: 'SWE (mm)',
+nameLocation: 'middle',
+nameGap: 50,
+min: 0
+},
+{
+type: 'value',
+name: 'Precip/Melt (mm/day)',
+nameLocation: 'middle',
+nameGap: 50,
+position: 'left',
+offset: 60
+},
+{
+type: 'value',
+name: 'Temperature (°C)',
+nameLocation: 'middle',
+nameGap: 50,
+position: 'right'
+}
+],
+series: series
+};
     
-    chart.setOption(option, true);
-  }
+chart.setOption(option, true);
+}
   
-  document.getElementById('ddf').addEventListener('input', (e) => {
-    ddf = parseFloat(e.target.value);
-    document.getElementById('ddf-val').textContent = ddf.toFixed(1);
-    render();
-  });
+document.getElementById('ddf').addEventListener('input', (e) => {
+ddf = parseFloat(e.target.value);
+document.getElementById('ddf-val').textContent = ddf.toFixed(1);
+render();
+});
   
-  document.getElementById('elevation').addEventListener('input', (e) => {
-    elevation = parseFloat(e.target.value);
-    document.getElementById('elev-val').textContent = elevation;
-    render();
-  });
+document.getElementById('elevation').addEventListener('input', (e) => {
+elevation = parseFloat(e.target.value);
+document.getElementById('elev-val').textContent = elevation;
+render();
+});
   
-  document.getElementById('winter-precip').addEventListener('input', (e) => {
-    precipScale = parseFloat(e.target.value) / 100;
-    document.getElementById('precip-val').textContent = e.target.value;
-    render();
-  });
+document.getElementById('winter-precip').addEventListener('input', (e) => {
+precipScale = parseFloat(e.target.value) / 100;
+document.getElementById('precip-val').textContent = e.target.value;
+render();
+});
   
-  document.getElementById('show-precip').addEventListener('change', (e) => {
-    showPrecip = e.target.checked;
-    render();
-  });
+document.getElementById('show-precip').addEventListener('change', (e) => {
+showPrecip = e.target.checked;
+render();
+});
   
-  document.getElementById('show-melt').addEventListener('change', (e) => {
-    showMelt = e.target.checked;
-    render();
-  });
+document.getElementById('show-melt').addEventListener('change', (e) => {
+showMelt = e.target.checked;
+render();
+});
   
-  render();
+render();
   
-  window.addEventListener('resize', () => chart.resize());
+window.addEventListener('resize', () => chart.resize());
 })();
 </script>
 <p><strong>Try this:</strong> - <strong>Higher elevation:</strong> Colder temps, later melt, more peak SWE - <strong>Lower elevation:</strong> Earlier melt, less accumulation - <strong>Higher DDF:</strong> Faster melt (more sensitive to temperature) - <strong>More precipitation:</strong> Higher peak SWE, more water stored - <strong>Blue area:</strong> SWE accumulation through season - <strong>Light blue bars:</strong> Snowfall events - <strong>Orange bars (downward):</strong> Daily melt - <strong>Red dashed line:</strong> Temperature (when &gt; 0°C, melt occurs) - Notice: Peak SWE in March/April, rapid melt in May!</p>

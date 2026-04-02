@@ -258,99 +258,98 @@ window.Quarto = {
 <p>Wind damage threat: CATASTROPHIC</p>
 <hr>
 <h2 id="implementation" class="anchored">5. Implementation</h2>
-<div id="downburst-viz" class="viz-container">
+<div class="viz-container" id="downburst-viz">
 <div class="controls">
-<pre><code>&lt;label&gt;
-  Downdraft velocity (m/s):
-  &lt;input type="range" id="downdraft" min="20" max="70" step="5" value="45"&gt;
-  &lt;span id="down-val"&gt;45&lt;/span&gt;
-&lt;/label&gt;
-&lt;label&gt;
-  RIJ strength (m/s):
-  &lt;input type="range" id="rij" min="0" max="50" step="5" value="30"&gt;
-  &lt;span id="rij-val"&gt;30&lt;/span&gt;
-&lt;/label&gt;
-&lt;label&gt;
-  DCAPE (J/kg):
-  &lt;input type="range" id="dcape" min="500" max="2000" step="100" value="1200"&gt;
-  &lt;span id="dcape-val"&gt;1200&lt;/span&gt;
-&lt;/label&gt;
-&lt;div class="downburst-info"&gt;
-  &lt;p&gt;&lt;strong&gt;Surface wind:&lt;/strong&gt; &lt;span id="surf-wind"&gt;--&lt;/span&gt; mph&lt;/p&gt;
-  &lt;p&gt;&lt;strong&gt;Damage category:&lt;/strong&gt; &lt;span id="damage-cat"&gt;--&lt;/span&gt;&lt;/p&gt;
-  &lt;p&gt;&lt;strong&gt;Structural pressure:&lt;/strong&gt; &lt;span id="pressure"&gt;--&lt;/span&gt; lb/ft²&lt;/p&gt;
-&lt;/div&gt;</code></pre>
+<label>
+Downdraft velocity (m/s):
+<input type="range" id="downdraft" min="20" max="70" step="5" value="45">
+<span id="down-val">45</span>
+</label>
+<label>
+RIJ strength (m/s):
+<input type="range" id="rij" min="0" max="50" step="5" value="30">
+<span id="rij-val">30</span>
+</label>
+<label>
+DCAPE (J/kg):
+<input type="range" id="dcape" min="500" max="2000" step="100" value="1200">
+<span id="dcape-val">1200</span>
+</label>
+<div class="downburst-info">
+<p><strong>Surface wind:</strong> <span id="surf-wind">--</span> mph</p>
+<p><strong>Damage category:</strong> <span id="damage-cat">--</span></p>
+<p><strong>Structural pressure:</strong> <span id="pressure">--</span> lb/ft²</p>
 </div>
-<div id="downburst-canvas">
+</div>
+<div id="downburst-canvas"></div>
+</div>
 
-</div>
-</div>
 <script type="module">
 await new Promise(r => {
-  const c = () => typeof echarts !== 'undefined' ? r() : setTimeout(c, 50);
-  c();
+const c = () => typeof echarts !== 'undefined' ? r() : setTimeout(c, 50);
+c();
 });
 
 (function() {
-  const chart = echarts.init(document.getElementById('downburst-canvas'));
-  let downdraft = 45, rij = 30, dcape = 1200;
+const chart = echarts.init(document.getElementById('downburst-canvas'));
+let downdraft = 45, rij = 30, dcape = 1200;
   
-  function calc() {
-    const wTheory = Math.sqrt(2 * dcape * 0.6);
-    const uRIJ = rij * 0.75;
-    const uSurf = downdraft + uRIJ;
-    const uMPH = uSurf * 2.237;
-    const pressure = 0.6 * 1.5 * uSurf * uSurf / 47.88;
+function calc() {
+const wTheory = Math.sqrt(2 * dcape * 0.6);
+const uRIJ = rij * 0.75;
+const uSurf = downdraft + uRIJ;
+const uMPH = uSurf * 2.237;
+const pressure = 0.6 * 1.5 * uSurf * uSurf / 47.88;
     
-    let cat, color;
-    if (uMPH >= 130) { cat = 'Extreme (EF2+)'; color = '#8B0000'; }
-    else if (uMPH >= 100) { cat = 'Severe (EF1)'; color = '#B71C1C'; }
-    else if (uMPH >= 75) { cat = 'Significant'; color = '#F57F17'; }
-    else if (uMPH >= 58) { cat = 'Damaging'; color = '#FFA726'; }
-    else { cat = 'Sub-severe'; color = '#66BB6A'; }
+let cat, color;
+if (uMPH >= 130) { cat = 'Extreme (EF2+)'; color = '#8B0000'; }
+else if (uMPH >= 100) { cat = 'Severe (EF1)'; color = '#B71C1C'; }
+else if (uMPH >= 75) { cat = 'Significant'; color = '#F57F17'; }
+else if (uMPH >= 58) { cat = 'Damaging'; color = '#FFA726'; }
+else { cat = 'Sub-severe'; color = '#66BB6A'; }
     
-    document.getElementById('surf-wind').textContent = uMPH.toFixed(0);
-    document.getElementById('damage-cat').textContent = cat;
-    document.getElementById('damage-cat').style.color = color;
-    document.getElementById('pressure').textContent = pressure.toFixed(0);
+document.getElementById('surf-wind').textContent = uMPH.toFixed(0);
+document.getElementById('damage-cat').textContent = cat;
+document.getElementById('damage-cat').style.color = color;
+document.getElementById('pressure').textContent = pressure.toFixed(0);
     
-    const profile = [];
-    for (let z = 0; z <= 5000; z += 100) {
-      const w = z < 3000 ? downdraft * (1 - z/3000) : 0;
-      profile.push([w, z]);
-    }
+const profile = [];
+for (let z = 0; z <= 5000; z += 100) {
+const w = z < 3000 ? downdraft * (1 - z/3000) : 0;
+profile.push([w, z]);
+}
     
-    chart.setOption({
-      title: {text: 'Downdraft Profile', left: 'center'},
-      grid: {left: 80, right: 40, top: 60, bottom: 60},
-      xAxis: {type: 'value', name: 'Velocity (m/s)', min: -70, max: 0},
-      yAxis: {type: 'value', name: 'Height (m)', max: 5000},
-      series: [{
-        type: 'line',
-        data: profile,
-        lineStyle: {color: color, width: 3},
-        areaStyle: {color: color + '44'}
-      }]
-    });
-  }
+chart.setOption({
+title: {text: 'Downdraft Profile', left: 'center'},
+grid: {left: 80, right: 40, top: 60, bottom: 60},
+xAxis: {type: 'value', name: 'Velocity (m/s)', min: -70, max: 0},
+yAxis: {type: 'value', name: 'Height (m)', max: 5000},
+series: [{
+type: 'line',
+data: profile,
+lineStyle: {color: color, width: 3},
+areaStyle: {color: color + '44'}
+}]
+});
+}
   
-  document.getElementById('downdraft').addEventListener('input', e => {
-    downdraft = +e.target.value;
-    document.getElementById('down-val').textContent = downdraft;
-    calc();
-  });
-  document.getElementById('rij').addEventListener('input', e => {
-    rij = +e.target.value;
-    document.getElementById('rij-val').textContent = rij;
-    calc();
-  });
-  document.getElementById('dcape').addEventListener('input', e => {
-    dcape = +e.target.value;
-    document.getElementById('dcape-val').textContent = dcape;
-    calc();
-  });
+document.getElementById('downdraft').addEventListener('input', e => {
+downdraft = +e.target.value;
+document.getElementById('down-val').textContent = downdraft;
+calc();
+});
+document.getElementById('rij').addEventListener('input', e => {
+rij = +e.target.value;
+document.getElementById('rij-val').textContent = rij;
+calc();
+});
+document.getElementById('dcape').addEventListener('input', e => {
+dcape = +e.target.value;
+document.getElementById('dcape-val').textContent = dcape;
+calc();
+});
   
-  calc();
+calc();
 })();
 </script>
 <hr>

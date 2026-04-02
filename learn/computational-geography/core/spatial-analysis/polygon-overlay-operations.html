@@ -244,312 +244,313 @@ window.Quarto = {
 <hr>
 <h2 id="computational-implementation" class="anchored">5. Computational Implementation</h2>
 <p>Below is an interactive polygon overlay demonstration.</p>
-<div id="overlay-viz" class="viz-container">
+<div class="viz-container" id="overlay-viz">
 <div class="controls">
-<pre><code>&lt;label&gt;
-  Operation:
-  &lt;select id="overlay-op"&gt;
-    &lt;option value="intersection" selected&gt;Intersection (A ∩ B)&lt;/option&gt;
-    &lt;option value="union"&gt;Union (A ∪ B)&lt;/option&gt;
-    &lt;option value="difference"&gt;Difference (A \ B)&lt;/option&gt;
-    &lt;option value="sym-difference"&gt;Symmetric Difference (A ⊕ B)&lt;/option&gt;
-  &lt;/select&gt;
-&lt;/label&gt;
-&lt;label&gt;
-  Show inputs:
-  &lt;input type="checkbox" id="show-inputs" checked&gt;
-&lt;/label&gt;
-&lt;label&gt;
-  Show intersections:
-  &lt;input type="checkbox" id="show-intersections" checked&gt;
-&lt;/label&gt;
-&lt;div class="overlay-info"&gt;
-  &lt;p&gt;&lt;strong&gt;Polygon A area:&lt;/strong&gt; &lt;span id="area-a"&gt;--&lt;/span&gt;&lt;/p&gt;
-  &lt;p&gt;&lt;strong&gt;Polygon B area:&lt;/strong&gt; &lt;span id="area-b"&gt;--&lt;/span&gt;&lt;/p&gt;
-  &lt;p&gt;&lt;strong&gt;Result area:&lt;/strong&gt; &lt;span id="area-result"&gt;--&lt;/span&gt;&lt;/p&gt;
-  &lt;p&gt;&lt;strong&gt;Intersections:&lt;/strong&gt; &lt;span id="intersection-count"&gt;--&lt;/span&gt;&lt;/p&gt;
-&lt;/div&gt;</code></pre>
+<label>
+Operation:
+<select id="overlay-op">
+<option value="intersection" selected="">Intersection (A ∩ B)</option>
+<option value="union">Union (A ∪ B)</option>
+<option value="difference">Difference (A \ B)</option>
+<option value="sym-difference">Symmetric Difference (A ⊕ B)</option>
+</select>
+</label>
+<label>
+Show inputs:
+<input type="checkbox" id="show-inputs" checked="">
+</label>
+<label>
+Show intersections:
+<input type="checkbox" id="show-intersections" checked="">
+</label>
+<div class="overlay-info">
+<p><strong>Polygon A area:</strong> <span id="area-a">--</span></p>
+<p><strong>Polygon B area:</strong> <span id="area-b">--</span></p>
+<p><strong>Result area:</strong> <span id="area-result">--</span></p>
+<p><strong>Intersections:</strong> <span id="intersection-count">--</span></p>
+</div>
 </div>
 <div id="overlay-canvas-container">
-<pre><code>&lt;canvas id="overlay-canvas" width="600" height="500" style="border: 1px solid #ddd;"&gt;&lt;/canvas&gt;</code></pre>
+<canvas id="overlay-canvas" width="600" height="500" style="border: 1px solid #ddd;"></canvas>
 </div>
 </div>
+
 <script type="module">
 (function() {
-  const canvas = document.getElementById('overlay-canvas');
-  const ctx = canvas.getContext('2d');
+const canvas = document.getElementById('overlay-canvas');
+const ctx = canvas.getContext('2d');
   
-  let operation = 'intersection';
-  let showInputs = true;
-  let showIntersections = true;
+let operation = 'intersection';
+let showInputs = true;
+let showIntersections = true;
   
-  // Define two overlapping polygons
-  const polyA = [
-    {x: 100, y: 150}, {x: 300, y: 100}, 
-    {x: 350, y: 300}, {x: 150, y: 350}
-  ];
+// Define two overlapping polygons
+const polyA = [
+{x: 100, y: 150}, {x: 300, y: 100}, 
+{x: 350, y: 300}, {x: 150, y: 350}
+];
   
-  const polyB = [
-    {x: 250, y: 150}, {x: 450, y: 200}, 
-    {x: 400, y: 400}, {x: 200, y: 350}
-  ];
+const polyB = [
+{x: 250, y: 150}, {x: 450, y: 200}, 
+{x: 400, y: 400}, {x: 200, y: 350}
+];
   
-  function cross2D(v1, v2) {
-    return v1.x * v2.y - v1.y * v2.x;
-  }
+function cross2D(v1, v2) {
+return v1.x * v2.y - v1.y * v2.x;
+}
   
-  function subtract(p1, p2) {
-    return {x: p1.x - p2.x, y: p1.y - p2.y};
-  }
+function subtract(p1, p2) {
+return {x: p1.x - p2.x, y: p1.y - p2.y};
+}
   
-  function add(p1, p2) {
-    return {x: p1.x + p2.x, y: p1.y + p2.y};
-  }
+function add(p1, p2) {
+return {x: p1.x + p2.x, y: p1.y + p2.y};
+}
   
-  function scale(p, s) {
-    return {x: p.x * s, y: p.y * s};
-  }
+function scale(p, s) {
+return {x: p.x * s, y: p.y * s};
+}
   
-  function segmentIntersection(p1, p2, q1, q2) {
-    const r = subtract(p2, p1);
-    const s = subtract(q2, q1);
-    const qp = subtract(q1, p1);
+function segmentIntersection(p1, p2, q1, q2) {
+const r = subtract(p2, p1);
+const s = subtract(q2, q1);
+const qp = subtract(q1, p1);
     
-    const rxs = cross2D(r, s);
-    const qpxr = cross2D(qp, r);
+const rxs = cross2D(r, s);
+const qpxr = cross2D(qp, r);
     
-    if (Math.abs(rxs) < 1e-10) {
-      return null; // Parallel or collinear
-    }
+if (Math.abs(rxs) < 1e-10) {
+return null; // Parallel or collinear
+}
     
-    const t = cross2D(qp, s) / rxs;
-    const u = cross2D(qp, r) / rxs;
+const t = cross2D(qp, s) / rxs;
+const u = cross2D(qp, r) / rxs;
     
-    if (t >= 0 && t <= 1 && u >= 0 && u <= 1) {
-      return add(p1, scale(r, t));
-    }
+if (t >= 0 && t <= 1 && u >= 0 && u <= 1) {
+return add(p1, scale(r, t));
+}
     
-    return null;
-  }
+return null;
+}
   
-  function findIntersections(poly1, poly2) {
-    const intersections = [];
+function findIntersections(poly1, poly2) {
+const intersections = [];
     
-    for (let i = 0; i < poly1.length; i++) {
-      const p1 = poly1[i];
-      const p2 = poly1[(i + 1) % poly1.length];
+for (let i = 0; i < poly1.length; i++) {
+const p1 = poly1[i];
+const p2 = poly1[(i + 1) % poly1.length];
       
-      for (let j = 0; j < poly2.length; j++) {
-        const q1 = poly2[j];
-        const q2 = poly2[(j + 1) % poly2.length];
+for (let j = 0; j < poly2.length; j++) {
+const q1 = poly2[j];
+const q2 = poly2[(j + 1) % poly2.length];
         
-        const intersection = segmentIntersection(p1, p2, q1, q2);
-        if (intersection) {
-          intersections.push(intersection);
-        }
-      }
-    }
+const intersection = segmentIntersection(p1, p2, q1, q2);
+if (intersection) {
+intersections.push(intersection);
+}
+}
+}
     
-    return intersections;
-  }
+return intersections;
+}
   
-  function pointInPolygon(point, polygon) {
-    let count = 0;
+function pointInPolygon(point, polygon) {
+let count = 0;
     
-    for (let i = 0; i < polygon.length; i++) {
-      const v1 = polygon[i];
-      const v2 = polygon[(i + 1) % polygon.length];
+for (let i = 0; i < polygon.length; i++) {
+const v1 = polygon[i];
+const v2 = polygon[(i + 1) % polygon.length];
       
-      if ((v1.y <= point.y && point.y < v2.y) ||
-          (v2.y <= point.y && point.y < v1.y)) {
-        const x_intersect = v1.x + (point.y - v1.y) * (v2.x - v1.x) / (v2.y - v1.y);
-        if (x_intersect > point.x) {
-          count++;
-        }
-      }
-    }
+if ((v1.y <= point.y && point.y < v2.y) ||
+(v2.y <= point.y && point.y < v1.y)) {
+const x_intersect = v1.x + (point.y - v1.y) * (v2.x - v1.x) / (v2.y - v1.y);
+if (x_intersect > point.x) {
+count++;
+}
+}
+}
     
-    return (count % 2 === 1);
-  }
+return (count % 2 === 1);
+}
   
-  function polygonArea(polygon) {
-    let area = 0;
-    for (let i = 0; i < polygon.length; i++) {
-      const p1 = polygon[i];
-      const p2 = polygon[(i + 1) % polygon.length];
-      area += p1.x * p2.y - p2.x * p1.y;
-    }
-    return Math.abs(area) / 2;
-  }
+function polygonArea(polygon) {
+let area = 0;
+for (let i = 0; i < polygon.length; i++) {
+const p1 = polygon[i];
+const p2 = polygon[(i + 1) % polygon.length];
+area += p1.x * p2.y - p2.x * p1.y;
+}
+return Math.abs(area) / 2;
+}
   
-  function approximateIntersection(polyA, polyB) {
-    // Simplified: sample points and filter (not true polygon intersection)
-    const result = [];
+function approximateIntersection(polyA, polyB) {
+// Simplified: sample points and filter (not true polygon intersection)
+const result = [];
     
-    // Add vertices of A that are inside B
-    for (let p of polyA) {
-      if (pointInPolygon(p, polyB)) {
-        result.push(p);
-      }
-    }
+// Add vertices of A that are inside B
+for (let p of polyA) {
+if (pointInPolygon(p, polyB)) {
+result.push(p);
+}
+}
     
-    // Add vertices of B that are inside A
-    for (let p of polyB) {
-      if (pointInPolygon(p, polyA)) {
-        result.push(p);
-      }
-    }
+// Add vertices of B that are inside A
+for (let p of polyB) {
+if (pointInPolygon(p, polyA)) {
+result.push(p);
+}
+}
     
-    // Add intersection points
-    const intersections = findIntersections(polyA, polyB);
-    result.push(...intersections);
+// Add intersection points
+const intersections = findIntersections(polyA, polyB);
+result.push(...intersections);
     
-    if (result.length === 0) return null;
+if (result.length === 0) return null;
     
-    // Sort by angle from centroid (crude convex hull)
-    const cx = result.reduce((s, p) => s + p.x, 0) / result.length;
-    const cy = result.reduce((s, p) => s + p.y, 0) / result.length;
+// Sort by angle from centroid (crude convex hull)
+const cx = result.reduce((s, p) => s + p.x, 0) / result.length;
+const cy = result.reduce((s, p) => s + p.y, 0) / result.length;
     
-    result.sort((a, b) => {
-      const angleA = Math.atan2(a.y - cy, a.x - cx);
-      const angleB = Math.atan2(b.y - cy, b.x - cx);
-      return angleA - angleB;
-    });
+result.sort((a, b) => {
+const angleA = Math.atan2(a.y - cy, a.x - cx);
+const angleB = Math.atan2(b.y - cy, b.x - cx);
+return angleA - angleB;
+});
     
-    return result;
-  }
+return result;
+}
   
-  function approximateUnion(polyA, polyB) {
-    // Very simplified: just combine vertices (doesn't handle all cases)
-    const result = [];
+function approximateUnion(polyA, polyB) {
+// Very simplified: just combine vertices (doesn't handle all cases)
+const result = [];
     
-    // Add vertices of A that are outside B
-    for (let p of polyA) {
-      if (!pointInPolygon(p, polyB)) {
-        result.push(p);
-      }
-    }
+// Add vertices of A that are outside B
+for (let p of polyA) {
+if (!pointInPolygon(p, polyB)) {
+result.push(p);
+}
+}
     
-    // Add vertices of B that are outside A
-    for (let p of polyB) {
-      if (!pointInPolygon(p, polyA)) {
-        result.push(p);
-      }
-    }
+// Add vertices of B that are outside A
+for (let p of polyB) {
+if (!pointInPolygon(p, polyA)) {
+result.push(p);
+}
+}
     
-    // Add intersection points
-    const intersections = findIntersections(polyA, polyB);
-    result.push(...intersections);
+// Add intersection points
+const intersections = findIntersections(polyA, polyB);
+result.push(...intersections);
     
-    if (result.length === 0) return null;
+if (result.length === 0) return null;
     
-    // Sort by angle
-    const cx = result.reduce((s, p) => s + p.x, 0) / result.length;
-    const cy = result.reduce((s, p) => s + p.y, 0) / result.length;
+// Sort by angle
+const cx = result.reduce((s, p) => s + p.x, 0) / result.length;
+const cy = result.reduce((s, p) => s + p.y, 0) / result.length;
     
-    result.sort((a, b) => {
-      const angleA = Math.atan2(a.y - cy, a.x - cx);
-      const angleB = Math.atan2(b.y - cy, b.x - cx);
-      return angleA - angleB;
-    });
+result.sort((a, b) => {
+const angleA = Math.atan2(a.y - cy, a.x - cx);
+const angleB = Math.atan2(b.y - cy, b.x - cx);
+return angleA - angleB;
+});
     
-    return result;
-  }
+return result;
+}
   
-  function drawPolygon(polygon, fillColor, strokeColor) {
-    if (!polygon || polygon.length < 3) return;
+function drawPolygon(polygon, fillColor, strokeColor) {
+if (!polygon || polygon.length < 3) return;
     
-    ctx.fillStyle = fillColor;
-    ctx.strokeStyle = strokeColor;
-    ctx.lineWidth = 2;
+ctx.fillStyle = fillColor;
+ctx.strokeStyle = strokeColor;
+ctx.lineWidth = 2;
     
-    ctx.beginPath();
-    ctx.moveTo(polygon[0].x, polygon[0].y);
-    for (let i = 1; i < polygon.length; i++) {
-      ctx.lineTo(polygon[i].x, polygon[i].y);
-    }
-    ctx.closePath();
-    ctx.fill();
-    ctx.stroke();
-  }
+ctx.beginPath();
+ctx.moveTo(polygon[0].x, polygon[0].y);
+for (let i = 1; i < polygon.length; i++) {
+ctx.lineTo(polygon[i].x, polygon[i].y);
+}
+ctx.closePath();
+ctx.fill();
+ctx.stroke();
+}
   
-  function render() {
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
+function render() {
+ctx.clearRect(0, 0, canvas.width, canvas.height);
     
-    let result = null;
-    let resultColor, resultStroke;
+let result = null;
+let resultColor, resultStroke;
     
-    if (operation === 'intersection') {
-      result = approximateIntersection(polyA, polyB);
-      resultColor = 'rgba(155, 89, 182, 0.6)';
-      resultStroke = '#8E44AD';
-    } else if (operation === 'union') {
-      result = approximateUnion(polyA, polyB);
-      resultColor = 'rgba(241, 196, 15, 0.6)';
-      resultStroke = '#F39C12';
-    } else if (operation === 'difference') {
-      // Simplified: just show A without overlapping parts
-      result = polyA.filter(p => !pointInPolygon(p, polyB));
-      if (result.length < 3) result = null;
-      resultColor = 'rgba(231, 76, 60, 0.6)';
-      resultStroke = '#C0392B';
-    } else {
-      // Symmetric difference (XOR)
-      result = null; // Complex, skip for now
-      resultColor = 'rgba(52, 152, 219, 0.6)';
-      resultStroke = '#2980B9';
-    }
+if (operation === 'intersection') {
+result = approximateIntersection(polyA, polyB);
+resultColor = 'rgba(155, 89, 182, 0.6)';
+resultStroke = '#8E44AD';
+} else if (operation === 'union') {
+result = approximateUnion(polyA, polyB);
+resultColor = 'rgba(241, 196, 15, 0.6)';
+resultStroke = '#F39C12';
+} else if (operation === 'difference') {
+// Simplified: just show A without overlapping parts
+result = polyA.filter(p => !pointInPolygon(p, polyB));
+if (result.length < 3) result = null;
+resultColor = 'rgba(231, 76, 60, 0.6)';
+resultStroke = '#C0392B';
+} else {
+// Symmetric difference (XOR)
+result = null; // Complex, skip for now
+resultColor = 'rgba(52, 152, 219, 0.6)';
+resultStroke = '#2980B9';
+}
     
-    // Draw input polygons if requested
-    if (showInputs) {
-      drawPolygon(polyA, 'rgba(52, 152, 219, 0.3)', '#3498DB');
-      drawPolygon(polyB, 'rgba(46, 204, 113, 0.3)', '#27AE60');
-    }
+// Draw input polygons if requested
+if (showInputs) {
+drawPolygon(polyA, 'rgba(52, 152, 219, 0.3)', '#3498DB');
+drawPolygon(polyB, 'rgba(46, 204, 113, 0.3)', '#27AE60');
+}
     
-    // Draw result
-    if (result) {
-      drawPolygon(result, resultColor, resultStroke);
-    }
+// Draw result
+if (result) {
+drawPolygon(result, resultColor, resultStroke);
+}
     
-    // Draw intersections
-    if (showIntersections) {
-      const intersections = findIntersections(polyA, polyB);
-      ctx.fillStyle = '#E74C3C';
-      for (let p of intersections) {
-        ctx.beginPath();
-        ctx.arc(p.x, p.y, 6, 0, 2 * Math.PI);
-        ctx.fill();
-      }
+// Draw intersections
+if (showIntersections) {
+const intersections = findIntersections(polyA, polyB);
+ctx.fillStyle = '#E74C3C';
+for (let p of intersections) {
+ctx.beginPath();
+ctx.arc(p.x, p.y, 6, 0, 2 * Math.PI);
+ctx.fill();
+}
       
-      document.getElementById('intersection-count').textContent = intersections.length;
-    }
+document.getElementById('intersection-count').textContent = intersections.length;
+}
     
-    // Calculate areas
-    const areaA = polygonArea(polyA);
-    const areaB = polygonArea(polyB);
-    const areaResult = result ? polygonArea(result) : 0;
+// Calculate areas
+const areaA = polygonArea(polyA);
+const areaB = polygonArea(polyB);
+const areaResult = result ? polygonArea(result) : 0;
     
-    document.getElementById('area-a').textContent = areaA.toFixed(0);
-    document.getElementById('area-b').textContent = areaB.toFixed(0);
-    document.getElementById('area-result').textContent = areaResult.toFixed(0);
-  }
+document.getElementById('area-a').textContent = areaA.toFixed(0);
+document.getElementById('area-b').textContent = areaB.toFixed(0);
+document.getElementById('area-result').textContent = areaResult.toFixed(0);
+}
   
-  document.getElementById('overlay-op').addEventListener('change', (e) => {
-    operation = e.target.value;
-    render();
-  });
+document.getElementById('overlay-op').addEventListener('change', (e) => {
+operation = e.target.value;
+render();
+});
   
-  document.getElementById('show-inputs').addEventListener('change', (e) => {
-    showInputs = e.target.checked;
-    render();
-  });
+document.getElementById('show-inputs').addEventListener('change', (e) => {
+showInputs = e.target.checked;
+render();
+});
   
-  document.getElementById('show-intersections').addEventListener('change', (e) => {
-    showIntersections = e.target.checked;
-    render();
-  });
+document.getElementById('show-intersections').addEventListener('change', (e) => {
+showIntersections = e.target.checked;
+render();
+});
   
-  render();
+render();
 })();
 </script>
 <p><strong>Try this:</strong> - <strong>Intersection:</strong> Purple area where polygons overlap (A AND B) - <strong>Union:</strong> Yellow area covered by either polygon (A OR B) - <strong>Difference:</strong> Red area in A but not in B (A NOT B) - <strong>Show intersections:</strong> Red dots where edges cross - <strong>Hide inputs:</strong> See only the result polygon - Notice: Area(A ∩ B) + Area(A &nbsp;B) + Area(B &nbsp;A) = Area(A ∪ B)</p>

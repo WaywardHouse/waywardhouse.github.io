@@ -325,371 +325,372 @@ window.Quarto = {
 <hr>
 <h2 id="computational-implementation" class="anchored">5. Computational Implementation</h2>
 <p>Below is an interactive time series analyzer.</p>
-<div id="timeseries-viz" class="viz-container">
+<div class="viz-container" id="timeseries-viz">
 <div class="controls">
-<pre><code>&lt;label&gt;
-  Location type:
-  &lt;select id="location-type"&gt;
-    &lt;option value="temperate" selected&gt;Temperate Forest&lt;/option&gt;
-    &lt;option value="grassland"&gt;Grassland&lt;/option&gt;
-    &lt;option value="tropical"&gt;Tropical (Evergreen)&lt;/option&gt;
-    &lt;option value="cropland"&gt;Cropland (Double-crop)&lt;/option&gt;
-  &lt;/select&gt;
-&lt;/label&gt;
-&lt;label&gt;
-  Show components:
-  &lt;input type="checkbox" id="show-trend" checked&gt; Trend
-  &lt;input type="checkbox" id="show-seasonal" checked&gt; Seasonal
-  &lt;input type="checkbox" id="show-smoothed"&gt; Smoothed
-&lt;/label&gt;
-&lt;label&gt;
-  Phenology threshold:
-  &lt;input type="range" id="pheno-threshold" min="0.2" max="0.6" step="0.05" value="0.4"&gt;
-  &lt;span id="pheno-threshold-val"&gt;0.40&lt;/span&gt;
-&lt;/label&gt;
-&lt;div class="timeseries-info"&gt;
-  &lt;p&gt;&lt;strong&gt;Start of Season:&lt;/strong&gt; &lt;span id="sos-doy"&gt;--&lt;/span&gt;&lt;/p&gt;
-  &lt;p&gt;&lt;strong&gt;Peak of Season:&lt;/strong&gt; &lt;span id="pos-doy"&gt;--&lt;/span&gt;&lt;/p&gt;
-  &lt;p&gt;&lt;strong&gt;End of Season:&lt;/strong&gt; &lt;span id="eos-doy"&gt;--&lt;/span&gt;&lt;/p&gt;
-  &lt;p&gt;&lt;strong&gt;Growing Season Length:&lt;/strong&gt; &lt;span id="gsl-days"&gt;--&lt;/span&gt; days&lt;/p&gt;
-  &lt;p&gt;&lt;strong&gt;Trend:&lt;/strong&gt; &lt;span id="trend-value"&gt;--&lt;/span&gt; NDVI/year&lt;/p&gt;
-&lt;/div&gt;</code></pre>
+<label>
+Location type:
+<select id="location-type">
+<option value="temperate" selected="">Temperate Forest</option>
+<option value="grassland">Grassland</option>
+<option value="tropical">Tropical (Evergreen)</option>
+<option value="cropland">Cropland (Double-crop)</option>
+</select>
+</label>
+<label>
+Show components:
+<input type="checkbox" id="show-trend" checked=""> Trend
+<input type="checkbox" id="show-seasonal" checked=""> Seasonal
+<input type="checkbox" id="show-smoothed"> Smoothed
+</label>
+<label>
+Phenology threshold:
+<input type="range" id="pheno-threshold" min="0.2" max="0.6" step="0.05" value="0.4">
+<span id="pheno-threshold-val">0.40</span>
+</label>
+<div class="timeseries-info">
+<p><strong>Start of Season:</strong> <span id="sos-doy">--</span></p>
+<p><strong>Peak of Season:</strong> <span id="pos-doy">--</span></p>
+<p><strong>End of Season:</strong> <span id="eos-doy">--</span></p>
+<p><strong>Growing Season Length:</strong> <span id="gsl-days">--</span> days</p>
+<p><strong>Trend:</strong> <span id="trend-value">--</span> NDVI/year</p>
+</div>
 </div>
 <div id="timeseries-canvas-container">
-<pre><code>&lt;canvas id="timeseries-canvas" width="700" height="400" style="border: 1px solid #ddd;"&gt;&lt;/canvas&gt;</code></pre>
+<canvas id="timeseries-canvas" width="700" height="400" style="border: 1px solid #ddd;"></canvas>
 </div>
 </div>
+
 <script type="module">
 await new Promise(resolve => {
-  const checkECharts = () => {
-    if (typeof echarts !== 'undefined') resolve();
-    else setTimeout(checkECharts, 50);
-  };
-  checkECharts();
+const checkECharts = () => {
+if (typeof echarts !== 'undefined') resolve();
+else setTimeout(checkECharts, 50);
+};
+checkECharts();
 });
 
 (function() {
-  const chart = echarts.init(document.getElementById('timeseries-canvas'));
+const chart = echarts.init(document.getElementById('timeseries-canvas'));
   
-  let locationType = 'temperate';
-  let showTrend = true;
-  let showSeasonal = true;
-  let showSmoothed = false;
-  let phenoThreshold = 0.4;
+let locationType = 'temperate';
+let showTrend = true;
+let showSeasonal = true;
+let showSmoothed = false;
+let phenoThreshold = 0.4;
   
-  function generateTimeSeries(type, years = 3) {
-    const data = [];
-    const doy = [];
+function generateTimeSeries(type, years = 3) {
+const data = [];
+const doy = [];
     
-    for (let year = 0; year < years; year++) {
-      for (let day = 1; day <= 365; day += 16) { // 16-day composites
-        const t = year * 365 + day;
-        const yearFrac = (day / 365);
+for (let year = 0; year < years; year++) {
+for (let day = 1; day <= 365; day += 16) { // 16-day composites
+const t = year * 365 + day;
+const yearFrac = (day / 365);
         
-        let seasonal, trend, noise, amplitude, phase;
+let seasonal, trend, noise, amplitude, phase;
         
-        if (type === 'temperate') {
-          // Single peak, strong seasonality
-          amplitude = 0.35;
-          phase = 0.4; // Peak in summer
-          trend = 0.0005 * t / 365; // Slight greening
-          seasonal = amplitude * Math.sin(2 * Math.PI * yearFrac + phase);
-          noise = (Math.random() - 0.5) * 0.05;
+if (type === 'temperate') {
+// Single peak, strong seasonality
+amplitude = 0.35;
+phase = 0.4; // Peak in summer
+trend = 0.0005 * t / 365; // Slight greening
+seasonal = amplitude * Math.sin(2 * Math.PI * yearFrac + phase);
+noise = (Math.random() - 0.5) * 0.05;
           
-        } else if (type === 'grassland') {
-          // Single peak, moderate amplitude
-          amplitude = 0.25;
-          phase = 0.3;
-          trend = -0.0002 * t / 365; // Slight browning
-          seasonal = amplitude * Math.sin(2 * Math.PI * yearFrac + phase);
-          noise = (Math.random() - 0.5) * 0.08;
+} else if (type === 'grassland') {
+// Single peak, moderate amplitude
+amplitude = 0.25;
+phase = 0.3;
+trend = -0.0002 * t / 365; // Slight browning
+seasonal = amplitude * Math.sin(2 * Math.PI * yearFrac + phase);
+noise = (Math.random() - 0.5) * 0.08;
           
-        } else if (type === 'tropical') {
-          // Evergreen, minimal seasonality
-          amplitude = 0.08;
-          phase = 0;
-          trend = 0;
-          seasonal = amplitude * Math.sin(2 * Math.PI * yearFrac + phase);
-          noise = (Math.random() - 0.5) * 0.03;
+} else if (type === 'tropical') {
+// Evergreen, minimal seasonality
+amplitude = 0.08;
+phase = 0;
+trend = 0;
+seasonal = amplitude * Math.sin(2 * Math.PI * yearFrac + phase);
+noise = (Math.random() - 0.5) * 0.03;
           
-        } else { // cropland
-          // Double-crop, two peaks per year
-          amplitude = 0.30;
-          phase = 0.2;
-          trend = 0.0003 * t / 365;
-          seasonal = amplitude * (Math.sin(2 * Math.PI * yearFrac + phase) + 
-                                  0.5 * Math.sin(4 * Math.PI * yearFrac + 0.5));
-          noise = (Math.random() - 0.5) * 0.06;
-        }
+} else { // cropland
+// Double-crop, two peaks per year
+amplitude = 0.30;
+phase = 0.2;
+trend = 0.0003 * t / 365;
+seasonal = amplitude * (Math.sin(2 * Math.PI * yearFrac + phase) + 
+0.5 * Math.sin(4 * Math.PI * yearFrac + 0.5));
+noise = (Math.random() - 0.5) * 0.06;
+}
         
-        const baseline = 0.45;
-        const ndvi = baseline + trend + seasonal + noise;
+const baseline = 0.45;
+const ndvi = baseline + trend + seasonal + noise;
         
-        data.push({
-          t: t,
-          doy: day,
-          year: year,
-          ndvi: Math.max(0, Math.min(1, ndvi)),
-          trend: baseline + trend,
-          seasonal: seasonal,
-          noise: noise
-        });
-        doy.push(day);
-      }
-    }
+data.push({
+t: t,
+doy: day,
+year: year,
+ndvi: Math.max(0, Math.min(1, ndvi)),
+trend: baseline + trend,
+seasonal: seasonal,
+noise: noise
+});
+doy.push(day);
+}
+}
     
-    return data;
-  }
+return data;
+}
   
-  function extractPhenology(data, threshold) {
-    // Use last complete year
-    const lastYear = Math.max(...data.map(d => d.year));
-    const yearData = data.filter(d => d.year === lastYear);
+function extractPhenology(data, threshold) {
+// Use last complete year
+const lastYear = Math.max(...data.map(d => d.year));
+const yearData = data.filter(d => d.year === lastYear);
     
-    if (yearData.length === 0) return null;
+if (yearData.length === 0) return null;
     
-    // Find SOS (first crossing above threshold)
-    let sos = null;
-    for (let i = 0; i < yearData.length; i++) {
-      if (yearData[i].ndvi > threshold) {
-        sos = yearData[i].doy;
-        break;
-      }
-    }
+// Find SOS (first crossing above threshold)
+let sos = null;
+for (let i = 0; i < yearData.length; i++) {
+if (yearData[i].ndvi > threshold) {
+sos = yearData[i].doy;
+break;
+}
+}
     
-    // Find POS (maximum NDVI)
-    let maxNDVI = -Infinity;
-    let pos = null;
-    for (let d of yearData) {
-      if (d.ndvi > maxNDVI) {
-        maxNDVI = d.ndvi;
-        pos = d.doy;
-      }
-    }
+// Find POS (maximum NDVI)
+let maxNDVI = -Infinity;
+let pos = null;
+for (let d of yearData) {
+if (d.ndvi > maxNDVI) {
+maxNDVI = d.ndvi;
+pos = d.doy;
+}
+}
     
-    // Find EOS (last crossing above threshold)
-    let eos = null;
-    for (let i = yearData.length - 1; i >= 0; i--) {
-      if (yearData[i].ndvi > threshold) {
-        eos = yearData[i].doy;
-        break;
-      }
-    }
+// Find EOS (last crossing above threshold)
+let eos = null;
+for (let i = yearData.length - 1; i >= 0; i--) {
+if (yearData[i].ndvi > threshold) {
+eos = yearData[i].doy;
+break;
+}
+}
     
-    const gsl = (sos && eos) ? (eos - sos) : null;
+const gsl = (sos && eos) ? (eos - sos) : null;
     
-    return {sos, pos, eos, gsl};
-  }
+return {sos, pos, eos, gsl};
+}
   
-  function computeTrend(data) {
-    const n = data.length;
-    const meanT = data.reduce((s, d) => s + d.t, 0) / n;
-    const meanY = data.reduce((s, d) => s + d.ndvi, 0) / n;
+function computeTrend(data) {
+const n = data.length;
+const meanT = data.reduce((s, d) => s + d.t, 0) / n;
+const meanY = data.reduce((s, d) => s + d.ndvi, 0) / n;
     
-    let num = 0, den = 0;
-    for (let d of data) {
-      num += (d.t - meanT) * (d.ndvi - meanY);
-      den += (d.t - meanT) ** 2;
-    }
+let num = 0, den = 0;
+for (let d of data) {
+num += (d.t - meanT) * (d.ndvi - meanY);
+den += (d.t - meanT) ** 2;
+}
     
-    const slope = num / den;
-    // Convert to NDVI/year
-    const slopePerYear = slope * 365;
+const slope = num / den;
+// Convert to NDVI/year
+const slopePerYear = slope * 365;
     
-    return slopePerYear;
-  }
+return slopePerYear;
+}
   
-  function movingAverage(data, window = 3) {
-    const smoothed = [];
-    const half = Math.floor(window / 2);
+function movingAverage(data, window = 3) {
+const smoothed = [];
+const half = Math.floor(window / 2);
     
-    for (let i = 0; i < data.length; i++) {
-      let sum = 0, count = 0;
-      for (let j = Math.max(0, i - half); j <= Math.min(data.length - 1, i + half); j++) {
-        sum += data[j].ndvi;
-        count++;
-      }
-      smoothed.push(sum / count);
-    }
+for (let i = 0; i < data.length; i++) {
+let sum = 0, count = 0;
+for (let j = Math.max(0, i - half); j <= Math.min(data.length - 1, i + half); j++) {
+sum += data[j].ndvi;
+count++;
+}
+smoothed.push(sum / count);
+}
     
-    return smoothed;
-  }
+return smoothed;
+}
   
-  function render() {
-    const data = generateTimeSeries(locationType, 3);
-    const smoothed = movingAverage(data, 3);
+function render() {
+const data = generateTimeSeries(locationType, 3);
+const smoothed = movingAverage(data, 3);
     
-    const pheno = extractPhenology(data, phenoThreshold);
-    const trendSlope = computeTrend(data);
+const pheno = extractPhenology(data, phenoThreshold);
+const trendSlope = computeTrend(data);
     
-    // Update display
-    document.getElementById('sos-doy').textContent = pheno.sos || '--';
-    document.getElementById('pos-doy').textContent = pheno.pos || '--';
-    document.getElementById('eos-doy').textContent = pheno.eos || '--';
-    document.getElementById('gsl-days').textContent = pheno.gsl || '--';
-    document.getElementById('trend-value').textContent = trendSlope.toFixed(4);
+// Update display
+document.getElementById('sos-doy').textContent = pheno.sos || '--';
+document.getElementById('pos-doy').textContent = pheno.pos || '--';
+document.getElementById('eos-doy').textContent = pheno.eos || '--';
+document.getElementById('gsl-days').textContent = pheno.gsl || '--';
+document.getElementById('trend-value').textContent = trendSlope.toFixed(4);
     
-    // Prepare series
-    const series = [];
+// Prepare series
+const series = [];
     
-    // Observed NDVI
-    series.push({
-      name: 'Observed NDVI',
-      type: 'scatter',
-      data: data.map(d => [d.t, d.ndvi]),
-      symbolSize: 4,
-      itemStyle: {color: '#95A5A6'}
-    });
+// Observed NDVI
+series.push({
+name: 'Observed NDVI',
+type: 'scatter',
+data: data.map(d => [d.t, d.ndvi]),
+symbolSize: 4,
+itemStyle: {color: '#95A5A6'}
+});
     
-    if (showSmoothed) {
-      series.push({
-        name: 'Smoothed',
-        type: 'line',
-        data: data.map((d, i) => [d.t, smoothed[i]]),
-        lineStyle: {color: '#3498DB', width: 2},
-        showSymbol: false
-      });
-    }
+if (showSmoothed) {
+series.push({
+name: 'Smoothed',
+type: 'line',
+data: data.map((d, i) => [d.t, smoothed[i]]),
+lineStyle: {color: '#3498DB', width: 2},
+showSymbol: false
+});
+}
     
-    if (showTrend) {
-      series.push({
-        name: 'Trend',
-        type: 'line',
-        data: data.map(d => [d.t, d.trend]),
-        lineStyle: {color: '#E74C3C', width: 2, type: 'dashed'},
-        showSymbol: false
-      });
-    }
+if (showTrend) {
+series.push({
+name: 'Trend',
+type: 'line',
+data: data.map(d => [d.t, d.trend]),
+lineStyle: {color: '#E74C3C', width: 2, type: 'dashed'},
+showSymbol: false
+});
+}
     
-    if (showSeasonal) {
-      series.push({
-        name: 'Seasonal Component',
-        type: 'line',
-        data: data.map(d => [d.t, d.trend + d.seasonal]),
-        lineStyle: {color: '#2ECC71', width: 2},
-        showSymbol: false
-      });
-    }
+if (showSeasonal) {
+series.push({
+name: 'Seasonal Component',
+type: 'line',
+data: data.map(d => [d.t, d.trend + d.seasonal]),
+lineStyle: {color: '#2ECC71', width: 2},
+showSymbol: false
+});
+}
     
-    // Threshold line
-    series.push({
-      name: 'Phenology Threshold',
-      type: 'line',
-      data: [[0, phenoThreshold], [data[data.length-1].t, phenoThreshold]],
-      lineStyle: {color: '#F39C12', width: 1, type: 'dotted'},
-      showSymbol: false
-    });
+// Threshold line
+series.push({
+name: 'Phenology Threshold',
+type: 'line',
+data: [[0, phenoThreshold], [data[data.length-1].t, phenoThreshold]],
+lineStyle: {color: '#F39C12', width: 1, type: 'dotted'},
+showSymbol: false
+});
     
-    // Mark phenology points (last year)
-    if (pheno.sos) {
-      const lastYear = Math.max(...data.map(d => d.year));
-      const sosPoint = data.find(d => d.year === lastYear && d.doy >= pheno.sos);
-      const posPoint = data.find(d => d.year === lastYear && d.doy >= pheno.pos);
-      const eosPoint = data.find(d => d.year === lastYear && d.doy >= pheno.eos);
+// Mark phenology points (last year)
+if (pheno.sos) {
+const lastYear = Math.max(...data.map(d => d.year));
+const sosPoint = data.find(d => d.year === lastYear && d.doy >= pheno.sos);
+const posPoint = data.find(d => d.year === lastYear && d.doy >= pheno.pos);
+const eosPoint = data.find(d => d.year === lastYear && d.doy >= pheno.eos);
       
-      if (sosPoint) {
-        series.push({
-          name: 'SOS',
-          type: 'scatter',
-          data: [[sosPoint.t, sosPoint.ndvi]],
-          symbolSize: 10,
-          itemStyle: {color: '#27AE60'},
-          label: {show: true, formatter: 'SOS', position: 'top'}
-        });
-      }
+if (sosPoint) {
+series.push({
+name: 'SOS',
+type: 'scatter',
+data: [[sosPoint.t, sosPoint.ndvi]],
+symbolSize: 10,
+itemStyle: {color: '#27AE60'},
+label: {show: true, formatter: 'SOS', position: 'top'}
+});
+}
       
-      if (posPoint) {
-        series.push({
-          name: 'POS',
-          type: 'scatter',
-          data: [[posPoint.t, posPoint.ndvi]],
-          symbolSize: 10,
-          itemStyle: {color: '#8E44AD'},
-          label: {show: true, formatter: 'POS', position: 'top'}
-        });
-      }
+if (posPoint) {
+series.push({
+name: 'POS',
+type: 'scatter',
+data: [[posPoint.t, posPoint.ndvi]],
+symbolSize: 10,
+itemStyle: {color: '#8E44AD'},
+label: {show: true, formatter: 'POS', position: 'top'}
+});
+}
       
-      if (eosPoint) {
-        series.push({
-          name: 'EOS',
-          type: 'scatter',
-          data: [[eosPoint.t, eosPoint.ndvi]],
-          symbolSize: 10,
-          itemStyle: {color: '#E67E22'},
-          label: {show: true, formatter: 'EOS', position: 'top'}
-        });
-      }
-    }
+if (eosPoint) {
+series.push({
+name: 'EOS',
+type: 'scatter',
+data: [[eosPoint.t, eosPoint.ndvi]],
+symbolSize: 10,
+itemStyle: {color: '#E67E22'},
+label: {show: true, formatter: 'EOS', position: 'top'}
+});
+}
+}
     
-    const option = {
-      title: {
-        text: `NDVI Time Series (${locationType})`,
-        left: 'center'
-      },
-      tooltip: {
-        trigger: 'axis',
-        axisPointer: {type: 'cross'}
-      },
-      legend: {
-        data: series.map(s => s.name),
-        top: 30,
-        type: 'scroll'
-      },
-      grid: {
-        left: 80,
-        right: 40,
-        top: 80,
-        bottom: 60
-      },
-      xAxis: {
-        type: 'value',
-        name: 'Days from start',
-        nameLocation: 'middle',
-        nameGap: 30
-      },
-      yAxis: {
-        type: 'value',
-        name: 'NDVI',
-        nameLocation: 'middle',
-        nameGap: 50,
-        min: 0,
-        max: 1
-      },
-      series: series
-    };
+const option = {
+title: {
+text: `NDVI Time Series (${locationType})`,
+left: 'center'
+},
+tooltip: {
+trigger: 'axis',
+axisPointer: {type: 'cross'}
+},
+legend: {
+data: series.map(s => s.name),
+top: 30,
+type: 'scroll'
+},
+grid: {
+left: 80,
+right: 40,
+top: 80,
+bottom: 60
+},
+xAxis: {
+type: 'value',
+name: 'Days from start',
+nameLocation: 'middle',
+nameGap: 30
+},
+yAxis: {
+type: 'value',
+name: 'NDVI',
+nameLocation: 'middle',
+nameGap: 50,
+min: 0,
+max: 1
+},
+series: series
+};
     
-    chart.setOption(option, true);
-  }
+chart.setOption(option, true);
+}
   
-  document.getElementById('location-type').addEventListener('change', (e) => {
-    locationType = e.target.value;
-    render();
-  });
+document.getElementById('location-type').addEventListener('change', (e) => {
+locationType = e.target.value;
+render();
+});
   
-  document.getElementById('show-trend').addEventListener('change', (e) => {
-    showTrend = e.target.checked;
-    render();
-  });
+document.getElementById('show-trend').addEventListener('change', (e) => {
+showTrend = e.target.checked;
+render();
+});
   
-  document.getElementById('show-seasonal').addEventListener('change', (e) => {
-    showSeasonal = e.target.checked;
-    render();
-  });
+document.getElementById('show-seasonal').addEventListener('change', (e) => {
+showSeasonal = e.target.checked;
+render();
+});
   
-  document.getElementById('show-smoothed').addEventListener('change', (e) => {
-    showSmoothed = e.target.checked;
-    render();
-  });
+document.getElementById('show-smoothed').addEventListener('change', (e) => {
+showSmoothed = e.target.checked;
+render();
+});
   
-  document.getElementById('pheno-threshold').addEventListener('input', (e) => {
-    phenoThreshold = parseFloat(e.target.value);
-    document.getElementById('pheno-threshold-val').textContent = phenoThreshold.toFixed(2);
-    render();
-  });
+document.getElementById('pheno-threshold').addEventListener('input', (e) => {
+phenoThreshold = parseFloat(e.target.value);
+document.getElementById('pheno-threshold-val').textContent = phenoThreshold.toFixed(2);
+render();
+});
   
-  render();
+render();
   
-  window.addEventListener('resize', () => chart.resize());
+window.addEventListener('resize', () => chart.resize());
 })();
 </script>
 <p><strong>Try this:</strong> - <strong>Temperate forest:</strong> Strong seasonal cycle, single peak - <strong>Grassland:</strong> Similar but smaller amplitude - <strong>Tropical evergreen:</strong> Minimal seasonality (always green) - <strong>Cropland:</strong> Double-crop pattern (two peaks per year!) - <strong>Show trend:</strong> Red dashed line (long-term change) - <strong>Show seasonal:</strong> Green line (trend + seasonality) - <strong>Show smoothed:</strong> Blue line (noise reduced) - <strong>Adjust threshold:</strong> Changes SOS/EOS detection - <strong>Phenology markers:</strong> Green (SOS), Purple (POS), Orange (EOS)</p>

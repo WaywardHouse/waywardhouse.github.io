@@ -290,200 +290,201 @@ DOD 5-6: 136-165 mph → <strong>EF3</strong></p>
 <hr>
 <h2 id="computational-implementation" class="anchored">5. Computational Implementation</h2>
 <p>Below is an interactive tornado vortex simulator.</p>
-<div id="tornado-viz" class="viz-container">
+<div class="viz-container" id="tornado-viz">
 <div class="controls">
-<pre><code>&lt;label&gt;
-  Max wind speed (mph):
-  &lt;input type="range" id="max-wind" min="65" max="250" step="5" value="140"&gt;
-  &lt;span id="wind-val"&gt;140&lt;/span&gt;
-&lt;/label&gt;
-&lt;label&gt;
-  Radius of max wind (m):
-  &lt;input type="range" id="rmw" min="50" max="500" step="25" value="200"&gt;
-  &lt;span id="rmw-val"&gt;200&lt;/span&gt;
-&lt;/label&gt;
-&lt;label&gt;
-  Vortex profile:
-  &lt;select id="profile"&gt;
-    &lt;option value="rankine" selected&gt;Rankine&lt;/option&gt;
-    &lt;option value="modified"&gt;Modified (real)&lt;/option&gt;
-  &lt;/select&gt;
-&lt;/label&gt;
-&lt;div class="tornado-info"&gt;
-  &lt;p&gt;&lt;strong&gt;EF Rating:&lt;/strong&gt; &lt;span id="ef-rating"&gt;--&lt;/span&gt;&lt;/p&gt;
-  &lt;p&gt;&lt;strong&gt;Pressure deficit:&lt;/strong&gt; &lt;span id="pressure-deficit"&gt;--&lt;/span&gt; mb&lt;/p&gt;
-  &lt;p&gt;&lt;strong&gt;Core vorticity:&lt;/strong&gt; &lt;span id="vorticity"&gt;--&lt;/span&gt; s⁻¹&lt;/p&gt;
-  &lt;p&gt;&lt;strong&gt;Damage range:&lt;/strong&gt; &lt;span id="damage-range"&gt;--&lt;/span&gt;&lt;/p&gt;
-&lt;/div&gt;</code></pre>
+<label>
+Max wind speed (mph):
+<input type="range" id="max-wind" min="65" max="250" step="5" value="140">
+<span id="wind-val">140</span>
+</label>
+<label>
+Radius of max wind (m):
+<input type="range" id="rmw" min="50" max="500" step="25" value="200">
+<span id="rmw-val">200</span>
+</label>
+<label>
+Vortex profile:
+<select id="profile">
+<option value="rankine" selected="">Rankine</option>
+<option value="modified">Modified (real)</option>
+</select>
+</label>
+<div class="tornado-info">
+<p><strong>EF Rating:</strong> <span id="ef-rating">--</span></p>
+<p><strong>Pressure deficit:</strong> <span id="pressure-deficit">--</span> mb</p>
+<p><strong>Core vorticity:</strong> <span id="vorticity">--</span> s⁻¹</p>
+<p><strong>Damage range:</strong> <span id="damage-range">--</span></p>
+</div>
 </div>
 <div id="tornado-canvas-container">
-<pre><code>&lt;canvas id="tornado-canvas" width="700" height="400" style="border: 1px solid #ddd;"&gt;&lt;/canvas&gt;</code></pre>
+<canvas id="tornado-canvas" width="700" height="400" style="border: 1px solid #ddd;"></canvas>
 </div>
 </div>
+
 <script type="module">
 await new Promise(resolve => {
-  const checkECharts = () => {
-    if (typeof echarts !== 'undefined') resolve();
-    else setTimeout(checkECharts, 50);
-  };
-  checkECharts();
+const checkECharts = () => {
+if (typeof echarts !== 'undefined') resolve();
+else setTimeout(checkECharts, 50);
+};
+checkECharts();
 });
 
 (function() {
-  const chart = echarts.init(document.getElementById('tornado-canvas'));
+const chart = echarts.init(document.getElementById('tornado-canvas'));
   
-  let maxWind = 140; // mph
-  let rmw = 200; // meters
-  let profile = 'rankine';
+let maxWind = 140; // mph
+let rmw = 200; // meters
+let profile = 'rankine';
   
-  function getEFRating(wind) {
-    if (wind >= 200) return {ef: 'EF5', color: '#8B0000', damage: 'Incredible'};
-    if (wind >= 166) return {ef: 'EF4', color: '#B71C1C', damage: 'Devastating'};
-    if (wind >= 136) return {ef: 'EF3', color: '#E64A19', damage: 'Severe'};
-    if (wind >= 111) return {ef: 'EF2', color: '#F57F17', damage: 'Considerable'};
-    if (wind >= 86) return {ef: 'EF1', color: '#FFA726', damage: 'Moderate'};
-    return {ef: 'EF0', color: '#66BB6A', damage: 'Light'};
-  }
+function getEFRating(wind) {
+if (wind >= 200) return {ef: 'EF5', color: '#8B0000', damage: 'Incredible'};
+if (wind >= 166) return {ef: 'EF4', color: '#B71C1C', damage: 'Devastating'};
+if (wind >= 136) return {ef: 'EF3', color: '#E64A19', damage: 'Severe'};
+if (wind >= 111) return {ef: 'EF2', color: '#F57F17', damage: 'Considerable'};
+if (wind >= 86) return {ef: 'EF1', color: '#FFA726', damage: 'Moderate'};
+return {ef: 'EF0', color: '#66BB6A', damage: 'Light'};
+}
   
-  function calculateVortex() {
-    const data = [];
-    const maxR = 1500; // meters
+function calculateVortex() {
+const data = [];
+const maxR = 1500; // meters
     
-    const vMax = maxWind * 0.447; // Convert mph to m/s
+const vMax = maxWind * 0.447; // Convert mph to m/s
     
-    for (let r = 0; r <= maxR; r += 10) {
-      let v;
+for (let r = 0; r <= maxR; r += 10) {
+let v;
       
-      if (profile === 'rankine') {
-        if (r <= rmw) {
-          v = (vMax / rmw) * r; // Solid body
-        } else {
-          v = (vMax * rmw) / r; // Potential vortex
-        }
-      } else {
-        // Modified profile (more realistic)
-        const alpha = 0.7;
-        v = vMax * Math.pow(r / rmw, alpha) * Math.exp(alpha * (1 - r / rmw));
-      }
+if (profile === 'rankine') {
+if (r <= rmw) {
+v = (vMax / rmw) * r; // Solid body
+} else {
+v = (vMax * rmw) / r; // Potential vortex
+}
+} else {
+// Modified profile (more realistic)
+const alpha = 0.7;
+v = vMax * Math.pow(r / rmw, alpha) * Math.exp(alpha * (1 - r / rmw));
+}
       
-      data.push([r, v * 2.237]); // Convert to mph
-    }
+data.push([r, v * 2.237]); // Convert to mph
+}
     
-    return data;
-  }
+return data;
+}
   
-  function render() {
-    const rating = getEFRating(maxWind);
+function render() {
+const rating = getEFRating(maxWind);
     
-    // Pressure deficit
-    const vMaxMS = maxWind * 0.447;
-    const pressureDeficit = (1.2 * vMaxMS * vMaxMS / 2) / 100; // mb
+// Pressure deficit
+const vMaxMS = maxWind * 0.447;
+const pressureDeficit = (1.2 * vMaxMS * vMaxMS / 2) / 100; // mb
     
-    // Core vorticity
-    const vorticity = (vMaxMS / rmw).toFixed(3);
+// Core vorticity
+const vorticity = (vMaxMS / rmw).toFixed(3);
     
-    document.getElementById('ef-rating').textContent = rating.ef;
-    document.getElementById('ef-rating').style.color = rating.color;
-    document.getElementById('pressure-deficit').textContent = pressureDeficit.toFixed(0);
-    document.getElementById('vorticity').textContent = vorticity;
-    document.getElementById('damage-range').textContent = rating.damage;
+document.getElementById('ef-rating').textContent = rating.ef;
+document.getElementById('ef-rating').style.color = rating.color;
+document.getElementById('pressure-deficit').textContent = pressureDeficit.toFixed(0);
+document.getElementById('vorticity').textContent = vorticity;
+document.getElementById('damage-range').textContent = rating.damage;
     
-    const vortexData = calculateVortex();
+const vortexData = calculateVortex();
     
-    const series = [
-      {
-        name: 'Tangential Velocity',
-        type: 'line',
-        data: vortexData,
-        lineStyle: {color: rating.color, width: 3},
-        areaStyle: {
-          color: {
-            type: 'linear',
-            x: 0, y: 0, x2: 0, y2: 1,
-            colorStops: [
-              {offset: 0, color: rating.color + 'AA'},
-              {offset: 1, color: rating.color + '22'}
-            ]
-          }
-        }
-      },
-      {
-        name: 'RMW',
-        type: 'line',
-        data: [[rmw, 0], [rmw, maxWind * 1.2]],
-        lineStyle: {color: '#2196F3', width: 2, type: 'dashed'},
-        markLine: {
-          silent: true,
-          label: {formatter: 'RMW', position: 'insideStartTop'}
-        }
-      }
-    ];
+const series = [
+{
+name: 'Tangential Velocity',
+type: 'line',
+data: vortexData,
+lineStyle: {color: rating.color, width: 3},
+areaStyle: {
+color: {
+type: 'linear',
+x: 0, y: 0, x2: 0, y2: 1,
+colorStops: [
+{offset: 0, color: rating.color + 'AA'},
+{offset: 1, color: rating.color + '22'}
+]
+}
+}
+},
+{
+name: 'RMW',
+type: 'line',
+data: [[rmw, 0], [rmw, maxWind * 1.2]],
+lineStyle: {color: '#2196F3', width: 2, type: 'dashed'},
+markLine: {
+silent: true,
+label: {formatter: 'RMW', position: 'insideStartTop'}
+}
+}
+];
     
-    const option = {
-      title: {
-        text: `Tornado Vortex Profile (${rating.ef})`,
-        left: 'center'
-      },
-      tooltip: {
-        trigger: 'axis',
-        axisPointer: {type: 'cross'},
-        formatter: (params) => {
-          if (params[0]) {
-            return `Radius: ${params[0].value[0]} m<br/>Wind: ${params[0].value[1].toFixed(0)} mph`;
-          }
-        }
-      },
-      legend: {
-        data: ['Tangential Velocity', 'RMW'],
-        top: 30
-      },
-      grid: {
-        left: 80,
-        right: 40,
-        top: 80,
-        bottom: 60
-      },
-      xAxis: {
-        type: 'value',
-        name: 'Radius (m)',
-        nameLocation: 'middle',
-        nameGap: 30,
-        min: 0,
-        max: 1500
-      },
-      yAxis: {
-        type: 'value',
-        name: 'Wind Speed (mph)',
-        nameLocation: 'middle',
-        nameGap: 50,
-        min: 0
-      },
-      series: series
-    };
+const option = {
+title: {
+text: `Tornado Vortex Profile (${rating.ef})`,
+left: 'center'
+},
+tooltip: {
+trigger: 'axis',
+axisPointer: {type: 'cross'},
+formatter: (params) => {
+if (params[0]) {
+return `Radius: ${params[0].value[0]} m<br/>Wind: ${params[0].value[1].toFixed(0)} mph`;
+}
+}
+},
+legend: {
+data: ['Tangential Velocity', 'RMW'],
+top: 30
+},
+grid: {
+left: 80,
+right: 40,
+top: 80,
+bottom: 60
+},
+xAxis: {
+type: 'value',
+name: 'Radius (m)',
+nameLocation: 'middle',
+nameGap: 30,
+min: 0,
+max: 1500
+},
+yAxis: {
+type: 'value',
+name: 'Wind Speed (mph)',
+nameLocation: 'middle',
+nameGap: 50,
+min: 0
+},
+series: series
+};
     
-    chart.setOption(option, true);
-  }
+chart.setOption(option, true);
+}
   
-  document.getElementById('max-wind').addEventListener('input', (e) => {
-    maxWind = parseFloat(e.target.value);
-    document.getElementById('wind-val').textContent = maxWind;
-    render();
-  });
+document.getElementById('max-wind').addEventListener('input', (e) => {
+maxWind = parseFloat(e.target.value);
+document.getElementById('wind-val').textContent = maxWind;
+render();
+});
   
-  document.getElementById('rmw').addEventListener('input', (e) => {
-    rmw = parseFloat(e.target.value);
-    document.getElementById('rmw-val').textContent = rmw;
-    render();
-  });
+document.getElementById('rmw').addEventListener('input', (e) => {
+rmw = parseFloat(e.target.value);
+document.getElementById('rmw-val').textContent = rmw;
+render();
+});
   
-  document.getElementById('profile').addEventListener('change', (e) => {
-    profile = e.target.value;
-    render();
-  });
+document.getElementById('profile').addEventListener('change', (e) => {
+profile = e.target.value;
+render();
+});
   
-  render();
+render();
   
-  window.addEventListener('resize', () => chart.resize());
+window.addEventListener('resize', () => chart.resize());
 })();
 </script>
 <p><strong>Observations:</strong> - Rankine vortex shows linear increase to RMW, then decay - Maximum winds at radius of maximum wind (RMW) - Modified profile more realistic with smoother peak - Pressure deficit proportional to velocity squared - Core vorticity highest in narrow tornadoes - EF rating based on maximum wind speed</p>

@@ -267,227 +267,228 @@ Stable (E-F): Limited mixing, concentrated plume</p>
 <hr>
 <h2 id="computational-implementation" class="anchored">5. Computational Implementation</h2>
 <p>Below is an interactive smoke dispersion simulator.</p>
-<div id="smoke-viz" class="viz-container">
+<div class="viz-container" id="smoke-viz">
 <div class="controls">
-<pre><code>&lt;label&gt;
-  Burned area (ha):
-  &lt;input type="range" id="burned-area" min="100" max="5000" step="100" value="1000"&gt;
-  &lt;span id="area-val"&gt;1000&lt;/span&gt;
-&lt;/label&gt;
-&lt;label&gt;
-  Wind speed (m/s):
-  &lt;input type="range" id="wind" min="2" max="15" step="1" value="5"&gt;
-  &lt;span id="wind-val"&gt;5&lt;/span&gt;
-&lt;/label&gt;
-&lt;label&gt;
-  Plume height (m):
-  &lt;input type="range" id="plume-height" min="200" max="2000" step="100" value="800"&gt;
-  &lt;span id="height-val"&gt;800&lt;/span&gt;
-&lt;/label&gt;
-&lt;label&gt;
-  Stability class:
-  &lt;select id="stability"&gt;
-    &lt;option value="A"&gt;A (Very unstable)&lt;/option&gt;
-    &lt;option value="B"&gt;B (Unstable)&lt;/option&gt;
-    &lt;option value="C" selected&gt;C (Slightly unstable)&lt;/option&gt;
-    &lt;option value="D"&gt;D (Neutral)&lt;/option&gt;
-    &lt;option value="E"&gt;E (Slightly stable)&lt;/option&gt;
-  &lt;/select&gt;
-&lt;/label&gt;
-&lt;div class="smoke-info"&gt;
-  &lt;p&gt;&lt;strong&gt;Total PM₂.₅:&lt;/strong&gt; &lt;span id="total-pm"&gt;--&lt;/span&gt; tonnes&lt;/p&gt;
-  &lt;p&gt;&lt;strong&gt;Max concentration:&lt;/strong&gt; &lt;span id="max-conc"&gt;--&lt;/span&gt; μg/m³&lt;/p&gt;
-  &lt;p&gt;&lt;strong&gt;Distance to standard:&lt;/strong&gt; &lt;span id="dist-standard"&gt;--&lt;/span&gt; km&lt;/p&gt;
-&lt;/div&gt;</code></pre>
+<label>
+Burned area (ha):
+<input type="range" id="burned-area" min="100" max="5000" step="100" value="1000">
+<span id="area-val">1000</span>
+</label>
+<label>
+Wind speed (m/s):
+<input type="range" id="wind" min="2" max="15" step="1" value="5">
+<span id="wind-val">5</span>
+</label>
+<label>
+Plume height (m):
+<input type="range" id="plume-height" min="200" max="2000" step="100" value="800">
+<span id="height-val">800</span>
+</label>
+<label>
+Stability class:
+<select id="stability">
+<option value="A">A (Very unstable)</option>
+<option value="B">B (Unstable)</option>
+<option value="C" selected="">C (Slightly unstable)</option>
+<option value="D">D (Neutral)</option>
+<option value="E">E (Slightly stable)</option>
+</select>
+</label>
+<div class="smoke-info">
+<p><strong>Total PM₂.₅:</strong> <span id="total-pm">--</span> tonnes</p>
+<p><strong>Max concentration:</strong> <span id="max-conc">--</span> μg/m³</p>
+<p><strong>Distance to standard:</strong> <span id="dist-standard">--</span> km</p>
+</div>
 </div>
 <div id="smoke-canvas-container">
-<pre><code>&lt;canvas id="smoke-canvas" width="700" height="400" style="border: 1px solid #ddd;"&gt;&lt;/canvas&gt;</code></pre>
+<canvas id="smoke-canvas" width="700" height="400" style="border: 1px solid #ddd;"></canvas>
 </div>
 </div>
+
 <script type="module">
 await new Promise(resolve => {
-  const checkECharts = () => {
-    if (typeof echarts !== 'undefined') resolve();
-    else setTimeout(checkECharts, 50);
-  };
-  checkECharts();
+const checkECharts = () => {
+if (typeof echarts !== 'undefined') resolve();
+else setTimeout(checkECharts, 50);
+};
+checkECharts();
 });
 
 (function() {
-  const chart = echarts.init(document.getElementById('smoke-canvas'));
+const chart = echarts.init(document.getElementById('smoke-canvas'));
   
-  let burnedArea = 1000;
-  let windSpeed = 5;
-  let plumeHeight = 800;
-  let stabilityClass = 'C';
+let burnedArea = 1000;
+let windSpeed = 5;
+let plumeHeight = 800;
+let stabilityClass = 'C';
   
-  const stabilityParams = {
-    'A': {a: 0.22, b: 0.894, c: 0.20, d: 0.894},
-    'B': {a: 0.16, b: 0.894, c: 0.12, d: 0.894},
-    'C': {a: 0.11, b: 0.894, c: 0.08, d: 0.894},
-    'D': {a: 0.08, b: 0.894, c: 0.06, d: 0.894},
-    'E': {a: 0.06, b: 0.894, c: 0.03, d: 0.894}
-  };
+const stabilityParams = {
+'A': {a: 0.22, b: 0.894, c: 0.20, d: 0.894},
+'B': {a: 0.16, b: 0.894, c: 0.12, d: 0.894},
+'C': {a: 0.11, b: 0.894, c: 0.08, d: 0.894},
+'D': {a: 0.08, b: 0.894, c: 0.06, d: 0.894},
+'E': {a: 0.06, b: 0.894, c: 0.03, d: 0.894}
+};
   
-  function calculateEmissions() {
-    const fuelLoading = 1.5; // kg/m²
-    const CC = 0.85;
-    const EF_PM25 = 15; // g/kg
+function calculateEmissions() {
+const fuelLoading = 1.5; // kg/m²
+const CC = 0.85;
+const EF_PM25 = 15; // g/kg
     
-    const area = burnedArea * 10000; // m²
-    const FC = area * fuelLoading * CC;
-    const totalPM = FC * EF_PM25 / 1e6; // tonnes
+const area = burnedArea * 10000; // m²
+const FC = area * fuelLoading * CC;
+const totalPM = FC * EF_PM25 / 1e6; // tonnes
     
-    const Q = FC * EF_PM25 / (8 * 3600); // g/s (8 hour burn)
+const Q = FC * EF_PM25 / (8 * 3600); // g/s (8 hour burn)
     
-    return {totalPM, Q};
-  }
+return {totalPM, Q};
+}
   
-  function calculateConcentration(x, y) {
-    const {Q} = calculateEmissions();
-    const params = stabilityParams[stabilityClass];
+function calculateConcentration(x, y) {
+const {Q} = calculateEmissions();
+const params = stabilityParams[stabilityClass];
     
-    const sigmaY = params.a * Math.pow(x, params.b);
-    const sigmaZ = params.c * Math.pow(x, params.d);
+const sigmaY = params.a * Math.pow(x, params.b);
+const sigmaZ = params.c * Math.pow(x, params.d);
     
-    const H = plumeHeight;
+const H = plumeHeight;
     
-    const C = (Q / (Math.PI * windSpeed * sigmaY * sigmaZ)) *
-              Math.exp(-Math.pow(y, 2) / (2 * Math.pow(sigmaY, 2))) *
-              Math.exp(-Math.pow(H, 2) / (2 * Math.pow(sigmaZ, 2)));
+const C = (Q / (Math.PI * windSpeed * sigmaY * sigmaZ)) *
+Math.exp(-Math.pow(y, 2) / (2 * Math.pow(sigmaY, 2))) *
+Math.exp(-Math.pow(H, 2) / (2 * Math.pow(sigmaZ, 2)));
     
-    return C; // μg/m³
-  }
+return C; // μg/m³
+}
   
-  function generatePlume() {
-    const data = [];
-    const maxDist = 50000; // 50 km
+function generatePlume() {
+const data = [];
+const maxDist = 50000; // 50 km
     
-    for (let x = 1000; x <= maxDist; x += 1000) {
-      const C = calculateConcentration(x, 0); // centerline
-      data.push([x/1000, C]);
-    }
+for (let x = 1000; x <= maxDist; x += 1000) {
+const C = calculateConcentration(x, 0); // centerline
+data.push([x/1000, C]);
+}
     
-    return data;
-  }
+return data;
+}
   
-  function findDistanceToStandard() {
-    const standard = 35; // μg/m³
+function findDistanceToStandard() {
+const standard = 35; // μg/m³
     
-    for (let x = 1000; x <= 100000; x += 500) {
-      const C = calculateConcentration(x, 0);
-      if (C < standard) {
-        return x / 1000;
-      }
-    }
+for (let x = 1000; x <= 100000; x += 500) {
+const C = calculateConcentration(x, 0);
+if (C < standard) {
+return x / 1000;
+}
+}
     
-    return '>100';
-  }
+return '>100';
+}
   
-  function render() {
-    const {totalPM} = calculateEmissions();
-    const plumeData = generatePlume();
+function render() {
+const {totalPM} = calculateEmissions();
+const plumeData = generatePlume();
     
-    const maxConc = Math.max(...plumeData.map(d => d[1]));
-    const distStandard = findDistanceToStandard();
+const maxConc = Math.max(...plumeData.map(d => d[1]));
+const distStandard = findDistanceToStandard();
     
-    document.getElementById('total-pm').textContent = totalPM.toFixed(0);
-    document.getElementById('max-conc').textContent = maxConc.toFixed(0);
-    document.getElementById('dist-standard').textContent = 
-      typeof distStandard === 'number' ? distStandard.toFixed(0) : distStandard;
+document.getElementById('total-pm').textContent = totalPM.toFixed(0);
+document.getElementById('max-conc').textContent = maxConc.toFixed(0);
+document.getElementById('dist-standard').textContent = 
+typeof distStandard === 'number' ? distStandard.toFixed(0) : distStandard;
     
-    const series = [
-      {
-        name: 'PM₂.₅ Concentration',
-        type: 'line',
-        data: plumeData,
-        lineStyle: {color: '#F44336', width: 3},
-        areaStyle: {color: 'rgba(244, 67, 54, 0.3)'}
-      },
-      {
-        name: 'EPA Standard (35 μg/m³)',
-        type: 'line',
-        data: [[0, 35], [50, 35]],
-        lineStyle: {color: '#FF9800', width: 2, type: 'dashed'},
-        markLine: {
-          silent: true,
-          label: {formatter: 'EPA 24-hr standard'}
-        }
-      },
-      {
-        name: 'Unhealthy (55 μg/m³)',
-        type: 'line',
-        data: [[0, 55], [50, 55]],
-        lineStyle: {color: '#F57F17', width: 2, type: 'dotted'}
-      }
-    ];
+const series = [
+{
+name: 'PM₂.₅ Concentration',
+type: 'line',
+data: plumeData,
+lineStyle: {color: '#F44336', width: 3},
+areaStyle: {color: 'rgba(244, 67, 54, 0.3)'}
+},
+{
+name: 'EPA Standard (35 μg/m³)',
+type: 'line',
+data: [[0, 35], [50, 35]],
+lineStyle: {color: '#FF9800', width: 2, type: 'dashed'},
+markLine: {
+silent: true,
+label: {formatter: 'EPA 24-hr standard'}
+}
+},
+{
+name: 'Unhealthy (55 μg/m³)',
+type: 'line',
+data: [[0, 55], [50, 55]],
+lineStyle: {color: '#F57F17', width: 2, type: 'dotted'}
+}
+];
     
-    const option = {
-      title: {
-        text: 'Smoke Concentration vs Distance',
-        left: 'center'
-      },
-      tooltip: {
-        trigger: 'axis',
-        axisPointer: {type: 'cross'}
-      },
-      legend: {
-        data: series.map(s => s.name),
-        top: 30
-      },
-      grid: {
-        left: 80,
-        right: 40,
-        top: 80,
-        bottom: 60
-      },
-      xAxis: {
-        type: 'value',
-        name: 'Distance Downwind (km)',
-        nameLocation: 'middle',
-        nameGap: 30,
-        min: 0,
-        max: 50
-      },
-      yAxis: {
-        type: 'value',
-        name: 'PM₂.₅ (μg/m³)',
-        nameLocation: 'middle',
-        nameGap: 50,
-        min: 0
-      },
-      series: series
-    };
+const option = {
+title: {
+text: 'Smoke Concentration vs Distance',
+left: 'center'
+},
+tooltip: {
+trigger: 'axis',
+axisPointer: {type: 'cross'}
+},
+legend: {
+data: series.map(s => s.name),
+top: 30
+},
+grid: {
+left: 80,
+right: 40,
+top: 80,
+bottom: 60
+},
+xAxis: {
+type: 'value',
+name: 'Distance Downwind (km)',
+nameLocation: 'middle',
+nameGap: 30,
+min: 0,
+max: 50
+},
+yAxis: {
+type: 'value',
+name: 'PM₂.₅ (μg/m³)',
+nameLocation: 'middle',
+nameGap: 50,
+min: 0
+},
+series: series
+};
     
-    chart.setOption(option, true);
-  }
+chart.setOption(option, true);
+}
   
-  document.getElementById('burned-area').addEventListener('input', (e) => {
-    burnedArea = parseFloat(e.target.value);
-    document.getElementById('area-val').textContent = burnedArea;
-    render();
-  });
+document.getElementById('burned-area').addEventListener('input', (e) => {
+burnedArea = parseFloat(e.target.value);
+document.getElementById('area-val').textContent = burnedArea;
+render();
+});
   
-  document.getElementById('wind').addEventListener('input', (e) => {
-    windSpeed = parseFloat(e.target.value);
-    document.getElementById('wind-val').textContent = windSpeed;
-    render();
-  });
+document.getElementById('wind').addEventListener('input', (e) => {
+windSpeed = parseFloat(e.target.value);
+document.getElementById('wind-val').textContent = windSpeed;
+render();
+});
   
-  document.getElementById('plume-height').addEventListener('input', (e) => {
-    plumeHeight = parseFloat(e.target.value);
-    document.getElementById('height-val').textContent = plumeHeight;
-    render();
-  });
+document.getElementById('plume-height').addEventListener('input', (e) => {
+plumeHeight = parseFloat(e.target.value);
+document.getElementById('height-val').textContent = plumeHeight;
+render();
+});
   
-  document.getElementById('stability').addEventListener('change', (e) => {
-    stabilityClass = e.target.value;
-    render();
-  });
+document.getElementById('stability').addEventListener('change', (e) => {
+stabilityClass = e.target.value;
+render();
+});
   
-  render();
+render();
   
-  window.addEventListener('resize', () => chart.resize());
+window.addEventListener('resize', () => chart.resize());
 })();
 </script>
 <p><strong>Observations:</strong> - Concentration decreases with distance as plume disperses - Higher plume rise reduces ground-level concentrations - Unstable atmosphere promotes mixing (lower peak concentrations) - EPA standard often exceeded 10-30 km downwind - Larger fires produce proportionally more emissions - Wind speed dilutes concentrations but transports farther</p>

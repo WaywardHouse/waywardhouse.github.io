@@ -292,406 +292,407 @@ i=3     1    2    3   16</code></pre>
 <hr>
 <h2 id="computational-implementation" class="anchored">5. Computational Implementation</h2>
 <p>Below is an interactive watershed delineation tool.</p>
-<div id="watershed-viz" class="viz-container">
+<div class="viz-container" id="watershed-viz">
 <div class="controls">
-<pre><code>&lt;label&gt;
-  Terrain type:
-  &lt;select id="terrain-type"&gt;
-    &lt;option value="valley" selected&gt;Simple Valley&lt;/option&gt;
-    &lt;option value="ridge"&gt;Ridge and Valleys&lt;/option&gt;
-    &lt;option value="complex"&gt;Complex Terrain&lt;/option&gt;
-  &lt;/select&gt;
-&lt;/label&gt;
-&lt;label&gt;
-  Stream threshold:
-  &lt;input type="range" id="stream-threshold" min="10" max="200" step="10" value="50"&gt;
-  &lt;span id="stream-threshold-val"&gt;50&lt;/span&gt; cells
-&lt;/label&gt;
-&lt;label&gt;
-  Show flow direction:
-  &lt;input type="checkbox" id="show-flow-dir"&gt;
-&lt;/label&gt;
-&lt;label&gt;
-  Show streams:
-  &lt;input type="checkbox" id="show-streams" checked&gt;
-&lt;/label&gt;
-&lt;div class="watershed-info"&gt;
-  &lt;p&gt;&lt;strong&gt;Click any cell to extract its watershed&lt;/strong&gt;&lt;/p&gt;
-  &lt;p&gt;&lt;strong&gt;Watershed area:&lt;/strong&gt; &lt;span id="watershed-area"&gt;--&lt;/span&gt; cells&lt;/p&gt;
-  &lt;p&gt;&lt;strong&gt;Max accumulation:&lt;/strong&gt; &lt;span id="max-accum"&gt;--&lt;/span&gt; cells&lt;/p&gt;
-&lt;/div&gt;</code></pre>
+<label>
+Terrain type:
+<select id="terrain-type">
+<option value="valley" selected="">Simple Valley</option>
+<option value="ridge">Ridge and Valleys</option>
+<option value="complex">Complex Terrain</option>
+</select>
+</label>
+<label>
+Stream threshold:
+<input type="range" id="stream-threshold" min="10" max="200" step="10" value="50">
+<span id="stream-threshold-val">50</span> cells
+</label>
+<label>
+Show flow direction:
+<input type="checkbox" id="show-flow-dir">
+</label>
+<label>
+Show streams:
+<input type="checkbox" id="show-streams" checked="">
+</label>
+<div class="watershed-info">
+<p><strong>Click any cell to extract its watershed</strong></p>
+<p><strong>Watershed area:</strong> <span id="watershed-area">--</span> cells</p>
+<p><strong>Max accumulation:</strong> <span id="max-accum">--</span> cells</p>
+</div>
 </div>
 <div id="watershed-canvas-container">
-<pre><code>&lt;canvas id="watershed-canvas" width="700" height="350" style="border: 1px solid #ddd; cursor: crosshair;"&gt;&lt;/canvas&gt;</code></pre>
+<canvas id="watershed-canvas" width="700" height="350" style="border: 1px solid #ddd; cursor: crosshair;"></canvas>
 </div>
 </div>
+
 <script type="module">
 (function() {
-  const canvas = document.getElementById('watershed-canvas');
-  const ctx = canvas.getContext('2d');
+const canvas = document.getElementById('watershed-canvas');
+const ctx = canvas.getContext('2d');
   
-  let terrainType = 'valley';
-  let streamThreshold = 50;
-  let showFlowDir = false;
-  let showStreams = true;
-  let pourPoint = null;
+let terrainType = 'valley';
+let streamThreshold = 50;
+let showFlowDir = false;
+let showStreams = true;
+let pourPoint = null;
   
-  const size = 50;
-  const cellSize = 7;
+const size = 50;
+const cellSize = 7;
   
-  const terrains = {};
+const terrains = {};
   
-  // Generate terrains
-  function generateValley() {
-    const dem = [];
-    for (let i = 0; i < size; i++) {
-      const row = [];
-      for (let j = 0; j < size; j++) {
-        const centerDist = Math.abs(j - size/2);
-        const elevation = 100 - i * 1.5 + centerDist * 2;
-        row.push(elevation);
-      }
-      dem.push(row);
-    }
-    return dem;
-  }
+// Generate terrains
+function generateValley() {
+const dem = [];
+for (let i = 0; i < size; i++) {
+const row = [];
+for (let j = 0; j < size; j++) {
+const centerDist = Math.abs(j - size/2);
+const elevation = 100 - i * 1.5 + centerDist * 2;
+row.push(elevation);
+}
+dem.push(row);
+}
+return dem;
+}
   
-  function generateRidge() {
-    const dem = [];
-    for (let i = 0; i < size; i++) {
-      const row = [];
-      for (let j = 0; j < size; j++) {
-        const ridge = Math.abs(j - size/2) < 5 ? 20 : 0;
-        const elevation = 100 - i * 1.2 + ridge;
-        row.push(elevation);
-      }
-      dem.push(row);
-    }
-    return dem;
-  }
+function generateRidge() {
+const dem = [];
+for (let i = 0; i < size; i++) {
+const row = [];
+for (let j = 0; j < size; j++) {
+const ridge = Math.abs(j - size/2) < 5 ? 20 : 0;
+const elevation = 100 - i * 1.2 + ridge;
+row.push(elevation);
+}
+dem.push(row);
+}
+return dem;
+}
   
-  function generateComplex() {
-    const dem = [];
-    for (let i = 0; i < size; i++) {
-      const row = [];
-      for (let j = 0; j < size; j++) {
-        const noise = Math.sin(i / 8) * Math.cos(j / 8) * 10;
-        const elevation = 100 - i * 1.0 - j * 0.5 + noise;
-        row.push(elevation);
-      }
-      dem.push(row);
-    }
-    return dem;
-  }
+function generateComplex() {
+const dem = [];
+for (let i = 0; i < size; i++) {
+const row = [];
+for (let j = 0; j < size; j++) {
+const noise = Math.sin(i / 8) * Math.cos(j / 8) * 10;
+const elevation = 100 - i * 1.0 - j * 0.5 + noise;
+row.push(elevation);
+}
+dem.push(row);
+}
+return dem;
+}
   
-  terrains.valley = generateValley();
-  terrains.ridge = generateRidge();
-  terrains.complex = generateComplex();
+terrains.valley = generateValley();
+terrains.ridge = generateRidge();
+terrains.complex = generateComplex();
   
-  function getDEM() {
-    return terrains[terrainType];
-  }
+function getDEM() {
+return terrains[terrainType];
+}
   
-  function computeFlowDirection(dem) {
-    const flowDir = [];
-    const neighbors = [
-      {di: -1, dj: 0, dist: 1, code: 64},
-      {di: -1, dj: 1, dist: Math.SQRT2, code: 128},
-      {di: 0, dj: 1, dist: 1, code: 1},
-      {di: 1, dj: 1, dist: Math.SQRT2, code: 2},
-      {di: 1, dj: 0, dist: 1, code: 4},
-      {di: 1, dj: -1, dist: Math.SQRT2, code: 8},
-      {di: 0, dj: -1, dist: 1, code: 16},
-      {di: -1, dj: -1, dist: Math.SQRT2, code: 32}
-    ];
+function computeFlowDirection(dem) {
+const flowDir = [];
+const neighbors = [
+{di: -1, dj: 0, dist: 1, code: 64},
+{di: -1, dj: 1, dist: Math.SQRT2, code: 128},
+{di: 0, dj: 1, dist: 1, code: 1},
+{di: 1, dj: 1, dist: Math.SQRT2, code: 2},
+{di: 1, dj: 0, dist: 1, code: 4},
+{di: 1, dj: -1, dist: Math.SQRT2, code: 8},
+{di: 0, dj: -1, dist: 1, code: 16},
+{di: -1, dj: -1, dist: Math.SQRT2, code: 32}
+];
     
-    for (let i = 0; i < size; i++) {
-      const row = [];
-      for (let j = 0; j < size; j++) {
-        let maxSlope = -Infinity;
-        let direction = 0;
+for (let i = 0; i < size; i++) {
+const row = [];
+for (let j = 0; j < size; j++) {
+let maxSlope = -Infinity;
+let direction = 0;
         
-        for (let {di, dj, dist, code} of neighbors) {
-          const ni = i + di;
-          const nj = j + dj;
+for (let {di, dj, dist, code} of neighbors) {
+const ni = i + di;
+const nj = j + dj;
           
-          if (ni >= 0 && ni < size && nj >= 0 && nj < size) {
-            const slope = (dem[i][j] - dem[ni][nj]) / dist;
-            if (slope > maxSlope) {
-              maxSlope = slope;
-              direction = code;
-            }
-          }
-        }
+if (ni >= 0 && ni < size && nj >= 0 && nj < size) {
+const slope = (dem[i][j] - dem[ni][nj]) / dist;
+if (slope > maxSlope) {
+maxSlope = slope;
+direction = code;
+}
+}
+}
         
-        row.push(direction);
-      }
-      flowDir.push(row);
-    }
+row.push(direction);
+}
+flowDir.push(row);
+}
     
-    return flowDir;
-  }
+return flowDir;
+}
   
-  function computeFlowAccumulation(flowDir) {
-    const accum = Array(size).fill(null).map(() => Array(size).fill(1));
+function computeFlowAccumulation(flowDir) {
+const accum = Array(size).fill(null).map(() => Array(size).fill(1));
     
-    // Create elevation-sorted list
-    const dem = getDEM();
-    const cells = [];
-    for (let i = 0; i < size; i++) {
-      for (let j = 0; j < size; j++) {
-        cells.push({i, j, elev: dem[i][j]});
-      }
-    }
-    cells.sort((a, b) => b.elev - a.elev);
+// Create elevation-sorted list
+const dem = getDEM();
+const cells = [];
+for (let i = 0; i < size; i++) {
+for (let j = 0; j < size; j++) {
+cells.push({i, j, elev: dem[i][j]});
+}
+}
+cells.sort((a, b) => b.elev - a.elev);
     
-    // Process in topological order
-    const dirMap = {
-      64: {di: -1, dj: 0},
-      128: {di: -1, dj: 1},
-      1: {di: 0, dj: 1},
-      2: {di: 1, dj: 1},
-      4: {di: 1, dj: 0},
-      8: {di: 1, dj: -1},
-      16: {di: 0, dj: -1},
-      32: {di: -1, dj: -1}
-    };
+// Process in topological order
+const dirMap = {
+64: {di: -1, dj: 0},
+128: {di: -1, dj: 1},
+1: {di: 0, dj: 1},
+2: {di: 1, dj: 1},
+4: {di: 1, dj: 0},
+8: {di: 1, dj: -1},
+16: {di: 0, dj: -1},
+32: {di: -1, dj: -1}
+};
     
-    for (let {i, j} of cells) {
-      const dir = flowDir[i][j];
-      if (dir > 0 && dirMap[dir]) {
-        const {di, dj} = dirMap[dir];
-        const ni = i + di;
-        const nj = j + dj;
-        if (ni >= 0 && ni < size && nj >= 0 && nj < size) {
-          accum[ni][nj] += accum[i][j];
-        }
-      }
-    }
+for (let {i, j} of cells) {
+const dir = flowDir[i][j];
+if (dir > 0 && dirMap[dir]) {
+const {di, dj} = dirMap[dir];
+const ni = i + di;
+const nj = j + dj;
+if (ni >= 0 && ni < size && nj >= 0 && nj < size) {
+accum[ni][nj] += accum[i][j];
+}
+}
+}
     
-    return accum;
-  }
+return accum;
+}
   
-  function extractWatershed(flowDir, pourI, pourJ) {
-    const watershed = Array(size).fill(null).map(() => Array(size).fill(false));
-    const queue = [{i: pourI, j: pourJ}];
-    watershed[pourI][pourJ] = true;
+function extractWatershed(flowDir, pourI, pourJ) {
+const watershed = Array(size).fill(null).map(() => Array(size).fill(false));
+const queue = [{i: pourI, j: pourJ}];
+watershed[pourI][pourJ] = true;
     
-    const dirMap = {
-      64: {di: -1, dj: 0},
-      128: {di: -1, dj: 1},
-      1: {di: 0, dj: 1},
-      2: {di: 1, dj: 1},
-      4: {di: 1, dj: 0},
-      8: {di: 1, dj: -1},
-      16: {di: 0, dj: -1},
-      32: {di: -1, dj: -1}
-    };
+const dirMap = {
+64: {di: -1, dj: 0},
+128: {di: -1, dj: 1},
+1: {di: 0, dj: 1},
+2: {di: 1, dj: 1},
+4: {di: 1, dj: 0},
+8: {di: 1, dj: -1},
+16: {di: 0, dj: -1},
+32: {di: -1, dj: -1}
+};
     
-    // Reverse direction lookup
-    const reverseDir = {
-      64: 4, 128: 8, 1: 16, 2: 32, 4: 64, 8: 128, 16: 1, 32: 2
-    };
+// Reverse direction lookup
+const reverseDir = {
+64: 4, 128: 8, 1: 16, 2: 32, 4: 64, 8: 128, 16: 1, 32: 2
+};
     
-    while (queue.length > 0) {
-      const {i, j} = queue.shift();
+while (queue.length > 0) {
+const {i, j} = queue.shift();
       
-      // Check all neighbors
-      for (let [code, {di, dj}] of Object.entries(dirMap)) {
-        const ni = i + di;
-        const nj = j + dj;
+// Check all neighbors
+for (let [code, {di, dj}] of Object.entries(dirMap)) {
+const ni = i + di;
+const nj = j + dj;
         
-        if (ni >= 0 && ni < size && nj >= 0 && nj < size) {
-          if (!watershed[ni][nj] && flowDir[ni][nj] == reverseDir[code]) {
-            watershed[ni][nj] = true;
-            queue.push({i: ni, j: nj});
-          }
-        }
-      }
-    }
+if (ni >= 0 && ni < size && nj >= 0 && nj < size) {
+if (!watershed[ni][nj] && flowDir[ni][nj] == reverseDir[code]) {
+watershed[ni][nj] = true;
+queue.push({i: ni, j: nj});
+}
+}
+}
+}
     
-    return watershed;
-  }
+return watershed;
+}
   
-  function drawDEM(dem, x, y, width, height) {
-    let min = Infinity, max = -Infinity;
-    for (let row of dem) {
-      for (let val of row) {
-        min = Math.min(min, val);
-        max = Math.max(max, val);
-      }
-    }
+function drawDEM(dem, x, y, width, height) {
+let min = Infinity, max = -Infinity;
+for (let row of dem) {
+for (let val of row) {
+min = Math.min(min, val);
+max = Math.max(max, val);
+}
+}
     
-    for (let i = 0; i < size; i++) {
-      for (let j = 0; j < size; j++) {
-        const norm = (dem[i][j] - min) / (max - min);
-        const gray = Math.floor(100 + 155 * norm);
+for (let i = 0; i < size; i++) {
+for (let j = 0; j < size; j++) {
+const norm = (dem[i][j] - min) / (max - min);
+const gray = Math.floor(100 + 155 * norm);
         
-        ctx.fillStyle = `rgb(${gray}, ${gray}, ${gray})`;
-        ctx.fillRect(x + j * cellSize, y + i * cellSize, cellSize, cellSize);
-      }
-    }
-  }
+ctx.fillStyle = `rgb(${gray}, ${gray}, ${gray})`;
+ctx.fillRect(x + j * cellSize, y + i * cellSize, cellSize, cellSize);
+}
+}
+}
   
-  function drawAccumulation(accum, x, y, width, height) {
-    const maxAccum = Math.max(...accum.flat());
+function drawAccumulation(accum, x, y, width, height) {
+const maxAccum = Math.max(...accum.flat());
     
-    for (let i = 0; i < size; i++) {
-      for (let j = 0; j < size; j++) {
-        const norm = Math.log(accum[i][j]) / Math.log(maxAccum);
-        const blue = Math.floor(255 * norm);
+for (let i = 0; i < size; i++) {
+for (let j = 0; j < size; j++) {
+const norm = Math.log(accum[i][j]) / Math.log(maxAccum);
+const blue = Math.floor(255 * norm);
         
-        ctx.fillStyle = `rgb(200, 200, ${200 + blue/4})`;
-        ctx.fillRect(x + j * cellSize, y + i * cellSize, cellSize, cellSize);
-      }
-    }
+ctx.fillStyle = `rgb(200, 200, ${200 + blue/4})`;
+ctx.fillRect(x + j * cellSize, y + i * cellSize, cellSize, cellSize);
+}
+}
     
-    document.getElementById('max-accum').textContent = maxAccum;
-  }
+document.getElementById('max-accum').textContent = maxAccum;
+}
   
-  function drawStreams(accum, x, y) {
-    ctx.strokeStyle = '#3498DB';
-    ctx.lineWidth = 1;
+function drawStreams(accum, x, y) {
+ctx.strokeStyle = '#3498DB';
+ctx.lineWidth = 1;
     
-    for (let i = 0; i < size; i++) {
-      for (let j = 0; j < size; j++) {
-        if (accum[i][j] >= streamThreshold) {
-          ctx.fillStyle = '#3498DB';
-          ctx.fillRect(x + j * cellSize, y + i * cellSize, cellSize, cellSize);
-        }
-      }
-    }
-  }
+for (let i = 0; i < size; i++) {
+for (let j = 0; j < size; j++) {
+if (accum[i][j] >= streamThreshold) {
+ctx.fillStyle = '#3498DB';
+ctx.fillRect(x + j * cellSize, y + i * cellSize, cellSize, cellSize);
+}
+}
+}
+}
   
-  function drawWatershed(watershed, x, y) {
-    let area = 0;
-    for (let i = 0; i < size; i++) {
-      for (let j = 0; j < size; j++) {
-        if (watershed[i][j]) {
-          area++;
-          ctx.fillStyle = 'rgba(46, 204, 113, 0.5)';
-          ctx.fillRect(x + j * cellSize, y + i * cellSize, cellSize, cellSize);
-        }
-      }
-    }
+function drawWatershed(watershed, x, y) {
+let area = 0;
+for (let i = 0; i < size; i++) {
+for (let j = 0; j < size; j++) {
+if (watershed[i][j]) {
+area++;
+ctx.fillStyle = 'rgba(46, 204, 113, 0.5)';
+ctx.fillRect(x + j * cellSize, y + i * cellSize, cellSize, cellSize);
+}
+}
+}
     
-    document.getElementById('watershed-area').textContent = area;
-  }
+document.getElementById('watershed-area').textContent = area;
+}
   
-  function drawFlowDirection(flowDir, x, y) {
-    const dirMap = {
-      64: {di: -1, dj: 0},
-      128: {di: -1, dj: 1},
-      1: {di: 0, dj: 1},
-      2: {di: 1, dj: 1},
-      4: {di: 1, dj: 0},
-      8: {di: 1, dj: -1},
-      16: {di: 0, dj: -1},
-      32: {di: -1, dj: -1}
-    };
+function drawFlowDirection(flowDir, x, y) {
+const dirMap = {
+64: {di: -1, dj: 0},
+128: {di: -1, dj: 1},
+1: {di: 0, dj: 1},
+2: {di: 1, dj: 1},
+4: {di: 1, dj: 0},
+8: {di: 1, dj: -1},
+16: {di: 0, dj: -1},
+32: {di: -1, dj: -1}
+};
     
-    ctx.strokeStyle = 'rgba(231, 76, 60, 0.5)';
-    ctx.lineWidth = 1;
+ctx.strokeStyle = 'rgba(231, 76, 60, 0.5)';
+ctx.lineWidth = 1;
     
-    for (let i = 0; i < size; i += 2) {
-      for (let j = 0; j < size; j += 2) {
-        const dir = flowDir[i][j];
-        if (dir > 0 && dirMap[dir]) {
-          const {di, dj} = dirMap[dir];
-          const cx = x + j * cellSize + cellSize/2;
-          const cy = y + i * cellSize + cellSize/2;
+for (let i = 0; i < size; i += 2) {
+for (let j = 0; j < size; j += 2) {
+const dir = flowDir[i][j];
+if (dir > 0 && dirMap[dir]) {
+const {di, dj} = dirMap[dir];
+const cx = x + j * cellSize + cellSize/2;
+const cy = y + i * cellSize + cellSize/2;
           
-          ctx.beginPath();
-          ctx.moveTo(cx, cy);
-          ctx.lineTo(cx + dj * cellSize/2, cy + di * cellSize/2);
-          ctx.stroke();
-        }
-      }
-    }
-  }
+ctx.beginPath();
+ctx.moveTo(cx, cy);
+ctx.lineTo(cx + dj * cellSize/2, cy + di * cellSize/2);
+ctx.stroke();
+}
+}
+}
+}
   
-  function render() {
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
+function render() {
+ctx.clearRect(0, 0, canvas.width, canvas.height);
     
-    const dem = getDEM();
-    const flowDir = computeFlowDirection(dem);
-    const accum = computeFlowAccumulation(flowDir);
+const dem = getDEM();
+const flowDir = computeFlowDirection(dem);
+const accum = computeFlowAccumulation(flowDir);
     
-    // Left panel: DEM
-    drawDEM(dem, 10, 10, size * cellSize, size * cellSize);
-    ctx.fillStyle = '#2C3E50';
-    ctx.font = 'bold 12px sans-serif';
-    ctx.fillText('Elevation', 15, 25);
+// Left panel: DEM
+drawDEM(dem, 10, 10, size * cellSize, size * cellSize);
+ctx.fillStyle = '#2C3E50';
+ctx.font = 'bold 12px sans-serif';
+ctx.fillText('Elevation', 15, 25);
     
-    // Right panel: Flow accumulation
-    drawAccumulation(accum, 10 + size * cellSize + 10, 10, size * cellSize, size * cellSize);
-    ctx.fillText('Flow Accumulation', 10 + size * cellSize + 15, 25);
+// Right panel: Flow accumulation
+drawAccumulation(accum, 10 + size * cellSize + 10, 10, size * cellSize, size * cellSize);
+ctx.fillText('Flow Accumulation', 10 + size * cellSize + 15, 25);
     
-    if (showStreams) {
-      drawStreams(accum, 10 + size * cellSize + 10, 10);
-    }
+if (showStreams) {
+drawStreams(accum, 10 + size * cellSize + 10, 10);
+}
     
-    if (showFlowDir) {
-      drawFlowDirection(flowDir, 10 + size * cellSize + 10, 10);
-    }
+if (showFlowDir) {
+drawFlowDirection(flowDir, 10 + size * cellSize + 10, 10);
+}
     
-    if (pourPoint) {
-      const watershed = extractWatershed(flowDir, pourPoint.i, pourPoint.j);
-      drawWatershed(watershed, 10 + size * cellSize + 10, 10);
+if (pourPoint) {
+const watershed = extractWatershed(flowDir, pourPoint.i, pourPoint.j);
+drawWatershed(watershed, 10 + size * cellSize + 10, 10);
       
-      // Mark pour point
-      ctx.fillStyle = '#E74C3C';
-      ctx.beginPath();
-      ctx.arc(
-        10 + size * cellSize + 10 + pourPoint.j * cellSize + cellSize/2,
-        10 + pourPoint.i * cellSize + cellSize/2,
-        cellSize/2, 0, 2 * Math.PI
-      );
-      ctx.fill();
-    }
-  }
+// Mark pour point
+ctx.fillStyle = '#E74C3C';
+ctx.beginPath();
+ctx.arc(
+10 + size * cellSize + 10 + pourPoint.j * cellSize + cellSize/2,
+10 + pourPoint.i * cellSize + cellSize/2,
+cellSize/2, 0, 2 * Math.PI
+);
+ctx.fill();
+}
+}
   
-  canvas.addEventListener('click', (e) => {
-    const rect = canvas.getBoundingClientRect();
-    const x = e.clientX - rect.left;
-    const y = e.clientY - rect.top;
+canvas.addEventListener('click', (e) => {
+const rect = canvas.getBoundingClientRect();
+const x = e.clientX - rect.left;
+const y = e.clientY - rect.top;
     
-    // Check if click is in right panel
-    const rightPanelX = 10 + size * cellSize + 10;
-    if (x >= rightPanelX && x < rightPanelX + size * cellSize &&
-        y >= 10 && y < 10 + size * cellSize) {
+// Check if click is in right panel
+const rightPanelX = 10 + size * cellSize + 10;
+if (x >= rightPanelX && x < rightPanelX + size * cellSize &&
+y >= 10 && y < 10 + size * cellSize) {
       
-      const j = Math.floor((x - rightPanelX) / cellSize);
-      const i = Math.floor((y - 10) / cellSize);
+const j = Math.floor((x - rightPanelX) / cellSize);
+const i = Math.floor((y - 10) / cellSize);
       
-      pourPoint = {i, j};
-      render();
-    }
-  });
+pourPoint = {i, j};
+render();
+}
+});
   
-  document.getElementById('terrain-type').addEventListener('change', (e) => {
-    terrainType = e.target.value;
-    pourPoint = null;
-    render();
-  });
+document.getElementById('terrain-type').addEventListener('change', (e) => {
+terrainType = e.target.value;
+pourPoint = null;
+render();
+});
   
-  document.getElementById('stream-threshold').addEventListener('input', (e) => {
-    streamThreshold = parseInt(e.target.value);
-    document.getElementById('stream-threshold-val').textContent = streamThreshold;
-    render();
-  });
+document.getElementById('stream-threshold').addEventListener('input', (e) => {
+streamThreshold = parseInt(e.target.value);
+document.getElementById('stream-threshold-val').textContent = streamThreshold;
+render();
+});
   
-  document.getElementById('show-flow-dir').addEventListener('change', (e) => {
-    showFlowDir = e.target.checked;
-    render();
-  });
+document.getElementById('show-flow-dir').addEventListener('change', (e) => {
+showFlowDir = e.target.checked;
+render();
+});
   
-  document.getElementById('show-streams').addEventListener('change', (e) => {
-    showStreams = e.target.checked;
-    render();
-  });
+document.getElementById('show-streams').addEventListener('change', (e) => {
+showStreams = e.target.checked;
+render();
+});
   
-  render();
+render();
 })();
 </script>
 <p><strong>Try this:</strong> - <strong>Click right panel</strong> to set pour point (red dot) and extract watershed (green overlay) - <strong>Simple valley:</strong> Water flows down center channel - <strong>Ridge and valleys:</strong> Divides drainage into separate basins - <strong>Complex terrain:</strong> Multiple drainage patterns - <strong>Stream threshold:</strong> Higher = only major streams shown (blue) - <strong>Show flow direction:</strong> Red arrows show where each cell drains - <strong>Left:</strong> Elevation (lighter = higher) - <strong>Right:</strong> Flow accumulation (darker blue = more contributing area)</p>

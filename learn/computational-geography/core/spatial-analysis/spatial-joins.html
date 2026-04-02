@@ -317,300 +317,301 @@ window.Quarto = {
 <hr>
 <h2 id="computational-implementation" class="anchored">5. Computational Implementation</h2>
 <p>Below is an interactive spatial join demonstration.</p>
-<div id="join-viz" class="viz-container">
+<div class="viz-container" id="join-viz">
 <div class="controls">
-<pre><code>&lt;label&gt;
-  Join type:
-  &lt;select id="join-type"&gt;
-    &lt;option value="point-in-polygon" selected&gt;Point-in-Polygon&lt;/option&gt;
-    &lt;option value="nearest-neighbor"&gt;Nearest Neighbor&lt;/option&gt;
-    &lt;option value="within-distance"&gt;Within Distance&lt;/option&gt;
-  &lt;/select&gt;
-&lt;/label&gt;
-&lt;label&gt;
-  Distance threshold (for distance join):
-  &lt;input type="range" id="dist-threshold" min="20" max="150" step="10" value="80"&gt;
-  &lt;span id="dist-value"&gt;80&lt;/span&gt; px
-&lt;/label&gt;
-&lt;label&gt;
-  Show spatial index:
-  &lt;input type="checkbox" id="show-index"&gt;
-&lt;/label&gt;
-&lt;div class="join-info"&gt;
-  &lt;p&gt;&lt;strong&gt;Query features:&lt;/strong&gt; &lt;span id="query-count"&gt;--&lt;/span&gt;&lt;/p&gt;
-  &lt;p&gt;&lt;strong&gt;Target features:&lt;/strong&gt; &lt;span id="target-count"&gt;--&lt;/span&gt;&lt;/p&gt;
-  &lt;p&gt;&lt;strong&gt;Join results:&lt;/strong&gt; &lt;span id="result-count"&gt;--&lt;/span&gt;&lt;/p&gt;
-  &lt;p&gt;&lt;strong&gt;Tests performed:&lt;/strong&gt; &lt;span id="test-count"&gt;--&lt;/span&gt;&lt;/p&gt;
-&lt;/div&gt;</code></pre>
+<label>
+Join type:
+<select id="join-type">
+<option value="point-in-polygon" selected="">Point-in-Polygon</option>
+<option value="nearest-neighbor">Nearest Neighbor</option>
+<option value="within-distance">Within Distance</option>
+</select>
+</label>
+<label>
+Distance threshold (for distance join):
+<input type="range" id="dist-threshold" min="20" max="150" step="10" value="80">
+<span id="dist-value">80</span> px
+</label>
+<label>
+Show spatial index:
+<input type="checkbox" id="show-index">
+</label>
+<div class="join-info">
+<p><strong>Query features:</strong> <span id="query-count">--</span></p>
+<p><strong>Target features:</strong> <span id="target-count">--</span></p>
+<p><strong>Join results:</strong> <span id="result-count">--</span></p>
+<p><strong>Tests performed:</strong> <span id="test-count">--</span></p>
+</div>
 </div>
 <div id="join-canvas-container">
-<pre><code>&lt;canvas id="join-canvas" width="600" height="500" style="border: 1px solid #ddd;"&gt;&lt;/canvas&gt;</code></pre>
+<canvas id="join-canvas" width="600" height="500" style="border: 1px solid #ddd;"></canvas>
 </div>
 </div>
+
 <script type="module">
 (function() {
-  const canvas = document.getElementById('join-canvas');
-  const ctx = canvas.getContext('2d');
+const canvas = document.getElementById('join-canvas');
+const ctx = canvas.getContext('2d');
   
-  let joinType = 'point-in-polygon';
-  let distThreshold = 80;
-  let showIndex = false;
+let joinType = 'point-in-polygon';
+let distThreshold = 80;
+let showIndex = false;
   
-  // Generate random points
-  const points = [];
-  for (let i = 0; i < 20; i++) {
-    points.push({
-      x: 50 + Math.random() * 500,
-      y: 50 + Math.random() * 400,
-      id: i
-    });
-  }
+// Generate random points
+const points = [];
+for (let i = 0; i < 20; i++) {
+points.push({
+x: 50 + Math.random() * 500,
+y: 50 + Math.random() * 400,
+id: i
+});
+}
   
-  // Define grid of polygons
-  const polygons = [];
-  for (let row = 0; row < 2; row++) {
-    for (let col = 0; col < 3; col++) {
-      const x = 100 + col * 150;
-      const y = 100 + row * 200;
-      polygons.push({
-        vertices: [
-          {x: x, y: y},
-          {x: x + 120, y: y},
-          {x: x + 120, y: y + 150},
-          {x: x, y: y + 150}
-        ],
-        id: row * 3 + col,
-        mbr: {
-          xmin: x,
-          ymin: y,
-          xmax: x + 120,
-          ymax: y + 150
-        }
-      });
-    }
-  }
+// Define grid of polygons
+const polygons = [];
+for (let row = 0; row < 2; row++) {
+for (let col = 0; col < 3; col++) {
+const x = 100 + col * 150;
+const y = 100 + row * 200;
+polygons.push({
+vertices: [
+{x: x, y: y},
+{x: x + 120, y: y},
+{x: x + 120, y: y + 150},
+{x: x, y: y + 150}
+],
+id: row * 3 + col,
+mbr: {
+xmin: x,
+ymin: y,
+xmax: x + 120,
+ymax: y + 150
+}
+});
+}
+}
   
-  function pointInPolygon(point, polygon) {
-    let count = 0;
-    const vertices = polygon.vertices;
+function pointInPolygon(point, polygon) {
+let count = 0;
+const vertices = polygon.vertices;
     
-    for (let i = 0; i < vertices.length; i++) {
-      const v1 = vertices[i];
-      const v2 = vertices[(i + 1) % vertices.length];
+for (let i = 0; i < vertices.length; i++) {
+const v1 = vertices[i];
+const v2 = vertices[(i + 1) % vertices.length];
       
-      if ((v1.y <= point.y && point.y < v2.y) ||
-          (v2.y <= point.y && point.y < v1.y)) {
-        const x_intersect = v1.x + (point.y - v1.y) * (v2.x - v1.x) / (v2.y - v1.y);
-        if (x_intersect > point.x) {
-          count++;
-        }
-      }
-    }
+if ((v1.y <= point.y && point.y < v2.y) ||
+(v2.y <= point.y && point.y < v1.y)) {
+const x_intersect = v1.x + (point.y - v1.y) * (v2.x - v1.x) / (v2.y - v1.y);
+if (x_intersect > point.x) {
+count++;
+}
+}
+}
     
-    return (count % 2 === 1);
-  }
+return (count % 2 === 1);
+}
   
-  function mbrContains(mbr, point) {
-    return point.x >= mbr.xmin && point.x <= mbr.xmax &&
-           point.y >= mbr.ymin && point.y <= mbr.ymax;
-  }
+function mbrContains(mbr, point) {
+return point.x >= mbr.xmin && point.x <= mbr.xmax &&
+point.y >= mbr.ymin && point.y <= mbr.ymax;
+}
   
-  function distance(p1, p2) {
-    return Math.sqrt((p2.x - p1.x) ** 2 + (p2.y - p1.y) ** 2);
-  }
+function distance(p1, p2) {
+return Math.sqrt((p2.x - p1.x) ** 2 + (p2.y - p1.y) ** 2);
+}
   
-  function performJoin() {
-    const results = [];
-    let testCount = 0;
+function performJoin() {
+const results = [];
+let testCount = 0;
     
-    if (joinType === 'point-in-polygon') {
-      // Point-in-polygon join with spatial index
-      for (let point of points) {
-        // First filter with MBR
-        const candidates = polygons.filter(poly => {
-          testCount++;
-          return mbrContains(poly.mbr, point);
-        });
+if (joinType === 'point-in-polygon') {
+// Point-in-polygon join with spatial index
+for (let point of points) {
+// First filter with MBR
+const candidates = polygons.filter(poly => {
+testCount++;
+return mbrContains(poly.mbr, point);
+});
         
-        // Then test actual containment
-        for (let poly of candidates) {
-          testCount++;
-          if (pointInPolygon(point, poly)) {
-            results.push({point, poly});
-            break; // Point can only be in one polygon
-          }
-        }
-      }
-    } else if (joinType === 'nearest-neighbor') {
-      // Nearest polygon to each point
-      for (let point of points) {
-        let nearest = null;
-        let minDist = Infinity;
+// Then test actual containment
+for (let poly of candidates) {
+testCount++;
+if (pointInPolygon(point, poly)) {
+results.push({point, poly});
+break; // Point can only be in one polygon
+}
+}
+}
+} else if (joinType === 'nearest-neighbor') {
+// Nearest polygon to each point
+for (let point of points) {
+let nearest = null;
+let minDist = Infinity;
         
-        for (let poly of polygons) {
-          testCount++;
-          // Distance to polygon center (simplified)
-          const cx = (poly.mbr.xmin + poly.mbr.xmax) / 2;
-          const cy = (poly.mbr.ymin + poly.mbr.ymax) / 2;
-          const dist = distance(point, {x: cx, y: cy});
+for (let poly of polygons) {
+testCount++;
+// Distance to polygon center (simplified)
+const cx = (poly.mbr.xmin + poly.mbr.xmax) / 2;
+const cy = (poly.mbr.ymin + poly.mbr.ymax) / 2;
+const dist = distance(point, {x: cx, y: cy});
           
-          if (dist < minDist) {
-            minDist = dist;
-            nearest = poly;
-          }
-        }
+if (dist < minDist) {
+minDist = dist;
+nearest = poly;
+}
+}
         
-        if (nearest) {
-          results.push({point, poly: nearest, distance: minDist});
-        }
-      }
-    } else if (joinType === 'within-distance') {
-      // All point-polygon pairs within threshold
-      for (let point of points) {
-        for (let poly of polygons) {
-          testCount++;
-          const cx = (poly.mbr.xmin + poly.mbr.xmax) / 2;
-          const cy = (poly.mbr.ymin + poly.mbr.ymax) / 2;
-          const dist = distance(point, {x: cx, y: cy});
+if (nearest) {
+results.push({point, poly: nearest, distance: minDist});
+}
+}
+} else if (joinType === 'within-distance') {
+// All point-polygon pairs within threshold
+for (let point of points) {
+for (let poly of polygons) {
+testCount++;
+const cx = (poly.mbr.xmin + poly.mbr.xmax) / 2;
+const cy = (poly.mbr.ymin + poly.mbr.ymax) / 2;
+const dist = distance(point, {x: cx, y: cy});
           
-          if (dist <= distThreshold) {
-            results.push({point, poly, distance: dist});
-          }
-        }
-      }
-    }
+if (dist <= distThreshold) {
+results.push({point, poly, distance: dist});
+}
+}
+}
+}
     
-    return {results, testCount};
-  }
+return {results, testCount};
+}
   
-  function render() {
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
+function render() {
+ctx.clearRect(0, 0, canvas.width, canvas.height);
     
-    const {results, testCount} = performJoin();
+const {results, testCount} = performJoin();
     
-    // Draw MBRs if requested
-    if (showIndex) {
-      ctx.strokeStyle = '#BDC3C7';
-      ctx.lineWidth = 1;
-      ctx.setLineDash([3, 3]);
-      for (let poly of polygons) {
-        ctx.strokeRect(
-          poly.mbr.xmin, poly.mbr.ymin,
-          poly.mbr.xmax - poly.mbr.xmin,
-          poly.mbr.ymax - poly.mbr.ymin
-        );
-      }
-      ctx.setLineDash([]);
-    }
+// Draw MBRs if requested
+if (showIndex) {
+ctx.strokeStyle = '#BDC3C7';
+ctx.lineWidth = 1;
+ctx.setLineDash([3, 3]);
+for (let poly of polygons) {
+ctx.strokeRect(
+poly.mbr.xmin, poly.mbr.ymin,
+poly.mbr.xmax - poly.mbr.xmin,
+poly.mbr.ymax - poly.mbr.ymin
+);
+}
+ctx.setLineDash([]);
+}
     
-    // Draw polygons
-    ctx.strokeStyle = '#34495E';
-    ctx.fillStyle = 'rgba(149, 165, 166, 0.2)';
-    ctx.lineWidth = 2;
+// Draw polygons
+ctx.strokeStyle = '#34495E';
+ctx.fillStyle = 'rgba(149, 165, 166, 0.2)';
+ctx.lineWidth = 2;
     
-    for (let poly of polygons) {
-      ctx.beginPath();
-      ctx.moveTo(poly.vertices[0].x, poly.vertices[0].y);
-      for (let i = 1; i < poly.vertices.length; i++) {
-        ctx.lineTo(poly.vertices[i].x, poly.vertices[i].y);
-      }
-      ctx.closePath();
-      ctx.fill();
-      ctx.stroke();
+for (let poly of polygons) {
+ctx.beginPath();
+ctx.moveTo(poly.vertices[0].x, poly.vertices[0].y);
+for (let i = 1; i < poly.vertices.length; i++) {
+ctx.lineTo(poly.vertices[i].x, poly.vertices[i].y);
+}
+ctx.closePath();
+ctx.fill();
+ctx.stroke();
       
-      // Label
-      const cx = (poly.mbr.xmin + poly.mbr.xmax) / 2;
-      const cy = (poly.mbr.ymin + poly.mbr.ymax) / 2;
-      ctx.fillStyle = '#7F8C8D';
-      ctx.font = '12px monospace';
-      ctx.textAlign = 'center';
-      ctx.fillText(`P${poly.id}`, cx, cy);
-    }
+// Label
+const cx = (poly.mbr.xmin + poly.mbr.xmax) / 2;
+const cy = (poly.mbr.ymin + poly.mbr.ymax) / 2;
+ctx.fillStyle = '#7F8C8D';
+ctx.font = '12px monospace';
+ctx.textAlign = 'center';
+ctx.fillText(`P${poly.id}`, cx, cy);
+}
     
-    // Draw join results
-    if (joinType === 'point-in-polygon') {
-      // Highlight matching polygons
-      for (let result of results) {
-        ctx.fillStyle = 'rgba(46, 204, 113, 0.3)';
-        ctx.beginPath();
-        ctx.moveTo(result.poly.vertices[0].x, result.poly.vertices[0].y);
-        for (let v of result.poly.vertices) {
-          ctx.lineTo(v.x, v.y);
-        }
-        ctx.closePath();
-        ctx.fill();
-      }
-    } else if (joinType === 'nearest-neighbor') {
-      // Draw lines to nearest
-      ctx.strokeStyle = '#3498DB';
-      ctx.lineWidth = 1;
-      for (let result of results) {
-        const cx = (result.poly.mbr.xmin + result.poly.mbr.xmax) / 2;
-        const cy = (result.poly.mbr.ymin + result.poly.mbr.ymax) / 2;
-        ctx.beginPath();
-        ctx.moveTo(result.point.x, result.point.y);
-        ctx.lineTo(cx, cy);
-        ctx.stroke();
-      }
-    } else if (joinType === 'within-distance') {
-      // Draw circles showing threshold
-      ctx.strokeStyle = 'rgba(155, 89, 182, 0.3)';
-      ctx.lineWidth = 1;
-      for (let point of points) {
-        ctx.beginPath();
-        ctx.arc(point.x, point.y, distThreshold, 0, 2 * Math.PI);
-        ctx.stroke();
-      }
+// Draw join results
+if (joinType === 'point-in-polygon') {
+// Highlight matching polygons
+for (let result of results) {
+ctx.fillStyle = 'rgba(46, 204, 113, 0.3)';
+ctx.beginPath();
+ctx.moveTo(result.poly.vertices[0].x, result.poly.vertices[0].y);
+for (let v of result.poly.vertices) {
+ctx.lineTo(v.x, v.y);
+}
+ctx.closePath();
+ctx.fill();
+}
+} else if (joinType === 'nearest-neighbor') {
+// Draw lines to nearest
+ctx.strokeStyle = '#3498DB';
+ctx.lineWidth = 1;
+for (let result of results) {
+const cx = (result.poly.mbr.xmin + result.poly.mbr.xmax) / 2;
+const cy = (result.poly.mbr.ymin + result.poly.mbr.ymax) / 2;
+ctx.beginPath();
+ctx.moveTo(result.point.x, result.point.y);
+ctx.lineTo(cx, cy);
+ctx.stroke();
+}
+} else if (joinType === 'within-distance') {
+// Draw circles showing threshold
+ctx.strokeStyle = 'rgba(155, 89, 182, 0.3)';
+ctx.lineWidth = 1;
+for (let point of points) {
+ctx.beginPath();
+ctx.arc(point.x, point.y, distThreshold, 0, 2 * Math.PI);
+ctx.stroke();
+}
       
-      // Draw connections
-      ctx.strokeStyle = '#9B59B6';
-      for (let result of results) {
-        const cx = (result.poly.mbr.xmin + result.poly.mbr.xmax) / 2;
-        const cy = (result.poly.mbr.ymin + result.poly.mbr.ymax) / 2;
-        ctx.beginPath();
-        ctx.moveTo(result.point.x, result.point.y);
-        ctx.lineTo(cx, cy);
-        ctx.stroke();
-      }
-    }
+// Draw connections
+ctx.strokeStyle = '#9B59B6';
+for (let result of results) {
+const cx = (result.poly.mbr.xmin + result.poly.mbr.xmax) / 2;
+const cy = (result.poly.mbr.ymin + result.poly.mbr.ymax) / 2;
+ctx.beginPath();
+ctx.moveTo(result.point.x, result.point.y);
+ctx.lineTo(cx, cy);
+ctx.stroke();
+}
+}
     
-    // Draw points
-    for (let point of points) {
-      const matched = results.some(r => r.point === point);
-      ctx.fillStyle = matched ? '#E74C3C' : '#3498DB';
-      ctx.beginPath();
-      ctx.arc(point.x, point.y, 5, 0, 2 * Math.PI);
-      ctx.fill();
+// Draw points
+for (let point of points) {
+const matched = results.some(r => r.point === point);
+ctx.fillStyle = matched ? '#E74C3C' : '#3498DB';
+ctx.beginPath();
+ctx.arc(point.x, point.y, 5, 0, 2 * Math.PI);
+ctx.fill();
       
-      ctx.strokeStyle = '#FFF';
-      ctx.lineWidth = 2;
-      ctx.stroke();
-    }
+ctx.strokeStyle = '#FFF';
+ctx.lineWidth = 2;
+ctx.stroke();
+}
     
-    // Update stats
-    document.getElementById('query-count').textContent = points.length;
-    document.getElementById('target-count').textContent = polygons.length;
-    document.getElementById('result-count').textContent = results.length;
-    document.getElementById('test-count').textContent = testCount;
-  }
+// Update stats
+document.getElementById('query-count').textContent = points.length;
+document.getElementById('target-count').textContent = polygons.length;
+document.getElementById('result-count').textContent = results.length;
+document.getElementById('test-count').textContent = testCount;
+}
   
-  document.getElementById('join-type').addEventListener('change', (e) => {
-    joinType = e.target.value;
-    render();
-  });
+document.getElementById('join-type').addEventListener('change', (e) => {
+joinType = e.target.value;
+render();
+});
   
-  document.getElementById('dist-threshold').addEventListener('input', (e) => {
-    distThreshold = parseFloat(e.target.value);
-    document.getElementById('dist-value').textContent = distThreshold;
-    render();
-  });
+document.getElementById('dist-threshold').addEventListener('input', (e) => {
+distThreshold = parseFloat(e.target.value);
+document.getElementById('dist-value').textContent = distThreshold;
+render();
+});
   
-  document.getElementById('show-index').addEventListener('change', (e) => {
-    showIndex = e.target.checked;
-    render();
-  });
+document.getElementById('show-index').addEventListener('change', (e) => {
+showIndex = e.target.checked;
+render();
+});
   
-  render();
+render();
 })();
 </script>
 <p><strong>Try this:</strong> - <strong>Point-in-polygon:</strong> Green polygons contain red points - <strong>Nearest neighbor:</strong> Blue lines connect each point to nearest polygon - <strong>Within distance:</strong> Purple circles show search radius, lines show matches - <strong>Show spatial index:</strong> See MBR bounding boxes (dashed) - <strong>Adjust distance:</strong> Watch connections appear/disappear - Notice: Test count stays low because spatial index filters candidates</p>
@@ -671,29 +672,29 @@ Polygons in UTM Zone 10 (meters)</code></pre>
 <hr>
 <h2 id="extension-spatial-databases" class="anchored">8. Extension: Spatial Databases</h2>
 <p><strong>PostGIS</strong> extends PostgreSQL with spatial types and operations:</p>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb12"><pre class="sourceCode sql code-with-copy"><code class="sourceCode sql"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a><span class="co">-- Create spatial index</span></span>
-<span id="cb12-2"><a href="#cb12-2" aria-hidden="true" tabindex="-1"></a><span class="kw">CREATE</span> <span class="kw">INDEX</span> parcels_geom_idx </span>
-<span id="cb12-3"><a href="#cb12-3" aria-hidden="true" tabindex="-1"></a><span class="kw">ON</span> parcels <span class="kw">USING</span> GIST (geom);</span>
-<span id="cb12-4"><a href="#cb12-4" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb12-5"><a href="#cb12-5" aria-hidden="true" tabindex="-1"></a><span class="co">-- Point-in-polygon join</span></span>
-<span id="cb12-6"><a href="#cb12-6" aria-hidden="true" tabindex="-1"></a><span class="kw">SELECT</span> p.address, c.name</span>
-<span id="cb12-7"><a href="#cb12-7" aria-hidden="true" tabindex="-1"></a><span class="kw">FROM</span> parcels p</span>
-<span id="cb12-8"><a href="#cb12-8" aria-hidden="true" tabindex="-1"></a><span class="kw">JOIN</span> census_tracts c <span class="kw">ON</span> ST_Contains(c.geom, p.geom);</span>
-<span id="cb12-9"><a href="#cb12-9" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb12-10"><a href="#cb12-10" aria-hidden="true" tabindex="-1"></a><span class="co">-- Within distance join</span></span>
-<span id="cb12-11"><a href="#cb12-11" aria-hidden="true" tabindex="-1"></a><span class="kw">SELECT</span> h.<span class="kw">id</span>, s.name</span>
-<span id="cb12-12"><a href="#cb12-12" aria-hidden="true" tabindex="-1"></a><span class="kw">FROM</span> homes h</span>
-<span id="cb12-13"><a href="#cb12-13" aria-hidden="true" tabindex="-1"></a><span class="kw">JOIN</span> schools s <span class="kw">ON</span> ST_DWithin(h.geom, s.geom, <span class="dv">1000</span>);</span>
-<span id="cb12-14"><a href="#cb12-14" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb12-15"><a href="#cb12-15" aria-hidden="true" tabindex="-1"></a><span class="co">-- Nearest neighbor (PostgreSQL 9.5+)</span></span>
-<span id="cb12-16"><a href="#cb12-16" aria-hidden="true" tabindex="-1"></a><span class="kw">SELECT</span> <span class="kw">DISTINCT</span> <span class="kw">ON</span> (h.<span class="kw">id</span>)</span>
-<span id="cb12-17"><a href="#cb12-17" aria-hidden="true" tabindex="-1"></a>    h.<span class="kw">id</span>, s.name, ST_Distance(h.geom, s.geom) <span class="kw">as</span> dist</span>
-<span id="cb12-18"><a href="#cb12-18" aria-hidden="true" tabindex="-1"></a><span class="kw">FROM</span> homes h</span>
-<span id="cb12-19"><a href="#cb12-19" aria-hidden="true" tabindex="-1"></a><span class="kw">CROSS</span> <span class="kw">JOIN</span> LATERAL (</span>
-<span id="cb12-20"><a href="#cb12-20" aria-hidden="true" tabindex="-1"></a>    <span class="kw">SELECT</span> <span class="op">*</span> <span class="kw">FROM</span> schools s</span>
-<span id="cb12-21"><a href="#cb12-21" aria-hidden="true" tabindex="-1"></a>    <span class="kw">ORDER</span> <span class="kw">BY</span> h.geom <span class="op">&lt;-&gt;</span> s.geom</span>
-<span id="cb12-22"><a href="#cb12-22" aria-hidden="true" tabindex="-1"></a>    <span class="kw">LIMIT</span> <span class="dv">1</span></span>
-<span id="cb12-23"><a href="#cb12-23" aria-hidden="true" tabindex="-1"></a>) s;</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb10"><pre class="sourceCode sql code-with-copy"><code class="sourceCode sql"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a><span class="co">-- Create spatial index</span></span>
+<span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a><span class="kw">CREATE</span> <span class="kw">INDEX</span> parcels_geom_idx </span>
+<span id="cb10-3"><a href="#cb10-3" aria-hidden="true" tabindex="-1"></a><span class="kw">ON</span> parcels <span class="kw">USING</span> GIST (geom);</span>
+<span id="cb10-4"><a href="#cb10-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-5"><a href="#cb10-5" aria-hidden="true" tabindex="-1"></a><span class="co">-- Point-in-polygon join</span></span>
+<span id="cb10-6"><a href="#cb10-6" aria-hidden="true" tabindex="-1"></a><span class="kw">SELECT</span> p.address, c.name</span>
+<span id="cb10-7"><a href="#cb10-7" aria-hidden="true" tabindex="-1"></a><span class="kw">FROM</span> parcels p</span>
+<span id="cb10-8"><a href="#cb10-8" aria-hidden="true" tabindex="-1"></a><span class="kw">JOIN</span> census_tracts c <span class="kw">ON</span> ST_Contains(c.geom, p.geom);</span>
+<span id="cb10-9"><a href="#cb10-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-10"><a href="#cb10-10" aria-hidden="true" tabindex="-1"></a><span class="co">-- Within distance join</span></span>
+<span id="cb10-11"><a href="#cb10-11" aria-hidden="true" tabindex="-1"></a><span class="kw">SELECT</span> h.<span class="kw">id</span>, s.name</span>
+<span id="cb10-12"><a href="#cb10-12" aria-hidden="true" tabindex="-1"></a><span class="kw">FROM</span> homes h</span>
+<span id="cb10-13"><a href="#cb10-13" aria-hidden="true" tabindex="-1"></a><span class="kw">JOIN</span> schools s <span class="kw">ON</span> ST_DWithin(h.geom, s.geom, <span class="dv">1000</span>);</span>
+<span id="cb10-14"><a href="#cb10-14" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-15"><a href="#cb10-15" aria-hidden="true" tabindex="-1"></a><span class="co">-- Nearest neighbor (PostgreSQL 9.5+)</span></span>
+<span id="cb10-16"><a href="#cb10-16" aria-hidden="true" tabindex="-1"></a><span class="kw">SELECT</span> <span class="kw">DISTINCT</span> <span class="kw">ON</span> (h.<span class="kw">id</span>)</span>
+<span id="cb10-17"><a href="#cb10-17" aria-hidden="true" tabindex="-1"></a>    h.<span class="kw">id</span>, s.name, ST_Distance(h.geom, s.geom) <span class="kw">as</span> dist</span>
+<span id="cb10-18"><a href="#cb10-18" aria-hidden="true" tabindex="-1"></a><span class="kw">FROM</span> homes h</span>
+<span id="cb10-19"><a href="#cb10-19" aria-hidden="true" tabindex="-1"></a><span class="kw">CROSS</span> <span class="kw">JOIN</span> LATERAL (</span>
+<span id="cb10-20"><a href="#cb10-20" aria-hidden="true" tabindex="-1"></a>    <span class="kw">SELECT</span> <span class="op">*</span> <span class="kw">FROM</span> schools s</span>
+<span id="cb10-21"><a href="#cb10-21" aria-hidden="true" tabindex="-1"></a>    <span class="kw">ORDER</span> <span class="kw">BY</span> h.geom <span class="op">&lt;-&gt;</span> s.geom</span>
+<span id="cb10-22"><a href="#cb10-22" aria-hidden="true" tabindex="-1"></a>    <span class="kw">LIMIT</span> <span class="dv">1</span></span>
+<span id="cb10-23"><a href="#cb10-23" aria-hidden="true" tabindex="-1"></a>) s;</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <p><strong>GIST index</strong> = R-tree implementation in PostgreSQL.</p>
 <p><strong>Performance:</strong> Handles millions of features efficiently.</p>
 <hr>

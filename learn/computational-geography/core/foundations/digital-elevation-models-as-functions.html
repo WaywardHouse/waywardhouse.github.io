@@ -257,31 +257,30 @@ z(15, 5) &amp;= (1 - 0.5)(1 - 0.5)(105) + (0.5)(1 - 0.5)(110) \\
 <hr>
 <h2 id="computational-implementation" class="anchored">5. Computational Implementation</h2>
 <p>Below is an interactive 3D visualization of a synthetic DEM.</p>
-<div id="dem-viz" class="viz-container">
+<div class="viz-container" id="dem-viz">
 <div class="controls">
-<pre><code>&lt;label&gt;
-  Terrain type:
-  &lt;select id="terrain-select"&gt;
-    &lt;option value="cone"&gt;Cone (radial peak)&lt;/option&gt;
-    &lt;option value="saddle"&gt;Saddle point&lt;/option&gt;
-    &lt;option value="plane"&gt;Tilted plane&lt;/option&gt;
-    &lt;option value="ridge"&gt;Ridge&lt;/option&gt;
-    &lt;option value="valley"&gt;Valley&lt;/option&gt;
-  &lt;/select&gt;
-&lt;/label&gt;
-&lt;label&gt;
-  Grid resolution:
-  &lt;input type="range" id="resolution-slider" min="10" max="50" step="5" value="30"&gt;
-  &lt;span id="resolution-value"&gt;30&lt;/span&gt; cells
-&lt;/label&gt;</code></pre>
+<label>
+Terrain type:
+<select id="terrain-select">
+<option value="cone">Cone (radial peak)</option>
+<option value="saddle">Saddle point</option>
+<option value="plane">Tilted plane</option>
+<option value="ridge">Ridge</option>
+<option value="valley">Valley</option>
+</select>
+</label>
+<label>
+Grid resolution:
+<input type="range" id="resolution-slider" min="10" max="50" step="5" value="30">
+<span id="resolution-value">30</span> cells
+</label>
 </div>
-<div id="dem-chart" style="width: 100%; height: 500px;">
-
-</div>
+<div id="dem-chart" style="width: 100%; height: 500px;"></div>
 <div class="info-panel">
-<pre><code>&lt;p&gt;Each cell represents one grid point in the raster. Colour encodes elevation (blue = low, red = high). This top-down view is exactly how a DEM is stored: a 2D array of elevation values.&lt;/p&gt;</code></pre>
+<p>Each cell represents one grid point in the raster. Colour encodes elevation (blue = low, red = high). This top-down view is exactly how a DEM is stored: a 2D array of elevation values.</p>
 </div>
 </div>
+
 <script type="module">
 while (!window.echarts) await new Promise(r => setTimeout(r, 50));
 
@@ -291,101 +290,101 @@ let terrainType = 'cone';
 let resolution = 30;
 
 function generateDEM(type, res) {
-  const data = [];
-  const extent = 100;
-  const step = extent / res;
+const data = [];
+const extent = 100;
+const step = extent / res;
 
-  for (let i = 0; i < res; i++) {
-    for (let j = 0; j < res; j++) {
-      const x = (j - res / 2) * step;
-      const y = (i - res / 2) * step;
-      let z;
+for (let i = 0; i < res; i++) {
+for (let j = 0; j < res; j++) {
+const x = (j - res / 2) * step;
+const y = (i - res / 2) * step;
+let z;
 
-      switch (type) {
-        case 'cone':   z = 50 - Math.sqrt(x * x + y * y) * 0.5; break;
-        case 'saddle': z = (x * x - y * y) * 0.01; break;
-        case 'plane':  z = 10 + x * 0.3 + y * 0.2; break;
-        case 'ridge':  z = 30 - Math.abs(x) * 0.3 + y * 0.1; break;
-        case 'valley': z = Math.abs(y) * 0.3 - 20 + x * 0.1; break;
-      }
+switch (type) {
+case 'cone':   z = 50 - Math.sqrt(x * x + y * y) * 0.5; break;
+case 'saddle': z = (x * x - y * y) * 0.01; break;
+case 'plane':  z = 10 + x * 0.3 + y * 0.2; break;
+case 'ridge':  z = 30 - Math.abs(x) * 0.3 + y * 0.1; break;
+case 'valley': z = Math.abs(y) * 0.3 - 20 + x * 0.1; break;
+}
 
-      data.push([j, i, +z.toFixed(2)]);
-    }
-  }
-  return data;
+data.push([j, i, +z.toFixed(2)]);
+}
+}
+return data;
 }
 
 function updateChart() {
-  const data = generateDEM(terrainType, resolution);
-  const zValues = data.map(d => d[2]);
-  const zMin = Math.min(...zValues);
-  const zMax = Math.max(...zValues);
-  const cols = Array.from({ length: resolution }, (_, i) => i);
-  const rows = Array.from({ length: resolution }, (_, i) => i);
+const data = generateDEM(terrainType, resolution);
+const zValues = data.map(d => d[2]);
+const zMin = Math.min(...zValues);
+const zMax = Math.max(...zValues);
+const cols = Array.from({ length: resolution }, (_, i) => i);
+const rows = Array.from({ length: resolution }, (_, i) => i);
 
-  const option = {
-    title: {
-      text: `DEM Grid: ${terrainType} (${resolution}×${resolution} cells)`,
-      left: 'center'
-    },
-    tooltip: {
-      trigger: 'item',
-      formatter: params => {
-        const [col, row, z] = params.value;
-        return `Col ${col} (East), Row ${row} (North)<br/>Elevation: ${z} m`;
-      }
-    },
-    visualMap: {
-      show: true,
-      min: zMin,
-      max: zMax,
-      calculable: true,
-      orient: 'horizontal',
-      left: 'center',
-      bottom: '2%',
-      inRange: {
-        color: ['#313695', '#4575b4', '#74add1', '#abd9e9', '#e0f3f8',
-                '#ffffbf', '#fee090', '#fdae61', '#f46d43', '#d73027', '#a50026']
-      }
-    },
-    grid: { top: 60, bottom: 90, left: 50, right: 20 },
-    xAxis: {
-      type: 'category',
-      data: cols,
-      name: 'Column (East →)',
-      nameLocation: 'middle',
-      nameGap: 25,
-      axisLabel: { show: resolution <= 20 }
-    },
-    yAxis: {
-      type: 'category',
-      data: rows,
-      name: 'Row (North ↑)',
-      nameLocation: 'middle',
-      nameGap: 35,
-      axisLabel: { show: resolution <= 20 }
-    },
-    series: [{
-      type: 'heatmap',
-      data: data,
-      emphasis: {
-        itemStyle: { shadowBlur: 5, shadowColor: 'rgba(0,0,0,0.4)' }
-      }
-    }]
-  };
+const option = {
+title: {
+text: `DEM Grid: ${terrainType} (${resolution}×${resolution} cells)`,
+left: 'center'
+},
+tooltip: {
+trigger: 'item',
+formatter: params => {
+const [col, row, z] = params.value;
+return `Col ${col} (East), Row ${row} (North)<br/>Elevation: ${z} m`;
+}
+},
+visualMap: {
+show: true,
+min: zMin,
+max: zMax,
+calculable: true,
+orient: 'horizontal',
+left: 'center',
+bottom: '2%',
+inRange: {
+color: ['#313695', '#4575b4', '#74add1', '#abd9e9', '#e0f3f8',
+'#ffffbf', '#fee090', '#fdae61', '#f46d43', '#d73027', '#a50026']
+}
+},
+grid: { top: 60, bottom: 90, left: 50, right: 20 },
+xAxis: {
+type: 'category',
+data: cols,
+name: 'Column (East →)',
+nameLocation: 'middle',
+nameGap: 25,
+axisLabel: { show: resolution <= 20 }
+},
+yAxis: {
+type: 'category',
+data: rows,
+name: 'Row (North ↑)',
+nameLocation: 'middle',
+nameGap: 35,
+axisLabel: { show: resolution <= 20 }
+},
+series: [{
+type: 'heatmap',
+data: data,
+emphasis: {
+itemStyle: { shadowBlur: 5, shadowColor: 'rgba(0,0,0,0.4)' }
+}
+}]
+};
 
-  chart.setOption(option);
+chart.setOption(option);
 }
 
 document.getElementById('terrain-select').addEventListener('change', e => {
-  terrainType = e.target.value;
-  updateChart();
+terrainType = e.target.value;
+updateChart();
 });
 
 document.getElementById('resolution-slider').addEventListener('input', e => {
-  resolution = parseInt(e.target.value);
-  document.getElementById('resolution-value').textContent = resolution;
-  updateChart();
+resolution = parseInt(e.target.value);
+document.getElementById('resolution-value').textContent = resolution;
+updateChart();
 });
 
 updateChart();

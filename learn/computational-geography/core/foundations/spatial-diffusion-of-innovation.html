@@ -261,311 +261,310 @@ The innovation spreads between locations via the network (contagion), and within
 <hr>
 <h2 id="computational-implementation" class="anchored">5. Computational Implementation</h2>
 <p>Below is an interactive spatial diffusion simulation.</p>
-<div id="diffusion-viz" class="viz-container">
+<div class="viz-container" id="diffusion-viz">
 <div class="controls">
-<pre><code>&lt;label&gt;
-  Network type:
-  &lt;select id="network-select"&gt;
-    &lt;option value="grid"&gt;Grid (nearest neighbors)&lt;/option&gt;
-    &lt;option value="hub"&gt;Hub-and-spoke&lt;/option&gt;
-    &lt;option value="random"&gt;Random network&lt;/option&gt;
-    &lt;option value="distance"&gt;Distance-weighted&lt;/option&gt;
-  &lt;/select&gt;
-&lt;/label&gt;
-&lt;label&gt;
-  Transmission rate (β):
-  &lt;input type="range" id="beta-slider" min="0.05" max="0.5" step="0.05" value="0.2"&gt;
-  &lt;span id="beta-value"&gt;0.20&lt;/span&gt;
-&lt;/label&gt;
-&lt;label&gt;
-  Internal growth rate (r):
-  &lt;input type="range" id="r-diffusion-slider" min="0.05" max="0.3" step="0.05" value="0.1"&gt;
-  &lt;span id="r-diffusion-value"&gt;0.10&lt;/span&gt;
-&lt;/label&gt;
-&lt;div class="button-group"&gt;
-  &lt;button id="step-btn"&gt;Step Forward&lt;/button&gt;
-  &lt;button id="play-btn"&gt;Play&lt;/button&gt;
-  &lt;button id="reset-btn"&gt;Reset&lt;/button&gt;
-&lt;/div&gt;</code></pre>
+<label>
+Network type:
+<select id="network-select">
+<option value="grid">Grid (nearest neighbors)</option>
+<option value="hub">Hub-and-spoke</option>
+<option value="random">Random network</option>
+<option value="distance">Distance-weighted</option>
+</select>
+</label>
+<label>
+Transmission rate (β):
+<input type="range" id="beta-slider" min="0.05" max="0.5" step="0.05" value="0.2">
+<span id="beta-value">0.20</span>
+</label>
+<label>
+Internal growth rate (r):
+<input type="range" id="r-diffusion-slider" min="0.05" max="0.3" step="0.05" value="0.1">
+<span id="r-diffusion-value">0.10</span>
+</label>
+<div class="button-group">
+<button id="step-btn">Step Forward</button>
+<button id="play-btn">Play</button>
+<button id="reset-btn">Reset</button>
 </div>
-<div id="diffusion-chart" style="width: 100%; height: 500px;">
-
 </div>
+<div id="diffusion-chart" style="width: 100%; height: 500px;"></div>
 <div class="info-panel">
-<pre><code>&lt;p id="diffusion-stats"&gt;&lt;/p&gt;</code></pre>
+<p id="diffusion-stats"></p>
 </div>
 </div>
+
 <script type="module">
 await new Promise(resolve => {
-  const checkECharts = () => {
-    if (typeof echarts !== 'undefined') resolve();
-    else setTimeout(checkECharts, 50);
-  };
-  checkECharts();
+const checkECharts = () => {
+if (typeof echarts !== 'undefined') resolve();
+else setTimeout(checkECharts, 50);
+};
+checkECharts();
 });
 
 (function() {
-  const chart = echarts.init(document.getElementById('diffusion-chart'));
+const chart = echarts.init(document.getElementById('diffusion-chart'));
   
-  let networkType = 'grid';
-  let beta = 0.2;
-  let r = 0.1;
-  let time = 0;
-  let playing = false;
-  let playInterval = null;
+let networkType = 'grid';
+let beta = 0.2;
+let r = 0.1;
+let time = 0;
+let playing = false;
+let playInterval = null;
   
-  let nodes = [];
-  let edges = [];
-  let adjacency = [];
+let nodes = [];
+let edges = [];
+let adjacency = [];
   
-  function generateNetwork(type) {
-    const n = type === 'grid' ? 25 : 15;
-    const nodeList = [];
-    const edgeList = [];
-    const adj = Array(n).fill(0).map(() => Array(n).fill(0));
+function generateNetwork(type) {
+const n = type === 'grid' ? 25 : 15;
+const nodeList = [];
+const edgeList = [];
+const adj = Array(n).fill(0).map(() => Array(n).fill(0));
     
-    if (type === 'grid') {
-      // 5x5 grid
-      for (let i = 0; i < 5; i++) {
-        for (let j = 0; j < 5; j++) {
-          const idx = i * 5 + j;
-          nodeList.push({
-            name: `${idx}`,
-            x: j * 100 + 50,
-            y: i * 100 + 50,
-            pop: 100,
-            adopters: (i === 2 && j === 2) ? 50 : 0,
-            category: 0
-          });
+if (type === 'grid') {
+// 5x5 grid
+for (let i = 0; i < 5; i++) {
+for (let j = 0; j < 5; j++) {
+const idx = i * 5 + j;
+nodeList.push({
+name: `${idx}`,
+x: j * 100 + 50,
+y: i * 100 + 50,
+pop: 100,
+adopters: (i === 2 && j === 2) ? 50 : 0,
+category: 0
+});
           
-          // Connect to neighbors
-          if (j < 4) { // Right
-            adj[idx][idx + 1] = 1;
-            adj[idx + 1][idx] = 1;
-          }
-          if (i < 4) { // Down
-            adj[idx][idx + 5] = 1;
-            adj[idx + 5][idx] = 1;
-          }
-        }
-      }
+// Connect to neighbors
+if (j < 4) { // Right
+adj[idx][idx + 1] = 1;
+adj[idx + 1][idx] = 1;
+}
+if (i < 4) { // Down
+adj[idx][idx + 5] = 1;
+adj[idx + 5][idx] = 1;
+}
+}
+}
       
-    } else if (type === 'hub') {
-      // Hub and spoke
-      nodeList.push({name: '0', x: 250, y: 250, pop: 500, adopters: 250, category: 1});
+} else if (type === 'hub') {
+// Hub and spoke
+nodeList.push({name: '0', x: 250, y: 250, pop: 500, adopters: 250, category: 1});
       
-      for (let i = 1; i < n; i++) {
-        const angle = (i - 1) * 2 * Math.PI / (n - 1);
-        nodeList.push({
-          name: `${i}`,
-          x: 250 + 180 * Math.cos(angle),
-          y: 250 + 180 * Math.sin(angle),
-          pop: 100,
-          adopters: 0,
-          category: 0
-        });
-        adj[0][i] = 1;
-        adj[i][0] = 1;
-      }
+for (let i = 1; i < n; i++) {
+const angle = (i - 1) * 2 * Math.PI / (n - 1);
+nodeList.push({
+name: `${i}`,
+x: 250 + 180 * Math.cos(angle),
+y: 250 + 180 * Math.sin(angle),
+pop: 100,
+adopters: 0,
+category: 0
+});
+adj[0][i] = 1;
+adj[i][0] = 1;
+}
       
-    } else if (type === 'random') {
-      for (let i = 0; i < n; i++) {
-        nodeList.push({
-          name: `${i}`,
-          x: Math.random() * 450 + 25,
-          y: Math.random() * 450 + 25,
-          pop: Math.floor(Math.random() * 200) + 50,
-          adopters: i === 0 ? 50 : 0,
-          category: 0
-        });
-      }
-      // Random edges
-      for (let i = 0; i < n; i++) {
-        for (let j = i + 1; j < n; j++) {
-          if (Math.random() < 0.2) {
-            adj[i][j] = 1;
-            adj[j][i] = 1;
-          }
-        }
-      }
+} else if (type === 'random') {
+for (let i = 0; i < n; i++) {
+nodeList.push({
+name: `${i}`,
+x: Math.random() * 450 + 25,
+y: Math.random() * 450 + 25,
+pop: Math.floor(Math.random() * 200) + 50,
+adopters: i === 0 ? 50 : 0,
+category: 0
+});
+}
+// Random edges
+for (let i = 0; i < n; i++) {
+for (let j = i + 1; j < n; j++) {
+if (Math.random() < 0.2) {
+adj[i][j] = 1;
+adj[j][i] = 1;
+}
+}
+}
       
-    } else if (type === 'distance') {
-      for (let i = 0; i < n; i++) {
-        nodeList.push({
-          name: `${i}`,
-          x: Math.random() * 450 + 25,
-          y: Math.random() * 450 + 25,
-          pop: Math.floor(Math.random() * 200) + 50,
-          adopters: i === 0 ? 50 : 0,
-          category: 0
-        });
-      }
-      // Distance-weighted edges
-      for (let i = 0; i < n; i++) {
-        for (let j = i + 1; j < n; j++) {
-          const d = Math.sqrt((nodeList[i].x - nodeList[j].x)**2 + 
-                              (nodeList[i].y - nodeList[j].y)**2);
-          if (d < 150) {
-            adj[i][j] = Math.max(0.1, 1 - d / 150);
-            adj[j][i] = adj[i][j];
-          }
-        }
-      }
-    }
+} else if (type === 'distance') {
+for (let i = 0; i < n; i++) {
+nodeList.push({
+name: `${i}`,
+x: Math.random() * 450 + 25,
+y: Math.random() * 450 + 25,
+pop: Math.floor(Math.random() * 200) + 50,
+adopters: i === 0 ? 50 : 0,
+category: 0
+});
+}
+// Distance-weighted edges
+for (let i = 0; i < n; i++) {
+for (let j = i + 1; j < n; j++) {
+const d = Math.sqrt((nodeList[i].x - nodeList[j].x)**2 + 
+(nodeList[i].y - nodeList[j].y)**2);
+if (d < 150) {
+adj[i][j] = Math.max(0.1, 1 - d / 150);
+adj[j][i] = adj[i][j];
+}
+}
+}
+}
     
-    // Build edge list for visualization
-    for (let i = 0; i < n; i++) {
-      for (let j = i + 1; j < n; j++) {
-        if (adj[i][j] > 0) {
-          edgeList.push({source: `${i}`, target: `${j}`});
-        }
-      }
-    }
+// Build edge list for visualization
+for (let i = 0; i < n; i++) {
+for (let j = i + 1; j < n; j++) {
+if (adj[i][j] > 0) {
+edgeList.push({source: `${i}`, target: `${j}`});
+}
+}
+}
     
-    return {nodes: nodeList, edges: edgeList, adjacency: adj};
-  }
+return {nodes: nodeList, edges: edgeList, adjacency: adj};
+}
   
-  function stepSimulation() {
-    const n = nodes.length;
-    const newAdopters = nodes.map(node => node.adopters);
+function stepSimulation() {
+const n = nodes.length;
+const newAdopters = nodes.map(node => node.adopters);
     
-    for (let i = 0; i < n; i++) {
-      const I = nodes[i].adopters;
-      const N = nodes[i].pop;
-      const S = N - I;
+for (let i = 0; i < n; i++) {
+const I = nodes[i].adopters;
+const N = nodes[i].pop;
+const S = N - I;
       
-      // Internal diffusion
-      const deltaInternal = r * I * (1 - I / N);
+// Internal diffusion
+const deltaInternal = r * I * (1 - I / N);
       
-      // External diffusion
-      let externalPressure = 0;
-      for (let j = 0; j < n; j++) {
-        if (adjacency[i][j] > 0) {
-          externalPressure += adjacency[i][j] * (nodes[j].adopters / nodes[j].pop);
-        }
-      }
-      const deltaExternal = beta * S * externalPressure;
+// External diffusion
+let externalPressure = 0;
+for (let j = 0; j < n; j++) {
+if (adjacency[i][j] > 0) {
+externalPressure += adjacency[i][j] * (nodes[j].adopters / nodes[j].pop);
+}
+}
+const deltaExternal = beta * S * externalPressure;
       
-      newAdopters[i] = Math.min(N, I + deltaInternal + deltaExternal);
-    }
+newAdopters[i] = Math.min(N, I + deltaInternal + deltaExternal);
+}
     
-    nodes.forEach((node, i) => {
-      node.adopters = newAdopters[i];
-      node.category = node.adopters / node.pop > 0.5 ? 1 : 0;
-    });
+nodes.forEach((node, i) => {
+node.adopters = newAdopters[i];
+node.category = node.adopters / node.pop > 0.5 ? 1 : 0;
+});
     
-    time++;
-    updateChart();
-  }
+time++;
+updateChart();
+}
   
-  function updateChart() {
-    const totalPop = nodes.reduce((sum, n) => sum + n.pop, 0);
-    const totalAdopters = nodes.reduce((sum, n) => sum + n.adopters, 0);
-    const adoptionRate = (totalAdopters / totalPop * 100).toFixed(1);
+function updateChart() {
+const totalPop = nodes.reduce((sum, n) => sum + n.pop, 0);
+const totalAdopters = nodes.reduce((sum, n) => sum + n.adopters, 0);
+const adoptionRate = (totalAdopters / totalPop * 100).toFixed(1);
     
-    document.getElementById('diffusion-stats').innerHTML = 
-      `<strong>Time step:</strong> ${time} | <strong>Adoption rate:</strong> ${adoptionRate}% | <strong>Adopters:</strong> ${Math.round(totalAdopters)} / ${totalPop}`;
+document.getElementById('diffusion-stats').innerHTML = 
+`<strong>Time step:</strong> ${time} | <strong>Adoption rate:</strong> ${adoptionRate}% | <strong>Adopters:</strong> ${Math.round(totalAdopters)} / ${totalPop}`;
     
-    const option = {
-      title: {
-        text: `Spatial Diffusion (${networkType} network)`,
-        left: 'center'
-      },
-      tooltip: {
-        formatter: params => {
-          if (params.dataType === 'node') {
-            const node = nodes[parseInt(params.name)];
-            return `Node ${params.name}<br/>Adopters: ${Math.round(node.adopters)} / ${node.pop}<br/>Rate: ${(node.adopters/node.pop*100).toFixed(1)}%`;
-          }
-          return '';
-        }
-      },
-      series: [{
-        type: 'graph',
-        layout: 'none',
-        data: nodes.map((n, i) => ({
-          name: n.name,
-          x: n.x,
-          y: n.y,
-          symbolSize: Math.sqrt(n.pop) * 2,
-          value: n.adopters / n.pop,
-          itemStyle: {
-            color: `rgb(${255 * (1 - n.adopters/n.pop)}, ${100 + 155 * (n.adopters/n.pop)}, ${240 * (1 - n.adopters/n.pop)})`
-          }
-        })),
-        links: edges,
-        lineStyle: {
-          color: '#ccc',
-          width: 1,
-          curveness: 0
-        },
-        label: {
-          show: false
-        },
-        emphasis: {
-          focus: 'adjacency',
-          lineStyle: {
-            width: 3
-          }
-        }
-      }]
-    };
+const option = {
+title: {
+text: `Spatial Diffusion (${networkType} network)`,
+left: 'center'
+},
+tooltip: {
+formatter: params => {
+if (params.dataType === 'node') {
+const node = nodes[parseInt(params.name)];
+return `Node ${params.name}<br/>Adopters: ${Math.round(node.adopters)} / ${node.pop}<br/>Rate: ${(node.adopters/node.pop*100).toFixed(1)}%`;
+}
+return '';
+}
+},
+series: [{
+type: 'graph',
+layout: 'none',
+data: nodes.map((n, i) => ({
+name: n.name,
+x: n.x,
+y: n.y,
+symbolSize: Math.sqrt(n.pop) * 2,
+value: n.adopters / n.pop,
+itemStyle: {
+color: `rgb(${255 * (1 - n.adopters/n.pop)}, ${100 + 155 * (n.adopters/n.pop)}, ${240 * (1 - n.adopters/n.pop)})`
+}
+})),
+links: edges,
+lineStyle: {
+color: '#ccc',
+width: 1,
+curveness: 0
+},
+label: {
+show: false
+},
+emphasis: {
+focus: 'adjacency',
+lineStyle: {
+width: 3
+}
+}
+}]
+};
     
-    chart.setOption(option);
-  }
+chart.setOption(option);
+}
   
-  function reset() {
-    const network = generateNetwork(networkType);
-    nodes = network.nodes;
-    edges = network.edges;
-    adjacency = network.adjacency;
-    time = 0;
-    updateChart();
-  }
+function reset() {
+const network = generateNetwork(networkType);
+nodes = network.nodes;
+edges = network.edges;
+adjacency = network.adjacency;
+time = 0;
+updateChart();
+}
   
-  document.getElementById('network-select').addEventListener('change', (e) => {
-    networkType = e.target.value;
-    reset();
-  });
+document.getElementById('network-select').addEventListener('change', (e) => {
+networkType = e.target.value;
+reset();
+});
   
-  document.getElementById('beta-slider').addEventListener('input', (e) => {
-    beta = parseFloat(e.target.value);
-    document.getElementById('beta-value').textContent = beta.toFixed(2);
-  });
+document.getElementById('beta-slider').addEventListener('input', (e) => {
+beta = parseFloat(e.target.value);
+document.getElementById('beta-value').textContent = beta.toFixed(2);
+});
   
-  document.getElementById('r-diffusion-slider').addEventListener('input', (e) => {
-    r = parseFloat(e.target.value);
-    document.getElementById('r-diffusion-value').textContent = r.toFixed(2);
-  });
+document.getElementById('r-diffusion-slider').addEventListener('input', (e) => {
+r = parseFloat(e.target.value);
+document.getElementById('r-diffusion-value').textContent = r.toFixed(2);
+});
   
-  document.getElementById('step-btn').addEventListener('click', () => {
-    stepSimulation();
-  });
+document.getElementById('step-btn').addEventListener('click', () => {
+stepSimulation();
+});
   
-  document.getElementById('play-btn').addEventListener('click', (e) => {
-    if (playing) {
-      clearInterval(playInterval);
-      e.target.textContent = 'Play';
-      playing = false;
-    } else {
-      playInterval = setInterval(stepSimulation, 500);
-      e.target.textContent = 'Pause';
-      playing = true;
-    }
-  });
+document.getElementById('play-btn').addEventListener('click', (e) => {
+if (playing) {
+clearInterval(playInterval);
+e.target.textContent = 'Play';
+playing = false;
+} else {
+playInterval = setInterval(stepSimulation, 500);
+e.target.textContent = 'Pause';
+playing = true;
+}
+});
   
-  document.getElementById('reset-btn').addEventListener('click', () => {
-    if (playing) {
-      clearInterval(playInterval);
-      document.getElementById('play-btn').textContent = 'Play';
-      playing = false;
-    }
-    reset();
-  });
+document.getElementById('reset-btn').addEventListener('click', () => {
+if (playing) {
+clearInterval(playInterval);
+document.getElementById('play-btn').textContent = 'Play';
+playing = false;
+}
+reset();
+});
   
-  reset();
+reset();
   
-  window.addEventListener('resize', () => chart.resize());
+window.addEventListener('resize', () => chart.resize());
 })();
 </script>
 <p><strong>Try this:</strong> - <strong>Grid network:</strong> Diffusion spreads outward in waves from the center - <strong>Hub network:</strong> Central city infects all spokes rapidly, then they spread internally - <strong>Random network:</strong> Irregular diffusion pattern, depends on network structure - <strong>Distance-weighted:</strong> Closer neighbors exert stronger influence - Increase β: Faster spatial spread - Increase r: Faster internal adoption once innovation arrives</p>

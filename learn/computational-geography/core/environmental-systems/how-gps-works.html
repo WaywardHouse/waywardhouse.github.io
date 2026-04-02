@@ -299,362 +299,361 @@ window.Quarto = {
 <hr>
 <h2 id="computational-implementation" class="anchored">8. Computational Implementation</h2>
 <p>Below is an interactive GPS solver.</p>
-<div id="gps-viz" class="viz-container">
+<div class="viz-container" id="gps-viz">
 <div class="controls">
-<pre><code>&lt;label&gt;
-  Number of satellites:
-  &lt;input type="range" id="num-sats-slider" min="4" max="12" step="1" value="6"&gt;
-  &lt;span id="num-sats-value"&gt;6&lt;/span&gt;
-&lt;/label&gt;
-&lt;label&gt;
-  Measurement noise (meters):
-  &lt;input type="range" id="noise-slider" min="0" max="20" step="1" value="5"&gt;
-  &lt;span id="noise-value"&gt;5&lt;/span&gt; m
-&lt;/label&gt;
-&lt;label&gt;
-  Clock bias (nanoseconds):
-  &lt;input type="range" id="bias-slider" min="-100" max="100" step="10" value="50"&gt;
-  &lt;span id="bias-value"&gt;50&lt;/span&gt; ns
-&lt;/label&gt;
-&lt;div class="button-group"&gt;
-  &lt;button id="solve-gps"&gt;Solve Position&lt;/button&gt;
-  &lt;button id="randomize-sats"&gt;Randomize Satellites&lt;/button&gt;
-&lt;/div&gt;</code></pre>
+<label>
+Number of satellites:
+<input type="range" id="num-sats-slider" min="4" max="12" step="1" value="6">
+<span id="num-sats-value">6</span>
+</label>
+<label>
+Measurement noise (meters):
+<input type="range" id="noise-slider" min="0" max="20" step="1" value="5">
+<span id="noise-value">5</span> m
+</label>
+<label>
+Clock bias (nanoseconds):
+<input type="range" id="bias-slider" min="-100" max="100" step="10" value="50">
+<span id="bias-value">50</span> ns
+</label>
+<div class="button-group">
+<button id="solve-gps">Solve Position</button>
+<button id="randomize-sats">Randomize Satellites</button>
+</div>
 </div>
 <div class="gps-results">
-<pre><code>&lt;h4&gt;Solution:&lt;/h4&gt;
-&lt;p&gt;&lt;strong&gt;True position:&lt;/strong&gt; &lt;span id="true-pos"&gt;&lt;/span&gt;&lt;/p&gt;
-&lt;p&gt;&lt;strong&gt;Estimated position:&lt;/strong&gt; &lt;span id="est-pos"&gt;&lt;/span&gt;&lt;/p&gt;
-&lt;p&gt;&lt;strong&gt;Position error:&lt;/strong&gt; &lt;span id="pos-error"&gt;&lt;/span&gt; m&lt;/p&gt;
-&lt;p&gt;&lt;strong&gt;True clock bias:&lt;/strong&gt; &lt;span id="true-bias"&gt;&lt;/span&gt; ns&lt;/p&gt;
-&lt;p&gt;&lt;strong&gt;Estimated clock bias:&lt;/strong&gt; &lt;span id="est-bias"&gt;&lt;/span&gt; ns&lt;/p&gt;
-&lt;p&gt;&lt;strong&gt;Iterations:&lt;/strong&gt; &lt;span id="iterations"&gt;&lt;/span&gt;&lt;/p&gt;
-&lt;p&gt;&lt;strong&gt;PDOP:&lt;/strong&gt; &lt;span id="pdop-value"&gt;&lt;/span&gt;&lt;/p&gt;</code></pre>
+<h4 class="anchored">Solution:</h4>
+<p><strong>True position:</strong> <span id="true-pos"></span></p>
+<p><strong>Estimated position:</strong> <span id="est-pos"></span></p>
+<p><strong>Position error:</strong> <span id="pos-error"></span> m</p>
+<p><strong>True clock bias:</strong> <span id="true-bias"></span> ns</p>
+<p><strong>Estimated clock bias:</strong> <span id="est-bias"></span> ns</p>
+<p><strong>Iterations:</strong> <span id="iterations"></span></p>
+<p><strong>PDOP:</strong> <span id="pdop-value"></span></p>
 </div>
-<div id="gps-chart" style="width: 100%; height: 500px;">
+<div id="gps-chart" style="width: 100%; height: 500px;"></div>
+</div>
 
-</div>
-</div>
 <script type="module">
 while (!window.echarts || !window.__echartsGL) await new Promise(r => setTimeout(r, 50));
 
 (function() {
-  const chart = window.echarts.init(document.getElementById('gps-chart'));
+const chart = window.echarts.init(document.getElementById('gps-chart'));
   
-  const c = 299792458; // m/s
-  const R_earth = 6371000; // m
-  const R_gps = 26571000; // m (GPS orbit radius)
+const c = 299792458; // m/s
+const R_earth = 6371000; // m
+const R_gps = 26571000; // m (GPS orbit radius)
   
-  let numSats = 6;
-  let noise = 5;
-  let clockBias = 50e-9; // seconds
+let numSats = 6;
+let noise = 5;
+let clockBias = 50e-9; // seconds
   
-  // True receiver position (on Earth's surface)
-  let truePos = {
-    x: R_earth * 0.7,
-    y: R_earth * 0.5,
-    z: R_earth * 0.5
-  };
+// True receiver position (on Earth's surface)
+let truePos = {
+x: R_earth * 0.7,
+y: R_earth * 0.5,
+z: R_earth * 0.5
+};
   
-  let satellites = [];
+let satellites = [];
   
-  function randomizeSatellites() {
-    satellites = [];
-    for (let i = 0; i < numSats; i++) {
-      // Random point on GPS orbit sphere
-      const theta = Math.random() * 2 * Math.PI;
-      const phi = Math.acos(2 * Math.random() - 1);
+function randomizeSatellites() {
+satellites = [];
+for (let i = 0; i < numSats; i++) {
+// Random point on GPS orbit sphere
+const theta = Math.random() * 2 * Math.PI;
+const phi = Math.acos(2 * Math.random() - 1);
       
-      satellites.push({
-        x: R_gps * Math.sin(phi) * Math.cos(theta),
-        y: R_gps * Math.sin(phi) * Math.sin(theta),
-        z: R_gps * Math.cos(phi)
-      });
-    }
-  }
+satellites.push({
+x: R_gps * Math.sin(phi) * Math.cos(theta),
+y: R_gps * Math.sin(phi) * Math.sin(theta),
+z: R_gps * Math.cos(phi)
+});
+}
+}
   
-  function distance(p1, p2) {
-    return Math.sqrt(
-      (p1.x - p2.x)**2 + 
-      (p1.y - p2.y)**2 + 
-      (p1.z - p2.z)**2
-    );
-  }
+function distance(p1, p2) {
+return Math.sqrt(
+(p1.x - p2.x)**2 + 
+(p1.y - p2.y)**2 + 
+(p1.z - p2.z)**2
+);
+}
   
-  function solveGPS() {
-    // Generate pseudoranges with noise
-    const pseudoranges = satellites.map(sat => {
-      const trueRange = distance(truePos, sat);
-      const noiseValue = (Math.random() - 0.5) * 2 * noise;
-      return trueRange + c * clockBias + noiseValue;
-    });
+function solveGPS() {
+// Generate pseudoranges with noise
+const pseudoranges = satellites.map(sat => {
+const trueRange = distance(truePos, sat);
+const noiseValue = (Math.random() - 0.5) * 2 * noise;
+return trueRange + c * clockBias + noiseValue;
+});
     
-    // Iterative least squares
-    let x = 0, y = 0, z = 0, b = 0;
-    let iterations = 0;
-    const maxIter = 20;
+// Iterative least squares
+let x = 0, y = 0, z = 0, b = 0;
+let iterations = 0;
+const maxIter = 20;
     
-    for (let iter = 0; iter < maxIter; iter++) {
-      iterations++;
+for (let iter = 0; iter < maxIter; iter++) {
+iterations++;
       
-      // Compute residuals and Jacobian
-      const H = [];
-      const f = [];
+// Compute residuals and Jacobian
+const H = [];
+const f = [];
       
-      satellites.forEach((sat, i) => {
-        const dx = x - sat.x;
-        const dy = y - sat.y;
-        const dz = z - sat.z;
-        const r = Math.sqrt(dx*dx + dy*dy + dz*dz);
+satellites.forEach((sat, i) => {
+const dx = x - sat.x;
+const dy = y - sat.y;
+const dz = z - sat.z;
+const r = Math.sqrt(dx*dx + dy*dy + dz*dz);
         
-        if (r < 1) return; // Skip if too close (shouldn't happen)
+if (r < 1) return; // Skip if too close (shouldn't happen)
         
-        const predicted = r + c * b;
-        const residual = predicted - pseudoranges[i];
+const predicted = r + c * b;
+const residual = predicted - pseudoranges[i];
         
-        H.push([dx/r, dy/r, dz/r, c]);
-        f.push(residual);
-      });
+H.push([dx/r, dy/r, dz/r, c]);
+f.push(residual);
+});
       
-      // Solve H * dx = -f using normal equations
-      // dx = -(H^T H)^-1 H^T f
+// Solve H * dx = -f using normal equations
+// dx = -(H^T H)^-1 H^T f
       
-      const HT = transpose(H);
-      const HTH = matmul(HT, H);
-      const HTf = matvec(HT, f);
+const HT = transpose(H);
+const HTH = matmul(HT, H);
+const HTf = matvec(HT, f);
       
-      try {
-        const HTH_inv = invert4x4(HTH);
-        const dx = matvec(HTH_inv, HTf.map(v => -v));
+try {
+const HTH_inv = invert4x4(HTH);
+const dx = matvec(HTH_inv, HTf.map(v => -v));
         
-        x += dx[0];
-        y += dx[1];
-        z += dx[2];
-        b += dx[3];
+x += dx[0];
+y += dx[1];
+z += dx[2];
+b += dx[3];
         
-        // Check convergence
-        const norm = Math.sqrt(dx[0]**2 + dx[1]**2 + dx[2]**2 + dx[3]**2);
-        if (norm < 1e-3) break;
+// Check convergence
+const norm = Math.sqrt(dx[0]**2 + dx[1]**2 + dx[2]**2 + dx[3]**2);
+if (norm < 1e-3) break;
         
-      } catch(e) {
-        console.error('Matrix inversion failed:', e);
-        break;
-      }
-    }
+} catch(e) {
+console.error('Matrix inversion failed:', e);
+break;
+}
+}
     
-    // Compute PDOP
-    const H = [];
-    satellites.forEach(sat => {
-      const dx = x - sat.x;
-      const dy = y - sat.y;
-      const dz = z - sat.z;
-      const r = Math.sqrt(dx*dx + dy*dy + dz*dz);
-      if (r > 1) {
-        H.push([dx/r, dy/r, dz/r, c]);
-      }
-    });
+// Compute PDOP
+const H = [];
+satellites.forEach(sat => {
+const dx = x - sat.x;
+const dy = y - sat.y;
+const dz = z - sat.z;
+const r = Math.sqrt(dx*dx + dy*dy + dz*dz);
+if (r > 1) {
+H.push([dx/r, dy/r, dz/r, c]);
+}
+});
     
-    let pdop = 0;
-    try {
-      const HT = transpose(H);
-      const HTH = matmul(HT, H);
-      const Q = invert4x4(HTH);
-      pdop = Math.sqrt(Q[0][0] + Q[1][1] + Q[2][2]);
-    } catch(e) {
-      pdop = -1;
-    }
+let pdop = 0;
+try {
+const HT = transpose(H);
+const HTH = matmul(HT, H);
+const Q = invert4x4(HTH);
+pdop = Math.sqrt(Q[0][0] + Q[1][1] + Q[2][2]);
+} catch(e) {
+pdop = -1;
+}
     
-    const estPos = {x, y, z};
-    const posError = distance(estPos, truePos);
+const estPos = {x, y, z};
+const posError = distance(estPos, truePos);
     
-    return {estPos, b, iterations, posError, pdop};
-  }
+return {estPos, b, iterations, posError, pdop};
+}
   
-  function transpose(matrix) {
-    const rows = matrix.length;
-    const cols = matrix[0].length;
-    const result = [];
-    for (let j = 0; j < cols; j++) {
-      result[j] = [];
-      for (let i = 0; i < rows; i++) {
-        result[j][i] = matrix[i][j];
-      }
-    }
-    return result;
-  }
+function transpose(matrix) {
+const rows = matrix.length;
+const cols = matrix[0].length;
+const result = [];
+for (let j = 0; j < cols; j++) {
+result[j] = [];
+for (let i = 0; i < rows; i++) {
+result[j][i] = matrix[i][j];
+}
+}
+return result;
+}
   
-  function matmul(A, B) {
-    const rowsA = A.length;
-    const colsA = A[0].length;
-    const colsB = B[0].length;
-    const result = [];
+function matmul(A, B) {
+const rowsA = A.length;
+const colsA = A[0].length;
+const colsB = B[0].length;
+const result = [];
     
-    for (let i = 0; i < rowsA; i++) {
-      result[i] = [];
-      for (let j = 0; j < colsB; j++) {
-        let sum = 0;
-        for (let k = 0; k < colsA; k++) {
-          sum += A[i][k] * B[k][j];
-        }
-        result[i][j] = sum;
-      }
-    }
-    return result;
-  }
+for (let i = 0; i < rowsA; i++) {
+result[i] = [];
+for (let j = 0; j < colsB; j++) {
+let sum = 0;
+for (let k = 0; k < colsA; k++) {
+sum += A[i][k] * B[k][j];
+}
+result[i][j] = sum;
+}
+}
+return result;
+}
   
-  function matvec(A, v) {
-    return A.map(row => row.reduce((sum, val, i) => sum + val * v[i], 0));
-  }
+function matvec(A, v) {
+return A.map(row => row.reduce((sum, val, i) => sum + val * v[i], 0));
+}
   
-  function invert4x4(m) {
-    // Simplified 4x4 matrix inversion (using cofactor method)
-    // For production, use a proper linear algebra library
-    const det = determinant4x4(m);
-    if (Math.abs(det) < 1e-10) throw new Error('Singular matrix');
+function invert4x4(m) {
+// Simplified 4x4 matrix inversion (using cofactor method)
+// For production, use a proper linear algebra library
+const det = determinant4x4(m);
+if (Math.abs(det) < 1e-10) throw new Error('Singular matrix');
     
-    const inv = [];
-    for (let i = 0; i < 4; i++) {
-      inv[i] = [];
-      for (let j = 0; j < 4; j++) {
-        const minor = getMinor(m, i, j);
-        inv[i][j] = ((-1)**(i+j)) * determinant3x3(minor) / det;
-      }
-    }
-    return transpose(inv);
-  }
+const inv = [];
+for (let i = 0; i < 4; i++) {
+inv[i] = [];
+for (let j = 0; j < 4; j++) {
+const minor = getMinor(m, i, j);
+inv[i][j] = ((-1)**(i+j)) * determinant3x3(minor) / det;
+}
+}
+return transpose(inv);
+}
   
-  function determinant4x4(m) {
-    let det = 0;
-    for (let j = 0; j < 4; j++) {
-      const minor = getMinor(m, 0, j);
-      det += ((-1)**j) * m[0][j] * determinant3x3(minor);
-    }
-    return det;
-  }
+function determinant4x4(m) {
+let det = 0;
+for (let j = 0; j < 4; j++) {
+const minor = getMinor(m, 0, j);
+det += ((-1)**j) * m[0][j] * determinant3x3(minor);
+}
+return det;
+}
   
-  function determinant3x3(m) {
-    return m[0][0]*(m[1][1]*m[2][2] - m[1][2]*m[2][1]) -
-           m[0][1]*(m[1][0]*m[2][2] - m[1][2]*m[2][0]) +
-           m[0][2]*(m[1][0]*m[2][1] - m[1][1]*m[2][0]);
-  }
+function determinant3x3(m) {
+return m[0][0]*(m[1][1]*m[2][2] - m[1][2]*m[2][1]) -
+m[0][1]*(m[1][0]*m[2][2] - m[1][2]*m[2][0]) +
+m[0][2]*(m[1][0]*m[2][1] - m[1][1]*m[2][0]);
+}
   
-  function getMinor(m, row, col) {
-    const minor = [];
-    for (let i = 0; i < 4; i++) {
-      if (i === row) continue;
-      const newRow = [];
-      for (let j = 0; j < 4; j++) {
-        if (j === col) continue;
-        newRow.push(m[i][j]);
-      }
-      minor.push(newRow);
-    }
-    return minor;
-  }
+function getMinor(m, row, col) {
+const minor = [];
+for (let i = 0; i < 4; i++) {
+if (i === row) continue;
+const newRow = [];
+for (let j = 0; j < 4; j++) {
+if (j === col) continue;
+newRow.push(m[i][j]);
+}
+minor.push(newRow);
+}
+return minor;
+}
   
-  function updateDisplay() {
-    const solution = solveGPS();
+function updateDisplay() {
+const solution = solveGPS();
     
-    document.getElementById('true-pos').textContent = 
-      `(${(truePos.x/1000).toFixed(1)}, ${(truePos.y/1000).toFixed(1)}, ${(truePos.z/1000).toFixed(1)}) km`;
-    document.getElementById('est-pos').textContent = 
-      `(${(solution.estPos.x/1000).toFixed(1)}, ${(solution.estPos.y/1000).toFixed(1)}, ${(solution.estPos.z/1000).toFixed(1)}) km`;
-    document.getElementById('pos-error').textContent = solution.posError.toFixed(1);
-    document.getElementById('true-bias').textContent = (clockBias * 1e9).toFixed(1);
-    document.getElementById('est-bias').textContent = (solution.b * 1e9).toFixed(1);
-    document.getElementById('iterations').textContent = solution.iterations;
-    document.getElementById('pdop-value').textContent = solution.pdop > 0 ? solution.pdop.toFixed(2) : 'N/A';
+document.getElementById('true-pos').textContent = 
+`(${(truePos.x/1000).toFixed(1)}, ${(truePos.y/1000).toFixed(1)}, ${(truePos.z/1000).toFixed(1)}) km`;
+document.getElementById('est-pos').textContent = 
+`(${(solution.estPos.x/1000).toFixed(1)}, ${(solution.estPos.y/1000).toFixed(1)}, ${(solution.estPos.z/1000).toFixed(1)}) km`;
+document.getElementById('pos-error').textContent = solution.posError.toFixed(1);
+document.getElementById('true-bias').textContent = (clockBias * 1e9).toFixed(1);
+document.getElementById('est-bias').textContent = (solution.b * 1e9).toFixed(1);
+document.getElementById('iterations').textContent = solution.iterations;
+document.getElementById('pdop-value').textContent = solution.pdop > 0 ? solution.pdop.toFixed(2) : 'N/A';
     
-    updateChart(solution);
-  }
+updateChart(solution);
+}
   
-  function updateChart(solution) {
-    const satData = satellites.map((sat, i) => ({
-      value: [sat.x/1000, sat.y/1000, sat.z/1000],
-      name: `Sat ${i+1}`,
-      symbolSize: 8,
-      itemStyle: { color: '#4A90E2' }
-    }));
+function updateChart(solution) {
+const satData = satellites.map((sat, i) => ({
+value: [sat.x/1000, sat.y/1000, sat.z/1000],
+name: `Sat ${i+1}`,
+symbolSize: 8,
+itemStyle: { color: '#4A90E2' }
+}));
     
-    const option = {
-      title: {
-        text: `GPS Trilateration (${numSats} satellites)`,
-        left: 'center'
-      },
-      tooltip: {},
-      legend: {
-        data: ['Satellites', 'True Position', 'Estimated'],
-        top: 30
-      },
-      xAxis3D: { type: 'value', name: 'X (km)', min: -30000, max: 30000 },
-      yAxis3D: { type: 'value', name: 'Y (km)', min: -30000, max: 30000 },
-      zAxis3D: { type: 'value', name: 'Z (km)', min: -30000, max: 30000 },
-      grid3D: {
-        viewControl: {
-          distance: 250
-        }
-      },
-      series: [
-        {
-          name: 'Satellites',
-          type: 'scatter3D',
-          data: satData,
-          itemStyle: { color: '#4A90E2' }
-        },
-        {
-          name: 'True Position',
-          type: 'scatter3D',
-          data: [{
-            value: [truePos.x/1000, truePos.y/1000, truePos.z/1000],
-            symbolSize: 15,
-            itemStyle: { color: '#2ECC71' }
-          }]
-        },
-        {
-          name: 'Estimated',
-          type: 'scatter3D',
-          data: [{
-            value: [solution.estPos.x/1000, solution.estPos.y/1000, solution.estPos.z/1000],
-            symbolSize: 12,
-            itemStyle: { color: '#F0177A' }
-          }]
-        }
-      ]
-    };
+const option = {
+title: {
+text: `GPS Trilateration (${numSats} satellites)`,
+left: 'center'
+},
+tooltip: {},
+legend: {
+data: ['Satellites', 'True Position', 'Estimated'],
+top: 30
+},
+xAxis3D: { type: 'value', name: 'X (km)', min: -30000, max: 30000 },
+yAxis3D: { type: 'value', name: 'Y (km)', min: -30000, max: 30000 },
+zAxis3D: { type: 'value', name: 'Z (km)', min: -30000, max: 30000 },
+grid3D: {
+viewControl: {
+distance: 250
+}
+},
+series: [
+{
+name: 'Satellites',
+type: 'scatter3D',
+data: satData,
+itemStyle: { color: '#4A90E2' }
+},
+{
+name: 'True Position',
+type: 'scatter3D',
+data: [{
+value: [truePos.x/1000, truePos.y/1000, truePos.z/1000],
+symbolSize: 15,
+itemStyle: { color: '#2ECC71' }
+}]
+},
+{
+name: 'Estimated',
+type: 'scatter3D',
+data: [{
+value: [solution.estPos.x/1000, solution.estPos.y/1000, solution.estPos.z/1000],
+symbolSize: 12,
+itemStyle: { color: '#F0177A' }
+}]
+}
+]
+};
     
-    chart.setOption(option);
-  }
+chart.setOption(option);
+}
   
-  document.getElementById('num-sats-slider').addEventListener('input', (e) => {
-    numSats = parseInt(e.target.value);
-    document.getElementById('num-sats-value').textContent = numSats;
-    randomizeSatellites();
-    updateDisplay();
-  });
+document.getElementById('num-sats-slider').addEventListener('input', (e) => {
+numSats = parseInt(e.target.value);
+document.getElementById('num-sats-value').textContent = numSats;
+randomizeSatellites();
+updateDisplay();
+});
   
-  document.getElementById('noise-slider').addEventListener('input', (e) => {
-    noise = parseFloat(e.target.value);
-    document.getElementById('noise-value').textContent = noise;
-  });
+document.getElementById('noise-slider').addEventListener('input', (e) => {
+noise = parseFloat(e.target.value);
+document.getElementById('noise-value').textContent = noise;
+});
   
-  document.getElementById('bias-slider').addEventListener('input', (e) => {
-    clockBias = parseFloat(e.target.value) * 1e-9;
-    document.getElementById('bias-value').textContent = e.target.value;
-  });
+document.getElementById('bias-slider').addEventListener('input', (e) => {
+clockBias = parseFloat(e.target.value) * 1e-9;
+document.getElementById('bias-value').textContent = e.target.value;
+});
   
-  document.getElementById('solve-gps').addEventListener('click', () => {
-    updateDisplay();
-  });
+document.getElementById('solve-gps').addEventListener('click', () => {
+updateDisplay();
+});
   
-  document.getElementById('randomize-sats').addEventListener('click', () => {
-    randomizeSatellites();
-    updateDisplay();
-  });
+document.getElementById('randomize-sats').addEventListener('click', () => {
+randomizeSatellites();
+updateDisplay();
+});
   
-  randomizeSatellites();
-  updateDisplay();
+randomizeSatellites();
+updateDisplay();
   
-  window.addEventListener('resize', () => chart.resize());
+window.addEventListener('resize', () => chart.resize());
 })();
 </script>
 <p><strong>Try this:</strong> - <strong>Increase satellites:</strong> More satellites reduce error and improve PDOP - <strong>Add noise:</strong> See how measurement errors affect position accuracy - <strong>Change clock bias:</strong> Even large biases (100 ns) are solved correctly - <strong>Randomize satellites:</strong> Different geometries produce different PDOP values - Notice: The estimated position (pink) converges to true position (green) despite clock bias</p>

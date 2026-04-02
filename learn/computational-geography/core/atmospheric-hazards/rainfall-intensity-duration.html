@@ -294,203 +294,204 @@ window.Quarto = {
 <hr>
 <h2 id="computational-implementation" class="anchored">5. Computational Implementation</h2>
 <p>Below is an interactive IDF curve generator.</p>
-<div id="idf-viz" class="viz-container">
+<div class="viz-container" id="idf-viz">
 <div class="controls">
-<pre><code>&lt;label&gt;
-  Return period (years):
-  &lt;input type="range" id="return-period" min="2" max="100" step="1" value="10"&gt;
-  &lt;span id="period-val"&gt;10&lt;/span&gt;
-&lt;/label&gt;
-&lt;label&gt;
-  Region:
-  &lt;select id="region"&gt;
-    &lt;option value="midwest"&gt;Midwest USA&lt;/option&gt;
-    &lt;option value="southeast"&gt;Southeast USA&lt;/option&gt;
-    &lt;option value="southwest"&gt;Southwest USA&lt;/option&gt;
-    &lt;option value="pacific"&gt;Pacific Northwest&lt;/option&gt;
-  &lt;/select&gt;
-&lt;/label&gt;
-&lt;label&gt;
-  Duration (minutes):
-  &lt;input type="range" id="duration" min="5" max="1440" step="5" value="60"&gt;
-  &lt;span id="duration-val"&gt;60&lt;/span&gt;
-&lt;/label&gt;
-&lt;div class="idf-info"&gt;
-  &lt;p&gt;&lt;strong&gt;Intensity:&lt;/strong&gt; &lt;span id="intensity"&gt;--&lt;/span&gt; mm/hr&lt;/p&gt;
-  &lt;p&gt;&lt;strong&gt;Rainfall depth:&lt;/strong&gt; &lt;span id="depth"&gt;--&lt;/span&gt; mm&lt;/p&gt;
-  &lt;p&gt;&lt;strong&gt;Exceedance prob:&lt;/strong&gt; &lt;span id="prob"&gt;--&lt;/span&gt;%&lt;/p&gt;
-  &lt;p&gt;&lt;strong&gt;Design standard:&lt;/strong&gt; &lt;span id="standard"&gt;--&lt;/span&gt;&lt;/p&gt;
-&lt;/div&gt;</code></pre>
+<label>
+Return period (years):
+<input type="range" id="return-period" min="2" max="100" step="1" value="10">
+<span id="period-val">10</span>
+</label>
+<label>
+Region:
+<select id="region">
+<option value="midwest">Midwest USA</option>
+<option value="southeast">Southeast USA</option>
+<option value="southwest">Southwest USA</option>
+<option value="pacific">Pacific Northwest</option>
+</select>
+</label>
+<label>
+Duration (minutes):
+<input type="range" id="duration" min="5" max="1440" step="5" value="60">
+<span id="duration-val">60</span>
+</label>
+<div class="idf-info">
+<p><strong>Intensity:</strong> <span id="intensity">--</span> mm/hr</p>
+<p><strong>Rainfall depth:</strong> <span id="depth">--</span> mm</p>
+<p><strong>Exceedance prob:</strong> <span id="prob">--</span>%</p>
+<p><strong>Design standard:</strong> <span id="standard">--</span></p>
+</div>
 </div>
 <div id="idf-canvas-container">
-<pre><code>&lt;canvas id="idf-canvas" width="700" height="400" style="border: 1px solid #ddd;"&gt;&lt;/canvas&gt;</code></pre>
+<canvas id="idf-canvas" width="700" height="400" style="border: 1px solid #ddd;"></canvas>
 </div>
 </div>
+
 <script type="module">
 await new Promise(resolve => {
-  const checkECharts = () => {
-    if (typeof echarts !== 'undefined') resolve();
-    else setTimeout(checkECharts, 50);
-  };
-  checkECharts();
+const checkECharts = () => {
+if (typeof echarts !== 'undefined') resolve();
+else setTimeout(checkECharts, 50);
+};
+checkECharts();
 });
 
 (function() {
-  const chart = echarts.init(document.getElementById('idf-canvas'));
+const chart = echarts.init(document.getElementById('idf-canvas'));
   
-  let returnPeriod = 10;
-  let region = 'midwest';
-  let duration = 60;
+let returnPeriod = 10;
+let region = 'midwest';
+let duration = 60;
   
-  const regionalParams = {
-    'midwest': {K: 1200, m: 0.20, b: 10, n: 0.80},
-    'southeast': {K: 1500, m: 0.18, b: 12, n: 0.75},
-    'southwest': {K: 800, m: 0.22, b: 8, n: 0.85},
-    'pacific': {K: 1000, m: 0.19, b: 15, n: 0.78}
-  };
+const regionalParams = {
+'midwest': {K: 1200, m: 0.20, b: 10, n: 0.80},
+'southeast': {K: 1500, m: 0.18, b: 12, n: 0.75},
+'southwest': {K: 800, m: 0.22, b: 8, n: 0.85},
+'pacific': {K: 1000, m: 0.19, b: 15, n: 0.78}
+};
   
-  function calculateIntensity(T, D, params) {
-    const numerator = params.K * Math.pow(T, params.m);
-    const denominator = Math.pow(D + params.b, params.n);
-    return numerator / denominator;
-  }
+function calculateIntensity(T, D, params) {
+const numerator = params.K * Math.pow(T, params.m);
+const denominator = Math.pow(D + params.b, params.n);
+return numerator / denominator;
+}
   
-  function getDesignStandard(T) {
-    if (T >= 100) return 'Major structure (dam spillway)';
-    if (T >= 50) return 'Critical infrastructure';
-    if (T >= 25) return 'Highway drainage';
-    if (T >= 10) return 'Urban storm sewer';
-    if (T >= 5) return 'Minor drainage';
-    return 'Agricultural drainage';
-  }
+function getDesignStandard(T) {
+if (T >= 100) return 'Major structure (dam spillway)';
+if (T >= 50) return 'Critical infrastructure';
+if (T >= 25) return 'Highway drainage';
+if (T >= 10) return 'Urban storm sewer';
+if (T >= 5) return 'Minor drainage';
+return 'Agricultural drainage';
+}
   
-  function generateIDFCurves() {
-    const params = regionalParams[region];
-    const returnPeriods = [2, 5, 10, 25, 50, 100];
-    const durations = [];
+function generateIDFCurves() {
+const params = regionalParams[region];
+const returnPeriods = [2, 5, 10, 25, 50, 100];
+const durations = [];
     
-    for (let d = 5; d <= 1440; d += 5) {
-      durations.push(d);
-    }
+for (let d = 5; d <= 1440; d += 5) {
+durations.push(d);
+}
     
-    const series = returnPeriods.map(T => {
-      const data = durations.map(D => {
-        const I = calculateIntensity(T, D, params);
-        return [D, I];
-      });
+const series = returnPeriods.map(T => {
+const data = durations.map(D => {
+const I = calculateIntensity(T, D, params);
+return [D, I];
+});
       
-      return {
-        name: `${T}-year`,
-        type: 'line',
-        data: data,
-        smooth: true,
-        lineStyle: {width: T === returnPeriod ? 3 : 2},
-        showSymbol: false
-      };
-    });
+return {
+name: `${T}-year`,
+type: 'line',
+data: data,
+smooth: true,
+lineStyle: {width: T === returnPeriod ? 3 : 2},
+showSymbol: false
+};
+});
     
-    // Add current point
-    const currentI = calculateIntensity(returnPeriod, duration, params);
-    series.push({
-      name: 'Current Design Point',
-      type: 'scatter',
-      data: [[duration, currentI]],
-      symbolSize: 15,
-      itemStyle: {color: '#F44336'}
-    });
+// Add current point
+const currentI = calculateIntensity(returnPeriod, duration, params);
+series.push({
+name: 'Current Design Point',
+type: 'scatter',
+data: [[duration, currentI]],
+symbolSize: 15,
+itemStyle: {color: '#F44336'}
+});
     
-    return series;
-  }
+return series;
+}
   
-  function render() {
-    const params = regionalParams[region];
-    const intensity = calculateIntensity(returnPeriod, duration, params);
-    const depth = intensity * duration / 60;
-    const exceedProb = (1 / returnPeriod * 100).toFixed(1);
-    const standard = getDesignStandard(returnPeriod);
+function render() {
+const params = regionalParams[region];
+const intensity = calculateIntensity(returnPeriod, duration, params);
+const depth = intensity * duration / 60;
+const exceedProb = (1 / returnPeriod * 100).toFixed(1);
+const standard = getDesignStandard(returnPeriod);
     
-    document.getElementById('intensity').textContent = intensity.toFixed(1);
-    document.getElementById('depth').textContent = depth.toFixed(1);
-    document.getElementById('prob').textContent = exceedProb;
-    document.getElementById('standard').textContent = standard;
+document.getElementById('intensity').textContent = intensity.toFixed(1);
+document.getElementById('depth').textContent = depth.toFixed(1);
+document.getElementById('prob').textContent = exceedProb;
+document.getElementById('standard').textContent = standard;
     
-    const series = generateIDFCurves();
+const series = generateIDFCurves();
     
-    const option = {
-      title: {
-        text: 'Intensity-Duration-Frequency Curves',
-        left: 'center'
-      },
-      tooltip: {
-        trigger: 'axis',
-        axisPointer: {type: 'cross'},
-        formatter: (params) => {
-          if (params.length > 0) {
-            const d = params[0].value[0];
-            const i = params[0].value[1];
-            return `Duration: ${d} min<br/>Intensity: ${i.toFixed(1)} mm/hr<br/>${params[0].seriesName}`;
-          }
-        }
-      },
-      legend: {
-        data: series.map(s => s.name),
-        top: 30,
-        type: 'scroll'
-      },
-      grid: {
-        left: 80,
-        right: 40,
-        top: 80,
-        bottom: 60
-      },
-      xAxis: {
-        type: 'log',
-        name: 'Duration (minutes)',
-        nameLocation: 'middle',
-        nameGap: 30,
-        min: 5,
-        max: 1440,
-        axisLabel: {
-          formatter: (value) => {
-            if (value >= 60) return `${(value/60).toFixed(0)}h`;
-            return `${value}m`;
-          }
-        }
-      },
-      yAxis: {
-        type: 'log',
-        name: 'Intensity (mm/hr)',
-        nameLocation: 'middle',
-        nameGap: 50,
-        min: 1,
-        max: 300
-      },
-      series: series
-    };
+const option = {
+title: {
+text: 'Intensity-Duration-Frequency Curves',
+left: 'center'
+},
+tooltip: {
+trigger: 'axis',
+axisPointer: {type: 'cross'},
+formatter: (params) => {
+if (params.length > 0) {
+const d = params[0].value[0];
+const i = params[0].value[1];
+return `Duration: ${d} min<br/>Intensity: ${i.toFixed(1)} mm/hr<br/>${params[0].seriesName}`;
+}
+}
+},
+legend: {
+data: series.map(s => s.name),
+top: 30,
+type: 'scroll'
+},
+grid: {
+left: 80,
+right: 40,
+top: 80,
+bottom: 60
+},
+xAxis: {
+type: 'log',
+name: 'Duration (minutes)',
+nameLocation: 'middle',
+nameGap: 30,
+min: 5,
+max: 1440,
+axisLabel: {
+formatter: (value) => {
+if (value >= 60) return `${(value/60).toFixed(0)}h`;
+return `${value}m`;
+}
+}
+},
+yAxis: {
+type: 'log',
+name: 'Intensity (mm/hr)',
+nameLocation: 'middle',
+nameGap: 50,
+min: 1,
+max: 300
+},
+series: series
+};
     
-    chart.setOption(option, true);
-  }
+chart.setOption(option, true);
+}
   
-  document.getElementById('return-period').addEventListener('input', (e) => {
-    returnPeriod = parseInt(e.target.value);
-    document.getElementById('period-val').textContent = returnPeriod;
-    render();
-  });
+document.getElementById('return-period').addEventListener('input', (e) => {
+returnPeriod = parseInt(e.target.value);
+document.getElementById('period-val').textContent = returnPeriod;
+render();
+});
   
-  document.getElementById('region').addEventListener('change', (e) => {
-    region = e.target.value;
-    render();
-  });
+document.getElementById('region').addEventListener('change', (e) => {
+region = e.target.value;
+render();
+});
   
-  document.getElementById('duration').addEventListener('input', (e) => {
-    duration = parseInt(e.target.value);
-    document.getElementById('duration-val').textContent = duration;
-    render();
-  });
+document.getElementById('duration').addEventListener('input', (e) => {
+duration = parseInt(e.target.value);
+document.getElementById('duration-val').textContent = duration;
+render();
+});
   
-  render();
+render();
   
-  window.addEventListener('resize', () => chart.resize());
+window.addEventListener('resize', () => chart.resize());
 })();
 </script>
 <p><strong>Observations:</strong> - Log-log plot shows power-law relationships - Curves decrease monotonically with duration - Higher return periods shift curves upward - Short durations show steepest slopes - Current design point highlighted in red - Regional differences significant (Southeast vs Southwest)</p>

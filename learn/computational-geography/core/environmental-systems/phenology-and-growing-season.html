@@ -234,301 +234,300 @@ window.Quarto = {
 <hr>
 <h2 id="computational-implementation" class="anchored">5. Computational Implementation</h2>
 <p>Below is an interactive phenology simulator.</p>
-<div id="phenology-viz" class="viz-container">
+<div class="viz-container" id="phenology-viz">
 <div class="controls">
-<pre><code>&lt;label&gt;
-  Latitude:
-  &lt;input type="range" id="latitude-slider" min="30" max="60" step="5" value="45"&gt;
-  &lt;span id="latitude-value"&gt;45&lt;/span&gt;°N
-&lt;/label&gt;
-&lt;label&gt;
-  Species type:
-  &lt;select id="species-type"&gt;
-    &lt;option value="early"&gt;Early (willow, 100 GDD)&lt;/option&gt;
-    &lt;option value="mid" selected&gt;Mid-season (oak, 200 GDD)&lt;/option&gt;
-    &lt;option value="late"&gt;Late (ash, 300 GDD)&lt;/option&gt;
-  &lt;/select&gt;
-&lt;/label&gt;
-&lt;label&gt;
-  Climate scenario:
-  &lt;select id="climate-scenario"&gt;
-    &lt;option value="current"&gt;Current Climate&lt;/option&gt;
-    &lt;option value="warm2c" selected&gt;+2°C Warming&lt;/option&gt;
-    &lt;option value="warm4c"&gt;+4°C Warming&lt;/option&gt;
-  &lt;/select&gt;
-&lt;/label&gt;
-&lt;div class="button-group"&gt;
-  &lt;button id="run-phenology-sim"&gt;Run Year&lt;/button&gt;
-&lt;/div&gt;</code></pre>
+<label>
+Latitude:
+<input type="range" id="latitude-slider" min="30" max="60" step="5" value="45">
+<span id="latitude-value">45</span>°N
+</label>
+<label>
+Species type:
+<select id="species-type">
+<option value="early">Early (willow, 100 GDD)</option>
+<option value="mid" selected="">Mid-season (oak, 200 GDD)</option>
+<option value="late">Late (ash, 300 GDD)</option>
+</select>
+</label>
+<label>
+Climate scenario:
+<select id="climate-scenario">
+<option value="current">Current Climate</option>
+<option value="warm2c" selected="">+2°C Warming</option>
+<option value="warm4c">+4°C Warming</option>
+</select>
+</label>
+<div class="button-group">
+<button id="run-phenology-sim">Run Year</button>
+</div>
 </div>
 <div class="phenology-results">
-<pre><code>&lt;p&gt;&lt;strong&gt;Bud break (SOS):&lt;/strong&gt; &lt;span id="bud-break-date"&gt;&lt;/span&gt;&lt;/p&gt;
-&lt;p&gt;&lt;strong&gt;Peak LAI date:&lt;/strong&gt; &lt;span id="peak-lai-date"&gt;&lt;/span&gt;&lt;/p&gt;
-&lt;p&gt;&lt;strong&gt;Senescence start (EOS):&lt;/strong&gt; &lt;span id="senescence-date"&gt;&lt;/span&gt;&lt;/p&gt;
-&lt;p&gt;&lt;strong&gt;Growing season length:&lt;/strong&gt; &lt;span id="gsl-result"&gt;&lt;/span&gt; days&lt;/p&gt;
-&lt;p&gt;&lt;strong&gt;Annual GPP:&lt;/strong&gt; &lt;span id="annual-gpp"&gt;&lt;/span&gt; kg C/m²&lt;/p&gt;</code></pre>
+<p><strong>Bud break (SOS):</strong> <span id="bud-break-date"></span></p>
+<p><strong>Peak LAI date:</strong> <span id="peak-lai-date"></span></p>
+<p><strong>Senescence start (EOS):</strong> <span id="senescence-date"></span></p>
+<p><strong>Growing season length:</strong> <span id="gsl-result"></span> days</p>
+<p><strong>Annual GPP:</strong> <span id="annual-gpp"></span> kg C/m²</p>
 </div>
-<div id="phenology-chart" style="width: 100%; height: 500px;">
+<div id="phenology-chart" style="width: 100%; height: 500px;"></div>
+</div>
 
-</div>
-</div>
 <script type="module">
 await new Promise(resolve => {
-  const checkECharts = () => {
-    if (typeof echarts !== 'undefined') resolve();
-    else setTimeout(checkECharts, 50);
-  };
-  checkECharts();
+const checkECharts = () => {
+if (typeof echarts !== 'undefined') resolve();
+else setTimeout(checkECharts, 50);
+};
+checkECharts();
 });
 
 (function() {
-  const chart = echarts.init(document.getElementById('phenology-chart'));
+const chart = echarts.init(document.getElementById('phenology-chart'));
   
-  const species = {
-    early: { gddReq: 100, maxLAI: 4.5, name: 'Early (willow)' },
-    mid: { gddReq: 200, maxLAI: 5.0, name: 'Mid-season (oak)' },
-    late: { gddReq: 300, maxLAI: 4.0, name: 'Late (ash)' }
-  };
+const species = {
+early: { gddReq: 100, maxLAI: 4.5, name: 'Early (willow)' },
+mid: { gddReq: 200, maxLAI: 5.0, name: 'Mid-season (oak)' },
+late: { gddReq: 300, maxLAI: 4.0, name: 'Late (ash)' }
+};
   
-  let latitude = 45;
-  let speciesType = 'mid';
-  let warming = 2;
+let latitude = 45;
+let speciesType = 'mid';
+let warming = 2;
   
-  function dayOfYear(month, day) {
-    const daysInMonth = [0, 31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
-    let doy = day;
-    for (let m = 1; m < month; m++) {
-      doy += daysInMonth[m];
-    }
-    return doy;
-  }
+function dayOfYear(month, day) {
+const daysInMonth = [0, 31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
+let doy = day;
+for (let m = 1; m < month; m++) {
+doy += daysInMonth[m];
+}
+return doy;
+}
   
-  function dateFromDOY(doy) {
-    const daysInMonth = [0, 31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
-    let month = 1;
-    let remaining = doy;
-    while (remaining > daysInMonth[month]) {
-      remaining -= daysInMonth[month];
-      month++;
-    }
-    const monthNames = ['', 'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 
-                        'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-    return `${monthNames[month]} ${remaining}`;
-  }
+function dateFromDOY(doy) {
+const daysInMonth = [0, 31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
+let month = 1;
+let remaining = doy;
+while (remaining > daysInMonth[month]) {
+remaining -= daysInMonth[month];
+month++;
+}
+const monthNames = ['', 'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 
+'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+return `${monthNames[month]} ${remaining}`;
+}
   
-  function temperatureModel(doy, lat, warming) {
-    // Sinusoidal temperature model
-    const Tmean = 10 + warming; // Base mean temperature
-    const Tampl = 15; // Amplitude
-    const phase = lat / 90 * 30; // Latitude-dependent phase shift (days)
-    return Tmean + Tampl * Math.sin(2 * Math.PI * (doy - 80 - phase) / 365);
-  }
+function temperatureModel(doy, lat, warming) {
+// Sinusoidal temperature model
+const Tmean = 10 + warming; // Base mean temperature
+const Tampl = 15; // Amplitude
+const phase = lat / 90 * 30; // Latitude-dependent phase shift (days)
+return Tmean + Tampl * Math.sin(2 * Math.PI * (doy - 80 - phase) / 365);
+}
   
-  function photoperiod(doy, lat) {
-    // Simplified day length calculation
-    const latRad = lat * Math.PI / 180;
-    const declination = 23.45 * Math.sin(2 * Math.PI * (doy - 81) / 365) * Math.PI / 180;
-    const cosH = -Math.tan(latRad) * Math.tan(declination);
-    if (cosH > 1) return 0;
-    if (cosH < -1) return 24;
-    const H = Math.acos(cosH);
-    return 2 * H * 12 / Math.PI;
-  }
+function photoperiod(doy, lat) {
+// Simplified day length calculation
+const latRad = lat * Math.PI / 180;
+const declination = 23.45 * Math.sin(2 * Math.PI * (doy - 81) / 365) * Math.PI / 180;
+const cosH = -Math.tan(latRad) * Math.tan(declination);
+if (cosH > 1) return 0;
+if (cosH < -1) return 24;
+const H = Math.acos(cosH);
+return 2 * H * 12 / Math.PI;
+}
   
-  function runPhenologySim() {
-    const sp = species[speciesType];
-    const Tbase = 5;
+function runPhenologySim() {
+const sp = species[speciesType];
+const Tbase = 5;
     
-    let gdd = 0;
-    let LAI = 0;
-    let budBreakDOY = null;
-    let peakLAIDOY = null;
-    let senescenceDOY = null;
-    let maxLAI = 0;
+let gdd = 0;
+let LAI = 0;
+let budBreakDOY = null;
+let peakLAIDOY = null;
+let senescenceDOY = null;
+let maxLAI = 0;
     
-    const doyData = [];
-    const laiData = [];
-    const tempData = [];
-    const photoData = [];
-    const gddData = [];
+const doyData = [];
+const laiData = [];
+const tempData = [];
+const photoData = [];
+const gddData = [];
     
-    // Start from day 60 (early March)
-    for (let doy = 60; doy <= 365; doy++) {
-      const T = temperatureModel(doy, latitude, warming);
-      const photo = photoperiod(doy, latitude);
+// Start from day 60 (early March)
+for (let doy = 60; doy <= 365; doy++) {
+const T = temperatureModel(doy, latitude, warming);
+const photo = photoperiod(doy, latitude);
       
-      // Accumulate GDD
-      if (T > Tbase && budBreakDOY === null) {
-        gdd += (T - Tbase);
-      }
+// Accumulate GDD
+if (T > Tbase && budBreakDOY === null) {
+gdd += (T - Tbase);
+}
       
-      // Bud break
-      if (gdd > sp.gddReq && budBreakDOY === null) {
-        budBreakDOY = doy;
-      }
+// Bud break
+if (gdd > sp.gddReq && budBreakDOY === null) {
+budBreakDOY = doy;
+}
       
-      // LAI growth (after bud break, while warm)
-      if (budBreakDOY !== null && T > Tbase && senescenceDOY === null) {
-        const growth = 0.05 * (T - Tbase) * (sp.maxLAI - LAI);
-        LAI += growth;
-        LAI = Math.min(LAI, sp.maxLAI);
-      }
+// LAI growth (after bud break, while warm)
+if (budBreakDOY !== null && T > Tbase && senescenceDOY === null) {
+const growth = 0.05 * (T - Tbase) * (sp.maxLAI - LAI);
+LAI += growth;
+LAI = Math.min(LAI, sp.maxLAI);
+}
       
-      // Track peak
-      if (LAI > maxLAI) {
-        maxLAI = LAI;
-        peakLAIDOY = doy;
-      }
+// Track peak
+if (LAI > maxLAI) {
+maxLAI = LAI;
+peakLAIDOY = doy;
+}
       
-      // Senescence triggers (day length < 12 hrs or cold)
-      if (photo < 12 && senescenceDOY === null && doy > 200) {
-        senescenceDOY = doy;
-      }
+// Senescence triggers (day length < 12 hrs or cold)
+if (photo < 12 && senescenceDOY === null && doy > 200) {
+senescenceDOY = doy;
+}
       
-      // LAI decline
-      if (senescenceDOY !== null) {
-        LAI -= 0.05 * LAI;
-        LAI = Math.max(0, LAI);
-      }
+// LAI decline
+if (senescenceDOY !== null) {
+LAI -= 0.05 * LAI;
+LAI = Math.max(0, LAI);
+}
       
-      doyData.push(doy);
-      laiData.push(LAI);
-      tempData.push(T);
-      photoData.push(photo);
-      gddData.push(gdd);
-    }
+doyData.push(doy);
+laiData.push(LAI);
+tempData.push(T);
+photoData.push(photo);
+gddData.push(gdd);
+}
     
-    const GSL = (senescenceDOY || 300) - (budBreakDOY || 100);
+const GSL = (senescenceDOY || 300) - (budBreakDOY || 100);
     
-    // Annual GPP (simplified: proportional to LAI and growing season)
-    const avgLAI = laiData.reduce((a, b) => a + b, 0) / laiData.length;
-    const annualGPP = avgLAI * 0.5; // Very simplified
+// Annual GPP (simplified: proportional to LAI and growing season)
+const avgLAI = laiData.reduce((a, b) => a + b, 0) / laiData.length;
+const annualGPP = avgLAI * 0.5; // Very simplified
     
-    document.getElementById('bud-break-date').textContent = 
-      budBreakDOY ? dateFromDOY(budBreakDOY) : 'N/A';
-    document.getElementById('peak-lai-date').textContent = 
-      peakLAIDOY ? dateFromDOY(peakLAIDOY) : 'N/A';
-    document.getElementById('senescence-date').textContent = 
-      senescenceDOY ? dateFromDOY(senescenceDOY) : 'N/A';
-    document.getElementById('gsl-result').textContent = GSL;
-    document.getElementById('annual-gpp').textContent = annualGPP.toFixed(2);
+document.getElementById('bud-break-date').textContent = 
+budBreakDOY ? dateFromDOY(budBreakDOY) : 'N/A';
+document.getElementById('peak-lai-date').textContent = 
+peakLAIDOY ? dateFromDOY(peakLAIDOY) : 'N/A';
+document.getElementById('senescence-date').textContent = 
+senescenceDOY ? dateFromDOY(senescenceDOY) : 'N/A';
+document.getElementById('gsl-result').textContent = GSL;
+document.getElementById('annual-gpp').textContent = annualGPP.toFixed(2);
     
-    updateChart(doyData, laiData, tempData, photoData, budBreakDOY, senescenceDOY);
-  }
+updateChart(doyData, laiData, tempData, photoData, budBreakDOY, senescenceDOY);
+}
   
-  function updateChart(doy, lai, temp, photo, budBreak, senescence) {
-    const option = {
-      title: {
-        text: 'Seasonal Phenology',
-        left: 'center'
-      },
-      tooltip: {
-        trigger: 'axis',
-        axisPointer: { type: 'cross' }
-      },
-      legend: {
-        data: ['LAI', 'Temperature', 'Photoperiod'],
-        top: 30
-      },
-      grid: {
-        left: 80,
-        right: 80,
-        top: 80,
-        bottom: 60
-      },
-      xAxis: {
-        type: 'value',
-        name: 'Day of Year',
-        nameLocation: 'middle',
-        nameGap: 30,
-        min: 60,
-        max: 365
-      },
-      yAxis: [
-        {
-          type: 'value',
-          name: 'LAI (m²/m²)',
-          nameLocation: 'middle',
-          nameGap: 50,
-          min: 0,
-          max: 6
-        },
-        {
-          type: 'value',
-          name: 'Temp (°C) / Photo (hr)',
-          nameLocation: 'middle',
-          nameGap: 50,
-          position: 'right',
-          min: -10,
-          max: 30
-        }
-      ],
-      series: [
-        {
-          name: 'LAI',
-          type: 'line',
-          data: doy.map((d, i) => [d, lai[i]]),
-          lineStyle: { color: '#2ECC71', width: 3 },
-          showSymbol: false,
-          yAxisIndex: 0,
-          areaStyle: {
-            color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
-              { offset: 0, color: 'rgba(46, 204, 113, 0.3)' },
-              { offset: 1, color: 'rgba(46, 204, 113, 0)' }
-            ])
-          },
-          markLine: {
-            silent: true,
-            symbol: 'none',
-            data: [
-              budBreak ? { xAxis: budBreak, label: { formatter: 'Bud Break' }, lineStyle: { color: '#F39C12' } } : null,
-              senescence ? { xAxis: senescence, label: { formatter: 'Senescence' }, lineStyle: { color: '#E74C3C' } } : null
-            ].filter(x => x)
-          }
-        },
-        {
-          name: 'Temperature',
-          type: 'line',
-          data: doy.map((d, i) => [d, temp[i]]),
-          lineStyle: { color: '#E74C3C', width: 2, type: 'dashed' },
-          showSymbol: false,
-          yAxisIndex: 1
-        },
-        {
-          name: 'Photoperiod',
-          type: 'line',
-          data: doy.map((d, i) => [d, photo[i]]),
-          lineStyle: { color: '#3498DB', width: 2, type: 'dotted' },
-          showSymbol: false,
-          yAxisIndex: 1
-        }
-      ]
-    };
+function updateChart(doy, lai, temp, photo, budBreak, senescence) {
+const option = {
+title: {
+text: 'Seasonal Phenology',
+left: 'center'
+},
+tooltip: {
+trigger: 'axis',
+axisPointer: { type: 'cross' }
+},
+legend: {
+data: ['LAI', 'Temperature', 'Photoperiod'],
+top: 30
+},
+grid: {
+left: 80,
+right: 80,
+top: 80,
+bottom: 60
+},
+xAxis: {
+type: 'value',
+name: 'Day of Year',
+nameLocation: 'middle',
+nameGap: 30,
+min: 60,
+max: 365
+},
+yAxis: [
+{
+type: 'value',
+name: 'LAI (m²/m²)',
+nameLocation: 'middle',
+nameGap: 50,
+min: 0,
+max: 6
+},
+{
+type: 'value',
+name: 'Temp (°C) / Photo (hr)',
+nameLocation: 'middle',
+nameGap: 50,
+position: 'right',
+min: -10,
+max: 30
+}
+],
+series: [
+{
+name: 'LAI',
+type: 'line',
+data: doy.map((d, i) => [d, lai[i]]),
+lineStyle: { color: '#2ECC71', width: 3 },
+showSymbol: false,
+yAxisIndex: 0,
+areaStyle: {
+color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
+{ offset: 0, color: 'rgba(46, 204, 113, 0.3)' },
+{ offset: 1, color: 'rgba(46, 204, 113, 0)' }
+])
+},
+markLine: {
+silent: true,
+symbol: 'none',
+data: [
+budBreak ? { xAxis: budBreak, label: { formatter: 'Bud Break' }, lineStyle: { color: '#F39C12' } } : null,
+senescence ? { xAxis: senescence, label: { formatter: 'Senescence' }, lineStyle: { color: '#E74C3C' } } : null
+].filter(x => x)
+}
+},
+{
+name: 'Temperature',
+type: 'line',
+data: doy.map((d, i) => [d, temp[i]]),
+lineStyle: { color: '#E74C3C', width: 2, type: 'dashed' },
+showSymbol: false,
+yAxisIndex: 1
+},
+{
+name: 'Photoperiod',
+type: 'line',
+data: doy.map((d, i) => [d, photo[i]]),
+lineStyle: { color: '#3498DB', width: 2, type: 'dotted' },
+showSymbol: false,
+yAxisIndex: 1
+}
+]
+};
     
-    chart.setOption(option);
-  }
+chart.setOption(option);
+}
   
-  document.getElementById('latitude-slider').addEventListener('input', (e) => {
-    latitude = parseFloat(e.target.value);
-    document.getElementById('latitude-value').textContent = latitude;
-  });
+document.getElementById('latitude-slider').addEventListener('input', (e) => {
+latitude = parseFloat(e.target.value);
+document.getElementById('latitude-value').textContent = latitude;
+});
   
-  document.getElementById('species-type').addEventListener('change', (e) => {
-    speciesType = e.target.value;
-  });
+document.getElementById('species-type').addEventListener('change', (e) => {
+speciesType = e.target.value;
+});
   
-  document.getElementById('climate-scenario').addEventListener('change', (e) => {
-    const scenario = e.target.value;
-    warming = scenario === 'current' ? 0 : (scenario === 'warm2c' ? 2 : 4);
-  });
+document.getElementById('climate-scenario').addEventListener('change', (e) => {
+const scenario = e.target.value;
+warming = scenario === 'current' ? 0 : (scenario === 'warm2c' ? 2 : 4);
+});
   
-  document.getElementById('run-phenology-sim').addEventListener('click', () => {
-    runPhenologySim();
-  });
+document.getElementById('run-phenology-sim').addEventListener('click', () => {
+runPhenologySim();
+});
   
-  runPhenologySim();
+runPhenologySim();
   
-  window.addEventListener('resize', () => chart.resize());
+window.addEventListener('resize', () => chart.resize());
 })();
 </script>
 <p><strong>Try this:</strong> - <strong>Higher latitude:</strong> Later bud break (cooler spring), shorter growing season - <strong>Warming scenarios:</strong> Earlier bud break, longer growing season, higher annual GPP - <strong>Early species:</strong> Lower GDD requirement → earlier green-up - <strong>Late species:</strong> Higher GDD requirement → later green-up but avoid late frosts - Notice: Photoperiod (blue dotted) triggers senescence in autumn (falls below 12 hours)</p>

@@ -282,224 +282,225 @@ Band 6: <span class="math inline">B_6 = 1.0 \times (-2.5) = -2.5</span></p>
 <hr>
 <h2 id="computational-implementation" class="anchored">5. Computational Implementation</h2>
 <p>Below is an interactive glacier mass balance simulator.</p>
-<div id="glacier-viz" class="viz-container">
+<div class="viz-container" id="glacier-viz">
 <div class="controls">
-<pre><code>&lt;label&gt;
-  ELA shift (m):
-  &lt;input type="range" id="ela-shift" min="-200" max="200" step="20" value="0"&gt;
-  &lt;span id="ela-val"&gt;0&lt;/span&gt; m
-&lt;/label&gt;
-&lt;label&gt;
-  Mass balance gradient:
-  &lt;input type="range" id="mb-gradient" min="0.004" max="0.012" step="0.001" value="0.008"&gt;
-  &lt;span id="gradient-val"&gt;0.008&lt;/span&gt; year⁻¹
-&lt;/label&gt;
-&lt;label&gt;
-  Terminus elevation (m):
-  &lt;input type="range" id="terminus-elev" min="2400" max="3000" step="100" value="2600"&gt;
-  &lt;span id="terminus-val"&gt;2600&lt;/span&gt;
-&lt;/label&gt;
-&lt;div class="glacier-info"&gt;
-  &lt;p&gt;&lt;strong&gt;Glacier-wide balance:&lt;/strong&gt; &lt;span id="glacier-balance"&gt;--&lt;/span&gt; m/year&lt;/p&gt;
-  &lt;p&gt;&lt;strong&gt;ELA:&lt;/strong&gt; &lt;span id="ela-result"&gt;--&lt;/span&gt; m&lt;/p&gt;
-  &lt;p&gt;&lt;strong&gt;AAR:&lt;/strong&gt; &lt;span id="aar-result"&gt;--&lt;/span&gt;&lt;/p&gt;
-  &lt;p&gt;&lt;strong&gt;Status:&lt;/strong&gt; &lt;span id="glacier-status"&gt;--&lt;/span&gt;&lt;/p&gt;
-&lt;/div&gt;</code></pre>
+<label>
+ELA shift (m):
+<input type="range" id="ela-shift" min="-200" max="200" step="20" value="0">
+<span id="ela-val">0</span> m
+</label>
+<label>
+Mass balance gradient:
+<input type="range" id="mb-gradient" min="0.004" max="0.012" step="0.001" value="0.008">
+<span id="gradient-val">0.008</span> year⁻¹
+</label>
+<label>
+Terminus elevation (m):
+<input type="range" id="terminus-elev" min="2400" max="3000" step="100" value="2600">
+<span id="terminus-val">2600</span>
+</label>
+<div class="glacier-info">
+<p><strong>Glacier-wide balance:</strong> <span id="glacier-balance">--</span> m/year</p>
+<p><strong>ELA:</strong> <span id="ela-result">--</span> m</p>
+<p><strong>AAR:</strong> <span id="aar-result">--</span></p>
+<p><strong>Status:</strong> <span id="glacier-status">--</span></p>
+</div>
 </div>
 <div id="glacier-canvas-container">
-<pre><code>&lt;canvas id="glacier-canvas" width="700" height="400" style="border: 1px solid #ddd;"&gt;&lt;/canvas&gt;</code></pre>
+<canvas id="glacier-canvas" width="700" height="400" style="border: 1px solid #ddd;"></canvas>
 </div>
 </div>
+
 <script type="module">
 await new Promise(resolve => {
-  const checkECharts = () => {
-    if (typeof echarts !== 'undefined') resolve();
-    else setTimeout(checkECharts, 50);
-  };
-  checkECharts();
+const checkECharts = () => {
+if (typeof echarts !== 'undefined') resolve();
+else setTimeout(checkECharts, 50);
+};
+checkECharts();
 });
 
 (function() {
-  const chart = echarts.init(document.getElementById('glacier-canvas'));
+const chart = echarts.init(document.getElementById('glacier-canvas'));
   
-  let elaShift = 0;
-  let mbGradient = 0.008;
-  let terminusElev = 2600;
+let elaShift = 0;
+let mbGradient = 0.008;
+let terminusElev = 2600;
   
-  const headElev = 3800; // Fixed
-  const baseELA = 3200;
+const headElev = 3800; // Fixed
+const baseELA = 3200;
   
-  function calculateMassBalance() {
-    const ELA = baseELA + elaShift;
+function calculateMassBalance() {
+const ELA = baseELA + elaShift;
     
-    // Generate elevation profile with area distribution
-    const bands = [];
-    const nBands = 12;
-    const elevStep = (headElev - terminusElev) / nBands;
+// Generate elevation profile with area distribution
+const bands = [];
+const nBands = 12;
+const elevStep = (headElev - terminusElev) / nBands;
     
-    for (let i = 0; i < nBands; i++) {
-      const elevTop = headElev - i * elevStep;
-      const elevBot = elevTop - elevStep;
-      const elevMid = (elevTop + elevBot) / 2;
+for (let i = 0; i < nBands; i++) {
+const elevTop = headElev - i * elevStep;
+const elevBot = elevTop - elevStep;
+const elevMid = (elevTop + elevBot) / 2;
       
-      // Area distribution (wider at mid-elevations)
-      const areaFactor = 1 - 0.5 * Math.abs((elevMid - 3200) / 600);
-      const area = 1.5 * areaFactor;
+// Area distribution (wider at mid-elevations)
+const areaFactor = 1 - 0.5 * Math.abs((elevMid - 3200) / 600);
+const area = 1.5 * areaFactor;
       
-      // Mass balance from linear model
-      const mb = mbGradient * (elevMid - ELA);
+// Mass balance from linear model
+const mb = mbGradient * (elevMid - ELA);
       
-      bands.push({
-        elevTop,
-        elevBot,
-        elevMid,
-        area,
-        mb,
-        contribution: mb * area
-      });
-    }
+bands.push({
+elevTop,
+elevBot,
+elevMid,
+area,
+mb,
+contribution: mb * area
+});
+}
     
-    const totalArea = bands.reduce((sum, b) => sum + b.area, 0);
-    const totalBalance = bands.reduce((sum, b) => sum + b.contribution, 0);
-    const specificBalance = totalBalance / totalArea;
+const totalArea = bands.reduce((sum, b) => sum + b.area, 0);
+const totalBalance = bands.reduce((sum, b) => sum + b.contribution, 0);
+const specificBalance = totalBalance / totalArea;
     
-    // AAR
-    const accumArea = bands.filter(b => b.mb > 0).reduce((sum, b) => sum + b.area, 0);
-    const AAR = accumArea / totalArea;
+// AAR
+const accumArea = bands.filter(b => b.mb > 0).reduce((sum, b) => sum + b.area, 0);
+const AAR = accumArea / totalArea;
     
-    // Status
-    let status;
-    if (specificBalance > 0.1) status = 'Advancing';
-    else if (specificBalance < -0.1) status = 'Retreating';
-    else status = 'Equilibrium';
+// Status
+let status;
+if (specificBalance > 0.1) status = 'Advancing';
+else if (specificBalance < -0.1) status = 'Retreating';
+else status = 'Equilibrium';
     
-    return {bands, totalArea, specificBalance, ELA, AAR, status};
-  }
+return {bands, totalArea, specificBalance, ELA, AAR, status};
+}
   
-  function render() {
-    const result = calculateMassBalance();
+function render() {
+const result = calculateMassBalance();
     
-    // Update display
-    document.getElementById('glacier-balance').textContent = result.specificBalance.toFixed(2);
-    document.getElementById('ela-result').textContent = result.ELA.toFixed(0);
-    document.getElementById('aar-result').textContent = result.AAR.toFixed(2);
-    document.getElementById('glacier-status').textContent = result.status;
+// Update display
+document.getElementById('glacier-balance').textContent = result.specificBalance.toFixed(2);
+document.getElementById('ela-result').textContent = result.ELA.toFixed(0);
+document.getElementById('aar-result').textContent = result.AAR.toFixed(2);
+document.getElementById('glacier-status').textContent = result.status;
     
-    const statusEl = document.getElementById('glacier-status');
-    if (result.status === 'Advancing') statusEl.style.color = '#2E7D32';
-    else if (result.status === 'Retreating') statusEl.style.color = '#D32F2F';
-    else statusEl.style.color = '#1976D2';
+const statusEl = document.getElementById('glacier-status');
+if (result.status === 'Advancing') statusEl.style.color = '#2E7D32';
+else if (result.status === 'Retreating') statusEl.style.color = '#D32F2F';
+else statusEl.style.color = '#1976D2';
     
-    // Chart
-    const elevData = result.bands.map(b => b.elevMid);
-    const mbData = result.bands.map(b => b.mb);
-    const areaData = result.bands.map(b => b.area);
+// Chart
+const elevData = result.bands.map(b => b.elevMid);
+const mbData = result.bands.map(b => b.mb);
+const areaData = result.bands.map(b => b.area);
     
-    const series = [
-      {
-        name: 'Mass Balance',
-        type: 'bar',
-        data: mbData.map((mb, i) => [elevData[i], mb]),
-        itemStyle: {
-          color: (params) => params.value[1] > 0 ? '#2196F3' : '#F44336'
-        },
-        barWidth: 30
-      },
-      {
-        name: 'Glacier Area',
-        type: 'line',
-        data: areaData.map((a, i) => [elevData[i], a * 0.5]), // Scale for visibility
-        yAxisIndex: 1,
-        lineStyle: {color: '#9E9E9E', width: 2, type: 'dashed'},
-        showSymbol: false
-      },
-      {
-        name: 'ELA',
-        type: 'line',
-        data: [[result.ELA, -3], [result.ELA, 3]],
-        lineStyle: {color: '#FF9800', width: 3},
-        showSymbol: false,
-        markLine: {
-          silent: true,
-          lineStyle: {color: '#FF9800', width: 3},
-          data: [{xAxis: result.ELA}],
-          label: {
-            formatter: 'ELA',
-            position: 'insideEndTop'
-          }
-        }
-      }
-    ];
+const series = [
+{
+name: 'Mass Balance',
+type: 'bar',
+data: mbData.map((mb, i) => [elevData[i], mb]),
+itemStyle: {
+color: (params) => params.value[1] > 0 ? '#2196F3' : '#F44336'
+},
+barWidth: 30
+},
+{
+name: 'Glacier Area',
+type: 'line',
+data: areaData.map((a, i) => [elevData[i], a * 0.5]), // Scale for visibility
+yAxisIndex: 1,
+lineStyle: {color: '#9E9E9E', width: 2, type: 'dashed'},
+showSymbol: false
+},
+{
+name: 'ELA',
+type: 'line',
+data: [[result.ELA, -3], [result.ELA, 3]],
+lineStyle: {color: '#FF9800', width: 3},
+showSymbol: false,
+markLine: {
+silent: true,
+lineStyle: {color: '#FF9800', width: 3},
+data: [{xAxis: result.ELA}],
+label: {
+formatter: 'ELA',
+position: 'insideEndTop'
+}
+}
+}
+];
     
-    const option = {
-      title: {
-        text: 'Glacier Mass Balance Profile',
-        left: 'center'
-      },
-      tooltip: {
-        trigger: 'axis',
-        axisPointer: {type: 'cross'}
-      },
-      legend: {
-        data: ['Mass Balance', 'Glacier Area', 'ELA'],
-        top: 30
-      },
-      grid: {
-        left: 80,
-        right: 80,
-        top: 80,
-        bottom: 60
-      },
-      xAxis: {
-        type: 'value',
-        name: 'Elevation (m)',
-        nameLocation: 'middle',
-        nameGap: 30,
-        min: terminusElev - 100,
-        max: headElev + 100
-      },
-      yAxis: [
-        {
-          type: 'value',
-          name: 'Mass Balance (m/year)',
-          nameLocation: 'middle',
-          nameGap: 50
-        },
-        {
-          type: 'value',
-          name: 'Glacier Area (km²)',
-          nameLocation: 'middle',
-          nameGap: 50,
-          position: 'right'
-        }
-      ],
-      series: series
-    };
+const option = {
+title: {
+text: 'Glacier Mass Balance Profile',
+left: 'center'
+},
+tooltip: {
+trigger: 'axis',
+axisPointer: {type: 'cross'}
+},
+legend: {
+data: ['Mass Balance', 'Glacier Area', 'ELA'],
+top: 30
+},
+grid: {
+left: 80,
+right: 80,
+top: 80,
+bottom: 60
+},
+xAxis: {
+type: 'value',
+name: 'Elevation (m)',
+nameLocation: 'middle',
+nameGap: 30,
+min: terminusElev - 100,
+max: headElev + 100
+},
+yAxis: [
+{
+type: 'value',
+name: 'Mass Balance (m/year)',
+nameLocation: 'middle',
+nameGap: 50
+},
+{
+type: 'value',
+name: 'Glacier Area (km²)',
+nameLocation: 'middle',
+nameGap: 50,
+position: 'right'
+}
+],
+series: series
+};
     
-    chart.setOption(option, true);
-  }
+chart.setOption(option, true);
+}
   
-  document.getElementById('ela-shift').addEventListener('input', (e) => {
-    elaShift = parseFloat(e.target.value);
-    document.getElementById('ela-val').textContent = elaShift;
-    render();
-  });
+document.getElementById('ela-shift').addEventListener('input', (e) => {
+elaShift = parseFloat(e.target.value);
+document.getElementById('ela-val').textContent = elaShift;
+render();
+});
   
-  document.getElementById('mb-gradient').addEventListener('input', (e) => {
-    mbGradient = parseFloat(e.target.value);
-    document.getElementById('gradient-val').textContent = mbGradient.toFixed(3);
-    render();
-  });
+document.getElementById('mb-gradient').addEventListener('input', (e) => {
+mbGradient = parseFloat(e.target.value);
+document.getElementById('gradient-val').textContent = mbGradient.toFixed(3);
+render();
+});
   
-  document.getElementById('terminus-elev').addEventListener('input', (e) => {
-    terminusElev = parseFloat(e.target.value);
-    document.getElementById('terminus-val').textContent = terminusElev;
-    render();
-  });
+document.getElementById('terminus-elev').addEventListener('input', (e) => {
+terminusElev = parseFloat(e.target.value);
+document.getElementById('terminus-val').textContent = terminusElev;
+render();
+});
   
-  render();
+render();
   
-  window.addEventListener('resize', () => chart.resize());
+window.addEventListener('resize', () => chart.resize());
 })();
 </script>
 <p><strong>Try this:</strong> - <strong>ELA shift +100m:</strong> Warmer climate, glacier retreats (red bars dominate) - <strong>ELA shift -100m:</strong> Cooler climate, glacier advances (blue bars dominate) - <strong>Higher gradient:</strong> Steeper mass balance profile (more sensitive) - <strong>Lower terminus:</strong> Longer glacier, more ablation zone - <strong>Blue bars:</strong> Accumulation (snow gain) - <strong>Red bars:</strong> Ablation (ice loss) - <strong>Orange line:</strong> Equilibrium Line Altitude - <strong>Gray dashed:</strong> Glacier area distribution - Watch balance go from positive → equilibrium → negative!</p>

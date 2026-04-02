@@ -253,228 +253,229 @@ window.Quarto = {
 <hr>
 <h2 id="computational-implementation" class="anchored">5. Computational Implementation</h2>
 <p>Below is an interactive GLOF simulator.</p>
-<div id="glof-viz" class="viz-container">
+<div class="viz-container" id="glof-viz">
 <div class="controls">
-<pre><code>&lt;label&gt;
-  Lake volume (million m³):
-  &lt;input type="range" id="lake-vol" min="1" max="100" step="5" value="25"&gt;
-  &lt;span id="vol-val"&gt;25&lt;/span&gt;
-&lt;/label&gt;
-&lt;label&gt;
-  Ice dam thickness (m):
-  &lt;input type="range" id="ice-thick" min="50" max="200" step="10" value="80"&gt;
-  &lt;span id="ice-val"&gt;80&lt;/span&gt;
-&lt;/label&gt;
-&lt;label&gt;
-  Water depth (m):
-  &lt;input type="range" id="water-depth" min="30" max="150" step="5" value="75"&gt;
-  &lt;span id="depth-val"&gt;75&lt;/span&gt;
-&lt;/label&gt;
-&lt;label&gt;
-  Distance downstream (km):
-  &lt;input type="range" id="distance" min="5" max="50" step="5" value="15"&gt;
-  &lt;span id="dist-val"&gt;15&lt;/span&gt;
-&lt;/label&gt;
-&lt;div class="glof-info"&gt;
-  &lt;p&gt;&lt;strong&gt;Safety factor:&lt;/strong&gt; &lt;span id="safety-factor"&gt;--&lt;/span&gt;&lt;/p&gt;
-  &lt;p&gt;&lt;strong&gt;Peak discharge:&lt;/strong&gt; &lt;span id="peak-q"&gt;--&lt;/span&gt; m³/s&lt;/p&gt;
-  &lt;p&gt;&lt;strong&gt;Travel time:&lt;/strong&gt; &lt;span id="travel-time"&gt;--&lt;/span&gt; min&lt;/p&gt;
-  &lt;p&gt;&lt;strong&gt;Downstream peak:&lt;/strong&gt; &lt;span id="down-q"&gt;--&lt;/span&gt; m³/s&lt;/p&gt;
-  &lt;p&gt;&lt;strong&gt;Hazard:&lt;/strong&gt; &lt;span id="hazard-level"&gt;--&lt;/span&gt;&lt;/p&gt;
-&lt;/div&gt;</code></pre>
+<label>
+Lake volume (million m³):
+<input type="range" id="lake-vol" min="1" max="100" step="5" value="25">
+<span id="vol-val">25</span>
+</label>
+<label>
+Ice dam thickness (m):
+<input type="range" id="ice-thick" min="50" max="200" step="10" value="80">
+<span id="ice-val">80</span>
+</label>
+<label>
+Water depth (m):
+<input type="range" id="water-depth" min="30" max="150" step="5" value="75">
+<span id="depth-val">75</span>
+</label>
+<label>
+Distance downstream (km):
+<input type="range" id="distance" min="5" max="50" step="5" value="15">
+<span id="dist-val">15</span>
+</label>
+<div class="glof-info">
+<p><strong>Safety factor:</strong> <span id="safety-factor">--</span></p>
+<p><strong>Peak discharge:</strong> <span id="peak-q">--</span> m³/s</p>
+<p><strong>Travel time:</strong> <span id="travel-time">--</span> min</p>
+<p><strong>Downstream peak:</strong> <span id="down-q">--</span> m³/s</p>
+<p><strong>Hazard:</strong> <span id="hazard-level">--</span></p>
+</div>
 </div>
 <div id="glof-canvas-container">
-<pre><code>&lt;canvas id="glof-canvas" width="700" height="400" style="border: 1px solid #ddd;"&gt;&lt;/canvas&gt;</code></pre>
+<canvas id="glof-canvas" width="700" height="400" style="border: 1px solid #ddd;"></canvas>
 </div>
 </div>
+
 <script type="module">
 await new Promise(resolve => {
-  const checkECharts = () => {
-    if (typeof echarts !== 'undefined') resolve();
-    else setTimeout(checkECharts, 50);
-  };
-  checkECharts();
+const checkECharts = () => {
+if (typeof echarts !== 'undefined') resolve();
+else setTimeout(checkECharts, 50);
+};
+checkECharts();
 });
 
 (function() {
-  const chart = echarts.init(document.getElementById('glof-canvas'));
+const chart = echarts.init(document.getElementById('glof-canvas'));
   
-  let lakeVol = 25;
-  let iceThick = 80;
-  let waterDepth = 75;
-  let distance = 15;
+let lakeVol = 25;
+let iceThick = 80;
+let waterDepth = 75;
+let distance = 15;
   
-  function calculateGLOF() {
-    // Safety factor
-    const F = (0.9 * iceThick) / waterDepth;
+function calculateGLOF() {
+// Safety factor
+const F = (0.9 * iceThick) / waterDepth;
     
-    // Peak discharge (Clague-Mathews)
-    const Qmax = 75 * Math.pow(lakeVol, 0.67);
+// Peak discharge (Clague-Mathews)
+const Qmax = 75 * Math.pow(lakeVol, 0.67);
     
-    // Wave velocity (simplified)
-    const slope = 0.05;
-    const n = 0.045;
-    const h = 5; // assumed depth
-    const v = (1/n) * Math.pow(h, 2/3) * Math.pow(slope, 0.5);
-    const c = 5/3 * v;
+// Wave velocity (simplified)
+const slope = 0.05;
+const n = 0.045;
+const h = 5; // assumed depth
+const v = (1/n) * Math.pow(h, 2/3) * Math.pow(slope, 0.5);
+const c = 5/3 * v;
     
-    // Travel time
-    const travelTime = (distance * 1000 / c) / 60; // minutes
+// Travel time
+const travelTime = (distance * 1000 / c) / 60; // minutes
     
-    // Attenuation
-    const alpha = 0.03; // per km
-    const Qdown = Qmax * Math.exp(-alpha * distance);
+// Attenuation
+const alpha = 0.03; // per km
+const Qdown = Qmax * Math.exp(-alpha * distance);
     
-    // Hazard level
-    let hazard;
-    if (F > 1.2) hazard = 'Low (stable)';
-    else if (F > 1.0) hazard = 'Moderate (marginal)';
-    else if (Qdown < 100) hazard = 'High';
-    else if (Qdown < 500) hazard = 'Very High';
-    else hazard = 'Extreme';
+// Hazard level
+let hazard;
+if (F > 1.2) hazard = 'Low (stable)';
+else if (F > 1.0) hazard = 'Moderate (marginal)';
+else if (Qdown < 100) hazard = 'High';
+else if (Qdown < 500) hazard = 'Very High';
+else hazard = 'Extreme';
     
-    return {F, Qmax, travelTime, Qdown, hazard, c, v};
-  }
+return {F, Qmax, travelTime, Qdown, hazard, c, v};
+}
   
-  function generateHydrograph() {
-    const result = calculateGLOF();
-    const Qmax = result.Qmax;
+function generateHydrograph() {
+const result = calculateGLOF();
+const Qmax = result.Qmax;
     
-    // Simple triangular hydrograph
-    const tPeak = 2; // hours
-    const tBase = 8; // hours
+// Simple triangular hydrograph
+const tPeak = 2; // hours
+const tBase = 8; // hours
     
-    const hydro = [];
-    const nPoints = 100;
+const hydro = [];
+const nPoints = 100;
     
-    for (let i = 0; i <= nPoints; i++) {
-      const t = i * tBase / nPoints;
-      let Q;
+for (let i = 0; i <= nPoints; i++) {
+const t = i * tBase / nPoints;
+let Q;
       
-      if (t < tPeak) {
-        Q = Qmax * (t / tPeak);
-      } else {
-        Q = Qmax * (tBase - t) / (tBase - tPeak);
-      }
+if (t < tPeak) {
+Q = Qmax * (t / tPeak);
+} else {
+Q = Qmax * (tBase - t) / (tBase - tPeak);
+}
       
-      Q = Math.max(0, Q);
-      hydro.push([t, Q]);
-    }
+Q = Math.max(0, Q);
+hydro.push([t, Q]);
+}
     
-    return hydro;
-  }
+return hydro;
+}
   
-  function generateDownstreamHydro() {
-    const result = calculateGLOF();
-    const hydro = generateHydrograph();
-    const attenFactor = result.Qdown / result.Qmax;
-    const lagTime = result.travelTime / 60; // hours
+function generateDownstreamHydro() {
+const result = calculateGLOF();
+const hydro = generateHydrograph();
+const attenFactor = result.Qdown / result.Qmax;
+const lagTime = result.travelTime / 60; // hours
     
-    return hydro.map(([t, Q]) => [t + lagTime, Q * attenFactor]);
-  }
+return hydro.map(([t, Q]) => [t + lagTime, Q * attenFactor]);
+}
   
-  function render() {
-    const result = calculateGLOF();
+function render() {
+const result = calculateGLOF();
     
-    document.getElementById('safety-factor').textContent = result.F.toFixed(2);
-    document.getElementById('peak-q').textContent = result.Qmax.toFixed(0);
-    document.getElementById('travel-time').textContent = result.travelTime.toFixed(1);
-    document.getElementById('down-q').textContent = result.Qdown.toFixed(0);
-    document.getElementById('hazard-level').textContent = result.hazard;
+document.getElementById('safety-factor').textContent = result.F.toFixed(2);
+document.getElementById('peak-q').textContent = result.Qmax.toFixed(0);
+document.getElementById('travel-time').textContent = result.travelTime.toFixed(1);
+document.getElementById('down-q').textContent = result.Qdown.toFixed(0);
+document.getElementById('hazard-level').textContent = result.hazard;
     
-    const hazardEl = document.getElementById('hazard-level');
-    if (result.hazard.includes('Low')) hazardEl.style.color = '#2E7D32';
-    else if (result.hazard.includes('Moderate')) hazardEl.style.color = '#F57F17';
-    else if (result.hazard.includes('High')) hazardEl.style.color = '#E64A19';
-    else hazardEl.style.color = '#B71C1C';
+const hazardEl = document.getElementById('hazard-level');
+if (result.hazard.includes('Low')) hazardEl.style.color = '#2E7D32';
+else if (result.hazard.includes('Moderate')) hazardEl.style.color = '#F57F17';
+else if (result.hazard.includes('High')) hazardEl.style.color = '#E64A19';
+else hazardEl.style.color = '#B71C1C';
     
-    const sourceHydro = generateHydrograph();
-    const downHydro = generateDownstreamHydro();
+const sourceHydro = generateHydrograph();
+const downHydro = generateDownstreamHydro();
     
-    const series = [
-      {
-        name: 'Source (lake)',
-        type: 'line',
-        data: sourceHydro,
-        lineStyle: {color: '#D32F2F', width: 3},
-        areaStyle: {color: 'rgba(211, 47, 47, 0.3)'}
-      },
-      {
-        name: `${distance} km downstream`,
-        type: 'line',
-        data: downHydro,
-        lineStyle: {color: '#1976D2', width: 3},
-        areaStyle: {color: 'rgba(25, 118, 210, 0.3)'}
-      }
-    ];
+const series = [
+{
+name: 'Source (lake)',
+type: 'line',
+data: sourceHydro,
+lineStyle: {color: '#D32F2F', width: 3},
+areaStyle: {color: 'rgba(211, 47, 47, 0.3)'}
+},
+{
+name: `${distance} km downstream`,
+type: 'line',
+data: downHydro,
+lineStyle: {color: '#1976D2', width: 3},
+areaStyle: {color: 'rgba(25, 118, 210, 0.3)'}
+}
+];
     
-    const option = {
-      title: {
-        text: 'GLOF Hydrograph',
-        left: 'center'
-      },
-      tooltip: {
-        trigger: 'axis',
-        axisPointer: {type: 'cross'}
-      },
-      legend: {
-        data: ['Source (lake)', `${distance} km downstream`],
-        top: 30
-      },
-      grid: {
-        left: 80,
-        right: 40,
-        top: 80,
-        bottom: 60
-      },
-      xAxis: {
-        type: 'value',
-        name: 'Time (hours)',
-        nameLocation: 'middle',
-        nameGap: 30,
-        min: 0,
-        max: 12
-      },
-      yAxis: {
-        type: 'value',
-        name: 'Discharge (m³/s)',
-        nameLocation: 'middle',
-        nameGap: 50,
-        min: 0
-      },
-      series: series
-    };
+const option = {
+title: {
+text: 'GLOF Hydrograph',
+left: 'center'
+},
+tooltip: {
+trigger: 'axis',
+axisPointer: {type: 'cross'}
+},
+legend: {
+data: ['Source (lake)', `${distance} km downstream`],
+top: 30
+},
+grid: {
+left: 80,
+right: 40,
+top: 80,
+bottom: 60
+},
+xAxis: {
+type: 'value',
+name: 'Time (hours)',
+nameLocation: 'middle',
+nameGap: 30,
+min: 0,
+max: 12
+},
+yAxis: {
+type: 'value',
+name: 'Discharge (m³/s)',
+nameLocation: 'middle',
+nameGap: 50,
+min: 0
+},
+series: series
+};
     
-    chart.setOption(option, true);
-  }
+chart.setOption(option, true);
+}
   
-  document.getElementById('lake-vol').addEventListener('input', (e) => {
-    lakeVol = parseFloat(e.target.value);
-    document.getElementById('vol-val').textContent = lakeVol;
-    render();
-  });
+document.getElementById('lake-vol').addEventListener('input', (e) => {
+lakeVol = parseFloat(e.target.value);
+document.getElementById('vol-val').textContent = lakeVol;
+render();
+});
   
-  document.getElementById('ice-thick').addEventListener('input', (e) => {
-    iceThick = parseFloat(e.target.value);
-    document.getElementById('ice-val').textContent = iceThick;
-    render();
-  });
+document.getElementById('ice-thick').addEventListener('input', (e) => {
+iceThick = parseFloat(e.target.value);
+document.getElementById('ice-val').textContent = iceThick;
+render();
+});
   
-  document.getElementById('water-depth').addEventListener('input', (e) => {
-    waterDepth = parseFloat(e.target.value);
-    document.getElementById('depth-val').textContent = waterDepth;
-    render();
-  });
+document.getElementById('water-depth').addEventListener('input', (e) => {
+waterDepth = parseFloat(e.target.value);
+document.getElementById('depth-val').textContent = waterDepth;
+render();
+});
   
-  document.getElementById('distance').addEventListener('input', (e) => {
-    distance = parseFloat(e.target.value);
-    document.getElementById('dist-val').textContent = distance;
-    render();
-  });
+document.getElementById('distance').addEventListener('input', (e) => {
+distance = parseFloat(e.target.value);
+document.getElementById('dist-val').textContent = distance;
+render();
+});
   
-  render();
+render();
   
-  window.addEventListener('resize', () => chart.resize());
+window.addEventListener('resize', () => chart.resize());
 })();
 </script>
 <p><strong>Try this:</strong> - <strong>Increase water depth:</strong> Safety factor drops below 1.0 → dam fails! - <strong>Larger lake:</strong> Higher peak discharge (exponential relationship) - <strong>Increase distance:</strong> Peak attenuates, delayed arrival - <strong>Red hydrograph:</strong> At source (lake breach) - <strong>Blue hydrograph:</strong> Downstream (lower peak, delayed, wider) - <strong>Safety factor &lt; 1.0:</strong> Dam flotation imminent - Watch hazard level change from Low → Extreme - Notice: Even 15 km away, travel time &lt; 20 minutes!</p>
