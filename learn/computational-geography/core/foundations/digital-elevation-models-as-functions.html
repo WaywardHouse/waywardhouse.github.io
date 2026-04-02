@@ -1,0 +1,896 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
+
+<meta charset="utf-8">
+<meta name="generator" content="quarto-1.8.27">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+
+<meta name="dcterms.date" content="2026-02-26">
+<meta name="description" content="Terrain has structure: it rises and falls continuously across space. We can represent elevation as a mathematical function z = f(x, y), where every point in the horizontal plane has a unique elevation. In practice, we discretize this into a raster grid. This model bridges continuous mathematics and digital data.">
+
+<title>Digital Elevation Models as Functions – Computational Geography</title>
+<style>
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: min(4vw, 1.5em);}
+div.column{flex: auto; overflow-x: auto;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+  width: 0.8em;
+  margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
+  vertical-align: middle;
+}
+</style>
+
+
+<script src="../site_libs/clipboard/clipboard.min.js"></script>
+<script src="../site_libs/quarto-html/tabby.min.js"></script>
+<script src="../site_libs/quarto-html/popper.min.js"></script>
+<script src="../site_libs/quarto-html/tippy.umd.min.js"></script>
+<script src="../site_libs/quarto-html/anchor.min.js"></script>
+<link href="../site_libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="../site_libs/quarto-html/light-border.css" rel="stylesheet">
+<link href="../site_libs/quarto-html/quarto-html-734cb40618f438257b19a1e532635a32.min.css" rel="stylesheet" append-hash="true" data-mode="light">
+<link href="../site_libs/quarto-html/quarto-syntax-highlighting-ed96de9b727972fe78a7b5d16c58bf87.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<script>
+  (function () {
+    var s = localStorage.getItem('theme');
+    var dark = s !== null ? s === 'dark' : false;
+    document.documentElement.dataset.theme = dark ? 'dark' : 'light';
+    document.documentElement.dataset.brand = 'wayward';
+  })();
+</script>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:ital,wght@0,300;0,400;0,600;0,700;0,800;0,900;1,700;1,800&amp;family=Barlow:wght@300;400;500;600&amp;family=IBM+Plex+Mono:ital,wght@0,300;0,400;0,500;1,300&amp;family=Literata:ital,opsz,wght@0,7..72,300;0,7..72,400;0,7..72,500;1,7..72,300;1,7..72,400&amp;display=swap" rel="stylesheet">
+
+  <script>window.backupDefine = window.define; window.define = undefined;</script><script src="https://cdn.jsdelivr.net/npm/katex@latest/dist/katex.min.js"></script>
+  <script>document.addEventListener("DOMContentLoaded", function () {
+ var mathElements = document.getElementsByClassName("math");
+ var macros = [];
+ for (var i = 0; i < mathElements.length; i++) {
+  var texText = mathElements[i].firstChild;
+  if (mathElements[i].tagName == "SPAN") {
+   katex.render(texText.data, mathElements[i], {
+    displayMode: mathElements[i].classList.contains('display'),
+    throwOnError: false,
+    macros: macros,
+    fleqn: false
+   });
+}}});
+  </script>
+  <script>window.define = window.backupDefine; window.backupDefine = undefined;</script><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@latest/dist/katex.min.css">
+
+<script type="text/javascript">
+const typesetMath = (el) => {
+  if (window.MathJax) {
+    // MathJax Typeset
+    window.MathJax.typeset([el]);
+  } else if (window.katex) {
+    // KaTeX Render
+    var mathElements = el.getElementsByClassName("math");
+    var macros = [];
+    for (var i = 0; i < mathElements.length; i++) {
+      var texText = mathElements[i].firstChild;
+      if (mathElements[i].tagName == "SPAN" && texText && texText.data) {
+        window.katex.render(texText.data, mathElements[i], {
+          displayMode: mathElements[i].classList.contains('display'),
+          throwOnError: false,
+          macros: macros,
+          fleqn: false
+        });
+      }
+    }
+  }
+}
+window.Quarto = {
+  typesetMath
+};
+</script>
+
+<link rel="stylesheet" href="../assets/css/quarto-wayward.css">
+</head>
+
+<body class="reading-body tag-hash-math tag-hash-viz">
+
+
+<header id="title-block-header">
+<h1 class="title"><span class="chapter-title">Digital Elevation Models as Functions</span></h1>
+<p class="subtitle">Representing terrain as a function of two variables — from continuous surfaces to discrete grids</p>
+
+<p class="date">2026-02-26</p>
+</header>
+
+<nav id="TOC" role="doc-toc">
+    <h2 id="toc-title">Table of contents</h2>
+   
+  <ul>
+  <li><a href="#before-you-start" id="toc-before-you-start">Before You Start</a></li>
+  <li><a href="#the-question" id="toc-the-question">1. The Question</a></li>
+  <li><a href="#the-conceptual-model" id="toc-the-conceptual-model">2. The Conceptual Model</a>
+  <ul>
+  <li><a href="#terrain-as-a-function" id="toc-terrain-as-a-function">Terrain as a Function</a></li>
+  <li><a href="#from-continuous-to-discrete" id="toc-from-continuous-to-discrete">From Continuous to Discrete</a></li>
+  </ul></li>
+  <li><a href="#building-the-mathematical-model" id="toc-building-the-mathematical-model">3. Building the Mathematical Model</a>
+  <ul>
+  <li><a href="#defining-the-coordinate-system" id="toc-defining-the-coordinate-system">Defining the Coordinate System</a></li>
+  <li><a href="#from-grid-indices-to-coordinates" id="toc-from-grid-indices-to-coordinates">From Grid Indices to Coordinates</a></li>
+  <li><a href="#interpolating-between-grid-points" id="toc-interpolating-between-grid-points">Interpolating Between Grid Points</a></li>
+  </ul></li>
+  <li><a href="#worked-example-by-hand" id="toc-worked-example-by-hand">4. Worked Example by Hand</a>
+  <ul>
+  <li><a href="#solution" id="toc-solution">Solution</a></li>
+  </ul></li>
+  <li><a href="#computational-implementation" id="toc-computational-implementation">5. Computational Implementation</a></li>
+  <li><a href="#interpretation" id="toc-interpretation">6. Interpretation</a>
+  <ul>
+  <li><a href="#resolution-and-detail" id="toc-resolution-and-detail">Resolution and Detail</a></li>
+  <li><a href="#vertical-accuracy-vs.-horizontal-resolution" id="toc-vertical-accuracy-vs.-horizontal-resolution">Vertical Accuracy vs.&nbsp;Horizontal Resolution</a></li>
+  <li><a href="#edge-effects" id="toc-edge-effects">Edge Effects</a></li>
+  </ul></li>
+  <li><a href="#what-could-go-wrong" id="toc-what-could-go-wrong">7. What Could Go Wrong?</a>
+  <ul>
+  <li><a href="#confusing-rowcolumn-with-xy" id="toc-confusing-rowcolumn-with-xy">Confusing Row/Column with X/Y</a></li>
+  <li><a href="#assuming-regular-grids" id="toc-assuming-regular-grids">Assuming Regular Grids</a></li>
+  <li><a href="#interpolation-artifacts" id="toc-interpolation-artifacts">Interpolation Artifacts</a></li>
+  <li><a href="#coordinate-reference-systems" id="toc-coordinate-reference-systems">Coordinate Reference Systems</a></li>
+  </ul></li>
+  <li><a href="#extension-functions-of-two-variables-in-calculus" id="toc-extension-functions-of-two-variables-in-calculus">8. Extension: Functions of Two Variables in Calculus</a></li>
+  <li><a href="#math-refresher-functions-of-two-variables" id="toc-math-refresher-functions-of-two-variables">9. Math Refresher: Functions of Two Variables</a>
+  <ul>
+  <li><a href="#notation" id="toc-notation">Notation</a></li>
+  <li><a href="#example" id="toc-example">Example</a></li>
+  <li><a href="#level-curves-contour-lines" id="toc-level-curves-contour-lines">Level Curves (Contour Lines)</a></li>
+  </ul></li>
+  <li><a href="#summary" id="toc-summary">Summary</a></li>
+  </ul>
+</nav>
+<h2 id="before-you-start" class="anchored">Before You Start</h2>
+<p><strong>You should know</strong><br>
+How coordinates locate a point on a map and how a graph can assign one value to each position.</p>
+<p><strong>You will learn</strong><br>
+How a digital elevation model works, how landscapes can be treated as mathematical surfaces, and why grids are so useful in computational geography.</p>
+<p><strong>Why this matters</strong><br>
+Once you can think of a landscape as a function, you can calculate slope, flow, shading, visibility, and many other terrain properties.</p>
+<p><strong>If this gets hard, focus on…</strong><br>
+The simple idea that every grid cell stores one height value. The rest of the chapter is about what that idea lets us do.</p>
+<p>The SRTM mission, flown aboard Space Shuttle Endeavour in February 2000, used a radar interferometer to measure the elevation of virtually the entire land surface of Earth in eleven days. The result — a 30-metre resolution grid of elevations covering 80% of the globe — transformed terrain analysis from a laborious manual discipline into something any laptop could compute in seconds. But behind the data product is a conceptual leap worth making explicit: a landscape is a function.</p>
+<p>Elevation at any location is determined entirely by its coordinates. Given a position (x, y), there is exactly one elevation z. That is what a mathematical function does — it assigns a unique output to every input. For terrain, z = f(x, y) is the one-line summary on which slope calculation, hydrological flow routing, viewshed analysis, and landslide prediction are all built. Understanding what it means to represent a continuous surface as a discrete grid — and what information is preserved or lost in that digitisation — is the first step toward doing terrain analysis whose results you can actually interpret and trust.</p>
+<h2 id="the-question" class="anchored">1. The Question</h2>
+<p>How do we represent the shape of the land mathematically?</p>
+<p>A landscape is not at all just flat. Mountains rise, valleys sink, hillslopes tilt. Every point on the surface has an <strong>elevation</strong> above some reference (usually sea level).</p>
+<p>If we know the coordinates <span class="math inline">(x, y)</span> of a point on the ground, can we write down a function that gives us the elevation <span class="math inline">z</span>?</p>
+<p><strong>Yes</strong> — and this is the foundation of <strong>terrain analysis</strong>, <strong>hydrology</strong>, <strong>viewshed modelling</strong>, and <strong>landslide prediction</strong>.</p>
+<p>The mathematical question: How do we go from a continuous surface to a computable representation?</p>
+<hr>
+<h2 id="the-conceptual-model" class="anchored">2. The Conceptual Model</h2>
+<h3 id="terrain-as-a-function" class="anchored">Terrain as a Function</h3>
+<p>Imagine standing at a point with coordinates <span class="math inline">(x, y)</span> measured in meters east and north from some origin. The elevation at that point is <span class="math inline">z</span>.</p>
+<p><strong>Mathematically:</strong></p>
+<p><span class="math display">z = f(x, y)</span></p>
+<p>This is a <strong>function of two variables</strong>: - <strong>Input:</strong> A position <span class="math inline">(x, y)</span> in the horizontal plane - <strong>Output:</strong> Elevation <span class="math inline">z</span> at that position</p>
+<p><strong>Examples of terrain functions:</strong></p>
+<ol type="1">
+<li><strong>Flat plane:</strong> <span class="math inline">z = 100</span> (elevation is constant everywhere)</li>
+<li><strong>Tilted plane:</strong> <span class="math inline">z = 500 + 0.05x - 0.02y</span> (uniform slope)</li>
+<li><strong>Cone:</strong> <span class="math inline">z = 1000 - \sqrt{x^2 + y^2}</span> (peak at origin, decreasing radially)</li>
+<li><strong>Saddle:</strong> <span class="math inline">z = x^2 - y^2</span> (up in one direction, down in the perpendicular direction)</li>
+</ol>
+<p>Real terrain is more complex, but the <strong>concept</strong> is the same: elevation is determined by position.</p>
+<h3 id="from-continuous-to-discrete" class="anchored">From Continuous to Discrete</h3>
+<p>In reality, we can’t write down a simple algebraic formula for real terrain. Instead, we <strong>measure</strong> elevation at many points and store the values in a grid.</p>
+<p><strong>Digital Elevation Model (DEM):</strong> A raster grid where each cell contains the elevation of the terrain at that location.</p>
+<p><strong>Grid structure:</strong> - Rows and columns define positions - Cell size (resolution) determines how finely we sample the terrain (e.g., 10 m × 10 m cells) - Elevation values are stored as numbers (integers or floating point)</p>
+<p><strong>Example:</strong> A 5×5 DEM (rows from north to south, columns from west to east):</p>
+<pre><code>110  115  120  125  130
+108  112  118  124  129
+105  110  115  121  127
+103  108  113  118  123
+100  105  110  115  120</code></pre>
+<p>Each number is the elevation (in meters) at the center of that cell.</p>
+<hr>
+<h2 id="building-the-mathematical-model" class="anchored">3. Building the Mathematical Model</h2>
+<h3 id="defining-the-coordinate-system" class="anchored">Defining the Coordinate System</h3>
+<p>To turn a grid into a function, we need to define: 1. <strong>Origin:</strong> Where is <span class="math inline">(x, y) = (0, 0)</span>? 2. <strong>Cell size:</strong> <span class="math inline">\Delta x</span> (east-west), <span class="math inline">\Delta y</span> (north-south) 3. <strong>Grid extent:</strong> How many rows and columns?</p>
+<p><strong>Standard convention:</strong> - x increases <strong>eastward</strong> - y increases <strong>northward</strong> - Origin is typically the <strong>southwest corner</strong> of the grid</p>
+<p>If the grid has <span class="math inline">m</span> rows and <span class="math inline">n</span> columns, with cell size <span class="math inline">\Delta x = \Delta y = d</span>:</p>
+<p><span class="math display">x_j = x_0 + j \cdot d, \quad j = 0, 1, \ldots, n-1</span> <span class="math display">y_i = y_0 + i \cdot d, \quad i = 0, 1, \ldots, m-1</span></p>
+<p>The elevation at grid cell <span class="math inline">(i, j)</span> is <span class="math inline">z_{i,j}</span>.</p>
+<h3 id="from-grid-indices-to-coordinates" class="anchored">From Grid Indices to Coordinates</h3>
+<p>Given a grid cell index <span class="math inline">(i, j)</span>, the corresponding real-world coordinates are:</p>
+<p><span class="math display">(x, y) = (x_0 + j \cdot d, \; y_0 + i \cdot d)</span></p>
+<p><strong>Example:</strong> Grid with origin <span class="math inline">(x_0, y_0) = (500000, 4500000)</span> (UTM coordinates), cell size <span class="math inline">d = 30</span> m, cell <span class="math inline">(i=2, j=3)</span>:</p>
+<p><span class="math display">x = 500000 + 3 \times 30 = 500090 \text{ m}</span> <span class="math display">y = 4500000 + 2 \times 30 = 4500060 \text{ m}</span></p>
+<h3 id="interpolating-between-grid-points" class="anchored">Interpolating Between Grid Points</h3>
+<p>A DEM gives elevation only at grid cell <strong>centers</strong>. What about points between cells?</p>
+<p><strong>Bilinear interpolation:</strong> Given a point <span class="math inline">(x, y)</span> inside a grid cell, interpolate elevation using the four surrounding cell values.</p>
+<p>Let the four corners have elevations <span class="math inline">z_{00}, z_{01}, z_{10}, z_{11}</span> at positions:</p>
+<p><span class="math display">\begin{align}
+(x_0, y_0) &amp;\rightarrow z_{00} \\
+(x_0, y_1) &amp;\rightarrow z_{01} \\
+(x_1, y_0) &amp;\rightarrow z_{10} \\
+(x_1, y_1) &amp;\rightarrow z_{11}
+\end{align}</span></p>
+<p>For a point <span class="math inline">(x, y)</span> with <span class="math inline">x_0 &lt; x &lt; x_1</span> and <span class="math inline">y_0 &lt; y &lt; y_1</span>:</p>
+<p><span class="math display">z(x, y) = (1 - s)(1 - t) z_{00} + s(1 - t) z_{10} + (1 - s)t z_{01} + st z_{11}</span></p>
+<p>Where:</p>
+<p><span class="math display">s = \frac{x - x_0}{x_1 - x_0}, \quad t = \frac{y - y_0}{y_1 - y_0}</span></p>
+<p>This creates a <strong>piecewise continuous surface</strong> — smooth within each cell, potentially discontinuous at cell boundaries.</p>
+<hr>
+<h2 id="worked-example-by-hand" class="anchored">4. Worked Example by Hand</h2>
+<p><strong>Problem:</strong> A 3×3 DEM has cell size 10 m and origin at <span class="math inline">(x_0, y_0) = (0, 0)</span>. Elevations (in meters):</p>
+<pre><code>Row 0:  100  105  110
+Row 1:  102  107  112
+Row 2:  105  110  115</code></pre>
+<ol type="a">
+<li>What is the elevation at grid cell <span class="math inline">(i=1, j=2)</span>?<br>
+</li>
+<li>What are the real-world coordinates of this cell center?<br>
+</li>
+<li>Estimate the elevation at point <span class="math inline">(x, y) = (15, 5)</span> using bilinear interpolation.</li>
+</ol>
+<h3 id="solution" class="anchored">Solution</h3>
+<p><strong>(a) Elevation at cell (1, 2)</strong></p>
+<p>Row 1, column 2: <span class="math inline">z_{1,2} = 112</span> m</p>
+<p><strong>(b) Coordinates of cell center</strong></p>
+<p><span class="math display">x = x_0 + j \cdot d = 0 + 2 \times 10 = 20 \text{ m}</span> <span class="math display">y = y_0 + i \cdot d = 0 + 1 \times 10 = 10 \text{ m}</span></p>
+<p>Cell center: <strong>(20, 10)</strong> m</p>
+<p><strong>(c) Interpolation at (15, 5)</strong></p>
+<p>Point <span class="math inline">(15, 5)</span> lies between cells: - <span class="math inline">x</span>: between column 1 (<span class="math inline">x = 10</span>) and column 2 (<span class="math inline">x = 20</span>) - <span class="math inline">y</span>: between row 0 (<span class="math inline">y = 0</span>) and row 1 (<span class="math inline">y = 10</span>)</p>
+<p>Four corner elevations: - <span class="math inline">(10, 0)</span>: <span class="math inline">z = 105</span> (row 0, col 1) - <span class="math inline">(20, 0)</span>: <span class="math inline">z = 110</span> (row 0, col 2) - <span class="math inline">(10, 10)</span>: <span class="math inline">z = 107</span> (row 1, col 1) - <span class="math inline">(20, 10)</span>: <span class="math inline">z = 112</span> (row 1, col 2)</p>
+<p>Interpolation parameters:</p>
+<p><span class="math display">s = \frac{15 - 10}{20 - 10} = \frac{5}{10} = 0.5</span></p>
+<p><span class="math display">t = \frac{5 - 0}{10 - 0} = \frac{5}{10} = 0.5</span></p>
+<p>Interpolated elevation:</p>
+<p><span class="math display">\begin{align}
+z(15, 5) &amp;= (1 - 0.5)(1 - 0.5)(105) + (0.5)(1 - 0.5)(110) \\
+&amp;\quad + (1 - 0.5)(0.5)(107) + (0.5)(0.5)(112) \\
+&amp;= 0.25 \times 105 + 0.25 \times 110 + 0.25 \times 107 + 0.25 \times 112 \\
+&amp;= 26.25 + 27.5 + 26.75 + 28 \\
+&amp;= 108.5 \text{ m}
+\end{align}</span></p>
+<p><strong>Elevation at (15, 5): 108.5 m</strong></p>
+<hr>
+<h2 id="computational-implementation" class="anchored">5. Computational Implementation</h2>
+<p>Below is an interactive 3D visualization of a synthetic DEM.</p>
+<div id="dem-viz" class="viz-container">
+<div class="controls">
+<pre><code>&lt;label&gt;
+  Terrain type:
+  &lt;select id="terrain-select"&gt;
+    &lt;option value="cone"&gt;Cone (radial peak)&lt;/option&gt;
+    &lt;option value="saddle"&gt;Saddle point&lt;/option&gt;
+    &lt;option value="plane"&gt;Tilted plane&lt;/option&gt;
+    &lt;option value="ridge"&gt;Ridge&lt;/option&gt;
+    &lt;option value="valley"&gt;Valley&lt;/option&gt;
+  &lt;/select&gt;
+&lt;/label&gt;
+&lt;label&gt;
+  Grid resolution:
+  &lt;input type="range" id="resolution-slider" min="10" max="50" step="5" value="30"&gt;
+  &lt;span id="resolution-value"&gt;30&lt;/span&gt; cells
+&lt;/label&gt;</code></pre>
+</div>
+<div id="dem-chart" style="width: 100%; height: 500px;">
+
+</div>
+<div class="info-panel">
+<pre><code>&lt;p&gt;Each cell represents one grid point in the raster. Colour encodes elevation (blue = low, red = high). This top-down view is exactly how a DEM is stored: a 2D array of elevation values.&lt;/p&gt;</code></pre>
+</div>
+</div>
+<script type="module">
+while (!window.echarts) await new Promise(r => setTimeout(r, 50));
+
+const chart = window.echarts.init(document.getElementById('dem-chart'));
+
+let terrainType = 'cone';
+let resolution = 30;
+
+function generateDEM(type, res) {
+  const data = [];
+  const extent = 100;
+  const step = extent / res;
+
+  for (let i = 0; i < res; i++) {
+    for (let j = 0; j < res; j++) {
+      const x = (j - res / 2) * step;
+      const y = (i - res / 2) * step;
+      let z;
+
+      switch (type) {
+        case 'cone':   z = 50 - Math.sqrt(x * x + y * y) * 0.5; break;
+        case 'saddle': z = (x * x - y * y) * 0.01; break;
+        case 'plane':  z = 10 + x * 0.3 + y * 0.2; break;
+        case 'ridge':  z = 30 - Math.abs(x) * 0.3 + y * 0.1; break;
+        case 'valley': z = Math.abs(y) * 0.3 - 20 + x * 0.1; break;
+      }
+
+      data.push([j, i, +z.toFixed(2)]);
+    }
+  }
+  return data;
+}
+
+function updateChart() {
+  const data = generateDEM(terrainType, resolution);
+  const zValues = data.map(d => d[2]);
+  const zMin = Math.min(...zValues);
+  const zMax = Math.max(...zValues);
+  const cols = Array.from({ length: resolution }, (_, i) => i);
+  const rows = Array.from({ length: resolution }, (_, i) => i);
+
+  const option = {
+    title: {
+      text: `DEM Grid: ${terrainType} (${resolution}×${resolution} cells)`,
+      left: 'center'
+    },
+    tooltip: {
+      trigger: 'item',
+      formatter: params => {
+        const [col, row, z] = params.value;
+        return `Col ${col} (East), Row ${row} (North)<br/>Elevation: ${z} m`;
+      }
+    },
+    visualMap: {
+      show: true,
+      min: zMin,
+      max: zMax,
+      calculable: true,
+      orient: 'horizontal',
+      left: 'center',
+      bottom: '2%',
+      inRange: {
+        color: ['#313695', '#4575b4', '#74add1', '#abd9e9', '#e0f3f8',
+                '#ffffbf', '#fee090', '#fdae61', '#f46d43', '#d73027', '#a50026']
+      }
+    },
+    grid: { top: 60, bottom: 90, left: 50, right: 20 },
+    xAxis: {
+      type: 'category',
+      data: cols,
+      name: 'Column (East →)',
+      nameLocation: 'middle',
+      nameGap: 25,
+      axisLabel: { show: resolution <= 20 }
+    },
+    yAxis: {
+      type: 'category',
+      data: rows,
+      name: 'Row (North ↑)',
+      nameLocation: 'middle',
+      nameGap: 35,
+      axisLabel: { show: resolution <= 20 }
+    },
+    series: [{
+      type: 'heatmap',
+      data: data,
+      emphasis: {
+        itemStyle: { shadowBlur: 5, shadowColor: 'rgba(0,0,0,0.4)' }
+      }
+    }]
+  };
+
+  chart.setOption(option);
+}
+
+document.getElementById('terrain-select').addEventListener('change', e => {
+  terrainType = e.target.value;
+  updateChart();
+});
+
+document.getElementById('resolution-slider').addEventListener('input', e => {
+  resolution = parseInt(e.target.value);
+  document.getElementById('resolution-value').textContent = resolution;
+  updateChart();
+});
+
+updateChart();
+window.addEventListener('resize', () => chart.resize());
+</script>
+<p><strong>Try this:</strong> - <strong>Cone:</strong> Radial symmetry, single peak - <strong>Saddle:</strong> Up in one direction, down in perpendicular direction (mountain pass) - <strong>Plane:</strong> Uniform slope (no curvature) - <strong>Ridge:</strong> Linear high feature - <strong>Valley:</strong> Linear low feature - Increase resolution: Smoother surface, more cells, same terrain shape - Decrease resolution: Coarser surface, blockier appearance</p>
+<p><strong>Key insight:</strong> The mathematical function is continuous, but the DEM is discrete. Higher resolution approximates the continuous surface better.</p>
+<hr>
+<h2 id="interpretation" class="anchored">6. Interpretation</h2>
+<h3 id="resolution-and-detail" class="anchored">Resolution and Detail</h3>
+<p><strong>Coarse DEM</strong> (90 m cells): - Good for regional analysis - Misses small features (gullies, terraces) - Fast to process</p>
+<p><strong>Fine DEM</strong> (1 m cells): - Captures detailed topography - Required for local hydrology, erosion modelling - Large file sizes, slower computation</p>
+<p><strong>Rule of thumb:</strong> Cell size should be smaller than the features you care about.</p>
+<h3 id="vertical-accuracy-vs.-horizontal-resolution" class="anchored">Vertical Accuracy vs.&nbsp;Horizontal Resolution</h3>
+<p>A DEM with 10 m horizontal resolution might have: - ±1 m vertical accuracy (high-quality lidar) - ±10 m vertical accuracy (older photogrammetry)</p>
+<p><strong>Don’t confuse the two.</strong> Resolution is spacing; accuracy is error.</p>
+<h3 id="edge-effects" class="anchored">Edge Effects</h3>
+<p>At the edge of a DEM, there are no neighboring cells beyond the boundary. Calculations requiring neighbors (slope, aspect) are undefined or require special handling (mirror, clamp, or mark as no-data).</p>
+<hr>
+<h2 id="what-could-go-wrong" class="anchored">7. What Could Go Wrong?</h2>
+<h3 id="confusing-rowcolumn-with-xy" class="anchored">Confusing Row/Column with X/Y</h3>
+<p><strong>Common error:</strong> Treating row index as x-coordinate.</p>
+<p><strong>Correct:</strong> - Row index <span class="math inline">i</span> corresponds to <strong>y-coordinate</strong> (north-south) - Column index <span class="math inline">j</span> corresponds to <strong>x-coordinate</strong> (east-west)</p>
+<p>Always check your coordinate system convention.</p>
+<h3 id="assuming-regular-grids" class="anchored">Assuming Regular Grids</h3>
+<p>Not all DEMs are regular grids: - <strong>Triangulated Irregular Networks (TINs):</strong> Points connected by triangles (better for sparse data) - <strong>Irregular point clouds:</strong> Lidar before gridding</p>
+<p>This model focuses on regular grids (rasters) because they’re simpler and more common.</p>
+<h3 id="interpolation-artifacts" class="anchored">Interpolation Artifacts</h3>
+<p>Bilinear interpolation creates a <strong>piecewise planar surface</strong> — each cell becomes a flat facet. This can introduce: - Artificial terracing - Discontinuous slopes at cell boundaries</p>
+<p>More sophisticated interpolation (bicubic, splines) can smooth these, but at computational cost.</p>
+<h3 id="coordinate-reference-systems" class="anchored">Coordinate Reference Systems</h3>
+<p>Real-world DEMs use <strong>projected coordinate systems</strong> (e.g., UTM) or <strong>geographic coordinates</strong> (latitude/longitude). Geographic coordinates are <strong>not</strong> uniform in distance — 1° longitude spans different distances at different latitudes.</p>
+<p>Always check the CRS before doing distance-based calculations.</p>
+<hr>
+<h2 id="extension-functions-of-two-variables-in-calculus" class="anchored">8. Extension: Functions of Two Variables in Calculus</h2>
+<p>A function <span class="math inline">z = f(x, y)</span> defines a <strong>surface</strong> in 3D space.</p>
+<p><strong>Partial derivatives</strong> measure how the surface changes when you move in one direction while holding the other constant:</p>
+<p><span class="math display">\frac{\partial z}{\partial x} = \text{rate of change in the x-direction (eastward)}</span></p>
+<p><span class="math display">\frac{\partial z}{\partial y} = \text{rate of change in the y-direction (northward)}</span></p>
+<p>In terrain analysis: - <span class="math inline">\frac{\partial z}{\partial x}</span> is the <strong>east-west slope component</strong> - <span class="math inline">\frac{\partial z}{\partial y}</span> is the <strong>north-south slope component</strong></p>
+<p><strong>Next model (Model 8)</strong> will show how to compute these from a DEM using <strong>finite differences</strong> and combine them into <strong>gradient</strong> and <strong>aspect</strong>.</p>
+<hr>
+<h2 id="math-refresher-functions-of-two-variables" class="anchored">9. Math Refresher: Functions of Two Variables</h2>
+<h3 id="notation" class="anchored">Notation</h3>
+<p><span class="math display">z = f(x, y)</span></p>
+<p><strong>Read as:</strong> “z is a function of x and y.”</p>
+<h3 id="example" class="anchored">Example</h3>
+<p><span class="math display">f(x, y) = x^2 + y^2</span></p>
+<p><strong>Evaluation:</strong> - <span class="math inline">f(3, 4) = 3^2 + 4^2 = 9 + 16 = 25</span> - <span class="math inline">f(0, 0) = 0</span> - <span class="math inline">f(-1, 2) = 1 + 4 = 5</span></p>
+<h3 id="level-curves-contour-lines" class="anchored">Level Curves (Contour Lines)</h3>
+<p>A <strong>level curve</strong> is the set of all <span class="math inline">(x, y)</span> points where <span class="math inline">f(x, y)</span> equals a constant.</p>
+<p><strong>Example:</strong> For <span class="math inline">z = x^2 + y^2</span>, the level curve <span class="math inline">z = 25</span> is the circle <span class="math inline">x^2 + y^2 = 25</span> (radius 5).</p>
+<p>In terrain, level curves are <strong>contour lines</strong> — lines of constant elevation.</p>
+<hr>
+<h2 id="summary" class="anchored">Summary</h2>
+<ul>
+<li>Terrain can be represented as a function <span class="math inline">z = f(x, y)</span></li>
+<li>A <strong>Digital Elevation Model (DEM)</strong> discretizes this function into a raster grid</li>
+<li>Grid cells have indices <span class="math inline">(i, j)</span> corresponding to coordinates <span class="math inline">(x, y)</span></li>
+<li><strong>Bilinear interpolation</strong> estimates elevation between grid points</li>
+<li><strong>Resolution</strong> (cell size) determines how finely the terrain is sampled</li>
+<li>Functions of two variables define surfaces; partial derivatives measure slope</li>
+<li>Real DEMs require careful attention to coordinate systems and interpolation methods</li>
+</ul>
+
+
+<footer class="wayward-footer">
+  <div class="wayward-footer__inner">
+    <div class="wayward-footer__brand">
+      <div class="wayward-footer__logo">WaywardHouse<span>.</span></div>
+      <p>Understanding how place, economy, and environment interact through analysis, modelling, and open tools.</p>
+    </div>
+
+    <nav class="wayward-footer__group" aria-labelledby="footer-reading">
+      <h2 id="footer-reading" class="anchored">Reading</h2>
+      <a href="../articles/">Articles</a>
+      <a href="../learn/">Learn</a>
+      <a href="../archive.html">Archive</a>
+      <a href="../start-here.html">Start Here</a>
+    </nav>
+
+    <nav class="wayward-footer__group" aria-labelledby="footer-site">
+      <h2 id="footer-site" class="anchored">Site</h2>
+      <a href="../start-here.html">Start Here</a>
+      <a href="../about.html">About</a>
+      <a href="../contact.html">Contact</a>
+    </nav>
+
+    <nav class="wayward-footer__group" aria-labelledby="footer-resources">
+      <h2 id="footer-resources" class="anchored">Resources</h2>
+      <a href="../topics/">All Topics</a>
+      <a href="../privacy.html">Privacy Policy</a>
+      <a href="../terms.html">Terms of Use</a>
+    </nav>
+  </div>
+</footer>
+
+<script type="module" src="../assets/dist/main.js"></script>
+<script type="module" src="../assets/js/core.js"></script>
+<script id="quarto-html-after-body" type="application/javascript">
+  window.document.addEventListener("DOMContentLoaded", function (event) {
+    const tabsets =  window.document.querySelectorAll(".panel-tabset-tabby")
+    tabsets.forEach(function(tabset) {
+      const tabby = new Tabby('#' + tabset.id);
+    });
+    const icon = "";
+    const anchorJS = new window.AnchorJS();
+    anchorJS.options = {
+      placement: 'right',
+      icon: icon
+    };
+    anchorJS.add('.anchored');
+    const isCodeAnnotation = (el) => {
+      for (const clz of el.classList) {
+        if (clz.startsWith('code-annotation-')) {                     
+          return true;
+        }
+      }
+      return false;
+    }
+    const onCopySuccess = function(e) {
+      // button target
+      const button = e.trigger;
+      // don't keep focus
+      button.blur();
+      // flash "checked"
+      button.classList.add('code-copy-button-checked');
+      var currentTitle = button.getAttribute("title");
+      button.setAttribute("title", "Copied!");
+      let tooltip;
+      if (window.bootstrap) {
+        button.setAttribute("data-bs-toggle", "tooltip");
+        button.setAttribute("data-bs-placement", "left");
+        button.setAttribute("data-bs-title", "Copied!");
+        tooltip = new bootstrap.Tooltip(button, 
+          { trigger: "manual", 
+            customClass: "code-copy-button-tooltip",
+            offset: [0, -8]});
+        tooltip.show();    
+      }
+      setTimeout(function() {
+        if (tooltip) {
+          tooltip.hide();
+          button.removeAttribute("data-bs-title");
+          button.removeAttribute("data-bs-toggle");
+          button.removeAttribute("data-bs-placement");
+        }
+        button.setAttribute("title", currentTitle);
+        button.classList.remove('code-copy-button-checked');
+      }, 1000);
+      // clear code selection
+      e.clearSelection();
+    }
+    const getTextToCopy = function(trigger) {
+      const outerScaffold = trigger.parentElement.cloneNode(true);
+      const codeEl = outerScaffold.querySelector('code');
+      for (const childEl of codeEl.children) {
+        if (isCodeAnnotation(childEl)) {
+          childEl.remove();
+        }
+      }
+      return codeEl.innerText;
+    }
+    const clipboard = new window.ClipboardJS('.code-copy-button:not([data-in-quarto-modal])', {
+      text: getTextToCopy
+    });
+    clipboard.on('success', onCopySuccess);
+    if (window.document.getElementById('quarto-embedded-source-code-modal')) {
+      const clipboardModal = new window.ClipboardJS('.code-copy-button[data-in-quarto-modal]', {
+        text: getTextToCopy,
+        container: window.document.getElementById('quarto-embedded-source-code-modal')
+      });
+      clipboardModal.on('success', onCopySuccess);
+    }
+      var localhostRegex = new RegExp(/^(?:http|https):\/\/localhost\:?[0-9]*\//);
+      var mailtoRegex = new RegExp(/^mailto:/);
+        var filterRegex = new RegExp('/' + window.location.host + '/');
+      var isInternal = (href) => {
+          return filterRegex.test(href) || localhostRegex.test(href) || mailtoRegex.test(href);
+      }
+      // Inspect non-navigation links and adorn them if external
+     var links = window.document.querySelectorAll('a[href]:not(.nav-link):not(.navbar-brand):not(.toc-action):not(.sidebar-link):not(.sidebar-item-toggle):not(.pagination-link):not(.no-external):not([aria-hidden]):not(.dropdown-item):not(.quarto-navigation-tool):not(.about-link)');
+      for (var i=0; i<links.length; i++) {
+        const link = links[i];
+        if (!isInternal(link.href)) {
+          // undo the damage that might have been done by quarto-nav.js in the case of
+          // links that we want to consider external
+          if (link.dataset.originalHref !== undefined) {
+            link.href = link.dataset.originalHref;
+          }
+        }
+      }
+    function tippyHover(el, contentFn, onTriggerFn, onUntriggerFn) {
+      const config = {
+        allowHTML: true,
+        maxWidth: 500,
+        delay: 100,
+        arrow: false,
+        appendTo: function(el) {
+            return el.parentElement;
+        },
+        interactive: true,
+        interactiveBorder: 10,
+        theme: 'light-border',
+        placement: 'bottom-start',
+      };
+      if (contentFn) {
+        config.content = contentFn;
+      }
+      if (onTriggerFn) {
+        config.onTrigger = onTriggerFn;
+      }
+      if (onUntriggerFn) {
+        config.onUntrigger = onUntriggerFn;
+      }
+      window.tippy(el, config); 
+    }
+    const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+    for (var i=0; i<noterefs.length; i++) {
+      const ref = noterefs[i];
+      tippyHover(ref, function() {
+        // use id or data attribute instead here
+        let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+        try { href = new URL(href).hash; } catch {}
+        const id = href.replace(/^#\/?/, "");
+        const note = window.document.getElementById(id);
+        if (note) {
+          return note.innerHTML;
+        } else {
+          return "";
+        }
+      });
+    }
+    const xrefs = window.document.querySelectorAll('a.quarto-xref');
+    const processXRef = (id, note) => {
+      // Strip column container classes
+      const stripColumnClz = (el) => {
+        el.classList.remove("page-full", "page-columns");
+        if (el.children) {
+          for (const child of el.children) {
+            stripColumnClz(child);
+          }
+        }
+      }
+      stripColumnClz(note)
+      if (id === null || id.startsWith('sec-')) {
+        // Special case sections, only their first couple elements
+        const container = document.createElement("div");
+        if (note.children && note.children.length > 2) {
+          container.appendChild(note.children[0].cloneNode(true));
+          for (let i = 1; i < note.children.length; i++) {
+            const child = note.children[i];
+            if (child.tagName === "P" && child.innerText === "") {
+              continue;
+            } else {
+              container.appendChild(child.cloneNode(true));
+              break;
+            }
+          }
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(container);
+          }
+          return container.innerHTML
+        } else {
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(note);
+          }
+          return note.innerHTML;
+        }
+      } else {
+        // Remove any anchor links if they are present
+        const anchorLink = note.querySelector('a.anchorjs-link');
+        if (anchorLink) {
+          anchorLink.remove();
+        }
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(note);
+        }
+        if (note.classList.contains("callout")) {
+          return note.outerHTML;
+        } else {
+          return note.innerHTML;
+        }
+      }
+    }
+    for (var i=0; i<xrefs.length; i++) {
+      const xref = xrefs[i];
+      tippyHover(xref, undefined, function(instance) {
+        instance.disable();
+        let url = xref.getAttribute('href');
+        let hash = undefined; 
+        if (url.startsWith('#')) {
+          hash = url;
+        } else {
+          try { hash = new URL(url).hash; } catch {}
+        }
+        if (hash) {
+          const id = hash.replace(/^#\/?/, "");
+          const note = window.document.getElementById(id);
+          if (note !== null) {
+            try {
+              const html = processXRef(id, note.cloneNode(true));
+              instance.setContent(html);
+            } finally {
+              instance.enable();
+              instance.show();
+            }
+          } else {
+            // See if we can fetch this
+            fetch(url.split('#')[0])
+            .then(res => res.text())
+            .then(html => {
+              const parser = new DOMParser();
+              const htmlDoc = parser.parseFromString(html, "text/html");
+              const note = htmlDoc.getElementById(id);
+              if (note !== null) {
+                const html = processXRef(id, note);
+                instance.setContent(html);
+              } 
+            }).finally(() => {
+              instance.enable();
+              instance.show();
+            });
+          }
+        } else {
+          // See if we can fetch a full url (with no hash to target)
+          // This is a special case and we should probably do some content thinning / targeting
+          fetch(url)
+          .then(res => res.text())
+          .then(html => {
+            const parser = new DOMParser();
+            const htmlDoc = parser.parseFromString(html, "text/html");
+            const note = htmlDoc.querySelector('main.content');
+            if (note !== null) {
+              // This should only happen for chapter cross references
+              // (since there is no id in the URL)
+              // remove the first header
+              if (note.children.length > 0 && note.children[0].tagName === "HEADER") {
+                note.children[0].remove();
+              }
+              const html = processXRef(null, note);
+              instance.setContent(html);
+            } 
+          }).finally(() => {
+            instance.enable();
+            instance.show();
+          });
+        }
+      }, function(instance) {
+      });
+    }
+        let selectedAnnoteEl;
+        const selectorForAnnotation = ( cell, annotation) => {
+          let cellAttr = 'data-code-cell="' + cell + '"';
+          let lineAttr = 'data-code-annotation="' +  annotation + '"';
+          const selector = 'span[' + cellAttr + '][' + lineAttr + ']';
+          return selector;
+        }
+        const selectCodeLines = (annoteEl) => {
+          const doc = window.document;
+          const targetCell = annoteEl.getAttribute("data-target-cell");
+          const targetAnnotation = annoteEl.getAttribute("data-target-annotation");
+          const annoteSpan = window.document.querySelector(selectorForAnnotation(targetCell, targetAnnotation));
+          const lines = annoteSpan.getAttribute("data-code-lines").split(",");
+          const lineIds = lines.map((line) => {
+            return targetCell + "-" + line;
+          })
+          let top = null;
+          let height = null;
+          let parent = null;
+          if (lineIds.length > 0) {
+              //compute the position of the single el (top and bottom and make a div)
+              const el = window.document.getElementById(lineIds[0]);
+              top = el.offsetTop;
+              height = el.offsetHeight;
+              parent = el.parentElement.parentElement;
+            if (lineIds.length > 1) {
+              const lastEl = window.document.getElementById(lineIds[lineIds.length - 1]);
+              const bottom = lastEl.offsetTop + lastEl.offsetHeight;
+              height = bottom - top;
+            }
+            if (top !== null && height !== null && parent !== null) {
+              // cook up a div (if necessary) and position it 
+              let div = window.document.getElementById("code-annotation-line-highlight");
+              if (div === null) {
+                div = window.document.createElement("div");
+                div.setAttribute("id", "code-annotation-line-highlight");
+                div.style.position = 'absolute';
+                parent.appendChild(div);
+              }
+              div.style.top = top - 2 + "px";
+              div.style.height = height + 4 + "px";
+              div.style.left = 0;
+              let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
+              if (gutterDiv === null) {
+                gutterDiv = window.document.createElement("div");
+                gutterDiv.setAttribute("id", "code-annotation-line-highlight-gutter");
+                gutterDiv.style.position = 'absolute';
+                const codeCell = window.document.getElementById(targetCell);
+                const gutter = codeCell.querySelector('.code-annotation-gutter');
+                gutter.appendChild(gutterDiv);
+              }
+              gutterDiv.style.top = top - 2 + "px";
+              gutterDiv.style.height = height + 4 + "px";
+            }
+            selectedAnnoteEl = annoteEl;
+          }
+        };
+        const unselectCodeLines = () => {
+          const elementsIds = ["code-annotation-line-highlight", "code-annotation-line-highlight-gutter"];
+          elementsIds.forEach((elId) => {
+            const div = window.document.getElementById(elId);
+            if (div) {
+              div.remove();
+            }
+          });
+          selectedAnnoteEl = undefined;
+        };
+          // Handle positioning of the toggle
+      window.addEventListener(
+        "resize",
+        throttle(() => {
+          elRect = undefined;
+          if (selectedAnnoteEl) {
+            selectCodeLines(selectedAnnoteEl);
+          }
+        }, 10)
+      );
+      function throttle(fn, ms) {
+      let throttle = false;
+      let timer;
+        return (...args) => {
+          if(!throttle) { // first call gets through
+              fn.apply(this, args);
+              throttle = true;
+          } else { // all the others get throttled
+              if(timer) clearTimeout(timer); // cancel #2
+              timer = setTimeout(() => {
+                fn.apply(this, args);
+                timer = throttle = false;
+              }, ms);
+          }
+        };
+      }
+        // Attach click handler to the DT
+        const annoteDls = window.document.querySelectorAll('dt[data-target-cell]');
+        for (const annoteDlNode of annoteDls) {
+          annoteDlNode.addEventListener('click', (event) => {
+            const clickedEl = event.target;
+            if (clickedEl !== selectedAnnoteEl) {
+              unselectCodeLines();
+              const activeEl = window.document.querySelector('dt[data-target-cell].code-annotation-active');
+              if (activeEl) {
+                activeEl.classList.remove('code-annotation-active');
+              }
+              selectCodeLines(clickedEl);
+              clickedEl.classList.add('code-annotation-active');
+            } else {
+              // Unselect the line
+              unselectCodeLines();
+              clickedEl.classList.remove('code-annotation-active');
+            }
+          });
+        }
+    const findCites = (el) => {
+      const parentEl = el.parentElement;
+      if (parentEl) {
+        const cites = parentEl.dataset.cites;
+        if (cites) {
+          return {
+            el,
+            cites: cites.split(' ')
+          };
+        } else {
+          return findCites(el.parentElement)
+        }
+      } else {
+        return undefined;
+      }
+    };
+    var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+    for (var i=0; i<bibliorefs.length; i++) {
+      const ref = bibliorefs[i];
+      const citeInfo = findCites(ref);
+      if (citeInfo) {
+        tippyHover(citeInfo.el, function() {
+          var popup = window.document.createElement('div');
+          citeInfo.cites.forEach(function(cite) {
+            var citeDiv = window.document.createElement('div');
+            citeDiv.classList.add('hanging-indent');
+            citeDiv.classList.add('csl-entry');
+            var biblioDiv = window.document.getElementById('ref-' + cite);
+            if (biblioDiv) {
+              citeDiv.innerHTML = biblioDiv.innerHTML;
+            }
+            popup.appendChild(citeDiv);
+          });
+          return popup.innerHTML;
+        });
+      }
+    }
+  });
+  </script>
+
+
+
+
+</body></html>

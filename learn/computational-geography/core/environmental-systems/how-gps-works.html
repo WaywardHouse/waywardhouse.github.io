@@ -1,0 +1,1178 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
+
+<meta charset="utf-8">
+<meta name="generator" content="quarto-1.8.27">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+
+<meta name="dcterms.date" content="2026-02-26">
+<meta name="description" content="A GPS receiver determines its position by measuring the time it takes for radio signals to arrive from satellites with known positions. This model derives the mathematical model from first principles: distance from time, trilateration from multiple satellites, and why you need four satellites instead of three. We’ll solve the nonlinear system and explore how satellite geometry affects accuracy.">
+
+<title>How GPS Works – Computational Geography</title>
+<style>
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: min(4vw, 1.5em);}
+div.column{flex: auto; overflow-x: auto;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+  width: 0.8em;
+  margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
+  vertical-align: middle;
+}
+</style>
+
+
+<script src="../site_libs/clipboard/clipboard.min.js"></script>
+<script src="../site_libs/quarto-html/tabby.min.js"></script>
+<script src="../site_libs/quarto-html/popper.min.js"></script>
+<script src="../site_libs/quarto-html/tippy.umd.min.js"></script>
+<script src="../site_libs/quarto-html/anchor.min.js"></script>
+<link href="../site_libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="../site_libs/quarto-html/light-border.css" rel="stylesheet">
+<link href="../site_libs/quarto-html/quarto-html-734cb40618f438257b19a1e532635a32.min.css" rel="stylesheet" append-hash="true" data-mode="light">
+<link href="../site_libs/quarto-html/quarto-syntax-highlighting-ed96de9b727972fe78a7b5d16c58bf87.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<script>
+  (function () {
+    var s = localStorage.getItem('theme');
+    var dark = s !== null ? s === 'dark' : false;
+    document.documentElement.dataset.theme = dark ? 'dark' : 'light';
+    document.documentElement.dataset.brand = 'wayward';
+  })();
+</script>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:ital,wght@0,300;0,400;0,600;0,700;0,800;0,900;1,700;1,800&amp;family=Barlow:wght@300;400;500;600&amp;family=IBM+Plex+Mono:ital,wght@0,300;0,400;0,500;1,300&amp;family=Literata:ital,opsz,wght@0,7..72,300;0,7..72,400;0,7..72,500;1,7..72,300;1,7..72,400&amp;display=swap" rel="stylesheet">
+
+  <script>window.backupDefine = window.define; window.define = undefined;</script><script src="https://cdn.jsdelivr.net/npm/katex@latest/dist/katex.min.js"></script>
+  <script>document.addEventListener("DOMContentLoaded", function () {
+ var mathElements = document.getElementsByClassName("math");
+ var macros = [];
+ for (var i = 0; i < mathElements.length; i++) {
+  var texText = mathElements[i].firstChild;
+  if (mathElements[i].tagName == "SPAN") {
+   katex.render(texText.data, mathElements[i], {
+    displayMode: mathElements[i].classList.contains('display'),
+    throwOnError: false,
+    macros: macros,
+    fleqn: false
+   });
+}}});
+  </script>
+  <script>window.define = window.backupDefine; window.backupDefine = undefined;</script><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@latest/dist/katex.min.css">
+
+<script type="text/javascript">
+const typesetMath = (el) => {
+  if (window.MathJax) {
+    // MathJax Typeset
+    window.MathJax.typeset([el]);
+  } else if (window.katex) {
+    // KaTeX Render
+    var mathElements = el.getElementsByClassName("math");
+    var macros = [];
+    for (var i = 0; i < mathElements.length; i++) {
+      var texText = mathElements[i].firstChild;
+      if (mathElements[i].tagName == "SPAN" && texText && texText.data) {
+        window.katex.render(texText.data, mathElements[i], {
+          displayMode: mathElements[i].classList.contains('display'),
+          throwOnError: false,
+          macros: macros,
+          fleqn: false
+        });
+      }
+    }
+  }
+}
+window.Quarto = {
+  typesetMath
+};
+</script>
+
+<link rel="stylesheet" href="../assets/css/quarto-wayward.css">
+</head>
+
+<body class="reading-body tag-hash-math tag-hash-viz tag-hash-gl">
+
+
+<header id="title-block-header">
+<h1 class="title"><span class="chapter-title">How GPS Works</span></h1>
+<p class="subtitle">Trilateration, clock bias, and the geometry of space-based positioning</p>
+
+<p class="date">2026-02-26</p>
+</header>
+
+<nav id="TOC" role="doc-toc">
+    <h2 id="toc-title">Table of contents</h2>
+   
+  <ul>
+  <li><a href="#the-question" id="toc-the-question">1. The Question</a></li>
+  <li><a href="#the-conceptual-model" id="toc-the-conceptual-model">2. The Conceptual Model</a>
+  <ul>
+  <li><a href="#distance-from-time" id="toc-distance-from-time">Distance from Time</a></li>
+  <li><a href="#trilateration-not-triangulation" id="toc-trilateration-not-triangulation">Trilateration (Not Triangulation)</a></li>
+  </ul></li>
+  <li><a href="#building-the-mathematical-model" id="toc-building-the-mathematical-model">3. Building the Mathematical Model</a>
+  <ul>
+  <li><a href="#known-satellite-positions" id="toc-known-satellite-positions">Known: Satellite Positions</a></li>
+  <li><a href="#unknown-receiver-position" id="toc-unknown-receiver-position">Unknown: Receiver Position</a></li>
+  <li><a href="#measurement-pseudorange" id="toc-measurement-pseudorange">Measurement: Pseudorange</a></li>
+  </ul></li>
+  <li><a href="#the-clock-bias-problem" id="toc-the-clock-bias-problem">4. The Clock Bias Problem</a>
+  <ul>
+  <li><a href="#why-three-satellites-arent-enough" id="toc-why-three-satellites-arent-enough">Why Three Satellites Aren’t Enough</a></li>
+  <li><a href="#why-this-matters" id="toc-why-this-matters">Why This Matters</a></li>
+  </ul></li>
+  <li><a href="#the-nonlinear-system" id="toc-the-nonlinear-system">5. The Nonlinear System</a>
+  <ul>
+  <li><a href="#equations" id="toc-equations">Equations</a></li>
+  <li><a href="#why-its-nonlinear" id="toc-why-its-nonlinear">Why It’s Nonlinear</a></li>
+  </ul></li>
+  <li><a href="#linearization-and-iterative-solution" id="toc-linearization-and-iterative-solution">6. Linearization and Iterative Solution</a>
+  <ul>
+  <li><a href="#step-1-initial-guess" id="toc-step-1-initial-guess">Step 1: Initial Guess</a></li>
+  <li><a href="#step-2-compute-residuals" id="toc-step-2-compute-residuals">Step 2: Compute Residuals</a></li>
+  <li><a href="#step-3-linearize-build-the-jacobian" id="toc-step-3-linearize-build-the-jacobian">Step 3: Linearize (Build the Jacobian)</a></li>
+  <li><a href="#step-4-solve-for-update" id="toc-step-4-solve-for-update">Step 4: Solve for Update</a></li>
+  <li><a href="#step-5-update-and-iterate" id="toc-step-5-update-and-iterate">Step 5: Update and Iterate</a></li>
+  </ul></li>
+  <li><a href="#worked-example-by-hand-2d-simplified" id="toc-worked-example-by-hand-2d-simplified">7. Worked Example by Hand (2D Simplified)</a>
+  <ul>
+  <li><a href="#setup" id="toc-setup">Setup</a></li>
+  <li><a href="#iteration-1" id="toc-iteration-1">Iteration 1</a></li>
+  </ul></li>
+  <li><a href="#computational-implementation" id="toc-computational-implementation">8. Computational Implementation</a></li>
+  <li><a href="#interpretation" id="toc-interpretation">9. Interpretation</a>
+  <ul>
+  <li><a href="#why-the-clock-bias-trick-works" id="toc-why-the-clock-bias-trick-works">Why the Clock Bias Trick Works</a></li>
+  <li><a href="#dilution-of-precision-pdop" id="toc-dilution-of-precision-pdop">Dilution of Precision (PDOP)</a></li>
+  <li><a href="#gps-constellation-design" id="toc-gps-constellation-design">GPS Constellation Design</a></li>
+  </ul></li>
+  <li><a href="#what-could-go-wrong" id="toc-what-could-go-wrong">10. What Could Go Wrong?</a>
+  <ul>
+  <li><a href="#atmospheric-delay" id="toc-atmospheric-delay">Atmospheric Delay</a></li>
+  <li><a href="#multipath" id="toc-multipath">Multipath</a></li>
+  <li><a href="#poor-satellite-geometry" id="toc-poor-satellite-geometry">Poor Satellite Geometry</a></li>
+  <li><a href="#relativistic-effects" id="toc-relativistic-effects">Relativistic Effects</a></li>
+  </ul></li>
+  <li><a href="#extension-rtk-and-carrier-phase" id="toc-extension-rtk-and-carrier-phase">11. Extension: RTK and Carrier Phase</a></li>
+  <li><a href="#math-refresher-least-squares" id="toc-math-refresher-least-squares">12. Math Refresher: Least Squares</a>
+  <ul>
+  <li><a href="#why-least-squares" id="toc-why-least-squares">Why Least Squares?</a></li>
+  <li><a href="#matrix-form" id="toc-matrix-form">Matrix Form</a></li>
+  </ul></li>
+  <li><a href="#summary" id="toc-summary">Summary</a></li>
+  </ul>
+</nav>
+<p>On 2 May 2000, the United States government switched off Selective Availability — the deliberate degradation of GPS accuracy that had been limiting civilian receivers to about 100 metres. Overnight, accuracy improved to roughly 20 metres. Within two years, GPS receivers were in cars, boats, and hiking packs across the world, and within fifteen years they were in every smartphone. The underlying technology — announced by the Department of Defense in the 1970s, operationally complete by 1995 — is one of the most consequential engineering achievements of the twentieth century, and it rests on a piece of mathematics you can derive in an afternoon.</p>
+<p>The principle is deceptively simple: if you know your distance from three points in space whose positions are known, you can compute your position. GPS executes this in three dimensions using satellites instead of fixed ground beacons, measuring distances from the travel time of radio signals at the speed of light. The complication — and the mathematical interest — is that the receiver’s clock is not synchronised with the satellites’ atomic clocks. This introduces an unknown, the clock bias, which requires a fourth satellite to solve. The resulting system of four non-linear equations in four unknowns (three spatial coordinates, one clock bias) is solved iteratively on cheap hardware a dozen times per second. This model derives those equations from first principles and shows why the geometry of the satellite constellation — the Dilution of Precision — matters as much as the signal quality.</p>
+<h2 id="the-question" class="anchored">1. The Question</h2>
+<p>How does a handheld GPS receiver know where it is on Earth?</p>
+<p>Your phone reports your location to within a few meters. It does this by listening to radio signals from satellites 20,000 km overhead. Each satellite broadcasts: - Its position in space - The exact time the signal was transmitted</p>
+<p>Your receiver measures <strong>when</strong> the signal arrives. From time and the speed of light, you can calculate <strong>distance</strong>. Multiple satellites give multiple distances, which should intersect at your location.</p>
+<p>The mathematical question: How do we solve for position from distance measurements? And why do we need four satellites instead of three?</p>
+<hr>
+<h2 id="the-conceptual-model" class="anchored">2. The Conceptual Model</h2>
+<h3 id="distance-from-time" class="anchored">Distance from Time</h3>
+<p>Radio signals travel at the speed of light: <span class="math inline">c = 299,792,458</span> m/s.</p>
+<p>If a satellite transmits a signal at time <span class="math inline">t_{\text{transmit}}</span> and your receiver detects it at time <span class="math inline">t_{\text{receive}}</span>, the signal traveled for:</p>
+<p><span class="math display">\Delta t = t_{\text{receive}} - t_{\text{transmit}}</span></p>
+<p><strong>Distance:</strong></p>
+<p><span class="math display">d = c \cdot \Delta t</span></p>
+<p><strong>Example:</strong> If <span class="math inline">\Delta t = 0.07</span> seconds (70 milliseconds), then:</p>
+<p><span class="math display">d = 299,792,458 \times 0.07 = 20,985,472 \text{ m} \approx 21,000 \text{ km}</span></p>
+<p>This places you on a <strong>sphere</strong> of radius 21,000 km centered at the satellite.</p>
+<h3 id="trilateration-not-triangulation" class="anchored">Trilateration (Not Triangulation)</h3>
+<p>With three satellites, you have three spheres. Your position is where all three intersect.</p>
+<p><strong>Triangulation</strong> (used in surveying): Measure angles to known points, solve for position using geometry of triangles.</p>
+<p><strong>Trilateration</strong> (used in GPS): Measure distances to known points, solve for position as the intersection of spheres.</p>
+<p><strong>Difference:</strong> GPS receivers measure <strong>time</strong> (which gives distance), not angles.</p>
+<hr>
+<h2 id="building-the-mathematical-model" class="anchored">3. Building the Mathematical Model</h2>
+<h3 id="known-satellite-positions" class="anchored">Known: Satellite Positions</h3>
+<p>GPS satellites broadcast their positions in <strong>ECEF coordinates</strong> (Earth-Centered, Earth-Fixed): - Origin at Earth’s center - Z-axis through North Pole - X-axis through (0° lat, 0° lon) — the intersection of equator and prime meridian - Y-axis completes the right-handed system (through 0° lat, 90° E lon)</p>
+<p>Satellite <span class="math inline">i</span> has position <span class="math inline">(x_i, y_i, z_i)</span> in ECEF.</p>
+<h3 id="unknown-receiver-position" class="anchored">Unknown: Receiver Position</h3>
+<p>Receiver position: <span class="math inline">(x, y, z)</span> in ECEF.</p>
+<p><strong>Distance from receiver to satellite <span class="math inline">i</span>:</strong></p>
+<p><span class="math display">r_i = \sqrt{(x - x_i)^2 + (y - y_i)^2 + (z - z_i)^2}</span></p>
+<p>This is the <strong>geometric range</strong> — the straight-line distance through space.</p>
+<h3 id="measurement-pseudorange" class="anchored">Measurement: Pseudorange</h3>
+<p>The <strong>pseudorange</strong> <span class="math inline">\rho_i</span> is the measured distance based on signal travel time:</p>
+<p><span class="math display">\rho_i = c \cdot \Delta t_i</span></p>
+<p><strong>In a perfect world:</strong></p>
+<p><span class="math display">r_i = \rho_i</span></p>
+<p>Each satellite gives one equation. Three satellites → three equations → solve for three unknowns <span class="math inline">(x, y, z)</span>.</p>
+<p><strong>But the world is not perfect.</strong></p>
+<hr>
+<h2 id="the-clock-bias-problem" class="anchored">4. The Clock Bias Problem</h2>
+<h3 id="why-three-satellites-arent-enough" class="anchored">Why Three Satellites Aren’t Enough</h3>
+<p>Your receiver’s clock is <strong>not atomic</strong>. It’s a cheap quartz oscillator that drifts.</p>
+<p>Let <span class="math inline">b</span> = receiver clock error (seconds). If your clock is 0.001 seconds fast, you’ll measure arrival times 0.001 seconds too early.</p>
+<p><strong>Effect on pseudorange:</strong></p>
+<p><span class="math display">\rho_i = c(\Delta t_i + b)</span></p>
+<p>The measured travel time includes both the true travel time <strong>and</strong> your clock error.</p>
+<p><strong>This adds an unknown</strong> — the clock bias <span class="math inline">b</span> — to the system.</p>
+<p><strong>Four unknowns:</strong> <span class="math inline">(x, y, z, b)</span><br>
+<strong>Four equations required:</strong> Need signals from <strong>four satellites</strong> minimum.</p>
+<h3 id="why-this-matters" class="anchored">Why This Matters</h3>
+<p>A 1-microsecond clock error causes a 300-meter position error:</p>
+<p><span class="math display">\text{Error} = c \cdot b = 299,792,458 \times 0.000001 = 300 \text{ m}</span></p>
+<p>GPS timing is synchronized to nanoseconds (billionths of a second). A 1-nanosecond error = 30 cm.</p>
+<p><strong>Satellite clocks are atomic</strong> (rubidium or cesium) and synchronized to GPS time. Your phone’s clock is not. So <span class="math inline">b</span> must be solved alongside position.</p>
+<hr>
+<h2 id="the-nonlinear-system" class="anchored">5. The Nonlinear System</h2>
+<h3 id="equations" class="anchored">Equations</h3>
+<p>For each satellite <span class="math inline">i</span>, we have:</p>
+<p><span class="math display">\sqrt{(x - x_i)^2 + (y - y_i)^2 + (z - z_i)^2} + cb = \rho_i</span></p>
+<p>Where: - <span class="math inline">(x, y, z)</span> is the receiver position (unknown) - <span class="math inline">b</span> is the clock bias in seconds (unknown) - <span class="math inline">(x_i, y_i, z_i)</span> is satellite <span class="math inline">i</span>’s position (known) - <span class="math inline">\rho_i</span> is the measured pseudorange (observed) - <span class="math inline">c</span> is the speed of light (known constant)</p>
+<p>With <span class="math inline">m</span> satellites (typically 6–12 visible), we have <span class="math inline">m</span> equations and 4 unknowns. This is an <strong>overdetermined system</strong> — more equations than unknowns. We solve in a <strong>least-squares</strong> sense.</p>
+<h3 id="why-its-nonlinear" class="anchored">Why It’s Nonlinear</h3>
+<p>The square root makes this a <strong>nonlinear system</strong>. You can’t just write it as a matrix equation <span class="math inline">\mathbf{Ax} = \mathbf{b}</span> and invert.</p>
+<p><strong>Solution method:</strong> Linearize around an initial guess, then iterate.</p>
+<hr>
+<h2 id="linearization-and-iterative-solution" class="anchored">6. Linearization and Iterative Solution</h2>
+<h3 id="step-1-initial-guess" class="anchored">Step 1: Initial Guess</h3>
+<p>Start with a guess: <span class="math inline">(x_0, y_0, z_0, b_0)</span></p>
+<p>A crude guess might be: - <span class="math inline">(x_0, y_0, z_0)</span> = center of Earth (0, 0, 0) or the centroid of satellite positions - <span class="math inline">b_0 = 0</span> (assume no clock bias initially)</p>
+<h3 id="step-2-compute-residuals" class="anchored">Step 2: Compute Residuals</h3>
+<p>At the current guess, compute:</p>
+<p><strong>Predicted geometric range</strong> to satellite <span class="math inline">i</span>:</p>
+<p><span class="math display">r_{i,0} = \sqrt{(x_0 - x_i)^2 + (y_0 - y_i)^2 + (z_0 - z_i)^2}</span></p>
+<p><strong>Predicted pseudorange</strong> (including clock bias):</p>
+<p><span class="math display">\hat{\rho}_i = r_{i,0} + c b_0</span></p>
+<p><strong>Residual</strong> (difference between observed and predicted):</p>
+<p><span class="math display">f_i = \hat{\rho}_i - \rho_i = (r_{i,0} + c b_0) - \rho_i</span></p>
+<p>If the guess is perfect, all residuals are zero. Otherwise, we need to adjust the guess.</p>
+<h3 id="step-3-linearize-build-the-jacobian" class="anchored">Step 3: Linearize (Build the Jacobian)</h3>
+<p>Approximate each equation with a linear function near the guess.</p>
+<p>The <strong>Jacobian matrix</strong> <span class="math inline">\mathbf{H}</span> has one row per satellite:</p>
+<p><span class="math display">\mathbf{H}_i = \left[ \frac{\partial r_i}{\partial x}\bigg|_0, \; \frac{\partial r_i}{\partial y}\bigg|_0, \; \frac{\partial r_i}{\partial z}\bigg|_0, \; c \right]</span></p>
+<p><strong>Partial derivatives:</strong></p>
+<p><span class="math display">\frac{\partial r_i}{\partial x} = \frac{x_0 - x_i}{r_{i,0}}, \quad \frac{\partial r_i}{\partial y} = \frac{y_0 - y_i}{r_{i,0}}, \quad \frac{\partial r_i}{\partial z} = \frac{z_0 - z_i}{r_{i,0}}</span></p>
+<p><strong>Interpretation:</strong> These are the <strong>direction cosines</strong> — the components of the unit vector pointing from the satellite to the receiver.</p>
+<p>The last column is <span class="math inline">c</span> because <span class="math inline">\frac{\partial(cb)}{\partial b} = c</span>.</p>
+<h3 id="step-4-solve-for-update" class="anchored">Step 4: Solve for Update</h3>
+<p>We want to find <span class="math inline">\Delta \mathbf{x} = (\Delta x, \Delta y, \Delta z, \Delta b)</span> such that:</p>
+<p><span class="math display">\mathbf{H} \Delta \mathbf{x} \approx -\mathbf{f}</span></p>
+<p>This is a <strong>linear least-squares problem</strong>. If <span class="math inline">\mathbf{H}</span> has more rows than columns (more satellites than unknowns), solve:</p>
+<p><span class="math display">\Delta \mathbf{x} = -(\mathbf{H}^T \mathbf{H})^{-1} \mathbf{H}^T \mathbf{f}</span></p>
+<h3 id="step-5-update-and-iterate" class="anchored">Step 5: Update and Iterate</h3>
+<p><span class="math display">x_1 = x_0 + \Delta x</span> <span class="math display">y_1 = y_0 + \Delta y</span> <span class="math display">z_1 = z_0 + \Delta z</span> <span class="math display">b_1 = b_0 + \Delta b</span></p>
+<p>Repeat steps 2–5 until <span class="math inline">|\Delta \mathbf{x}|</span> is smaller than some threshold (e.g., 1 cm for position, 1 ns for time).</p>
+<p><strong>Typically converges in 3–5 iterations.</strong></p>
+<hr>
+<h2 id="worked-example-by-hand-2d-simplified" class="anchored">7. Worked Example by Hand (2D Simplified)</h2>
+<p>A full 3D GPS calculation is tedious by hand. Here’s a 2D analogue to show the mechanics.</p>
+<h3 id="setup" class="anchored">Setup</h3>
+<p>Assume signal speed <span class="math inline">c = 1</span> (toy units).</p>
+<p><strong>Three transmitters</strong> at known positions: - <span class="math inline">S_1 = (0, 0)</span> - <span class="math inline">S_2 = (10, 0)</span> - <span class="math inline">S_3 = (0, 10)</span></p>
+<p><strong>True receiver position:</strong> <span class="math inline">(x, y) = (2, 3)</span> with clock bias <span class="math inline">b = 0.5</span>.</p>
+<p><strong>Measured pseudoranges:</strong></p>
+<p>Calculate true ranges: - <span class="math inline">r_1 = \sqrt{2^2 + 3^2} = \sqrt{13} = 3.606</span> - <span class="math inline">r_2 = \sqrt{(2-10)^2 + 3^2} = \sqrt{73} = 8.544</span> - <span class="math inline">r_3 = \sqrt{2^2 + (3-10)^2} = \sqrt{53} = 7.280</span></p>
+<p>Add clock bias (<span class="math inline">c = 1</span>): - <span class="math inline">\rho_1 = 3.606 + 0.5 = 4.106</span> - <span class="math inline">\rho_2 = 8.544 + 0.5 = 9.044</span> - <span class="math inline">\rho_3 = 7.280 + 0.5 = 7.780</span></p>
+<h3 id="iteration-1" class="anchored">Iteration 1</h3>
+<p><strong>Initial guess:</strong> <span class="math inline">(x_0, y_0, b_0) = (1, 1, 0)</span></p>
+<p><strong>Predicted ranges:</strong> - <span class="math inline">r_{1,0} = \sqrt{1^2 + 1^2} = 1.414</span> - <span class="math inline">r_{2,0} = \sqrt{(1-10)^2 + 1^2} = \sqrt{82} = 9.055</span> - <span class="math inline">r_{3,0} = \sqrt{1^2 + (1-10)^2} = \sqrt{82} = 9.055</span></p>
+<p><strong>Predicted pseudoranges</strong> (with <span class="math inline">b_0 = 0</span>): - <span class="math inline">\hat{\rho}_1 = 1.414</span> - <span class="math inline">\hat{\rho}_2 = 9.055</span> - <span class="math inline">\hat{\rho}_3 = 9.055</span></p>
+<p><strong>Residuals:</strong> - <span class="math inline">f_1 = 1.414 - 4.106 = -2.692</span> - <span class="math inline">f_2 = 9.055 - 9.044 = 0.011</span> - <span class="math inline">f_3 = 9.055 - 7.780 = 1.275</span></p>
+<p><strong>Jacobian rows:</strong></p>
+<p>For <span class="math inline">S_1 = (0, 0)</span>: <span class="math display">\left[ \frac{1-0}{1.414}, \frac{1-0}{1.414}, 1 \right] = [0.707, 0.707, 1]</span></p>
+<p>For <span class="math inline">S_2 = (10, 0)</span>: <span class="math display">\left[ \frac{1-10}{9.055}, \frac{1-0}{9.055}, 1 \right] = [-0.994, 0.110, 1]</span></p>
+<p>For <span class="math inline">S_3 = (0, 10)</span>: <span class="math display">\left[ \frac{1-0}{9.055}, \frac{1-10}{9.055}, 1 \right] = [0.110, -0.994, 1]</span></p>
+<p><span class="math display">\mathbf{H} = \begin{bmatrix}
+0.707 &amp; 0.707 &amp; 1 \\
+-0.994 &amp; 0.110 &amp; 1 \\
+0.110 &amp; -0.994 &amp; 1
+\end{bmatrix}, \quad
+\mathbf{f} = \begin{bmatrix}
+-2.692 \\
+0.011 \\
+1.275
+\end{bmatrix}</span></p>
+<p>Solve <span class="math inline">\mathbf{H} \Delta \mathbf{x} = -\mathbf{f}</span> (using least squares or matrix inversion for the square case):</p>
+<p><span class="math display">\Delta \mathbf{x} \approx \begin{bmatrix} 1.0 \\ 2.0 \\ 0.5 \end{bmatrix}</span></p>
+<p><strong>Updated guess:</strong> <span class="math display">(x_1, y_1, b_1) = (1, 1, 0) + (1.0, 2.0, 0.5) = (2.0, 3.0, 0.5)</span></p>
+<p><strong>This is the true solution!</strong> In practice, you’d verify by computing residuals again (they should be near zero).</p>
+<hr>
+<h2 id="computational-implementation" class="anchored">8. Computational Implementation</h2>
+<p>Below is an interactive GPS solver.</p>
+<div id="gps-viz" class="viz-container">
+<div class="controls">
+<pre><code>&lt;label&gt;
+  Number of satellites:
+  &lt;input type="range" id="num-sats-slider" min="4" max="12" step="1" value="6"&gt;
+  &lt;span id="num-sats-value"&gt;6&lt;/span&gt;
+&lt;/label&gt;
+&lt;label&gt;
+  Measurement noise (meters):
+  &lt;input type="range" id="noise-slider" min="0" max="20" step="1" value="5"&gt;
+  &lt;span id="noise-value"&gt;5&lt;/span&gt; m
+&lt;/label&gt;
+&lt;label&gt;
+  Clock bias (nanoseconds):
+  &lt;input type="range" id="bias-slider" min="-100" max="100" step="10" value="50"&gt;
+  &lt;span id="bias-value"&gt;50&lt;/span&gt; ns
+&lt;/label&gt;
+&lt;div class="button-group"&gt;
+  &lt;button id="solve-gps"&gt;Solve Position&lt;/button&gt;
+  &lt;button id="randomize-sats"&gt;Randomize Satellites&lt;/button&gt;
+&lt;/div&gt;</code></pre>
+</div>
+<div class="gps-results">
+<pre><code>&lt;h4&gt;Solution:&lt;/h4&gt;
+&lt;p&gt;&lt;strong&gt;True position:&lt;/strong&gt; &lt;span id="true-pos"&gt;&lt;/span&gt;&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;Estimated position:&lt;/strong&gt; &lt;span id="est-pos"&gt;&lt;/span&gt;&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;Position error:&lt;/strong&gt; &lt;span id="pos-error"&gt;&lt;/span&gt; m&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;True clock bias:&lt;/strong&gt; &lt;span id="true-bias"&gt;&lt;/span&gt; ns&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;Estimated clock bias:&lt;/strong&gt; &lt;span id="est-bias"&gt;&lt;/span&gt; ns&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;Iterations:&lt;/strong&gt; &lt;span id="iterations"&gt;&lt;/span&gt;&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;PDOP:&lt;/strong&gt; &lt;span id="pdop-value"&gt;&lt;/span&gt;&lt;/p&gt;</code></pre>
+</div>
+<div id="gps-chart" style="width: 100%; height: 500px;">
+
+</div>
+</div>
+<script type="module">
+while (!window.echarts || !window.__echartsGL) await new Promise(r => setTimeout(r, 50));
+
+(function() {
+  const chart = window.echarts.init(document.getElementById('gps-chart'));
+  
+  const c = 299792458; // m/s
+  const R_earth = 6371000; // m
+  const R_gps = 26571000; // m (GPS orbit radius)
+  
+  let numSats = 6;
+  let noise = 5;
+  let clockBias = 50e-9; // seconds
+  
+  // True receiver position (on Earth's surface)
+  let truePos = {
+    x: R_earth * 0.7,
+    y: R_earth * 0.5,
+    z: R_earth * 0.5
+  };
+  
+  let satellites = [];
+  
+  function randomizeSatellites() {
+    satellites = [];
+    for (let i = 0; i < numSats; i++) {
+      // Random point on GPS orbit sphere
+      const theta = Math.random() * 2 * Math.PI;
+      const phi = Math.acos(2 * Math.random() - 1);
+      
+      satellites.push({
+        x: R_gps * Math.sin(phi) * Math.cos(theta),
+        y: R_gps * Math.sin(phi) * Math.sin(theta),
+        z: R_gps * Math.cos(phi)
+      });
+    }
+  }
+  
+  function distance(p1, p2) {
+    return Math.sqrt(
+      (p1.x - p2.x)**2 + 
+      (p1.y - p2.y)**2 + 
+      (p1.z - p2.z)**2
+    );
+  }
+  
+  function solveGPS() {
+    // Generate pseudoranges with noise
+    const pseudoranges = satellites.map(sat => {
+      const trueRange = distance(truePos, sat);
+      const noiseValue = (Math.random() - 0.5) * 2 * noise;
+      return trueRange + c * clockBias + noiseValue;
+    });
+    
+    // Iterative least squares
+    let x = 0, y = 0, z = 0, b = 0;
+    let iterations = 0;
+    const maxIter = 20;
+    
+    for (let iter = 0; iter < maxIter; iter++) {
+      iterations++;
+      
+      // Compute residuals and Jacobian
+      const H = [];
+      const f = [];
+      
+      satellites.forEach((sat, i) => {
+        const dx = x - sat.x;
+        const dy = y - sat.y;
+        const dz = z - sat.z;
+        const r = Math.sqrt(dx*dx + dy*dy + dz*dz);
+        
+        if (r < 1) return; // Skip if too close (shouldn't happen)
+        
+        const predicted = r + c * b;
+        const residual = predicted - pseudoranges[i];
+        
+        H.push([dx/r, dy/r, dz/r, c]);
+        f.push(residual);
+      });
+      
+      // Solve H * dx = -f using normal equations
+      // dx = -(H^T H)^-1 H^T f
+      
+      const HT = transpose(H);
+      const HTH = matmul(HT, H);
+      const HTf = matvec(HT, f);
+      
+      try {
+        const HTH_inv = invert4x4(HTH);
+        const dx = matvec(HTH_inv, HTf.map(v => -v));
+        
+        x += dx[0];
+        y += dx[1];
+        z += dx[2];
+        b += dx[3];
+        
+        // Check convergence
+        const norm = Math.sqrt(dx[0]**2 + dx[1]**2 + dx[2]**2 + dx[3]**2);
+        if (norm < 1e-3) break;
+        
+      } catch(e) {
+        console.error('Matrix inversion failed:', e);
+        break;
+      }
+    }
+    
+    // Compute PDOP
+    const H = [];
+    satellites.forEach(sat => {
+      const dx = x - sat.x;
+      const dy = y - sat.y;
+      const dz = z - sat.z;
+      const r = Math.sqrt(dx*dx + dy*dy + dz*dz);
+      if (r > 1) {
+        H.push([dx/r, dy/r, dz/r, c]);
+      }
+    });
+    
+    let pdop = 0;
+    try {
+      const HT = transpose(H);
+      const HTH = matmul(HT, H);
+      const Q = invert4x4(HTH);
+      pdop = Math.sqrt(Q[0][0] + Q[1][1] + Q[2][2]);
+    } catch(e) {
+      pdop = -1;
+    }
+    
+    const estPos = {x, y, z};
+    const posError = distance(estPos, truePos);
+    
+    return {estPos, b, iterations, posError, pdop};
+  }
+  
+  function transpose(matrix) {
+    const rows = matrix.length;
+    const cols = matrix[0].length;
+    const result = [];
+    for (let j = 0; j < cols; j++) {
+      result[j] = [];
+      for (let i = 0; i < rows; i++) {
+        result[j][i] = matrix[i][j];
+      }
+    }
+    return result;
+  }
+  
+  function matmul(A, B) {
+    const rowsA = A.length;
+    const colsA = A[0].length;
+    const colsB = B[0].length;
+    const result = [];
+    
+    for (let i = 0; i < rowsA; i++) {
+      result[i] = [];
+      for (let j = 0; j < colsB; j++) {
+        let sum = 0;
+        for (let k = 0; k < colsA; k++) {
+          sum += A[i][k] * B[k][j];
+        }
+        result[i][j] = sum;
+      }
+    }
+    return result;
+  }
+  
+  function matvec(A, v) {
+    return A.map(row => row.reduce((sum, val, i) => sum + val * v[i], 0));
+  }
+  
+  function invert4x4(m) {
+    // Simplified 4x4 matrix inversion (using cofactor method)
+    // For production, use a proper linear algebra library
+    const det = determinant4x4(m);
+    if (Math.abs(det) < 1e-10) throw new Error('Singular matrix');
+    
+    const inv = [];
+    for (let i = 0; i < 4; i++) {
+      inv[i] = [];
+      for (let j = 0; j < 4; j++) {
+        const minor = getMinor(m, i, j);
+        inv[i][j] = ((-1)**(i+j)) * determinant3x3(minor) / det;
+      }
+    }
+    return transpose(inv);
+  }
+  
+  function determinant4x4(m) {
+    let det = 0;
+    for (let j = 0; j < 4; j++) {
+      const minor = getMinor(m, 0, j);
+      det += ((-1)**j) * m[0][j] * determinant3x3(minor);
+    }
+    return det;
+  }
+  
+  function determinant3x3(m) {
+    return m[0][0]*(m[1][1]*m[2][2] - m[1][2]*m[2][1]) -
+           m[0][1]*(m[1][0]*m[2][2] - m[1][2]*m[2][0]) +
+           m[0][2]*(m[1][0]*m[2][1] - m[1][1]*m[2][0]);
+  }
+  
+  function getMinor(m, row, col) {
+    const minor = [];
+    for (let i = 0; i < 4; i++) {
+      if (i === row) continue;
+      const newRow = [];
+      for (let j = 0; j < 4; j++) {
+        if (j === col) continue;
+        newRow.push(m[i][j]);
+      }
+      minor.push(newRow);
+    }
+    return minor;
+  }
+  
+  function updateDisplay() {
+    const solution = solveGPS();
+    
+    document.getElementById('true-pos').textContent = 
+      `(${(truePos.x/1000).toFixed(1)}, ${(truePos.y/1000).toFixed(1)}, ${(truePos.z/1000).toFixed(1)}) km`;
+    document.getElementById('est-pos').textContent = 
+      `(${(solution.estPos.x/1000).toFixed(1)}, ${(solution.estPos.y/1000).toFixed(1)}, ${(solution.estPos.z/1000).toFixed(1)}) km`;
+    document.getElementById('pos-error').textContent = solution.posError.toFixed(1);
+    document.getElementById('true-bias').textContent = (clockBias * 1e9).toFixed(1);
+    document.getElementById('est-bias').textContent = (solution.b * 1e9).toFixed(1);
+    document.getElementById('iterations').textContent = solution.iterations;
+    document.getElementById('pdop-value').textContent = solution.pdop > 0 ? solution.pdop.toFixed(2) : 'N/A';
+    
+    updateChart(solution);
+  }
+  
+  function updateChart(solution) {
+    const satData = satellites.map((sat, i) => ({
+      value: [sat.x/1000, sat.y/1000, sat.z/1000],
+      name: `Sat ${i+1}`,
+      symbolSize: 8,
+      itemStyle: { color: '#4A90E2' }
+    }));
+    
+    const option = {
+      title: {
+        text: `GPS Trilateration (${numSats} satellites)`,
+        left: 'center'
+      },
+      tooltip: {},
+      legend: {
+        data: ['Satellites', 'True Position', 'Estimated'],
+        top: 30
+      },
+      xAxis3D: { type: 'value', name: 'X (km)', min: -30000, max: 30000 },
+      yAxis3D: { type: 'value', name: 'Y (km)', min: -30000, max: 30000 },
+      zAxis3D: { type: 'value', name: 'Z (km)', min: -30000, max: 30000 },
+      grid3D: {
+        viewControl: {
+          distance: 250
+        }
+      },
+      series: [
+        {
+          name: 'Satellites',
+          type: 'scatter3D',
+          data: satData,
+          itemStyle: { color: '#4A90E2' }
+        },
+        {
+          name: 'True Position',
+          type: 'scatter3D',
+          data: [{
+            value: [truePos.x/1000, truePos.y/1000, truePos.z/1000],
+            symbolSize: 15,
+            itemStyle: { color: '#2ECC71' }
+          }]
+        },
+        {
+          name: 'Estimated',
+          type: 'scatter3D',
+          data: [{
+            value: [solution.estPos.x/1000, solution.estPos.y/1000, solution.estPos.z/1000],
+            symbolSize: 12,
+            itemStyle: { color: '#F0177A' }
+          }]
+        }
+      ]
+    };
+    
+    chart.setOption(option);
+  }
+  
+  document.getElementById('num-sats-slider').addEventListener('input', (e) => {
+    numSats = parseInt(e.target.value);
+    document.getElementById('num-sats-value').textContent = numSats;
+    randomizeSatellites();
+    updateDisplay();
+  });
+  
+  document.getElementById('noise-slider').addEventListener('input', (e) => {
+    noise = parseFloat(e.target.value);
+    document.getElementById('noise-value').textContent = noise;
+  });
+  
+  document.getElementById('bias-slider').addEventListener('input', (e) => {
+    clockBias = parseFloat(e.target.value) * 1e-9;
+    document.getElementById('bias-value').textContent = e.target.value;
+  });
+  
+  document.getElementById('solve-gps').addEventListener('click', () => {
+    updateDisplay();
+  });
+  
+  document.getElementById('randomize-sats').addEventListener('click', () => {
+    randomizeSatellites();
+    updateDisplay();
+  });
+  
+  randomizeSatellites();
+  updateDisplay();
+  
+  window.addEventListener('resize', () => chart.resize());
+})();
+</script>
+<p><strong>Try this:</strong> - <strong>Increase satellites:</strong> More satellites reduce error and improve PDOP - <strong>Add noise:</strong> See how measurement errors affect position accuracy - <strong>Change clock bias:</strong> Even large biases (100 ns) are solved correctly - <strong>Randomize satellites:</strong> Different geometries produce different PDOP values - Notice: The estimated position (pink) converges to true position (green) despite clock bias</p>
+<p><strong>Key insight:</strong> The fourth unknown (clock bias) is why GPS needs four satellites minimum. The system simultaneously solves for position and time.</p>
+<hr>
+<h2 id="interpretation" class="anchored">9. Interpretation</h2>
+<h3 id="why-the-clock-bias-trick-works" class="anchored">Why the Clock Bias Trick Works</h3>
+<p>The receiver doesn’t need an atomic clock because: 1. All satellites share the same time reference (GPS time) 2. The clock bias affects <strong>all</strong> pseudoranges equally (adds the same error to each) 3. This creates a geometric constraint that can be solved</p>
+<p><strong>Analogy:</strong> If four people tell you distances to a landmark, but your measuring tape is miscalibrated by the same amount for all measurements, you can still figure out both: - Where the landmark is - How miscalibrated your tape is</p>
+<h3 id="dilution-of-precision-pdop" class="anchored">Dilution of Precision (PDOP)</h3>
+<p><strong>Position Dilution of Precision</strong> quantifies how satellite geometry affects accuracy.</p>
+<p><strong>Good geometry</strong> (low PDOP &lt; 3): - Satellites spread out in all directions - Some high in sky, some near horizon - Measured distances intersect at steep angles</p>
+<p><strong>Bad geometry</strong> (high PDOP &gt; 6): - Satellites clustered in one part of sky - All at similar elevations - Measured distances intersect at shallow angles</p>
+<p><strong>Formula:</strong> PDOP relates measurement error to position error:</p>
+<p><span class="math display">\sigma_{\text{position}} = \text{PDOP} \times \sigma_{\text{range}}</span></p>
+<p><strong>Example:</strong> If ranging error is 5 m and PDOP = 2:</p>
+<p><span class="math display">\sigma_{\text{position}} = 2 \times 5 = 10 \text{ m}</span></p>
+<h3 id="gps-constellation-design" class="anchored">GPS Constellation Design</h3>
+<p>The 31 satellites in the GPS constellation are arranged so that: - 6 orbital planes at 55° inclination - 4–5 satellites per plane - At least 4 satellites visible from anywhere on Earth (usually 6–12)</p>
+<p>This ensures <strong>good PDOP globally</strong> at all times.</p>
+<hr>
+<h2 id="what-could-go-wrong" class="anchored">10. What Could Go Wrong?</h2>
+<h3 id="atmospheric-delay" class="anchored">Atmospheric Delay</h3>
+<p>Radio signals slow down in the ionosphere (charged particles) and troposphere (water vapor).</p>
+<p><strong>Effect:</strong> Signals take longer than expected → pseudoranges are too large → position error.</p>
+<p><strong>Mitigation:</strong> - <strong>Dual-frequency receivers:</strong> Use two frequencies (L1 and L2) to estimate ionospheric delay - <strong>Atmospheric models:</strong> Predict tropospheric delay from temperature/pressure - <strong>Differential GPS:</strong> Use corrections from a nearby base station</p>
+<h3 id="multipath" class="anchored">Multipath</h3>
+<p>Signals bounce off buildings, terrain, or water before reaching the antenna.</p>
+<p><strong>Effect:</strong> Reflected signals travel farther → pseudoranges too large → position error (typically 5–10 m in urban areas).</p>
+<p><strong>Mitigation:</strong> - <strong>Antenna design:</strong> Reject signals from below (likely reflected) - <strong>Signal processing:</strong> Correlate to detect direct vs.&nbsp;reflected signals - <strong>Carrier phase tracking:</strong> More resistant to multipath than code phase</p>
+<h3 id="poor-satellite-geometry" class="anchored">Poor Satellite Geometry</h3>
+<p>If all visible satellites are in one part of the sky (high PDOP): - Position error is amplified - Vertical accuracy suffers most (satellites overhead improve HDOP but not VDOP)</p>
+<p><strong>Mitigation:</strong> Wait for better satellite configuration, or use multi-GNSS (GPS + GLONASS + Galileo + BeiDou).</p>
+<h3 id="relativistic-effects" class="anchored">Relativistic Effects</h3>
+<p>Satellites are moving at 3.9 km/s in weaker gravity than Earth’s surface.</p>
+<p><strong>Special relativity:</strong> Moving clocks run slower (−7 μs/day)<br>
+<strong>General relativity:</strong> Clocks in weaker gravity run faster (+45 μs/day)<br>
+<strong>Net effect:</strong> Satellite clocks run fast by +38 μs/day</p>
+<p>Without correction, this would cause <strong>10 km/day</strong> position error!</p>
+<p><strong>Solution:</strong> Satellite clocks are pre-adjusted to run at 10.22999999543 MHz instead of 10.23 MHz exactly.</p>
+<hr>
+<h2 id="extension-rtk-and-carrier-phase" class="anchored">11. Extension: RTK and Carrier Phase</h2>
+<p><strong>Standard GPS</strong> uses <strong>code phase</strong> (timing of pseudorandom noise pattern) → 1–5 m accuracy.</p>
+<p><strong>RTK (Real-Time Kinematic)</strong> uses <strong>carrier phase</strong> (actual radio wave oscillations) → 1–2 cm accuracy.</p>
+<p><strong>Carrier phase ambiguity:</strong></p>
+<p>The carrier phase measurement is:</p>
+<p><span class="math display">\Phi_i = \frac{1}{\lambda}(r_i + cb) + N_i</span></p>
+<p>Where: - <span class="math inline">\lambda</span> is the carrier wavelength (19 cm for GPS L1) - <span class="math inline">N_i</span> is an integer number of full wavelengths (ambiguity)</p>
+<p><strong>Challenge:</strong> Solve for both position and integer ambiguities simultaneously.</p>
+<p><strong>Method:</strong> Use a nearby base station with known position to form <strong>differential measurements</strong> that eliminate common errors, then resolve integer ambiguities using statistical methods (LAMBDA algorithm).</p>
+<hr>
+<h2 id="math-refresher-least-squares" class="anchored">12. Math Refresher: Least Squares</h2>
+<h3 id="why-least-squares" class="anchored">Why Least Squares?</h3>
+<p>With more equations than unknowns (<span class="math inline">m &gt; 4</span>), the system is <strong>overdetermined</strong>. There’s no exact solution that satisfies all equations perfectly (due to measurement noise).</p>
+<p><strong>Least squares</strong> finds the solution that minimizes the sum of squared residuals:</p>
+<p><span class="math display">\min_{\mathbf{x}} \sum_{i=1}^{m} f_i^2(\mathbf{x})</span></p>
+<h3 id="matrix-form" class="anchored">Matrix Form</h3>
+<p>For linear system <span class="math inline">\mathbf{Hx} = \mathbf{b}</span>, the least-squares solution is:</p>
+<p><span class="math display">\mathbf{x} = (\mathbf{H}^T \mathbf{H})^{-1} \mathbf{H}^T \mathbf{b}</span></p>
+<p>This minimizes <span class="math inline">\|\mathbf{Hx} - \mathbf{b}\|^2</span>.</p>
+<p><strong>Covariance:</strong> If measurement errors have variance <span class="math inline">\sigma^2</span>, then:</p>
+<p><span class="math display">\text{Cov}(\mathbf{x}) = \sigma^2 (\mathbf{H}^T \mathbf{H})^{-1}</span></p>
+<p>The diagonal elements are the variances of <span class="math inline">x</span>, <span class="math inline">y</span>, <span class="math inline">z</span>, and <span class="math inline">b</span>.</p>
+<hr>
+<h2 id="summary" class="anchored">Summary</h2>
+<ul>
+<li>GPS determines position by measuring <strong>signal travel time</strong> from satellites</li>
+<li><strong>Trilateration:</strong> Each satellite measurement places you on a sphere</li>
+<li><strong>Four satellites</strong> needed: 3 for position (x, y, z) + 1 for clock bias (b)</li>
+<li><strong>Clock bias</strong> is solved alongside position — no atomic clock required in receiver</li>
+<li><strong>Nonlinear system</strong> solved by linearization and iteration</li>
+<li><strong>PDOP</strong> quantifies how satellite geometry affects accuracy</li>
+<li>Real GPS corrects for atmospheric delay, relativistic effects, and multipath</li>
+<li><strong>RTK</strong> uses carrier phase for centimeter-level accuracy</li>
+</ul>
+<p><strong>Next steps:</strong> Further exploration of this subject could include: - Differential GPS and SBAS (Satellite-Based Augmentation Systems) - Kalman filtering for continuous position tracking - Integration with INS (Inertial Navigation Systems) - Multi-GNSS constellation usage</p>
+<hr>
+
+
+<footer class="wayward-footer">
+  <div class="wayward-footer__inner">
+    <div class="wayward-footer__brand">
+      <div class="wayward-footer__logo">WaywardHouse<span>.</span></div>
+      <p>Understanding how place, economy, and environment interact through analysis, modelling, and open tools.</p>
+    </div>
+
+    <nav class="wayward-footer__group" aria-labelledby="footer-reading">
+      <h2 id="footer-reading" class="anchored">Reading</h2>
+      <a href="../articles/">Articles</a>
+      <a href="../learn/">Learn</a>
+      <a href="../archive.html">Archive</a>
+      <a href="../start-here.html">Start Here</a>
+    </nav>
+
+    <nav class="wayward-footer__group" aria-labelledby="footer-site">
+      <h2 id="footer-site" class="anchored">Site</h2>
+      <a href="../start-here.html">Start Here</a>
+      <a href="../about.html">About</a>
+      <a href="../contact.html">Contact</a>
+    </nav>
+
+    <nav class="wayward-footer__group" aria-labelledby="footer-resources">
+      <h2 id="footer-resources" class="anchored">Resources</h2>
+      <a href="../topics/">All Topics</a>
+      <a href="../privacy.html">Privacy Policy</a>
+      <a href="../terms.html">Terms of Use</a>
+    </nav>
+  </div>
+</footer>
+
+<script type="module" src="../assets/dist/main.js"></script>
+<script type="module" src="../assets/js/core.js"></script>
+<script id="quarto-html-after-body" type="application/javascript">
+  window.document.addEventListener("DOMContentLoaded", function (event) {
+    const tabsets =  window.document.querySelectorAll(".panel-tabset-tabby")
+    tabsets.forEach(function(tabset) {
+      const tabby = new Tabby('#' + tabset.id);
+    });
+    const icon = "";
+    const anchorJS = new window.AnchorJS();
+    anchorJS.options = {
+      placement: 'right',
+      icon: icon
+    };
+    anchorJS.add('.anchored');
+    const isCodeAnnotation = (el) => {
+      for (const clz of el.classList) {
+        if (clz.startsWith('code-annotation-')) {                     
+          return true;
+        }
+      }
+      return false;
+    }
+    const onCopySuccess = function(e) {
+      // button target
+      const button = e.trigger;
+      // don't keep focus
+      button.blur();
+      // flash "checked"
+      button.classList.add('code-copy-button-checked');
+      var currentTitle = button.getAttribute("title");
+      button.setAttribute("title", "Copied!");
+      let tooltip;
+      if (window.bootstrap) {
+        button.setAttribute("data-bs-toggle", "tooltip");
+        button.setAttribute("data-bs-placement", "left");
+        button.setAttribute("data-bs-title", "Copied!");
+        tooltip = new bootstrap.Tooltip(button, 
+          { trigger: "manual", 
+            customClass: "code-copy-button-tooltip",
+            offset: [0, -8]});
+        tooltip.show();    
+      }
+      setTimeout(function() {
+        if (tooltip) {
+          tooltip.hide();
+          button.removeAttribute("data-bs-title");
+          button.removeAttribute("data-bs-toggle");
+          button.removeAttribute("data-bs-placement");
+        }
+        button.setAttribute("title", currentTitle);
+        button.classList.remove('code-copy-button-checked');
+      }, 1000);
+      // clear code selection
+      e.clearSelection();
+    }
+    const getTextToCopy = function(trigger) {
+      const outerScaffold = trigger.parentElement.cloneNode(true);
+      const codeEl = outerScaffold.querySelector('code');
+      for (const childEl of codeEl.children) {
+        if (isCodeAnnotation(childEl)) {
+          childEl.remove();
+        }
+      }
+      return codeEl.innerText;
+    }
+    const clipboard = new window.ClipboardJS('.code-copy-button:not([data-in-quarto-modal])', {
+      text: getTextToCopy
+    });
+    clipboard.on('success', onCopySuccess);
+    if (window.document.getElementById('quarto-embedded-source-code-modal')) {
+      const clipboardModal = new window.ClipboardJS('.code-copy-button[data-in-quarto-modal]', {
+        text: getTextToCopy,
+        container: window.document.getElementById('quarto-embedded-source-code-modal')
+      });
+      clipboardModal.on('success', onCopySuccess);
+    }
+      var localhostRegex = new RegExp(/^(?:http|https):\/\/localhost\:?[0-9]*\//);
+      var mailtoRegex = new RegExp(/^mailto:/);
+        var filterRegex = new RegExp('/' + window.location.host + '/');
+      var isInternal = (href) => {
+          return filterRegex.test(href) || localhostRegex.test(href) || mailtoRegex.test(href);
+      }
+      // Inspect non-navigation links and adorn them if external
+     var links = window.document.querySelectorAll('a[href]:not(.nav-link):not(.navbar-brand):not(.toc-action):not(.sidebar-link):not(.sidebar-item-toggle):not(.pagination-link):not(.no-external):not([aria-hidden]):not(.dropdown-item):not(.quarto-navigation-tool):not(.about-link)');
+      for (var i=0; i<links.length; i++) {
+        const link = links[i];
+        if (!isInternal(link.href)) {
+          // undo the damage that might have been done by quarto-nav.js in the case of
+          // links that we want to consider external
+          if (link.dataset.originalHref !== undefined) {
+            link.href = link.dataset.originalHref;
+          }
+        }
+      }
+    function tippyHover(el, contentFn, onTriggerFn, onUntriggerFn) {
+      const config = {
+        allowHTML: true,
+        maxWidth: 500,
+        delay: 100,
+        arrow: false,
+        appendTo: function(el) {
+            return el.parentElement;
+        },
+        interactive: true,
+        interactiveBorder: 10,
+        theme: 'light-border',
+        placement: 'bottom-start',
+      };
+      if (contentFn) {
+        config.content = contentFn;
+      }
+      if (onTriggerFn) {
+        config.onTrigger = onTriggerFn;
+      }
+      if (onUntriggerFn) {
+        config.onUntrigger = onUntriggerFn;
+      }
+      window.tippy(el, config); 
+    }
+    const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+    for (var i=0; i<noterefs.length; i++) {
+      const ref = noterefs[i];
+      tippyHover(ref, function() {
+        // use id or data attribute instead here
+        let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+        try { href = new URL(href).hash; } catch {}
+        const id = href.replace(/^#\/?/, "");
+        const note = window.document.getElementById(id);
+        if (note) {
+          return note.innerHTML;
+        } else {
+          return "";
+        }
+      });
+    }
+    const xrefs = window.document.querySelectorAll('a.quarto-xref');
+    const processXRef = (id, note) => {
+      // Strip column container classes
+      const stripColumnClz = (el) => {
+        el.classList.remove("page-full", "page-columns");
+        if (el.children) {
+          for (const child of el.children) {
+            stripColumnClz(child);
+          }
+        }
+      }
+      stripColumnClz(note)
+      if (id === null || id.startsWith('sec-')) {
+        // Special case sections, only their first couple elements
+        const container = document.createElement("div");
+        if (note.children && note.children.length > 2) {
+          container.appendChild(note.children[0].cloneNode(true));
+          for (let i = 1; i < note.children.length; i++) {
+            const child = note.children[i];
+            if (child.tagName === "P" && child.innerText === "") {
+              continue;
+            } else {
+              container.appendChild(child.cloneNode(true));
+              break;
+            }
+          }
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(container);
+          }
+          return container.innerHTML
+        } else {
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(note);
+          }
+          return note.innerHTML;
+        }
+      } else {
+        // Remove any anchor links if they are present
+        const anchorLink = note.querySelector('a.anchorjs-link');
+        if (anchorLink) {
+          anchorLink.remove();
+        }
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(note);
+        }
+        if (note.classList.contains("callout")) {
+          return note.outerHTML;
+        } else {
+          return note.innerHTML;
+        }
+      }
+    }
+    for (var i=0; i<xrefs.length; i++) {
+      const xref = xrefs[i];
+      tippyHover(xref, undefined, function(instance) {
+        instance.disable();
+        let url = xref.getAttribute('href');
+        let hash = undefined; 
+        if (url.startsWith('#')) {
+          hash = url;
+        } else {
+          try { hash = new URL(url).hash; } catch {}
+        }
+        if (hash) {
+          const id = hash.replace(/^#\/?/, "");
+          const note = window.document.getElementById(id);
+          if (note !== null) {
+            try {
+              const html = processXRef(id, note.cloneNode(true));
+              instance.setContent(html);
+            } finally {
+              instance.enable();
+              instance.show();
+            }
+          } else {
+            // See if we can fetch this
+            fetch(url.split('#')[0])
+            .then(res => res.text())
+            .then(html => {
+              const parser = new DOMParser();
+              const htmlDoc = parser.parseFromString(html, "text/html");
+              const note = htmlDoc.getElementById(id);
+              if (note !== null) {
+                const html = processXRef(id, note);
+                instance.setContent(html);
+              } 
+            }).finally(() => {
+              instance.enable();
+              instance.show();
+            });
+          }
+        } else {
+          // See if we can fetch a full url (with no hash to target)
+          // This is a special case and we should probably do some content thinning / targeting
+          fetch(url)
+          .then(res => res.text())
+          .then(html => {
+            const parser = new DOMParser();
+            const htmlDoc = parser.parseFromString(html, "text/html");
+            const note = htmlDoc.querySelector('main.content');
+            if (note !== null) {
+              // This should only happen for chapter cross references
+              // (since there is no id in the URL)
+              // remove the first header
+              if (note.children.length > 0 && note.children[0].tagName === "HEADER") {
+                note.children[0].remove();
+              }
+              const html = processXRef(null, note);
+              instance.setContent(html);
+            } 
+          }).finally(() => {
+            instance.enable();
+            instance.show();
+          });
+        }
+      }, function(instance) {
+      });
+    }
+        let selectedAnnoteEl;
+        const selectorForAnnotation = ( cell, annotation) => {
+          let cellAttr = 'data-code-cell="' + cell + '"';
+          let lineAttr = 'data-code-annotation="' +  annotation + '"';
+          const selector = 'span[' + cellAttr + '][' + lineAttr + ']';
+          return selector;
+        }
+        const selectCodeLines = (annoteEl) => {
+          const doc = window.document;
+          const targetCell = annoteEl.getAttribute("data-target-cell");
+          const targetAnnotation = annoteEl.getAttribute("data-target-annotation");
+          const annoteSpan = window.document.querySelector(selectorForAnnotation(targetCell, targetAnnotation));
+          const lines = annoteSpan.getAttribute("data-code-lines").split(",");
+          const lineIds = lines.map((line) => {
+            return targetCell + "-" + line;
+          })
+          let top = null;
+          let height = null;
+          let parent = null;
+          if (lineIds.length > 0) {
+              //compute the position of the single el (top and bottom and make a div)
+              const el = window.document.getElementById(lineIds[0]);
+              top = el.offsetTop;
+              height = el.offsetHeight;
+              parent = el.parentElement.parentElement;
+            if (lineIds.length > 1) {
+              const lastEl = window.document.getElementById(lineIds[lineIds.length - 1]);
+              const bottom = lastEl.offsetTop + lastEl.offsetHeight;
+              height = bottom - top;
+            }
+            if (top !== null && height !== null && parent !== null) {
+              // cook up a div (if necessary) and position it 
+              let div = window.document.getElementById("code-annotation-line-highlight");
+              if (div === null) {
+                div = window.document.createElement("div");
+                div.setAttribute("id", "code-annotation-line-highlight");
+                div.style.position = 'absolute';
+                parent.appendChild(div);
+              }
+              div.style.top = top - 2 + "px";
+              div.style.height = height + 4 + "px";
+              div.style.left = 0;
+              let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
+              if (gutterDiv === null) {
+                gutterDiv = window.document.createElement("div");
+                gutterDiv.setAttribute("id", "code-annotation-line-highlight-gutter");
+                gutterDiv.style.position = 'absolute';
+                const codeCell = window.document.getElementById(targetCell);
+                const gutter = codeCell.querySelector('.code-annotation-gutter');
+                gutter.appendChild(gutterDiv);
+              }
+              gutterDiv.style.top = top - 2 + "px";
+              gutterDiv.style.height = height + 4 + "px";
+            }
+            selectedAnnoteEl = annoteEl;
+          }
+        };
+        const unselectCodeLines = () => {
+          const elementsIds = ["code-annotation-line-highlight", "code-annotation-line-highlight-gutter"];
+          elementsIds.forEach((elId) => {
+            const div = window.document.getElementById(elId);
+            if (div) {
+              div.remove();
+            }
+          });
+          selectedAnnoteEl = undefined;
+        };
+          // Handle positioning of the toggle
+      window.addEventListener(
+        "resize",
+        throttle(() => {
+          elRect = undefined;
+          if (selectedAnnoteEl) {
+            selectCodeLines(selectedAnnoteEl);
+          }
+        }, 10)
+      );
+      function throttle(fn, ms) {
+      let throttle = false;
+      let timer;
+        return (...args) => {
+          if(!throttle) { // first call gets through
+              fn.apply(this, args);
+              throttle = true;
+          } else { // all the others get throttled
+              if(timer) clearTimeout(timer); // cancel #2
+              timer = setTimeout(() => {
+                fn.apply(this, args);
+                timer = throttle = false;
+              }, ms);
+          }
+        };
+      }
+        // Attach click handler to the DT
+        const annoteDls = window.document.querySelectorAll('dt[data-target-cell]');
+        for (const annoteDlNode of annoteDls) {
+          annoteDlNode.addEventListener('click', (event) => {
+            const clickedEl = event.target;
+            if (clickedEl !== selectedAnnoteEl) {
+              unselectCodeLines();
+              const activeEl = window.document.querySelector('dt[data-target-cell].code-annotation-active');
+              if (activeEl) {
+                activeEl.classList.remove('code-annotation-active');
+              }
+              selectCodeLines(clickedEl);
+              clickedEl.classList.add('code-annotation-active');
+            } else {
+              // Unselect the line
+              unselectCodeLines();
+              clickedEl.classList.remove('code-annotation-active');
+            }
+          });
+        }
+    const findCites = (el) => {
+      const parentEl = el.parentElement;
+      if (parentEl) {
+        const cites = parentEl.dataset.cites;
+        if (cites) {
+          return {
+            el,
+            cites: cites.split(' ')
+          };
+        } else {
+          return findCites(el.parentElement)
+        }
+      } else {
+        return undefined;
+      }
+    };
+    var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+    for (var i=0; i<bibliorefs.length; i++) {
+      const ref = bibliorefs[i];
+      const citeInfo = findCites(ref);
+      if (citeInfo) {
+        tippyHover(citeInfo.el, function() {
+          var popup = window.document.createElement('div');
+          citeInfo.cites.forEach(function(cite) {
+            var citeDiv = window.document.createElement('div');
+            citeDiv.classList.add('hanging-indent');
+            citeDiv.classList.add('csl-entry');
+            var biblioDiv = window.document.getElementById('ref-' + cite);
+            if (biblioDiv) {
+              citeDiv.innerHTML = biblioDiv.innerHTML;
+            }
+            popup.appendChild(citeDiv);
+          });
+          return popup.innerHTML;
+        });
+      }
+    }
+  });
+  </script>
+
+
+
+
+</body></html>

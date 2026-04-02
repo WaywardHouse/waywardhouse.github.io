@@ -1,0 +1,710 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
+
+<meta charset="utf-8">
+<meta name="generator" content="quarto-1.8.27">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+
+<meta name="dcterms.date" content="2026-03-10">
+<meta name="description" content="Cities are not just concentrations of people — they are productivity machines. Workers in large dense cities earn 4–8% more than identical workers in small cities, not because they work harder but because density itself raises productivity. This essay derives why, measures how much, and asks what Calgary’s energy-sector concentration implies about resilience.">
+
+<title>Agglomeration Economies – Computational Geography</title>
+<style>
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: min(4vw, 1.5em);}
+div.column{flex: auto; overflow-x: auto;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+  width: 0.8em;
+  margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
+  vertical-align: middle;
+}
+</style>
+
+
+<script src="../site_libs/clipboard/clipboard.min.js"></script>
+<script src="../site_libs/quarto-html/tabby.min.js"></script>
+<script src="../site_libs/quarto-html/popper.min.js"></script>
+<script src="../site_libs/quarto-html/tippy.umd.min.js"></script>
+<script src="../site_libs/quarto-html/anchor.min.js"></script>
+<link href="../site_libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="../site_libs/quarto-html/light-border.css" rel="stylesheet">
+<link href="../site_libs/quarto-html/quarto-html-734cb40618f438257b19a1e532635a32.min.css" rel="stylesheet" append-hash="true" data-mode="light">
+<link href="../site_libs/quarto-html/quarto-syntax-highlighting-ed96de9b727972fe78a7b5d16c58bf87.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<script>
+  (function () {
+    var s = localStorage.getItem('theme');
+    var dark = s !== null ? s === 'dark' : false;
+    document.documentElement.dataset.theme = dark ? 'dark' : 'light';
+    document.documentElement.dataset.brand = 'wayward';
+  })();
+</script>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:ital,wght@0,300;0,400;0,600;0,700;0,800;0,900;1,700;1,800&amp;family=Barlow:wght@300;400;500;600&amp;family=IBM+Plex+Mono:ital,wght@0,300;0,400;0,500;1,300&amp;family=Literata:ital,opsz,wght@0,7..72,300;0,7..72,400;0,7..72,500;1,7..72,300;1,7..72,400&amp;display=swap" rel="stylesheet">
+
+  <script>window.backupDefine = window.define; window.define = undefined;</script><script src="https://cdn.jsdelivr.net/npm/katex@latest/dist/katex.min.js"></script>
+  <script>document.addEventListener("DOMContentLoaded", function () {
+ var mathElements = document.getElementsByClassName("math");
+ var macros = [];
+ for (var i = 0; i < mathElements.length; i++) {
+  var texText = mathElements[i].firstChild;
+  if (mathElements[i].tagName == "SPAN") {
+   katex.render(texText.data, mathElements[i], {
+    displayMode: mathElements[i].classList.contains('display'),
+    throwOnError: false,
+    macros: macros,
+    fleqn: false
+   });
+}}});
+  </script>
+  <script>window.define = window.backupDefine; window.backupDefine = undefined;</script><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@latest/dist/katex.min.css">
+
+<script type="text/javascript">
+const typesetMath = (el) => {
+  if (window.MathJax) {
+    // MathJax Typeset
+    window.MathJax.typeset([el]);
+  } else if (window.katex) {
+    // KaTeX Render
+    var mathElements = el.getElementsByClassName("math");
+    var macros = [];
+    for (var i = 0; i < mathElements.length; i++) {
+      var texText = mathElements[i].firstChild;
+      if (mathElements[i].tagName == "SPAN" && texText && texText.data) {
+        window.katex.render(texText.data, mathElements[i], {
+          displayMode: mathElements[i].classList.contains('display'),
+          throwOnError: false,
+          macros: macros,
+          fleqn: false
+        });
+      }
+    }
+  }
+}
+window.Quarto = {
+  typesetMath
+};
+</script>
+
+<link rel="stylesheet" href="../assets/css/quarto-wayward.css">
+</head>
+
+<body class="reading-body tag-hash-math tag-hash-viz">
+
+
+<header id="title-block-header">
+<h1 class="title"><span class="chapter-title">Agglomeration Economies</span></h1>
+<p class="subtitle">Why Firms Cluster and What It Costs When They Don’t</p>
+
+<p class="date">2026-03-10</p>
+</header>
+
+<nav id="TOC" role="doc-toc">
+    <h2 id="toc-title">Table of contents</h2>
+   
+  <ul>
+  <li><a href="#marshalls-three-sources-of-localisation" id="toc-marshalls-three-sources-of-localisation">1. Marshall’s Three Sources of Localisation</a></li>
+  <li><a href="#jacobs-and-urbanisation-economies" id="toc-jacobs-and-urbanisation-economies">2. Jacobs and Urbanisation Economies</a></li>
+  <li><a href="#the-wage-density-relationship" id="toc-the-wage-density-relationship">3. The Wage-Density Relationship</a></li>
+  <li><a href="#location-quotient-measuring-specialisation" id="toc-location-quotient-measuring-specialisation">4. Location Quotient: Measuring Specialisation</a></li>
+  <li><a href="#the-net-benefit-curve-agglomeration-vs-congestion" id="toc-the-net-benefit-curve-agglomeration-vs-congestion">5. The Net-Benefit Curve: Agglomeration vs Congestion</a></li>
+  <li><a href="#calgary-vs-toronto-specialised-vs-diversified-agglomeration" id="toc-calgary-vs-toronto-specialised-vs-diversified-agglomeration">6. Calgary vs Toronto: Specialised vs Diversified Agglomeration</a></li>
+  <li><a href="#resilience-implications" id="toc-resilience-implications">7. Resilience Implications</a></li>
+  <li><a href="#limits-of-the-framework" id="toc-limits-of-the-framework">8. Limits of the Framework</a></li>
+  <li><a href="#references" id="toc-references">References</a></li>
+  </ul>
+</nav>
+<p>In 2014, when oil prices collapsed from over $100 to under $50 a barrel, Calgary’s unemployment rate rose from roughly 4% to 9% within eighteen months. Edmonton’s rose too, but more slowly and by less. Montreal and Toronto barely registered the shock. This asymmetry was not an accident of geography or policy — it was a predictable consequence of how differently these cities had organised their economic bases. Calgary had clustered, deeply and deliberately, into a single sector. That clustering had made it extraordinarily productive in good times. The same clustering made it fragile.</p>
+<p>To understand why, we need to distinguish two things that both look like clustering but work through entirely different mechanisms. <strong>Localisation economies</strong> are productivity gains that come from being near other firms in the <em>same</em> industry. <strong>Urbanisation economies</strong> are productivity gains that come from being in a <em>large and diverse</em> city, regardless of industry. Alfred Marshall identified the first in 1890; Jane Jacobs articulated the second in 1969. The distinction matters enormously for economic policy — and for interpreting what happened to Calgary.</p>
+<hr>
+<h2 id="marshalls-three-sources-of-localisation" class="anchored">1. Marshall’s Three Sources of Localisation</h2>
+<p>Marshall observed that firms in the same industry benefit from co-locating through three distinct channels:</p>
+<p><strong>Labour market pooling.</strong> When many firms in the same industry cluster together, they create a thick local labour market. Workers can move between firms easily; firms can hire quickly when they grow and shed workers who find alternative employment nearby when they contract. Both parties benefit from lower search costs and better matches. The result is higher average productivity — better worker-firm fit — and lower wage variance.</p>
+<p><strong>Input sharing.</strong> Specialised suppliers locate near their customers. A cluster of oil and gas firms in Calgary supports a dense ecosystem of engineering consultants, equipment suppliers, software vendors, and financial services that would not be viable in a smaller market. Each individual firm benefits from access to these specialised inputs at lower cost and shorter lead times. The suppliers also achieve scale economies they could not reach serving a dispersed market.</p>
+<p><strong>Knowledge spillovers.</strong> Workers who share a local labour market also share knowledge. They talk at conferences, move between firms, and observe each other’s practices. Ideas spread through informal contact. This is why Silicon Valley retains its technology advantage: the density of engineering talent means that knowledge generated anywhere in the cluster diffuses rapidly, reducing duplication and accelerating innovation. Patent citation data confirms that knowledge spillovers decay sharply with distance — an invention in one part of a city is far more likely to be cited by a nearby inventor than by one in another city.</p>
+<hr>
+<h2 id="jacobs-and-urbanisation-economies" class="anchored">2. Jacobs and Urbanisation Economies</h2>
+<p>Jane Jacobs argued that the most important driver of urban productivity was not industry-level clustering but city-level diversity. In her account, new ideas emerge from the <em>recombination</em> of knowledge across different industries. A city where engineers, artists, biologists, and financiers interact produces innovations that no single-industry cluster can. New York’s fashion industry benefits from proximity to advertising, media, and finance. London’s finance sector benefits from proximity to law, technology, and design.</p>
+<p>Urbanisation economies increase with total city size and economic diversity. They predict that the largest and most diverse cities — Toronto, Montreal, Vancouver — will be more productive and more innovative, even after controlling for industry composition. Localisation economies, by contrast, predict that specialised cities will outperform diversified ones <em>within</em> their sector.</p>
+<p>The empirical challenge is separating the two. Both predict a positive relationship between density and productivity, but they have different policy implications. If localisation dominates, specialised clusters are the right strategy. If urbanisation dominates, diversified growth is more valuable.</p>
+<hr>
+<h2 id="the-wage-density-relationship" class="anchored">3. The Wage-Density Relationship</h2>
+<p>The cleanest empirical test of agglomeration economies is the wage-density elasticity. The idea is straightforward: if agglomeration raises productivity, wages should be higher in denser places, even after controlling for worker characteristics. The relationship is typically estimated as:</p>
+<p><span class="math display">\ln(w_i) = \alpha + \beta \ln(\text{density}_j) + \mathbf{X}_i \gamma + \varepsilon_i</span></p>
+<p>where <span class="math inline">w_i</span> is the wage of worker <span class="math inline">i</span>, <span class="math inline">\text{density}_j</span> is the employment density of the city or zone where they work, <span class="math inline">\mathbf{X}_i</span> is a vector of individual controls (education, experience, occupation), and <span class="math inline">\beta</span> is the <strong>wage-density elasticity</strong> — the percentage increase in wages associated with a doubling of density.</p>
+<p>Across dozens of studies of North American and European cities, <span class="math inline">\hat{\beta}</span> typically falls in the range $0.04$ to $0.08$. That is: doubling employment density is associated with a 4–8% wage premium. At first glance this seems modest. But consider the difference in density between a small city of 100,000 and a metropolitan area of 5,000,000. A ten-fold difference in density implies a wage premium of <span class="math inline">\beta \cdot \ln(10) \approx 0.06 \cdot 2.3 \approx 14\%</span> — before controlling for industry composition or worker selection.</p>
+<p>The challenge for causal identification is that high-ability workers sort into dense cities. The wage premium in Toronto relative to Lethbridge partly reflects the skill of the people who chose to move there, not only the productivity boost from density itself. Identifying the pure agglomeration effect requires instruments for density — historical population levels, geographic constraints, or the density of railroads in 1900 — or longitudinal data tracking the same workers as they move between cities.</p>
+<hr>
+<h2 id="location-quotient-measuring-specialisation" class="anchored">4. Location Quotient: Measuring Specialisation</h2>
+<p>To measure whether a city is specialised in a given industry — and therefore likely to benefit from localisation economies — economists use the <strong>Location Quotient</strong> (LQ):</p>
+<p><span class="math display">LQ_{i,c} = \frac{e_{i,c} / E_c}{e_{i,n} / E_n}</span></p>
+<p>where <span class="math inline">e_{i,c}</span> is employment in industry <span class="math inline">i</span> in city <span class="math inline">c</span>, <span class="math inline">E_c</span> is total employment in city <span class="math inline">c</span>, <span class="math inline">e_{i,n}</span> is national employment in industry <span class="math inline">i</span>, and <span class="math inline">E_n</span> is total national employment.</p>
+<p>An <span class="math inline">LQ &gt; 1</span> means the city is more specialised in industry <span class="math inline">i</span> than the national average — the city has a relative concentration that suggests export orientation. An <span class="math inline">LQ &lt; 1</span> means the city is underrepresented in that industry relative to the national norm.</p>
+<p>Calgary’s LQ in mining, oil and gas extraction exceeds 8 — meaning the city is more than eight times as specialised in energy as the national average. This extreme specialisation drives both its exceptional productivity during oil booms and its exceptional fragility during busts.</p>
+<hr>
+<h2 id="the-net-benefit-curve-agglomeration-vs-congestion" class="anchored">5. The Net-Benefit Curve: Agglomeration vs Congestion</h2>
+<p>Agglomeration generates benefits, but density also generates costs: congestion on roads and transit, higher housing prices, higher wages for non-tradable services (restaurants, retail), and pollution. The net agglomeration benefit is the difference between productivity gains and these congestion costs.</p>
+<p>Formally, if <span class="math inline">A(N)</span> is the agglomeration benefit and <span class="math inline">C(N)</span> is the congestion cost, both functions of city size <span class="math inline">N</span>, the net benefit is:</p>
+<p><span class="math display">NB(N) = A(N) - C(N)</span></p>
+<p>Empirically, <span class="math inline">A(N)</span> is concave — diminishing marginal returns to scale. <span class="math inline">C(N)</span> is convex — congestion costs accelerate as the city grows. The optimal city size <span class="math inline">N^*</span> satisfies:</p>
+<p><span class="math display">A'(N^*) = C'(N^*)</span></p>
+<p>Most estimates place North American cities well below <span class="math inline">N^*</span>, implying that further densification would raise net welfare. The persistent undersupply of housing in Toronto and Vancouver — enforced by zoning — keeps density below the social optimum and suppresses agglomeration gains.</p>
+<hr>
+<h2 id="calgary-vs-toronto-specialised-vs-diversified-agglomeration" class="anchored">6. Calgary vs Toronto: Specialised vs Diversified Agglomeration</h2>
+<div data-viz="echarts" style="height:420px; min-height:320px" data-options="{
+  &quot;title&quot;: {&quot;text&quot;: &quot;City-Size vs Wage Premium: Canadian CMAs&quot;, &quot;left&quot;: &quot;center&quot;, &quot;subtext&quot;: &quot;Stylised — log scale on x-axis&quot;},
+  &quot;tooltip&quot;: {&quot;trigger&quot;: &quot;item&quot;, &quot;formatter&quot;: &quot;{b}: {c}% premium&quot;},
+  &quot;xAxis&quot;: {
+    &quot;type&quot;: &quot;log&quot;,
+    &quot;name&quot;: &quot;CMA Employment (thousands, log scale)&quot;,
+    &quot;nameLocation&quot;: &quot;middle&quot;,
+    &quot;nameGap&quot;: 35,
+    &quot;min&quot;: 50,
+    &quot;max&quot;: 4000
+  },
+  &quot;yAxis&quot;: {
+    &quot;type&quot;: &quot;value&quot;,
+    &quot;name&quot;: &quot;Estimated Wage Premium vs National Median (%)&quot;,
+    &quot;nameLocation&quot;: &quot;middle&quot;,
+    &quot;nameGap&quot;: 50,
+    &quot;min&quot;: -5,
+    &quot;max&quot;: 30
+  },
+  &quot;series&quot;: [
+    {
+      &quot;type&quot;: &quot;scatter&quot;,
+      &quot;symbolSize&quot;: 12,
+      &quot;data&quot;: [
+        {&quot;name&quot;: &quot;Toronto&quot;, &quot;value&quot;: [3200, 26]},
+        {&quot;name&quot;: &quot;Vancouver&quot;, &quot;value&quot;: [1400, 18]},
+        {&quot;name&quot;: &quot;Montreal&quot;, &quot;value&quot;: [2100, 12]},
+        {&quot;name&quot;: &quot;Calgary&quot;, &quot;value&quot;: [830, 22]},
+        {&quot;name&quot;: &quot;Edmonton&quot;, &quot;value&quot;: [620, 14]},
+        {&quot;name&quot;: &quot;Ottawa&quot;, &quot;value&quot;: [730, 16]},
+        {&quot;name&quot;: &quot;Winnipeg&quot;, &quot;value&quot;: [420, 4]},
+        {&quot;name&quot;: &quot;Quebec City&quot;, &quot;value&quot;: [350, 2]},
+        {&quot;name&quot;: &quot;Hamilton&quot;, &quot;value&quot;: [280, 1]},
+        {&quot;name&quot;: &quot;Saskatoon&quot;, &quot;value&quot;: [160, -1]},
+        {&quot;name&quot;: &quot;Regina&quot;, &quot;value&quot;: [130, -2]},
+        {&quot;name&quot;: &quot;Halifax&quot;, &quot;value&quot;: [220, 0]},
+        {&quot;name&quot;: &quot;Kelowna&quot;, &quot;value&quot;: [100, -3]},
+        {&quot;name&quot;: &quot;Lethbridge&quot;, &quot;value&quot;: [60, -4]}
+      ],
+      &quot;label&quot;: {&quot;show&quot;: true, &quot;formatter&quot;: &quot;{b}&quot;, &quot;position&quot;: &quot;right&quot;, &quot;fontSize&quot;: 11},
+      &quot;itemStyle&quot;: {&quot;color&quot;: &quot;#5c8ee0&quot;}
+    }
+  ]
+}">
+
+</div>
+<p>Calgary sits above the trend line: its wage premium exceeds what its size alone would predict. This is the signature of localisation economies — sector-specific productivity gains from energy cluster density that push wages above the urbanisation-only benchmark. Toronto’s premium reflects diversified urbanisation: a mix of finance, technology, professional services, and creative industries that generates broad-based productivity gains.</p>
+<div data-viz="echarts" style="height:420px; min-height:320px" data-options="{
+  &quot;title&quot;: {&quot;text&quot;: &quot;Location Quotient by Industry: Calgary vs Toronto vs Vancouver&quot;, &quot;left&quot;: &quot;center&quot;},
+  &quot;tooltip&quot;: {&quot;trigger&quot;: &quot;axis&quot;, &quot;axisPointer&quot;: {&quot;type&quot;: &quot;shadow&quot;}},
+  &quot;legend&quot;: {&quot;data&quot;: [&quot;Calgary&quot;, &quot;Toronto&quot;, &quot;Vancouver&quot;], &quot;bottom&quot;: 0},
+  &quot;xAxis&quot;: {
+    &quot;type&quot;: &quot;category&quot;,
+    &quot;data&quot;: [&quot;Energy &amp; Mining&quot;, &quot;Finance &amp; Insurance&quot;, &quot;Technology&quot;, &quot;Government&quot;, &quot;Health &amp; Social&quot;, &quot;Retail&quot;, &quot;Construction&quot;],
+    &quot;axisLabel&quot;: {&quot;rotate&quot;: 25, &quot;fontSize&quot;: 11}
+  },
+  &quot;yAxis&quot;: {
+    &quot;type&quot;: &quot;value&quot;,
+    &quot;name&quot;: &quot;Location Quotient&quot;,
+    &quot;nameLocation&quot;: &quot;middle&quot;,
+    &quot;nameGap&quot;: 45,
+    &quot;min&quot;: 0,
+    &quot;max&quot;: 5
+  },
+  &quot;series&quot;: [
+    {
+      &quot;name&quot;: &quot;Calgary&quot;,
+      &quot;type&quot;: &quot;bar&quot;,
+      &quot;data&quot;: [4.8, 1.6, 1.0, 0.7, 0.8, 0.9, 1.4],
+      &quot;itemStyle&quot;: {&quot;color&quot;: &quot;#e05c5c&quot;}
+    },
+    {
+      &quot;name&quot;: &quot;Toronto&quot;,
+      &quot;type&quot;: &quot;bar&quot;,
+      &quot;data&quot;: [0.2, 2.8, 1.9, 0.9, 1.1, 1.0, 0.8],
+      &quot;itemStyle&quot;: {&quot;color&quot;: &quot;#5c8ee0&quot;}
+    },
+    {
+      &quot;name&quot;: &quot;Vancouver&quot;,
+      &quot;type&quot;: &quot;bar&quot;,
+      &quot;data&quot;: [0.3, 1.1, 1.7, 1.0, 1.2, 1.1, 1.2],
+      &quot;itemStyle&quot;: {&quot;color&quot;: &quot;#6dba6d&quot;}
+    }
+  ]
+}">
+
+</div>
+<p>Calgary’s energy LQ of ~4.8 dwarfs any other specialisation in any of the three cities. Toronto’s finance LQ of ~2.8 reflects a significant cluster but one embedded in a far more diversified economy. Vancouver is the most balanced of the three — moderate LQs across technology, finance, and construction, consistent with Jacobs-style urbanisation rather than Marshall-style localisation.</p>
+<hr>
+<h2 id="resilience-implications" class="anchored">7. Resilience Implications</h2>
+<p>The contrast matters for how each city responds to shocks. When Calgary’s energy sector contracts — as it did in 2015–16 and again in 2020 — the localisation economies that boosted productivity in good times become channels of contagion. Energy firms shed workers; the specialised suppliers who depend on them lose revenue; the thick local labour market becomes a pool of structurally unemployed engineers and geoscientists whose skills are not easily transferred to other sectors.</p>
+<p>Toronto’s 2008–09 recession hit the financial sector hard, but the city’s diversification meant that technology, healthcare, and government employment provided a partial offset. The diversified agglomeration model is more resilient, at the cost of somewhat lower sector-specific productivity peaks.</p>
+<p>Alberta’s provincial government has grappled explicitly with this tradeoff. The diversification agenda — attracting technology companies, expanding the post-secondary sector, developing renewable energy — is an attempt to shift Calgary’s LQ profile toward something more like Vancouver’s. The challenge is that localisation economies are self-reinforcing: the energy cluster is productive precisely because it is concentrated, and dismantling that concentration reduces the very advantages that made it attractive.</p>
+<hr>
+<h2 id="limits-of-the-framework" class="anchored">8. Limits of the Framework</h2>
+<p>The wage-density elasticity captures average productivity effects. It misses the distribution: agglomeration benefits accrue unevenly across workers. High-skill workers capture the majority of the productivity premium; low-skill workers in service industries may see little wage gain from density while bearing high housing costs. The net welfare effect of agglomeration for a low-income worker in Vancouver or Toronto may be negative despite the city-wide productivity gains.</p>
+<p>The framework also treats agglomeration as a smooth, continuous effect of density. In practice, agglomeration effects are lumpy and path-dependent. A city that fails to achieve the critical mass needed to attract a specialised supplier ecosystem may be stuck in a low-productivity equilibrium despite its geographic and demographic potential.</p>
+<hr>
+<p>Next in this cluster: <strong>Zipf’s Law and the City Size Distribution</strong> (Model 13) steps back from individual cities to ask: why do national city systems organise into a predictable rank-size hierarchy, and where does Canada — with its near-equal Edmonton-Calgary pair — fit that pattern?</p>
+<h2 id="references" class="anchored">References</h2>
+<p>Glaeser, Edward L. 2011. <em>Triumph of the City: How Our Greatest Invention Makes Us Richer, Smarter, Greener, Healthier, and Happier</em>. New York: Penguin Press. (no public URL available)</p>
+<p>Jacobs, Jane. 1969. <em>The Economy of Cities</em>. New York: Random House. (no public URL available)</p>
+<p>Jaffe, Adam B., Manuel Trajtenberg, and Rebecca Henderson. 1993. “Geographic Localization of Knowledge Spillovers as Evidenced by Patent Citations.” <em>Quarterly Journal of Economics</em> 108 (3): 577–598. <a href="https://doi.org/10.2307/2118401" class="uri">https://doi.org/10.2307/2118401</a></p>
+<p>Marshall, Alfred. 1890. <em>Principles of Economics</em>. London: Macmillan. Book IV, Chapter X. <a href="https://www.marxists.org/reference/subject/economics/marshall/bk4ch10.htm" class="uri">https://www.marxists.org/reference/subject/economics/marshall/bk4ch10.htm</a></p>
+<p>Rosenthal, Stuart S., and William C. Strange. 2004. “Evidence on the Nature and Sources of Agglomeration Economies.” In <em>Handbook of Regional and Urban Economics</em>, vol.&nbsp;4, edited by J. Vernon Henderson and Jacques-François Thisse, 2119–2171. Amsterdam: Elsevier. <a href="https://www.sciencedirect.com/science/article/pii/S1574008004800063" class="uri">https://www.sciencedirect.com/science/article/pii/S1574008004800063</a></p>
+<p>Statistics Canada. 2022. “Annual Review of the Labour Market, 2016.” Statistics Canada Catalogue no. 75-004-M. <a href="https://www150.statcan.gc.ca/n1/pub/75-004-m/75-004-m2017001-eng.htm" class="uri">https://www150.statcan.gc.ca/n1/pub/75-004-m/75-004-m2017001-eng.htm</a></p>
+<p>Statistics Canada. 2022. “Population and Dwelling Count Highlight Tables, 2021 Census of Population.” <a href="https://www12.statcan.gc.ca/census-recensement/2021/dp-pd/hlt-fst/pd-pl/List-cma-tca.cfm?Lang=Eng&amp;T=1601&amp;S=86&amp;O=A" class="uri">https://www12.statcan.gc.ca/census-recensement/2021/dp-pd/hlt-fst/pd-pl/List-cma-tca.cfm?Lang=Eng&amp;T=1601&amp;S=86&amp;O=A</a></p>
+<p>Statistics Canada. 2020. “How Do Workers Displaced from Energy-producing Sectors Fare after Job Loss? Evidence from the Oil and Gas Industry.” Economic Insights, Catalogue no. 11-626-X, No.&nbsp;123. <a href="https://www150.statcan.gc.ca/n1/pub/11-626-x/11-626-x2020021-eng.htm" class="uri">https://www150.statcan.gc.ca/n1/pub/11-626-x/11-626-x2020021-eng.htm</a></p>
+
+
+<footer class="wayward-footer">
+  <div class="wayward-footer__inner">
+    <div class="wayward-footer__brand">
+      <div class="wayward-footer__logo">WaywardHouse<span>.</span></div>
+      <p>Understanding how place, economy, and environment interact through analysis, modelling, and open tools.</p>
+    </div>
+
+    <nav class="wayward-footer__group" aria-labelledby="footer-reading">
+      <h2 id="footer-reading" class="anchored">Reading</h2>
+      <a href="../articles/">Articles</a>
+      <a href="../learn/">Learn</a>
+      <a href="../archive.html">Archive</a>
+      <a href="../start-here.html">Start Here</a>
+    </nav>
+
+    <nav class="wayward-footer__group" aria-labelledby="footer-site">
+      <h2 id="footer-site" class="anchored">Site</h2>
+      <a href="../start-here.html">Start Here</a>
+      <a href="../about.html">About</a>
+      <a href="../contact.html">Contact</a>
+    </nav>
+
+    <nav class="wayward-footer__group" aria-labelledby="footer-resources">
+      <h2 id="footer-resources" class="anchored">Resources</h2>
+      <a href="../topics/">All Topics</a>
+      <a href="../privacy.html">Privacy Policy</a>
+      <a href="../terms.html">Terms of Use</a>
+    </nav>
+  </div>
+</footer>
+
+<script type="module" src="../assets/dist/main.js"></script>
+<script type="module" src="../assets/js/core.js"></script>
+<script id="quarto-html-after-body" type="application/javascript">
+  window.document.addEventListener("DOMContentLoaded", function (event) {
+    const tabsets =  window.document.querySelectorAll(".panel-tabset-tabby")
+    tabsets.forEach(function(tabset) {
+      const tabby = new Tabby('#' + tabset.id);
+    });
+    const icon = "";
+    const anchorJS = new window.AnchorJS();
+    anchorJS.options = {
+      placement: 'right',
+      icon: icon
+    };
+    anchorJS.add('.anchored');
+    const isCodeAnnotation = (el) => {
+      for (const clz of el.classList) {
+        if (clz.startsWith('code-annotation-')) {                     
+          return true;
+        }
+      }
+      return false;
+    }
+    const onCopySuccess = function(e) {
+      // button target
+      const button = e.trigger;
+      // don't keep focus
+      button.blur();
+      // flash "checked"
+      button.classList.add('code-copy-button-checked');
+      var currentTitle = button.getAttribute("title");
+      button.setAttribute("title", "Copied!");
+      let tooltip;
+      if (window.bootstrap) {
+        button.setAttribute("data-bs-toggle", "tooltip");
+        button.setAttribute("data-bs-placement", "left");
+        button.setAttribute("data-bs-title", "Copied!");
+        tooltip = new bootstrap.Tooltip(button, 
+          { trigger: "manual", 
+            customClass: "code-copy-button-tooltip",
+            offset: [0, -8]});
+        tooltip.show();    
+      }
+      setTimeout(function() {
+        if (tooltip) {
+          tooltip.hide();
+          button.removeAttribute("data-bs-title");
+          button.removeAttribute("data-bs-toggle");
+          button.removeAttribute("data-bs-placement");
+        }
+        button.setAttribute("title", currentTitle);
+        button.classList.remove('code-copy-button-checked');
+      }, 1000);
+      // clear code selection
+      e.clearSelection();
+    }
+    const getTextToCopy = function(trigger) {
+      const outerScaffold = trigger.parentElement.cloneNode(true);
+      const codeEl = outerScaffold.querySelector('code');
+      for (const childEl of codeEl.children) {
+        if (isCodeAnnotation(childEl)) {
+          childEl.remove();
+        }
+      }
+      return codeEl.innerText;
+    }
+    const clipboard = new window.ClipboardJS('.code-copy-button:not([data-in-quarto-modal])', {
+      text: getTextToCopy
+    });
+    clipboard.on('success', onCopySuccess);
+    if (window.document.getElementById('quarto-embedded-source-code-modal')) {
+      const clipboardModal = new window.ClipboardJS('.code-copy-button[data-in-quarto-modal]', {
+        text: getTextToCopy,
+        container: window.document.getElementById('quarto-embedded-source-code-modal')
+      });
+      clipboardModal.on('success', onCopySuccess);
+    }
+      var localhostRegex = new RegExp(/^(?:http|https):\/\/localhost\:?[0-9]*\//);
+      var mailtoRegex = new RegExp(/^mailto:/);
+        var filterRegex = new RegExp('/' + window.location.host + '/');
+      var isInternal = (href) => {
+          return filterRegex.test(href) || localhostRegex.test(href) || mailtoRegex.test(href);
+      }
+      // Inspect non-navigation links and adorn them if external
+     var links = window.document.querySelectorAll('a[href]:not(.nav-link):not(.navbar-brand):not(.toc-action):not(.sidebar-link):not(.sidebar-item-toggle):not(.pagination-link):not(.no-external):not([aria-hidden]):not(.dropdown-item):not(.quarto-navigation-tool):not(.about-link)');
+      for (var i=0; i<links.length; i++) {
+        const link = links[i];
+        if (!isInternal(link.href)) {
+          // undo the damage that might have been done by quarto-nav.js in the case of
+          // links that we want to consider external
+          if (link.dataset.originalHref !== undefined) {
+            link.href = link.dataset.originalHref;
+          }
+        }
+      }
+    function tippyHover(el, contentFn, onTriggerFn, onUntriggerFn) {
+      const config = {
+        allowHTML: true,
+        maxWidth: 500,
+        delay: 100,
+        arrow: false,
+        appendTo: function(el) {
+            return el.parentElement;
+        },
+        interactive: true,
+        interactiveBorder: 10,
+        theme: 'light-border',
+        placement: 'bottom-start',
+      };
+      if (contentFn) {
+        config.content = contentFn;
+      }
+      if (onTriggerFn) {
+        config.onTrigger = onTriggerFn;
+      }
+      if (onUntriggerFn) {
+        config.onUntrigger = onUntriggerFn;
+      }
+      window.tippy(el, config); 
+    }
+    const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+    for (var i=0; i<noterefs.length; i++) {
+      const ref = noterefs[i];
+      tippyHover(ref, function() {
+        // use id or data attribute instead here
+        let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+        try { href = new URL(href).hash; } catch {}
+        const id = href.replace(/^#\/?/, "");
+        const note = window.document.getElementById(id);
+        if (note) {
+          return note.innerHTML;
+        } else {
+          return "";
+        }
+      });
+    }
+    const xrefs = window.document.querySelectorAll('a.quarto-xref');
+    const processXRef = (id, note) => {
+      // Strip column container classes
+      const stripColumnClz = (el) => {
+        el.classList.remove("page-full", "page-columns");
+        if (el.children) {
+          for (const child of el.children) {
+            stripColumnClz(child);
+          }
+        }
+      }
+      stripColumnClz(note)
+      if (id === null || id.startsWith('sec-')) {
+        // Special case sections, only their first couple elements
+        const container = document.createElement("div");
+        if (note.children && note.children.length > 2) {
+          container.appendChild(note.children[0].cloneNode(true));
+          for (let i = 1; i < note.children.length; i++) {
+            const child = note.children[i];
+            if (child.tagName === "P" && child.innerText === "") {
+              continue;
+            } else {
+              container.appendChild(child.cloneNode(true));
+              break;
+            }
+          }
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(container);
+          }
+          return container.innerHTML
+        } else {
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(note);
+          }
+          return note.innerHTML;
+        }
+      } else {
+        // Remove any anchor links if they are present
+        const anchorLink = note.querySelector('a.anchorjs-link');
+        if (anchorLink) {
+          anchorLink.remove();
+        }
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(note);
+        }
+        if (note.classList.contains("callout")) {
+          return note.outerHTML;
+        } else {
+          return note.innerHTML;
+        }
+      }
+    }
+    for (var i=0; i<xrefs.length; i++) {
+      const xref = xrefs[i];
+      tippyHover(xref, undefined, function(instance) {
+        instance.disable();
+        let url = xref.getAttribute('href');
+        let hash = undefined; 
+        if (url.startsWith('#')) {
+          hash = url;
+        } else {
+          try { hash = new URL(url).hash; } catch {}
+        }
+        if (hash) {
+          const id = hash.replace(/^#\/?/, "");
+          const note = window.document.getElementById(id);
+          if (note !== null) {
+            try {
+              const html = processXRef(id, note.cloneNode(true));
+              instance.setContent(html);
+            } finally {
+              instance.enable();
+              instance.show();
+            }
+          } else {
+            // See if we can fetch this
+            fetch(url.split('#')[0])
+            .then(res => res.text())
+            .then(html => {
+              const parser = new DOMParser();
+              const htmlDoc = parser.parseFromString(html, "text/html");
+              const note = htmlDoc.getElementById(id);
+              if (note !== null) {
+                const html = processXRef(id, note);
+                instance.setContent(html);
+              } 
+            }).finally(() => {
+              instance.enable();
+              instance.show();
+            });
+          }
+        } else {
+          // See if we can fetch a full url (with no hash to target)
+          // This is a special case and we should probably do some content thinning / targeting
+          fetch(url)
+          .then(res => res.text())
+          .then(html => {
+            const parser = new DOMParser();
+            const htmlDoc = parser.parseFromString(html, "text/html");
+            const note = htmlDoc.querySelector('main.content');
+            if (note !== null) {
+              // This should only happen for chapter cross references
+              // (since there is no id in the URL)
+              // remove the first header
+              if (note.children.length > 0 && note.children[0].tagName === "HEADER") {
+                note.children[0].remove();
+              }
+              const html = processXRef(null, note);
+              instance.setContent(html);
+            } 
+          }).finally(() => {
+            instance.enable();
+            instance.show();
+          });
+        }
+      }, function(instance) {
+      });
+    }
+        let selectedAnnoteEl;
+        const selectorForAnnotation = ( cell, annotation) => {
+          let cellAttr = 'data-code-cell="' + cell + '"';
+          let lineAttr = 'data-code-annotation="' +  annotation + '"';
+          const selector = 'span[' + cellAttr + '][' + lineAttr + ']';
+          return selector;
+        }
+        const selectCodeLines = (annoteEl) => {
+          const doc = window.document;
+          const targetCell = annoteEl.getAttribute("data-target-cell");
+          const targetAnnotation = annoteEl.getAttribute("data-target-annotation");
+          const annoteSpan = window.document.querySelector(selectorForAnnotation(targetCell, targetAnnotation));
+          const lines = annoteSpan.getAttribute("data-code-lines").split(",");
+          const lineIds = lines.map((line) => {
+            return targetCell + "-" + line;
+          })
+          let top = null;
+          let height = null;
+          let parent = null;
+          if (lineIds.length > 0) {
+              //compute the position of the single el (top and bottom and make a div)
+              const el = window.document.getElementById(lineIds[0]);
+              top = el.offsetTop;
+              height = el.offsetHeight;
+              parent = el.parentElement.parentElement;
+            if (lineIds.length > 1) {
+              const lastEl = window.document.getElementById(lineIds[lineIds.length - 1]);
+              const bottom = lastEl.offsetTop + lastEl.offsetHeight;
+              height = bottom - top;
+            }
+            if (top !== null && height !== null && parent !== null) {
+              // cook up a div (if necessary) and position it 
+              let div = window.document.getElementById("code-annotation-line-highlight");
+              if (div === null) {
+                div = window.document.createElement("div");
+                div.setAttribute("id", "code-annotation-line-highlight");
+                div.style.position = 'absolute';
+                parent.appendChild(div);
+              }
+              div.style.top = top - 2 + "px";
+              div.style.height = height + 4 + "px";
+              div.style.left = 0;
+              let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
+              if (gutterDiv === null) {
+                gutterDiv = window.document.createElement("div");
+                gutterDiv.setAttribute("id", "code-annotation-line-highlight-gutter");
+                gutterDiv.style.position = 'absolute';
+                const codeCell = window.document.getElementById(targetCell);
+                const gutter = codeCell.querySelector('.code-annotation-gutter');
+                gutter.appendChild(gutterDiv);
+              }
+              gutterDiv.style.top = top - 2 + "px";
+              gutterDiv.style.height = height + 4 + "px";
+            }
+            selectedAnnoteEl = annoteEl;
+          }
+        };
+        const unselectCodeLines = () => {
+          const elementsIds = ["code-annotation-line-highlight", "code-annotation-line-highlight-gutter"];
+          elementsIds.forEach((elId) => {
+            const div = window.document.getElementById(elId);
+            if (div) {
+              div.remove();
+            }
+          });
+          selectedAnnoteEl = undefined;
+        };
+          // Handle positioning of the toggle
+      window.addEventListener(
+        "resize",
+        throttle(() => {
+          elRect = undefined;
+          if (selectedAnnoteEl) {
+            selectCodeLines(selectedAnnoteEl);
+          }
+        }, 10)
+      );
+      function throttle(fn, ms) {
+      let throttle = false;
+      let timer;
+        return (...args) => {
+          if(!throttle) { // first call gets through
+              fn.apply(this, args);
+              throttle = true;
+          } else { // all the others get throttled
+              if(timer) clearTimeout(timer); // cancel #2
+              timer = setTimeout(() => {
+                fn.apply(this, args);
+                timer = throttle = false;
+              }, ms);
+          }
+        };
+      }
+        // Attach click handler to the DT
+        const annoteDls = window.document.querySelectorAll('dt[data-target-cell]');
+        for (const annoteDlNode of annoteDls) {
+          annoteDlNode.addEventListener('click', (event) => {
+            const clickedEl = event.target;
+            if (clickedEl !== selectedAnnoteEl) {
+              unselectCodeLines();
+              const activeEl = window.document.querySelector('dt[data-target-cell].code-annotation-active');
+              if (activeEl) {
+                activeEl.classList.remove('code-annotation-active');
+              }
+              selectCodeLines(clickedEl);
+              clickedEl.classList.add('code-annotation-active');
+            } else {
+              // Unselect the line
+              unselectCodeLines();
+              clickedEl.classList.remove('code-annotation-active');
+            }
+          });
+        }
+    const findCites = (el) => {
+      const parentEl = el.parentElement;
+      if (parentEl) {
+        const cites = parentEl.dataset.cites;
+        if (cites) {
+          return {
+            el,
+            cites: cites.split(' ')
+          };
+        } else {
+          return findCites(el.parentElement)
+        }
+      } else {
+        return undefined;
+      }
+    };
+    var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+    for (var i=0; i<bibliorefs.length; i++) {
+      const ref = bibliorefs[i];
+      const citeInfo = findCites(ref);
+      if (citeInfo) {
+        tippyHover(citeInfo.el, function() {
+          var popup = window.document.createElement('div');
+          citeInfo.cites.forEach(function(cite) {
+            var citeDiv = window.document.createElement('div');
+            citeDiv.classList.add('hanging-indent');
+            citeDiv.classList.add('csl-entry');
+            var biblioDiv = window.document.getElementById('ref-' + cite);
+            if (biblioDiv) {
+              citeDiv.innerHTML = biblioDiv.innerHTML;
+            }
+            popup.appendChild(citeDiv);
+          });
+          return popup.innerHTML;
+        });
+      }
+    }
+  });
+  </script>
+
+
+
+
+</body></html>
