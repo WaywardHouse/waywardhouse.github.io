@@ -236,8 +236,6 @@ function injectWaywardChrome() {
   const existingFooter = document.querySelector('.wayward-footer');
   const existingMain = document.querySelector('.wayward-main');
 
-  if (existingHeader && existingFooter && existingMain) return;
-
   body.classList.add('wayward-shell');
   if (isHomeLikePath(path)) body.classList.add('page-home');
   if (isReadingPage()) body.classList.add('page-reading');
@@ -264,7 +262,22 @@ function injectWaywardChrome() {
     `;
   }
 
+  const headerBrand = header.querySelector('.wayward-brand');
+  if (headerBrand) headerBrand.setAttribute('href', '/');
+
+  const headerLinks = [
+    ['/articles/', '/articles/'],
+    ['/learn/', '/learn/'],
+    ['/pages/about.html', '/about.html'],
+  ];
+  header.querySelectorAll('.wayward-nav a').forEach((link, index) => {
+    const [href, nav] = headerLinks[index] || [];
+    if (href) link.setAttribute('href', href);
+    if (nav) link.setAttribute('data-nav', nav);
+  });
+
   header.querySelectorAll('[data-nav]').forEach((link) => {
+    link.classList.remove('is-active');
     const target = link.getAttribute('data-nav');
     if (!target) return;
     if (path === target || path.startsWith(target)) {
@@ -277,13 +290,43 @@ function injectWaywardChrome() {
   if (span) {
     span.textContent = document.documentElement.dataset.theme === 'dark' ? 'Light' : 'Dark';
   }
-  toggle?.addEventListener('click', () => {
-    const nextTheme = document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark';
-    updateThemeMeta(nextTheme);
-    const label = nextTheme === 'dark' ? 'Light' : 'Dark';
-    const toggleSpan = toggle.querySelector('span');
-    if (toggleSpan) toggleSpan.textContent = label;
-  });
+  if (toggle && !toggle.dataset.waywardBound) {
+    toggle.dataset.waywardBound = 'true';
+    toggle.addEventListener('click', () => {
+      const nextTheme = document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark';
+      updateThemeMeta(nextTheme);
+      const label = nextTheme === 'dark' ? 'Light' : 'Dark';
+      const toggleSpan = toggle.querySelector('span');
+      if (toggleSpan) toggleSpan.textContent = label;
+    });
+  }
+
+  if (body.classList.contains('nav-sidebar') || document.getElementById('quarto-sidebar')) {
+    const quartoContent = document.getElementById('quarto-content');
+    const quartoDocument = document.getElementById('quarto-document-content');
+
+    if (existingHeader && quartoContent && existingHeader.closest('#quarto-document-content')) {
+      body.insertBefore(existingHeader, quartoContent);
+    }
+
+    if (existingFooter && quartoContent && existingFooter.closest('#quarto-document-content')) {
+      const firstScript = Array.from(body.children).find((node) => node.tagName === 'SCRIPT');
+      if (firstScript) {
+        body.insertBefore(existingFooter, firstScript);
+      } else {
+        body.appendChild(existingFooter);
+      }
+    }
+
+    if (quartoDocument) {
+      quartoDocument.querySelector('.wayward-header')?.remove();
+      quartoDocument.querySelector('.wayward-footer')?.remove();
+    }
+
+    return;
+  }
+
+  if (existingHeader && existingFooter && existingMain) return;
 
   const footer = existingFooter || document.createElement('footer');
   if (!existingFooter) {
@@ -309,6 +352,22 @@ function injectWaywardChrome() {
       </div>
     `;
   }
+
+  const footerLinkMap = new Map([
+    ['Articles', '/articles/'],
+    ['Learn', '/learn/'],
+    ['Archive', '/archive.html'],
+    ['Start Here', '/start-here.html'],
+    ['About', '/about.html'],
+    ['Contact', '/contact.html'],
+    ['All Topics', '/topics/'],
+    ['Privacy Policy', '/privacy.html'],
+    ['Terms of Use', '/terms.html'],
+  ]);
+  footer.querySelectorAll('.wayward-footer a').forEach((link) => {
+    const target = footerLinkMap.get((link.textContent || '').trim());
+    if (target) link.setAttribute('href', target);
+  });
 
   const contentNodes = Array.from(body.children).filter((node) => {
     if (node === header || node === footer) return false;
@@ -431,7 +490,7 @@ function initQuartoBookLayout() {
       // Ignore storage failures.
     }
 
-    setDesktopState(stored === 'open' ? true : false);
+    setDesktopState(stored === 'collapsed' ? false : true);
   }
 
   toggles.forEach((toggle) => {
