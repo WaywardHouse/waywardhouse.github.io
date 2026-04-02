@@ -28,21 +28,12 @@ export async function initDiagrams() {
     fontFamily: "'DM Sans', system-ui, sans-serif",
   });
 
-  // Convert mermaid code blocks to div.mermaid in-place.
-  // Quarto often emits <pre class="mermaid"><code>…</code></pre>, while some
-  // other sources emit <pre><code class="language-mermaid">…</code></pre>.
+  // Convert Ghost code blocks (language-mermaid) to div.mermaid in-place
   document.querySelectorAll('pre > code.language-mermaid').forEach((code) => {
     const div = document.createElement('div');
     div.className = 'mermaid';
     div.textContent = code.textContent;
     code.closest('pre').replaceWith(div);
-  });
-
-  document.querySelectorAll('pre.mermaid > code').forEach((code) => {
-    const div = document.createElement('div');
-    div.className = 'mermaid';
-    div.textContent = code.textContent;
-    code.closest('pre')?.replaceWith(div);
   });
 
   const nodes = Array.from(document.querySelectorAll('.mermaid'));

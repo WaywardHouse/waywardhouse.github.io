@@ -54,32 +54,40 @@ export function initNarrative() {
     const scroller = window.scrollama();
     scrollers.push(scroller);
 
+    function activateStep(element, index, direction = 'down') {
+      stepEls.forEach((s) => {
+        s.removeAttribute('data-active');
+        s.setAttribute('aria-hidden', 'true');
+      });
+      element.setAttribute('data-active', '');
+      element.removeAttribute('aria-hidden');
+
+      graphic.dispatchEvent(
+        new CustomEvent('story:step', {
+          bubbles: true,
+          detail: {
+            index,
+            step: element.dataset.step ?? String(index),
+            direction,
+            element,
+          },
+        })
+      );
+    }
+
     scroller
       .setup({ step: stepEls, offset: 0.55, debug: false })
       .onStepEnter(({ element, index, direction }) => {
-        stepEls.forEach((s) => {
-          s.removeAttribute('data-active');
-          s.setAttribute('aria-hidden', 'true');
-        });
-        element.setAttribute('data-active', '');
-        element.removeAttribute('aria-hidden');
-
-        graphic.dispatchEvent(
-          new CustomEvent('story:step', {
-            bubbles: true,
-            detail: {
-              index,
-              step:      element.dataset.step ?? String(index),
-              direction,
-              element,  // reference to step DOM element — used by core.js for data-update routing
-            },
-          })
-        );
+        activateStep(element, index, direction);
       })
       .onStepExit(({ element }) => {
         element.removeAttribute('data-active');
         element.setAttribute('aria-hidden', 'true');
       });
+
+    // Establish a deterministic initial state so custom scrolly graphics
+    // have a live first step even when Scrollama does not emit on load.
+    activateStep(stepEls[0], 0, 'down');
   });
 
   // Resize all scrollers together
