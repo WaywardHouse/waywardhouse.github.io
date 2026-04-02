@@ -1,0 +1,899 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
+
+<meta charset="utf-8">
+<meta name="generator" content="quarto-1.8.27">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+
+<meta name="dcterms.date" content="2026-03-05">
+<meta name="description" content="Every tonne of coal burned at the Genesee Power Plant west of Edmonton releases a calculable mass of CO₂ — not estimated, not approximated, but derived from the carbon content of the fuel and the stoichiometry of combustion. This essay derives CO₂ emission factors from first principles using nothing more than molecular weights and mass fractions, extends this to incomplete combustion producing CO and soot, and shows how emission inventories are constructed from fuel consumption statistics.">
+
+<title>Fossil Fuel Combustion Chemistry – Computational Geography</title>
+<style>
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: min(4vw, 1.5em);}
+div.column{flex: auto; overflow-x: auto;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+  width: 0.8em;
+  margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
+  vertical-align: middle;
+}
+</style>
+
+
+<script src="../site_libs/clipboard/clipboard.min.js"></script>
+<script src="../site_libs/quarto-html/tabby.min.js"></script>
+<script src="../site_libs/quarto-html/popper.min.js"></script>
+<script src="../site_libs/quarto-html/tippy.umd.min.js"></script>
+<script src="../site_libs/quarto-html/anchor.min.js"></script>
+<link href="../site_libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="../site_libs/quarto-html/light-border.css" rel="stylesheet">
+<link href="../site_libs/quarto-html/quarto-html-734cb40618f438257b19a1e532635a32.min.css" rel="stylesheet" append-hash="true" data-mode="light">
+<link href="../site_libs/quarto-html/quarto-syntax-highlighting-ed96de9b727972fe78a7b5d16c58bf87.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<script>
+  (function () {
+    var s = localStorage.getItem('theme');
+    var dark = s !== null ? s === 'dark' : false;
+    document.documentElement.dataset.theme = dark ? 'dark' : 'light';
+    document.documentElement.dataset.brand = 'wayward';
+  })();
+</script>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:ital,wght@0,300;0,400;0,600;0,700;0,800;0,900;1,700;1,800&amp;family=Barlow:wght@300;400;500;600&amp;family=IBM+Plex+Mono:ital,wght@0,300;0,400;0,500;1,300&amp;family=Literata:ital,opsz,wght@0,7..72,300;0,7..72,400;0,7..72,500;1,7..72,300;1,7..72,400&amp;display=swap" rel="stylesheet">
+
+  <script>window.backupDefine = window.define; window.define = undefined;</script><script src="https://cdn.jsdelivr.net/npm/katex@latest/dist/katex.min.js"></script>
+  <script>document.addEventListener("DOMContentLoaded", function () {
+ var mathElements = document.getElementsByClassName("math");
+ var macros = [];
+ for (var i = 0; i < mathElements.length; i++) {
+  var texText = mathElements[i].firstChild;
+  if (mathElements[i].tagName == "SPAN") {
+   katex.render(texText.data, mathElements[i], {
+    displayMode: mathElements[i].classList.contains('display'),
+    throwOnError: false,
+    macros: macros,
+    fleqn: false
+   });
+}}});
+  </script>
+  <script>window.define = window.backupDefine; window.backupDefine = undefined;</script><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@latest/dist/katex.min.css">
+
+<script type="text/javascript">
+const typesetMath = (el) => {
+  if (window.MathJax) {
+    // MathJax Typeset
+    window.MathJax.typeset([el]);
+  } else if (window.katex) {
+    // KaTeX Render
+    var mathElements = el.getElementsByClassName("math");
+    var macros = [];
+    for (var i = 0; i < mathElements.length; i++) {
+      var texText = mathElements[i].firstChild;
+      if (mathElements[i].tagName == "SPAN" && texText && texText.data) {
+        window.katex.render(texText.data, mathElements[i], {
+          displayMode: mathElements[i].classList.contains('display'),
+          throwOnError: false,
+          macros: macros,
+          fleqn: false
+        });
+      }
+    }
+  }
+}
+window.Quarto = {
+  typesetMath
+};
+</script>
+
+<link rel="stylesheet" href="../assets/css/quarto-wayward.css">
+</head>
+
+<body class="reading-body tag-hash-math tag-hash-viz">
+
+
+<header id="title-block-header">
+<h1 class="title"><span class="chapter-title">Fossil Fuel Combustion Chemistry</span></h1>
+<p class="subtitle">Stoichiometry, carbon content, emission factors, and incomplete combustion</p>
+
+<p class="date">2026-03-05</p>
+</header>
+
+<nav id="TOC" role="doc-toc">
+    <h2 id="toc-title">Table of contents</h2>
+   
+  <ul>
+  <li><a href="#the-question" id="toc-the-question">1. The Question</a></li>
+  <li><a href="#the-conceptual-model" id="toc-the-conceptual-model">2. The Conceptual Model</a></li>
+  <li><a href="#building-the-mathematical-model" id="toc-building-the-mathematical-model">3. Building the Mathematical Model</a>
+  <ul>
+  <li><a href="#combustion-stoichiometry" id="toc-combustion-stoichiometry">3.1 Combustion Stoichiometry</a></li>
+  <li><a href="#carbon-content-and-the-emission-factor" id="toc-carbon-content-and-the-emission-factor">3.2 Carbon Content and the Emission Factor</a></li>
+  <li><a href="#carbon-mass-balance" id="toc-carbon-mass-balance">3.3 Carbon Mass Balance</a></li>
+  <li><a href="#incomplete-combustion" id="toc-incomplete-combustion">3.4 Incomplete Combustion</a></li>
+  <li><a href="#the-co₂-equivalent-emission-factor" id="toc-the-co₂-equivalent-emission-factor">3.5 The CO₂-Equivalent Emission Factor</a></li>
+  </ul></li>
+  <li><a href="#worked-example-by-hand" id="toc-worked-example-by-hand">4. Worked Example by Hand</a></li>
+  <li><a href="#computational-implementation" id="toc-computational-implementation">5. Computational Implementation</a></li>
+  <li><a href="#visualization" id="toc-visualization">6. Visualization</a></li>
+  <li><a href="#interpretation" id="toc-interpretation">7. Interpretation</a></li>
+  <li><a href="#what-could-go-wrong" id="toc-what-could-go-wrong">8. What Could Go Wrong?</a></li>
+  <li><a href="#summary" id="toc-summary">9. Summary</a></li>
+  <li><a href="#math-refresher" id="toc-math-refresher">Math Refresher</a></li>
+  </ul>
+</nav>
+<p>The Genesee Generating Station, 70 km west of Edmonton, burns sub-bituminous coal to produce up to 1,370 MW of electrical power. In 2022 it emitted approximately 5.2 million tonnes of CO₂ — the largest single point source in Alberta. This number was not measured directly. No instrument can count CO₂ molecules as they leave a smokestack. Instead, it was calculated: fuel consumption (tonnes of coal) multiplied by an emission factor (tonnes of CO₂ per tonne of coal). That emission factor comes from chemistry — from the carbon content of the coal and the stoichiometry of its combustion.</p>
+<p>The connection between fuel chemistry and atmospheric CO₂ is one of the most direct cause-and-effect relationships in Earth science: carbon in the fuel becomes carbon in the atmosphere, quantitatively, with no ambiguity. Understanding this connection from first principles is the foundation of every national greenhouse gas inventory.</p>
+<hr>
+<h2 id="the-question" class="anchored">1. The Question</h2>
+<p>Given the chemical composition of a fuel and the mass consumed, how much CO₂ is released? How does incomplete combustion change the accounting? Where do CO, CH₄, and black carbon fit in?</p>
+<hr>
+<h2 id="the-conceptual-model" class="anchored">2. The Conceptual Model</h2>
+<p>Combustion is oxidation: carbon in the fuel combines with atmospheric oxygen to form carbon dioxide. The reaction is exothermic — it releases energy as heat and light. The carbon atoms do not disappear; they are transferred from a solid or liquid fuel into gaseous CO₂ in the atmosphere. Every carbon atom in the fuel produces exactly one CO₂ molecule. Mass is conserved; atoms are rearranged.</p>
+<p>Complete combustion is the ideal case. Real combustion is always incomplete to some degree — some carbon escapes as CO, some as unburned hydrocarbons (VOCs), some as soot (black carbon, BC). Incomplete combustion reduces the CO₂ produced per unit carbon burned, but the remaining carbon is still in the atmosphere, and CO and CH₄ are eventually oxidised to CO₂ anyway.</p>
+<hr>
+<h2 id="building-the-mathematical-model" class="anchored">3. Building the Mathematical Model</h2>
+<h3 id="combustion-stoichiometry" class="anchored">3.1 Combustion Stoichiometry</h3>
+<p>The complete combustion of a hydrocarbon with formula <span class="math inline">\text{C}_x\text{H}_y</span> in oxygen:</p>
+<p><span class="math display">\text{C}_x\text{H}_y + \left(x + \frac{y}{4}\right)\text{O}_2 \to x\,\text{CO}_2 + \frac{y}{2}\,\text{H}_2\text{O}</span></p>
+<p>For pure carbon (<span class="math inline">y = 0</span>):</p>
+<p><span class="math display">\text{C} + \text{O}_2 \to \text{CO}_2</span></p>
+<p>Molecular weights: C = 12 g/mol, O = 16 g/mol, CO₂ = 44 g/mol. The <strong>mass ratio</strong>:</p>
+<p><span class="math display">\frac{m_{\text{CO}_2}}{m_{\text{C}}} = \frac{44}{12} = 3.667</span></p>
+<p>Every kilogram of pure carbon burned produces 3.667 kg of CO₂. This ratio — 44/12 — is the most important number in carbon accounting. It is exact, derived from atomic masses, and applies universally.</p>
+<p><strong>For methane</strong> (natural gas, <span class="math inline">\text{CH}_4</span>, <span class="math inline">x=1</span>, <span class="math inline">y=4</span>):</p>
+<p><span class="math display">\text{CH}_4 + 2\text{O}_2 \to \text{CO}_2 + 2\text{H}_2\text{O}</span></p>
+<p>Molecular weight of CH₄ = 16. CO₂ produced per kg of CH₄:</p>
+<p><span class="math display">\frac{44}{16} = 2.750 \text{ kg CO}_2/\text{kg CH}_4</span></p>
+<p><strong>For octane</strong> (<span class="math inline">\text{C}_8\text{H}_{18}</span>, representative of petrol):</p>
+<p><span class="math display">\text{C}_8\text{H}_{18} + 12.5\,\text{O}_2 \to 8\,\text{CO}_2 + 9\,\text{H}_2\text{O}</span></p>
+<p>Molecular weight of C₈H₁₈ = 114. CO₂ produced per kg of octane:</p>
+<p><span class="math display">\frac{8 \times 44}{114} = \frac{352}{114} = 3.088 \text{ kg CO}_2/\text{kg fuel}</span></p>
+<h3 id="carbon-content-and-the-emission-factor" class="anchored">3.2 Carbon Content and the Emission Factor</h3>
+<p>Real fuels are mixtures, not pure chemicals. The <strong>carbon fraction</strong> <span class="math inline">f_C</span> (mass fraction of carbon in the fuel, dimensionless) is measured by elemental analysis.</p>
+<p>Typical values:</p>
+<table class="caption-top">
+<thead>
+<tr class="header">
+<th>Fuel</th>
+<th>Carbon fraction <span class="math inline">f_C</span></th>
+<th>H fraction</th>
+<th>O fraction</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>Anthracite coal</td>
+<td>0.90–0.95</td>
+<td>0.02–0.03</td>
+<td>0.02–0.05</td>
+</tr>
+<tr class="even">
+<td>Bituminous coal</td>
+<td>0.75–0.85</td>
+<td>0.05–0.06</td>
+<td>0.05–0.10</td>
+</tr>
+<tr class="odd">
+<td>Sub-bituminous coal</td>
+<td>0.65–0.75</td>
+<td>0.05</td>
+<td>0.15–0.20</td>
+</tr>
+<tr class="even">
+<td>Lignite</td>
+<td>0.40–0.65</td>
+<td>0.04–0.06</td>
+<td>0.20–0.35</td>
+</tr>
+<tr class="odd">
+<td>Heavy fuel oil</td>
+<td>0.86</td>
+<td>0.12</td>
+<td>0.01</td>
+</tr>
+<tr class="even">
+<td>Diesel/kerosene</td>
+<td>0.87</td>
+<td>0.13</td>
+<td>0</td>
+</tr>
+<tr class="odd">
+<td>Petrol (gasoline)</td>
+<td>0.85</td>
+<td>0.15</td>
+<td>0</td>
+</tr>
+<tr class="even">
+<td>Natural gas (CH₄-rich)</td>
+<td>0.73</td>
+<td>0.23</td>
+<td>0</td>
+</tr>
+<tr class="odd">
+<td>Liquefied petroleum gas</td>
+<td>0.82</td>
+<td>0.18</td>
+<td>0</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Complete combustion emission factor:</strong></p>
+<p><span class="math display">\text{EF}_{\text{CO}_2} = f_C \times \frac{44}{12} = f_C \times 3.667 \quad \left[\text{kg CO}_2 / \text{kg fuel}\right]</span></p>
+<p>This is the Tier 1 IPCC approach: measure fuel consumption, multiply by emission factor, report CO₂.</p>
+<h3 id="carbon-mass-balance" class="anchored">3.3 Carbon Mass Balance</h3>
+<p>For a combustion process burning mass <span class="math inline">m_{\text{fuel}}</span> of fuel with carbon fraction <span class="math inline">f_C</span>:</p>
+<p><span class="math display">m_C = m_{\text{fuel}} \times f_C \quad \text{[total carbon input, kg]}</span></p>
+<p>In complete combustion, all carbon exits as CO₂:</p>
+<p><span class="math display">m_{\text{CO}_2} = m_C \times \frac{44}{12} = m_{\text{fuel}} \times f_C \times 3.667</span></p>
+<p><strong>Example:</strong> Genesee Unit 1 burns 1.8 million tonnes yr⁻¹ of sub-bituminous coal, <span class="math inline">f_C = 0.67</span>.</p>
+<p><span class="math display">m_C = 1.8 \times 10^6 \times 0.67 = 1.206 \times 10^6 \text{ t C yr}^{-1}</span></p>
+<p><span class="math display">m_{\text{CO}_2} = 1.206 \times 10^6 \times 3.667 = 4.42 \times 10^6 \text{ t CO}_2 \text{ yr}^{-1}</span></p>
+<p>Note the unit: Mt CO₂. The IPCC reports emissions in Gt CO₂ yr⁻¹ (global) or Mt CO₂ yr⁻¹ (national). A common error is confusing tonnes of carbon (t C) with tonnes of CO₂ (t CO₂) — they differ by the 44/12 = 3.667 factor.</p>
+<h3 id="incomplete-combustion" class="anchored">3.4 Incomplete Combustion</h3>
+<p>Real combustion is never 100% complete. The <strong>combustion efficiency</strong> <span class="math inline">\eta</span> represents the fraction of fuel carbon that is fully oxidised to CO₂:</p>
+<p><span class="math display">\eta = \frac{m_C \text{ oxidised to CO}_2}{m_C \text{ total}}</span></p>
+<p>The remaining carbon is distributed among: - <strong>CO</strong> (carbon monoxide): <span class="math inline">\eta_{\text{CO}}</span> fraction - <strong>CH₄</strong> (methane): <span class="math inline">\eta_{\text{CH}_4}</span> fraction - <strong>VOC</strong> (non-methane hydrocarbons): <span class="math inline">\eta_{\text{NMHC}}</span> fraction - <strong>BC</strong> (black carbon, soot): <span class="math inline">\eta_{\text{BC}}</span> fraction</p>
+<p>with <span class="math inline">\eta + \eta_{\text{CO}} + \eta_{\text{CH}_4} + \eta_{\text{NMHC}} + \eta_{\text{BC}} = 1</span>.</p>
+<p><strong>CO₂ from incomplete combustion:</strong></p>
+<p><span class="math display">m_{\text{CO}_2} = m_C \times \eta \times \frac{44}{12}</span></p>
+<p><strong>CO produced:</strong></p>
+<p><span class="math display">m_{\text{CO}} = m_C \times \eta_{\text{CO}} \times \frac{28}{12}</span></p>
+<p>(Molecular weight of CO = 28.)</p>
+<p><strong>CO emission factor</strong> in kg CO per kg fuel:</p>
+<p><span class="math display">\text{EF}_{\text{CO}} = f_C \times \eta_{\text{CO}} \times \frac{28}{12} = f_C \times \eta_{\text{CO}} \times 2.333</span></p>
+<p>Typical combustion efficiencies:</p>
+<table class="caption-top">
+<thead>
+<tr class="header">
+<th>Source</th>
+<th><span class="math inline">\eta</span> (CO₂)</th>
+<th><span class="math inline">\eta_{\text{CO}}</span></th>
+<th><span class="math inline">\eta_{\text{BC}}</span></th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>Modern power plant</td>
+<td>0.999</td>
+<td>0.001</td>
+<td>&lt;0.001</td>
+</tr>
+<tr class="even">
+<td>Natural gas boiler</td>
+<td>0.998</td>
+<td>0.001</td>
+<td>~0</td>
+</tr>
+<tr class="odd">
+<td>Vehicle petrol engine</td>
+<td>0.990</td>
+<td>0.008</td>
+<td>0.002</td>
+</tr>
+<tr class="even">
+<td>Old diesel engine</td>
+<td>0.975</td>
+<td>0.010</td>
+<td>0.015</td>
+</tr>
+<tr class="odd">
+<td>Wood stove</td>
+<td>0.920</td>
+<td>0.060</td>
+<td>0.010</td>
+</tr>
+<tr class="even">
+<td>Open burning (field)</td>
+<td>0.850</td>
+<td>0.100</td>
+<td>0.020</td>
+</tr>
+</tbody>
+</table>
+<h3 id="the-co₂-equivalent-emission-factor" class="anchored">3.5 The CO₂-Equivalent Emission Factor</h3>
+<p>A complete emission factor reports emissions of all species, converted to CO₂-equivalent using Global Warming Potentials (GWP100):</p>
+<table class="caption-top">
+<thead>
+<tr class="header">
+<th>Gas</th>
+<th>GWP100</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>CO₂</td>
+<td>1</td>
+</tr>
+<tr class="even">
+<td>CH₄</td>
+<td>28–34</td>
+</tr>
+<tr class="odd">
+<td>N₂O</td>
+<td>265–298</td>
+</tr>
+<tr class="even">
+<td>BC (short-lived)</td>
+<td>~900 (forcing-based)</td>
+</tr>
+</tbody>
+</table>
+<p><span class="math display">\text{EF}_{\text{CO}_2\text{-eq}} = \text{EF}_{\text{CO}_2} + \text{EF}_{\text{CH}_4} \times \text{GWP}_{\text{CH}_4} + \ldots</span></p>
+<p>For coal-fired power plants, CO₂ dominates overwhelmingly (&gt;99.9% of total GWP impact). For open burning and cookstoves, CH₄ and BC can be climatically significant additions.</p>
+<hr>
+<h2 id="worked-example-by-hand" class="anchored">4. Worked Example by Hand</h2>
+<p><strong>Setting:</strong> A grain farmer near Lethbridge, Alberta burns 50 hectares of cereal stubble in the autumn. The stubble biomass density is 3 t ha⁻¹ (dry matter), carbon fraction <span class="math inline">f_C = 0.45</span>, combustion efficiency <span class="math inline">\eta = 0.85</span>.</p>
+<p><strong>Total carbon input:</strong></p>
+<p><span class="math display">m_C = 50 \text{ ha} \times 3 \text{ t ha}^{-1} \times 0.45 = 67.5 \text{ t C}</span></p>
+<p><strong>CO₂ released</strong> (<span class="math inline">\eta = 0.85</span>):</p>
+<p><span class="math display">m_{\text{CO}_2} = 67.5 \times 0.85 \times \frac{44}{12} = 67.5 \times 0.85 \times 3.667 = 210.3 \text{ t CO}_2</span></p>
+<p><strong>CO released</strong> (<span class="math inline">\eta_{\text{CO}} = 0.10</span>):</p>
+<p><span class="math display">m_{\text{CO}} = 67.5 \times 0.10 \times \frac{28}{12} = 15.75 \text{ t CO}</span></p>
+<p><strong>CH₄ released</strong> (<span class="math inline">\eta_{\text{CH}_4} = 0.005</span>):</p>
+<p><span class="math display">m_{\text{CH}_4} = 67.5 \times 0.005 \times \frac{16}{12} = 0.45 \text{ t CH}_4 \equiv 0.45 \times 30 = 13.5 \text{ t CO}_2\text{-eq}</span></p>
+<p><strong>BC released</strong> (<span class="math inline">\eta_{\text{BC}} = 0.01</span>, stays as carbon):</p>
+<p><span class="math display">m_{\text{BC}} = 67.5 \times 0.01 = 0.675 \text{ t BC}</span></p>
+<p><strong>Carbon balance check:</strong> $0.85 + 0.10 + 0.005 + 0.01 + = 0.965$; remaining 3.5% as NMHC and ash.</p>
+<p>Total CO₂-equivalent: 210.3 + 13.5 + (BC climate forcing equivalent) ≈ 225 t CO₂-eq for 50 ha.</p>
+<hr>
+<h2 id="computational-implementation" class="anchored">5. Computational Implementation</h2>
+<pre><code>function combustion_emissions(m_fuel_t, carbon_fraction, eta_CO2,
+                               eta_CO=0, eta_CH4=0, eta_BC=0):
+    m_C = m_fuel_t * carbon_fraction
+    emissions = {
+        'CO2':  m_C * eta_CO2 * 44/12,    # t CO2
+        'CO':   m_C * eta_CO  * 28/12,    # t CO
+        'CH4':  m_C * eta_CH4 * 16/12,    # t CH4
+        'BC':   m_C * eta_BC              # t BC (remains carbon)
+    }
+    return emissions
+
+function emission_factor(carbon_fraction, eta=1.0):
+    return carbon_fraction * eta * 44/12  # kg CO2 / kg fuel
+
+# IPCC Tier 1 inventory
+function fuel_inventory_CO2(fuel_dict):
+    # fuel_dict: {fuel_type: {'consumption_t': x, 'carbon_frac': y, 'eta': z}}
+    total_CO2 = 0
+    for fuel, params in fuel_dict.items():
+        EF = emission_factor(params['carbon_frac'], params['eta'])
+        CO2 = params['consumption_t'] * EF
+        total_CO2 += CO2
+    return total_CO2</code></pre>
+<pre class="{pyodide}"><code># Emission factor calculator from first principles
+
+def combustion_emissions(m_fuel, f_C, eta_CO2, eta_CO=0.0, eta_CH4=0.0, eta_BC=0.0):
+    """
+    m_fuel: tonnes of fuel burned
+    f_C: carbon fraction (mass fraction)
+    eta_X: fraction of carbon emitted as species X
+    Returns: dict of emissions in tonnes
+    """
+    m_C = m_fuel * f_C
+    return {
+        'CO2_t':  m_C * eta_CO2 * 44/12,
+        'CO_t':   m_C * eta_CO  * 28/12,
+        'CH4_t':  m_C * eta_CH4 * 16/12,
+        'BC_t':   m_C * eta_BC,
+        'C_total_t': m_C
+    }
+
+# Alberta fuels: emission factors
+fuels = {
+    'Sub-bituminous coal':  {'f_C': 0.67, 'eta': 0.999},
+    'Natural gas':          {'f_C': 0.73, 'eta': 0.998},
+    'Diesel':               {'f_C': 0.87, 'eta': 0.990},
+    'Petrol (gasoline)':    {'f_C': 0.85, 'eta': 0.990},
+    'Wood (residential)':   {'f_C': 0.50, 'eta': 0.920},
+}
+
+print(f"{'Fuel':&lt;25} {'f_C':&gt;5} {'η':&gt;6} {'EF (kg CO₂/kg fuel)':&gt;22}")
+print("-"*62)
+for name, p in fuels.items():
+    EF = p['f_C'] * p['eta'] * 44/12
+    print(f"{name:&lt;25} {p['f_C']:&gt;5.2f} {p['eta']:&gt;6.3f} {EF:&gt;22.3f}")
+
+# Stubble burning example
+print("\nStubble burning (50 ha, 3 t/ha, f_C=0.45):")
+e = combustion_emissions(50*3, 0.45, eta_CO2=0.85, eta_CO=0.10,
+                         eta_CH4=0.005, eta_BC=0.010)
+for k, v in e.items():
+    print(f"  {k}: {v:.2f} t")
+
+# CO2-equivalent (CH4 GWP = 30)
+CO2eq = e['CO2_t'] + e['CH4_t'] * 30
+print(f"  Total CO2-eq (excl. BC): {CO2eq:.1f} t")
+
+# Cross-check: carbon balance
+emitted_C = e['CO2_t']*12/44 + e['CO_t']*12/28 + e['CH4_t']*12/16 + e['BC_t']
+print(f"  Carbon balance: {emitted_C:.1f} / {e['C_total_t']:.1f} t C accounted")</code></pre>
+<hr>
+<h2 id="visualization" class="anchored">6. Visualization</h2>
+<div data-viz="echarts" style="height:420px" data-options="{
+  &quot;title&quot;: {&quot;text&quot;: &quot;CO₂ Emission Factors by Fuel Type (kg CO₂ per kg fuel)&quot;, &quot;textStyle&quot;: {&quot;fontSize&quot;: 14}},
+  &quot;tooltip&quot;: {&quot;trigger&quot;: &quot;axis&quot;, &quot;axisPointer&quot;: {&quot;type&quot;: &quot;shadow&quot;}},
+  &quot;xAxis&quot;: {&quot;type&quot;: &quot;category&quot;,
+    &quot;data&quot;: [&quot;Anthracite coal&quot;,&quot;Bituminous coal&quot;,&quot;Sub-bit. coal&quot;,&quot;Lignite&quot;,&quot;Heavy fuel oil&quot;,&quot;Diesel&quot;,&quot;Petrol&quot;,&quot;Natural gas&quot;,&quot;LPG&quot;,&quot;Wood&quot;]},
+  &quot;yAxis&quot;: {&quot;name&quot;: &quot;kg CO₂ per kg fuel&quot;, &quot;nameLocation&quot;: &quot;middle&quot;, &quot;nameGap&quot;: 50},
+  &quot;series&quot;: [{
+    &quot;type&quot;: &quot;bar&quot;,
+    &quot;data&quot;: [3.30,2.94,2.39,1.76,3.16,3.16,3.12,2.68,3.01,1.65],
+    &quot;itemStyle&quot;: {&quot;color&quot;: &quot;#B71C1C&quot;},
+    &quot;label&quot;: {&quot;show&quot;: true, &quot;position&quot;: &quot;top&quot;, &quot;fontSize&quot;: 11}
+  }]
+}">
+
+</div>
+<p>Coal is the most carbon-intensive fuel per unit mass, but natural gas has the highest carbon intensity per unit <strong>energy</strong> relative to coal? No — natural gas has lower carbon intensity per unit energy (~54 kg CO₂/GJ vs ~96 for coal) because its high hydrogen content provides more heat per carbon atom. The chart shows mass-based emission factors; energy-based factors require dividing by the fuel’s energy density (heating value).</p>
+<hr>
+<h2 id="interpretation" class="anchored">7. Interpretation</h2>
+<p>The 44/12 ratio is invariant across all fossil fuels — it is atomic mass, not chemistry. What varies between fuels is the carbon fraction <span class="math inline">f_C</span>. Coal is nearly pure carbon; natural gas is largely hydrogen; wood contains substantial oxygen (already partially oxidised). This is why natural gas produces roughly half the CO₂ per unit energy compared to coal: not because it burns more cleanly in the stoichiometric sense, but because a substantial fraction of its energy comes from the combustion of hydrogen to water vapour, which produces no CO₂.</p>
+<p>The incomplete combustion terms — CO, CH₄, BC — matter most for small, diffuse sources: residential wood burning, agricultural field fires, traditional cookstoves. For modern industrial sources (power plants, large boilers), combustion efficiency exceeds 99.9% and the CO₂ term overwhelmingly dominates.</p>
+<hr>
+<h2 id="what-could-go-wrong" class="anchored">8. What Could Go Wrong?</h2>
+<p><strong>Confusing t C with t CO₂.</strong> The factor of 3.667 is frequently misapplied. Global carbon cycle literature reports in Gt C (or Pg C); climate policy literature reports in Gt CO₂. Converting between them: 1 Gt C = 3.667 Gt CO₂. Misinterpreting a headline figure requires checking the units carefully — a “1.5 Gt” figure in a news article almost certainly means Gt CO₂, while a “1.5 Pg C” figure in a journal article means Pg of carbon atoms.</p>
+<p><strong>Assuming complete combustion for emission inventories.</strong> For regulatory compliance and climate reporting, using <span class="math inline">\eta = 1</span> is generally acceptable for large stationary sources (power plants, cement kilns) where monitoring data confirm high combustion efficiency. For mobile sources, residential combustion, and waste burning, assuming complete combustion will underestimate total CO₂-eq by 5–20% and drastically underestimate co-pollutants (CO, BC, VOCs) that have separate air quality significance.</p>
+<p><strong>Ignoring the carbon in ash.</strong> In coal combustion, a fraction of carbon is retained in fly ash and bottom ash without oxidising. This unburned carbon (loss-on-ignition, LOI) reduces the effective CO₂ per tonne of coal and represents energy loss. Modern plants minimise LOI to improve efficiency; older plants can have LOI of 5–15%, meaningfully affecting emission factor calculations.</p>
+<hr>
+<h2 id="summary" class="anchored">9. Summary</h2>
+<p>The fundamental equation of combustion emission accounting:</p>
+<p><span class="math display">m_{\text{CO}_2} = m_{\text{fuel}} \times f_C \times \eta \times \frac{44}{12}</span></p>
+<p>For complete combustion of a fuel with carbon fraction <span class="math inline">f_C</span>: every kilogram of carbon produces $44/12 = 3.667$ kg of CO₂. This ratio is derived from atomic masses and is invariant. The carbon fraction is fuel-specific: ~0.75 for bituminous coal, ~0.73 for natural gas, ~0.85 for liquid petroleum products, ~0.45–0.50 for biomass.</p>
+<p>Incomplete combustion partitions the remaining carbon into CO (<span class="math inline">\times 28/12</span>), CH₄ (<span class="math inline">\times 16/12</span>), NMHC, and black carbon. For industrial sources, combustion efficiency exceeds 99.9%; for open burning, 80–90%.</p>
+<p><strong>Key equations:</strong></p>
+<p><span class="math display">\text{EF}_{\text{CO}_2} = f_C \times \frac{44}{12} \quad [\text{kg CO}_2/\text{kg fuel, complete combustion}]</span></p>
+<p><span class="math display">m_{\text{CO}_2} = m_{\text{fuel}} \times f_C \times \eta_{\text{CO}_2} \times \frac{44}{12}</span></p>
+<p><span class="math display">m_{\text{CO}} = m_{\text{fuel}} \times f_C \times \eta_{\text{CO}} \times \frac{28}{12}</span></p>
+<hr>
+<h2 id="math-refresher" class="anchored">Math Refresher</h2>
+<p><strong>Molar mass and stoichiometry.</strong> A mole is $6.022 ^{23}$ atoms or molecules — Avogadro’s number. The molar mass (molecular weight) of a molecule is the sum of its constituent atomic masses in grams per mole: CO₂ has one C (12 g/mol) and two O (16 g/mol each), giving 44 g/mol. A balanced equation like <span class="math inline">\text{C} + \text{O}_2 \to \text{CO}_2</span> says one mole of carbon produces one mole of CO₂. In mass terms: 12 g of C produces 44 g of CO₂ — the 44/12 ratio. Mass fractions are dimensionless ratios: a fuel with <span class="math inline">f_C = 0.75</span> contains 750 g of carbon per kg of fuel. All emission factor calculations reduce to tracking this mass of carbon through the stoichiometric ratio to its final molecular form.</p>
+
+
+<footer class="wayward-footer">
+  <div class="wayward-footer__inner">
+    <div class="wayward-footer__brand">
+      <div class="wayward-footer__logo">WaywardHouse<span>.</span></div>
+      <p>Understanding how place, economy, and environment interact through analysis, modelling, and open tools.</p>
+    </div>
+
+    <nav class="wayward-footer__group" aria-labelledby="footer-reading">
+      <h2 id="footer-reading" class="anchored">Reading</h2>
+      <a href="../articles/">Articles</a>
+      <a href="../learn/">Learn</a>
+      <a href="../archive.html">Archive</a>
+      <a href="../start-here.html">Start Here</a>
+    </nav>
+
+    <nav class="wayward-footer__group" aria-labelledby="footer-site">
+      <h2 id="footer-site" class="anchored">Site</h2>
+      <a href="../start-here.html">Start Here</a>
+      <a href="../about.html">About</a>
+      <a href="../contact.html">Contact</a>
+    </nav>
+
+    <nav class="wayward-footer__group" aria-labelledby="footer-resources">
+      <h2 id="footer-resources" class="anchored">Resources</h2>
+      <a href="../topics/">All Topics</a>
+      <a href="../privacy.html">Privacy Policy</a>
+      <a href="../terms.html">Terms of Use</a>
+    </nav>
+  </div>
+</footer>
+
+<script type="module" src="../assets/dist/main.js"></script>
+<script type="module" src="../assets/js/core.js"></script>
+<script id="quarto-html-after-body" type="application/javascript">
+  window.document.addEventListener("DOMContentLoaded", function (event) {
+    const tabsets =  window.document.querySelectorAll(".panel-tabset-tabby")
+    tabsets.forEach(function(tabset) {
+      const tabby = new Tabby('#' + tabset.id);
+    });
+    const icon = "";
+    const anchorJS = new window.AnchorJS();
+    anchorJS.options = {
+      placement: 'right',
+      icon: icon
+    };
+    anchorJS.add('.anchored');
+    const isCodeAnnotation = (el) => {
+      for (const clz of el.classList) {
+        if (clz.startsWith('code-annotation-')) {                     
+          return true;
+        }
+      }
+      return false;
+    }
+    const onCopySuccess = function(e) {
+      // button target
+      const button = e.trigger;
+      // don't keep focus
+      button.blur();
+      // flash "checked"
+      button.classList.add('code-copy-button-checked');
+      var currentTitle = button.getAttribute("title");
+      button.setAttribute("title", "Copied!");
+      let tooltip;
+      if (window.bootstrap) {
+        button.setAttribute("data-bs-toggle", "tooltip");
+        button.setAttribute("data-bs-placement", "left");
+        button.setAttribute("data-bs-title", "Copied!");
+        tooltip = new bootstrap.Tooltip(button, 
+          { trigger: "manual", 
+            customClass: "code-copy-button-tooltip",
+            offset: [0, -8]});
+        tooltip.show();    
+      }
+      setTimeout(function() {
+        if (tooltip) {
+          tooltip.hide();
+          button.removeAttribute("data-bs-title");
+          button.removeAttribute("data-bs-toggle");
+          button.removeAttribute("data-bs-placement");
+        }
+        button.setAttribute("title", currentTitle);
+        button.classList.remove('code-copy-button-checked');
+      }, 1000);
+      // clear code selection
+      e.clearSelection();
+    }
+    const getTextToCopy = function(trigger) {
+      const outerScaffold = trigger.parentElement.cloneNode(true);
+      const codeEl = outerScaffold.querySelector('code');
+      for (const childEl of codeEl.children) {
+        if (isCodeAnnotation(childEl)) {
+          childEl.remove();
+        }
+      }
+      return codeEl.innerText;
+    }
+    const clipboard = new window.ClipboardJS('.code-copy-button:not([data-in-quarto-modal])', {
+      text: getTextToCopy
+    });
+    clipboard.on('success', onCopySuccess);
+    if (window.document.getElementById('quarto-embedded-source-code-modal')) {
+      const clipboardModal = new window.ClipboardJS('.code-copy-button[data-in-quarto-modal]', {
+        text: getTextToCopy,
+        container: window.document.getElementById('quarto-embedded-source-code-modal')
+      });
+      clipboardModal.on('success', onCopySuccess);
+    }
+      var localhostRegex = new RegExp(/^(?:http|https):\/\/localhost\:?[0-9]*\//);
+      var mailtoRegex = new RegExp(/^mailto:/);
+        var filterRegex = new RegExp('/' + window.location.host + '/');
+      var isInternal = (href) => {
+          return filterRegex.test(href) || localhostRegex.test(href) || mailtoRegex.test(href);
+      }
+      // Inspect non-navigation links and adorn them if external
+     var links = window.document.querySelectorAll('a[href]:not(.nav-link):not(.navbar-brand):not(.toc-action):not(.sidebar-link):not(.sidebar-item-toggle):not(.pagination-link):not(.no-external):not([aria-hidden]):not(.dropdown-item):not(.quarto-navigation-tool):not(.about-link)');
+      for (var i=0; i<links.length; i++) {
+        const link = links[i];
+        if (!isInternal(link.href)) {
+          // undo the damage that might have been done by quarto-nav.js in the case of
+          // links that we want to consider external
+          if (link.dataset.originalHref !== undefined) {
+            link.href = link.dataset.originalHref;
+          }
+        }
+      }
+    function tippyHover(el, contentFn, onTriggerFn, onUntriggerFn) {
+      const config = {
+        allowHTML: true,
+        maxWidth: 500,
+        delay: 100,
+        arrow: false,
+        appendTo: function(el) {
+            return el.parentElement;
+        },
+        interactive: true,
+        interactiveBorder: 10,
+        theme: 'light-border',
+        placement: 'bottom-start',
+      };
+      if (contentFn) {
+        config.content = contentFn;
+      }
+      if (onTriggerFn) {
+        config.onTrigger = onTriggerFn;
+      }
+      if (onUntriggerFn) {
+        config.onUntrigger = onUntriggerFn;
+      }
+      window.tippy(el, config); 
+    }
+    const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+    for (var i=0; i<noterefs.length; i++) {
+      const ref = noterefs[i];
+      tippyHover(ref, function() {
+        // use id or data attribute instead here
+        let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+        try { href = new URL(href).hash; } catch {}
+        const id = href.replace(/^#\/?/, "");
+        const note = window.document.getElementById(id);
+        if (note) {
+          return note.innerHTML;
+        } else {
+          return "";
+        }
+      });
+    }
+    const xrefs = window.document.querySelectorAll('a.quarto-xref');
+    const processXRef = (id, note) => {
+      // Strip column container classes
+      const stripColumnClz = (el) => {
+        el.classList.remove("page-full", "page-columns");
+        if (el.children) {
+          for (const child of el.children) {
+            stripColumnClz(child);
+          }
+        }
+      }
+      stripColumnClz(note)
+      if (id === null || id.startsWith('sec-')) {
+        // Special case sections, only their first couple elements
+        const container = document.createElement("div");
+        if (note.children && note.children.length > 2) {
+          container.appendChild(note.children[0].cloneNode(true));
+          for (let i = 1; i < note.children.length; i++) {
+            const child = note.children[i];
+            if (child.tagName === "P" && child.innerText === "") {
+              continue;
+            } else {
+              container.appendChild(child.cloneNode(true));
+              break;
+            }
+          }
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(container);
+          }
+          return container.innerHTML
+        } else {
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(note);
+          }
+          return note.innerHTML;
+        }
+      } else {
+        // Remove any anchor links if they are present
+        const anchorLink = note.querySelector('a.anchorjs-link');
+        if (anchorLink) {
+          anchorLink.remove();
+        }
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(note);
+        }
+        if (note.classList.contains("callout")) {
+          return note.outerHTML;
+        } else {
+          return note.innerHTML;
+        }
+      }
+    }
+    for (var i=0; i<xrefs.length; i++) {
+      const xref = xrefs[i];
+      tippyHover(xref, undefined, function(instance) {
+        instance.disable();
+        let url = xref.getAttribute('href');
+        let hash = undefined; 
+        if (url.startsWith('#')) {
+          hash = url;
+        } else {
+          try { hash = new URL(url).hash; } catch {}
+        }
+        if (hash) {
+          const id = hash.replace(/^#\/?/, "");
+          const note = window.document.getElementById(id);
+          if (note !== null) {
+            try {
+              const html = processXRef(id, note.cloneNode(true));
+              instance.setContent(html);
+            } finally {
+              instance.enable();
+              instance.show();
+            }
+          } else {
+            // See if we can fetch this
+            fetch(url.split('#')[0])
+            .then(res => res.text())
+            .then(html => {
+              const parser = new DOMParser();
+              const htmlDoc = parser.parseFromString(html, "text/html");
+              const note = htmlDoc.getElementById(id);
+              if (note !== null) {
+                const html = processXRef(id, note);
+                instance.setContent(html);
+              } 
+            }).finally(() => {
+              instance.enable();
+              instance.show();
+            });
+          }
+        } else {
+          // See if we can fetch a full url (with no hash to target)
+          // This is a special case and we should probably do some content thinning / targeting
+          fetch(url)
+          .then(res => res.text())
+          .then(html => {
+            const parser = new DOMParser();
+            const htmlDoc = parser.parseFromString(html, "text/html");
+            const note = htmlDoc.querySelector('main.content');
+            if (note !== null) {
+              // This should only happen for chapter cross references
+              // (since there is no id in the URL)
+              // remove the first header
+              if (note.children.length > 0 && note.children[0].tagName === "HEADER") {
+                note.children[0].remove();
+              }
+              const html = processXRef(null, note);
+              instance.setContent(html);
+            } 
+          }).finally(() => {
+            instance.enable();
+            instance.show();
+          });
+        }
+      }, function(instance) {
+      });
+    }
+        let selectedAnnoteEl;
+        const selectorForAnnotation = ( cell, annotation) => {
+          let cellAttr = 'data-code-cell="' + cell + '"';
+          let lineAttr = 'data-code-annotation="' +  annotation + '"';
+          const selector = 'span[' + cellAttr + '][' + lineAttr + ']';
+          return selector;
+        }
+        const selectCodeLines = (annoteEl) => {
+          const doc = window.document;
+          const targetCell = annoteEl.getAttribute("data-target-cell");
+          const targetAnnotation = annoteEl.getAttribute("data-target-annotation");
+          const annoteSpan = window.document.querySelector(selectorForAnnotation(targetCell, targetAnnotation));
+          const lines = annoteSpan.getAttribute("data-code-lines").split(",");
+          const lineIds = lines.map((line) => {
+            return targetCell + "-" + line;
+          })
+          let top = null;
+          let height = null;
+          let parent = null;
+          if (lineIds.length > 0) {
+              //compute the position of the single el (top and bottom and make a div)
+              const el = window.document.getElementById(lineIds[0]);
+              top = el.offsetTop;
+              height = el.offsetHeight;
+              parent = el.parentElement.parentElement;
+            if (lineIds.length > 1) {
+              const lastEl = window.document.getElementById(lineIds[lineIds.length - 1]);
+              const bottom = lastEl.offsetTop + lastEl.offsetHeight;
+              height = bottom - top;
+            }
+            if (top !== null && height !== null && parent !== null) {
+              // cook up a div (if necessary) and position it 
+              let div = window.document.getElementById("code-annotation-line-highlight");
+              if (div === null) {
+                div = window.document.createElement("div");
+                div.setAttribute("id", "code-annotation-line-highlight");
+                div.style.position = 'absolute';
+                parent.appendChild(div);
+              }
+              div.style.top = top - 2 + "px";
+              div.style.height = height + 4 + "px";
+              div.style.left = 0;
+              let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
+              if (gutterDiv === null) {
+                gutterDiv = window.document.createElement("div");
+                gutterDiv.setAttribute("id", "code-annotation-line-highlight-gutter");
+                gutterDiv.style.position = 'absolute';
+                const codeCell = window.document.getElementById(targetCell);
+                const gutter = codeCell.querySelector('.code-annotation-gutter');
+                gutter.appendChild(gutterDiv);
+              }
+              gutterDiv.style.top = top - 2 + "px";
+              gutterDiv.style.height = height + 4 + "px";
+            }
+            selectedAnnoteEl = annoteEl;
+          }
+        };
+        const unselectCodeLines = () => {
+          const elementsIds = ["code-annotation-line-highlight", "code-annotation-line-highlight-gutter"];
+          elementsIds.forEach((elId) => {
+            const div = window.document.getElementById(elId);
+            if (div) {
+              div.remove();
+            }
+          });
+          selectedAnnoteEl = undefined;
+        };
+          // Handle positioning of the toggle
+      window.addEventListener(
+        "resize",
+        throttle(() => {
+          elRect = undefined;
+          if (selectedAnnoteEl) {
+            selectCodeLines(selectedAnnoteEl);
+          }
+        }, 10)
+      );
+      function throttle(fn, ms) {
+      let throttle = false;
+      let timer;
+        return (...args) => {
+          if(!throttle) { // first call gets through
+              fn.apply(this, args);
+              throttle = true;
+          } else { // all the others get throttled
+              if(timer) clearTimeout(timer); // cancel #2
+              timer = setTimeout(() => {
+                fn.apply(this, args);
+                timer = throttle = false;
+              }, ms);
+          }
+        };
+      }
+        // Attach click handler to the DT
+        const annoteDls = window.document.querySelectorAll('dt[data-target-cell]');
+        for (const annoteDlNode of annoteDls) {
+          annoteDlNode.addEventListener('click', (event) => {
+            const clickedEl = event.target;
+            if (clickedEl !== selectedAnnoteEl) {
+              unselectCodeLines();
+              const activeEl = window.document.querySelector('dt[data-target-cell].code-annotation-active');
+              if (activeEl) {
+                activeEl.classList.remove('code-annotation-active');
+              }
+              selectCodeLines(clickedEl);
+              clickedEl.classList.add('code-annotation-active');
+            } else {
+              // Unselect the line
+              unselectCodeLines();
+              clickedEl.classList.remove('code-annotation-active');
+            }
+          });
+        }
+    const findCites = (el) => {
+      const parentEl = el.parentElement;
+      if (parentEl) {
+        const cites = parentEl.dataset.cites;
+        if (cites) {
+          return {
+            el,
+            cites: cites.split(' ')
+          };
+        } else {
+          return findCites(el.parentElement)
+        }
+      } else {
+        return undefined;
+      }
+    };
+    var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+    for (var i=0; i<bibliorefs.length; i++) {
+      const ref = bibliorefs[i];
+      const citeInfo = findCites(ref);
+      if (citeInfo) {
+        tippyHover(citeInfo.el, function() {
+          var popup = window.document.createElement('div');
+          citeInfo.cites.forEach(function(cite) {
+            var citeDiv = window.document.createElement('div');
+            citeDiv.classList.add('hanging-indent');
+            citeDiv.classList.add('csl-entry');
+            var biblioDiv = window.document.getElementById('ref-' + cite);
+            if (biblioDiv) {
+              citeDiv.innerHTML = biblioDiv.innerHTML;
+            }
+            popup.appendChild(citeDiv);
+          });
+          return popup.innerHTML;
+        });
+      }
+    }
+  });
+  </script>
+
+
+
+
+</body></html>

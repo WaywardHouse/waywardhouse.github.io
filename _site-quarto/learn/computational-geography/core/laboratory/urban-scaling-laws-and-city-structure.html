@@ -1,0 +1,892 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
+
+<meta charset="utf-8">
+<meta name="generator" content="quarto-1.8.27">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+
+<meta name="dcterms.date" content="2026-03-05">
+<meta name="description" content="Double the population of a city and its GDP grows by more than double, its road network by less than double, and the number of patent applications by even more. These superlinear and sublinear scaling relationships — power laws relating urban quantities to city size — appear to be universal across countries, historical periods, and continents. This essay derives the scaling exponents, explains why they arise from network geometry, applies Zipf’s law to the rank-size distribution of cities, and derives the von Thünen land rent gradient that explains the spatial structure of land use within a city.">
+
+<title>Urban Scaling Laws and City Structure – Computational Geography</title>
+<style>
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: min(4vw, 1.5em);}
+div.column{flex: auto; overflow-x: auto;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+  width: 0.8em;
+  margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
+  vertical-align: middle;
+}
+</style>
+
+
+<script src="../site_libs/clipboard/clipboard.min.js"></script>
+<script src="../site_libs/quarto-html/tabby.min.js"></script>
+<script src="../site_libs/quarto-html/popper.min.js"></script>
+<script src="../site_libs/quarto-html/tippy.umd.min.js"></script>
+<script src="../site_libs/quarto-html/anchor.min.js"></script>
+<link href="../site_libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="../site_libs/quarto-html/light-border.css" rel="stylesheet">
+<link href="../site_libs/quarto-html/quarto-html-734cb40618f438257b19a1e532635a32.min.css" rel="stylesheet" append-hash="true" data-mode="light">
+<link href="../site_libs/quarto-html/quarto-syntax-highlighting-ed96de9b727972fe78a7b5d16c58bf87.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<script>
+  (function () {
+    var s = localStorage.getItem('theme');
+    var dark = s !== null ? s === 'dark' : false;
+    document.documentElement.dataset.theme = dark ? 'dark' : 'light';
+    document.documentElement.dataset.brand = 'wayward';
+  })();
+</script>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:ital,wght@0,300;0,400;0,600;0,700;0,800;0,900;1,700;1,800&amp;family=Barlow:wght@300;400;500;600&amp;family=IBM+Plex+Mono:ital,wght@0,300;0,400;0,500;1,300&amp;family=Literata:ital,opsz,wght@0,7..72,300;0,7..72,400;0,7..72,500;1,7..72,300;1,7..72,400&amp;display=swap" rel="stylesheet">
+
+  <script>window.backupDefine = window.define; window.define = undefined;</script><script src="https://cdn.jsdelivr.net/npm/katex@latest/dist/katex.min.js"></script>
+  <script>document.addEventListener("DOMContentLoaded", function () {
+ var mathElements = document.getElementsByClassName("math");
+ var macros = [];
+ for (var i = 0; i < mathElements.length; i++) {
+  var texText = mathElements[i].firstChild;
+  if (mathElements[i].tagName == "SPAN") {
+   katex.render(texText.data, mathElements[i], {
+    displayMode: mathElements[i].classList.contains('display'),
+    throwOnError: false,
+    macros: macros,
+    fleqn: false
+   });
+}}});
+  </script>
+  <script>window.define = window.backupDefine; window.backupDefine = undefined;</script><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@latest/dist/katex.min.css">
+
+<script type="text/javascript">
+const typesetMath = (el) => {
+  if (window.MathJax) {
+    // MathJax Typeset
+    window.MathJax.typeset([el]);
+  } else if (window.katex) {
+    // KaTeX Render
+    var mathElements = el.getElementsByClassName("math");
+    var macros = [];
+    for (var i = 0; i < mathElements.length; i++) {
+      var texText = mathElements[i].firstChild;
+      if (mathElements[i].tagName == "SPAN" && texText && texText.data) {
+        window.katex.render(texText.data, mathElements[i], {
+          displayMode: mathElements[i].classList.contains('display'),
+          throwOnError: false,
+          macros: macros,
+          fleqn: false
+        });
+      }
+    }
+  }
+}
+window.Quarto = {
+  typesetMath
+};
+</script>
+
+<link rel="stylesheet" href="../assets/css/quarto-wayward.css">
+</head>
+
+<body class="reading-body tag-hash-math tag-hash-viz">
+
+
+<header id="title-block-header">
+<h1 class="title"><span class="chapter-title">Urban Scaling Laws and City Structure</span></h1>
+<p class="subtitle">Zipf’s law, power laws for infrastructure, superlinear creativity, and the von Thünen rent gradient</p>
+
+<p class="date">2026-03-05</p>
+</header>
+
+<nav id="TOC" role="doc-toc">
+    <h2 id="toc-title">Table of contents</h2>
+   
+  <ul>
+  <li><a href="#the-question" id="toc-the-question">1. The Question</a></li>
+  <li><a href="#the-conceptual-model" id="toc-the-conceptual-model">2. The Conceptual Model</a></li>
+  <li><a href="#building-the-mathematical-model" id="toc-building-the-mathematical-model">3. Building the Mathematical Model</a>
+  <ul>
+  <li><a href="#power-laws-and-log-log-analysis" id="toc-power-laws-and-log-log-analysis">3.1 Power Laws and Log-Log Analysis</a></li>
+  <li><a href="#zipfs-law-for-city-size-distribution" id="toc-zipfs-law-for-city-size-distribution">3.2 Zipf’s Law for City Size Distribution</a></li>
+  <li><a href="#infrastructure-scaling-and-the-2d-network-geometry-argument" id="toc-infrastructure-scaling-and-the-2d-network-geometry-argument">3.3 Infrastructure Scaling and the 2D Network Geometry Argument</a></li>
+  <li><a href="#superlinear-scaling-and-social-interactions" id="toc-superlinear-scaling-and-social-interactions">3.4 Superlinear Scaling and Social Interactions</a></li>
+  <li><a href="#the-von-thünen-land-rent-gradient" id="toc-the-von-thünen-land-rent-gradient">3.5 The Von Thünen Land Rent Gradient</a></li>
+  </ul></li>
+  <li><a href="#worked-example-by-hand" id="toc-worked-example-by-hand">4. Worked Example by Hand</a></li>
+  <li><a href="#computational-implementation" id="toc-computational-implementation">5. Computational Implementation</a></li>
+  <li><a href="#visualization" id="toc-visualization">6. Visualization</a></li>
+  <li><a href="#interpretation" id="toc-interpretation">7. Interpretation</a></li>
+  <li><a href="#what-could-go-wrong" id="toc-what-could-go-wrong">8. What Could Go Wrong?</a></li>
+  <li><a href="#summary" id="toc-summary">9. Summary</a></li>
+  <li><a href="#math-refresher" id="toc-math-refresher">Math Refresher</a></li>
+  </ul>
+</nav>
+<p>In 1949, George Kingsley Zipf noticed something strange about the cities of the United States. If you ranked them by population — New York first, Los Angeles second, Chicago third, and so on — and plotted rank against population on a log-log graph, the data fell almost perfectly on a straight line with slope −1. This meant that the second-largest city had roughly half the population of the largest, the third-largest roughly one-third, and so on. The same pattern appeared for cities in every country with sufficient data, and for words in texts, and for earthquake magnitudes, and for firm sizes.</p>
+<p>Zipf’s law is an example of a <strong>power law</strong> — a relationship where one quantity varies as a fixed power of another. Cities exhibit power laws not just in their size distribution but in their internal structure: roads, patents, crime, restaurants, and walking speed all scale with city population as power laws, with exponents that cluster around 1.15 for socioeconomic quantities (superlinear) and 0.85 for infrastructure (sublinear).</p>
+<hr>
+<h2 id="the-question" class="anchored">1. The Question</h2>
+<p>What is Zipf’s law and why does the city size distribution follow it? What do scaling exponents for infrastructure and economic output reveal about the nature of cities? And how does the von Thünen model explain the concentric ring structure of land use within a city?</p>
+<hr>
+<h2 id="the-conceptual-model" class="anchored">2. The Conceptual Model</h2>
+<p>Cities are not random collections of people — they are networks where proximity enables interaction, and interaction generates economic value. The scaling laws emerge from the geometry of these networks.</p>
+<p>The <strong>sublinear scaling</strong> of infrastructure (roads, water pipes, electrical wires) arises because a larger city allows these networks to serve more people with proportionally less total length — a geometric efficiency gain that scales as <span class="math inline">N^{2/3}</span> for a network embedded in 2D space.</p>
+<p>The <strong>superlinear scaling</strong> of socioeconomic quantities (GDP, patents, crime, disease) arises because the number of possible pairwise interactions in a city of <span class="math inline">N</span> people scales as <span class="math inline">N^2</span>, but the interaction rate is also enhanced by denser, better-connected urban networks — producing an effective scaling exponent above 1.</p>
+<p>The <strong>von Thünen land rent gradient</strong> explains the internal spatial organisation of a city: land closest to the centre commands the highest rent because the time and cost of commuting to the centre is lowest. Different land uses have different rent gradients (slopes), and the city’s ring structure emerges from the competition among them.</p>
+<hr>
+<h2 id="building-the-mathematical-model" class="anchored">3. Building the Mathematical Model</h2>
+<h3 id="power-laws-and-log-log-analysis" class="anchored">3.1 Power Laws and Log-Log Analysis</h3>
+<p>A power law relationship between city quantity <span class="math inline">Y</span> (e.g., GDP) and population <span class="math inline">N</span> takes the form:</p>
+<p><span class="math display">Y = Y_0 \cdot N^\beta</span></p>
+<p>where <span class="math inline">\beta</span> is the <strong>scaling exponent</strong>. Taking logarithms of both sides:</p>
+<p><span class="math display">\ln Y = \ln Y_0 + \beta \ln N</span></p>
+<p>This is a linear relationship between <span class="math inline">\ln Y</span> and <span class="math inline">\ln N</span> — the signature of a power law is a straight line on a log-log plot. The slope is the scaling exponent <span class="math inline">\beta</span>.</p>
+<p>Three regimes: - <span class="math inline">\beta &lt; 1</span>: <strong>sublinear scaling</strong> — the quantity grows slower than city size (infrastructure: roads, power lines) - <span class="math inline">\beta = 1</span>: <strong>linear scaling</strong> — the quantity grows proportionally with city size (housing units, employment) - <span class="math inline">\beta &gt; 1</span>: <strong>superlinear scaling</strong> — the quantity grows faster than city size (GDP, patents, crime, restaurants, wages)</p>
+<p>Empirically documented scaling exponents (Bettencourt et al.&nbsp;2007, West 2017):</p>
+<table class="caption-top">
+<colgroup>
+<col style="width: 33%">
+<col style="width: 33%">
+<col style="width: 33%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>Quantity</th>
+<th>Exponent <span class="math inline">\beta</span></th>
+<th>Interpretation</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>Road surface area</td>
+<td>0.83</td>
+<td>Sublinear: larger cities need less road per person</td>
+</tr>
+<tr class="even">
+<td>Electrical cable length</td>
+<td>0.87</td>
+<td>Sublinear: infrastructure economies of scale</td>
+</tr>
+<tr class="odd">
+<td>Housing units</td>
+<td>1.00</td>
+<td>Linear: one unit per household regardless of size</td>
+</tr>
+<tr class="even">
+<td>Employment</td>
+<td>1.00</td>
+<td>Linear</td>
+</tr>
+<tr class="odd">
+<td>GDP</td>
+<td>1.13</td>
+<td>Superlinear: +13% per doubling</td>
+</tr>
+<tr class="even">
+<td>Patent applications</td>
+<td>1.27</td>
+<td>Superlinear: innovation accelerates</td>
+</tr>
+<tr class="odd">
+<td>Wages</td>
+<td>1.12</td>
+<td>Superlinear</td>
+</tr>
+<tr class="even">
+<td>Crime incidence</td>
+<td>1.16</td>
+<td>Superlinear: same mechanism as innovation</td>
+</tr>
+<tr class="odd">
+<td>New AIDS cases</td>
+<td>1.23</td>
+<td>Superlinear: disease spread is also a network phenomenon</td>
+</tr>
+</tbody>
+</table>
+<p>The same network mechanism that accelerates innovation also accelerates disease and crime — superlinear scaling of interaction has no inherent moral valence.</p>
+<p><strong>Calibration by OLS on log-transformed data:</strong></p>
+<p>Given observations <span class="math inline">(N_i, Y_i)</span> for a sample of cities, estimate <span class="math inline">\beta</span> by ordinary least squares on the log-log regression:</p>
+<p><span class="math display">\hat{\beta} = \frac{\sum_i (\ln N_i - \overline{\ln N})(\ln Y_i - \overline{\ln Y})}{\sum_i (\ln N_i - \overline{\ln N})^2}</span></p>
+<h3 id="zipfs-law-for-city-size-distribution" class="anchored">3.2 Zipf’s Law for City Size Distribution</h3>
+<p><strong>Zipf’s law</strong> (or the rank-size rule) states that the population <span class="math inline">P(r)</span> of the city with rank <span class="math inline">r</span> follows:</p>
+<p><span class="math display">P(r) = \frac{P_1}{r^\alpha}</span></p>
+<p>where <span class="math inline">P_1</span> is the population of the largest city and <span class="math inline">\alpha \approx 1</span> for most national city systems. Taking logs:</p>
+<p><span class="math display">\ln P(r) = \ln P_1 - \alpha \ln r</span></p>
+<p>A log-log plot of population against rank gives a straight line with slope <span class="math inline">-\alpha</span>.</p>
+<p>Zipf’s law is equivalent to saying city sizes follow a <strong>Pareto distribution</strong> with shape parameter <span class="math inline">\alpha</span>. The probability that a randomly chosen city has population greater than <span class="math inline">P</span> is:</p>
+<p><span class="math display">\Pr(\text{pop} &gt; P) = \left(\frac{P_{\min}}{P}\right)^\alpha</span></p>
+<p><strong>Why does <span class="math inline">\alpha \approx 1</span>?</strong> Several mechanisms produce Zipf’s law, including: random proportional growth (Gibrat’s rule — cities grow at random rates proportional to current size), maximum entropy subject to constraints, and self-organised criticality in settlement systems. No single mechanism is universally accepted; Zipf’s law is empirically robust but theoretically contested.</p>
+<p><strong>Canadian city sizes:</strong> For Canada’s Census Metropolitan Areas, the rank-size rule applies approximately with <span class="math inline">\alpha \approx 0.95</span>: Toronto (~6.2M), Montreal (~4.3M), Vancouver (~2.7M), Ottawa-Gatineau (~1.4M), Calgary (~1.3M). The ratio between ranks 1 and 5 is $6.2/1.3 = 4.8 ^{0.95}$, confirming near-Zipf behaviour.</p>
+<h3 id="infrastructure-scaling-and-the-2d-network-geometry-argument" class="anchored">3.3 Infrastructure Scaling and the 2D Network Geometry Argument</h3>
+<p>Why does road length scale sublinearly with population? Consider a city as a circular area of radius <span class="math inline">R</span> with population density <span class="math inline">\rho</span> (persons per unit area), so total population <span class="math inline">N = \pi R^2 \rho</span>. Assume the road network provides access within walking distance <span class="math inline">\ell</span> of every resident. The total road length needed to cover the city area with spacing <span class="math inline">\ell</span> is:</p>
+<p><span class="math display">L_{\text{road}} \sim \frac{\pi R^2}{\ell} = \frac{N}{\rho \ell}</span></p>
+<p>If density <span class="math inline">\rho</span> and walking distance <span class="math inline">\ell</span> are approximately constant across city sizes, then <span class="math inline">L_{\text{road}} \sim N</span> — linear scaling. But if, as cities grow, density increases (taller buildings, more compact land use) as <span class="math inline">\rho \sim N^{1/3}</span>, then:</p>
+<p><span class="math display">L_{\text{road}} \sim N / N^{1/3} = N^{2/3}</span></p>
+<p>Sublinear scaling with exponent $2/3 $. The empirical exponent <span class="math inline">\beta \approx 0.83</span> is between $2/3$ and 1, consistent with partial density increase — cities do get denser as they grow, but not as fast as the idealised 2D geometric argument predicts.</p>
+<h3 id="superlinear-scaling-and-social-interactions" class="anchored">3.4 Superlinear Scaling and Social Interactions</h3>
+<p>The superlinear scaling of economic and social outputs arises from interaction rates. In a city of <span class="math inline">N</span> people, the number of possible pairwise interactions is <span class="math inline">N(N-1)/2 \approx N^2/2</span>. If output per interaction is constant, total output scales as <span class="math inline">N^2</span> — superlinear.</p>
+<p>But not all <span class="math inline">N^2</span> pairs interact; interaction rate falls with distance. The <strong>social interaction integral</strong> for a city of density <span class="math inline">\rho</span> and radius <span class="math inline">R</span>:</p>
+<p><span class="math display">I = \int_0^R \int_0^R \rho^2 f(d_{ij}) \cdot 2\pi r \, dr \, dr'</span></p>
+<p>where <span class="math inline">f(d_{ij})</span> is the probability of interaction at distance <span class="math inline">d_{ij}</span>. If <span class="math inline">f(d) \propto d^{-\mu}</span> (power-law decay), the total interaction scales as <span class="math inline">N^\beta</span> with <span class="math inline">\beta &gt; 1</span> — the exact exponent depending on the geometry, density profile, and distance decay.</p>
+<p>Bettencourt (2013) shows analytically that the scaling exponent <span class="math inline">\beta = (D+1)/D</span> where <span class="math inline">D</span> is the effective spatial dimension of the urban interaction network. For <span class="math inline">D = 2</span> (planar city): <span class="math inline">\beta = 3/2</span>. For <span class="math inline">D</span> between 2 and 3 (accounting for 3D building structure): <span class="math inline">\beta \approx 1.1</span>–$1.2$, consistent with observed exponents.</p>
+<h3 id="the-von-thünen-land-rent-gradient" class="anchored">3.5 The Von Thünen Land Rent Gradient</h3>
+<p>The <strong>von Thünen model</strong> (1826, updated for urban economics by Alonso 1964) explains the spatial structure of land use within a city as the outcome of competition for central land. Each land use has a <strong>bid rent</strong> — the maximum rent it can pay at each distance from the centre while still covering its costs.</p>
+<p>For a firm that needs floor area at the centre to conduct business, the profit is:</p>
+<p><span class="math display">\pi = \text{Revenue} - \text{Production costs} - \text{Commuting/transport costs} - \text{Rent}</span></p>
+<p>Setting <span class="math inline">\pi = \pi^*</span> (equilibrium profit level) and solving for bid rent <span class="math inline">R(d)</span> at distance <span class="math inline">d</span>:</p>
+<p><span class="math display">R(d) = \frac{\text{Revenue} - \text{Production costs} - t \cdot d - \pi^*}{q}</span></p>
+<p>where <span class="math inline">t</span> is the transport cost per unit distance and <span class="math inline">q</span> is floor area demanded. This is a <strong>linear rent gradient</strong> — rent declines linearly with distance from the centre at rate <span class="math inline">t/q</span>.</p>
+<p>Different land uses have different gradients:</p>
+<ul>
+<li><strong>Commercial/retail:</strong> high revenue density, low floor area demand → steep rent gradient (high intercept, falls rapidly)</li>
+<li><strong>Residential:</strong> moderate income, moderate commuting cost → intermediate gradient</li>
+<li><strong>Industrial:</strong> low revenue density, large space requirements → shallow gradient (low intercept, falls slowly)</li>
+<li><strong>Agriculture:</strong> lowest productivity in urban context → nearly flat gradient</li>
+</ul>
+<p>The <strong>envelope</strong> of all bid rent curves determines which land use occupies each zone: the use with the highest bid rent at each distance wins the competition for land. The result is <strong>concentric rings</strong> — commercial core, residential ring, industrial fringe — the classic structure of the monocentric city.</p>
+<p><strong>Mathematical formulation:</strong> Let commercial bid rent be <span class="math inline">R_c(d) = a_c - b_c d</span> and residential bid rent be <span class="math inline">R_r(d) = a_r - b_r d</span>, with <span class="math inline">a_c &gt; a_r</span> (commercial has higher central bid) and <span class="math inline">b_c &gt; b_r</span> (commercial rent falls faster). The transition from commercial to residential occurs at the crossover distance:</p>
+<p><span class="math display">d^* = \frac{a_c - a_r}{b_c - b_r}</span></p>
+<p>At distances <span class="math inline">d &lt; d^*</span>: commercial rent exceeds residential, so commercial use prevails. At <span class="math inline">d &gt; d^*</span>: residential prevails. This crossover defines the edge of the Central Business District (CBD).</p>
+<p><strong>Exponential rent gradient:</strong> Empirically, urban land rent often follows an exponential rather than linear decline:</p>
+<p><span class="math display">R(d) = R_0 e^{-\gamma d}</span></p>
+<p>where <span class="math inline">R_0</span> is the central land rent and <span class="math inline">\gamma</span> [km⁻¹] is the rent gradient. Taking logs: <span class="math inline">\ln R(d) = \ln R_0 - \gamma d</span> — a semilog linear relationship. Typical values: <span class="math inline">\gamma \approx 0.1</span>–$0.3$ km⁻¹ for North American cities, meaning rent declines by $10<span class="math inline">–&amp;#36;30\%</span> per kilometre from the CBD.</p>
+<hr>
+<h2 id="worked-example-by-hand" class="anchored">4. Worked Example by Hand</h2>
+<p><strong>Setting:</strong> Calibrate scaling exponents for three Canadian city metrics and verify Zipf’s law.</p>
+<p><strong>Scaling calibration (log-log OLS)</strong> — 5 Canadian CMAs:</p>
+<table class="caption-top" style="width:100%;">
+<colgroup>
+<col style="width: 14%">
+<col style="width: 14%">
+<col style="width: 14%">
+<col style="width: 14%">
+<col style="width: 14%">
+<col style="width: 14%">
+<col style="width: 14%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>City</th>
+<th>Pop <span class="math inline">N</span> (M)</th>
+<th>Road km <span class="math inline">L</span></th>
+<th>Patents <span class="math inline">P</span></th>
+<th><span class="math inline">\ln N</span></th>
+<th><span class="math inline">\ln L</span></th>
+<th><span class="math inline">\ln P</span></th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>Toronto</td>
+<td>6.20</td>
+<td>15,400</td>
+<td>5,200</td>
+<td>1.825</td>
+<td>9.641</td>
+<td>8.556</td>
+</tr>
+<tr class="even">
+<td>Montreal</td>
+<td>4.29</td>
+<td>10,800</td>
+<td>2,100</td>
+<td>1.456</td>
+<td>9.287</td>
+<td>7.650</td>
+</tr>
+<tr class="odd">
+<td>Vancouver</td>
+<td>2.74</td>
+<td>7,600</td>
+<td>1,400</td>
+<td>1.008</td>
+<td>8.936</td>
+<td>7.244</td>
+</tr>
+<tr class="even">
+<td>Calgary</td>
+<td>1.34</td>
+<td>4,100</td>
+<td>580</td>
+<td>0.293</td>
+<td>8.319</td>
+<td>6.363</td>
+</tr>
+<tr class="odd">
+<td>Edmonton</td>
+<td>1.30</td>
+<td>3,900</td>
+<td>520</td>
+<td>0.262</td>
+<td>8.268</td>
+<td>6.254</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Road length scaling</strong> (OLS slope of <span class="math inline">\ln L</span> on <span class="math inline">\ln N</span>):</p>
+<p><span class="math display">\hat{\beta}_L = \frac{\text{Cov}(\ln N, \ln L)}{\text{Var}(\ln N)} \approx 0.87</span></p>
+<p><strong>Patent scaling:</strong></p>
+<p><span class="math display">\hat{\beta}_P \approx 1.22</span></p>
+<p>Road infrastructure scales sublinearly (economies of scale: larger cities need proportionally less road per resident). Patent output scales superlinearly (innovation clusters: doubling population more than doubles invention).</p>
+<p><strong>Von Thünen crossover:</strong></p>
+<p>Commercial: <span class="math inline">R_c(d) = 4800 - 320d</span> $/m²/yr; Residential: <span class="math inline">R_r(d) = 1200 - 80d</span></p>
+<p><span class="math display">d^* = \frac{4800 - 1200}{320 - 80} = \frac{3600}{240} = 15 \text{ km}</span></p>
+<p>The CBD extends approximately 15 km from the city centre — at this distance, commercial and residential land compete equally, and beyond it, residential use outbids commercial for land.</p>
+<hr>
+<h2 id="computational-implementation" class="anchored">5. Computational Implementation</h2>
+<pre><code>function fit_scaling_exponent(N_array, Y_array):
+    ln_N = log(N_array)
+    ln_Y = log(Y_array)
+    beta = covariance(ln_N, ln_Y) / variance(ln_N)
+    ln_Y0 = mean(ln_Y) - beta * mean(ln_N)
+    return beta, exp(ln_Y0)
+
+function zipf_exponent(populations):
+    ranks = argsort(argsort(-populations)) + 1   # rank 1 = largest
+    ln_r = log(ranks)
+    ln_P = log(populations)
+    alpha = -covariance(ln_r, ln_P) / variance(ln_r)
+    return alpha
+
+function bid_rent(d_km, a, b):
+    return max(0, a - b*d_km)
+
+function cbd_radius(a_comm, b_comm, a_res, b_res):
+    return (a_comm - a_res) / (b_comm - b_res)</code></pre>
+<pre class="{pyodide}"><code>import numpy as np
+
+def fit_scaling(N, Y):
+    lnN, lnY = np.log(N), np.log(Y)
+    beta = np.cov(lnN, lnY)[0,1] / np.var(lnN)
+    lnY0 = np.mean(lnY) - beta * np.mean(lnN)
+    return beta, np.exp(lnY0)
+
+# Canadian CMA data
+N = np.array([6.20, 4.29, 2.74, 1.34, 1.30]) * 1e6
+L = np.array([15400, 10800, 7600, 4100, 3900])  # road km
+P = np.array([5200, 2100, 1400, 580, 520])       # patents
+
+beta_L, _ = fit_scaling(N, L)
+beta_P, _ = fit_scaling(N, P)
+print(f"Road length scaling exponent β = {beta_L:.3f} (sublinear, &lt; 1)")
+print(f"Patent scaling exponent β = {beta_P:.3f} (superlinear, &gt; 1)")
+
+# Zipf's law check
+ranks = np.argsort(np.argsort(-N)) + 1
+cities = ['Toronto','Montreal','Vancouver','Calgary','Edmonton']
+print("\nZipf rank-size check (α ≈ 1):")
+P1 = N[0]  # Toronto
+for i, (city, n, r) in enumerate(zip(cities, N, ranks)):
+    zipf_pred = P1 / r
+    print(f"  Rank {r}: {city:10s}  obs={n/1e6:.2f}M  Zipf pred={zipf_pred/1e6:.2f}M")
+
+# Von Thünen crossover
+a_c, b_c = 4800, 320  # commercial rent gradient
+a_r, b_r = 1200, 80   # residential rent gradient
+d_star = (a_c - a_r) / (b_c - b_r)
+print(f"\nVon Thünen CBD radius: {d_star:.1f} km")
+
+# Show rent at various distances
+print("Land rent by distance:")
+for d in [0, 5, 10, 15, 20, 25, 30]:
+    Rc = max(0, a_c - b_c*d)
+    Rr = max(0, a_r - b_r*d)
+    dominant = "commercial" if Rc &gt; Rr else "residential"
+    print(f"  {d:3d}km: commercial=${Rc}, residential=${Rr} → {dominant}")</code></pre>
+<hr>
+<h2 id="visualization" class="anchored">6. Visualization</h2>
+<div data-viz="echarts" style="height:420px" data-options="{
+  &quot;title&quot;: {&quot;text&quot;: &quot;Von Thünen Bid Rent Gradients — Land Use Competition by Distance&quot;, &quot;textStyle&quot;: {&quot;fontSize&quot;: 14}},
+  &quot;tooltip&quot;: {&quot;trigger&quot;: &quot;axis&quot;},
+  &quot;legend&quot;: {&quot;data&quot;: [&quot;Commercial/Retail&quot;, &quot;Residential&quot;, &quot;Industrial&quot;, &quot;Agriculture&quot;], &quot;bottom&quot;: 0},
+  &quot;xAxis&quot;: {&quot;name&quot;: &quot;Distance from city centre (km)&quot;, &quot;nameLocation&quot;: &quot;middle&quot;, &quot;nameGap&quot;: 30,
+    &quot;data&quot;: [0, 5, 10, 15, 20, 25, 30, 40, 50]},
+  &quot;yAxis&quot;: {&quot;name&quot;: &quot;Bid rent ($ m⁻² yr⁻¹)&quot;, &quot;nameLocation&quot;: &quot;middle&quot;, &quot;nameGap&quot;: 60},
+  &quot;series&quot;: [
+    {&quot;name&quot;: &quot;Commercial/Retail&quot;, &quot;type&quot;: &quot;line&quot;, &quot;smooth&quot;: false,
+     &quot;data&quot;: [4800, 3200, 1600, 0, 0, 0, 0, 0, 0]},
+    {&quot;name&quot;: &quot;Residential&quot;, &quot;type&quot;: &quot;line&quot;, &quot;smooth&quot;: false,
+     &quot;data&quot;: [1200, 1000, 800, 600, 400, 200, 0, 0, 0]},
+    {&quot;name&quot;: &quot;Industrial&quot;, &quot;type&quot;: &quot;line&quot;, &quot;smooth&quot;: false,
+     &quot;data&quot;: [600, 570, 540, 510, 480, 450, 420, 360, 300]},
+    {&quot;name&quot;: &quot;Agriculture&quot;, &quot;type&quot;: &quot;line&quot;, &quot;smooth&quot;: false,
+     &quot;data&quot;: [200, 195, 190, 185, 180, 175, 170, 160, 150]}
+  ]
+}">
+
+</div>
+<p>The dominant land use at each distance is determined by the highest bid rent. Commercial wins the CBD (0–15 km here); residential wins the inner suburbs (15–30 km); industrial wins the outer fringe; agriculture dominates the rural-urban interface. The crossover distances define the boundaries between urban zones — which in this stylised model appear as concentric rings, matching the classical monocentric city structure observed in many mid-20th century North American cities.</p>
+<hr>
+<h2 id="interpretation" class="anchored">7. Interpretation</h2>
+<p>The power law scaling results carry a profound policy implication: <strong>cities are not just large towns</strong>. They are qualitatively different social and economic environments where per-capita economic output, innovation, crime, and disease all exceed the linear sum of their residents’ individual contributions. This superlinear scaling is the economic argument for cities — the reason why urbanisation has historically been the most reliable pathway to rising living standards.</p>
+<p>The sublinear infrastructure scaling is equally important: it means that larger cities are more resource-efficient per capita, not less. The highway lane-miles, water mains, and electrical cables needed to serve one million people in a single dense city are less than those needed to serve the same million in ten small cities of 100,000. This directly contradicts the intuition that urban density creates inefficiency — at the infrastructure level, density is efficiency.</p>
+<p>The von Thünen model predicts a monocentric city with concentric land use rings. Real cities are polycentric — multiple employment centres create multiple bid rent peaks that deform the simple gradient into a complex surface. The model remains useful as a baseline: the deviations from monocentricity tell us where subcentres have formed, where transportation improvements have flattened the gradient, and where zoning has overridden market rent signals.</p>
+<hr>
+<h2 id="what-could-go-wrong" class="anchored">8. What Could Go Wrong?</h2>
+<p><strong>Zipf’s law fails for small cities and for countries with primate city systems.</strong> In France, Paris (12M) is vastly larger than Lyon (2M) — a Zipf ratio of 6 compared to the expected 2 for a rank-2 city. France is a “primate city” system where historical centralisation of government and culture concentrated population in one city far beyond the Zipf prediction. The law is best tested on systems where growth was relatively unconstrained.</p>
+<p><strong>Scaling exponents vary by country and time period.</strong> The exponents reported by Bettencourt and West are averages across US cities in the 2000s. European cities, Asian cities, and cities in the Global South have different exponents — particularly for infrastructure, where political economy of investment, not just geometric efficiency, determines road length per capita.</p>
+<p><strong>The von Thünen model assumes a monocentric city with a featureless plain.</strong> Real cities have topography, historical industrial sites, rivers, highways, and zoning that create land use patterns that bear little resemblance to concentric rings. The model is best understood as a theory of the forces that generate spatial structure, not a prediction of observed structure — deviations from the model are evidence of other forces (history, topography, policy) operating alongside market rent competition.</p>
+<p><strong>Scaling laws are correlation, not causation.</strong> The superlinear scaling of GDP with city size does not prove that making cities larger causes GDP to grow. Reverse causation (richer cities attract more migrants, growing larger) and omitted variable bias (coastal cities are both larger and more connected to global trade) could generate the same pattern without any causal urban agglomeration effect.</p>
+<hr>
+<h2 id="summary" class="anchored">9. Summary</h2>
+<p>Cities exhibit systematic power law scaling relationships between size and urban quantities. Infrastructure scales sublinearly (<span class="math inline">\beta \approx 0.85</span>) — larger cities provide infrastructure more efficiently per capita. Socioeconomic outputs (GDP, patents, wages) scale superlinearly (<span class="math inline">\beta \approx 1.1</span>–$1.3$) — larger cities generate disproportionately more economic and social activity through denser interaction networks.</p>
+<p>Zipf’s law states that the rank-size distribution of cities follows a power law with exponent near 1, producing a straight line on a log-log rank-population plot. The von Thünen model explains the internal spatial structure of the city: land uses with steep bid rent gradients (commercial) occupy the centre; those with shallow gradients (industrial, agricultural) are pushed to the periphery. The CBD boundary occurs where the commercial and residential bid rent curves cross.</p>
+<p><strong>Key equations:</strong></p>
+<p><span class="math display">Y = Y_0 N^\beta \quad \Leftrightarrow \quad \ln Y = \ln Y_0 + \beta \ln N</span></p>
+<p><span class="math display">P(r) = P_1 / r^\alpha \quad \text{[Zipf's law]}</span></p>
+<p><span class="math display">R(d) = R_0 e^{-\gamma d} \quad \text{[exponential rent gradient]}</span></p>
+<p><span class="math display">d^* = (a_c - a_r)/(b_c - b_r) \quad \text{[CBD boundary]}</span></p>
+<hr>
+<h2 id="math-refresher" class="anchored">Math Refresher</h2>
+<p><strong>Power laws and log-log plots.</strong> If <span class="math inline">Y = Y_0 N^\beta</span>, then <span class="math inline">\log Y = \log Y_0 + \beta \log N</span> — a straight line on a log-log plot. The slope is the exponent <span class="math inline">\beta</span> and the intercept is <span class="math inline">\log Y_0</span>. This is why log-log plots are the diagnostic tool for power laws: any deviation from a straight line on a log-log plot indicates a departure from power-law behaviour. In particular, an exponential relationship <span class="math inline">Y = Y_0 e^{\lambda N}</span> would appear as a curve curving upward on a log-log plot (since <span class="math inline">\log Y = \log Y_0 + \lambda N / \ln 10</span> is linear in <span class="math inline">N</span>, not <span class="math inline">\log N</span>).</p>
+<p><strong>The difference between superlinear scaling and exponential growth.</strong> A superlinear power law <span class="math inline">Y \sim N^{1.15}</span> says larger cities are proportionally more productive — but the ratio <span class="math inline">Y/N \sim N^{0.15}</span> grows only slowly with city size. Doubling city size increases per-capita output by $2^{0.15} - 1 = 11%<span class="math inline">. This is modest but cumulative: a city 10× larger produces &amp;#36;10^{0.15} - 1 = 41\%</span> more per capita. Exponential growth in time would imply no saturation — cities that grow forever become arbitrarily productive. The power law implies a steady scaling advantage of size but not unbounded acceleration.</p>
+
+
+<footer class="wayward-footer">
+  <div class="wayward-footer__inner">
+    <div class="wayward-footer__brand">
+      <div class="wayward-footer__logo">WaywardHouse<span>.</span></div>
+      <p>Understanding how place, economy, and environment interact through analysis, modelling, and open tools.</p>
+    </div>
+
+    <nav class="wayward-footer__group" aria-labelledby="footer-reading">
+      <h2 id="footer-reading" class="anchored">Reading</h2>
+      <a href="../articles/">Articles</a>
+      <a href="../learn/">Learn</a>
+      <a href="../archive.html">Archive</a>
+      <a href="../start-here.html">Start Here</a>
+    </nav>
+
+    <nav class="wayward-footer__group" aria-labelledby="footer-site">
+      <h2 id="footer-site" class="anchored">Site</h2>
+      <a href="../start-here.html">Start Here</a>
+      <a href="../about.html">About</a>
+      <a href="../contact.html">Contact</a>
+    </nav>
+
+    <nav class="wayward-footer__group" aria-labelledby="footer-resources">
+      <h2 id="footer-resources" class="anchored">Resources</h2>
+      <a href="../topics/">All Topics</a>
+      <a href="../privacy.html">Privacy Policy</a>
+      <a href="../terms.html">Terms of Use</a>
+    </nav>
+  </div>
+</footer>
+
+<script type="module" src="../assets/dist/main.js"></script>
+<script type="module" src="../assets/js/core.js"></script>
+<script id="quarto-html-after-body" type="application/javascript">
+  window.document.addEventListener("DOMContentLoaded", function (event) {
+    const tabsets =  window.document.querySelectorAll(".panel-tabset-tabby")
+    tabsets.forEach(function(tabset) {
+      const tabby = new Tabby('#' + tabset.id);
+    });
+    const icon = "";
+    const anchorJS = new window.AnchorJS();
+    anchorJS.options = {
+      placement: 'right',
+      icon: icon
+    };
+    anchorJS.add('.anchored');
+    const isCodeAnnotation = (el) => {
+      for (const clz of el.classList) {
+        if (clz.startsWith('code-annotation-')) {                     
+          return true;
+        }
+      }
+      return false;
+    }
+    const onCopySuccess = function(e) {
+      // button target
+      const button = e.trigger;
+      // don't keep focus
+      button.blur();
+      // flash "checked"
+      button.classList.add('code-copy-button-checked');
+      var currentTitle = button.getAttribute("title");
+      button.setAttribute("title", "Copied!");
+      let tooltip;
+      if (window.bootstrap) {
+        button.setAttribute("data-bs-toggle", "tooltip");
+        button.setAttribute("data-bs-placement", "left");
+        button.setAttribute("data-bs-title", "Copied!");
+        tooltip = new bootstrap.Tooltip(button, 
+          { trigger: "manual", 
+            customClass: "code-copy-button-tooltip",
+            offset: [0, -8]});
+        tooltip.show();    
+      }
+      setTimeout(function() {
+        if (tooltip) {
+          tooltip.hide();
+          button.removeAttribute("data-bs-title");
+          button.removeAttribute("data-bs-toggle");
+          button.removeAttribute("data-bs-placement");
+        }
+        button.setAttribute("title", currentTitle);
+        button.classList.remove('code-copy-button-checked');
+      }, 1000);
+      // clear code selection
+      e.clearSelection();
+    }
+    const getTextToCopy = function(trigger) {
+      const outerScaffold = trigger.parentElement.cloneNode(true);
+      const codeEl = outerScaffold.querySelector('code');
+      for (const childEl of codeEl.children) {
+        if (isCodeAnnotation(childEl)) {
+          childEl.remove();
+        }
+      }
+      return codeEl.innerText;
+    }
+    const clipboard = new window.ClipboardJS('.code-copy-button:not([data-in-quarto-modal])', {
+      text: getTextToCopy
+    });
+    clipboard.on('success', onCopySuccess);
+    if (window.document.getElementById('quarto-embedded-source-code-modal')) {
+      const clipboardModal = new window.ClipboardJS('.code-copy-button[data-in-quarto-modal]', {
+        text: getTextToCopy,
+        container: window.document.getElementById('quarto-embedded-source-code-modal')
+      });
+      clipboardModal.on('success', onCopySuccess);
+    }
+      var localhostRegex = new RegExp(/^(?:http|https):\/\/localhost\:?[0-9]*\//);
+      var mailtoRegex = new RegExp(/^mailto:/);
+        var filterRegex = new RegExp('/' + window.location.host + '/');
+      var isInternal = (href) => {
+          return filterRegex.test(href) || localhostRegex.test(href) || mailtoRegex.test(href);
+      }
+      // Inspect non-navigation links and adorn them if external
+     var links = window.document.querySelectorAll('a[href]:not(.nav-link):not(.navbar-brand):not(.toc-action):not(.sidebar-link):not(.sidebar-item-toggle):not(.pagination-link):not(.no-external):not([aria-hidden]):not(.dropdown-item):not(.quarto-navigation-tool):not(.about-link)');
+      for (var i=0; i<links.length; i++) {
+        const link = links[i];
+        if (!isInternal(link.href)) {
+          // undo the damage that might have been done by quarto-nav.js in the case of
+          // links that we want to consider external
+          if (link.dataset.originalHref !== undefined) {
+            link.href = link.dataset.originalHref;
+          }
+        }
+      }
+    function tippyHover(el, contentFn, onTriggerFn, onUntriggerFn) {
+      const config = {
+        allowHTML: true,
+        maxWidth: 500,
+        delay: 100,
+        arrow: false,
+        appendTo: function(el) {
+            return el.parentElement;
+        },
+        interactive: true,
+        interactiveBorder: 10,
+        theme: 'light-border',
+        placement: 'bottom-start',
+      };
+      if (contentFn) {
+        config.content = contentFn;
+      }
+      if (onTriggerFn) {
+        config.onTrigger = onTriggerFn;
+      }
+      if (onUntriggerFn) {
+        config.onUntrigger = onUntriggerFn;
+      }
+      window.tippy(el, config); 
+    }
+    const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+    for (var i=0; i<noterefs.length; i++) {
+      const ref = noterefs[i];
+      tippyHover(ref, function() {
+        // use id or data attribute instead here
+        let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+        try { href = new URL(href).hash; } catch {}
+        const id = href.replace(/^#\/?/, "");
+        const note = window.document.getElementById(id);
+        if (note) {
+          return note.innerHTML;
+        } else {
+          return "";
+        }
+      });
+    }
+    const xrefs = window.document.querySelectorAll('a.quarto-xref');
+    const processXRef = (id, note) => {
+      // Strip column container classes
+      const stripColumnClz = (el) => {
+        el.classList.remove("page-full", "page-columns");
+        if (el.children) {
+          for (const child of el.children) {
+            stripColumnClz(child);
+          }
+        }
+      }
+      stripColumnClz(note)
+      if (id === null || id.startsWith('sec-')) {
+        // Special case sections, only their first couple elements
+        const container = document.createElement("div");
+        if (note.children && note.children.length > 2) {
+          container.appendChild(note.children[0].cloneNode(true));
+          for (let i = 1; i < note.children.length; i++) {
+            const child = note.children[i];
+            if (child.tagName === "P" && child.innerText === "") {
+              continue;
+            } else {
+              container.appendChild(child.cloneNode(true));
+              break;
+            }
+          }
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(container);
+          }
+          return container.innerHTML
+        } else {
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(note);
+          }
+          return note.innerHTML;
+        }
+      } else {
+        // Remove any anchor links if they are present
+        const anchorLink = note.querySelector('a.anchorjs-link');
+        if (anchorLink) {
+          anchorLink.remove();
+        }
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(note);
+        }
+        if (note.classList.contains("callout")) {
+          return note.outerHTML;
+        } else {
+          return note.innerHTML;
+        }
+      }
+    }
+    for (var i=0; i<xrefs.length; i++) {
+      const xref = xrefs[i];
+      tippyHover(xref, undefined, function(instance) {
+        instance.disable();
+        let url = xref.getAttribute('href');
+        let hash = undefined; 
+        if (url.startsWith('#')) {
+          hash = url;
+        } else {
+          try { hash = new URL(url).hash; } catch {}
+        }
+        if (hash) {
+          const id = hash.replace(/^#\/?/, "");
+          const note = window.document.getElementById(id);
+          if (note !== null) {
+            try {
+              const html = processXRef(id, note.cloneNode(true));
+              instance.setContent(html);
+            } finally {
+              instance.enable();
+              instance.show();
+            }
+          } else {
+            // See if we can fetch this
+            fetch(url.split('#')[0])
+            .then(res => res.text())
+            .then(html => {
+              const parser = new DOMParser();
+              const htmlDoc = parser.parseFromString(html, "text/html");
+              const note = htmlDoc.getElementById(id);
+              if (note !== null) {
+                const html = processXRef(id, note);
+                instance.setContent(html);
+              } 
+            }).finally(() => {
+              instance.enable();
+              instance.show();
+            });
+          }
+        } else {
+          // See if we can fetch a full url (with no hash to target)
+          // This is a special case and we should probably do some content thinning / targeting
+          fetch(url)
+          .then(res => res.text())
+          .then(html => {
+            const parser = new DOMParser();
+            const htmlDoc = parser.parseFromString(html, "text/html");
+            const note = htmlDoc.querySelector('main.content');
+            if (note !== null) {
+              // This should only happen for chapter cross references
+              // (since there is no id in the URL)
+              // remove the first header
+              if (note.children.length > 0 && note.children[0].tagName === "HEADER") {
+                note.children[0].remove();
+              }
+              const html = processXRef(null, note);
+              instance.setContent(html);
+            } 
+          }).finally(() => {
+            instance.enable();
+            instance.show();
+          });
+        }
+      }, function(instance) {
+      });
+    }
+        let selectedAnnoteEl;
+        const selectorForAnnotation = ( cell, annotation) => {
+          let cellAttr = 'data-code-cell="' + cell + '"';
+          let lineAttr = 'data-code-annotation="' +  annotation + '"';
+          const selector = 'span[' + cellAttr + '][' + lineAttr + ']';
+          return selector;
+        }
+        const selectCodeLines = (annoteEl) => {
+          const doc = window.document;
+          const targetCell = annoteEl.getAttribute("data-target-cell");
+          const targetAnnotation = annoteEl.getAttribute("data-target-annotation");
+          const annoteSpan = window.document.querySelector(selectorForAnnotation(targetCell, targetAnnotation));
+          const lines = annoteSpan.getAttribute("data-code-lines").split(",");
+          const lineIds = lines.map((line) => {
+            return targetCell + "-" + line;
+          })
+          let top = null;
+          let height = null;
+          let parent = null;
+          if (lineIds.length > 0) {
+              //compute the position of the single el (top and bottom and make a div)
+              const el = window.document.getElementById(lineIds[0]);
+              top = el.offsetTop;
+              height = el.offsetHeight;
+              parent = el.parentElement.parentElement;
+            if (lineIds.length > 1) {
+              const lastEl = window.document.getElementById(lineIds[lineIds.length - 1]);
+              const bottom = lastEl.offsetTop + lastEl.offsetHeight;
+              height = bottom - top;
+            }
+            if (top !== null && height !== null && parent !== null) {
+              // cook up a div (if necessary) and position it 
+              let div = window.document.getElementById("code-annotation-line-highlight");
+              if (div === null) {
+                div = window.document.createElement("div");
+                div.setAttribute("id", "code-annotation-line-highlight");
+                div.style.position = 'absolute';
+                parent.appendChild(div);
+              }
+              div.style.top = top - 2 + "px";
+              div.style.height = height + 4 + "px";
+              div.style.left = 0;
+              let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
+              if (gutterDiv === null) {
+                gutterDiv = window.document.createElement("div");
+                gutterDiv.setAttribute("id", "code-annotation-line-highlight-gutter");
+                gutterDiv.style.position = 'absolute';
+                const codeCell = window.document.getElementById(targetCell);
+                const gutter = codeCell.querySelector('.code-annotation-gutter');
+                gutter.appendChild(gutterDiv);
+              }
+              gutterDiv.style.top = top - 2 + "px";
+              gutterDiv.style.height = height + 4 + "px";
+            }
+            selectedAnnoteEl = annoteEl;
+          }
+        };
+        const unselectCodeLines = () => {
+          const elementsIds = ["code-annotation-line-highlight", "code-annotation-line-highlight-gutter"];
+          elementsIds.forEach((elId) => {
+            const div = window.document.getElementById(elId);
+            if (div) {
+              div.remove();
+            }
+          });
+          selectedAnnoteEl = undefined;
+        };
+          // Handle positioning of the toggle
+      window.addEventListener(
+        "resize",
+        throttle(() => {
+          elRect = undefined;
+          if (selectedAnnoteEl) {
+            selectCodeLines(selectedAnnoteEl);
+          }
+        }, 10)
+      );
+      function throttle(fn, ms) {
+      let throttle = false;
+      let timer;
+        return (...args) => {
+          if(!throttle) { // first call gets through
+              fn.apply(this, args);
+              throttle = true;
+          } else { // all the others get throttled
+              if(timer) clearTimeout(timer); // cancel #2
+              timer = setTimeout(() => {
+                fn.apply(this, args);
+                timer = throttle = false;
+              }, ms);
+          }
+        };
+      }
+        // Attach click handler to the DT
+        const annoteDls = window.document.querySelectorAll('dt[data-target-cell]');
+        for (const annoteDlNode of annoteDls) {
+          annoteDlNode.addEventListener('click', (event) => {
+            const clickedEl = event.target;
+            if (clickedEl !== selectedAnnoteEl) {
+              unselectCodeLines();
+              const activeEl = window.document.querySelector('dt[data-target-cell].code-annotation-active');
+              if (activeEl) {
+                activeEl.classList.remove('code-annotation-active');
+              }
+              selectCodeLines(clickedEl);
+              clickedEl.classList.add('code-annotation-active');
+            } else {
+              // Unselect the line
+              unselectCodeLines();
+              clickedEl.classList.remove('code-annotation-active');
+            }
+          });
+        }
+    const findCites = (el) => {
+      const parentEl = el.parentElement;
+      if (parentEl) {
+        const cites = parentEl.dataset.cites;
+        if (cites) {
+          return {
+            el,
+            cites: cites.split(' ')
+          };
+        } else {
+          return findCites(el.parentElement)
+        }
+      } else {
+        return undefined;
+      }
+    };
+    var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+    for (var i=0; i<bibliorefs.length; i++) {
+      const ref = bibliorefs[i];
+      const citeInfo = findCites(ref);
+      if (citeInfo) {
+        tippyHover(citeInfo.el, function() {
+          var popup = window.document.createElement('div');
+          citeInfo.cites.forEach(function(cite) {
+            var citeDiv = window.document.createElement('div');
+            citeDiv.classList.add('hanging-indent');
+            citeDiv.classList.add('csl-entry');
+            var biblioDiv = window.document.getElementById('ref-' + cite);
+            if (biblioDiv) {
+              citeDiv.innerHTML = biblioDiv.innerHTML;
+            }
+            popup.appendChild(citeDiv);
+          });
+          return popup.innerHTML;
+        });
+      }
+    }
+  });
+  </script>
+
+
+
+
+</body></html>

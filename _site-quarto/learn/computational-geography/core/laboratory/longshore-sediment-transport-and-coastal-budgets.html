@@ -1,0 +1,759 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
+
+<meta charset="utf-8">
+<meta name="generator" content="quarto-1.8.27">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+
+<meta name="dcterms.date" content="2026-03-05">
+<meta name="description" content="A beach is not a static feature — it is a temporary residence for sand that is perpetually moving alongshore, driven by the oblique approach of breaking waves. The CERC formula translates wave energy flux into a volumetric transport rate. A coastal sediment budget tracks every source and sink in the system. Together, they explain why building a harbour jetty starves the downdrift beach of sand, and how much material a nourishment project must place to compensate.">
+
+<title>Longshore Sediment Transport and Coastal Budgets – Computational Geography</title>
+<style>
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: min(4vw, 1.5em);}
+div.column{flex: auto; overflow-x: auto;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+  width: 0.8em;
+  margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
+  vertical-align: middle;
+}
+</style>
+
+
+<script src="../site_libs/clipboard/clipboard.min.js"></script>
+<script src="../site_libs/quarto-html/tabby.min.js"></script>
+<script src="../site_libs/quarto-html/popper.min.js"></script>
+<script src="../site_libs/quarto-html/tippy.umd.min.js"></script>
+<script src="../site_libs/quarto-html/anchor.min.js"></script>
+<link href="../site_libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="../site_libs/quarto-html/light-border.css" rel="stylesheet">
+<link href="../site_libs/quarto-html/quarto-html-734cb40618f438257b19a1e532635a32.min.css" rel="stylesheet" append-hash="true" data-mode="light">
+<link href="../site_libs/quarto-html/quarto-syntax-highlighting-ed96de9b727972fe78a7b5d16c58bf87.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<script>
+  (function () {
+    var s = localStorage.getItem('theme');
+    var dark = s !== null ? s === 'dark' : false;
+    document.documentElement.dataset.theme = dark ? 'dark' : 'light';
+    document.documentElement.dataset.brand = 'wayward';
+  })();
+</script>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:ital,wght@0,300;0,400;0,600;0,700;0,800;0,900;1,700;1,800&amp;family=Barlow:wght@300;400;500;600&amp;family=IBM+Plex+Mono:ital,wght@0,300;0,400;0,500;1,300&amp;family=Literata:ital,opsz,wght@0,7..72,300;0,7..72,400;0,7..72,500;1,7..72,300;1,7..72,400&amp;display=swap" rel="stylesheet">
+
+  <script>window.backupDefine = window.define; window.define = undefined;</script><script src="https://cdn.jsdelivr.net/npm/katex@latest/dist/katex.min.js"></script>
+  <script>document.addEventListener("DOMContentLoaded", function () {
+ var mathElements = document.getElementsByClassName("math");
+ var macros = [];
+ for (var i = 0; i < mathElements.length; i++) {
+  var texText = mathElements[i].firstChild;
+  if (mathElements[i].tagName == "SPAN") {
+   katex.render(texText.data, mathElements[i], {
+    displayMode: mathElements[i].classList.contains('display'),
+    throwOnError: false,
+    macros: macros,
+    fleqn: false
+   });
+}}});
+  </script>
+  <script>window.define = window.backupDefine; window.backupDefine = undefined;</script><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@latest/dist/katex.min.css">
+
+<script type="text/javascript">
+const typesetMath = (el) => {
+  if (window.MathJax) {
+    // MathJax Typeset
+    window.MathJax.typeset([el]);
+  } else if (window.katex) {
+    // KaTeX Render
+    var mathElements = el.getElementsByClassName("math");
+    var macros = [];
+    for (var i = 0; i < mathElements.length; i++) {
+      var texText = mathElements[i].firstChild;
+      if (mathElements[i].tagName == "SPAN" && texText && texText.data) {
+        window.katex.render(texText.data, mathElements[i], {
+          displayMode: mathElements[i].classList.contains('display'),
+          throwOnError: false,
+          macros: macros,
+          fleqn: false
+        });
+      }
+    }
+  }
+}
+window.Quarto = {
+  typesetMath
+};
+</script>
+
+<link rel="stylesheet" href="../assets/css/quarto-wayward.css">
+</head>
+
+<body class="reading-body tag-hash-math tag-hash-viz">
+
+
+<header id="title-block-header">
+<h1 class="title"><span class="chapter-title">Longshore Sediment Transport and Coastal Budgets</span></h1>
+<p class="subtitle">The CERC formula, littoral drift, and the arithmetic of beaches gained and lost</p>
+
+<p class="date">2026-03-05</p>
+</header>
+
+<nav id="TOC" role="doc-toc">
+    <h2 id="toc-title">Table of contents</h2>
+   
+  <ul>
+  <li><a href="#the-question" id="toc-the-question">1. The Question</a></li>
+  <li><a href="#the-conceptual-model" id="toc-the-conceptual-model">2. The Conceptual Model</a></li>
+  <li><a href="#building-the-mathematical-model" id="toc-building-the-mathematical-model">3. Building the Mathematical Model</a>
+  <ul>
+  <li><a href="#longshore-wave-energy-flux" id="toc-longshore-wave-energy-flux">3.1 Longshore Wave Energy Flux</a></li>
+  <li><a href="#the-cerc-formula" id="toc-the-cerc-formula">3.2 The CERC Formula</a></li>
+  <li><a href="#net-and-gross-transport" id="toc-net-and-gross-transport">3.3 Net and Gross Transport</a></li>
+  <li><a href="#the-coastal-sediment-budget" id="toc-the-coastal-sediment-budget">3.4 The Coastal Sediment Budget</a></li>
+  <li><a href="#updrift-and-downdrift-effects-of-structures" id="toc-updrift-and-downdrift-effects-of-structures">3.5 Updrift and Downdrift Effects of Structures</a></li>
+  <li><a href="#beach-nourishment-volume" id="toc-beach-nourishment-volume">3.6 Beach Nourishment Volume</a></li>
+  <li><a href="#erosion-hotspot-identification" id="toc-erosion-hotspot-identification">3.7 Erosion Hotspot Identification</a></li>
+  </ul></li>
+  <li><a href="#worked-example-by-hand" id="toc-worked-example-by-hand">4. Worked Example by Hand</a></li>
+  <li><a href="#computational-implementation" id="toc-computational-implementation">5. Computational Implementation</a></li>
+  <li><a href="#visualization" id="toc-visualization">6. Visualization</a></li>
+  <li><a href="#interpretation" id="toc-interpretation">7. Interpretation</a></li>
+  <li><a href="#what-could-go-wrong" id="toc-what-could-go-wrong">8. What Could Go Wrong?</a></li>
+  <li><a href="#summary" id="toc-summary">9. Summary</a></li>
+  <li><a href="#math-refresher" id="toc-math-refresher">Math Refresher</a></li>
+  </ul>
+</nav>
+<p>In the summer of 1968, the town of Ocean City, Maryland, opened a new inlet to create a safer harbour entrance. Engineers placed two jetties to stabilise the channel. Within a decade, the downdrift beach to the south — Assateague Island — had retreated hundreds of metres. The jetties had interrupted the longshore transport of sand that had historically nourished Assateague, and the beach was consuming itself.</p>
+<p>The same story has played out at hundreds of harbour inlets, groyne fields, and breakwaters around the world. The mechanism is always the same: an engineering structure interrupts the longshore conveyor belt of sediment. Updrift sand accumulates. Downdrift sand is starved. The physics is not subtle — it follows directly from a sediment budget in which transport must be continuous unless something intercepts it.</p>
+<hr>
+<h2 id="the-question" class="anchored">1. The Question</h2>
+<p>How much sediment moves along a coastline, and what drives it? What happens to a beach when that transport is intercepted? How do we quantify the volume of sand a beach has gained or lost, and how much nourishment is needed to compensate?</p>
+<hr>
+<h2 id="the-conceptual-model" class="anchored">2. The Conceptual Model</h2>
+<p>Waves approaching a beach at an angle exert a net force in the alongshore direction — the longshore component of radiation stress. This force drives a current and, more importantly, keeps sediment in motion that the current then transports. The <strong>littoral drift</strong> — the net volumetric sediment flux along the coast — results from this wave-driven mechanism.</p>
+<p>We model the coastline as a one-dimensional system: a line of beach with a sediment budget at each point. Transport enters from one side, leaves from the other, and the difference determines whether the beach accretes or erodes. Sources of sediment include river input, cliff erosion, and artificial nourishment. Sinks include offshore loss, aeolian transport inland, and engineering interception.</p>
+<p>The budget framework is the coastal equivalent of the mass balance equation we used for soil erosion (Essay AA2) — here applied to a linear control volume along the shore rather than a hillslope area.</p>
+<hr>
+<h2 id="building-the-mathematical-model" class="anchored">3. Building the Mathematical Model</h2>
+<h3 id="longshore-wave-energy-flux" class="anchored">3.1 Longshore Wave Energy Flux</h3>
+<p>From Essay AC1, the energy flux of breaking waves per unit length of crest is:</p>
+<p><span class="math display">P = E C_g = \frac{1}{8}\rho_f g H^2 C_g</span></p>
+<p>where <span class="math inline">H</span> is wave height and <span class="math inline">C_g</span> is group velocity. The <strong>longshore component</strong> of this flux depends on the angle <span class="math inline">\alpha_b</span> of wave approach at the breaker line:</p>
+<p><span class="math display">P_\ell = P \sin\alpha_b \cos\alpha_b = \frac{P}{2}\sin(2\alpha_b)</span></p>
+<p>where <span class="math inline">\alpha_b</span> is measured from the shore-normal. The factor <span class="math inline">\sin\alpha_b</span> extracts the alongshore component; the factor <span class="math inline">\cos\alpha_b</span> accounts for the fact that a wave approaching at a large angle has a longer crest length per unit shoreline.</p>
+<p>The maximum longshore energy flux occurs at <span class="math inline">\alpha_b = 45°</span>; the flux is zero for normal incidence (<span class="math inline">\alpha_b = 0°</span>) and for shore-parallel waves (<span class="math inline">\alpha_b = 90°</span>).</p>
+<h3 id="the-cerc-formula" class="anchored">3.2 The CERC Formula</h3>
+<p>The <strong>CERC formula</strong> (Coastal Engineering Research Center, 1984) relates the immersed-weight longshore sediment transport rate <span class="math inline">I_\ell</span> to the longshore wave energy flux:</p>
+<p><span class="math display">I_\ell = K P_\ell</span></p>
+<p>where <span class="math inline">K</span> is an empirical coefficient (dimensionless). The value <span class="math inline">K = 0.77</span> is commonly used for natural beach sand; <span class="math inline">K</span> varies from about 0.4 for coarse sand to 1.2 for fine sand.</p>
+<p>The immersed-weight transport rate <span class="math inline">I_\ell</span> [N s⁻¹] is related to the volumetric transport rate <span class="math inline">Q_\ell</span> [m³ s⁻¹] by:</p>
+<p><span class="math display">Q_\ell = \frac{I_\ell}{(\rho_s - \rho_f)(1 - p)g}</span></p>
+<p>where <span class="math inline">p \approx 0.4</span> is the sediment porosity. Substituting:</p>
+<p><span class="math display">Q_\ell = \frac{K P_\ell}{(\rho_s - \rho_f)(1-p)g} = \frac{K \cdot \frac{1}{8}\rho_f g H_b^2 C_{gb} \sin(2\alpha_b)}{(\rho_s - \rho_f)(1-p)g}</span></p>
+<p>In shallow water at breaking, <span class="math inline">C_{gb} \approx C_b = \sqrt{g h_b}</span> and <span class="math inline">H_b = \gamma h_b</span> (with <span class="math inline">\gamma = 0.78</span>), so <span class="math inline">h_b = H_b/0.78</span> and:</p>
+<p><span class="math display">C_{gb} = \sqrt{g H_b/0.78} = \sqrt{12.58 \, H_b}</span></p>
+<p>A simplified but widely used form of CERC using only <span class="math inline">H_b</span> and <span class="math inline">\alpha_b</span>:</p>
+<p><span class="math display">Q_\ell = \frac{K \rho_f g^{3/2}}{16(\rho_s-\rho_f)(1-p)\gamma^{1/2}} H_b^{5/2} \sin(2\alpha_b)</span></p>
+<p>For standard values (<span class="math inline">K=0.77</span>, <span class="math inline">\rho_f=1025</span> kg m⁻³, <span class="math inline">\rho_s=2650</span> kg m⁻³, <span class="math inline">p=0.4</span>, <span class="math inline">\gamma=0.78</span>):</p>
+<p><span class="math display">Q_\ell \approx 0.080 \, H_b^{5/2} \sin(2\alpha_b) \quad \text{[m}^3\text{ s}^{-1}\text{]}</span></p>
+<p>Note the <span class="math inline">H_b^{5/2}</span> dependence: doubling wave height increases transport by a factor of $2^{2.5} = 5.66$. Longshore transport is extremely sensitive to wave height — large storms dominate the annual transport budget.</p>
+<h3 id="net-and-gross-transport" class="anchored">3.3 Net and Gross Transport</h3>
+<p>The CERC formula gives transport in one direction. Over a year, waves come from multiple directions, some driving transport northward (say, <span class="math inline">Q^+</span>), some southward (<span class="math inline">Q^-</span>). The <strong>gross transport</strong> is <span class="math inline">Q_g = Q^+ + Q^-</span> and the <strong>net transport</strong> is <span class="math inline">Q_n = Q^+ - Q^-</span>. A beach can have large gross transport but small net transport if waves arrive from roughly symmetric directions — the sand moves back and forth but there is no persistent drift direction. The net transport determines whether structures cause asymmetric accretion/erosion.</p>
+<h3 id="the-coastal-sediment-budget" class="anchored">3.4 The Coastal Sediment Budget</h3>
+<p>The coastal sediment budget applies mass conservation to a shoreline control volume of length <span class="math inline">\Delta x</span> [m] and active profile depth <span class="math inline">D_c</span> (the closure depth, below which sediment does not move appreciably, typically 5–15 m):</p>
+<p><span class="math display">\frac{\partial y}{\partial t} = -\frac{1}{D_c}\frac{\partial Q_\ell}{\partial x} + \frac{q_{\text{source}} - q_{\text{sink}}}{D_c}</span></p>
+<p>where <span class="math inline">y</span> [m] is the shoreline position (positive = seaward), <span class="math inline">\partial Q_\ell/\partial x</span> [m³ s⁻¹ m⁻¹] is the longshore transport divergence, and <span class="math inline">q_{\text{source}}</span>, <span class="math inline">q_{\text{sink}}</span> are volumetric rates of sediment addition and removal per unit shoreline length [m³ m⁻¹ s⁻¹].</p>
+<p>This is the <strong>one-line model</strong> of shoreline change — one of the most widely used models in coastal engineering. It treats the beach profile shape as fixed (the “one line” is the shoreline), and predicts how the shoreline position changes due to gradients in longshore transport.</p>
+<p><strong>Key insight:</strong> The shoreline only erodes if transport diverges (<span class="math inline">\partial Q_\ell / \partial x &gt; 0</span>) — more sand leaving than arriving. If transport is spatially uniform, no erosion or deposition occurs even if transport rates are very high.</p>
+<h3 id="updrift-and-downdrift-effects-of-structures" class="anchored">3.5 Updrift and Downdrift Effects of Structures</h3>
+<p>A coastal structure (groyne, jetty, breakwater) that completely blocks longshore transport creates a step-change in <span class="math inline">Q_\ell</span> at its location. Updrift, transport is intercepted and sand accumulates; downdrift, the transport that would have nourished the beach is absent and the beach erodes.</p>
+<p>For a structure that blocks a fraction <span class="math inline">f</span> of the net longshore transport <span class="math inline">Q_n</span> [m³ yr⁻¹]:</p>
+<p><strong>Updrift accretion rate</strong> (volume per year per unit shoreline length):</p>
+<p><span class="math display">\dot{V}_{\text{up}} = f Q_n / D_c \quad \text{[m yr}^{-1}\text{]}</span></p>
+<p><strong>Downdrift erosion rate:</strong></p>
+<p><span class="math display">\dot{V}_{\text{down}} = -f Q_n / D_c</span></p>
+<p>These rates persist until the updrift fillet reaches the structure tip (bypassing begins) or until the downdrift beach reaches a new equilibrium through offshore supply. The time to reach downdrift equilibrium can be decades to centuries, depending on the magnitude of the deficit and the availability of offshore sediment.</p>
+<h3 id="beach-nourishment-volume" class="anchored">3.6 Beach Nourishment Volume</h3>
+<p>Beach nourishment replaces sediment lost to erosion by placing dredged material on the beach. The required nourishment volume to advance a shoreline by <span class="math inline">\Delta y</span> [m] over a length <span class="math inline">\ell</span> [m] of coast, through an active profile of depth <span class="math inline">D_c</span>, is:</p>
+<p><span class="math display">V = \ell \cdot \Delta y \cdot D_c</span></p>
+<p>However, nourishment sand is typically finer or coarser than the native beach sand. If the nourishment grain size <span class="math inline">D_n</span> differs from the native grain size <span class="math inline">D_b</span>, the <strong>overfill factor</strong> <span class="math inline">R_a</span> adjusts the required volume:</p>
+<p><span class="math display">R_a = \frac{\Phi_n}{\Phi_b}</span></p>
+<p>where <span class="math inline">\Phi_n</span> and <span class="math inline">\Phi_b</span> are the proportions of nourishment and native sand above the threshold diameter. For nourishment sand finer than native: <span class="math inline">R_a &gt; 1</span> (more must be placed because the excess fine material is quickly lost offshore). For coarser nourishment: <span class="math inline">R_a &lt; 1</span> (less required, and the beach is more stable).</p>
+<p><strong>Renourishment interval:</strong> Nourishment sand is lost at a rate determined by the coastal sediment budget. If the natural erosion rate is <span class="math inline">E_r</span> [m yr⁻¹] and the nourishment advances the shoreline by <span class="math inline">\Delta y</span>, the lifespan before renourishment is required is approximately:</p>
+<p><span class="math display">T = \Delta y / E_r</span></p>
+<p>For a beach eroding at 1.5 m yr⁻¹ that is nourished to advance 30 m: <span class="math inline">T = 20</span> yr. In practice, storm losses reduce this — the median nourishment lifespan for US East Coast projects is 3–6 years.</p>
+<h3 id="erosion-hotspot-identification" class="anchored">3.7 Erosion Hotspot Identification</h3>
+<p>A systematic approach to identifying erosion hotspots combines three datasets:</p>
+<ol type="1">
+<li><strong>Historic shoreline position change</strong> <span class="math inline">\dot{y}</span> [m yr⁻¹] — from aerial photograph or satellite analysis</li>
+<li><strong>Longshore transport gradients</strong> <span class="math inline">\partial Q_\ell / \partial x</span> [m³ m⁻¹ yr⁻¹] — from wave hindcasts and CERC</li>
+<li><strong>Source/sink terms</strong> — river inputs, structures, offshore losses</li>
+</ol>
+<p>An <strong>erosion hotspot index</strong> can be constructed as:</p>
+<p><span class="math display">\text{EHI} = \dot{y} + \frac{1}{D_c}\frac{\partial Q_\ell}{\partial x} - \frac{q_{\text{source}}}{D_c}</span></p>
+<p>Locations where EHI is most negative (most strongly erosional) after accounting for all known source and sink terms are residual hotspots — places where an unidentified sink or an underestimated gradient is driving observed retreat.</p>
+<hr>
+<h2 id="worked-example-by-hand" class="anchored">4. Worked Example by Hand</h2>
+<p><strong>Setting:</strong> A 12 km stretch of open coastline on the British Columbia coast, facing southwest. We want to estimate annual longshore transport volume, the effect of a proposed harbour breakwater, and the nourishment volume required to compensate downdrift losses.</p>
+<p><strong>Given:</strong> - Dominant wave climate: <span class="math inline">H_b = 1.8</span> m, <span class="math inline">T = 10</span> s, <span class="math inline">\alpha_b = 15°</span> from shore-normal - Closure depth <span class="math inline">D_c = 8</span> m - Native beach sand <span class="math inline">D_{50} = 0.35</span> mm (fine–medium sand) - Current shoreline erosion rate: 0.8 m yr⁻¹ over the southern 4 km</p>
+<p><strong>Step 1: Longshore transport rate (CERC)</strong></p>
+<p><span class="math display">Q_\ell = 0.080 \times (1.8)^{5/2} \times \sin(2 \times 15°)</span></p>
+<p><span class="math display">(1.8)^{5/2} = (1.8)^2 \times (1.8)^{0.5} = 3.24 \times 1.342 = 4.348</span></p>
+<p><span class="math display">\sin(30°) = 0.500</span></p>
+<p><span class="math display">Q_\ell = 0.080 \times 4.348 \times 0.500 = 0.1739 \text{ m}^3\text{s}^{-1}</span></p>
+<p>Annual transport: <span class="math inline">Q_n = 0.1739 \times 3.156 \times 10^7 = 5.49 \times 10^6</span> m³ yr⁻¹</p>
+<p>This is a very high transport rate — consistent with exposed northwest Pacific coastlines. For context, the entire Pacific Outer Coast of the US has estimated annual net longshore transport of $10^5<span class="math inline">–&amp;#36;10^6</span> m³ yr⁻¹ per reach.</p>
+<p><strong>Step 2: Existing erosion budget</strong></p>
+<p>Erosion rate = 0.8 m yr⁻¹ over 4 km = 4000 m:</p>
+<p><span class="math display">\dot{V}_{\text{loss}} = 0.8 \times 4000 \times 8 = 25{,}600 \text{ m}^3\text{yr}^{-1}</span></p>
+<p>As a fraction of throughgoing transport: $25{,}600 / 5{,}490{,}000 = 0.47%$ — the beach is losing a very small fraction of throughgoing transport, likely due to a modest transport gradient (slight increase in <span class="math inline">Q_\ell</span> with <span class="math inline">x</span> in the southern reach, perhaps from a change in beach orientation).</p>
+<p><strong>Step 3: Effect of proposed breakwater</strong> blocking 40% of net transport</p>
+<p><span class="math display">\dot{V}_{\text{up}} = 0.40 \times 5{,}490{,}000 / 8 = 274{,}500 \text{ m}^3\text{yr}^{-1}</span></p>
+<p>This is the annual accretion rate at the breakwater updrift face — 274,500 m³ yr⁻¹ accumulating in the fillet.</p>
+<p>Downdrift erosion matches this exactly:</p>
+<p><span class="math display">\dot{V}_{\text{down}} = -274{,}500 \text{ m}^3\text{yr}^{-1}</span></p>
+<p>Expressed as a shoreline retreat rate over 4 km:</p>
+<p><span class="math display">\dot{y}_{\text{down}} = 274{,}500 / (4000 \times 8) = 8.6 \text{ m yr}^{-1}</span></p>
+<p>This is an enormous erosion rate — more than 10× the pre-breakwater rate. The breakwater makes an already-eroding coast catastrophically worse.</p>
+<p><strong>Step 4: Nourishment volume to restore downdrift beach</strong></p>
+<p>To return the downdrift beach to its pre-breakwater position (i.e., hold the line against the additional 8.6 m yr⁻¹ retreat) over 4 km per year:</p>
+<p><span class="math display">V_{\text{annual}} = 8.6 \times 4000 \times 8 = 275{,}200 \text{ m}^3\text{yr}^{-1}</span></p>
+<p>At 2026 coastal dredging costs of approximately CAD 15–30 per m³, this represents CAD 4–8 million per year, indefinitely, as long as the breakwater stands. This is the hidden cost of coastal engineering that intercepts longshore transport.</p>
+<hr>
+<h2 id="computational-implementation" class="anchored">5. Computational Implementation</h2>
+<pre><code>function cerc_transport(H_b, alpha_b_deg, K=0.77, rho_f=1025, rho_s=2650, p=0.4, gamma=0.78):
+    alpha_b = radians(alpha_b_deg)
+    Pl = (1/16) * rho_f * g^(3/2) * H_b^(5/2) * sin(2*alpha_b) / gamma^0.5
+    Ql = K * Pl / ((rho_s - rho_f) * (1-p) * g)
+    return Ql  # m³ s⁻¹
+
+function shoreline_change(Q_ell_array, dx, Dc, sources, sinks):
+    dQdx = gradient(Q_ell_array, dx)   # finite differences
+    dydt = (-dQdx + sources - sinks) / Dc
+    return dydt
+
+function nourishment_volume(delta_y, length, Dc, overfill=1.0):
+    return delta_y * length * Dc * overfill</code></pre>
+<pre class="{pyodide}"><code>import numpy as np
+
+g = 9.81
+
+def cerc(H_b, alpha_deg, K=0.77, rho_f=1025, rho_s=2650, p=0.4, gamma=0.78):
+    a = np.radians(alpha_deg)
+    Pl = (rho_f * g**1.5 * H_b**2.5 * np.sin(2*a)) / (16 * gamma**0.5)
+    Ql = K * Pl / ((rho_s - rho_f) * (1-p) * g)
+    return Ql  # m³ s⁻¹
+
+Ql = cerc(1.8, 15)
+Qn_annual = Ql * 365.25 * 24 * 3600
+print(f"Longshore transport: {Ql:.4f} m³/s  =  {Qn_annual/1e6:.2f} × 10⁶ m³/yr")
+
+# Sensitivity to wave height
+print("\nTransport sensitivity to H_b (alpha=15°):")
+for H in [0.5, 1.0, 1.5, 2.0, 2.5, 3.0]:
+    Q = cerc(H, 15) * 3.156e7 / 1e6
+    print(f"  H_b = {H:.1f}m  →  Q = {Q:.2f} × 10⁶ m³/yr")
+
+# Downdrift erosion from breakwater blocking 40%
+f, Dc, length = 0.40, 8, 4000
+V_down = f * Qn_annual
+rate = V_down / (length * Dc)
+print(f"\nDowndrift erosion rate: {rate:.1f} m/yr")
+print(f"Annual nourishment needed: {V_down/1e3:.0f} × 10³ m³/yr")</code></pre>
+<hr>
+<h2 id="visualization" class="anchored">6. Visualization</h2>
+<div data-viz="echarts" style="height:420px" data-options="{
+  &quot;title&quot;: {&quot;text&quot;: &quot;CERC Longshore Transport vs Wave Angle and Height&quot;, &quot;textStyle&quot;: {&quot;fontSize&quot;: 14}},
+  &quot;tooltip&quot;: {&quot;trigger&quot;: &quot;axis&quot;},
+  &quot;legend&quot;: {&quot;data&quot;: [&quot;H_b = 1.0m&quot;, &quot;H_b = 1.5m&quot;, &quot;H_b = 2.0m&quot;, &quot;H_b = 2.5m&quot;], &quot;bottom&quot;: 0},
+  &quot;xAxis&quot;: {&quot;name&quot;: &quot;Wave Approach Angle α_b (degrees from shore-normal)&quot;, &quot;nameLocation&quot;: &quot;middle&quot;, &quot;nameGap&quot;: 35,
+    &quot;data&quot;: [5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55, 60]},
+  &quot;yAxis&quot;: {&quot;name&quot;: &quot;Annual Transport (10³ m³ yr⁻¹)&quot;, &quot;nameLocation&quot;: &quot;middle&quot;, &quot;nameGap&quot;: 55},
+  &quot;series&quot;: [
+    {&quot;name&quot;: &quot;H_b = 1.0m&quot;, &quot;type&quot;: &quot;line&quot;, &quot;smooth&quot;: true,
+     &quot;data&quot;: [38, 74, 107, 136, 161, 180, 193, 199, 198, 191, 178, 160]},
+    {&quot;name&quot;: &quot;H_b = 1.5m&quot;, &quot;type&quot;: &quot;line&quot;, &quot;smooth&quot;: true,
+     &quot;data&quot;: [132, 256, 370, 472, 558, 624, 671, 691, 686, 662, 617, 554]},
+    {&quot;name&quot;: &quot;H_b = 2.0m&quot;, &quot;type&quot;: &quot;line&quot;, &quot;smooth&quot;: true,
+     &quot;data&quot;: [314, 610, 882, 1124, 1328, 1484, 1596, 1643, 1631, 1574, 1469, 1318]},
+    {&quot;name&quot;: &quot;H_b = 2.5m&quot;, &quot;type&quot;: &quot;line&quot;, &quot;smooth&quot;: true,
+     &quot;data&quot;: [617, 1198, 1732, 2208, 2609, 2916, 3135, 3228, 3204, 3090, 2884, 2589]}
+  ]
+}">
+
+</div>
+<p>Transport peaks at 45° approach angle for all wave heights, following the <span class="math inline">\sin(2\alpha_b)</span> term. The vertical spacing between curves grows nonlinearly — the <span class="math inline">H_b^{5/2}</span> dependence means doubling wave height increases transport by 5.7×, not 2×. Storm waves dominate the annual transport budget.</p>
+<hr>
+<h2 id="interpretation" class="anchored">7. Interpretation</h2>
+<p>The CERC formula and the one-line model together produce a powerful framework for coastal management. Their most important joint implication is the <strong>sediment continuity principle</strong>: sediment that accumulates somewhere must have come from somewhere else. An eroding beach is not simply losing sand to the ocean — it is most often losing sand to a downdrift accumulation zone, an offshore sink, or a structure that has intercepted the flow.</p>
+<p>The Ocean City–Assateague example illustrates this perfectly. The jetties did not destroy sand; they redirected it. Assateague’s retreat is precisely mirrored by updrift accumulation in the Ocean City Inlet fillet — a closed budget in which one beach’s loss is another’s gain.</p>
+<p>The <span class="math inline">H_b^{5/2}</span> sensitivity of CERC transport also has a policy implication: annual transport budgets are dominated by a small number of large storm events. A beach that appears stable for most of the year may have its entire annual budget reshuffled in a single week-long storm. Management based on mean wave conditions will systematically underestimate both transport rates and the storm-scale variability that matters most for erosion hotspot identification.</p>
+<hr>
+<h2 id="what-could-go-wrong" class="anchored">8. What Could Go Wrong?</h2>
+<p><strong>K is highly uncertain.</strong> The CERC coefficient <span class="math inline">K</span> is fitted to field data with scatter spanning an order of magnitude. Values of <span class="math inline">K = 0.4</span>–$1.2$ are all physically defensible depending on grain size, wave steepness, and measurement method. Transport estimates from CERC should be treated as accurate to a factor of 2–3 at best.</p>
+<p><strong>Obliquity correction at large angles.</strong> The <span class="math inline">\sin(2\alpha_b)\cos(\alpha_b)</span> derivation assumes small-to-moderate approach angles. At angles above 45°, the formula becomes unreliable — in practice, most longshore transport occurs at angles of 5°–30°, so this is rarely a problem in the field but worth knowing.</p>
+<p><strong>The one-line model ignores cross-shore processes.</strong> Storm waves can push sediment offshore beyond the closure depth, removing it from the longshore system permanently (on engineering timescales). The one-line model treats <span class="math inline">D_c</span> as fixed and ignores this pathway — it may significantly underestimate erosion during storms.</p>
+<p><strong>Budget closure failures.</strong> Coastal sediment budgets rarely close perfectly because some terms (submarine groundwater discharge transporting fine sediment, wind-blown sand losses to dunes, biological carbonate production on carbonate coasts) are difficult to measure. Residuals in a budget closure should not be attributed to modelling error without first accounting for all measurable terms.</p>
+<hr>
+<h2 id="summary" class="anchored">9. Summary</h2>
+<p>Longshore sediment transport — the littoral drift — is driven by the longshore component of wave energy flux. The CERC formula <span class="math inline">Q_\ell \propto H_b^{5/2}\sin(2\alpha_b)</span> translates that flux into a volumetric transport rate. The one-line model applies sediment continuity to the shoreline: erosion requires a divergence of transport (more sand leaving than arriving).</p>
+<p>Coastal structures that intercept this transport create paired responses — updrift accretion and downdrift erosion — that can exceed natural erosion rates by an order of magnitude. Beach nourishment can compensate for these deficits but must be repeated on timescales set by the magnitude of the transport deficit and the storm climate.</p>
+<p><strong>Key equations:</strong></p>
+<p><span class="math display">Q_\ell = 0.080 \, H_b^{5/2} \sin(2\alpha_b) \quad \text{[m}^3\text{ s}^{-1}\text{, CERC]}</span></p>
+<p><span class="math display">\frac{\partial y}{\partial t} = -\frac{1}{D_c}\frac{\partial Q_\ell}{\partial x} + \frac{q_{\text{source}} - q_{\text{sink}}}{D_c} \quad \text{[one-line model]}</span></p>
+<p><span class="math display">V_{\text{nourish}} = \Delta y \cdot \ell \cdot D_c \cdot R_a \quad \text{[nourishment volume]}</span></p>
+<hr>
+<h2 id="math-refresher" class="anchored">Math Refresher</h2>
+<p><strong>Flux divergence.</strong> The term <span class="math inline">\partial Q_\ell / \partial x</span> is the spatial gradient (derivative) of the longshore transport rate. If transport increases with <span class="math inline">x</span> (the downdrift direction), more sand is leaving a given section than arriving — divergence is positive, and the shoreline retreats. If transport decreases with <span class="math inline">x</span>, more is arriving than leaving — divergence is negative, and the shoreline advances. This is the central operation of the one-line model: converting a transport field into a rate-of-change field by taking its spatial derivative.</p>
+<p><strong>The <span class="math inline">H^{5/2}</span> exponent.</strong> The CERC formula has <span class="math inline">H_b^{5/2}</span> because it is the product of wave energy density (<span class="math inline">\propto H^2</span>) and group velocity at breaking (<span class="math inline">\propto H^{1/2}</span> via <span class="math inline">C_g = \sqrt{gh_b}</span> and <span class="math inline">h_b = H/\gamma</span>). The <span class="math inline">\sin(2\alpha_b)</span> term is the product of <span class="math inline">\sin\alpha_b</span> (alongshore component) and <span class="math inline">\cos\alpha_b</span> (crest-length factor), using the double-angle identity $2= (2)$.</p>
+<p><strong>Annual vs instantaneous transport.</strong> CERC gives transport in m³ s⁻¹. To convert to annual: multiply by the number of seconds in a year ($3.156 ^7$ s yr⁻¹). For a real wave climate, compute <span class="math inline">Q_\ell</span> for each sea state (defined by <span class="math inline">H_s</span>, <span class="math inline">T_p</span>, <span class="math inline">\alpha</span>, and occurrence frequency) and sum the contributions. The result is the annual net or gross transport depending on whether opposite directions are subtracted or added.</p>
+
+
+<footer class="wayward-footer">
+  <div class="wayward-footer__inner">
+    <div class="wayward-footer__brand">
+      <div class="wayward-footer__logo">WaywardHouse<span>.</span></div>
+      <p>Understanding how place, economy, and environment interact through analysis, modelling, and open tools.</p>
+    </div>
+
+    <nav class="wayward-footer__group" aria-labelledby="footer-reading">
+      <h2 id="footer-reading" class="anchored">Reading</h2>
+      <a href="../articles/">Articles</a>
+      <a href="../learn/">Learn</a>
+      <a href="../archive.html">Archive</a>
+      <a href="../start-here.html">Start Here</a>
+    </nav>
+
+    <nav class="wayward-footer__group" aria-labelledby="footer-site">
+      <h2 id="footer-site" class="anchored">Site</h2>
+      <a href="../start-here.html">Start Here</a>
+      <a href="../about.html">About</a>
+      <a href="../contact.html">Contact</a>
+    </nav>
+
+    <nav class="wayward-footer__group" aria-labelledby="footer-resources">
+      <h2 id="footer-resources" class="anchored">Resources</h2>
+      <a href="../topics/">All Topics</a>
+      <a href="../privacy.html">Privacy Policy</a>
+      <a href="../terms.html">Terms of Use</a>
+    </nav>
+  </div>
+</footer>
+
+<script type="module" src="../assets/dist/main.js"></script>
+<script type="module" src="../assets/js/core.js"></script>
+<script id="quarto-html-after-body" type="application/javascript">
+  window.document.addEventListener("DOMContentLoaded", function (event) {
+    const tabsets =  window.document.querySelectorAll(".panel-tabset-tabby")
+    tabsets.forEach(function(tabset) {
+      const tabby = new Tabby('#' + tabset.id);
+    });
+    const icon = "";
+    const anchorJS = new window.AnchorJS();
+    anchorJS.options = {
+      placement: 'right',
+      icon: icon
+    };
+    anchorJS.add('.anchored');
+    const isCodeAnnotation = (el) => {
+      for (const clz of el.classList) {
+        if (clz.startsWith('code-annotation-')) {                     
+          return true;
+        }
+      }
+      return false;
+    }
+    const onCopySuccess = function(e) {
+      // button target
+      const button = e.trigger;
+      // don't keep focus
+      button.blur();
+      // flash "checked"
+      button.classList.add('code-copy-button-checked');
+      var currentTitle = button.getAttribute("title");
+      button.setAttribute("title", "Copied!");
+      let tooltip;
+      if (window.bootstrap) {
+        button.setAttribute("data-bs-toggle", "tooltip");
+        button.setAttribute("data-bs-placement", "left");
+        button.setAttribute("data-bs-title", "Copied!");
+        tooltip = new bootstrap.Tooltip(button, 
+          { trigger: "manual", 
+            customClass: "code-copy-button-tooltip",
+            offset: [0, -8]});
+        tooltip.show();    
+      }
+      setTimeout(function() {
+        if (tooltip) {
+          tooltip.hide();
+          button.removeAttribute("data-bs-title");
+          button.removeAttribute("data-bs-toggle");
+          button.removeAttribute("data-bs-placement");
+        }
+        button.setAttribute("title", currentTitle);
+        button.classList.remove('code-copy-button-checked');
+      }, 1000);
+      // clear code selection
+      e.clearSelection();
+    }
+    const getTextToCopy = function(trigger) {
+      const outerScaffold = trigger.parentElement.cloneNode(true);
+      const codeEl = outerScaffold.querySelector('code');
+      for (const childEl of codeEl.children) {
+        if (isCodeAnnotation(childEl)) {
+          childEl.remove();
+        }
+      }
+      return codeEl.innerText;
+    }
+    const clipboard = new window.ClipboardJS('.code-copy-button:not([data-in-quarto-modal])', {
+      text: getTextToCopy
+    });
+    clipboard.on('success', onCopySuccess);
+    if (window.document.getElementById('quarto-embedded-source-code-modal')) {
+      const clipboardModal = new window.ClipboardJS('.code-copy-button[data-in-quarto-modal]', {
+        text: getTextToCopy,
+        container: window.document.getElementById('quarto-embedded-source-code-modal')
+      });
+      clipboardModal.on('success', onCopySuccess);
+    }
+      var localhostRegex = new RegExp(/^(?:http|https):\/\/localhost\:?[0-9]*\//);
+      var mailtoRegex = new RegExp(/^mailto:/);
+        var filterRegex = new RegExp('/' + window.location.host + '/');
+      var isInternal = (href) => {
+          return filterRegex.test(href) || localhostRegex.test(href) || mailtoRegex.test(href);
+      }
+      // Inspect non-navigation links and adorn them if external
+     var links = window.document.querySelectorAll('a[href]:not(.nav-link):not(.navbar-brand):not(.toc-action):not(.sidebar-link):not(.sidebar-item-toggle):not(.pagination-link):not(.no-external):not([aria-hidden]):not(.dropdown-item):not(.quarto-navigation-tool):not(.about-link)');
+      for (var i=0; i<links.length; i++) {
+        const link = links[i];
+        if (!isInternal(link.href)) {
+          // undo the damage that might have been done by quarto-nav.js in the case of
+          // links that we want to consider external
+          if (link.dataset.originalHref !== undefined) {
+            link.href = link.dataset.originalHref;
+          }
+        }
+      }
+    function tippyHover(el, contentFn, onTriggerFn, onUntriggerFn) {
+      const config = {
+        allowHTML: true,
+        maxWidth: 500,
+        delay: 100,
+        arrow: false,
+        appendTo: function(el) {
+            return el.parentElement;
+        },
+        interactive: true,
+        interactiveBorder: 10,
+        theme: 'light-border',
+        placement: 'bottom-start',
+      };
+      if (contentFn) {
+        config.content = contentFn;
+      }
+      if (onTriggerFn) {
+        config.onTrigger = onTriggerFn;
+      }
+      if (onUntriggerFn) {
+        config.onUntrigger = onUntriggerFn;
+      }
+      window.tippy(el, config); 
+    }
+    const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+    for (var i=0; i<noterefs.length; i++) {
+      const ref = noterefs[i];
+      tippyHover(ref, function() {
+        // use id or data attribute instead here
+        let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+        try { href = new URL(href).hash; } catch {}
+        const id = href.replace(/^#\/?/, "");
+        const note = window.document.getElementById(id);
+        if (note) {
+          return note.innerHTML;
+        } else {
+          return "";
+        }
+      });
+    }
+    const xrefs = window.document.querySelectorAll('a.quarto-xref');
+    const processXRef = (id, note) => {
+      // Strip column container classes
+      const stripColumnClz = (el) => {
+        el.classList.remove("page-full", "page-columns");
+        if (el.children) {
+          for (const child of el.children) {
+            stripColumnClz(child);
+          }
+        }
+      }
+      stripColumnClz(note)
+      if (id === null || id.startsWith('sec-')) {
+        // Special case sections, only their first couple elements
+        const container = document.createElement("div");
+        if (note.children && note.children.length > 2) {
+          container.appendChild(note.children[0].cloneNode(true));
+          for (let i = 1; i < note.children.length; i++) {
+            const child = note.children[i];
+            if (child.tagName === "P" && child.innerText === "") {
+              continue;
+            } else {
+              container.appendChild(child.cloneNode(true));
+              break;
+            }
+          }
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(container);
+          }
+          return container.innerHTML
+        } else {
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(note);
+          }
+          return note.innerHTML;
+        }
+      } else {
+        // Remove any anchor links if they are present
+        const anchorLink = note.querySelector('a.anchorjs-link');
+        if (anchorLink) {
+          anchorLink.remove();
+        }
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(note);
+        }
+        if (note.classList.contains("callout")) {
+          return note.outerHTML;
+        } else {
+          return note.innerHTML;
+        }
+      }
+    }
+    for (var i=0; i<xrefs.length; i++) {
+      const xref = xrefs[i];
+      tippyHover(xref, undefined, function(instance) {
+        instance.disable();
+        let url = xref.getAttribute('href');
+        let hash = undefined; 
+        if (url.startsWith('#')) {
+          hash = url;
+        } else {
+          try { hash = new URL(url).hash; } catch {}
+        }
+        if (hash) {
+          const id = hash.replace(/^#\/?/, "");
+          const note = window.document.getElementById(id);
+          if (note !== null) {
+            try {
+              const html = processXRef(id, note.cloneNode(true));
+              instance.setContent(html);
+            } finally {
+              instance.enable();
+              instance.show();
+            }
+          } else {
+            // See if we can fetch this
+            fetch(url.split('#')[0])
+            .then(res => res.text())
+            .then(html => {
+              const parser = new DOMParser();
+              const htmlDoc = parser.parseFromString(html, "text/html");
+              const note = htmlDoc.getElementById(id);
+              if (note !== null) {
+                const html = processXRef(id, note);
+                instance.setContent(html);
+              } 
+            }).finally(() => {
+              instance.enable();
+              instance.show();
+            });
+          }
+        } else {
+          // See if we can fetch a full url (with no hash to target)
+          // This is a special case and we should probably do some content thinning / targeting
+          fetch(url)
+          .then(res => res.text())
+          .then(html => {
+            const parser = new DOMParser();
+            const htmlDoc = parser.parseFromString(html, "text/html");
+            const note = htmlDoc.querySelector('main.content');
+            if (note !== null) {
+              // This should only happen for chapter cross references
+              // (since there is no id in the URL)
+              // remove the first header
+              if (note.children.length > 0 && note.children[0].tagName === "HEADER") {
+                note.children[0].remove();
+              }
+              const html = processXRef(null, note);
+              instance.setContent(html);
+            } 
+          }).finally(() => {
+            instance.enable();
+            instance.show();
+          });
+        }
+      }, function(instance) {
+      });
+    }
+        let selectedAnnoteEl;
+        const selectorForAnnotation = ( cell, annotation) => {
+          let cellAttr = 'data-code-cell="' + cell + '"';
+          let lineAttr = 'data-code-annotation="' +  annotation + '"';
+          const selector = 'span[' + cellAttr + '][' + lineAttr + ']';
+          return selector;
+        }
+        const selectCodeLines = (annoteEl) => {
+          const doc = window.document;
+          const targetCell = annoteEl.getAttribute("data-target-cell");
+          const targetAnnotation = annoteEl.getAttribute("data-target-annotation");
+          const annoteSpan = window.document.querySelector(selectorForAnnotation(targetCell, targetAnnotation));
+          const lines = annoteSpan.getAttribute("data-code-lines").split(",");
+          const lineIds = lines.map((line) => {
+            return targetCell + "-" + line;
+          })
+          let top = null;
+          let height = null;
+          let parent = null;
+          if (lineIds.length > 0) {
+              //compute the position of the single el (top and bottom and make a div)
+              const el = window.document.getElementById(lineIds[0]);
+              top = el.offsetTop;
+              height = el.offsetHeight;
+              parent = el.parentElement.parentElement;
+            if (lineIds.length > 1) {
+              const lastEl = window.document.getElementById(lineIds[lineIds.length - 1]);
+              const bottom = lastEl.offsetTop + lastEl.offsetHeight;
+              height = bottom - top;
+            }
+            if (top !== null && height !== null && parent !== null) {
+              // cook up a div (if necessary) and position it 
+              let div = window.document.getElementById("code-annotation-line-highlight");
+              if (div === null) {
+                div = window.document.createElement("div");
+                div.setAttribute("id", "code-annotation-line-highlight");
+                div.style.position = 'absolute';
+                parent.appendChild(div);
+              }
+              div.style.top = top - 2 + "px";
+              div.style.height = height + 4 + "px";
+              div.style.left = 0;
+              let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
+              if (gutterDiv === null) {
+                gutterDiv = window.document.createElement("div");
+                gutterDiv.setAttribute("id", "code-annotation-line-highlight-gutter");
+                gutterDiv.style.position = 'absolute';
+                const codeCell = window.document.getElementById(targetCell);
+                const gutter = codeCell.querySelector('.code-annotation-gutter');
+                gutter.appendChild(gutterDiv);
+              }
+              gutterDiv.style.top = top - 2 + "px";
+              gutterDiv.style.height = height + 4 + "px";
+            }
+            selectedAnnoteEl = annoteEl;
+          }
+        };
+        const unselectCodeLines = () => {
+          const elementsIds = ["code-annotation-line-highlight", "code-annotation-line-highlight-gutter"];
+          elementsIds.forEach((elId) => {
+            const div = window.document.getElementById(elId);
+            if (div) {
+              div.remove();
+            }
+          });
+          selectedAnnoteEl = undefined;
+        };
+          // Handle positioning of the toggle
+      window.addEventListener(
+        "resize",
+        throttle(() => {
+          elRect = undefined;
+          if (selectedAnnoteEl) {
+            selectCodeLines(selectedAnnoteEl);
+          }
+        }, 10)
+      );
+      function throttle(fn, ms) {
+      let throttle = false;
+      let timer;
+        return (...args) => {
+          if(!throttle) { // first call gets through
+              fn.apply(this, args);
+              throttle = true;
+          } else { // all the others get throttled
+              if(timer) clearTimeout(timer); // cancel #2
+              timer = setTimeout(() => {
+                fn.apply(this, args);
+                timer = throttle = false;
+              }, ms);
+          }
+        };
+      }
+        // Attach click handler to the DT
+        const annoteDls = window.document.querySelectorAll('dt[data-target-cell]');
+        for (const annoteDlNode of annoteDls) {
+          annoteDlNode.addEventListener('click', (event) => {
+            const clickedEl = event.target;
+            if (clickedEl !== selectedAnnoteEl) {
+              unselectCodeLines();
+              const activeEl = window.document.querySelector('dt[data-target-cell].code-annotation-active');
+              if (activeEl) {
+                activeEl.classList.remove('code-annotation-active');
+              }
+              selectCodeLines(clickedEl);
+              clickedEl.classList.add('code-annotation-active');
+            } else {
+              // Unselect the line
+              unselectCodeLines();
+              clickedEl.classList.remove('code-annotation-active');
+            }
+          });
+        }
+    const findCites = (el) => {
+      const parentEl = el.parentElement;
+      if (parentEl) {
+        const cites = parentEl.dataset.cites;
+        if (cites) {
+          return {
+            el,
+            cites: cites.split(' ')
+          };
+        } else {
+          return findCites(el.parentElement)
+        }
+      } else {
+        return undefined;
+      }
+    };
+    var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+    for (var i=0; i<bibliorefs.length; i++) {
+      const ref = bibliorefs[i];
+      const citeInfo = findCites(ref);
+      if (citeInfo) {
+        tippyHover(citeInfo.el, function() {
+          var popup = window.document.createElement('div');
+          citeInfo.cites.forEach(function(cite) {
+            var citeDiv = window.document.createElement('div');
+            citeDiv.classList.add('hanging-indent');
+            citeDiv.classList.add('csl-entry');
+            var biblioDiv = window.document.getElementById('ref-' + cite);
+            if (biblioDiv) {
+              citeDiv.innerHTML = biblioDiv.innerHTML;
+            }
+            popup.appendChild(citeDiv);
+          });
+          return popup.innerHTML;
+        });
+      }
+    }
+  });
+  </script>
+
+
+
+
+</body></html>

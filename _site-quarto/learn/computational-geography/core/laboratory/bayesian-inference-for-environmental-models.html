@@ -1,0 +1,847 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
+
+<meta charset="utf-8">
+<meta name="generator" content="quarto-1.8.27">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+
+<meta name="dcterms.date" content="2026-03-05">
+<meta name="description" content="Every environmental model has parameters we don’t know exactly — a Manning’s n here, a decay rate there, an initial condition we can only estimate. Bayesian inference treats these parameters not as fixed unknowns to be estimated, but as probability distributions to be updated. This essay derives Bayes’ theorem from first principles, specifies priors and likelihoods for common environmental parameters, implements the Metropolis-Hastings MCMC sampler, constructs posterior predictive distributions, and compares models by Bayes factor.">
+
+<title>Bayesian Inference for Environmental Models – Computational Geography</title>
+<style>
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: min(4vw, 1.5em);}
+div.column{flex: auto; overflow-x: auto;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+  width: 0.8em;
+  margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
+  vertical-align: middle;
+}
+</style>
+
+
+<script src="../site_libs/clipboard/clipboard.min.js"></script>
+<script src="../site_libs/quarto-html/tabby.min.js"></script>
+<script src="../site_libs/quarto-html/popper.min.js"></script>
+<script src="../site_libs/quarto-html/tippy.umd.min.js"></script>
+<script src="../site_libs/quarto-html/anchor.min.js"></script>
+<link href="../site_libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="../site_libs/quarto-html/light-border.css" rel="stylesheet">
+<link href="../site_libs/quarto-html/quarto-html-734cb40618f438257b19a1e532635a32.min.css" rel="stylesheet" append-hash="true" data-mode="light">
+<link href="../site_libs/quarto-html/quarto-syntax-highlighting-ed96de9b727972fe78a7b5d16c58bf87.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<script>
+  (function () {
+    var s = localStorage.getItem('theme');
+    var dark = s !== null ? s === 'dark' : false;
+    document.documentElement.dataset.theme = dark ? 'dark' : 'light';
+    document.documentElement.dataset.brand = 'wayward';
+  })();
+</script>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:ital,wght@0,300;0,400;0,600;0,700;0,800;0,900;1,700;1,800&amp;family=Barlow:wght@300;400;500;600&amp;family=IBM+Plex+Mono:ital,wght@0,300;0,400;0,500;1,300&amp;family=Literata:ital,opsz,wght@0,7..72,300;0,7..72,400;0,7..72,500;1,7..72,300;1,7..72,400&amp;display=swap" rel="stylesheet">
+
+  <script>window.backupDefine = window.define; window.define = undefined;</script><script src="https://cdn.jsdelivr.net/npm/katex@latest/dist/katex.min.js"></script>
+  <script>document.addEventListener("DOMContentLoaded", function () {
+ var mathElements = document.getElementsByClassName("math");
+ var macros = [];
+ for (var i = 0; i < mathElements.length; i++) {
+  var texText = mathElements[i].firstChild;
+  if (mathElements[i].tagName == "SPAN") {
+   katex.render(texText.data, mathElements[i], {
+    displayMode: mathElements[i].classList.contains('display'),
+    throwOnError: false,
+    macros: macros,
+    fleqn: false
+   });
+}}});
+  </script>
+  <script>window.define = window.backupDefine; window.backupDefine = undefined;</script><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@latest/dist/katex.min.css">
+
+<script type="text/javascript">
+const typesetMath = (el) => {
+  if (window.MathJax) {
+    // MathJax Typeset
+    window.MathJax.typeset([el]);
+  } else if (window.katex) {
+    // KaTeX Render
+    var mathElements = el.getElementsByClassName("math");
+    var macros = [];
+    for (var i = 0; i < mathElements.length; i++) {
+      var texText = mathElements[i].firstChild;
+      if (mathElements[i].tagName == "SPAN" && texText && texText.data) {
+        window.katex.render(texText.data, mathElements[i], {
+          displayMode: mathElements[i].classList.contains('display'),
+          throwOnError: false,
+          macros: macros,
+          fleqn: false
+        });
+      }
+    }
+  }
+}
+window.Quarto = {
+  typesetMath
+};
+</script>
+
+<link rel="stylesheet" href="../assets/css/quarto-wayward.css">
+</head>
+
+<body class="reading-body tag-hash-math tag-hash-viz">
+
+
+<header id="title-block-header">
+<h1 class="title"><span class="chapter-title">Bayesian Inference for Environmental Models</span></h1>
+<p class="subtitle">Prior beliefs, likelihood, posterior updating, and MCMC sampling</p>
+
+<p class="date">2026-03-05</p>
+</header>
+
+<nav id="TOC" role="doc-toc">
+    <h2 id="toc-title">Table of contents</h2>
+   
+  <ul>
+  <li><a href="#the-question" id="toc-the-question">1. The Question</a></li>
+  <li><a href="#the-conceptual-model" id="toc-the-conceptual-model">2. The Conceptual Model</a></li>
+  <li><a href="#building-the-mathematical-model" id="toc-building-the-mathematical-model">3. Building the Mathematical Model</a>
+  <ul>
+  <li><a href="#bayes-theorem" id="toc-bayes-theorem">3.1 Bayes’ Theorem</a></li>
+  <li><a href="#prior-distributions" id="toc-prior-distributions">3.2 Prior Distributions</a></li>
+  <li><a href="#likelihood-functions" id="toc-likelihood-functions">3.3 Likelihood Functions</a></li>
+  <li><a href="#conjugate-update-normal-normal" id="toc-conjugate-update-normal-normal">3.4 Conjugate Update: Normal-Normal</a></li>
+  <li><a href="#metropolis-hastings-mcmc" id="toc-metropolis-hastings-mcmc">3.5 Metropolis-Hastings MCMC</a></li>
+  <li><a href="#posterior-predictive-distribution" id="toc-posterior-predictive-distribution">3.6 Posterior Predictive Distribution</a></li>
+  <li><a href="#model-comparison-by-bayes-factor" id="toc-model-comparison-by-bayes-factor">3.7 Model Comparison by Bayes Factor</a></li>
+  </ul></li>
+  <li><a href="#worked-example-by-hand" id="toc-worked-example-by-hand">4. Worked Example by Hand</a></li>
+  <li><a href="#computational-implementation" id="toc-computational-implementation">5. Computational Implementation</a></li>
+  <li><a href="#visualization" id="toc-visualization">6. Visualization</a></li>
+  <li><a href="#interpretation" id="toc-interpretation">7. Interpretation</a></li>
+  <li><a href="#what-could-go-wrong" id="toc-what-could-go-wrong">8. What Could Go Wrong?</a></li>
+  <li><a href="#summary" id="toc-summary">9. Summary</a></li>
+  <li><a href="#math-refresher" id="toc-math-refresher">Math Refresher</a></li>
+  </ul>
+</nav>
+<p>In 1783, the Reverend Thomas Bayes left behind an unpublished manuscript that would not see print until two years after his death. Its central insight was almost embarrassingly simple: the probability that a hypothesis is true, given the data we observe, is proportional to the probability of observing that data if the hypothesis were true, multiplied by how probable we thought the hypothesis was before we saw any data. Prior belief, updated by evidence, yields posterior belief.</p>
+<p>For two and a half centuries, this idea has been contested, celebrated, applied, and misapplied. In environmental modelling today, Bayesian inference is indispensable — not because it is philosophically superior to frequentism (a debate that continues), but because it naturally handles the situation environmental scientists actually face: sparse data, uncertain parameters, multiple competing models, and a need to communicate not just best estimates but the full range of possible outcomes.</p>
+<hr>
+<h2 id="the-question" class="anchored">1. The Question</h2>
+<p>How do we update our uncertainty about a model parameter when we collect new observations? How do we propagate that parameter uncertainty into predictions? How do we compare two competing model structures and decide which fits the data better? And what do we do when the mathematics does not yield a closed-form solution?</p>
+<hr>
+<h2 id="the-conceptual-model" class="anchored">2. The Conceptual Model</h2>
+<p>Bayesian inference treats model parameters as random variables with probability distributions, not as fixed unknowns with point estimates. Before seeing any data, we specify a <strong>prior distribution</strong> <span class="math inline">p(\theta)</span> encoding our existing knowledge or ignorance. We observe data <span class="math inline">\mathbf{y}</span> and specify a <strong>likelihood function</strong> <span class="math inline">p(\mathbf{y}|\theta)</span> — the probability of the data given the parameter. Bayes’ theorem combines these into the <strong>posterior distribution</strong> <span class="math inline">p(\theta|\mathbf{y})</span> — our updated belief about the parameter after seeing the data.</p>
+<p>The posterior is the complete answer to the inference question. A frequentist analysis produces a point estimate and a confidence interval; Bayesian analysis produces a probability distribution that can be interrogated at any quantile, propagated through any function, and updated with further data.</p>
+<hr>
+<h2 id="building-the-mathematical-model" class="anchored">3. Building the Mathematical Model</h2>
+<h3 id="bayes-theorem" class="anchored">3.1 Bayes’ Theorem</h3>
+<p>From the definition of conditional probability:</p>
+<p><span class="math display">p(A|B) = \frac{p(A \cap B)}{p(B)} \quad\text{and}\quad p(B|A) = \frac{p(A \cap B)}{p(A)}</span></p>
+<p>Combining: <span class="math inline">p(A \cap B) = p(A|B)p(B) = p(B|A)p(A)</span>. Therefore:</p>
+<p><span class="math display">\boxed{p(\theta|\mathbf{y}) = \frac{p(\mathbf{y}|\theta)\,p(\theta)}{p(\mathbf{y})}}</span></p>
+<p>The denominator <span class="math inline">p(\mathbf{y}) = \int p(\mathbf{y}|\theta)p(\theta)\,d\theta</span> is the <strong>marginal likelihood</strong> (evidence) — the probability of the data averaged over all possible parameter values. Since <span class="math inline">p(\mathbf{y})</span> does not depend on <span class="math inline">\theta</span>, we write:</p>
+<p><span class="math display">p(\theta|\mathbf{y}) \propto p(\mathbf{y}|\theta)\,p(\theta)</span></p>
+<p><strong>Posterior <span class="math inline">\propto</span> Likelihood × Prior.</strong> This is the operational form used in MCMC.</p>
+<p>In words: our updated belief about <span class="math inline">\theta</span> is proportional to how probable the data would be if <span class="math inline">\theta</span> were true, multiplied by how probable we thought <span class="math inline">\theta</span> was beforehand. Evidence that is improbable under the prior can still dominate if the likelihood strongly favours it.</p>
+<h3 id="prior-distributions" class="anchored">3.2 Prior Distributions</h3>
+<p>A prior encodes knowledge before observing data. Choices:</p>
+<p><strong>Conjugate priors</strong> — chosen so the posterior has the same functional form as the prior, yielding closed-form updates.</p>
+<table class="caption-top">
+<thead>
+<tr class="header">
+<th>Likelihood</th>
+<th>Conjugate prior</th>
+<th>Posterior</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>Normal (<span class="math inline">\sigma^2</span> known)</td>
+<td>Normal on <span class="math inline">\mu</span></td>
+<td>Normal</td>
+</tr>
+<tr class="even">
+<td>Poisson</td>
+<td>Gamma on <span class="math inline">\lambda</span></td>
+<td>Gamma</td>
+</tr>
+<tr class="odd">
+<td>Binomial</td>
+<td>Beta on <span class="math inline">p</span></td>
+<td>Beta</td>
+</tr>
+<tr class="even">
+<td>Normal (both unknown)</td>
+<td>Normal-Inverse-Gamma</td>
+<td>Normal-Inverse-Gamma</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Example — Beta-Binomial (conjugate):</strong> Estimating the probability <span class="math inline">p</span> of a site being occupied by a species. Prior: <span class="math inline">p \sim \text{Beta}(\alpha, \beta)</span>. After observing <span class="math inline">k</span> successes in <span class="math inline">n</span> trials:</p>
+<p><span class="math display">p|\mathbf{y} \sim \text{Beta}(\alpha + k,\ \beta + n - k)</span></p>
+<p>If we start with <span class="math inline">\text{Beta}(1,1)</span> (uniform, no prior knowledge) and observe 7 occupied sites out of 10: posterior is <span class="math inline">\text{Beta}(8, 4)</span>, with mean $8/12 = 0.667$ and 90% credible interval <span class="math inline">[0.42, 0.89]</span>.</p>
+<p><strong>Weakly informative priors</strong> — constrain parameters to physically plausible ranges without strongly influencing the posterior when data are plentiful. For a decay rate <span class="math inline">k &gt; 0</span>: half-normal or log-normal prior centred near the expected order of magnitude.</p>
+<p><strong>Jeffreys prior</strong> — objective prior proportional to <span class="math inline">\sqrt{I(\theta)}</span>, the square root of the Fisher information, representing the information content of the likelihood. Scale-invariant; appropriate when prior knowledge is genuinely absent.</p>
+<h3 id="likelihood-functions" class="anchored">3.3 Likelihood Functions</h3>
+<p>The likelihood <span class="math inline">p(\mathbf{y}|\theta)</span> is the probability density of observing the data <span class="math inline">\mathbf{y}</span> given parameter <span class="math inline">\theta</span>. For <span class="math inline">n</span> independent observations <span class="math inline">y_1, \ldots, y_n</span>:</p>
+<p><span class="math display">p(\mathbf{y}|\theta) = \prod_{i=1}^n p(y_i|\theta)</span></p>
+<p>Taking logs (computationally essential — products of small probabilities underflow):</p>
+<p><span class="math display">\ln p(\mathbf{y}|\theta) = \sum_{i=1}^n \ln p(y_i|\theta)</span></p>
+<p><strong>Normal likelihood</strong> — appropriate for continuous measurements with additive Gaussian error:</p>
+<p><span class="math display">\ln p(\mathbf{y}|\mu,\sigma) = -\frac{n}{2}\ln(2\pi\sigma^2) - \frac{1}{2\sigma^2}\sum_{i=1}^n(y_i - \mu)^2</span></p>
+<p><strong>Poisson likelihood</strong> — appropriate for count data (species counts, flood events, contamination detections):</p>
+<p><span class="math display">\ln p(\mathbf{y}|\lambda) = \sum_{i=1}^n \left[y_i\ln\lambda - \lambda - \ln(y_i!)\right]</span></p>
+<p><strong>Lognormal likelihood</strong> — appropriate for strictly positive, right-skewed environmental variables (streamflow, sediment concentration, contaminant concentration):</p>
+<p><span class="math display">\ln p(\mathbf{y}|\mu,\sigma) = -n\ln\sigma - \sum_{i=1}^n\ln y_i - \frac{1}{2\sigma^2}\sum_{i=1}^n(\ln y_i - \mu)^2</span></p>
+<h3 id="conjugate-update-normal-normal" class="anchored">3.4 Conjugate Update: Normal-Normal</h3>
+<p>For observations <span class="math inline">y_i \sim \mathcal{N}(\mu, \sigma^2)</span> with known <span class="math inline">\sigma^2</span> and prior <span class="math inline">\mu \sim \mathcal{N}(\mu_0, \tau_0^2)</span>:</p>
+<p><span class="math display">\mu|\mathbf{y} \sim \mathcal{N}(\mu_n, \tau_n^2)</span></p>
+<p>where:</p>
+<p><span class="math display">\frac{1}{\tau_n^2} = \frac{1}{\tau_0^2} + \frac{n}{\sigma^2}, \quad \mu_n = \tau_n^2\left(\frac{\mu_0}{\tau_0^2} + \frac{\bar{y}n}{\sigma^2}\right)</span></p>
+<p>The posterior mean is a <strong>precision-weighted average</strong> of the prior mean and the sample mean. Precision = 1/variance. As <span class="math inline">n \to \infty</span>, the prior is overwhelmed: <span class="math inline">\mu_n \to \bar{y}</span>. With very few observations, the posterior stays close to the prior.</p>
+<p><strong>Environmental interpretation:</strong> Suppose we estimate mean annual runoff <span class="math inline">\mu</span> for an ungauged watershed. Prior from regional regression: <span class="math inline">\mu_0 = 180</span> mm yr⁻¹, <span class="math inline">\tau_0 = 40</span> mm (moderate prior uncertainty). We collect 3 years of data: <span class="math inline">\bar{y} = 220</span> mm, <span class="math inline">\sigma = 30</span> mm yr⁻¹.</p>
+<p><span class="math display">\frac{1}{\tau_n^2} = \frac{1}{40^2} + \frac{3}{30^2} = 0.000625 + 0.00333 = 0.003958 \Rightarrow \tau_n = 15.9 \text{ mm}</span></p>
+<p><span class="math display">\mu_n = 15.9^2 \times\left(\frac{180}{1600} + \frac{220\times3}{900}\right) = 253 \times (0.1125 + 0.7333) = 213.9 \text{ mm}</span></p>
+<p>Three years of data pulled the estimate from 180 to 214 mm — closer to the observed 220 but not all the way there, because the prior had meaningful weight. The posterior uncertainty (16 mm) is substantially smaller than either the prior (40 mm) or the data uncertainty (30/√3 = 17 mm) — combining information from both sources.</p>
+<h3 id="metropolis-hastings-mcmc" class="anchored">3.5 Metropolis-Hastings MCMC</h3>
+<p>When conjugate priors are unavailable (most environmental models), we approximate the posterior by drawing samples using <strong>Markov chain Monte Carlo</strong>. The <strong>Metropolis-Hastings algorithm</strong> constructs a Markov chain whose stationary distribution is the target posterior:</p>
+<pre><code>Algorithm: Metropolis-Hastings
+1. Initialise θ₀ (any starting value)
+2. For iteration t = 1, 2, ..., N:
+   a. Propose θ* ~ q(θ* | θₜ₋₁)   [proposal distribution, e.g. Normal(θₜ₋₁, σ_prop)]
+   b. Compute acceptance ratio:
+      α = min(1, p(θ*|y) / p(θₜ₋₁|y))
+        = min(1, p(y|θ*) p(θ*) / [p(y|θₜ₋₁) p(θₜ₋₁)])
+   c. Accept with probability α: θₜ = θ*
+      Reject with probability 1-α: θₜ = θₜ₋₁
+3. Discard first B iterations (burn-in)
+4. Return {θ_B, θ_{B+1}, ..., θ_N} as posterior samples</code></pre>
+<p>Because the marginal likelihood <span class="math inline">p(\mathbf{y})</span> cancels in the ratio, we only need to evaluate <span class="math inline">\ln p(\mathbf{y}|\theta) + \ln p(\theta)</span> — the log-posterior up to an additive constant.</p>
+<p><strong>Proposal tuning:</strong> The proposal width <span class="math inline">\sigma_{\text{prop}}</span> controls acceptance rate. Target acceptance rate ≈ 23–44% for scalar or low-dimensional problems (Roberts et al.&nbsp;1997). Too wide → nearly all proposals rejected; too narrow → chain mixes slowly.</p>
+<p><strong>Diagnostics:</strong> - <strong>Trace plot:</strong> <span class="math inline">\theta_t</span> vs.&nbsp;<span class="math inline">t</span> should look like white noise around the posterior mean (not trending, not stuck) - <strong>Gelman-Rubin <span class="math inline">\hat{R}</span>:</strong> Compare variance between multiple chains to variance within chains; <span class="math inline">\hat{R} &lt; 1.05</span> indicates convergence - <strong>Effective sample size (ESS):</strong> Number of effectively independent samples after accounting for autocorrelation; ESS &gt; 400 for reliable quantiles</p>
+<h3 id="posterior-predictive-distribution" class="anchored">3.6 Posterior Predictive Distribution</h3>
+<p>The <strong>posterior predictive distribution</strong> for a new observation <span class="math inline">\tilde{y}</span> integrates over parameter uncertainty:</p>
+<p><span class="math display">p(\tilde{y}|\mathbf{y}) = \int p(\tilde{y}|\theta)\,p(\theta|\mathbf{y})\,d\theta</span></p>
+<p>In practice, with <span class="math inline">N</span> posterior samples <span class="math inline">\{\theta^{(s)}\}</span>:</p>
+<p><span class="math display">p(\tilde{y}|\mathbf{y}) \approx \frac{1}{N}\sum_{s=1}^N p(\tilde{y}|\theta^{(s)})</span></p>
+<p>This is broader than a prediction made at the posterior mean parameter — it correctly propagates parameter uncertainty into prediction uncertainty.</p>
+<h3 id="model-comparison-by-bayes-factor" class="anchored">3.7 Model Comparison by Bayes Factor</h3>
+<p>Given two models <span class="math inline">M_1</span> and <span class="math inline">M_2</span> with the same data <span class="math inline">\mathbf{y}</span>, the <strong>Bayes factor</strong>:</p>
+<p><span class="math display">B_{12} = \frac{p(\mathbf{y}|M_1)}{p(\mathbf{y}|M_2)} = \frac{\int p(\mathbf{y}|\theta_1,M_1)p(\theta_1|M_1)d\theta_1}{\int p(\mathbf{y}|\theta_2,M_2)p(\theta_2|M_2)d\theta_2}</span></p>
+<p>The Bayes factor is the ratio of marginal likelihoods — the evidence for <span class="math inline">M_1</span> relative to <span class="math inline">M_2</span>. It automatically penalises model complexity: a model with many parameters can fit the data better at any single parameter value, but its marginal likelihood is averaged over all parameter space and is diluted by all the values that fit poorly.</p>
+<p>Jeffreys (1961) interpretation:</p>
+<table class="caption-top">
+<thead>
+<tr class="header">
+<th><span class="math inline">\ln B_{12}</span></th>
+<th>Evidence for <span class="math inline">M_1</span></th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>0–1</td>
+<td>Weak</td>
+</tr>
+<tr class="even">
+<td>1–3</td>
+<td>Positive</td>
+</tr>
+<tr class="odd">
+<td>3–5</td>
+<td>Strong</td>
+</tr>
+<tr class="even">
+<td>&gt; 5</td>
+<td>Very strong</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Parameter identifiability:</strong> A parameter is <strong>non-identifiable</strong> if many different values of <span class="math inline">\theta</span> produce the same likelihood — the data cannot distinguish them. In a Bayesian context, the posterior for a non-identifiable parameter is identical to the prior: no amount of data narrows the distribution. This is a model structure problem, not a data problem. Identifiability analysis before fitting prevents the false confidence that MCMC results always imply.</p>
+<hr>
+<h2 id="worked-example-by-hand" class="anchored">4. Worked Example by Hand</h2>
+<p><strong>Setting:</strong> Estimating the decay rate <span class="math inline">k</span> of a contaminant in a small Alberta lake. We believe (from literature on similar compounds) that <span class="math inline">k \sim \mathcal{N}(0.05, 0.02^2)</span> day⁻¹ (prior: mean 0.05, sd 0.02). We observe concentrations at day 0 and day 30. Model: <span class="math inline">C(t) = C_0 e^{-kt}</span>, so <span class="math inline">C(30) = C_0 e^{-30k}</span>. Observed: <span class="math inline">C_0 = 100</span> mg/L, <span class="math inline">C(30) = 21.5</span> mg/L, measurement error <span class="math inline">\sigma = 3</span> mg/L.</p>
+<p><strong>Likelihood at <span class="math inline">k = 0.05</span>:</strong> <span class="math inline">C_{\text{pred}}(30) = 100 e^{-30\times0.05} = 100 e^{-1.5} = 22.31</span> mg/L</p>
+<p><span class="math inline">\ln p(21.5|k=0.05) = -\frac{1}{2}\ln(2\pi \times 9) - \frac{(21.5-22.31)^2}{18} = -2.072 - 0.0365 = -2.108</span></p>
+<p><strong>Likelihood at <span class="math inline">k = 0.06</span>:</strong> <span class="math inline">C_{\text{pred}}(30) = 100 e^{-1.8} = 16.53</span> mg/L</p>
+<p><span class="math inline">\ln p(21.5|k=0.06) = -2.072 - \frac{(21.5-16.53)^2}{18} = -2.072 - 1.370 = -3.442</span></p>
+<p><strong>Log-prior at <span class="math inline">k = 0.05</span>:</strong> <span class="math inline">\ln p(0.05) = -\frac{(0.05-0.05)^2}{2\times0.0004} = 0</span></p>
+<p><strong>Log-prior at <span class="math inline">k = 0.06</span>:</strong> <span class="math inline">\ln p(0.06) = -\frac{(0.06-0.05)^2}{0.0008} = -1.25</span></p>
+<p><strong>Log-posterior:</strong> - <span class="math inline">k = 0.05</span>: <span class="math inline">-2.108 + 0 = -2.108</span> → proportional to <span class="math inline">e^{-2.108} = 0.1216</span> - <span class="math inline">k = 0.06</span>: <span class="math inline">-3.442 + (-1.25) = -4.692</span> → proportional to <span class="math inline">e^{-4.692} = 0.00916</span></p>
+<p><strong>Acceptance ratio (MH step):</strong> Proposing <span class="math inline">k = 0.06</span> from <span class="math inline">k = 0.05</span>: <span class="math inline">\alpha = \min(1, 0.00916/0.1216) = 0.075</span>. Reject with probability 0.925 — the proposal is much worse and usually rejected, so the chain stays at 0.05.</p>
+<p><strong>True posterior mean</strong> (analytically for this conjugate-like case): The observed ratio $21.5/100 = 0.215 = e^{-30k}$ gives the MLE <span class="math inline">k_{\text{MLE}} = -\ln(0.215)/30 = 1.537/30 = 0.0512</span> day⁻¹. The posterior will be near this value, pulled slightly toward the prior mean of 0.05.</p>
+<hr>
+<h2 id="computational-implementation" class="anchored">5. Computational Implementation</h2>
+<pre><code>function log_posterior(theta, y_obs, prior_mean, prior_sd, C0, t, sigma_obs):
+    # Model prediction
+    C_pred = C0 * exp(-theta * t)
+    # Log-likelihood
+    ll = -0.5 * log(2*pi*sigma_obs**2) - (y_obs - C_pred)**2 / (2*sigma_obs**2)
+    # Log-prior (normal)
+    lp = -0.5 * ((theta - prior_mean)/prior_sd)**2
+    return ll + lp
+
+function metropolis_hastings(log_post_fn, theta_init, n_iter, proposal_sd):
+    theta_current = theta_init
+    lp_current = log_post_fn(theta_current)
+    samples = []
+    n_accept = 0
+    for i in range(n_iter):
+        theta_proposed = theta_current + normal(0, proposal_sd)
+        if theta_proposed &lt;= 0: continue   # enforce positivity
+        lp_proposed = log_post_fn(theta_proposed)
+        log_alpha = lp_proposed - lp_current
+        if log(uniform(0,1)) &lt; log_alpha:
+            theta_current = theta_proposed
+            lp_current = lp_proposed
+            n_accept += 1
+        samples.append(theta_current)
+    return samples, n_accept / n_iter
+
+function posterior_predictive(samples, model_fn, x_pred):
+    predictions = [model_fn(theta, x_pred) for theta in samples]
+    return predictions  # distribution of predictions</code></pre>
+<pre class="{pyodide}"><code>import numpy as np
+from scipy import stats
+
+rng = np.random.default_rng(42)
+
+def log_posterior(k, y_obs, C0, t_obs, sigma_obs, prior_mean=0.05, prior_sd=0.02):
+    if k &lt;= 0: return -np.inf
+    C_pred = C0 * np.exp(-k * t_obs)
+    ll = stats.norm.logpdf(y_obs, loc=C_pred, scale=sigma_obs)
+    lp = stats.norm.logpdf(k, loc=prior_mean, scale=prior_sd)
+    return ll + lp
+
+def metropolis_hastings(log_post, theta0, n_iter=10_000, prop_sd=0.005):
+    theta = theta0
+    lp = log_post(theta)
+    samples, n_acc = [theta], 0
+    for _ in range(n_iter - 1):
+        proposal = theta + rng.normal(0, prop_sd)
+        lp_new = log_post(proposal)
+        if np.log(rng.uniform()) &lt; lp_new - lp:
+            theta, lp = proposal, lp_new
+            n_acc += 1
+        samples.append(theta)
+    return np.array(samples), n_acc / n_iter
+
+# Data
+C0, t_obs, y_obs, sigma_obs = 100.0, 30.0, 21.5, 3.0
+
+log_post_fn = lambda k: log_posterior(k, y_obs, C0, t_obs, sigma_obs)
+samples, acc_rate = metropolis_hastings(log_post_fn, theta0=0.05)
+
+# Discard burn-in
+posterior = samples[2000:]
+print(f"Acceptance rate: {acc_rate:.2f}")
+print(f"Posterior mean:  {posterior.mean():.4f} day⁻¹")
+print(f"Posterior sd:    {posterior.std():.4f} day⁻¹")
+print(f"95% credible interval: [{np.percentile(posterior,2.5):.4f}, {np.percentile(posterior,97.5):.4f}]")
+print(f"Prior mean: 0.0500, MLE: {-np.log(y_obs/C0)/t_obs:.4f}")
+
+# Posterior predictive at t=60
+C60_samples = C0 * np.exp(-posterior * 60)
+noise = rng.normal(0, sigma_obs, len(C60_samples))
+C60_pred = C60_samples + noise
+print(f"\nPosterior predictive C(60):")
+print(f"  Mean: {C60_pred.mean():.2f} mg/L")
+print(f"  90% interval: [{np.percentile(C60_pred,5):.2f}, {np.percentile(C60_pred,95):.2f}]")</code></pre>
+<hr>
+<h2 id="visualization" class="anchored">6. Visualization</h2>
+<div data-viz="echarts" style="height:420px" data-options="{
+  &quot;title&quot;: {&quot;text&quot;: &quot;Prior, Likelihood, and Posterior for Decay Rate k&quot;, &quot;textStyle&quot;: {&quot;fontSize&quot;: 14}},
+  &quot;tooltip&quot;: {&quot;trigger&quot;: &quot;axis&quot;},
+  &quot;legend&quot;: {&quot;data&quot;: [&quot;Prior p(k)&quot;, &quot;Likelihood p(y|k) (scaled)&quot;, &quot;Posterior p(k|y)&quot;], &quot;bottom&quot;: 0},
+  &quot;xAxis&quot;: {&quot;name&quot;: &quot;Decay rate k (day⁻¹)&quot;, &quot;nameLocation&quot;: &quot;middle&quot;, &quot;nameGap&quot;: 30,
+    &quot;data&quot;: [&quot;0.00&quot;,&quot;0.01&quot;,&quot;0.02&quot;,&quot;0.03&quot;,&quot;0.04&quot;,&quot;0.05&quot;,&quot;0.06&quot;,&quot;0.07&quot;,&quot;0.08&quot;,&quot;0.09&quot;,&quot;0.10&quot;]},
+  &quot;yAxis&quot;: {&quot;name&quot;: &quot;Relative density&quot;, &quot;nameLocation&quot;: &quot;middle&quot;, &quot;nameGap&quot;: 45},
+  &quot;series&quot;: [
+    {&quot;name&quot;: &quot;Prior p(k)&quot;, &quot;type&quot;: &quot;line&quot;, &quot;smooth&quot;: true,
+     &quot;itemStyle&quot;: {&quot;color&quot;: &quot;#90A4AE&quot;},
+     &quot;data&quot;: [0.5,2.2,6.1,12.1,17.6,19.9,17.6,12.1,6.1,2.2,0.5]},
+    {&quot;name&quot;: &quot;Likelihood p(y|k) (scaled)&quot;, &quot;type&quot;: &quot;line&quot;, &quot;smooth&quot;: true,
+     &quot;itemStyle&quot;: {&quot;color&quot;: &quot;#1565C0&quot;},
+     &quot;data&quot;: [0.0,0.0,0.1,0.5,2.8,9.8,8.2,2.1,0.2,0.0,0.0]},
+    {&quot;name&quot;: &quot;Posterior p(k|y)&quot;, &quot;type&quot;: &quot;line&quot;, &quot;smooth&quot;: true,
+     &quot;itemStyle&quot;: {&quot;color&quot;: &quot;#C62828&quot;},
+     &quot;areaStyle&quot;: {&quot;color&quot;: &quot;#FFCDD2&quot;, &quot;opacity&quot;: 0.5},
+     &quot;data&quot;: [0.0,0.0,0.1,0.8,5.4,18.6,15.0,4.0,0.4,0.0,0.0]}
+  ]
+}">
+
+</div>
+<p>The posterior is concentrated between the prior (peaked at 0.05) and the likelihood (peaked near 0.051 from the MLE). With only one observation at t=30, the prior carries substantial weight and the posterior is noticeably narrower than either component alone — demonstrating Bayesian updating as a principled combination of prior knowledge and new evidence.</p>
+<hr>
+<h2 id="interpretation" class="anchored">7. Interpretation</h2>
+<p>The Bayesian framework answers three questions that frequentist methods struggle with: what is the probability that the parameter lies in this interval (credible interval, not confidence interval); what is the probability of a future observation exceeding a threshold (posterior predictive); and which of two models is better supported by the data, accounting for complexity (Bayes factor)?</p>
+<p>The credible interval has a direct probability interpretation: there is a 95% probability that <span class="math inline">k</span> lies in <span class="math inline">[0.042, 0.064]</span> day⁻¹ — given the prior and the data. The frequentist confidence interval does not make this statement; it says that 95% of intervals constructed by this procedure would contain the true value. The distinction matters when communicating risk to decision-makers.</p>
+<p>The posterior predictive distribution is richer than a prediction at the maximum likelihood estimate because it propagates all parameter uncertainty into the forecast. A prediction at <span class="math inline">k_{\text{MLE}} = 0.0512</span> gives a single point; the posterior predictive gives a distribution whose width reflects both observation noise and parameter uncertainty. Ignoring parameter uncertainty systematically produces prediction intervals that are too narrow — a chronic problem in environmental risk assessment.</p>
+<hr>
+<h2 id="what-could-go-wrong" class="anchored">8. What Could Go Wrong?</h2>
+<p><strong>The prior is a modelling choice with consequences.</strong> An informative prior that places significant probability outside the true parameter range will bias the posterior, especially with small samples. The right response is not to use “non-informative” priors blindly — truly uninformative priors do not exist for all parameterisations — but to document prior choices, conduct sensitivity analysis (how much does the posterior change if the prior is varied?), and be transparent about the information encoded.</p>
+<p><strong>MCMC convergence is not guaranteed.</strong> A Metropolis-Hastings chain that has not converged produces samples from a distribution that is not the posterior — but there is no mathematical guarantee that any finite run has converged. Convergence diagnostics (<span class="math inline">\hat{R}</span>, trace plots, ESS) are necessary but not sufficient. Multimodal posteriors — common when the model is poorly identified — can trap single chains in one mode. Running multiple chains from different starting values and verifying they reach the same distribution is essential.</p>
+<p><strong>Model comparison by Bayes factor requires accurate marginal likelihood estimates.</strong> Computing <span class="math inline">p(\mathbf{y}|M) = \int p(\mathbf{y}|\theta)p(\theta)d\theta</span> is difficult in high dimensions. Harmonic mean estimators (the simplest MCMC-based approach) are notoriously unstable. Thermodynamic integration, nested sampling (MultiNest), and bridge sampling provide more reliable estimates but at significant computational cost.</p>
+<p><strong>Identifiability is a prerequisite, not a guarantee.</strong> If two parameters <span class="math inline">\theta_1</span> and <span class="math inline">\theta_2</span> produce the same predictions for all data, MCMC will not fail — it will simply return the prior. The posterior will look informative (it will be narrow) only if the prior was informative. Checking identifiability analytically, or through synthetic data experiments, before deploying MCMC prevents false confidence in posterior results from unidentified models.</p>
+<hr>
+<h2 id="summary" class="anchored">9. Summary</h2>
+<p>Bayes’ theorem <span class="math inline">p(\theta|\mathbf{y}) \propto p(\mathbf{y}|\theta)\,p(\theta)</span> updates a prior distribution over parameters by the likelihood of the data, yielding a posterior distribution. Conjugate pairs (Beta-Binomial, Normal-Normal, Gamma-Poisson) admit closed-form posteriors. For non-conjugate models, Metropolis-Hastings MCMC draws samples from the posterior by constructing a Markov chain with the target distribution as its stationary distribution, accepting or rejecting proposals in proportion to the posterior ratio.</p>
+<p>The posterior predictive distribution <span class="math inline">p(\tilde{y}|\mathbf{y}) = \int p(\tilde{y}|\theta)p(\theta|\mathbf{y})d\theta</span> propagates parameter uncertainty into forecasts. Model comparison by Bayes factor automatically penalises complexity. Non-identifiable parameters return their prior — a diagnostic that reveals structural model problems.</p>
+<p><strong>Key equations:</strong></p>
+<p><span class="math display">p(\theta|\mathbf{y}) \propto p(\mathbf{y}|\theta)\,p(\theta)</span></p>
+<p><span class="math display">\mu_n = \tau_n^2\!\left(\frac{\mu_0}{\tau_0^2} + \frac{n\bar{y}}{\sigma^2}\right), \quad \frac{1}{\tau_n^2} = \frac{1}{\tau_0^2} + \frac{n}{\sigma^2}</span></p>
+<p><span class="math display">\alpha = \min\!\left(1,\frac{p(\mathbf{y}|\theta^*)p(\theta^*)}{p(\mathbf{y}|\theta_{t-1})p(\theta_{t-1})}\right) \quad\text{[MH acceptance ratio]}</span></p>
+<p><span class="math display">B_{12} = \frac{p(\mathbf{y}|M_1)}{p(\mathbf{y}|M_2)} \quad\text{[Bayes factor]}</span></p>
+<hr>
+<h2 id="math-refresher" class="anchored">Math Refresher</h2>
+<p><strong>Conditional probability and independence.</strong> The conditional probability <span class="math inline">p(A|B) = p(A\cap B)/p(B)</span> asks: given that <span class="math inline">B</span> occurred, how probable is <span class="math inline">A</span>? If <span class="math inline">A</span> and <span class="math inline">B</span> are independent, <span class="math inline">p(A|B) = p(A)</span> — knowing <span class="math inline">B</span> provides no information about <span class="math inline">A</span>. Bayes’ theorem is nothing more than two applications of the conditional probability definition; its power comes from inverting the conditioning — from <span class="math inline">p(\text{data}|\text{parameter})</span> (the forward model) to <span class="math inline">p(\text{parameter}|\text{data})</span> (the inference we actually want).</p>
+<p><strong>Log-probabilities and numerical stability.</strong> Probabilities of multiple observations are products of numbers between 0 and 1. With 100 observations each having probability 0.1, the joint probability is $0.1^{100} = 10^{-100}$ — smaller than any floating-point number. Working in log-space converts products to sums: <span class="math inline">\ln(0.1^{100}) = 100\ln(0.1) = -230.3</span> — perfectly representable. The MCMC acceptance ratio <span class="math inline">\alpha = \min(1, r)</span> with <span class="math inline">r = p(\theta^*)/p(\theta_{t-1})</span> is computed as <span class="math inline">r = \exp(\ln p(\theta^*) - \ln p(\theta_{t-1}))</span> — the difference of log-posteriors — which never underflows.</p>
+
+
+<footer class="wayward-footer">
+  <div class="wayward-footer__inner">
+    <div class="wayward-footer__brand">
+      <div class="wayward-footer__logo">WaywardHouse<span>.</span></div>
+      <p>Understanding how place, economy, and environment interact through analysis, modelling, and open tools.</p>
+    </div>
+
+    <nav class="wayward-footer__group" aria-labelledby="footer-reading">
+      <h2 id="footer-reading" class="anchored">Reading</h2>
+      <a href="../articles/">Articles</a>
+      <a href="../learn/">Learn</a>
+      <a href="../archive.html">Archive</a>
+      <a href="../start-here.html">Start Here</a>
+    </nav>
+
+    <nav class="wayward-footer__group" aria-labelledby="footer-site">
+      <h2 id="footer-site" class="anchored">Site</h2>
+      <a href="../start-here.html">Start Here</a>
+      <a href="../about.html">About</a>
+      <a href="../contact.html">Contact</a>
+    </nav>
+
+    <nav class="wayward-footer__group" aria-labelledby="footer-resources">
+      <h2 id="footer-resources" class="anchored">Resources</h2>
+      <a href="../topics/">All Topics</a>
+      <a href="../privacy.html">Privacy Policy</a>
+      <a href="../terms.html">Terms of Use</a>
+    </nav>
+  </div>
+</footer>
+
+<script type="module" src="../assets/dist/main.js"></script>
+<script type="module" src="../assets/js/core.js"></script>
+<script id="quarto-html-after-body" type="application/javascript">
+  window.document.addEventListener("DOMContentLoaded", function (event) {
+    const tabsets =  window.document.querySelectorAll(".panel-tabset-tabby")
+    tabsets.forEach(function(tabset) {
+      const tabby = new Tabby('#' + tabset.id);
+    });
+    const icon = "";
+    const anchorJS = new window.AnchorJS();
+    anchorJS.options = {
+      placement: 'right',
+      icon: icon
+    };
+    anchorJS.add('.anchored');
+    const isCodeAnnotation = (el) => {
+      for (const clz of el.classList) {
+        if (clz.startsWith('code-annotation-')) {                     
+          return true;
+        }
+      }
+      return false;
+    }
+    const onCopySuccess = function(e) {
+      // button target
+      const button = e.trigger;
+      // don't keep focus
+      button.blur();
+      // flash "checked"
+      button.classList.add('code-copy-button-checked');
+      var currentTitle = button.getAttribute("title");
+      button.setAttribute("title", "Copied!");
+      let tooltip;
+      if (window.bootstrap) {
+        button.setAttribute("data-bs-toggle", "tooltip");
+        button.setAttribute("data-bs-placement", "left");
+        button.setAttribute("data-bs-title", "Copied!");
+        tooltip = new bootstrap.Tooltip(button, 
+          { trigger: "manual", 
+            customClass: "code-copy-button-tooltip",
+            offset: [0, -8]});
+        tooltip.show();    
+      }
+      setTimeout(function() {
+        if (tooltip) {
+          tooltip.hide();
+          button.removeAttribute("data-bs-title");
+          button.removeAttribute("data-bs-toggle");
+          button.removeAttribute("data-bs-placement");
+        }
+        button.setAttribute("title", currentTitle);
+        button.classList.remove('code-copy-button-checked');
+      }, 1000);
+      // clear code selection
+      e.clearSelection();
+    }
+    const getTextToCopy = function(trigger) {
+      const outerScaffold = trigger.parentElement.cloneNode(true);
+      const codeEl = outerScaffold.querySelector('code');
+      for (const childEl of codeEl.children) {
+        if (isCodeAnnotation(childEl)) {
+          childEl.remove();
+        }
+      }
+      return codeEl.innerText;
+    }
+    const clipboard = new window.ClipboardJS('.code-copy-button:not([data-in-quarto-modal])', {
+      text: getTextToCopy
+    });
+    clipboard.on('success', onCopySuccess);
+    if (window.document.getElementById('quarto-embedded-source-code-modal')) {
+      const clipboardModal = new window.ClipboardJS('.code-copy-button[data-in-quarto-modal]', {
+        text: getTextToCopy,
+        container: window.document.getElementById('quarto-embedded-source-code-modal')
+      });
+      clipboardModal.on('success', onCopySuccess);
+    }
+      var localhostRegex = new RegExp(/^(?:http|https):\/\/localhost\:?[0-9]*\//);
+      var mailtoRegex = new RegExp(/^mailto:/);
+        var filterRegex = new RegExp('/' + window.location.host + '/');
+      var isInternal = (href) => {
+          return filterRegex.test(href) || localhostRegex.test(href) || mailtoRegex.test(href);
+      }
+      // Inspect non-navigation links and adorn them if external
+     var links = window.document.querySelectorAll('a[href]:not(.nav-link):not(.navbar-brand):not(.toc-action):not(.sidebar-link):not(.sidebar-item-toggle):not(.pagination-link):not(.no-external):not([aria-hidden]):not(.dropdown-item):not(.quarto-navigation-tool):not(.about-link)');
+      for (var i=0; i<links.length; i++) {
+        const link = links[i];
+        if (!isInternal(link.href)) {
+          // undo the damage that might have been done by quarto-nav.js in the case of
+          // links that we want to consider external
+          if (link.dataset.originalHref !== undefined) {
+            link.href = link.dataset.originalHref;
+          }
+        }
+      }
+    function tippyHover(el, contentFn, onTriggerFn, onUntriggerFn) {
+      const config = {
+        allowHTML: true,
+        maxWidth: 500,
+        delay: 100,
+        arrow: false,
+        appendTo: function(el) {
+            return el.parentElement;
+        },
+        interactive: true,
+        interactiveBorder: 10,
+        theme: 'light-border',
+        placement: 'bottom-start',
+      };
+      if (contentFn) {
+        config.content = contentFn;
+      }
+      if (onTriggerFn) {
+        config.onTrigger = onTriggerFn;
+      }
+      if (onUntriggerFn) {
+        config.onUntrigger = onUntriggerFn;
+      }
+      window.tippy(el, config); 
+    }
+    const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+    for (var i=0; i<noterefs.length; i++) {
+      const ref = noterefs[i];
+      tippyHover(ref, function() {
+        // use id or data attribute instead here
+        let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+        try { href = new URL(href).hash; } catch {}
+        const id = href.replace(/^#\/?/, "");
+        const note = window.document.getElementById(id);
+        if (note) {
+          return note.innerHTML;
+        } else {
+          return "";
+        }
+      });
+    }
+    const xrefs = window.document.querySelectorAll('a.quarto-xref');
+    const processXRef = (id, note) => {
+      // Strip column container classes
+      const stripColumnClz = (el) => {
+        el.classList.remove("page-full", "page-columns");
+        if (el.children) {
+          for (const child of el.children) {
+            stripColumnClz(child);
+          }
+        }
+      }
+      stripColumnClz(note)
+      if (id === null || id.startsWith('sec-')) {
+        // Special case sections, only their first couple elements
+        const container = document.createElement("div");
+        if (note.children && note.children.length > 2) {
+          container.appendChild(note.children[0].cloneNode(true));
+          for (let i = 1; i < note.children.length; i++) {
+            const child = note.children[i];
+            if (child.tagName === "P" && child.innerText === "") {
+              continue;
+            } else {
+              container.appendChild(child.cloneNode(true));
+              break;
+            }
+          }
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(container);
+          }
+          return container.innerHTML
+        } else {
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(note);
+          }
+          return note.innerHTML;
+        }
+      } else {
+        // Remove any anchor links if they are present
+        const anchorLink = note.querySelector('a.anchorjs-link');
+        if (anchorLink) {
+          anchorLink.remove();
+        }
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(note);
+        }
+        if (note.classList.contains("callout")) {
+          return note.outerHTML;
+        } else {
+          return note.innerHTML;
+        }
+      }
+    }
+    for (var i=0; i<xrefs.length; i++) {
+      const xref = xrefs[i];
+      tippyHover(xref, undefined, function(instance) {
+        instance.disable();
+        let url = xref.getAttribute('href');
+        let hash = undefined; 
+        if (url.startsWith('#')) {
+          hash = url;
+        } else {
+          try { hash = new URL(url).hash; } catch {}
+        }
+        if (hash) {
+          const id = hash.replace(/^#\/?/, "");
+          const note = window.document.getElementById(id);
+          if (note !== null) {
+            try {
+              const html = processXRef(id, note.cloneNode(true));
+              instance.setContent(html);
+            } finally {
+              instance.enable();
+              instance.show();
+            }
+          } else {
+            // See if we can fetch this
+            fetch(url.split('#')[0])
+            .then(res => res.text())
+            .then(html => {
+              const parser = new DOMParser();
+              const htmlDoc = parser.parseFromString(html, "text/html");
+              const note = htmlDoc.getElementById(id);
+              if (note !== null) {
+                const html = processXRef(id, note);
+                instance.setContent(html);
+              } 
+            }).finally(() => {
+              instance.enable();
+              instance.show();
+            });
+          }
+        } else {
+          // See if we can fetch a full url (with no hash to target)
+          // This is a special case and we should probably do some content thinning / targeting
+          fetch(url)
+          .then(res => res.text())
+          .then(html => {
+            const parser = new DOMParser();
+            const htmlDoc = parser.parseFromString(html, "text/html");
+            const note = htmlDoc.querySelector('main.content');
+            if (note !== null) {
+              // This should only happen for chapter cross references
+              // (since there is no id in the URL)
+              // remove the first header
+              if (note.children.length > 0 && note.children[0].tagName === "HEADER") {
+                note.children[0].remove();
+              }
+              const html = processXRef(null, note);
+              instance.setContent(html);
+            } 
+          }).finally(() => {
+            instance.enable();
+            instance.show();
+          });
+        }
+      }, function(instance) {
+      });
+    }
+        let selectedAnnoteEl;
+        const selectorForAnnotation = ( cell, annotation) => {
+          let cellAttr = 'data-code-cell="' + cell + '"';
+          let lineAttr = 'data-code-annotation="' +  annotation + '"';
+          const selector = 'span[' + cellAttr + '][' + lineAttr + ']';
+          return selector;
+        }
+        const selectCodeLines = (annoteEl) => {
+          const doc = window.document;
+          const targetCell = annoteEl.getAttribute("data-target-cell");
+          const targetAnnotation = annoteEl.getAttribute("data-target-annotation");
+          const annoteSpan = window.document.querySelector(selectorForAnnotation(targetCell, targetAnnotation));
+          const lines = annoteSpan.getAttribute("data-code-lines").split(",");
+          const lineIds = lines.map((line) => {
+            return targetCell + "-" + line;
+          })
+          let top = null;
+          let height = null;
+          let parent = null;
+          if (lineIds.length > 0) {
+              //compute the position of the single el (top and bottom and make a div)
+              const el = window.document.getElementById(lineIds[0]);
+              top = el.offsetTop;
+              height = el.offsetHeight;
+              parent = el.parentElement.parentElement;
+            if (lineIds.length > 1) {
+              const lastEl = window.document.getElementById(lineIds[lineIds.length - 1]);
+              const bottom = lastEl.offsetTop + lastEl.offsetHeight;
+              height = bottom - top;
+            }
+            if (top !== null && height !== null && parent !== null) {
+              // cook up a div (if necessary) and position it 
+              let div = window.document.getElementById("code-annotation-line-highlight");
+              if (div === null) {
+                div = window.document.createElement("div");
+                div.setAttribute("id", "code-annotation-line-highlight");
+                div.style.position = 'absolute';
+                parent.appendChild(div);
+              }
+              div.style.top = top - 2 + "px";
+              div.style.height = height + 4 + "px";
+              div.style.left = 0;
+              let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
+              if (gutterDiv === null) {
+                gutterDiv = window.document.createElement("div");
+                gutterDiv.setAttribute("id", "code-annotation-line-highlight-gutter");
+                gutterDiv.style.position = 'absolute';
+                const codeCell = window.document.getElementById(targetCell);
+                const gutter = codeCell.querySelector('.code-annotation-gutter');
+                gutter.appendChild(gutterDiv);
+              }
+              gutterDiv.style.top = top - 2 + "px";
+              gutterDiv.style.height = height + 4 + "px";
+            }
+            selectedAnnoteEl = annoteEl;
+          }
+        };
+        const unselectCodeLines = () => {
+          const elementsIds = ["code-annotation-line-highlight", "code-annotation-line-highlight-gutter"];
+          elementsIds.forEach((elId) => {
+            const div = window.document.getElementById(elId);
+            if (div) {
+              div.remove();
+            }
+          });
+          selectedAnnoteEl = undefined;
+        };
+          // Handle positioning of the toggle
+      window.addEventListener(
+        "resize",
+        throttle(() => {
+          elRect = undefined;
+          if (selectedAnnoteEl) {
+            selectCodeLines(selectedAnnoteEl);
+          }
+        }, 10)
+      );
+      function throttle(fn, ms) {
+      let throttle = false;
+      let timer;
+        return (...args) => {
+          if(!throttle) { // first call gets through
+              fn.apply(this, args);
+              throttle = true;
+          } else { // all the others get throttled
+              if(timer) clearTimeout(timer); // cancel #2
+              timer = setTimeout(() => {
+                fn.apply(this, args);
+                timer = throttle = false;
+              }, ms);
+          }
+        };
+      }
+        // Attach click handler to the DT
+        const annoteDls = window.document.querySelectorAll('dt[data-target-cell]');
+        for (const annoteDlNode of annoteDls) {
+          annoteDlNode.addEventListener('click', (event) => {
+            const clickedEl = event.target;
+            if (clickedEl !== selectedAnnoteEl) {
+              unselectCodeLines();
+              const activeEl = window.document.querySelector('dt[data-target-cell].code-annotation-active');
+              if (activeEl) {
+                activeEl.classList.remove('code-annotation-active');
+              }
+              selectCodeLines(clickedEl);
+              clickedEl.classList.add('code-annotation-active');
+            } else {
+              // Unselect the line
+              unselectCodeLines();
+              clickedEl.classList.remove('code-annotation-active');
+            }
+          });
+        }
+    const findCites = (el) => {
+      const parentEl = el.parentElement;
+      if (parentEl) {
+        const cites = parentEl.dataset.cites;
+        if (cites) {
+          return {
+            el,
+            cites: cites.split(' ')
+          };
+        } else {
+          return findCites(el.parentElement)
+        }
+      } else {
+        return undefined;
+      }
+    };
+    var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+    for (var i=0; i<bibliorefs.length; i++) {
+      const ref = bibliorefs[i];
+      const citeInfo = findCites(ref);
+      if (citeInfo) {
+        tippyHover(citeInfo.el, function() {
+          var popup = window.document.createElement('div');
+          citeInfo.cites.forEach(function(cite) {
+            var citeDiv = window.document.createElement('div');
+            citeDiv.classList.add('hanging-indent');
+            citeDiv.classList.add('csl-entry');
+            var biblioDiv = window.document.getElementById('ref-' + cite);
+            if (biblioDiv) {
+              citeDiv.innerHTML = biblioDiv.innerHTML;
+            }
+            popup.appendChild(citeDiv);
+          });
+          return popup.innerHTML;
+        });
+      }
+    }
+  });
+  </script>
+
+
+
+
+</body></html>

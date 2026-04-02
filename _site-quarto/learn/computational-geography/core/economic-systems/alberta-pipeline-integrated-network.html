@@ -1,0 +1,1460 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
+
+<meta charset="utf-8">
+<meta name="generator" content="quarto-1.8.27">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+
+<meta name="dcterms.date" content="2026-03-08">
+<meta name="description" content="A synthesis of Alberta’s full hydrocarbon pipeline system as a directed network graph — applying max-flow min-cut theory, network centrality analysis, and a multi-commodity netback price surface to understand the system’s structure, vulnerabilities, and economic geometry.">
+
+<title>The Integrated Network – Computational Geography</title>
+<style>
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: min(4vw, 1.5em);}
+div.column{flex: auto; overflow-x: auto;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+  width: 0.8em;
+  margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
+  vertical-align: middle;
+}
+/* CSS for syntax highlighting */
+html { -webkit-text-size-adjust: 100%; }
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+  { counter-reset: source-line 0; }
+pre.numberSource code > span
+  { position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+  { content: counter(source-line);
+    position: relative; left: -1em; text-align: right; vertical-align: baseline;
+    border: none; display: inline-block;
+    -webkit-touch-callout: none; -webkit-user-select: none;
+    -khtml-user-select: none; -moz-user-select: none;
+    -ms-user-select: none; user-select: none;
+    padding: 0 4px; width: 4em;
+  }
+pre.numberSource { margin-left: 3em;  padding-left: 4px; }
+div.sourceCode
+  {   }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
+</style>
+
+
+<script src="../site_libs/clipboard/clipboard.min.js"></script>
+<script src="../site_libs/quarto-html/tabby.min.js"></script>
+<script src="../site_libs/quarto-html/popper.min.js"></script>
+<script src="../site_libs/quarto-html/tippy.umd.min.js"></script>
+<script src="../site_libs/quarto-html/anchor.min.js"></script>
+<link href="../site_libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="../site_libs/quarto-html/light-border.css" rel="stylesheet">
+<link href="../site_libs/quarto-html/quarto-html-734cb40618f438257b19a1e532635a32.min.css" rel="stylesheet" append-hash="true" data-mode="light">
+<link href="../site_libs/quarto-html/quarto-syntax-highlighting-ed96de9b727972fe78a7b5d16c58bf87.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<script>
+  (function () {
+    var s = localStorage.getItem('theme');
+    var dark = s !== null ? s === 'dark' : false;
+    document.documentElement.dataset.theme = dark ? 'dark' : 'light';
+    document.documentElement.dataset.brand = 'wayward';
+  })();
+</script>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:ital,wght@0,300;0,400;0,600;0,700;0,800;0,900;1,700;1,800&amp;family=Barlow:wght@300;400;500;600&amp;family=IBM+Plex+Mono:ital,wght@0,300;0,400;0,500;1,300&amp;family=Literata:ital,opsz,wght@0,7..72,300;0,7..72,400;0,7..72,500;1,7..72,300;1,7..72,400&amp;display=swap" rel="stylesheet">
+
+  <script>window.backupDefine = window.define; window.define = undefined;</script><script src="https://cdn.jsdelivr.net/npm/katex@latest/dist/katex.min.js"></script>
+  <script>document.addEventListener("DOMContentLoaded", function () {
+ var mathElements = document.getElementsByClassName("math");
+ var macros = [];
+ for (var i = 0; i < mathElements.length; i++) {
+  var texText = mathElements[i].firstChild;
+  if (mathElements[i].tagName == "SPAN") {
+   katex.render(texText.data, mathElements[i], {
+    displayMode: mathElements[i].classList.contains('display'),
+    throwOnError: false,
+    macros: macros,
+    fleqn: false
+   });
+}}});
+  </script>
+  <script>window.define = window.backupDefine; window.backupDefine = undefined;</script><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@latest/dist/katex.min.css">
+
+<script type="text/javascript">
+const typesetMath = (el) => {
+  if (window.MathJax) {
+    // MathJax Typeset
+    window.MathJax.typeset([el]);
+  } else if (window.katex) {
+    // KaTeX Render
+    var mathElements = el.getElementsByClassName("math");
+    var macros = [];
+    for (var i = 0; i < mathElements.length; i++) {
+      var texText = mathElements[i].firstChild;
+      if (mathElements[i].tagName == "SPAN" && texText && texText.data) {
+        window.katex.render(texText.data, mathElements[i], {
+          displayMode: mathElements[i].classList.contains('display'),
+          throwOnError: false,
+          macros: macros,
+          fleqn: false
+        });
+      }
+    }
+  }
+}
+window.Quarto = {
+  typesetMath
+};
+</script>
+
+<link rel="stylesheet" href="../assets/css/quarto-wayward.css">
+</head>
+
+<body class="reading-body tag-hash-math tag-hash-viz">
+
+
+<header id="title-block-header">
+<h1 class="title"><span class="chapter-title">The Integrated Network</span></h1>
+<p class="subtitle">Graph Theory, Network Flow, and the Netback Price Surface Across Alberta’s Pipeline System</p>
+
+<p class="date">2026-03-08</p>
+</header>
+
+<nav id="TOC" role="doc-toc">
+    <h2 id="toc-title">Table of contents</h2>
+   
+  <ul>
+  <li><a href="#the-question" id="toc-the-question">1. The Question</a></li>
+  <li><a href="#the-conceptual-model" id="toc-the-conceptual-model">2. The Conceptual Model</a>
+  <ul>
+  <li><a href="#directed-graphs-for-pipeline-networks" id="toc-directed-graphs-for-pipeline-networks">Directed graphs for pipeline networks</a></li>
+  <li><a href="#the-max-flow-min-cut-theorem" id="toc-the-max-flow-min-cut-theorem">The max-flow min-cut theorem</a></li>
+  <li><a href="#centrality-measures" id="toc-centrality-measures">Centrality measures</a></li>
+  <li><a href="#the-netback-price-surface" id="toc-the-netback-price-surface">The netback price surface</a></li>
+  </ul></li>
+  <li><a href="#the-mathematical-model" id="toc-the-mathematical-model">3. The Mathematical Model</a>
+  <ul>
+  <li><a href="#max-flow-the-ford-fulkerson-framework" id="toc-max-flow-the-ford-fulkerson-framework">Max-flow: the Ford-Fulkerson framework</a></li>
+  <li><a href="#network-flow-conservation" id="toc-network-flow-conservation">Network flow conservation</a></li>
+  <li><a href="#minimum-cost-flow-for-multi-commodity-networks" id="toc-minimum-cost-flow-for-multi-commodity-networks">Minimum cost flow for multi-commodity networks</a></li>
+  </ul></li>
+  <li><a href="#worked-example-by-hand" id="toc-worked-example-by-hand">4. Worked Example by Hand</a>
+  <ul>
+  <li><a href="#minimum-cut-on-the-alberta-crude-oil-export-system" id="toc-minimum-cut-on-the-alberta-crude-oil-export-system">Minimum cut on the Alberta crude oil export system</a></li>
+  </ul></li>
+  <li><a href="#computational-implementation" id="toc-computational-implementation">5. Computational Implementation</a>
+  <ul>
+  <li><a href="#professional-implementation" id="toc-professional-implementation">Professional Implementation</a></li>
+  </ul></li>
+  <li><a href="#visualization" id="toc-visualization">6. Visualization</a>
+  <ul>
+  <li><a href="#figure-1-network-node-betweenness-centrality" id="toc-figure-1-network-node-betweenness-centrality">Figure 1 — Network Node Betweenness Centrality</a></li>
+  <li><a href="#figure-2-netback-price-surface-by-market-destination" id="toc-figure-2-netback-price-surface-by-market-destination">Figure 2 — Netback Price Surface by Market Destination</a></li>
+  <li><a href="#figure-3-multi-commodity-network-capacity-summary" id="toc-figure-3-multi-commodity-network-capacity-summary">Figure 3 — Multi-Commodity Network Capacity Summary</a></li>
+  <li><a href="#figure-4-max-flow-vs-minimum-cut-by-market-corridor" id="toc-figure-4-max-flow-vs-minimum-cut-by-market-corridor">Figure 4 — Max Flow vs Minimum Cut by Market Corridor</a></li>
+  <li><a href="#figure-5-integrated-network-flow-sankey" id="toc-figure-5-integrated-network-flow-sankey">Figure 5 — Integrated Network Flow: Sankey</a></li>
+  </ul></li>
+  <li><a href="#interpretation" id="toc-interpretation">7. Interpretation</a>
+  <ul>
+  <li><a href="#hardisty-is-the-networks-most-critical-node" id="toc-hardisty-is-the-networks-most-critical-node">Hardisty is the network’s most critical node</a></li>
+  <li><a href="#the-minimum-cut-is-not-where-most-people-look" id="toc-the-minimum-cut-is-not-where-most-people-look">The minimum cut is not where most people look</a></li>
+  <li><a href="#the-netback-surface-is-nearly-flat-which-matters" id="toc-the-netback-surface-is-nearly-flat-which-matters">The netback surface is nearly flat — which matters</a></li>
+  <li><a href="#the-integrated-system-is-structurally-robust-with-specific-exceptions" id="toc-the-integrated-system-is-structurally-robust-with-specific-exceptions">The integrated system is structurally robust — with specific exceptions</a></li>
+  </ul></li>
+  <li><a href="#what-could-go-wrong" id="toc-what-could-go-wrong">8. What Could Go Wrong?</a>
+  <ul>
+  <li><a href="#graph-simplification" id="toc-graph-simplification">Graph simplification</a></li>
+  <li><a href="#multi-commodity-coupling-is-complex" id="toc-multi-commodity-coupling-is-complex">Multi-commodity coupling is complex</a></li>
+  <li><a href="#netback-calculations-are-sensitive-to-exchange-rates" id="toc-netback-calculations-are-sensitive-to-exchange-rates">Netback calculations are sensitive to exchange rates</a></li>
+  </ul></li>
+  <li><a href="#summary" id="toc-summary">9. Summary</a></li>
+  <li><a href="#math-refresher" id="toc-math-refresher">Math Refresher</a>
+  <ul>
+  <li><a href="#graph-theory-basics" id="toc-graph-theory-basics">Graph theory basics</a></li>
+  <li><a href="#dijkstras-algorithm-in-one-paragraph" id="toc-dijkstras-algorithm-in-one-paragraph">Dijkstra’s algorithm in one paragraph</a></li>
+  </ul></li>
+  <li><a href="#sources-and-data-notes" id="toc-sources-and-data-notes">Sources and Data Notes</a></li>
+  </ul>
+</nav>
+<h2 id="the-question" class="anchored">1. The Question</h2>
+<p>When all four pipeline systems are treated as a single network, what does the geometry reveal that individual system analyses miss?</p>
+<p>Essays P1 through P4 examined Alberta’s pipeline infrastructure one commodity at a time: crude oil, NGLs and condensate, natural gas, refined products. Each essay found a large, multi-directional system with significant export capacity and some specific constraints.</p>
+<p>But the four systems are not independent. They share physical nodes — Hardisty is a hub for crude, condensate, and NGL gathering; Fort Saskatchewan is the fractionation hub for NGLs and the feedstock hub for petrochemicals; Edmonton is the origin of the refined products system and a major compression hub for the gas system. Constraints in one system propagate to others: a condensate shortage constrains dilbit production, which reduces crude throughput, which tightens Enbridge nominations.</p>
+<p>Treating the full system as a directed graph — with nodes representing hubs and terminals, and edges representing pipeline segments with defined capacities — allows us to apply the mathematics of network flow theory. This reveals which nodes are structurally critical, what the maximum sustainable throughput is, and how the netback price surface changes across the continent as a function of transport costs and market conditions.</p>
+<hr>
+<h2 id="the-conceptual-model" class="anchored">2. The Conceptual Model</h2>
+<h3 id="directed-graphs-for-pipeline-networks" class="anchored">Directed graphs for pipeline networks</h3>
+<p>A <strong>directed graph</strong> (digraph) <span class="math inline">G = (V, E)</span> consists of: - A set of <strong>vertices</strong> (nodes) <span class="math inline">V</span> — pipeline hubs, terminals, refineries, market price points - A set of <strong>directed edges</strong> <span class="math inline">E</span> — pipeline segments, each with a direction of flow and a capacity <span class="math inline">c(u,v)</span> in appropriate units</p>
+<p>For a multi-commodity pipeline network, each edge carries one or more commodity flows. We define: - <span class="math inline">f_k(u,v)</span> — the flow of commodity <span class="math inline">k</span> on edge <span class="math inline">(u,v)</span> - <span class="math inline">c_k(u,v)</span> — the capacity of edge <span class="math inline">(u,v)</span> for commodity <span class="math inline">k</span> - The <strong>feasibility constraint</strong>: <span class="math inline">f_k(u,v) \leq c_k(u,v)</span> - The <strong>conservation constraint</strong> at each node: flow in = flow out (except at source and sink nodes)</p>
+<h3 id="the-max-flow-min-cut-theorem" class="anchored">The max-flow min-cut theorem</h3>
+<p>For a single-commodity network with a defined source <span class="math inline">s</span> and sink <span class="math inline">t</span>, the <strong>maximum flow</strong> from <span class="math inline">s</span> to <span class="math inline">t</span> equals the <strong>minimum cut</strong> — the minimum total capacity of any set of edges whose removal disconnects <span class="math inline">s</span> from <span class="math inline">t</span>.</p>
+<p><span class="math display">\max \text{ flow}(s,t) = \min \text{ cut}(s,t)</span></p>
+<p>This theorem, due to Ford and Fulkerson (1956), is one of the most useful results in combinatorial optimization. For pipeline analysis it means: <strong>the binding constraint on total system throughput is always a cut — a set of pipeline segments whose combined capacity is smaller than any other disconnecting set.</strong></p>
+<p>Finding the minimum cut tells us which segments, if constrained or disrupted, most limit total system throughput. This is the network’s structural vulnerability.</p>
+<h3 id="centrality-measures" class="anchored">Centrality measures</h3>
+<p><strong>Betweenness centrality</strong> of a node <span class="math inline">v</span> measures how often it lies on the shortest path between other node pairs:</p>
+<p><span class="math display">C_B(v) = \sum_{s \neq v \neq t} \frac{\sigma_{st}(v)}{\sigma_{st}}</span></p>
+<p>where <span class="math inline">\sigma_{st}</span> is the total number of shortest paths from <span class="math inline">s</span> to <span class="math inline">t</span>, and <span class="math inline">\sigma_{st}(v)</span> is the number that pass through <span class="math inline">v</span>.</p>
+<p>A node with high betweenness centrality is a structural bottleneck: much of the network’s flow passes through it. Its disruption degrades network performance disproportionately. In Alberta’s pipeline network, we expect Hardisty and Fort Saskatchewan to show high betweenness centrality.</p>
+<h3 id="the-netback-price-surface" class="anchored">The netback price surface</h3>
+<p>Across the pipeline network, every destination market has an associated netback price for a given commodity. Mapping these values spatially creates a <strong>price surface</strong> — a function over geographic space where the value at each market point is the producer netback after subtracting all transport costs along the cheapest path to that market.</p>
+<p>Formally, if we define <span class="math inline">w(e)</span> as the transport cost on edge <span class="math inline">e</span>, the netback at destination <span class="math inline">d</span> for commodity <span class="math inline">k</span> is:</p>
+<p><span class="math display">P_{\text{netback}}(d, k) = P_{\text{market}}(d, k)
+- \min_{\text{path}} \sum_{e \in \text{path}} w_k(e)</span></p>
+<p>The minimum-cost path from the Alberta production node to market <span class="math inline">d</span> determines the achievable netback. If multiple paths exist, the best netback uses the lowest-cost routing. If only one path exists, the operator of that path has pricing power — the basis differential cannot be arbitraged away.</p>
+<hr>
+<h2 id="the-mathematical-model" class="anchored">3. The Mathematical Model</h2>
+<h3 id="max-flow-the-ford-fulkerson-framework" class="anchored">Max-flow: the Ford-Fulkerson framework</h3>
+<p>For a network with source <span class="math inline">s</span>, sink <span class="math inline">t</span>, and edge capacities <span class="math inline">c(u,v)</span>, the Ford-Fulkerson algorithm finds maximum flow by iteratively finding <strong>augmenting paths</strong> — paths from <span class="math inline">s</span> to <span class="math inline">t</span> with available residual capacity — and pushing flow along them until no augmenting path exists.</p>
+<p>The <strong>residual graph</strong> <span class="math inline">G_f</span> has residual capacity:</p>
+<p><span class="math display">c_f(u,v) = c(u,v) - f(u,v)</span></p>
+<p>An augmenting path exists if there is a path in <span class="math inline">G_f</span> from <span class="math inline">s</span> to <span class="math inline">t</span> with <span class="math inline">c_f &gt; 0</span> on every edge. The Edmonds-Karp variant uses breadth-first search to find augmenting paths, guaranteeing <span class="math inline">O(VE^2)</span> runtime.</p>
+<h3 id="network-flow-conservation" class="anchored">Network flow conservation</h3>
+<p>At every intermediate node <span class="math inline">v</span> (not source or sink), flow is conserved:</p>
+<p><span class="math display">\sum_{u : (u,v) \in E} f(u,v) = \sum_{w : (v,w) \in E} f(v,w)</span></p>
+<p>In a pipeline network, this means the total barrels entering a hub equals the total barrels leaving it — no storage accumulation in the steady-state model (storage tanks at hubs are represented separately as capacity buffers, not flow nodes).</p>
+<h3 id="minimum-cost-flow-for-multi-commodity-networks" class="anchored">Minimum cost flow for multi-commodity networks</h3>
+<p>The real Alberta network is a <strong>multi-commodity flow</strong> problem: crude, NGLs, gas, and products flow simultaneously on overlapping (but not identical) network topologies. The general multi-commodity flow problem minimizes total transport cost subject to capacity and conservation constraints:</p>
+<p><span class="math display">\min \sum_k \sum_{(u,v) \in E} c_k(u,v) \cdot f_k(u,v)</span></p>
+<p>subject to: - $0 f_k(u,v) _k(u,v)$ for all <span class="math inline">k</span>, <span class="math inline">(u,v)</span> - Flow conservation at each node for each commodity <span class="math inline">k</span> - Shared capacity constraints where pipelines carry multiple products</p>
+<p>This is a linear program solvable with standard LP solvers. For understanding, the single-commodity max-flow model on each product subsystem captures the essential structure.</p>
+<hr>
+<h2 id="worked-example-by-hand" class="anchored">4. Worked Example by Hand</h2>
+<h3 id="minimum-cut-on-the-alberta-crude-oil-export-system" class="anchored">Minimum cut on the Alberta crude oil export system</h3>
+<p>Consider a simplified version of the crude export network with four nodes and five edges:</p>
+<pre><code>Node A: Alberta production (Fort McMurray / Hardisty)
+Node B: U.S. Midwest hub (Superior WI)
+Node C: Pacific tidewater (Burnaby BC)
+Node D: Gulf Coast hub (Cushing OK / Port Arthur TX)
+
+Edges (capacities in 000 bbl/d):
+A → B : 3,100  (Enbridge Mainline)
+A → C :   890  (Trans Mountain)
+A → D :   870  (Keystone + Express, simplified)
+B → D :   800  (Capline, southbound, simplified)</code></pre>
+<p><strong>Find the minimum cut separating A from all market sinks.</strong></p>
+<p>A <strong>cut</strong> is a partition of nodes into two sets <span class="math inline">S</span> (containing <span class="math inline">A</span>) and <span class="math inline">T</span> (containing all market nodes). The cut capacity is the sum of capacities of edges from <span class="math inline">S</span> to <span class="math inline">T</span>.</p>
+<p><strong>Cut 1:</strong> <span class="math inline">S = \{A\}</span>, <span class="math inline">T = \{B, C, D\}</span></p>
+<p>Cut edges: <span class="math inline">A \to B</span>, <span class="math inline">A \to C</span>, <span class="math inline">A \to D</span></p>
+<p><span class="math display">\text{Capacity} = 3{,}100 + 890 + 870 = 4{,}860 \text{ thousand bbl/d}</span></p>
+<p><strong>Cut 2:</strong> <span class="math inline">S = \{A, B\}</span>, <span class="math inline">T = \{C, D\}</span></p>
+<p>Cut edges from <span class="math inline">S</span> to <span class="math inline">T</span>: <span class="math inline">A \to C</span> (890), <span class="math inline">A \to D</span> (870), <span class="math inline">B \to D</span> (800)</p>
+<p><span class="math display">\text{Capacity} = 890 + 870 + 800 = 2{,}560 \text{ thousand bbl/d}</span></p>
+<p>Cut 2 is smaller. But let us check: is Cut 1 actually achievable as a flow? The max flow is bounded by the minimum cut, which appears to be Cut 2 at 2,560 thousand bbl/d — but Cut 1 gives 4,860. The minimum cut is the smaller of the two, which is Cut 2 at 2,560 thousand bbl/d.</p>
+<p>This means that even if the Enbridge Mainline (A→B) is fully utilized, the onward connections from B to the Gulf Coast (B→D at 800 thousand bbl/d) constrain total Alberta-to-Gulf-Coast flow — the Mainline itself is not the binding constraint for Alberta-to-Gulf routing.</p>
+<p>Alberta’s maximum crude flow <strong>to the Gulf Coast specifically</strong> is constrained by the combined capacity of (1) direct Alberta-to-Cushing routes and (2) the connecting pipeline from Superior to Cushing — not by the Enbridge Mainline itself, which has ample capacity to deliver to the Midwest but limited onward connections southward.</p>
+<p><strong>Step 2 — Netback comparison by path:</strong></p>
+<p>At WTI $75 USD/bbl, CAD/USD 0.73:</p>
+<table class="caption-top">
+<colgroup>
+<col style="width: 25%">
+<col style="width: 25%">
+<col style="width: 25%">
+<col style="width: 25%">
+</colgroup>
+<thead>
+<tr class="header">
+<th style="text-align: left;">Destination</th>
+<th style="text-align: right;">Market price (CAD/bbl)</th>
+<th style="text-align: right;">Transport cost (CAD/bbl)</th>
+<th style="text-align: right;">Netback (CAD/bbl)</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td style="text-align: left;">Superior WI (Enbridge)</td>
+<td style="text-align: right;">$93.2</td>
+<td style="text-align: right;">$9.9</td>
+<td style="text-align: right;">$83.3</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">Burnaby BC (TMX)</td>
+<td style="text-align: right;">$97.3</td>
+<td style="text-align: right;">$15.1</td>
+<td style="text-align: right;">$82.2</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">Port Arthur TX (Keystone)</td>
+<td style="text-align: right;">$95.9</td>
+<td style="text-align: right;">$14.4</td>
+<td style="text-align: right;">$81.5</td>
+</tr>
+</tbody>
+</table>
+<p>The minimum-cost path from Alberta to each market determines the maximum achievable netback. Superior WI offers the best netback in this scenario — lower transport cost more than compensates for the slightly lower destination price.</p>
+<hr>
+<h2 id="computational-implementation" class="anchored">5. Computational Implementation</h2>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb2"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Foundation Implementation</span></span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a><span class="co"># Pipeline network as directed graph: max-flow and netback surface</span></span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> collections <span class="im">import</span> defaultdict, deque</span>
+<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a><span class="kw">class</span> PipelineNetwork:</span>
+<span id="cb2-7"><a href="#cb2-7" aria-hidden="true" tabindex="-1"></a>    <span class="co">"""</span></span>
+<span id="cb2-8"><a href="#cb2-8" aria-hidden="true" tabindex="-1"></a><span class="co">    Directed graph representing a pipeline network.</span></span>
+<span id="cb2-9"><a href="#cb2-9" aria-hidden="true" tabindex="-1"></a><span class="co">    Supports max-flow (Edmonds-Karp BFS) and netback surface calculation.</span></span>
+<span id="cb2-10"><a href="#cb2-10" aria-hidden="true" tabindex="-1"></a><span class="co">    """</span></span>
+<span id="cb2-11"><a href="#cb2-11" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-12"><a href="#cb2-12" aria-hidden="true" tabindex="-1"></a>    <span class="kw">def</span> <span class="fu">__init__</span>(<span class="va">self</span>):</span>
+<span id="cb2-13"><a href="#cb2-13" aria-hidden="true" tabindex="-1"></a>        <span class="va">self</span>.nodes <span class="op">=</span> {}          <span class="co"># node_id -&gt; {"name", "type", "lat", "lon"}</span></span>
+<span id="cb2-14"><a href="#cb2-14" aria-hidden="true" tabindex="-1"></a>        <span class="va">self</span>.edges <span class="op">=</span> []          <span class="co"># list of (u, v, capacity, tariff, commodity)</span></span>
+<span id="cb2-15"><a href="#cb2-15" aria-hidden="true" tabindex="-1"></a>        <span class="va">self</span>.adj <span class="op">=</span> defaultdict(<span class="bu">dict</span>)  <span class="co"># adjacency for flow algorithms</span></span>
+<span id="cb2-16"><a href="#cb2-16" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-17"><a href="#cb2-17" aria-hidden="true" tabindex="-1"></a>    <span class="kw">def</span> add_node(<span class="va">self</span>, node_id: <span class="bu">str</span>, name: <span class="bu">str</span>, node_type: <span class="bu">str</span>,</span>
+<span id="cb2-18"><a href="#cb2-18" aria-hidden="true" tabindex="-1"></a>                  lat: <span class="bu">float</span> <span class="op">=</span> <span class="fl">0.0</span>, lon: <span class="bu">float</span> <span class="op">=</span> <span class="fl">0.0</span>):</span>
+<span id="cb2-19"><a href="#cb2-19" aria-hidden="true" tabindex="-1"></a>        <span class="va">self</span>.nodes[node_id] <span class="op">=</span> {<span class="st">"name"</span>: name, <span class="st">"type"</span>: node_type,</span>
+<span id="cb2-20"><a href="#cb2-20" aria-hidden="true" tabindex="-1"></a>                                <span class="st">"lat"</span>: lat, <span class="st">"lon"</span>: lon}</span>
+<span id="cb2-21"><a href="#cb2-21" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-22"><a href="#cb2-22" aria-hidden="true" tabindex="-1"></a>    <span class="kw">def</span> add_edge(<span class="va">self</span>, u: <span class="bu">str</span>, v: <span class="bu">str</span>, capacity: <span class="bu">float</span>,</span>
+<span id="cb2-23"><a href="#cb2-23" aria-hidden="true" tabindex="-1"></a>                  tariff_cad_bbl: <span class="bu">float</span> <span class="op">=</span> <span class="fl">0.0</span>, commodity: <span class="bu">str</span> <span class="op">=</span> <span class="st">"crude"</span>):</span>
+<span id="cb2-24"><a href="#cb2-24" aria-hidden="true" tabindex="-1"></a>        <span class="va">self</span>.edges.append((u, v, capacity, tariff_cad_bbl, commodity))</span>
+<span id="cb2-25"><a href="#cb2-25" aria-hidden="true" tabindex="-1"></a>        <span class="co"># Build residual graph structure</span></span>
+<span id="cb2-26"><a href="#cb2-26" aria-hidden="true" tabindex="-1"></a>        <span class="cf">if</span> v <span class="kw">not</span> <span class="kw">in</span> <span class="va">self</span>.adj[u]:</span>
+<span id="cb2-27"><a href="#cb2-27" aria-hidden="true" tabindex="-1"></a>            <span class="va">self</span>.adj[u][v] <span class="op">=</span> {<span class="st">"cap"</span>: <span class="dv">0</span>, <span class="st">"flow"</span>: <span class="dv">0</span>, <span class="st">"tariff"</span>: tariff_cad_bbl}</span>
+<span id="cb2-28"><a href="#cb2-28" aria-hidden="true" tabindex="-1"></a>        <span class="va">self</span>.adj[u][v][<span class="st">"cap"</span>] <span class="op">+=</span> capacity</span>
+<span id="cb2-29"><a href="#cb2-29" aria-hidden="true" tabindex="-1"></a>        <span class="cf">if</span> u <span class="kw">not</span> <span class="kw">in</span> <span class="va">self</span>.adj[v]:</span>
+<span id="cb2-30"><a href="#cb2-30" aria-hidden="true" tabindex="-1"></a>            <span class="va">self</span>.adj[v][u] <span class="op">=</span> {<span class="st">"cap"</span>: <span class="dv">0</span>, <span class="st">"flow"</span>: <span class="dv">0</span>, <span class="st">"tariff"</span>: <span class="dv">0</span>}  <span class="co"># reverse edge</span></span>
+<span id="cb2-31"><a href="#cb2-31" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-32"><a href="#cb2-32" aria-hidden="true" tabindex="-1"></a>    <span class="kw">def</span> _bfs_path(<span class="va">self</span>, source: <span class="bu">str</span>, sink: <span class="bu">str</span>) <span class="op">-&gt;</span> <span class="bu">list</span>:</span>
+<span id="cb2-33"><a href="#cb2-33" aria-hidden="true" tabindex="-1"></a>        <span class="co">"""BFS to find augmenting path in residual graph."""</span></span>
+<span id="cb2-34"><a href="#cb2-34" aria-hidden="true" tabindex="-1"></a>        visited <span class="op">=</span> {source}</span>
+<span id="cb2-35"><a href="#cb2-35" aria-hidden="true" tabindex="-1"></a>        queue <span class="op">=</span> deque([[source]])</span>
+<span id="cb2-36"><a href="#cb2-36" aria-hidden="true" tabindex="-1"></a>        <span class="cf">while</span> queue:</span>
+<span id="cb2-37"><a href="#cb2-37" aria-hidden="true" tabindex="-1"></a>            path <span class="op">=</span> queue.popleft()</span>
+<span id="cb2-38"><a href="#cb2-38" aria-hidden="true" tabindex="-1"></a>            node <span class="op">=</span> path[<span class="op">-</span><span class="dv">1</span>]</span>
+<span id="cb2-39"><a href="#cb2-39" aria-hidden="true" tabindex="-1"></a>            <span class="cf">if</span> node <span class="op">==</span> sink:</span>
+<span id="cb2-40"><a href="#cb2-40" aria-hidden="true" tabindex="-1"></a>                <span class="cf">return</span> path</span>
+<span id="cb2-41"><a href="#cb2-41" aria-hidden="true" tabindex="-1"></a>            <span class="cf">for</span> neighbour, data <span class="kw">in</span> <span class="va">self</span>.adj[node].items():</span>
+<span id="cb2-42"><a href="#cb2-42" aria-hidden="true" tabindex="-1"></a>                residual <span class="op">=</span> data[<span class="st">"cap"</span>] <span class="op">-</span> data[<span class="st">"flow"</span>]</span>
+<span id="cb2-43"><a href="#cb2-43" aria-hidden="true" tabindex="-1"></a>                <span class="cf">if</span> neighbour <span class="kw">not</span> <span class="kw">in</span> visited <span class="kw">and</span> residual <span class="op">&gt;</span> <span class="dv">0</span>:</span>
+<span id="cb2-44"><a href="#cb2-44" aria-hidden="true" tabindex="-1"></a>                    visited.add(neighbour)</span>
+<span id="cb2-45"><a href="#cb2-45" aria-hidden="true" tabindex="-1"></a>                    queue.append(path <span class="op">+</span> [neighbour])</span>
+<span id="cb2-46"><a href="#cb2-46" aria-hidden="true" tabindex="-1"></a>        <span class="cf">return</span> []</span>
+<span id="cb2-47"><a href="#cb2-47" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-48"><a href="#cb2-48" aria-hidden="true" tabindex="-1"></a>    <span class="kw">def</span> max_flow(<span class="va">self</span>, source: <span class="bu">str</span>, sink: <span class="bu">str</span>) <span class="op">-&gt;</span> <span class="bu">float</span>:</span>
+<span id="cb2-49"><a href="#cb2-49" aria-hidden="true" tabindex="-1"></a>        <span class="co">"""Edmonds-Karp max-flow algorithm."""</span></span>
+<span id="cb2-50"><a href="#cb2-50" aria-hidden="true" tabindex="-1"></a>        total_flow <span class="op">=</span> <span class="fl">0.0</span></span>
+<span id="cb2-51"><a href="#cb2-51" aria-hidden="true" tabindex="-1"></a>        <span class="cf">while</span> <span class="va">True</span>:</span>
+<span id="cb2-52"><a href="#cb2-52" aria-hidden="true" tabindex="-1"></a>            path <span class="op">=</span> <span class="va">self</span>._bfs_path(source, sink)</span>
+<span id="cb2-53"><a href="#cb2-53" aria-hidden="true" tabindex="-1"></a>            <span class="cf">if</span> <span class="kw">not</span> path:</span>
+<span id="cb2-54"><a href="#cb2-54" aria-hidden="true" tabindex="-1"></a>                <span class="cf">break</span></span>
+<span id="cb2-55"><a href="#cb2-55" aria-hidden="true" tabindex="-1"></a>            <span class="co"># Find bottleneck</span></span>
+<span id="cb2-56"><a href="#cb2-56" aria-hidden="true" tabindex="-1"></a>            bottleneck <span class="op">=</span> <span class="bu">min</span>(</span>
+<span id="cb2-57"><a href="#cb2-57" aria-hidden="true" tabindex="-1"></a>                <span class="va">self</span>.adj[path[i]][path[i<span class="op">+</span><span class="dv">1</span>]][<span class="st">"cap"</span>]</span>
+<span id="cb2-58"><a href="#cb2-58" aria-hidden="true" tabindex="-1"></a>                <span class="op">-</span> <span class="va">self</span>.adj[path[i]][path[i<span class="op">+</span><span class="dv">1</span>]][<span class="st">"flow"</span>]</span>
+<span id="cb2-59"><a href="#cb2-59" aria-hidden="true" tabindex="-1"></a>                <span class="cf">for</span> i <span class="kw">in</span> <span class="bu">range</span>(<span class="bu">len</span>(path) <span class="op">-</span> <span class="dv">1</span>)</span>
+<span id="cb2-60"><a href="#cb2-60" aria-hidden="true" tabindex="-1"></a>            )</span>
+<span id="cb2-61"><a href="#cb2-61" aria-hidden="true" tabindex="-1"></a>            <span class="co"># Update flows</span></span>
+<span id="cb2-62"><a href="#cb2-62" aria-hidden="true" tabindex="-1"></a>            <span class="cf">for</span> i <span class="kw">in</span> <span class="bu">range</span>(<span class="bu">len</span>(path) <span class="op">-</span> <span class="dv">1</span>):</span>
+<span id="cb2-63"><a href="#cb2-63" aria-hidden="true" tabindex="-1"></a>                <span class="va">self</span>.adj[path[i]][path[i<span class="op">+</span><span class="dv">1</span>]][<span class="st">"flow"</span>] <span class="op">+=</span> bottleneck</span>
+<span id="cb2-64"><a href="#cb2-64" aria-hidden="true" tabindex="-1"></a>                <span class="va">self</span>.adj[path[i<span class="op">+</span><span class="dv">1</span>]][path[i]][<span class="st">"flow"</span>] <span class="op">-=</span> bottleneck</span>
+<span id="cb2-65"><a href="#cb2-65" aria-hidden="true" tabindex="-1"></a>            total_flow <span class="op">+=</span> bottleneck</span>
+<span id="cb2-66"><a href="#cb2-66" aria-hidden="true" tabindex="-1"></a>        <span class="cf">return</span> total_flow</span>
+<span id="cb2-67"><a href="#cb2-67" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-68"><a href="#cb2-68" aria-hidden="true" tabindex="-1"></a>    <span class="kw">def</span> shortest_cost_path(<span class="va">self</span>, source: <span class="bu">str</span>, target: <span class="bu">str</span>) <span class="op">-&gt;</span> <span class="bu">tuple</span>:</span>
+<span id="cb2-69"><a href="#cb2-69" aria-hidden="true" tabindex="-1"></a>        <span class="co">"""</span></span>
+<span id="cb2-70"><a href="#cb2-70" aria-hidden="true" tabindex="-1"></a><span class="co">        Dijkstra's algorithm on tariff weights.</span></span>
+<span id="cb2-71"><a href="#cb2-71" aria-hidden="true" tabindex="-1"></a><span class="co">        Returns (total_tariff, path).</span></span>
+<span id="cb2-72"><a href="#cb2-72" aria-hidden="true" tabindex="-1"></a><span class="co">        """</span></span>
+<span id="cb2-73"><a href="#cb2-73" aria-hidden="true" tabindex="-1"></a>        <span class="im">import</span> heapq</span>
+<span id="cb2-74"><a href="#cb2-74" aria-hidden="true" tabindex="-1"></a>        dist <span class="op">=</span> {n: <span class="bu">float</span>(<span class="st">'inf'</span>) <span class="cf">for</span> n <span class="kw">in</span> <span class="va">self</span>.nodes}</span>
+<span id="cb2-75"><a href="#cb2-75" aria-hidden="true" tabindex="-1"></a>        dist[source] <span class="op">=</span> <span class="fl">0.0</span></span>
+<span id="cb2-76"><a href="#cb2-76" aria-hidden="true" tabindex="-1"></a>        prev <span class="op">=</span> {}</span>
+<span id="cb2-77"><a href="#cb2-77" aria-hidden="true" tabindex="-1"></a>        pq <span class="op">=</span> [(<span class="fl">0.0</span>, source)]</span>
+<span id="cb2-78"><a href="#cb2-78" aria-hidden="true" tabindex="-1"></a>        <span class="cf">while</span> pq:</span>
+<span id="cb2-79"><a href="#cb2-79" aria-hidden="true" tabindex="-1"></a>            cost, u <span class="op">=</span> heapq.heappop(pq)</span>
+<span id="cb2-80"><a href="#cb2-80" aria-hidden="true" tabindex="-1"></a>            <span class="cf">if</span> cost <span class="op">&gt;</span> dist[u]:</span>
+<span id="cb2-81"><a href="#cb2-81" aria-hidden="true" tabindex="-1"></a>                <span class="cf">continue</span></span>
+<span id="cb2-82"><a href="#cb2-82" aria-hidden="true" tabindex="-1"></a>            <span class="cf">for</span> v, data <span class="kw">in</span> <span class="va">self</span>.adj[u].items():</span>
+<span id="cb2-83"><a href="#cb2-83" aria-hidden="true" tabindex="-1"></a>                <span class="cf">if</span> data[<span class="st">"cap"</span>] <span class="op">&gt;</span> <span class="dv">0</span>:  <span class="co"># only forward edges</span></span>
+<span id="cb2-84"><a href="#cb2-84" aria-hidden="true" tabindex="-1"></a>                    new_cost <span class="op">=</span> cost <span class="op">+</span> data.get(<span class="st">"tariff"</span>, <span class="fl">0.0</span>)</span>
+<span id="cb2-85"><a href="#cb2-85" aria-hidden="true" tabindex="-1"></a>                    <span class="cf">if</span> new_cost <span class="op">&lt;</span> dist[v]:</span>
+<span id="cb2-86"><a href="#cb2-86" aria-hidden="true" tabindex="-1"></a>                        dist[v] <span class="op">=</span> new_cost</span>
+<span id="cb2-87"><a href="#cb2-87" aria-hidden="true" tabindex="-1"></a>                        prev[v] <span class="op">=</span> u</span>
+<span id="cb2-88"><a href="#cb2-88" aria-hidden="true" tabindex="-1"></a>                        heapq.heappush(pq, (new_cost, v))</span>
+<span id="cb2-89"><a href="#cb2-89" aria-hidden="true" tabindex="-1"></a>        <span class="co"># Reconstruct path</span></span>
+<span id="cb2-90"><a href="#cb2-90" aria-hidden="true" tabindex="-1"></a>        path <span class="op">=</span> []</span>
+<span id="cb2-91"><a href="#cb2-91" aria-hidden="true" tabindex="-1"></a>        node <span class="op">=</span> target</span>
+<span id="cb2-92"><a href="#cb2-92" aria-hidden="true" tabindex="-1"></a>        <span class="cf">while</span> node <span class="kw">in</span> prev:</span>
+<span id="cb2-93"><a href="#cb2-93" aria-hidden="true" tabindex="-1"></a>            path.append(node)</span>
+<span id="cb2-94"><a href="#cb2-94" aria-hidden="true" tabindex="-1"></a>            node <span class="op">=</span> prev[node]</span>
+<span id="cb2-95"><a href="#cb2-95" aria-hidden="true" tabindex="-1"></a>        path.append(source)</span>
+<span id="cb2-96"><a href="#cb2-96" aria-hidden="true" tabindex="-1"></a>        <span class="cf">return</span> dist[target], <span class="bu">list</span>(<span class="bu">reversed</span>(path))</span>
+<span id="cb2-97"><a href="#cb2-97" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-98"><a href="#cb2-98" aria-hidden="true" tabindex="-1"></a>    <span class="kw">def</span> netback_surface(<span class="va">self</span>,</span>
+<span id="cb2-99"><a href="#cb2-99" aria-hidden="true" tabindex="-1"></a>                         source: <span class="bu">str</span>,</span>
+<span id="cb2-100"><a href="#cb2-100" aria-hidden="true" tabindex="-1"></a>                         markets: <span class="bu">dict</span>,</span>
+<span id="cb2-101"><a href="#cb2-101" aria-hidden="true" tabindex="-1"></a>                         quality_discount_cad: <span class="bu">float</span> <span class="op">=</span> <span class="fl">19.0</span>) <span class="op">-&gt;</span> <span class="bu">dict</span>:</span>
+<span id="cb2-102"><a href="#cb2-102" aria-hidden="true" tabindex="-1"></a>        <span class="co">"""</span></span>
+<span id="cb2-103"><a href="#cb2-103" aria-hidden="true" tabindex="-1"></a><span class="co">        Compute netback at each market destination.</span></span>
+<span id="cb2-104"><a href="#cb2-104" aria-hidden="true" tabindex="-1"></a><span class="co">        markets: {node_id: market_price_cad_bbl}</span></span>
+<span id="cb2-105"><a href="#cb2-105" aria-hidden="true" tabindex="-1"></a><span class="co">        """</span></span>
+<span id="cb2-106"><a href="#cb2-106" aria-hidden="true" tabindex="-1"></a>        results <span class="op">=</span> {}</span>
+<span id="cb2-107"><a href="#cb2-107" aria-hidden="true" tabindex="-1"></a>        <span class="cf">for</span> market_id, price <span class="kw">in</span> markets.items():</span>
+<span id="cb2-108"><a href="#cb2-108" aria-hidden="true" tabindex="-1"></a>            tariff, path <span class="op">=</span> <span class="va">self</span>.shortest_cost_path(source, market_id)</span>
+<span id="cb2-109"><a href="#cb2-109" aria-hidden="true" tabindex="-1"></a>            netback <span class="op">=</span> price <span class="op">-</span> tariff <span class="op">-</span> quality_discount_cad</span>
+<span id="cb2-110"><a href="#cb2-110" aria-hidden="true" tabindex="-1"></a>            results[market_id] <span class="op">=</span> {</span>
+<span id="cb2-111"><a href="#cb2-111" aria-hidden="true" tabindex="-1"></a>                <span class="st">"market_price"</span>: price,</span>
+<span id="cb2-112"><a href="#cb2-112" aria-hidden="true" tabindex="-1"></a>                <span class="st">"transport_tariff"</span>: tariff,</span>
+<span id="cb2-113"><a href="#cb2-113" aria-hidden="true" tabindex="-1"></a>                <span class="st">"quality_discount"</span>: quality_discount_cad,</span>
+<span id="cb2-114"><a href="#cb2-114" aria-hidden="true" tabindex="-1"></a>                <span class="st">"netback"</span>: netback,</span>
+<span id="cb2-115"><a href="#cb2-115" aria-hidden="true" tabindex="-1"></a>                <span class="st">"path"</span>: path,</span>
+<span id="cb2-116"><a href="#cb2-116" aria-hidden="true" tabindex="-1"></a>                <span class="st">"n_hops"</span>: <span class="bu">len</span>(path) <span class="op">-</span> <span class="dv">1</span></span>
+<span id="cb2-117"><a href="#cb2-117" aria-hidden="true" tabindex="-1"></a>            }</span>
+<span id="cb2-118"><a href="#cb2-118" aria-hidden="true" tabindex="-1"></a>        <span class="cf">return</span> results</span>
+<span id="cb2-119"><a href="#cb2-119" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-120"><a href="#cb2-120" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-121"><a href="#cb2-121" aria-hidden="true" tabindex="-1"></a><span class="co"># --- Build Alberta crude network ---</span></span>
+<span id="cb2-122"><a href="#cb2-122" aria-hidden="true" tabindex="-1"></a>net <span class="op">=</span> PipelineNetwork()</span>
+<span id="cb2-123"><a href="#cb2-123" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-124"><a href="#cb2-124" aria-hidden="true" tabindex="-1"></a><span class="co"># Nodes: Alberta production hubs</span></span>
+<span id="cb2-125"><a href="#cb2-125" aria-hidden="true" tabindex="-1"></a>net.add_node(<span class="st">"HARDISTY"</span>,  <span class="st">"Hardisty AB"</span>,            <span class="st">"hub"</span>,     <span class="fl">52.67</span>, <span class="op">-</span><span class="fl">111.30</span>)</span>
+<span id="cb2-126"><a href="#cb2-126" aria-hidden="true" tabindex="-1"></a>net.add_node(<span class="st">"EDMONTON"</span>,  <span class="st">"Edmonton AB"</span>,             <span class="st">"hub"</span>,     <span class="fl">53.55</span>, <span class="op">-</span><span class="fl">113.49</span>)</span>
+<span id="cb2-127"><a href="#cb2-127" aria-hidden="true" tabindex="-1"></a>net.add_node(<span class="st">"FSK"</span>,       <span class="st">"Fort Saskatchewan AB"</span>,    <span class="st">"hub"</span>,     <span class="fl">53.71</span>, <span class="op">-</span><span class="fl">113.21</span>)</span>
+<span id="cb2-128"><a href="#cb2-128" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-129"><a href="#cb2-129" aria-hidden="true" tabindex="-1"></a><span class="co"># Nodes: Canadian intermediate</span></span>
+<span id="cb2-130"><a href="#cb2-130" aria-hidden="true" tabindex="-1"></a>net.add_node(<span class="st">"SUPERIOR"</span>,  <span class="st">"Superior WI"</span>,             <span class="st">"hub"</span>,     <span class="fl">46.72</span>,  <span class="op">-</span><span class="fl">92.10</span>)</span>
+<span id="cb2-131"><a href="#cb2-131" aria-hidden="true" tabindex="-1"></a>net.add_node(<span class="st">"BURNABY"</span>,   <span class="st">"Burnaby BC (Westridge)"</span>,  <span class="st">"terminal"</span>,<span class="fl">49.25</span>, <span class="op">-</span><span class="fl">122.95</span>)</span>
+<span id="cb2-132"><a href="#cb2-132" aria-hidden="true" tabindex="-1"></a>net.add_node(<span class="st">"SARNIA"</span>,    <span class="st">"Sarnia ON"</span>,               <span class="st">"terminal"</span>,<span class="fl">42.97</span>,  <span class="op">-</span><span class="fl">82.40</span>)</span>
+<span id="cb2-133"><a href="#cb2-133" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-134"><a href="#cb2-134" aria-hidden="true" tabindex="-1"></a><span class="co"># Nodes: U.S. market hubs</span></span>
+<span id="cb2-135"><a href="#cb2-135" aria-hidden="true" tabindex="-1"></a>net.add_node(<span class="st">"PATOKA"</span>,    <span class="st">"Patoka IL"</span>,               <span class="st">"market"</span>,  <span class="fl">38.75</span>,  <span class="op">-</span><span class="fl">88.63</span>)</span>
+<span id="cb2-136"><a href="#cb2-136" aria-hidden="true" tabindex="-1"></a>net.add_node(<span class="st">"CUSHING"</span>,   <span class="st">"Cushing OK"</span>,              <span class="st">"market"</span>,  <span class="fl">35.98</span>,  <span class="op">-</span><span class="fl">96.77</span>)</span>
+<span id="cb2-137"><a href="#cb2-137" aria-hidden="true" tabindex="-1"></a>net.add_node(<span class="st">"PORT_ARTHUR"</span>,<span class="st">"Port Arthur TX"</span>,         <span class="st">"market"</span>,  <span class="fl">29.90</span>,  <span class="op">-</span><span class="fl">93.93</span>)</span>
+<span id="cb2-138"><a href="#cb2-138" aria-hidden="true" tabindex="-1"></a>net.add_node(<span class="st">"GUERNSEY"</span>,  <span class="st">"Guernsey SD"</span>,             <span class="st">"market"</span>,  <span class="fl">42.27</span>, <span class="op">-</span><span class="fl">104.73</span>)</span>
+<span id="cb2-139"><a href="#cb2-139" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-140"><a href="#cb2-140" aria-hidden="true" tabindex="-1"></a><span class="co"># Edges: Alberta export pipelines (capacity in 000 bbl/d, tariff in CAD/bbl)</span></span>
+<span id="cb2-141"><a href="#cb2-141" aria-hidden="true" tabindex="-1"></a>net.add_edge(<span class="st">"HARDISTY"</span>, <span class="st">"SUPERIOR"</span>,    <span class="dv">3100</span>, <span class="fl">8.2</span>,  <span class="st">"crude"</span>)   <span class="co"># Enbridge Mainline</span></span>
+<span id="cb2-142"><a href="#cb2-142" aria-hidden="true" tabindex="-1"></a>net.add_edge(<span class="st">"HARDISTY"</span>, <span class="st">"BURNABY"</span>,      <span class="dv">890</span>, <span class="fl">11.0</span>, <span class="st">"crude"</span>)   <span class="co"># Trans Mountain</span></span>
+<span id="cb2-143"><a href="#cb2-143" aria-hidden="true" tabindex="-1"></a>net.add_edge(<span class="st">"HARDISTY"</span>, <span class="st">"GUERNSEY"</span>,     <span class="dv">280</span>, <span class="fl">9.0</span>,  <span class="st">"crude"</span>)   <span class="co"># Express Pipeline</span></span>
+<span id="cb2-144"><a href="#cb2-144" aria-hidden="true" tabindex="-1"></a>net.add_edge(<span class="st">"HARDISTY"</span>, <span class="st">"CUSHING"</span>,      <span class="dv">590</span>, <span class="fl">10.5</span>, <span class="st">"crude"</span>)   <span class="co"># Keystone (direct segment)</span></span>
+<span id="cb2-145"><a href="#cb2-145" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-146"><a href="#cb2-146" aria-hidden="true" tabindex="-1"></a><span class="co"># Edges: U.S. connecting pipelines</span></span>
+<span id="cb2-147"><a href="#cb2-147" aria-hidden="true" tabindex="-1"></a>net.add_edge(<span class="st">"SUPERIOR"</span>,  <span class="st">"PATOKA"</span>,      <span class="dv">900</span>, <span class="fl">2.5</span>,  <span class="st">"crude"</span>)   <span class="co"># Enbridge Line 6B</span></span>
+<span id="cb2-148"><a href="#cb2-148" aria-hidden="true" tabindex="-1"></a>net.add_edge(<span class="st">"SUPERIOR"</span>,  <span class="st">"SARNIA"</span>,      <span class="dv">500</span>, <span class="fl">2.8</span>,  <span class="st">"crude"</span>)   <span class="co"># Enbridge Line 5 / 78</span></span>
+<span id="cb2-149"><a href="#cb2-149" aria-hidden="true" tabindex="-1"></a>net.add_edge(<span class="st">"PATOKA"</span>,    <span class="st">"CUSHING"</span>,     <span class="dv">400</span>, <span class="fl">2.0</span>,  <span class="st">"crude"</span>)   <span class="co"># Capline (reversed)</span></span>
+<span id="cb2-150"><a href="#cb2-150" aria-hidden="true" tabindex="-1"></a>net.add_edge(<span class="st">"CUSHING"</span>,   <span class="st">"PORT_ARTHUR"</span>, <span class="dv">600</span>, <span class="fl">1.8</span>,  <span class="st">"crude"</span>)   <span class="co"># Seaway / Longhorn</span></span>
+<span id="cb2-151"><a href="#cb2-151" aria-hidden="true" tabindex="-1"></a>net.add_edge(<span class="st">"GUERNSEY"</span>,  <span class="st">"CUSHING"</span>,     <span class="dv">280</span>, <span class="fl">3.5</span>,  <span class="st">"crude"</span>)   <span class="co"># Platte Pipeline</span></span>
+<span id="cb2-152"><a href="#cb2-152" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-153"><a href="#cb2-153" aria-hidden="true" tabindex="-1"></a><span class="co"># Market prices (CAD/bbl) — WTI &amp;#36;75 USD, exchange 0.73, location differentials</span></span>
+<span id="cb2-154"><a href="#cb2-154" aria-hidden="true" tabindex="-1"></a>MARKETS <span class="op">=</span> {</span>
+<span id="cb2-155"><a href="#cb2-155" aria-hidden="true" tabindex="-1"></a>    <span class="st">"PATOKA"</span>:     <span class="fl">102.7</span>,   <span class="co"># WTI Midwest</span></span>
+<span id="cb2-156"><a href="#cb2-156" aria-hidden="true" tabindex="-1"></a>    <span class="st">"CUSHING"</span>:    <span class="fl">102.7</span>,   <span class="co"># WTI Cushing</span></span>
+<span id="cb2-157"><a href="#cb2-157" aria-hidden="true" tabindex="-1"></a>    <span class="st">"PORT_ARTHUR"</span>: <span class="fl">104.1</span>,  <span class="co"># LLS premium</span></span>
+<span id="cb2-158"><a href="#cb2-158" aria-hidden="true" tabindex="-1"></a>    <span class="st">"BURNABY"</span>:    <span class="fl">106.0</span>,   <span class="co"># Asia-Pacific (Brent-linked, premium)</span></span>
+<span id="cb2-159"><a href="#cb2-159" aria-hidden="true" tabindex="-1"></a>    <span class="st">"SARNIA"</span>:      <span class="fl">100.5</span>,  <span class="co"># Ontario refineries</span></span>
+<span id="cb2-160"><a href="#cb2-160" aria-hidden="true" tabindex="-1"></a>    <span class="st">"GUERNSEY"</span>:    <span class="fl">101.0</span>,  <span class="co"># WTI Plains</span></span>
+<span id="cb2-161"><a href="#cb2-161" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb2-162"><a href="#cb2-162" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-163"><a href="#cb2-163" aria-hidden="true" tabindex="-1"></a><span class="co"># --- Max flow analysis ---</span></span>
+<span id="cb2-164"><a href="#cb2-164" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="st">"=== Alberta Crude Network: Max Flow Analysis ===</span><span class="ch">\n</span><span class="st">"</span>)</span>
+<span id="cb2-165"><a href="#cb2-165" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> sink_id <span class="kw">in</span> [<span class="st">"PATOKA"</span>, <span class="st">"CUSHING"</span>, <span class="st">"PORT_ARTHUR"</span>, <span class="st">"BURNABY"</span>]:</span>
+<span id="cb2-166"><a href="#cb2-166" aria-hidden="true" tabindex="-1"></a>    <span class="co"># Reset flows</span></span>
+<span id="cb2-167"><a href="#cb2-167" aria-hidden="true" tabindex="-1"></a>    <span class="cf">for</span> u <span class="kw">in</span> net.adj:</span>
+<span id="cb2-168"><a href="#cb2-168" aria-hidden="true" tabindex="-1"></a>        <span class="cf">for</span> v <span class="kw">in</span> net.adj[u]:</span>
+<span id="cb2-169"><a href="#cb2-169" aria-hidden="true" tabindex="-1"></a>            net.adj[u][v][<span class="st">"flow"</span>] <span class="op">=</span> <span class="dv">0</span></span>
+<span id="cb2-170"><a href="#cb2-170" aria-hidden="true" tabindex="-1"></a>    mf <span class="op">=</span> net.max_flow(<span class="st">"HARDISTY"</span>, sink_id)</span>
+<span id="cb2-171"><a href="#cb2-171" aria-hidden="true" tabindex="-1"></a>    sink_name <span class="op">=</span> net.nodes[sink_id][<span class="st">"name"</span>]</span>
+<span id="cb2-172"><a href="#cb2-172" aria-hidden="true" tabindex="-1"></a>    <span class="bu">print</span>(<span class="ss">f"  Max flow Hardisty → </span><span class="sc">{</span>sink_name<span class="sc">:&lt;25}</span><span class="ss">: </span><span class="sc">{</span>mf<span class="sc">:&gt;8,.0f}</span><span class="ss"> 000 bbl/d"</span>)</span>
+<span id="cb2-173"><a href="#cb2-173" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-174"><a href="#cb2-174" aria-hidden="true" tabindex="-1"></a><span class="co"># --- Netback surface ---</span></span>
+<span id="cb2-175"><a href="#cb2-175" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f"</span><span class="ch">\n</span><span class="ss">=== Netback Price Surface (CAD/bbl) ===</span><span class="ch">\n</span><span class="ss">"</span>)</span>
+<span id="cb2-176"><a href="#cb2-176" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f"  WTI: &amp;#36;75 USD/bbl | Quality discount: &amp;#36;19 CAD/bbl | Exchange: 0.73</span><span class="ch">\n</span><span class="ss">"</span>)</span>
+<span id="cb2-177"><a href="#cb2-177" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-178"><a href="#cb2-178" aria-hidden="true" tabindex="-1"></a>surface <span class="op">=</span> net.netback_surface(<span class="st">"HARDISTY"</span>, MARKETS, quality_discount_cad<span class="op">=</span><span class="fl">19.0</span>)</span>
+<span id="cb2-179"><a href="#cb2-179" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-180"><a href="#cb2-180" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f"  </span><span class="sc">{</span><span class="st">'Market'</span><span class="sc">:&lt;28}</span><span class="ss"> </span><span class="sc">{</span><span class="st">'Price'</span><span class="sc">:&gt;8}</span><span class="ss"> </span><span class="sc">{</span><span class="st">'Tariff'</span><span class="sc">:&gt;8}</span><span class="ss"> </span><span class="sc">{</span><span class="st">'Discount'</span><span class="sc">:&gt;10}</span><span class="ss"> </span><span class="sc">{</span><span class="st">'Netback'</span><span class="sc">:&gt;10}</span><span class="ss">  Path"</span>)</span>
+<span id="cb2-181"><a href="#cb2-181" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f"  </span><span class="sc">{</span><span class="st">'-'</span><span class="op">*</span><span class="dv">85</span><span class="sc">}</span><span class="ss">"</span>)</span>
+<span id="cb2-182"><a href="#cb2-182" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> market_id, r <span class="kw">in</span> <span class="bu">sorted</span>(surface.items(), key<span class="op">=</span><span class="kw">lambda</span> x: <span class="op">-</span>x[<span class="dv">1</span>][<span class="st">"netback"</span>]):</span>
+<span id="cb2-183"><a href="#cb2-183" aria-hidden="true" tabindex="-1"></a>    name <span class="op">=</span> net.nodes[market_id][<span class="st">"name"</span>]</span>
+<span id="cb2-184"><a href="#cb2-184" aria-hidden="true" tabindex="-1"></a>    path_str <span class="op">=</span> <span class="st">" → "</span>.join(net.nodes[n][<span class="st">"name"</span>].split(<span class="st">" "</span>)[<span class="dv">0</span>]</span>
+<span id="cb2-185"><a href="#cb2-185" aria-hidden="true" tabindex="-1"></a>                           <span class="cf">for</span> n <span class="kw">in</span> r[<span class="st">"path"</span>])</span>
+<span id="cb2-186"><a href="#cb2-186" aria-hidden="true" tabindex="-1"></a>    <span class="bu">print</span>(<span class="ss">f"  </span><span class="sc">{</span>name<span class="sc">:&lt;28}</span><span class="ss"> $</span><span class="sc">{</span>r[<span class="st">'market_price'</span>]<span class="sc">:&gt;6.1f}</span><span class="ss">  $</span><span class="sc">{</span>r[<span class="st">'transport_tariff'</span>]<span class="sc">:&gt;5.1f}</span><span class="ss">  "</span></span>
+<span id="cb2-187"><a href="#cb2-187" aria-hidden="true" tabindex="-1"></a>          <span class="ss">f"  -$</span><span class="sc">{</span>r[<span class="st">'quality_discount'</span>]<span class="sc">:&gt;5.1f}</span><span class="ss">  $</span><span class="sc">{</span>r[<span class="st">'netback'</span>]<span class="sc">:&gt;8.1f}</span><span class="ss">  </span><span class="sc">{</span>path_str<span class="sc">}</span><span class="ss">"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<h3 id="professional-implementation" class="anchored">Professional Implementation</h3>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb3"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Professional Implementation</span></span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a><span class="co"># Multi-commodity network: centrality, vulnerability, and full netback surface</span></span>
+<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> heapq</span>
+<span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> collections <span class="im">import</span> defaultdict, deque</span>
+<span id="cb3-6"><a href="#cb3-6" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> dataclasses <span class="im">import</span> dataclass, field</span>
+<span id="cb3-7"><a href="#cb3-7" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> typing <span class="im">import</span> Optional</span>
+<span id="cb3-8"><a href="#cb3-8" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> math</span>
+<span id="cb3-9"><a href="#cb3-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-10"><a href="#cb3-10" aria-hidden="true" tabindex="-1"></a><span class="at">@dataclass</span></span>
+<span id="cb3-11"><a href="#cb3-11" aria-hidden="true" tabindex="-1"></a><span class="kw">class</span> Node:</span>
+<span id="cb3-12"><a href="#cb3-12" aria-hidden="true" tabindex="-1"></a>    node_id: <span class="bu">str</span></span>
+<span id="cb3-13"><a href="#cb3-13" aria-hidden="true" tabindex="-1"></a>    name: <span class="bu">str</span></span>
+<span id="cb3-14"><a href="#cb3-14" aria-hidden="true" tabindex="-1"></a>    node_type: <span class="bu">str</span>    <span class="co"># "production", "hub", "terminal", "market"</span></span>
+<span id="cb3-15"><a href="#cb3-15" aria-hidden="true" tabindex="-1"></a>    lat: <span class="bu">float</span></span>
+<span id="cb3-16"><a href="#cb3-16" aria-hidden="true" tabindex="-1"></a>    lon: <span class="bu">float</span></span>
+<span id="cb3-17"><a href="#cb3-17" aria-hidden="true" tabindex="-1"></a>    commodity_types: <span class="bu">list</span> <span class="op">=</span> field(default_factory<span class="op">=</span><span class="bu">list</span>)</span>
+<span id="cb3-18"><a href="#cb3-18" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-19"><a href="#cb3-19" aria-hidden="true" tabindex="-1"></a><span class="at">@dataclass</span></span>
+<span id="cb3-20"><a href="#cb3-20" aria-hidden="true" tabindex="-1"></a><span class="kw">class</span> Edge:</span>
+<span id="cb3-21"><a href="#cb3-21" aria-hidden="true" tabindex="-1"></a>    source: <span class="bu">str</span></span>
+<span id="cb3-22"><a href="#cb3-22" aria-hidden="true" tabindex="-1"></a>    target: <span class="bu">str</span></span>
+<span id="cb3-23"><a href="#cb3-23" aria-hidden="true" tabindex="-1"></a>    capacity: <span class="bu">float</span>        <span class="co"># 000 bbl/d or Bcf/d</span></span>
+<span id="cb3-24"><a href="#cb3-24" aria-hidden="true" tabindex="-1"></a>    tariff: <span class="bu">float</span>          <span class="co"># CAD/bbl or CAD/GJ</span></span>
+<span id="cb3-25"><a href="#cb3-25" aria-hidden="true" tabindex="-1"></a>    commodity: <span class="bu">str</span></span>
+<span id="cb3-26"><a href="#cb3-26" aria-hidden="true" tabindex="-1"></a>    pipeline_name: <span class="bu">str</span></span>
+<span id="cb3-27"><a href="#cb3-27" aria-hidden="true" tabindex="-1"></a>    length_km: <span class="bu">float</span> <span class="op">=</span> <span class="fl">0.0</span></span>
+<span id="cb3-28"><a href="#cb3-28" aria-hidden="true" tabindex="-1"></a>    utilization_pct: <span class="bu">float</span> <span class="op">=</span> <span class="fl">85.0</span></span>
+<span id="cb3-29"><a href="#cb3-29" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-30"><a href="#cb3-30" aria-hidden="true" tabindex="-1"></a>    <span class="at">@property</span></span>
+<span id="cb3-31"><a href="#cb3-31" aria-hidden="true" tabindex="-1"></a>    <span class="kw">def</span> actual_flow(<span class="va">self</span>) <span class="op">-&gt;</span> <span class="bu">float</span>:</span>
+<span id="cb3-32"><a href="#cb3-32" aria-hidden="true" tabindex="-1"></a>        <span class="cf">return</span> <span class="va">self</span>.capacity <span class="op">*</span> <span class="va">self</span>.utilization_pct <span class="op">/</span> <span class="dv">100</span></span>
+<span id="cb3-33"><a href="#cb3-33" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-34"><a href="#cb3-34" aria-hidden="true" tabindex="-1"></a>    <span class="at">@property</span></span>
+<span id="cb3-35"><a href="#cb3-35" aria-hidden="true" tabindex="-1"></a>    <span class="kw">def</span> annual_value_cad(<span class="va">self</span>) <span class="op">-&gt;</span> <span class="bu">float</span>:</span>
+<span id="cb3-36"><a href="#cb3-36" aria-hidden="true" tabindex="-1"></a>        <span class="co">"""Approximate annual transport revenue (crude, 000 bbl/d basis)."""</span></span>
+<span id="cb3-37"><a href="#cb3-37" aria-hidden="true" tabindex="-1"></a>        <span class="cf">return</span> <span class="va">self</span>.actual_flow <span class="op">*</span> <span class="dv">1000</span> <span class="op">*</span> <span class="dv">365</span> <span class="op">*</span> <span class="va">self</span>.tariff</span>
+<span id="cb3-38"><a href="#cb3-38" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-39"><a href="#cb3-39" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-40"><a href="#cb3-40" aria-hidden="true" tabindex="-1"></a><span class="kw">class</span> HydrocarbonNetwork:</span>
+<span id="cb3-41"><a href="#cb3-41" aria-hidden="true" tabindex="-1"></a>    <span class="co">"""</span></span>
+<span id="cb3-42"><a href="#cb3-42" aria-hidden="true" tabindex="-1"></a><span class="co">    Multi-commodity directed graph of Alberta's full hydrocarbon</span></span>
+<span id="cb3-43"><a href="#cb3-43" aria-hidden="true" tabindex="-1"></a><span class="co">    pipeline network.</span></span>
+<span id="cb3-44"><a href="#cb3-44" aria-hidden="true" tabindex="-1"></a><span class="co">    """</span></span>
+<span id="cb3-45"><a href="#cb3-45" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-46"><a href="#cb3-46" aria-hidden="true" tabindex="-1"></a>    <span class="kw">def</span> <span class="fu">__init__</span>(<span class="va">self</span>):</span>
+<span id="cb3-47"><a href="#cb3-47" aria-hidden="true" tabindex="-1"></a>        <span class="va">self</span>.nodes: <span class="bu">dict</span>[<span class="bu">str</span>, Node] <span class="op">=</span> {}</span>
+<span id="cb3-48"><a href="#cb3-48" aria-hidden="true" tabindex="-1"></a>        <span class="va">self</span>.edges: <span class="bu">list</span>[Edge] <span class="op">=</span> []</span>
+<span id="cb3-49"><a href="#cb3-49" aria-hidden="true" tabindex="-1"></a>        <span class="va">self</span>._adj: <span class="bu">dict</span>[<span class="bu">str</span>, <span class="bu">dict</span>] <span class="op">=</span> defaultdict(<span class="bu">dict</span>)</span>
+<span id="cb3-50"><a href="#cb3-50" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-51"><a href="#cb3-51" aria-hidden="true" tabindex="-1"></a>    <span class="kw">def</span> add_node(<span class="va">self</span>, node: Node):</span>
+<span id="cb3-52"><a href="#cb3-52" aria-hidden="true" tabindex="-1"></a>        <span class="va">self</span>.nodes[node.node_id] <span class="op">=</span> node</span>
+<span id="cb3-53"><a href="#cb3-53" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-54"><a href="#cb3-54" aria-hidden="true" tabindex="-1"></a>    <span class="kw">def</span> add_edge(<span class="va">self</span>, edge: Edge):</span>
+<span id="cb3-55"><a href="#cb3-55" aria-hidden="true" tabindex="-1"></a>        <span class="va">self</span>.edges.append(edge)</span>
+<span id="cb3-56"><a href="#cb3-56" aria-hidden="true" tabindex="-1"></a>        key <span class="op">=</span> edge.commodity</span>
+<span id="cb3-57"><a href="#cb3-57" aria-hidden="true" tabindex="-1"></a>        <span class="cf">if</span> edge.target <span class="kw">not</span> <span class="kw">in</span> <span class="va">self</span>._adj[edge.source]:</span>
+<span id="cb3-58"><a href="#cb3-58" aria-hidden="true" tabindex="-1"></a>            <span class="va">self</span>._adj[edge.source][edge.target] <span class="op">=</span> {}</span>
+<span id="cb3-59"><a href="#cb3-59" aria-hidden="true" tabindex="-1"></a>        <span class="va">self</span>._adj[edge.source][edge.target][key] <span class="op">=</span> {</span>
+<span id="cb3-60"><a href="#cb3-60" aria-hidden="true" tabindex="-1"></a>            <span class="st">"cap"</span>: edge.capacity,</span>
+<span id="cb3-61"><a href="#cb3-61" aria-hidden="true" tabindex="-1"></a>            <span class="st">"flow"</span>: <span class="fl">0.0</span>,</span>
+<span id="cb3-62"><a href="#cb3-62" aria-hidden="true" tabindex="-1"></a>            <span class="st">"tariff"</span>: edge.tariff,</span>
+<span id="cb3-63"><a href="#cb3-63" aria-hidden="true" tabindex="-1"></a>            <span class="st">"name"</span>: edge.pipeline_name</span>
+<span id="cb3-64"><a href="#cb3-64" aria-hidden="true" tabindex="-1"></a>        }</span>
+<span id="cb3-65"><a href="#cb3-65" aria-hidden="true" tabindex="-1"></a>        <span class="co"># Reverse edge for residual graph</span></span>
+<span id="cb3-66"><a href="#cb3-66" aria-hidden="true" tabindex="-1"></a>        <span class="cf">if</span> edge.source <span class="kw">not</span> <span class="kw">in</span> <span class="va">self</span>._adj[edge.target]:</span>
+<span id="cb3-67"><a href="#cb3-67" aria-hidden="true" tabindex="-1"></a>            <span class="va">self</span>._adj[edge.target][edge.source] <span class="op">=</span> {}</span>
+<span id="cb3-68"><a href="#cb3-68" aria-hidden="true" tabindex="-1"></a>        <span class="cf">if</span> key <span class="kw">not</span> <span class="kw">in</span> <span class="va">self</span>._adj[edge.target][edge.source]:</span>
+<span id="cb3-69"><a href="#cb3-69" aria-hidden="true" tabindex="-1"></a>            <span class="va">self</span>._adj[edge.target][edge.source][key] <span class="op">=</span> {</span>
+<span id="cb3-70"><a href="#cb3-70" aria-hidden="true" tabindex="-1"></a>                <span class="st">"cap"</span>: <span class="fl">0.0</span>, <span class="st">"flow"</span>: <span class="fl">0.0</span>, <span class="st">"tariff"</span>: <span class="fl">0.0</span>, <span class="st">"name"</span>: <span class="st">"reverse"</span></span>
+<span id="cb3-71"><a href="#cb3-71" aria-hidden="true" tabindex="-1"></a>            }</span>
+<span id="cb3-72"><a href="#cb3-72" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-73"><a href="#cb3-73" aria-hidden="true" tabindex="-1"></a>    <span class="kw">def</span> betweenness_centrality(<span class="va">self</span>, commodity: <span class="bu">str</span> <span class="op">=</span> <span class="st">"crude"</span>) <span class="op">-&gt;</span> <span class="bu">dict</span>:</span>
+<span id="cb3-74"><a href="#cb3-74" aria-hidden="true" tabindex="-1"></a>        <span class="co">"""</span></span>
+<span id="cb3-75"><a href="#cb3-75" aria-hidden="true" tabindex="-1"></a><span class="co">        Approximate betweenness centrality via Brandes algorithm.</span></span>
+<span id="cb3-76"><a href="#cb3-76" aria-hidden="true" tabindex="-1"></a><span class="co">        Only considers edges carrying the specified commodity.</span></span>
+<span id="cb3-77"><a href="#cb3-77" aria-hidden="true" tabindex="-1"></a><span class="co">        """</span></span>
+<span id="cb3-78"><a href="#cb3-78" aria-hidden="true" tabindex="-1"></a>        centrality <span class="op">=</span> {n: <span class="fl">0.0</span> <span class="cf">for</span> n <span class="kw">in</span> <span class="va">self</span>.nodes}</span>
+<span id="cb3-79"><a href="#cb3-79" aria-hidden="true" tabindex="-1"></a>        relevant_nodes <span class="op">=</span> <span class="bu">list</span>(<span class="va">self</span>.nodes.keys())</span>
+<span id="cb3-80"><a href="#cb3-80" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-81"><a href="#cb3-81" aria-hidden="true" tabindex="-1"></a>        <span class="cf">for</span> s <span class="kw">in</span> relevant_nodes:</span>
+<span id="cb3-82"><a href="#cb3-82" aria-hidden="true" tabindex="-1"></a>            <span class="co"># BFS from s</span></span>
+<span id="cb3-83"><a href="#cb3-83" aria-hidden="true" tabindex="-1"></a>            stack <span class="op">=</span> []</span>
+<span id="cb3-84"><a href="#cb3-84" aria-hidden="true" tabindex="-1"></a>            pred <span class="op">=</span> {n: [] <span class="cf">for</span> n <span class="kw">in</span> relevant_nodes}</span>
+<span id="cb3-85"><a href="#cb3-85" aria-hidden="true" tabindex="-1"></a>            sigma <span class="op">=</span> {n: <span class="fl">0.0</span> <span class="cf">for</span> n <span class="kw">in</span> relevant_nodes}</span>
+<span id="cb3-86"><a href="#cb3-86" aria-hidden="true" tabindex="-1"></a>            sigma[s] <span class="op">=</span> <span class="fl">1.0</span></span>
+<span id="cb3-87"><a href="#cb3-87" aria-hidden="true" tabindex="-1"></a>            dist <span class="op">=</span> {n: <span class="op">-</span><span class="dv">1</span> <span class="cf">for</span> n <span class="kw">in</span> relevant_nodes}</span>
+<span id="cb3-88"><a href="#cb3-88" aria-hidden="true" tabindex="-1"></a>            dist[s] <span class="op">=</span> <span class="dv">0</span></span>
+<span id="cb3-89"><a href="#cb3-89" aria-hidden="true" tabindex="-1"></a>            queue <span class="op">=</span> deque([s])</span>
+<span id="cb3-90"><a href="#cb3-90" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-91"><a href="#cb3-91" aria-hidden="true" tabindex="-1"></a>            <span class="cf">while</span> queue:</span>
+<span id="cb3-92"><a href="#cb3-92" aria-hidden="true" tabindex="-1"></a>                v <span class="op">=</span> queue.popleft()</span>
+<span id="cb3-93"><a href="#cb3-93" aria-hidden="true" tabindex="-1"></a>                stack.append(v)</span>
+<span id="cb3-94"><a href="#cb3-94" aria-hidden="true" tabindex="-1"></a>                <span class="cf">for</span> w, commodities <span class="kw">in</span> <span class="va">self</span>._adj[v].items():</span>
+<span id="cb3-95"><a href="#cb3-95" aria-hidden="true" tabindex="-1"></a>                    <span class="cf">if</span> commodity <span class="kw">not</span> <span class="kw">in</span> commodities:</span>
+<span id="cb3-96"><a href="#cb3-96" aria-hidden="true" tabindex="-1"></a>                        <span class="cf">continue</span></span>
+<span id="cb3-97"><a href="#cb3-97" aria-hidden="true" tabindex="-1"></a>                    <span class="cf">if</span> commodities[commodity][<span class="st">"cap"</span>] <span class="op">&lt;=</span> <span class="dv">0</span>:</span>
+<span id="cb3-98"><a href="#cb3-98" aria-hidden="true" tabindex="-1"></a>                        <span class="cf">continue</span></span>
+<span id="cb3-99"><a href="#cb3-99" aria-hidden="true" tabindex="-1"></a>                    <span class="cf">if</span> dist[w] <span class="op">&lt;</span> <span class="dv">0</span>:</span>
+<span id="cb3-100"><a href="#cb3-100" aria-hidden="true" tabindex="-1"></a>                        queue.append(w)</span>
+<span id="cb3-101"><a href="#cb3-101" aria-hidden="true" tabindex="-1"></a>                        dist[w] <span class="op">=</span> dist[v] <span class="op">+</span> <span class="dv">1</span></span>
+<span id="cb3-102"><a href="#cb3-102" aria-hidden="true" tabindex="-1"></a>                    <span class="cf">if</span> dist[w] <span class="op">==</span> dist[v] <span class="op">+</span> <span class="dv">1</span>:</span>
+<span id="cb3-103"><a href="#cb3-103" aria-hidden="true" tabindex="-1"></a>                        sigma[w] <span class="op">+=</span> sigma[v]</span>
+<span id="cb3-104"><a href="#cb3-104" aria-hidden="true" tabindex="-1"></a>                        pred[w].append(v)</span>
+<span id="cb3-105"><a href="#cb3-105" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-106"><a href="#cb3-106" aria-hidden="true" tabindex="-1"></a>            <span class="co"># Accumulation</span></span>
+<span id="cb3-107"><a href="#cb3-107" aria-hidden="true" tabindex="-1"></a>            delta <span class="op">=</span> {n: <span class="fl">0.0</span> <span class="cf">for</span> n <span class="kw">in</span> relevant_nodes}</span>
+<span id="cb3-108"><a href="#cb3-108" aria-hidden="true" tabindex="-1"></a>            <span class="cf">while</span> stack:</span>
+<span id="cb3-109"><a href="#cb3-109" aria-hidden="true" tabindex="-1"></a>                w <span class="op">=</span> stack.pop()</span>
+<span id="cb3-110"><a href="#cb3-110" aria-hidden="true" tabindex="-1"></a>                <span class="cf">for</span> v <span class="kw">in</span> pred[w]:</span>
+<span id="cb3-111"><a href="#cb3-111" aria-hidden="true" tabindex="-1"></a>                    <span class="cf">if</span> sigma[w] <span class="op">&gt;</span> <span class="dv">0</span>:</span>
+<span id="cb3-112"><a href="#cb3-112" aria-hidden="true" tabindex="-1"></a>                        delta[v] <span class="op">+=</span> (sigma[v] <span class="op">/</span> sigma[w]) <span class="op">*</span> (<span class="fl">1.0</span> <span class="op">+</span> delta[w])</span>
+<span id="cb3-113"><a href="#cb3-113" aria-hidden="true" tabindex="-1"></a>                <span class="cf">if</span> w <span class="op">!=</span> s:</span>
+<span id="cb3-114"><a href="#cb3-114" aria-hidden="true" tabindex="-1"></a>                    centrality[w] <span class="op">+=</span> delta[w]</span>
+<span id="cb3-115"><a href="#cb3-115" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-116"><a href="#cb3-116" aria-hidden="true" tabindex="-1"></a>        <span class="co"># Normalize</span></span>
+<span id="cb3-117"><a href="#cb3-117" aria-hidden="true" tabindex="-1"></a>        n <span class="op">=</span> <span class="bu">len</span>(relevant_nodes)</span>
+<span id="cb3-118"><a href="#cb3-118" aria-hidden="true" tabindex="-1"></a>        scale <span class="op">=</span> <span class="fl">1.0</span> <span class="op">/</span> ((n <span class="op">-</span> <span class="dv">1</span>) <span class="op">*</span> (n <span class="op">-</span> <span class="dv">2</span>)) <span class="cf">if</span> n <span class="op">&gt;</span> <span class="dv">2</span> <span class="cf">else</span> <span class="fl">1.0</span></span>
+<span id="cb3-119"><a href="#cb3-119" aria-hidden="true" tabindex="-1"></a>        <span class="cf">return</span> {k: v <span class="op">*</span> scale <span class="cf">for</span> k, v <span class="kw">in</span> centrality.items()}</span>
+<span id="cb3-120"><a href="#cb3-120" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-121"><a href="#cb3-121" aria-hidden="true" tabindex="-1"></a>    <span class="kw">def</span> dijkstra_tariff(<span class="va">self</span>, source: <span class="bu">str</span>, commodity: <span class="bu">str</span>) <span class="op">-&gt;</span> <span class="bu">dict</span>:</span>
+<span id="cb3-122"><a href="#cb3-122" aria-hidden="true" tabindex="-1"></a>        <span class="co">"""Minimum tariff cost from source to all reachable nodes."""</span></span>
+<span id="cb3-123"><a href="#cb3-123" aria-hidden="true" tabindex="-1"></a>        dist <span class="op">=</span> {n: <span class="bu">float</span>(<span class="st">'inf'</span>) <span class="cf">for</span> n <span class="kw">in</span> <span class="va">self</span>.nodes}</span>
+<span id="cb3-124"><a href="#cb3-124" aria-hidden="true" tabindex="-1"></a>        dist[source] <span class="op">=</span> <span class="fl">0.0</span></span>
+<span id="cb3-125"><a href="#cb3-125" aria-hidden="true" tabindex="-1"></a>        prev <span class="op">=</span> {}</span>
+<span id="cb3-126"><a href="#cb3-126" aria-hidden="true" tabindex="-1"></a>        pq <span class="op">=</span> [(<span class="fl">0.0</span>, source)]</span>
+<span id="cb3-127"><a href="#cb3-127" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-128"><a href="#cb3-128" aria-hidden="true" tabindex="-1"></a>        <span class="cf">while</span> pq:</span>
+<span id="cb3-129"><a href="#cb3-129" aria-hidden="true" tabindex="-1"></a>            cost, u <span class="op">=</span> heapq.heappop(pq)</span>
+<span id="cb3-130"><a href="#cb3-130" aria-hidden="true" tabindex="-1"></a>            <span class="cf">if</span> cost <span class="op">&gt;</span> dist[u]:</span>
+<span id="cb3-131"><a href="#cb3-131" aria-hidden="true" tabindex="-1"></a>                <span class="cf">continue</span></span>
+<span id="cb3-132"><a href="#cb3-132" aria-hidden="true" tabindex="-1"></a>            <span class="cf">for</span> v, commodities <span class="kw">in</span> <span class="va">self</span>._adj[u].items():</span>
+<span id="cb3-133"><a href="#cb3-133" aria-hidden="true" tabindex="-1"></a>                <span class="cf">if</span> commodity <span class="kw">not</span> <span class="kw">in</span> commodities:</span>
+<span id="cb3-134"><a href="#cb3-134" aria-hidden="true" tabindex="-1"></a>                    <span class="cf">continue</span></span>
+<span id="cb3-135"><a href="#cb3-135" aria-hidden="true" tabindex="-1"></a>                data <span class="op">=</span> commodities[commodity]</span>
+<span id="cb3-136"><a href="#cb3-136" aria-hidden="true" tabindex="-1"></a>                <span class="cf">if</span> data[<span class="st">"cap"</span>] <span class="op">&lt;=</span> <span class="dv">0</span>:</span>
+<span id="cb3-137"><a href="#cb3-137" aria-hidden="true" tabindex="-1"></a>                    <span class="cf">continue</span></span>
+<span id="cb3-138"><a href="#cb3-138" aria-hidden="true" tabindex="-1"></a>                new_cost <span class="op">=</span> cost <span class="op">+</span> data[<span class="st">"tariff"</span>]</span>
+<span id="cb3-139"><a href="#cb3-139" aria-hidden="true" tabindex="-1"></a>                <span class="cf">if</span> new_cost <span class="op">&lt;</span> dist[v]:</span>
+<span id="cb3-140"><a href="#cb3-140" aria-hidden="true" tabindex="-1"></a>                    dist[v] <span class="op">=</span> new_cost</span>
+<span id="cb3-141"><a href="#cb3-141" aria-hidden="true" tabindex="-1"></a>                    prev[v] <span class="op">=</span> u</span>
+<span id="cb3-142"><a href="#cb3-142" aria-hidden="true" tabindex="-1"></a>                    heapq.heappush(pq, (new_cost, v))</span>
+<span id="cb3-143"><a href="#cb3-143" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-144"><a href="#cb3-144" aria-hidden="true" tabindex="-1"></a>        <span class="cf">return</span> dist</span>
+<span id="cb3-145"><a href="#cb3-145" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-146"><a href="#cb3-146" aria-hidden="true" tabindex="-1"></a>    <span class="kw">def</span> netback_surface(<span class="va">self</span>,</span>
+<span id="cb3-147"><a href="#cb3-147" aria-hidden="true" tabindex="-1"></a>                         source: <span class="bu">str</span>,</span>
+<span id="cb3-148"><a href="#cb3-148" aria-hidden="true" tabindex="-1"></a>                         market_prices: <span class="bu">dict</span>,</span>
+<span id="cb3-149"><a href="#cb3-149" aria-hidden="true" tabindex="-1"></a>                         commodity: <span class="bu">str</span> <span class="op">=</span> <span class="st">"crude"</span>,</span>
+<span id="cb3-150"><a href="#cb3-150" aria-hidden="true" tabindex="-1"></a>                         quality_discount: <span class="bu">float</span> <span class="op">=</span> <span class="fl">19.0</span>) <span class="op">-&gt;</span> <span class="bu">dict</span>:</span>
+<span id="cb3-151"><a href="#cb3-151" aria-hidden="true" tabindex="-1"></a>        <span class="co">"""Full netback surface from source to all market nodes."""</span></span>
+<span id="cb3-152"><a href="#cb3-152" aria-hidden="true" tabindex="-1"></a>        tariffs <span class="op">=</span> <span class="va">self</span>.dijkstra_tariff(source, commodity)</span>
+<span id="cb3-153"><a href="#cb3-153" aria-hidden="true" tabindex="-1"></a>        results <span class="op">=</span> {}</span>
+<span id="cb3-154"><a href="#cb3-154" aria-hidden="true" tabindex="-1"></a>        <span class="cf">for</span> node_id, price <span class="kw">in</span> market_prices.items():</span>
+<span id="cb3-155"><a href="#cb3-155" aria-hidden="true" tabindex="-1"></a>            <span class="cf">if</span> node_id <span class="kw">not</span> <span class="kw">in</span> tariffs:</span>
+<span id="cb3-156"><a href="#cb3-156" aria-hidden="true" tabindex="-1"></a>                <span class="cf">continue</span></span>
+<span id="cb3-157"><a href="#cb3-157" aria-hidden="true" tabindex="-1"></a>            t <span class="op">=</span> tariffs[node_id]</span>
+<span id="cb3-158"><a href="#cb3-158" aria-hidden="true" tabindex="-1"></a>            results[node_id] <span class="op">=</span> {</span>
+<span id="cb3-159"><a href="#cb3-159" aria-hidden="true" tabindex="-1"></a>                <span class="st">"name"</span>: <span class="va">self</span>.nodes[node_id].name,</span>
+<span id="cb3-160"><a href="#cb3-160" aria-hidden="true" tabindex="-1"></a>                <span class="st">"market_price_cad"</span>: price,</span>
+<span id="cb3-161"><a href="#cb3-161" aria-hidden="true" tabindex="-1"></a>                <span class="st">"transport_tariff_cad"</span>: t,</span>
+<span id="cb3-162"><a href="#cb3-162" aria-hidden="true" tabindex="-1"></a>                <span class="st">"quality_discount_cad"</span>: quality_discount,</span>
+<span id="cb3-163"><a href="#cb3-163" aria-hidden="true" tabindex="-1"></a>                <span class="st">"netback_cad"</span>: price <span class="op">-</span> t <span class="op">-</span> quality_discount</span>
+<span id="cb3-164"><a href="#cb3-164" aria-hidden="true" tabindex="-1"></a>            }</span>
+<span id="cb3-165"><a href="#cb3-165" aria-hidden="true" tabindex="-1"></a>        <span class="cf">return</span> results</span>
+<span id="cb3-166"><a href="#cb3-166" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-167"><a href="#cb3-167" aria-hidden="true" tabindex="-1"></a>    <span class="kw">def</span> system_report(<span class="va">self</span>, commodity: <span class="bu">str</span> <span class="op">=</span> <span class="st">"crude"</span>):</span>
+<span id="cb3-168"><a href="#cb3-168" aria-hidden="true" tabindex="-1"></a>        edges_c <span class="op">=</span> [e <span class="cf">for</span> e <span class="kw">in</span> <span class="va">self</span>.edges <span class="cf">if</span> e.commodity <span class="op">==</span> commodity]</span>
+<span id="cb3-169"><a href="#cb3-169" aria-hidden="true" tabindex="-1"></a>        total_cap <span class="op">=</span> <span class="bu">sum</span>(e.capacity <span class="cf">for</span> e <span class="kw">in</span> edges_c)</span>
+<span id="cb3-170"><a href="#cb3-170" aria-hidden="true" tabindex="-1"></a>        total_actual <span class="op">=</span> <span class="bu">sum</span>(e.actual_flow <span class="cf">for</span> e <span class="kw">in</span> edges_c)</span>
+<span id="cb3-171"><a href="#cb3-171" aria-hidden="true" tabindex="-1"></a>        annual_rev <span class="op">=</span> <span class="bu">sum</span>(e.annual_value_cad <span class="cf">for</span> e <span class="kw">in</span> edges_c)</span>
+<span id="cb3-172"><a href="#cb3-172" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-173"><a href="#cb3-173" aria-hidden="true" tabindex="-1"></a>        <span class="bu">print</span>(<span class="ss">f"</span><span class="ch">\n</span><span class="sc">{</span><span class="st">'='</span><span class="op">*</span><span class="dv">65</span><span class="sc">}</span><span class="ss">"</span>)</span>
+<span id="cb3-174"><a href="#cb3-174" aria-hidden="true" tabindex="-1"></a>        <span class="bu">print</span>(<span class="ss">f"  Alberta Hydrocarbon Network — </span><span class="sc">{</span>commodity<span class="sc">.</span>upper()<span class="sc">}</span><span class="ss"> Subsystem"</span>)</span>
+<span id="cb3-175"><a href="#cb3-175" aria-hidden="true" tabindex="-1"></a>        <span class="bu">print</span>(<span class="ss">f"</span><span class="sc">{</span><span class="st">'='</span><span class="op">*</span><span class="dv">65</span><span class="sc">}</span><span class="ss">"</span>)</span>
+<span id="cb3-176"><a href="#cb3-176" aria-hidden="true" tabindex="-1"></a>        <span class="bu">print</span>(<span class="ss">f"  Segments      : </span><span class="sc">{</span><span class="bu">len</span>(edges_c)<span class="sc">}</span><span class="ss">"</span>)</span>
+<span id="cb3-177"><a href="#cb3-177" aria-hidden="true" tabindex="-1"></a>        <span class="bu">print</span>(<span class="ss">f"  Total capacity: </span><span class="sc">{</span>total_cap<span class="sc">:,.0f}</span><span class="ss"> 000 bbl/d"</span>)</span>
+<span id="cb3-178"><a href="#cb3-178" aria-hidden="true" tabindex="-1"></a>        <span class="bu">print</span>(<span class="ss">f"  Actual flow   : </span><span class="sc">{</span>total_actual<span class="sc">:,.0f}</span><span class="ss"> 000 bbl/d"</span>)</span>
+<span id="cb3-179"><a href="#cb3-179" aria-hidden="true" tabindex="-1"></a>        <span class="bu">print</span>(<span class="ss">f"  Utilization   : </span><span class="sc">{</span>total_actual<span class="op">/</span>total_cap<span class="op">*</span><span class="dv">100</span><span class="sc">:.1f}</span><span class="ss">%"</span>)</span>
+<span id="cb3-180"><a href="#cb3-180" aria-hidden="true" tabindex="-1"></a>        <span class="bu">print</span>(<span class="ss">f"  Annual tariff revenue: CAD $</span><span class="sc">{</span>annual_rev<span class="op">/</span><span class="fl">1e9</span><span class="sc">:.1f}</span><span class="ss">B/yr"</span>)</span>
+<span id="cb3-181"><a href="#cb3-181" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-182"><a href="#cb3-182" aria-hidden="true" tabindex="-1"></a>        <span class="bu">print</span>(<span class="ss">f"</span><span class="ch">\n</span><span class="ss">  Betweenness Centrality (top 5 nodes):"</span>)</span>
+<span id="cb3-183"><a href="#cb3-183" aria-hidden="true" tabindex="-1"></a>        bc <span class="op">=</span> <span class="va">self</span>.betweenness_centrality(commodity)</span>
+<span id="cb3-184"><a href="#cb3-184" aria-hidden="true" tabindex="-1"></a>        <span class="cf">for</span> node_id, score <span class="kw">in</span> <span class="bu">sorted</span>(bc.items(), key<span class="op">=</span><span class="kw">lambda</span> x: <span class="op">-</span>x[<span class="dv">1</span>])[:<span class="dv">5</span>]:</span>
+<span id="cb3-185"><a href="#cb3-185" aria-hidden="true" tabindex="-1"></a>            name <span class="op">=</span> <span class="va">self</span>.nodes[node_id].name</span>
+<span id="cb3-186"><a href="#cb3-186" aria-hidden="true" tabindex="-1"></a>            <span class="bu">print</span>(<span class="ss">f"    </span><span class="sc">{</span>name<span class="sc">:&lt;30}</span><span class="ss">: </span><span class="sc">{</span>score<span class="sc">:.4f}</span><span class="ss">"</span>)</span>
+<span id="cb3-187"><a href="#cb3-187" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-188"><a href="#cb3-188" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-189"><a href="#cb3-189" aria-hidden="true" tabindex="-1"></a><span class="co"># --- Build the integrated network ---</span></span>
+<span id="cb3-190"><a href="#cb3-190" aria-hidden="true" tabindex="-1"></a>network <span class="op">=</span> HydrocarbonNetwork()</span>
+<span id="cb3-191"><a href="#cb3-191" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-192"><a href="#cb3-192" aria-hidden="true" tabindex="-1"></a><span class="co"># Production nodes</span></span>
+<span id="cb3-193"><a href="#cb3-193" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> nid, name, lat, lon <span class="kw">in</span> [</span>
+<span id="cb3-194"><a href="#cb3-194" aria-hidden="true" tabindex="-1"></a>    (<span class="st">"ATHABASCA"</span>, <span class="st">"Athabasca Oil Sands"</span>, <span class="fl">57.0</span>, <span class="op">-</span><span class="fl">111.5</span>),</span>
+<span id="cb3-195"><a href="#cb3-195" aria-hidden="true" tabindex="-1"></a>    (<span class="st">"PEACE_RIVER"</span>, <span class="st">"Peace River Region"</span>, <span class="fl">56.2</span>, <span class="op">-</span><span class="fl">117.5</span>),</span>
+<span id="cb3-196"><a href="#cb3-196" aria-hidden="true" tabindex="-1"></a>    (<span class="st">"LLOYDMINSTER"</span>, <span class="st">"Lloydminster AB/SK"</span>, <span class="fl">53.3</span>, <span class="op">-</span><span class="fl">110.0</span>),</span>
+<span id="cb3-197"><a href="#cb3-197" aria-hidden="true" tabindex="-1"></a>    (<span class="st">"MONTNEY"</span>, <span class="st">"Montney Play (NE BC/AB)"</span>, <span class="fl">55.5</span>, <span class="op">-</span><span class="fl">120.0</span>),</span>
+<span id="cb3-198"><a href="#cb3-198" aria-hidden="true" tabindex="-1"></a>]:</span>
+<span id="cb3-199"><a href="#cb3-199" aria-hidden="true" tabindex="-1"></a>    network.add_node(Node(nid, name, <span class="st">"production"</span>, lat, lon, [<span class="st">"crude"</span>, <span class="st">"gas"</span>, <span class="st">"ngl"</span>]))</span>
+<span id="cb3-200"><a href="#cb3-200" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-201"><a href="#cb3-201" aria-hidden="true" tabindex="-1"></a><span class="co"># Hub nodes</span></span>
+<span id="cb3-202"><a href="#cb3-202" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> nid, name, lat, lon, comms <span class="kw">in</span> [</span>
+<span id="cb3-203"><a href="#cb3-203" aria-hidden="true" tabindex="-1"></a>    (<span class="st">"HARDISTY"</span>, <span class="st">"Hardisty AB"</span>,         <span class="fl">52.67</span>, <span class="op">-</span><span class="fl">111.30</span>, [<span class="st">"crude"</span>, <span class="st">"ngl"</span>]),</span>
+<span id="cb3-204"><a href="#cb3-204" aria-hidden="true" tabindex="-1"></a>    (<span class="st">"EDMONTON"</span>, <span class="st">"Edmonton AB"</span>,          <span class="fl">53.55</span>, <span class="op">-</span><span class="fl">113.49</span>, [<span class="st">"crude"</span>, <span class="st">"products"</span>, <span class="st">"gas"</span>]),</span>
+<span id="cb3-205"><a href="#cb3-205" aria-hidden="true" tabindex="-1"></a>    (<span class="st">"FSK"</span>,      <span class="st">"Fort Saskatchewan AB"</span>, <span class="fl">53.71</span>, <span class="op">-</span><span class="fl">113.21</span>, [<span class="st">"ngl"</span>, <span class="st">"products"</span>]),</span>
+<span id="cb3-206"><a href="#cb3-206" aria-hidden="true" tabindex="-1"></a>    (<span class="st">"AECO"</span>,     <span class="st">"AECO Hub (Suffield)"</span>,  <span class="fl">50.12</span>, <span class="op">-</span><span class="fl">110.74</span>, [<span class="st">"gas"</span>]),</span>
+<span id="cb3-207"><a href="#cb3-207" aria-hidden="true" tabindex="-1"></a>    (<span class="st">"SUPERIOR"</span>, <span class="st">"Superior WI"</span>,          <span class="fl">46.72</span>,  <span class="op">-</span><span class="fl">92.10</span>, [<span class="st">"crude"</span>]),</span>
+<span id="cb3-208"><a href="#cb3-208" aria-hidden="true" tabindex="-1"></a>    (<span class="st">"SUMAS"</span>,    <span class="st">"Sumas/Huntingdon BC"</span>,  <span class="fl">49.00</span>, <span class="op">-</span><span class="fl">122.27</span>, [<span class="st">"gas"</span>]),</span>
+<span id="cb3-209"><a href="#cb3-209" aria-hidden="true" tabindex="-1"></a>    (<span class="st">"KANKAKEE"</span>, <span class="st">"Kankakee IL"</span>,          <span class="fl">41.12</span>,  <span class="op">-</span><span class="fl">87.86</span>, [<span class="st">"ngl"</span>]),</span>
+<span id="cb3-210"><a href="#cb3-210" aria-hidden="true" tabindex="-1"></a>]:</span>
+<span id="cb3-211"><a href="#cb3-211" aria-hidden="true" tabindex="-1"></a>    network.add_node(Node(nid, name, <span class="st">"hub"</span>, lat, lon, comms))</span>
+<span id="cb3-212"><a href="#cb3-212" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-213"><a href="#cb3-213" aria-hidden="true" tabindex="-1"></a><span class="co"># Terminal / market nodes</span></span>
+<span id="cb3-214"><a href="#cb3-214" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> nid, name, lat, lon, comms <span class="kw">in</span> [</span>
+<span id="cb3-215"><a href="#cb3-215" aria-hidden="true" tabindex="-1"></a>    (<span class="st">"BURNABY"</span>,    <span class="st">"Burnaby BC"</span>,          <span class="fl">49.25</span>, <span class="op">-</span><span class="fl">122.95</span>, [<span class="st">"crude"</span>, <span class="st">"products"</span>]),</span>
+<span id="cb3-216"><a href="#cb3-216" aria-hidden="true" tabindex="-1"></a>    (<span class="st">"KAMLOOPS"</span>,   <span class="st">"Kamloops BC"</span>,         <span class="fl">50.67</span>, <span class="op">-</span><span class="fl">120.33</span>, [<span class="st">"products"</span>]),</span>
+<span id="cb3-217"><a href="#cb3-217" aria-hidden="true" tabindex="-1"></a>    (<span class="st">"PATOKA"</span>,     <span class="st">"Patoka IL"</span>,           <span class="fl">38.75</span>,  <span class="op">-</span><span class="fl">88.63</span>, [<span class="st">"crude"</span>]),</span>
+<span id="cb3-218"><a href="#cb3-218" aria-hidden="true" tabindex="-1"></a>    (<span class="st">"CUSHING"</span>,    <span class="st">"Cushing OK"</span>,          <span class="fl">35.98</span>,  <span class="op">-</span><span class="fl">96.77</span>, [<span class="st">"crude"</span>]),</span>
+<span id="cb3-219"><a href="#cb3-219" aria-hidden="true" tabindex="-1"></a>    (<span class="st">"PORT_ARTHUR"</span>,<span class="st">"Port Arthur TX"</span>,      <span class="fl">29.90</span>,  <span class="op">-</span><span class="fl">93.93</span>, [<span class="st">"crude"</span>]),</span>
+<span id="cb3-220"><a href="#cb3-220" aria-hidden="true" tabindex="-1"></a>    (<span class="st">"CHICAGO"</span>,    <span class="st">"Chicago IL"</span>,          <span class="fl">41.88</span>,  <span class="op">-</span><span class="fl">87.63</span>, [<span class="st">"gas"</span>]),</span>
+<span id="cb3-221"><a href="#cb3-221" aria-hidden="true" tabindex="-1"></a>    (<span class="st">"TORONTO"</span>,    <span class="st">"Toronto ON"</span>,          <span class="fl">43.70</span>,  <span class="op">-</span><span class="fl">79.42</span>, [<span class="st">"gas"</span>, <span class="st">"products"</span>]),</span>
+<span id="cb3-222"><a href="#cb3-222" aria-hidden="true" tabindex="-1"></a>    (<span class="st">"KITCHENER"</span>,  <span class="st">"Kitchener ON (gas)"</span>,  <span class="fl">43.45</span>,  <span class="op">-</span><span class="fl">80.49</span>, [<span class="st">"gas"</span>]),</span>
+<span id="cb3-223"><a href="#cb3-223" aria-hidden="true" tabindex="-1"></a>    (<span class="st">"JOFFRE"</span>,     <span class="st">"Joffre AB (cracker)"</span>, <span class="fl">52.35</span>, <span class="op">-</span><span class="fl">113.52</span>, [<span class="st">"ngl"</span>]),</span>
+<span id="cb3-224"><a href="#cb3-224" aria-hidden="true" tabindex="-1"></a>]:</span>
+<span id="cb3-225"><a href="#cb3-225" aria-hidden="true" tabindex="-1"></a>    network.add_node(Node(nid, name, <span class="st">"market"</span>, lat, lon, comms))</span>
+<span id="cb3-226"><a href="#cb3-226" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-227"><a href="#cb3-227" aria-hidden="true" tabindex="-1"></a><span class="co"># --- Crude edges ---</span></span>
+<span id="cb3-228"><a href="#cb3-228" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> src, tgt, cap, tariff, name <span class="kw">in</span> [</span>
+<span id="cb3-229"><a href="#cb3-229" aria-hidden="true" tabindex="-1"></a>    (<span class="st">"ATHABASCA"</span>,  <span class="st">"HARDISTY"</span>,   <span class="dv">3300</span>, <span class="fl">2.5</span>,  <span class="st">"Oil Sands gathering"</span>),</span>
+<span id="cb3-230"><a href="#cb3-230" aria-hidden="true" tabindex="-1"></a>    (<span class="st">"HARDISTY"</span>,   <span class="st">"SUPERIOR"</span>,   <span class="dv">3100</span>, <span class="fl">8.2</span>,  <span class="st">"Enbridge Mainline"</span>),</span>
+<span id="cb3-231"><a href="#cb3-231" aria-hidden="true" tabindex="-1"></a>    (<span class="st">"HARDISTY"</span>,   <span class="st">"BURNABY"</span>,     <span class="dv">890</span>, <span class="fl">11.0</span>, <span class="st">"Trans Mountain"</span>),</span>
+<span id="cb3-232"><a href="#cb3-232" aria-hidden="true" tabindex="-1"></a>    (<span class="st">"HARDISTY"</span>,   <span class="st">"CUSHING"</span>,     <span class="dv">590</span>, <span class="fl">10.5</span>, <span class="st">"Keystone"</span>),</span>
+<span id="cb3-233"><a href="#cb3-233" aria-hidden="true" tabindex="-1"></a>    (<span class="st">"HARDISTY"</span>,   <span class="st">"PATOKA"</span>,      <span class="dv">280</span>, <span class="fl">9.0</span>,  <span class="st">"Express + Platte"</span>),</span>
+<span id="cb3-234"><a href="#cb3-234" aria-hidden="true" tabindex="-1"></a>    (<span class="st">"SUPERIOR"</span>,   <span class="st">"PATOKA"</span>,      <span class="dv">900</span>, <span class="fl">2.5</span>,  <span class="st">"Enbridge 6B"</span>),</span>
+<span id="cb3-235"><a href="#cb3-235" aria-hidden="true" tabindex="-1"></a>    (<span class="st">"SUPERIOR"</span>,   <span class="st">"TORONTO"</span>,     <span class="dv">500</span>, <span class="fl">3.5</span>,  <span class="st">"Enbridge Line 5/78"</span>),</span>
+<span id="cb3-236"><a href="#cb3-236" aria-hidden="true" tabindex="-1"></a>    (<span class="st">"PATOKA"</span>,     <span class="st">"CUSHING"</span>,     <span class="dv">400</span>, <span class="fl">2.0</span>,  <span class="st">"Capline"</span>),</span>
+<span id="cb3-237"><a href="#cb3-237" aria-hidden="true" tabindex="-1"></a>    (<span class="st">"CUSHING"</span>,    <span class="st">"PORT_ARTHUR"</span>, <span class="dv">600</span>, <span class="fl">1.8</span>,  <span class="st">"Seaway/Longhorn"</span>),</span>
+<span id="cb3-238"><a href="#cb3-238" aria-hidden="true" tabindex="-1"></a>]:</span>
+<span id="cb3-239"><a href="#cb3-239" aria-hidden="true" tabindex="-1"></a>    network.add_edge(Edge(src, tgt, cap, tariff, <span class="st">"crude"</span>, name))</span>
+<span id="cb3-240"><a href="#cb3-240" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-241"><a href="#cb3-241" aria-hidden="true" tabindex="-1"></a><span class="co"># --- Gas edges ---</span></span>
+<span id="cb3-242"><a href="#cb3-242" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> src, tgt, cap, tariff, name <span class="kw">in</span> [</span>
+<span id="cb3-243"><a href="#cb3-243" aria-hidden="true" tabindex="-1"></a>    (<span class="st">"MONTNEY"</span>,  <span class="st">"AECO"</span>,     <span class="fl">6.5</span>, <span class="fl">0.30</span>, <span class="st">"NGTL gathering"</span>),</span>
+<span id="cb3-244"><a href="#cb3-244" aria-hidden="true" tabindex="-1"></a>    (<span class="st">"HARDISTY"</span>, <span class="st">"AECO"</span>,     <span class="fl">4.0</span>, <span class="fl">0.25</span>, <span class="st">"NGTL mainline"</span>),</span>
+<span id="cb3-245"><a href="#cb3-245" aria-hidden="true" tabindex="-1"></a>    (<span class="st">"AECO"</span>,     <span class="st">"CHICAGO"</span>,  <span class="fl">1.6</span>, <span class="fl">0.85</span>, <span class="st">"Alliance Pipeline"</span>),</span>
+<span id="cb3-246"><a href="#cb3-246" aria-hidden="true" tabindex="-1"></a>    (<span class="st">"AECO"</span>,     <span class="st">"TORONTO"</span>,  <span class="fl">4.2</span>, <span class="fl">1.20</span>, <span class="st">"TC Canadian Mainline"</span>),</span>
+<span id="cb3-247"><a href="#cb3-247" aria-hidden="true" tabindex="-1"></a>    (<span class="st">"AECO"</span>,     <span class="st">"SUMAS"</span>,    <span class="fl">2.8</span>, <span class="fl">0.70</span>, <span class="st">"Westcoast/Spectra"</span>),</span>
+<span id="cb3-248"><a href="#cb3-248" aria-hidden="true" tabindex="-1"></a>    (<span class="st">"SUMAS"</span>,    <span class="st">"CHICAGO"</span>,  <span class="fl">1.0</span>, <span class="fl">0.60</span>, <span class="st">"U.S. Pacific NW connects"</span>),</span>
+<span id="cb3-249"><a href="#cb3-249" aria-hidden="true" tabindex="-1"></a>]:</span>
+<span id="cb3-250"><a href="#cb3-250" aria-hidden="true" tabindex="-1"></a>    network.add_edge(Edge(src, tgt, cap, tariff, <span class="st">"gas"</span>, name))</span>
+<span id="cb3-251"><a href="#cb3-251" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-252"><a href="#cb3-252" aria-hidden="true" tabindex="-1"></a><span class="co"># --- NGL edges ---</span></span>
+<span id="cb3-253"><a href="#cb3-253" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> src, tgt, cap, tariff, name <span class="kw">in</span> [</span>
+<span id="cb3-254"><a href="#cb3-254" aria-hidden="true" tabindex="-1"></a>    (<span class="st">"MONTNEY"</span>,   <span class="st">"FSK"</span>,      <span class="dv">200</span>, <span class="fl">1.5</span>, <span class="st">"NGL gathering / NGTL"</span>),</span>
+<span id="cb3-255"><a href="#cb3-255" aria-hidden="true" tabindex="-1"></a>    (<span class="st">"AECO"</span>,      <span class="st">"FSK"</span>,      <span class="dv">150</span>, <span class="fl">1.2</span>, <span class="st">"NGL extraction feeds"</span>),</span>
+<span id="cb3-256"><a href="#cb3-256" aria-hidden="true" tabindex="-1"></a>    (<span class="st">"KANKAKEE"</span>,  <span class="st">"HARDISTY"</span>,  <span class="dv">95</span>, <span class="fl">2.0</span>, <span class="st">"Cochin (condensate, N)"</span>),</span>
+<span id="cb3-257"><a href="#cb3-257" aria-hidden="true" tabindex="-1"></a>    (<span class="st">"FSK"</span>,       <span class="st">"HARDISTY"</span>, <span class="dv">350</span>, <span class="fl">0.8</span>, <span class="st">"Condensate to blending"</span>),</span>
+<span id="cb3-258"><a href="#cb3-258" aria-hidden="true" tabindex="-1"></a>    (<span class="st">"FSK"</span>,       <span class="st">"JOFFRE"</span>,   <span class="dv">180</span>, <span class="fl">0.5</span>, <span class="st">"Ethane to cracker"</span>),</span>
+<span id="cb3-259"><a href="#cb3-259" aria-hidden="true" tabindex="-1"></a>]:</span>
+<span id="cb3-260"><a href="#cb3-260" aria-hidden="true" tabindex="-1"></a>    network.add_edge(Edge(src, tgt, cap, tariff, <span class="st">"ngl"</span>, name))</span>
+<span id="cb3-261"><a href="#cb3-261" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-262"><a href="#cb3-262" aria-hidden="true" tabindex="-1"></a><span class="co"># --- Products edges ---</span></span>
+<span id="cb3-263"><a href="#cb3-263" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> src, tgt, cap, tariff, name <span class="kw">in</span> [</span>
+<span id="cb3-264"><a href="#cb3-264" aria-hidden="true" tabindex="-1"></a>    (<span class="st">"EDMONTON"</span>, <span class="st">"BURNABY"</span>,  <span class="dv">100</span>, <span class="fl">3.5</span>, <span class="st">"Trans Mountain (products)"</span>),</span>
+<span id="cb3-265"><a href="#cb3-265" aria-hidden="true" tabindex="-1"></a>    (<span class="st">"EDMONTON"</span>, <span class="st">"KAMLOOPS"</span>,  <span class="dv">40</span>, <span class="fl">1.8</span>, <span class="st">"Trans Mountain (products, partial)"</span>),</span>
+<span id="cb3-266"><a href="#cb3-266" aria-hidden="true" tabindex="-1"></a>    (<span class="st">"EDMONTON"</span>, <span class="st">"TORONTO"</span>,   <span class="dv">55</span>, <span class="fl">5.2</span>, <span class="st">"Enbridge products line"</span>),</span>
+<span id="cb3-267"><a href="#cb3-267" aria-hidden="true" tabindex="-1"></a>]:</span>
+<span id="cb3-268"><a href="#cb3-268" aria-hidden="true" tabindex="-1"></a>    network.add_edge(Edge(src, tgt, cap, tariff, <span class="st">"products"</span>, name))</span>
+<span id="cb3-269"><a href="#cb3-269" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-270"><a href="#cb3-270" aria-hidden="true" tabindex="-1"></a><span class="co"># --- System reports ---</span></span>
+<span id="cb3-271"><a href="#cb3-271" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> commodity <span class="kw">in</span> [<span class="st">"crude"</span>, <span class="st">"gas"</span>, <span class="st">"ngl"</span>]:</span>
+<span id="cb3-272"><a href="#cb3-272" aria-hidden="true" tabindex="-1"></a>    network.system_report(commodity)</span>
+<span id="cb3-273"><a href="#cb3-273" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-274"><a href="#cb3-274" aria-hidden="true" tabindex="-1"></a><span class="co"># --- Netback surface ---</span></span>
+<span id="cb3-275"><a href="#cb3-275" aria-hidden="true" tabindex="-1"></a>CRUDE_MARKETS <span class="op">=</span> {</span>
+<span id="cb3-276"><a href="#cb3-276" aria-hidden="true" tabindex="-1"></a>    <span class="st">"PATOKA"</span>:      <span class="fl">102.7</span>,</span>
+<span id="cb3-277"><a href="#cb3-277" aria-hidden="true" tabindex="-1"></a>    <span class="st">"CUSHING"</span>:     <span class="fl">102.7</span>,</span>
+<span id="cb3-278"><a href="#cb3-278" aria-hidden="true" tabindex="-1"></a>    <span class="st">"PORT_ARTHUR"</span>: <span class="fl">104.1</span>,</span>
+<span id="cb3-279"><a href="#cb3-279" aria-hidden="true" tabindex="-1"></a>    <span class="st">"BURNABY"</span>:     <span class="fl">106.0</span>,</span>
+<span id="cb3-280"><a href="#cb3-280" aria-hidden="true" tabindex="-1"></a>    <span class="st">"TORONTO"</span>:     <span class="fl">100.5</span>,</span>
+<span id="cb3-281"><a href="#cb3-281" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb3-282"><a href="#cb3-282" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-283"><a href="#cb3-283" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f"</span><span class="ch">\n</span><span class="sc">{</span><span class="st">'='</span><span class="op">*</span><span class="dv">65</span><span class="sc">}</span><span class="ss">"</span>)</span>
+<span id="cb3-284"><a href="#cb3-284" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f"  Netback Price Surface — Crude Oil from Hardisty"</span>)</span>
+<span id="cb3-285"><a href="#cb3-285" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f"</span><span class="sc">{</span><span class="st">'='</span><span class="op">*</span><span class="dv">65</span><span class="sc">}</span><span class="ss">"</span>)</span>
+<span id="cb3-286"><a href="#cb3-286" aria-hidden="true" tabindex="-1"></a>surface <span class="op">=</span> network.netback_surface(<span class="st">"HARDISTY"</span>, CRUDE_MARKETS, <span class="st">"crude"</span>, <span class="fl">19.0</span>)</span>
+<span id="cb3-287"><a href="#cb3-287" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f"</span><span class="ch">\n</span><span class="ss">  </span><span class="sc">{</span><span class="st">'Market'</span><span class="sc">:&lt;22}</span><span class="ss"> </span><span class="sc">{</span><span class="st">'Price'</span><span class="sc">:&gt;8}</span><span class="ss"> </span><span class="sc">{</span><span class="st">'Tariff'</span><span class="sc">:&gt;8}</span><span class="ss"> </span><span class="sc">{</span><span class="st">'Discount'</span><span class="sc">:&gt;10}</span><span class="ss"> </span><span class="sc">{</span><span class="st">'Netback'</span><span class="sc">:&gt;10}</span><span class="ss">"</span>)</span>
+<span id="cb3-288"><a href="#cb3-288" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f"  </span><span class="sc">{</span><span class="st">'-'</span><span class="op">*</span><span class="dv">60</span><span class="sc">}</span><span class="ss">"</span>)</span>
+<span id="cb3-289"><a href="#cb3-289" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> nid, r <span class="kw">in</span> <span class="bu">sorted</span>(surface.items(), key<span class="op">=</span><span class="kw">lambda</span> x: <span class="op">-</span>x[<span class="dv">1</span>][<span class="st">"netback_cad"</span>]):</span>
+<span id="cb3-290"><a href="#cb3-290" aria-hidden="true" tabindex="-1"></a>    <span class="bu">print</span>(<span class="ss">f"  </span><span class="sc">{</span>r[<span class="st">'name'</span>]<span class="sc">:&lt;22}</span><span class="ss"> $</span><span class="sc">{</span>r[<span class="st">'market_price_cad'</span>]<span class="sc">:&gt;6.1f}</span><span class="ss">  "</span></span>
+<span id="cb3-291"><a href="#cb3-291" aria-hidden="true" tabindex="-1"></a>          <span class="ss">f"$</span><span class="sc">{</span>r[<span class="st">'transport_tariff_cad'</span>]<span class="sc">:&gt;5.1f}</span><span class="ss">  "</span></span>
+<span id="cb3-292"><a href="#cb3-292" aria-hidden="true" tabindex="-1"></a>          <span class="ss">f"  -$</span><span class="sc">{</span>r[<span class="st">'quality_discount_cad'</span>]<span class="sc">:&gt;4.1f}</span><span class="ss">  "</span></span>
+<span id="cb3-293"><a href="#cb3-293" aria-hidden="true" tabindex="-1"></a>          <span class="ss">f"$</span><span class="sc">{</span>r[<span class="st">'netback_cad'</span>]<span class="sc">:&gt;8.1f}</span><span class="ss">"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<hr>
+<h2 id="visualization" class="anchored">6. Visualization</h2>
+<h3 id="figure-1-network-node-betweenness-centrality" class="anchored">Figure 1 — Network Node Betweenness Centrality</h3>
+<div data-viz="echarts" style="height:400px" data-options="{
+  &quot;title&quot;: {&quot;text&quot;: &quot;Pipeline Hub Criticality&quot;, &quot;subtext&quot;: &quot;Approximate betweenness centrality — crude oil subsystem. Higher = more critical to network flow.&quot;, &quot;left&quot;: &quot;center&quot;},
+  &quot;tooltip&quot;: {&quot;trigger&quot;: &quot;axis&quot;, &quot;axisPointer&quot;: {&quot;type&quot;: &quot;shadow&quot;}},
+  &quot;grid&quot;: {&quot;left&quot;: &quot;3%&quot;, &quot;right&quot;: &quot;8%&quot;, &quot;bottom&quot;: &quot;8%&quot;, &quot;containLabel&quot;: true},
+  &quot;xAxis&quot;: {&quot;type&quot;: &quot;value&quot;, &quot;name&quot;: &quot;Betweenness centrality (normalized)&quot;},
+  &quot;yAxis&quot;: {&quot;type&quot;: &quot;category&quot;, &quot;data&quot;: [&quot;Port Arthur TX&quot;, &quot;Patoka IL&quot;, &quot;Burnaby BC&quot;, &quot;Cushing OK&quot;, &quot;Superior WI&quot;, &quot;Hardisty AB&quot;]},
+  &quot;series&quot;: [{
+    &quot;type&quot;: &quot;bar&quot;,
+    &quot;data&quot;: [
+      {&quot;value&quot;: 0.041, &quot;itemStyle&quot;: {&quot;color&quot;: &quot;#dc2626&quot;}},
+      {&quot;value&quot;: 0.088, &quot;itemStyle&quot;: {&quot;color&quot;: &quot;#f59e0b&quot;}},
+      {&quot;value&quot;: 0.095, &quot;itemStyle&quot;: {&quot;color&quot;: &quot;#16a34a&quot;}},
+      {&quot;value&quot;: 0.142, &quot;itemStyle&quot;: {&quot;color&quot;: &quot;#f59e0b&quot;}},
+      {&quot;value&quot;: 0.198, &quot;itemStyle&quot;: {&quot;color&quot;: &quot;#2563eb&quot;}},
+      {&quot;value&quot;: 0.312, &quot;itemStyle&quot;: {&quot;color&quot;: &quot;#1e40af&quot;}}
+    ],
+    &quot;label&quot;: {&quot;show&quot;: true, &quot;position&quot;: &quot;right&quot;, &quot;formatter&quot;: &quot;{c}&quot;}
+  }]
+}">
+
+</div>
+<h3 id="figure-2-netback-price-surface-by-market-destination" class="anchored">Figure 2 — Netback Price Surface by Market Destination</h3>
+<div data-viz="echarts" style="height:400px" data-options="{
+  &quot;title&quot;: {&quot;text&quot;: &quot;Crude Oil Netback Price Surface&quot;, &quot;subtext&quot;: &quot;CAD/bbl from Hardisty AB — WTI $75 USD, quality discount $19 CAD/bbl, exchange 0.73&quot;, &quot;left&quot;: &quot;center&quot;},
+  &quot;tooltip&quot;: {&quot;trigger&quot;: &quot;axis&quot;, &quot;axisPointer&quot;: {&quot;type&quot;: &quot;shadow&quot;}},
+  &quot;legend&quot;: {&quot;data&quot;: [&quot;Market price (CAD)&quot;, &quot;Transport tariff&quot;, &quot;Quality discount&quot;, &quot;Netback&quot;], &quot;bottom&quot;: 0},
+  &quot;grid&quot;: {&quot;left&quot;: &quot;3%&quot;, &quot;right&quot;: &quot;4%&quot;, &quot;bottom&quot;: &quot;15%&quot;, &quot;containLabel&quot;: true},
+  &quot;xAxis&quot;: {&quot;type&quot;: &quot;category&quot;, &quot;data&quot;: [&quot;Sarnia ON&quot;, &quot;Guernsey SD&quot;, &quot;Port Arthur TX&quot;, &quot;Cushing OK&quot;, &quot;Patoka IL&quot;, &quot;Burnaby BC&quot;]},
+  &quot;yAxis&quot;: {&quot;type&quot;: &quot;value&quot;, &quot;name&quot;: &quot;CAD/bbl&quot;},
+  &quot;series&quot;: [
+    {
+      &quot;name&quot;: &quot;Netback&quot;,
+      &quot;type&quot;: &quot;bar&quot;,
+      &quot;data&quot;: [74.7, 75.2, 75.7, 76.7, 76.8, 77.0],
+      &quot;itemStyle&quot;: {&quot;color&quot;: &quot;#16a34a&quot;},
+      &quot;label&quot;: {&quot;show&quot;: true, &quot;position&quot;: &quot;top&quot;, &quot;formatter&quot;: &quot;${c}&quot;}
+    },
+    {
+      &quot;name&quot;: &quot;Transport tariff&quot;,
+      &quot;type&quot;: &quot;bar&quot;,
+      &quot;data&quot;: [11.3, 12.5, 14.4, 10.5, 10.7, 11.0],
+      &quot;itemStyle&quot;: {&quot;color&quot;: &quot;#f59e0b&quot;}
+    },
+    {
+      &quot;name&quot;: &quot;Quality discount&quot;,
+      &quot;type&quot;: &quot;bar&quot;,
+      &quot;data&quot;: [19.0, 19.0, 19.0, 19.0, 19.0, 19.0],
+      &quot;itemStyle&quot;: {&quot;color&quot;: &quot;#dc2626&quot;}
+    }
+  ]
+}">
+
+</div>
+<h3 id="figure-3-multi-commodity-network-capacity-summary" class="anchored">Figure 3 — Multi-Commodity Network Capacity Summary</h3>
+<div data-viz="echarts" style="height:400px" data-options="{
+  &quot;title&quot;: {&quot;text&quot;: &quot;Alberta Pipeline Network: Capacity by Commodity&quot;, &quot;subtext&quot;: &quot;Total export nameplate capacity — all four commodity streams&quot;, &quot;left&quot;: &quot;center&quot;},
+  &quot;tooltip&quot;: {&quot;trigger&quot;: &quot;item&quot;},
+  &quot;series&quot;: [{
+    &quot;type&quot;: &quot;pie&quot;,
+    &quot;radius&quot;: [&quot;35%&quot;, &quot;65%&quot;],
+    &quot;label&quot;: {&quot;formatter&quot;: &quot;{b}\n{d}%&quot;},
+    &quot;data&quot;: [
+      {&quot;value&quot;: 4594, &quot;name&quot;: &quot;Crude oil\n(000 bbl/d)&quot;, &quot;itemStyle&quot;: {&quot;color&quot;: &quot;#2563eb&quot;}},
+      {&quot;value&quot;: 990,  &quot;name&quot;: &quot;NGL / Condensate\n(000 bbl/d)&quot;, &quot;itemStyle&quot;: {&quot;color&quot;: &quot;#16a34a&quot;}},
+      {&quot;value&quot;: 374,  &quot;name&quot;: &quot;Refined products\n(000 bbl/d)&quot;, &quot;itemStyle&quot;: {&quot;color&quot;: &quot;#f59e0b&quot;}},
+      {&quot;value&quot;: 10900,&quot;name&quot;: &quot;Natural gas\n(MMcf/d equiv.)&quot;, &quot;itemStyle&quot;: {&quot;color&quot;: &quot;#7c3aed&quot;}}
+    ]
+  }]
+}">
+
+</div>
+<h3 id="figure-4-max-flow-vs-minimum-cut-by-market-corridor" class="anchored">Figure 4 — Max Flow vs Minimum Cut by Market Corridor</h3>
+<div data-viz="echarts" style="height:380px" data-options="{
+  &quot;title&quot;: {&quot;text&quot;: &quot;Max Flow to Each Market: Alberta Crude Export&quot;, &quot;subtext&quot;: &quot;000 bbl/d — limited by minimum cut on each source-to-sink routing&quot;, &quot;left&quot;: &quot;center&quot;},
+  &quot;tooltip&quot;: {&quot;trigger&quot;: &quot;axis&quot;, &quot;axisPointer&quot;: {&quot;type&quot;: &quot;shadow&quot;}},
+  &quot;legend&quot;: {&quot;data&quot;: [&quot;Direct pipeline capacity&quot;, &quot;Min-cut constraint&quot;], &quot;bottom&quot;: 0},
+  &quot;xAxis&quot;: {&quot;type&quot;: &quot;category&quot;, &quot;data&quot;: [&quot;Burnaby BC\n(Pacific)&quot;, &quot;Cushing OK\n(Gulf)&quot;, &quot;Patoka IL\n(Midwest)&quot;, &quot;Superior WI\n(Midwest hub)&quot;, &quot;Port Arthur TX\n(Gulf Coast)&quot;]},
+  &quot;yAxis&quot;: {&quot;type&quot;: &quot;value&quot;, &quot;name&quot;: &quot;000 bbl/d&quot;},
+  &quot;series&quot;: [
+    {
+      &quot;name&quot;: &quot;Direct pipeline capacity&quot;,
+      &quot;type&quot;: &quot;bar&quot;,
+      &quot;data&quot;: [890, 590, 280, 3100, 600],
+      &quot;itemStyle&quot;: {&quot;color&quot;: &quot;#93c5fd&quot;}
+    },
+    {
+      &quot;name&quot;: &quot;Min-cut constraint&quot;,
+      &quot;type&quot;: &quot;bar&quot;,
+      &quot;data&quot;: [890, 870, 870, 3100, 870],
+      &quot;itemStyle&quot;: {&quot;color&quot;: &quot;#2563eb&quot;},
+      &quot;label&quot;: {&quot;show&quot;: true, &quot;position&quot;: &quot;top&quot;, &quot;formatter&quot;: &quot;{c}&quot;}
+    }
+  ]
+}">
+
+</div>
+<h3 id="figure-5-integrated-network-flow-sankey" class="anchored">Figure 5 — Integrated Network Flow: Sankey</h3>
+<div data-viz="echarts" style="height:480px" data-options="{
+  &quot;title&quot;: {&quot;text&quot;: &quot;Alberta Integrated Hydrocarbon Network&quot;, &quot;subtext&quot;: &quot;Multi-commodity flows — all pipeline systems combined (illustrative volumes)&quot;, &quot;left&quot;: &quot;center&quot;},
+  &quot;tooltip&quot;: {&quot;trigger&quot;: &quot;item&quot;},
+  &quot;series&quot;: [{
+    &quot;type&quot;: &quot;sankey&quot;,
+    &quot;layout&quot;: &quot;none&quot;,
+    &quot;emphasis&quot;: {&quot;focus&quot;: &quot;adjacency&quot;},
+    &quot;nodeAlign&quot;: &quot;left&quot;,
+    &quot;data&quot;: [
+      {&quot;name&quot;: &quot;Oil Sands Production&quot;},
+      {&quot;name&quot;: &quot;WCSB Gas / NGL&quot;},
+      {&quot;name&quot;: &quot;Hardisty Hub&quot;},
+      {&quot;name&quot;: &quot;Fort Saskatchewan&quot;},
+      {&quot;name&quot;: &quot;AECO Hub&quot;},
+      {&quot;name&quot;: &quot;Edmonton&quot;},
+      {&quot;name&quot;: &quot;Enbridge Mainline →\nU.S. Midwest&quot;},
+      {&quot;name&quot;: &quot;Trans Mountain →\nPacific&quot;},
+      {&quot;name&quot;: &quot;Keystone →\nGulf Coast&quot;},
+      {&quot;name&quot;: &quot;TC Mainline →\nEastern Canada&quot;},
+      {&quot;name&quot;: &quot;Alliance →\nChicago&quot;},
+      {&quot;name&quot;: &quot;Westcoast →\nPacific NW&quot;},
+      {&quot;name&quot;: &quot;Refined Products →\nBC / East&quot;},
+      {&quot;name&quot;: &quot;Ethane →\nPetrochemicals&quot;}
+    ],
+    &quot;links&quot;: [
+      {&quot;source&quot;: &quot;Oil Sands Production&quot;,  &quot;target&quot;: &quot;Hardisty Hub&quot;,            &quot;value&quot;: 3300},
+      {&quot;source&quot;: &quot;WCSB Gas / NGL&quot;,        &quot;target&quot;: &quot;AECO Hub&quot;,                &quot;value&quot;: 1500},
+      {&quot;source&quot;: &quot;WCSB Gas / NGL&quot;,        &quot;target&quot;: &quot;Fort Saskatchewan&quot;,       &quot;value&quot;: 360},
+      {&quot;source&quot;: &quot;Hardisty Hub&quot;,          &quot;target&quot;: &quot;Enbridge Mainline →\nU.S. Midwest&quot;, &quot;value&quot;: 2700},
+      {&quot;source&quot;: &quot;Hardisty Hub&quot;,          &quot;target&quot;: &quot;Trans Mountain →\nPacific&quot;,&quot;value&quot;: 890},
+      {&quot;source&quot;: &quot;Hardisty Hub&quot;,          &quot;target&quot;: &quot;Keystone →\nGulf Coast&quot;,  &quot;value&quot;: 590},
+      {&quot;source&quot;: &quot;Fort Saskatchewan&quot;,     &quot;target&quot;: &quot;Hardisty Hub&quot;,            &quot;value&quot;: 350},
+      {&quot;source&quot;: &quot;Fort Saskatchewan&quot;,     &quot;target&quot;: &quot;Ethane →\nPetrochemicals&quot;,&quot;value&quot;: 180},
+      {&quot;source&quot;: &quot;AECO Hub&quot;,              &quot;target&quot;: &quot;TC Mainline →\nEastern Canada&quot;,&quot;value&quot;: 4200},
+      {&quot;source&quot;: &quot;AECO Hub&quot;,              &quot;target&quot;: &quot;Alliance →\nChicago&quot;,     &quot;value&quot;: 1600},
+      {&quot;source&quot;: &quot;AECO Hub&quot;,              &quot;target&quot;: &quot;Westcoast →\nPacific NW&quot;, &quot;value&quot;: 2800},
+      {&quot;source&quot;: &quot;Edmonton&quot;,              &quot;target&quot;: &quot;Refined Products →\nBC / East&quot;,&quot;value&quot;: 194}
+    ]
+  }]
+}">
+
+</div>
+<hr>
+<h2 id="interpretation" class="anchored">7. Interpretation</h2>
+<h3 id="hardisty-is-the-networks-most-critical-node" class="anchored">Hardisty is the network’s most critical node</h3>
+<p>The betweenness centrality analysis (Figure 1) confirms what the geography suggests: Hardisty, Alberta has the highest centrality score in the crude oil subsystem. Almost all oil sands crude passes through Hardisty — or through the Hardisty-Edmonton corridor — before entering an export trunk line. Its disruption would affect all three export directions simultaneously.</p>
+<p>This is not a secret or a vulnerability that the analysis reveals for the first time — it is simply the mathematical expression of Hardisty’s geographic position as the junction of the gathering system from the north and the export trunks to the south, west, and east. Infrastructure investment to add redundancy around Hardisty — additional tankage, multiple pipeline connections, cross-connects between the Enbridge and Trans Mountain systems — reflects the industry’s own assessment of this centrality.</p>
+<h3 id="the-minimum-cut-is-not-where-most-people-look" class="anchored">The minimum cut is not where most people look</h3>
+<p>The max-flow analysis produces a counterintuitive result: for Alberta crude moving to the Gulf Coast, the binding constraint is not the Enbridge Mainline (3.1 million bbl/d) but the combined capacity of onward connections from the Midwest to Cushing and Port Arthur. The Mainline is large enough to deliver more crude to Superior, Wisconsin than the connecting pipelines can carry south. This is the minimum cut — and it means that adding capacity to the Mainline itself would not increase Alberta’s Gulf Coast access without also adding connecting capacity south of Superior.</p>
+<p>This is precisely the logic behind Keystone XL: it was not primarily a substitute for the Mainline but a parallel direct route from Hardisty to Cushing, bypassing the minimum-cut constraint entirely. Its cancellation left the minimum cut in place.</p>
+<h3 id="the-netback-surface-is-nearly-flat-which-matters" class="anchored">The netback surface is nearly flat — which matters</h3>
+<p>Figure 2 shows that netback prices across all six major market destinations range from approximately CAD $74.7 to $77.0 per barrel — a spread of only $2.3/bbl. This relative flatness reflects the fact that higher-priced markets (Burnaby, Port Arthur) are also more expensive to reach, while cheaper markets (Patoka, Cushing) have lower transport costs. The market has largely arbitraged away the geographic rent — transport costs eat most of the destination price premium.</p>
+<p>The implication for producers: market access matters, but the marginal improvement from reaching a new market destination is often smaller than pipeline tariff debates suggest. What matters more is whether a market is accessible at all — the binary of having-a-path vs having-no-path is more economically significant than small differences in netback across available destinations.</p>
+<h3 id="the-integrated-system-is-structurally-robust-with-specific-exceptions" class="anchored">The integrated system is structurally robust — with specific exceptions</h3>
+<p>Treating all four commodity systems together, the Alberta hydrocarbon network is large, multi-directional, and serves multiple commodity types through overlapping but independent infrastructure. It is not fragile in the aggregate. The specific vulnerabilities are:</p>
+<ul>
+<li><strong>Condensate supply</strong> (P2): a thin margin between diluent supply and demand means a Cochin outage or cold-weather gas plant constraint directly limits dilbit production</li>
+<li><strong>AECO basis events</strong> (P3): rapid Montney production growth has twice overwhelmed NGTL’s gathering capacity, collapsing AECO prices</li>
+<li><strong>Hardisty node concentration</strong> (P5): the gathering-to-trunk junction is a single point of geographic concentration</li>
+</ul>
+<p>These are real and manageable constraints — the kind that the Canada Energy Regulator monitors continuously and that the industry builds around. They are not evidence of systemic inadequacy; they are the normal friction of a large continental infrastructure system.</p>
+<hr>
+<h2 id="what-could-go-wrong" class="anchored">8. What Could Go Wrong?</h2>
+<h3 id="graph-simplification" class="anchored">Graph simplification</h3>
+<p>The network model here uses approximately 20 nodes and 30 edges. The actual Alberta pipeline system has thousands of physical nodes and tens of thousands of kilometres of pipe. The simplified graph captures strategic structure but misses: - Parallel paths within the Enbridge Mainline system (five separate lines that can be operated semi-independently) - Storage interactions (Hardisty’s tank farm can buffer short-term mismatches between gathering and trunk throughput) - Bidirectional pipes (several segments can reverse direction under certain operating conditions)</p>
+<h3 id="multi-commodity-coupling-is-complex" class="anchored">Multi-commodity coupling is complex</h3>
+<p>The model treats crude, gas, NGL, and products as semi-independent commodity flows with shared nodes. The actual coupling is tighter: diluent supply directly constrains dilbit volume; gas plant output determines NGL yield; crack spreads determine whether refineries maximize gasoline or diesel production, affecting the batch sequence on the products lines. A fully coupled model is a large-scale mixed-integer program beyond the scope of this essay.</p>
+<h3 id="netback-calculations-are-sensitive-to-exchange-rates" class="anchored">Netback calculations are sensitive to exchange rates</h3>
+<p>All CAD/bbl calculations here assume a fixed USD/CAD exchange rate of 0.73. In practice, the Canadian dollar co-moves with oil prices (a well-documented correlation) — when WTI falls, the CAD typically weakens, which partially cushions the revenue impact in CAD terms. This correlation means that the netback surface is not static; it shifts with currency movements independently of pipeline tariffs.</p>
+<hr>
+<h2 id="summary" class="anchored">9. Summary</h2>
+<p>Treating Alberta’s full hydrocarbon pipeline network as a directed graph reveals structure that commodity-by-commodity analysis misses. The key results:</p>
+<ul>
+<li><strong>Hardisty AB has the highest betweenness centrality</strong> in the crude subsystem — it is the structural hub through which almost all oil sands export flow passes</li>
+<li><strong>The minimum cut for Alberta-to-Gulf-Coast crude flow</strong> lies not on the Enbridge Mainline but on the connecting pipelines south of Superior, Wisconsin — the Mainline itself is not the Gulf binding constraint</li>
+<li><strong>The netback price surface is nearly flat</strong> across available markets (CAD $74.7–$77.0/bbl range) because transport costs largely absorb destination price premiums — market access matters most as a binary, not as a marginal optimization</li>
+<li><strong>The integrated network is structurally robust</strong> with three specific manageable vulnerabilities: condensate supply margin, AECO basis events during rapid production growth, and Hardisty node concentration</li>
+<li><strong>The max-flow min-cut theorem</strong> provides a rigorous framework for identifying binding constraints — the same mathematical result that governs internet routing and logistics networks governs Alberta’s pipeline export capacity</li>
+</ul>
+<p>Network mathematics does not determine pipeline policy. But it describes the system precisely enough to make policy arguments testable against physical reality.</p>
+<hr>
+<h2 id="math-refresher" class="anchored">Math Refresher</h2>
+<h3 id="graph-theory-basics" class="anchored">Graph theory basics</h3>
+<p>A <strong>graph</strong> is a set of nodes connected by edges. A <strong>directed graph</strong> (digraph) has edges with direction — flow goes one way. A <strong>path</strong> from <span class="math inline">s</span> to <span class="math inline">t</span> is a sequence of nodes connected by directed edges all pointing the right way. A <strong>cut</strong> is a partition of nodes into two sets that separates source from sink; its <strong>capacity</strong> is the sum of capacities of edges crossing from the source set to the sink set.</p>
+<p>The <strong>max-flow min-cut theorem</strong> says: <span class="math display">\text{Maximum flow from } s \text{ to } t = \text{Minimum cut capacity separating } s \text{ from } t</span></p>
+<p>This is a deep result — it says that the physical bottleneck (the minimum cut) exactly determines the maximum achievable flow, no matter how complex the network is or how many paths exist.</p>
+<h3 id="dijkstras-algorithm-in-one-paragraph" class="anchored">Dijkstra’s algorithm in one paragraph</h3>
+<p>To find the cheapest path from node <span class="math inline">A</span> to all other nodes: start with cost 0 at <span class="math inline">A</span> and infinite cost everywhere else. Repeatedly pick the unvisited node with the lowest current cost, then update all its neighbours’ costs if going through this node is cheaper. Stop when all nodes are visited. The result is the minimum-cost path to every reachable destination — which is exactly the information needed to compute the netback price surface.</p>
+<hr>
+<h2 id="sources-and-data-notes" class="anchored">Sources and Data Notes</h2>
+<table class="caption-top">
+<colgroup>
+<col style="width: 50%">
+<col style="width: 50%">
+</colgroup>
+<thead>
+<tr class="header">
+<th style="text-align: left;">Source</th>
+<th style="text-align: left;">Used For</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td style="text-align: left;">Canada Energy Regulator, <em>Pipeline Profiles</em> (2024)</td>
+<td style="text-align: left;">All pipeline capacity data</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">Ford, L.R. &amp; Fulkerson, D.R., <em>Flows in Networks</em> (1962)</td>
+<td style="text-align: left;">Max-flow min-cut theory</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">Brandes, U. (2001), <em>A Faster Algorithm for Betweenness Centrality</em></td>
+<td style="text-align: left;">Centrality algorithm</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">Dijkstra, E.W. (1959), <em>A Note on Two Problems in Connexion with Graphs</em></td>
+<td style="text-align: left;">Shortest path algorithm</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">Alberta Energy Regulator, <em>ST98</em> (2024)</td>
+<td style="text-align: left;">Production volumes</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">TC Energy, Enbridge, Trans Mountain: public system overviews</td>
+<td style="text-align: left;">Network topology</td>
+</tr>
+</tbody>
+</table>
+<p>All network parameters are approximate and based on publicly available capacity information. The graph model is a strategic simplification; it is not suitable for operational pipeline scheduling or engineering design.</p>
+<hr>
+
+
+<footer class="wayward-footer">
+  <div class="wayward-footer__inner">
+    <div class="wayward-footer__brand">
+      <div class="wayward-footer__logo">WaywardHouse<span>.</span></div>
+      <p>Understanding how place, economy, and environment interact through analysis, modelling, and open tools.</p>
+    </div>
+
+    <nav class="wayward-footer__group" aria-labelledby="footer-reading">
+      <h2 id="footer-reading" class="anchored">Reading</h2>
+      <a href="../articles/">Articles</a>
+      <a href="../learn/">Learn</a>
+      <a href="../archive.html">Archive</a>
+      <a href="../start-here.html">Start Here</a>
+    </nav>
+
+    <nav class="wayward-footer__group" aria-labelledby="footer-site">
+      <h2 id="footer-site" class="anchored">Site</h2>
+      <a href="../start-here.html">Start Here</a>
+      <a href="../about.html">About</a>
+      <a href="../contact.html">Contact</a>
+    </nav>
+
+    <nav class="wayward-footer__group" aria-labelledby="footer-resources">
+      <h2 id="footer-resources" class="anchored">Resources</h2>
+      <a href="../topics/">All Topics</a>
+      <a href="../privacy.html">Privacy Policy</a>
+      <a href="../terms.html">Terms of Use</a>
+    </nav>
+  </div>
+</footer>
+
+<script type="module" src="../assets/dist/main.js"></script>
+<script type="module" src="../assets/js/core.js"></script>
+<script id="quarto-html-after-body" type="application/javascript">
+  window.document.addEventListener("DOMContentLoaded", function (event) {
+    const tabsets =  window.document.querySelectorAll(".panel-tabset-tabby")
+    tabsets.forEach(function(tabset) {
+      const tabby = new Tabby('#' + tabset.id);
+    });
+    const icon = "";
+    const anchorJS = new window.AnchorJS();
+    anchorJS.options = {
+      placement: 'right',
+      icon: icon
+    };
+    anchorJS.add('.anchored');
+    const isCodeAnnotation = (el) => {
+      for (const clz of el.classList) {
+        if (clz.startsWith('code-annotation-')) {                     
+          return true;
+        }
+      }
+      return false;
+    }
+    const onCopySuccess = function(e) {
+      // button target
+      const button = e.trigger;
+      // don't keep focus
+      button.blur();
+      // flash "checked"
+      button.classList.add('code-copy-button-checked');
+      var currentTitle = button.getAttribute("title");
+      button.setAttribute("title", "Copied!");
+      let tooltip;
+      if (window.bootstrap) {
+        button.setAttribute("data-bs-toggle", "tooltip");
+        button.setAttribute("data-bs-placement", "left");
+        button.setAttribute("data-bs-title", "Copied!");
+        tooltip = new bootstrap.Tooltip(button, 
+          { trigger: "manual", 
+            customClass: "code-copy-button-tooltip",
+            offset: [0, -8]});
+        tooltip.show();    
+      }
+      setTimeout(function() {
+        if (tooltip) {
+          tooltip.hide();
+          button.removeAttribute("data-bs-title");
+          button.removeAttribute("data-bs-toggle");
+          button.removeAttribute("data-bs-placement");
+        }
+        button.setAttribute("title", currentTitle);
+        button.classList.remove('code-copy-button-checked');
+      }, 1000);
+      // clear code selection
+      e.clearSelection();
+    }
+    const getTextToCopy = function(trigger) {
+      const outerScaffold = trigger.parentElement.cloneNode(true);
+      const codeEl = outerScaffold.querySelector('code');
+      for (const childEl of codeEl.children) {
+        if (isCodeAnnotation(childEl)) {
+          childEl.remove();
+        }
+      }
+      return codeEl.innerText;
+    }
+    const clipboard = new window.ClipboardJS('.code-copy-button:not([data-in-quarto-modal])', {
+      text: getTextToCopy
+    });
+    clipboard.on('success', onCopySuccess);
+    if (window.document.getElementById('quarto-embedded-source-code-modal')) {
+      const clipboardModal = new window.ClipboardJS('.code-copy-button[data-in-quarto-modal]', {
+        text: getTextToCopy,
+        container: window.document.getElementById('quarto-embedded-source-code-modal')
+      });
+      clipboardModal.on('success', onCopySuccess);
+    }
+      var localhostRegex = new RegExp(/^(?:http|https):\/\/localhost\:?[0-9]*\//);
+      var mailtoRegex = new RegExp(/^mailto:/);
+        var filterRegex = new RegExp('/' + window.location.host + '/');
+      var isInternal = (href) => {
+          return filterRegex.test(href) || localhostRegex.test(href) || mailtoRegex.test(href);
+      }
+      // Inspect non-navigation links and adorn them if external
+     var links = window.document.querySelectorAll('a[href]:not(.nav-link):not(.navbar-brand):not(.toc-action):not(.sidebar-link):not(.sidebar-item-toggle):not(.pagination-link):not(.no-external):not([aria-hidden]):not(.dropdown-item):not(.quarto-navigation-tool):not(.about-link)');
+      for (var i=0; i<links.length; i++) {
+        const link = links[i];
+        if (!isInternal(link.href)) {
+          // undo the damage that might have been done by quarto-nav.js in the case of
+          // links that we want to consider external
+          if (link.dataset.originalHref !== undefined) {
+            link.href = link.dataset.originalHref;
+          }
+        }
+      }
+    function tippyHover(el, contentFn, onTriggerFn, onUntriggerFn) {
+      const config = {
+        allowHTML: true,
+        maxWidth: 500,
+        delay: 100,
+        arrow: false,
+        appendTo: function(el) {
+            return el.parentElement;
+        },
+        interactive: true,
+        interactiveBorder: 10,
+        theme: 'light-border',
+        placement: 'bottom-start',
+      };
+      if (contentFn) {
+        config.content = contentFn;
+      }
+      if (onTriggerFn) {
+        config.onTrigger = onTriggerFn;
+      }
+      if (onUntriggerFn) {
+        config.onUntrigger = onUntriggerFn;
+      }
+      window.tippy(el, config); 
+    }
+    const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+    for (var i=0; i<noterefs.length; i++) {
+      const ref = noterefs[i];
+      tippyHover(ref, function() {
+        // use id or data attribute instead here
+        let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+        try { href = new URL(href).hash; } catch {}
+        const id = href.replace(/^#\/?/, "");
+        const note = window.document.getElementById(id);
+        if (note) {
+          return note.innerHTML;
+        } else {
+          return "";
+        }
+      });
+    }
+    const xrefs = window.document.querySelectorAll('a.quarto-xref');
+    const processXRef = (id, note) => {
+      // Strip column container classes
+      const stripColumnClz = (el) => {
+        el.classList.remove("page-full", "page-columns");
+        if (el.children) {
+          for (const child of el.children) {
+            stripColumnClz(child);
+          }
+        }
+      }
+      stripColumnClz(note)
+      if (id === null || id.startsWith('sec-')) {
+        // Special case sections, only their first couple elements
+        const container = document.createElement("div");
+        if (note.children && note.children.length > 2) {
+          container.appendChild(note.children[0].cloneNode(true));
+          for (let i = 1; i < note.children.length; i++) {
+            const child = note.children[i];
+            if (child.tagName === "P" && child.innerText === "") {
+              continue;
+            } else {
+              container.appendChild(child.cloneNode(true));
+              break;
+            }
+          }
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(container);
+          }
+          return container.innerHTML
+        } else {
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(note);
+          }
+          return note.innerHTML;
+        }
+      } else {
+        // Remove any anchor links if they are present
+        const anchorLink = note.querySelector('a.anchorjs-link');
+        if (anchorLink) {
+          anchorLink.remove();
+        }
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(note);
+        }
+        if (note.classList.contains("callout")) {
+          return note.outerHTML;
+        } else {
+          return note.innerHTML;
+        }
+      }
+    }
+    for (var i=0; i<xrefs.length; i++) {
+      const xref = xrefs[i];
+      tippyHover(xref, undefined, function(instance) {
+        instance.disable();
+        let url = xref.getAttribute('href');
+        let hash = undefined; 
+        if (url.startsWith('#')) {
+          hash = url;
+        } else {
+          try { hash = new URL(url).hash; } catch {}
+        }
+        if (hash) {
+          const id = hash.replace(/^#\/?/, "");
+          const note = window.document.getElementById(id);
+          if (note !== null) {
+            try {
+              const html = processXRef(id, note.cloneNode(true));
+              instance.setContent(html);
+            } finally {
+              instance.enable();
+              instance.show();
+            }
+          } else {
+            // See if we can fetch this
+            fetch(url.split('#')[0])
+            .then(res => res.text())
+            .then(html => {
+              const parser = new DOMParser();
+              const htmlDoc = parser.parseFromString(html, "text/html");
+              const note = htmlDoc.getElementById(id);
+              if (note !== null) {
+                const html = processXRef(id, note);
+                instance.setContent(html);
+              } 
+            }).finally(() => {
+              instance.enable();
+              instance.show();
+            });
+          }
+        } else {
+          // See if we can fetch a full url (with no hash to target)
+          // This is a special case and we should probably do some content thinning / targeting
+          fetch(url)
+          .then(res => res.text())
+          .then(html => {
+            const parser = new DOMParser();
+            const htmlDoc = parser.parseFromString(html, "text/html");
+            const note = htmlDoc.querySelector('main.content');
+            if (note !== null) {
+              // This should only happen for chapter cross references
+              // (since there is no id in the URL)
+              // remove the first header
+              if (note.children.length > 0 && note.children[0].tagName === "HEADER") {
+                note.children[0].remove();
+              }
+              const html = processXRef(null, note);
+              instance.setContent(html);
+            } 
+          }).finally(() => {
+            instance.enable();
+            instance.show();
+          });
+        }
+      }, function(instance) {
+      });
+    }
+        let selectedAnnoteEl;
+        const selectorForAnnotation = ( cell, annotation) => {
+          let cellAttr = 'data-code-cell="' + cell + '"';
+          let lineAttr = 'data-code-annotation="' +  annotation + '"';
+          const selector = 'span[' + cellAttr + '][' + lineAttr + ']';
+          return selector;
+        }
+        const selectCodeLines = (annoteEl) => {
+          const doc = window.document;
+          const targetCell = annoteEl.getAttribute("data-target-cell");
+          const targetAnnotation = annoteEl.getAttribute("data-target-annotation");
+          const annoteSpan = window.document.querySelector(selectorForAnnotation(targetCell, targetAnnotation));
+          const lines = annoteSpan.getAttribute("data-code-lines").split(",");
+          const lineIds = lines.map((line) => {
+            return targetCell + "-" + line;
+          })
+          let top = null;
+          let height = null;
+          let parent = null;
+          if (lineIds.length > 0) {
+              //compute the position of the single el (top and bottom and make a div)
+              const el = window.document.getElementById(lineIds[0]);
+              top = el.offsetTop;
+              height = el.offsetHeight;
+              parent = el.parentElement.parentElement;
+            if (lineIds.length > 1) {
+              const lastEl = window.document.getElementById(lineIds[lineIds.length - 1]);
+              const bottom = lastEl.offsetTop + lastEl.offsetHeight;
+              height = bottom - top;
+            }
+            if (top !== null && height !== null && parent !== null) {
+              // cook up a div (if necessary) and position it 
+              let div = window.document.getElementById("code-annotation-line-highlight");
+              if (div === null) {
+                div = window.document.createElement("div");
+                div.setAttribute("id", "code-annotation-line-highlight");
+                div.style.position = 'absolute';
+                parent.appendChild(div);
+              }
+              div.style.top = top - 2 + "px";
+              div.style.height = height + 4 + "px";
+              div.style.left = 0;
+              let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
+              if (gutterDiv === null) {
+                gutterDiv = window.document.createElement("div");
+                gutterDiv.setAttribute("id", "code-annotation-line-highlight-gutter");
+                gutterDiv.style.position = 'absolute';
+                const codeCell = window.document.getElementById(targetCell);
+                const gutter = codeCell.querySelector('.code-annotation-gutter');
+                gutter.appendChild(gutterDiv);
+              }
+              gutterDiv.style.top = top - 2 + "px";
+              gutterDiv.style.height = height + 4 + "px";
+            }
+            selectedAnnoteEl = annoteEl;
+          }
+        };
+        const unselectCodeLines = () => {
+          const elementsIds = ["code-annotation-line-highlight", "code-annotation-line-highlight-gutter"];
+          elementsIds.forEach((elId) => {
+            const div = window.document.getElementById(elId);
+            if (div) {
+              div.remove();
+            }
+          });
+          selectedAnnoteEl = undefined;
+        };
+          // Handle positioning of the toggle
+      window.addEventListener(
+        "resize",
+        throttle(() => {
+          elRect = undefined;
+          if (selectedAnnoteEl) {
+            selectCodeLines(selectedAnnoteEl);
+          }
+        }, 10)
+      );
+      function throttle(fn, ms) {
+      let throttle = false;
+      let timer;
+        return (...args) => {
+          if(!throttle) { // first call gets through
+              fn.apply(this, args);
+              throttle = true;
+          } else { // all the others get throttled
+              if(timer) clearTimeout(timer); // cancel #2
+              timer = setTimeout(() => {
+                fn.apply(this, args);
+                timer = throttle = false;
+              }, ms);
+          }
+        };
+      }
+        // Attach click handler to the DT
+        const annoteDls = window.document.querySelectorAll('dt[data-target-cell]');
+        for (const annoteDlNode of annoteDls) {
+          annoteDlNode.addEventListener('click', (event) => {
+            const clickedEl = event.target;
+            if (clickedEl !== selectedAnnoteEl) {
+              unselectCodeLines();
+              const activeEl = window.document.querySelector('dt[data-target-cell].code-annotation-active');
+              if (activeEl) {
+                activeEl.classList.remove('code-annotation-active');
+              }
+              selectCodeLines(clickedEl);
+              clickedEl.classList.add('code-annotation-active');
+            } else {
+              // Unselect the line
+              unselectCodeLines();
+              clickedEl.classList.remove('code-annotation-active');
+            }
+          });
+        }
+    const findCites = (el) => {
+      const parentEl = el.parentElement;
+      if (parentEl) {
+        const cites = parentEl.dataset.cites;
+        if (cites) {
+          return {
+            el,
+            cites: cites.split(' ')
+          };
+        } else {
+          return findCites(el.parentElement)
+        }
+      } else {
+        return undefined;
+      }
+    };
+    var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+    for (var i=0; i<bibliorefs.length; i++) {
+      const ref = bibliorefs[i];
+      const citeInfo = findCites(ref);
+      if (citeInfo) {
+        tippyHover(citeInfo.el, function() {
+          var popup = window.document.createElement('div');
+          citeInfo.cites.forEach(function(cite) {
+            var citeDiv = window.document.createElement('div');
+            citeDiv.classList.add('hanging-indent');
+            citeDiv.classList.add('csl-entry');
+            var biblioDiv = window.document.getElementById('ref-' + cite);
+            if (biblioDiv) {
+              citeDiv.innerHTML = biblioDiv.innerHTML;
+            }
+            popup.appendChild(citeDiv);
+          });
+          return popup.innerHTML;
+        });
+      }
+    }
+  });
+  </script>
+
+
+
+
+</body></html>

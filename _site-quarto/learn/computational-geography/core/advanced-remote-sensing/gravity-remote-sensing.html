@@ -1,0 +1,1008 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
+
+<meta charset="utf-8">
+<meta name="generator" content="quarto-1.8.27">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+
+<meta name="dcterms.date" content="2026-02-27">
+<meta name="description" content="How do we measure water storage changes and ice loss from space? GRACE (Gravity Recovery and Climate Experiment) satellites detect tiny gravity variations caused by mass redistribution. This model derives gravitational potential equations, implements mass anomaly calculations, demonstrates spherical harmonic analysis, and shows applications from groundwater depletion to ice sheet mass balance.">
+
+<title>Gravity Remote Sensing (GRACE) – Computational Geography</title>
+<style>
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: min(4vw, 1.5em);}
+div.column{flex: auto; overflow-x: auto;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+  width: 0.8em;
+  margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
+  vertical-align: middle;
+}
+</style>
+
+
+<script src="../site_libs/clipboard/clipboard.min.js"></script>
+<script src="../site_libs/quarto-html/tabby.min.js"></script>
+<script src="../site_libs/quarto-html/popper.min.js"></script>
+<script src="../site_libs/quarto-html/tippy.umd.min.js"></script>
+<script src="../site_libs/quarto-html/anchor.min.js"></script>
+<link href="../site_libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="../site_libs/quarto-html/light-border.css" rel="stylesheet">
+<link href="../site_libs/quarto-html/quarto-html-734cb40618f438257b19a1e532635a32.min.css" rel="stylesheet" append-hash="true" data-mode="light">
+<link href="../site_libs/quarto-html/quarto-syntax-highlighting-ed96de9b727972fe78a7b5d16c58bf87.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<script>
+  (function () {
+    var s = localStorage.getItem('theme');
+    var dark = s !== null ? s === 'dark' : false;
+    document.documentElement.dataset.theme = dark ? 'dark' : 'light';
+    document.documentElement.dataset.brand = 'wayward';
+  })();
+</script>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:ital,wght@0,300;0,400;0,600;0,700;0,800;0,900;1,700;1,800&amp;family=Barlow:wght@300;400;500;600&amp;family=IBM+Plex+Mono:ital,wght@0,300;0,400;0,500;1,300&amp;family=Literata:ital,opsz,wght@0,7..72,300;0,7..72,400;0,7..72,500;1,7..72,300;1,7..72,400&amp;display=swap" rel="stylesheet">
+
+  <script>window.backupDefine = window.define; window.define = undefined;</script><script src="https://cdn.jsdelivr.net/npm/katex@latest/dist/katex.min.js"></script>
+  <script>document.addEventListener("DOMContentLoaded", function () {
+ var mathElements = document.getElementsByClassName("math");
+ var macros = [];
+ for (var i = 0; i < mathElements.length; i++) {
+  var texText = mathElements[i].firstChild;
+  if (mathElements[i].tagName == "SPAN") {
+   katex.render(texText.data, mathElements[i], {
+    displayMode: mathElements[i].classList.contains('display'),
+    throwOnError: false,
+    macros: macros,
+    fleqn: false
+   });
+}}});
+  </script>
+  <script>window.define = window.backupDefine; window.backupDefine = undefined;</script><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@latest/dist/katex.min.css">
+
+<script type="text/javascript">
+const typesetMath = (el) => {
+  if (window.MathJax) {
+    // MathJax Typeset
+    window.MathJax.typeset([el]);
+  } else if (window.katex) {
+    // KaTeX Render
+    var mathElements = el.getElementsByClassName("math");
+    var macros = [];
+    for (var i = 0; i < mathElements.length; i++) {
+      var texText = mathElements[i].firstChild;
+      if (mathElements[i].tagName == "SPAN" && texText && texText.data) {
+        window.katex.render(texText.data, mathElements[i], {
+          displayMode: mathElements[i].classList.contains('display'),
+          throwOnError: false,
+          macros: macros,
+          fleqn: false
+        });
+      }
+    }
+  }
+}
+window.Quarto = {
+  typesetMath
+};
+</script>
+
+<link rel="stylesheet" href="../assets/css/quarto-wayward.css">
+</head>
+
+<body class="reading-body tag-hash-math tag-hash-viz">
+
+
+<header id="title-block-header">
+<h1 class="title"><span class="chapter-title">Gravity Remote Sensing (GRACE)</span></h1>
+<p class="subtitle">Measuring mass redistribution from satellite gravity measurements</p>
+
+<p class="date">2026-02-27</p>
+</header>
+
+<nav id="TOC" role="doc-toc">
+    <h2 id="toc-title">Table of contents</h2>
+   
+  <ul>
+  <li><a href="#the-question" id="toc-the-question">1. The Question</a></li>
+  <li><a href="#the-conceptual-model" id="toc-the-conceptual-model">2. The Conceptual Model</a>
+  <ul>
+  <li><a href="#gravitational-acceleration" id="toc-gravitational-acceleration">Gravitational Acceleration</a></li>
+  <li><a href="#satellite-perturbations" id="toc-satellite-perturbations">Satellite Perturbations</a></li>
+  <li><a href="#mass-anomaly-inversion" id="toc-mass-anomaly-inversion">Mass Anomaly Inversion</a></li>
+  <li><a href="#water-equivalent-thickness" id="toc-water-equivalent-thickness">Water Equivalent Thickness</a></li>
+  </ul></li>
+  <li><a href="#building-the-mathematical-model" id="toc-building-the-mathematical-model">3. Building the Mathematical Model</a>
+  <ul>
+  <li><a href="#satellite-acceleration" id="toc-satellite-acceleration">Satellite Acceleration</a></li>
+  <li><a href="#degree-variance" id="toc-degree-variance">Degree Variance</a></li>
+  <li><a href="#trend-estimation" id="toc-trend-estimation">Trend Estimation</a></li>
+  </ul></li>
+  <li><a href="#worked-example-by-hand" id="toc-worked-example-by-hand">4. Worked Example by Hand</a>
+  <ul>
+  <li><a href="#solution" id="toc-solution">Solution</a></li>
+  </ul></li>
+  <li><a href="#computational-implementation" id="toc-computational-implementation">5. Computational Implementation</a></li>
+  <li><a href="#interpretation" id="toc-interpretation">6. Interpretation</a>
+  <ul>
+  <li><a href="#ice-sheet-mass-balance" id="toc-ice-sheet-mass-balance">Ice Sheet Mass Balance</a></li>
+  <li><a href="#groundwater-depletion" id="toc-groundwater-depletion">Groundwater Depletion</a></li>
+  <li><a href="#drought-monitoring" id="toc-drought-monitoring">Drought Monitoring</a></li>
+  </ul></li>
+  <li><a href="#what-could-go-wrong" id="toc-what-could-go-wrong">7. What Could Go Wrong?</a>
+  <ul>
+  <li><a href="#spatial-leakage" id="toc-spatial-leakage">Spatial Leakage</a></li>
+  <li><a href="#glacial-isostatic-adjustment-gia" id="toc-glacial-isostatic-adjustment-gia">Glacial Isostatic Adjustment (GIA)</a></li>
+  <li><a href="#geocenter-motion" id="toc-geocenter-motion">Geocenter Motion</a></li>
+  <li><a href="#earthquake-signals" id="toc-earthquake-signals">Earthquake Signals</a></li>
+  </ul></li>
+  <li><a href="#extension-grace-follow-on" id="toc-extension-grace-follow-on">8. Extension: GRACE Follow-On</a></li>
+  <li><a href="#math-refresher-spherical-harmonics" id="toc-math-refresher-spherical-harmonics">9. Math Refresher: Spherical Harmonics</a>
+  <ul>
+  <li><a href="#basis-functions" id="toc-basis-functions">Basis Functions</a></li>
+  <li><a href="#wavelength" id="toc-wavelength">Wavelength</a></li>
+  </ul></li>
+  <li><a href="#summary" id="toc-summary">Summary</a></li>
+  </ul>
+</nav>
+<p>The Central Valley of California overlies one of the largest and most heavily exploited aquifer systems in the world. Groundwater has been withdrawn for irrigation since the early twentieth century, but the rate accelerated dramatically during droughts — including those of 2007–2009, 2012–2016, and 2020–2022 — when surface water allocations were cut and farmers turned to pumping to survive. The loss of groundwater mass shows up in a remarkable measurement: the slight decrease in gravitational attraction that the two GRACE satellites sense as they fly over the region. The lead satellite accelerates slightly as it approaches an area of excess mass and decelerates as it leaves; the trailing satellite does the same, with a time delay. The changing separation between them — measured to micrometre precision by a microwave ranging system — is the raw data from which gravity anomalies are recovered.</p>
+<p>GRACE (Gravity Recovery and Climate Experiment), launched in 2002 and succeeded by GRACE-FO in 2018, is the only instrument that measures large-scale changes in the distribution of mass within and at the surface of the Earth. Every month it produces a global map of gravitational anomalies that, when processed to remove known signals from ocean tides, atmospheric loading, and glacial isostatic adjustment, yields changes in terrestrial water storage — the sum of soil moisture, surface water, snow, ice, and groundwater. The spatial resolution is coarse (roughly 300 km) and the processing is complex, but the measurement is unique: no other technique can quantify groundwater depletion over a multi-state region or ice sheet mass balance over an entire continent. This model derives the gravitational potential equations, introduces spherical harmonic decomposition, and explains how mass anomalies are recovered from satellite inter-ranging data.</p>
+<h2 id="the-question" class="anchored">1. The Question</h2>
+<p>How much water is California losing during drought?</p>
+<p><strong>GRACE mission (2002-2017, GRACE-FO 2018-present):</strong></p>
+<p>Twin satellites measure gravity variations.</p>
+<p><strong>Principle:</strong></p>
+<p>Mass changes → gravity changes → satellite separation changes</p>
+<p><strong>Measurement:</strong></p>
+<p>Inter-satellite distance via microwave ranging.</p>
+<p><strong>Precision:</strong> ~10 μm range change → ~1-2 cm equivalent water thickness</p>
+<p><strong>Temporal resolution:</strong> Monthly</p>
+<p><strong>Spatial resolution:</strong> ~300-400 km</p>
+<p><strong>Applications:</strong> - Ice sheet mass balance (Greenland, Antarctica) - Groundwater storage changes - Drought monitoring - Flood assessment - Ocean mass change (sea level) - Terrestrial water storage - Earthquake mass redistribution</p>
+<hr>
+<h2 id="the-conceptual-model" class="anchored">2. The Conceptual Model</h2>
+<h3 id="gravitational-acceleration" class="anchored">Gravitational Acceleration</h3>
+<p><strong>Newton’s law:</strong></p>
+<p><span class="math display">g = \frac{GM}{r^2}</span></p>
+<p>Where: - <span class="math inline">g</span> = gravitational acceleration (m/s²) - <span class="math inline">G</span> = gravitational constant (6.674 × 10⁻¹¹ m³/kg/s²) - <span class="math inline">M</span> = mass (kg) - <span class="math inline">r</span> = distance (m)</p>
+<p><strong>Earth surface:</strong> <span class="math inline">g \approx 9.81</span> m/s²</p>
+<p><strong>Variations:</strong></p>
+<p>Latitude (centrifugal force): ±0.03 m/s²<br>
+Altitude (1 km): -0.003 m/s²<br>
+Mass anomalies: ±10⁻⁶ m/s² (1 μGal)</p>
+<p><strong>GRACE detects:</strong> ~10⁻⁸ m/s² (0.01 μGal)</p>
+<h3 id="satellite-perturbations" class="anchored">Satellite Perturbations</h3>
+<p><strong>Gravity anomaly</strong> → orbital velocity change</p>
+<p><strong>Two satellites in tandem:</strong></p>
+<p>Leading satellite over mass anomaly: - Accelerates (stronger pull) - Separation increases</p>
+<p>Trailing satellite reaches anomaly: - Accelerates (catches up) - Separation decreases</p>
+<p><strong>Range rate:</strong></p>
+<p><span class="math display">\dot{\rho} = \frac{d\rho}{dt}</span></p>
+<p>Where <span class="math inline">\rho</span> = inter-satellite distance (~220 km)</p>
+<p><strong>Measured:</strong> Range rate via K-band ranging (24 GHz)</p>
+<p><strong>Precision:</strong> 0.1 μm/s</p>
+<h3 id="mass-anomaly-inversion" class="anchored">Mass Anomaly Inversion</h3>
+<p><strong>Gravitational potential:</strong></p>
+<p><span class="math display">V = \frac{GM}{r} + \text{anomalies}</span></p>
+<p><strong>Spherical harmonic expansion:</strong></p>
+<p><span class="math display">V = \frac{GM}{r} \sum_{l=0}^{\infty} \sum_{m=0}^{l} \left(\frac{a}{r}\right)^l P_{lm}(\sin\phi) (C_{lm}\cos m\lambda + S_{lm}\sin m\lambda)</span></p>
+<p>Where: - <span class="math inline">l</span> = degree (spatial scale) - <span class="math inline">m</span> = order - <span class="math inline">P_{lm}</span> = associated Legendre polynomials - <span class="math inline">C_{lm}</span>, <span class="math inline">S_{lm}</span> = Stokes coefficients - <span class="math inline">a</span> = Earth radius - <span class="math inline">\phi</span> = latitude - <span class="math inline">\lambda</span> = longitude</p>
+<p><strong>Truncation:</strong> <span class="math inline">l_{\max} \approx 60</span> (GRACE resolution limit)</p>
+<p><strong>Degree 60:</strong> ~300 km wavelength</p>
+<h3 id="water-equivalent-thickness" class="anchored">Water Equivalent Thickness</h3>
+<p><strong>Mass anomaly to water depth:</strong></p>
+<p><span class="math display">\Delta h = \frac{\Delta \sigma}{\rho_w}</span></p>
+<p>Where: - <span class="math inline">\Delta h</span> = equivalent water thickness (m) - <span class="math inline">\Delta \sigma</span> = surface density anomaly (kg/m²) - <span class="math inline">\rho_w</span> = 1000 kg/m³</p>
+<p><strong>From gravity:</strong></p>
+<p><span class="math display">\Delta \sigma = \frac{a}{3} \sum_{l,m} \frac{2l+1}{1+k_l} \Delta C_{lm} Y_{lm}</span></p>
+<p>Where <span class="math inline">k_l</span> = load Love number (elastic deformation).</p>
+<hr>
+<h2 id="building-the-mathematical-model" class="anchored">3. Building the Mathematical Model</h2>
+<h3 id="satellite-acceleration" class="anchored">Satellite Acceleration</h3>
+<p><strong>Gravity gradient along track:</strong></p>
+<p><span class="math display">\frac{\partial g}{\partial x} = -\frac{2GM}{r^3} + \text{anomaly gradient}</span></p>
+<p><strong>Differential acceleration:</strong></p>
+<p><span class="math display">\Delta a = \frac{\partial g}{\partial x} \times \Delta x</span></p>
+<p>Where <span class="math inline">\Delta x</span> = satellite separation (~220 km)</p>
+<p><strong>Range rate change:</strong></p>
+<p><span class="math display">\ddot{\rho} = \Delta a</span></p>
+<p><strong>Integrate:</strong></p>
+<p><span class="math display">\Delta \rho(t) = \int_0^t \int_0^{t'} \Delta a \, dt' \, dt</span></p>
+<p><strong>Observed:</strong> Range vs predicted (from baseline gravity model)</p>
+<p><strong>Residual:</strong> Indicates mass change</p>
+<h3 id="degree-variance" class="anchored">Degree Variance</h3>
+<p><strong>Power at each degree:</strong></p>
+<p><span class="math display">\sigma_l^2 = \sum_{m=0}^{l} (C_{lm}^2 + S_{lm}^2)</span></p>
+<p><strong>Kaula’s rule:</strong></p>
+<p>Expected variance:</p>
+<p><span class="math display">\sigma_l \propto l^{-2}</span></p>
+<p><strong>GRACE measurement error:</strong></p>
+<p>Increases rapidly with degree:</p>
+<p><span class="math display">\epsilon_l \propto l^2</span></p>
+<p><strong>Filtering required:</strong></p>
+<p>Low-pass (smooth) to reduce noise.</p>
+<p><strong>Gaussian filter:</strong></p>
+<p><span class="math display">W_l = e^{-l(l+1) b^2 / 2}</span></p>
+<p>Where <span class="math inline">b</span> = smoothing radius (typically 300-500 km)</p>
+<p><strong>Trade-off:</strong> Noise reduction vs spatial resolution</p>
+<h3 id="trend-estimation" class="anchored">Trend Estimation</h3>
+<p><strong>Time series at location:</strong></p>
+<p><span class="math display">\Delta h(t) = a + b \times t + \sum A_i \cos(\omega_i t + \phi_i) + \varepsilon</span></p>
+<p>Where: - <span class="math inline">a</span> = offset - <span class="math inline">b</span> = linear trend (mass change rate) - <span class="math inline">A_i</span> = seasonal amplitudes - <span class="math inline">\omega_i</span> = annual, semi-annual frequencies - <span class="math inline">\varepsilon</span> = noise</p>
+<p><strong>Least squares fit:</strong></p>
+<p>Solve for parameters.</p>
+<p><strong>Uncertainty:</strong></p>
+<p>Accounts for temporal correlation in residuals.</p>
+<hr>
+<h2 id="worked-example-by-hand" class="anchored">4. Worked Example by Hand</h2>
+<p><strong>Problem:</strong> Calculate water storage change from GRACE.</p>
+<p><strong>Observations:</strong></p>
+<p>Region: California Central Valley (120°W, 37°N, radius 200 km)</p>
+<p><strong>GRACE data (simplified):</strong></p>
+<p>Month 1 (Jan 2022): Gravity anomaly = +50 μGal<br>
+Month 13 (Jan 2023): Gravity anomaly = -30 μGal</p>
+<p>Change: -80 μGal</p>
+<p>Calculate equivalent water thickness change.</p>
+<h3 id="solution" class="anchored">Solution</h3>
+<p><strong>Step 1: Convert gravity to mass</strong></p>
+<p><span class="math display">\Delta g = 2\pi G \Delta \sigma</span></p>
+<p>Where <span class="math inline">\Delta \sigma</span> = surface density change (kg/m²)</p>
+<p><span class="math display">\Delta \sigma = \frac{\Delta g}{2\pi G}</span></p>
+<p><strong>Units:</strong></p>
+<p>1 μGal = 10⁻⁸ m/s²</p>
+<p><span class="math display">\Delta \sigma = \frac{-80 \times 10^{-8}}{2\pi \times 6.674 \times 10^{-11}}</span></p>
+<p><span class="math display">= \frac{-8 \times 10^{-7}}{4.19 \times 10^{-10}} = -1910 \text{ kg/m}^2</span></p>
+<p><strong>Step 2: Convert to water depth</strong></p>
+<p><span class="math display">\Delta h = \frac{-1910}{1000} = -1.91 \text{ m}</span></p>
+<p><strong>1.9 meters of water loss!</strong></p>
+<p><strong>Step 3: Total volume</strong></p>
+<p>Area of region (circle, r = 200 km):</p>
+<p><span class="math display">A = \pi r^2 = \pi \times (200000)^2 = 1.26 \times 10^{11} \text{ m}^2</span></p>
+<p>Volume change:</p>
+<p><span class="math display">V = A \times \Delta h = 1.26 \times 10^{11} \times (-1.91) = -2.4 \times 10^{11} \text{ m}^3</span></p>
+<p><strong>= 240 km³ loss</strong></p>
+<p><strong>Step 4: Interpretation</strong></p>
+<p>240 cubic kilometers of water lost in one year.</p>
+<p><strong>Causes:</strong> - Groundwater extraction - Below-average precipitation - Snow deficit - Soil moisture depletion</p>
+<p><strong>This is severe drought</strong> (typical seasonal variation: ±50 km³)</p>
+<hr>
+<h2 id="computational-implementation" class="anchored">5. Computational Implementation</h2>
+<p>Below is an interactive GRACE data simulator.</p>
+<div id="grace-viz" class="viz-container">
+<div class="controls">
+<pre><code>&lt;label&gt;
+  Region:
+  &lt;select id="region"&gt;
+    &lt;option value="greenland" selected&gt;Greenland Ice Sheet&lt;/option&gt;
+    &lt;option value="amazon"&gt;Amazon Basin&lt;/option&gt;
+    &lt;option value="california"&gt;California&lt;/option&gt;
+    &lt;option value="ganges"&gt;Ganges Basin (India)&lt;/option&gt;
+  &lt;/select&gt;
+&lt;/label&gt;
+&lt;label&gt;
+  Time range (years):
+  &lt;input type="range" id="time-range" min="1" max="20" step="1" value="10"&gt;
+  &lt;span id="time-val"&gt;10&lt;/span&gt;
+&lt;/label&gt;
+&lt;div class="grace-info"&gt;
+  &lt;p&gt;&lt;strong&gt;Linear trend:&lt;/strong&gt; &lt;span id="trend"&gt;--&lt;/span&gt; cm/year&lt;/p&gt;
+  &lt;p&gt;&lt;strong&gt;Seasonal amplitude:&lt;/strong&gt; &lt;span id="seasonal"&gt;--&lt;/span&gt; cm&lt;/p&gt;
+  &lt;p&gt;&lt;strong&gt;Total change:&lt;/strong&gt; &lt;span id="total-change"&gt;--&lt;/span&gt; m&lt;/p&gt;
+  &lt;p&gt;&lt;strong&gt;Mass change rate:&lt;/strong&gt; &lt;span id="mass-rate"&gt;--&lt;/span&gt; Gt/year&lt;/p&gt;
+&lt;/div&gt;</code></pre>
+</div>
+<div id="grace-canvas-container">
+<pre><code>&lt;canvas id="grace-canvas" width="700" height="400" style="border: 1px solid #ddd;"&gt;&lt;/canvas&gt;</code></pre>
+</div>
+</div>
+<script type="module">
+await new Promise(resolve => {
+  const checkECharts = () => {
+    if (typeof echarts !== 'undefined') resolve();
+    else setTimeout(checkECharts, 50);
+  };
+  checkECharts();
+});
+
+(function() {
+  const chart = echarts.init(document.getElementById('grace-canvas'));
+  
+  let region = 'greenland';
+  let timeRange = 10;
+  
+  const regionParams = {
+    'greenland': {
+      trend: -25, // cm/year
+      seasonal: 8,
+      area: 1.71e12, // m²
+      name: 'Greenland Ice Sheet'
+    },
+    'amazon': {
+      trend: 0,
+      seasonal: 15,
+      area: 5.5e12,
+      name: 'Amazon Basin'
+    },
+    'california': {
+      trend: -3,
+      seasonal: 20,
+      area: 4e11,
+      name: 'California'
+    },
+    'ganges': {
+      trend: -4,
+      seasonal: 25,
+      area: 1e12,
+      name: 'Ganges Basin'
+    }
+  };
+  
+  function generateTimeSeries() {
+    const params = regionParams[region];
+    const data = [];
+    const nMonths = timeRange * 12;
+    
+    for (let month = 0; month < nMonths; month++) {
+      const year = month / 12;
+      
+      // Linear trend
+      const trend = params.trend * year / 100; // m
+      
+      // Seasonal (annual + semi-annual)
+      const annual = params.seasonal/100 * Math.sin(2 * Math.PI * month / 12);
+      const semiannual = params.seasonal/200 * Math.sin(4 * Math.PI * month / 12);
+      const seasonal = annual + semiannual;
+      
+      // Noise
+      const noise = (Math.random() - 0.5) * 0.03; // ±3 cm
+      
+      const value = trend + seasonal + noise;
+      data.push([year, value]);
+    }
+    
+    return data;
+  }
+  
+  function render() {
+    const params = regionParams[region];
+    const data = generateTimeSeries();
+    
+    // Calculate statistics
+    const trend = params.trend;
+    const seasonal = params.seasonal;
+    const totalChange = trend * timeRange / 100;
+    
+    // Mass rate (Gt/year)
+    const massRate = trend / 100 * params.area * 1000 / 1e12; // Convert to Gt
+    
+    document.getElementById('trend').textContent = trend.toFixed(1);
+    document.getElementById('seasonal').textContent = seasonal.toFixed(0);
+    document.getElementById('total-change').textContent = totalChange.toFixed(2);
+    document.getElementById('mass-rate').textContent = massRate.toFixed(0);
+    
+    const series = [
+      {
+        name: 'Water Equivalent Thickness',
+        type: 'line',
+        data: data,
+        lineStyle: {color: '#2196F3', width: 2},
+        showSymbol: false
+      },
+      {
+        name: 'Linear Trend',
+        type: 'line',
+        data: [[0, 0], [timeRange, totalChange]],
+        lineStyle: {color: '#F44336', width: 2, type: 'dashed'},
+        showSymbol: false
+      }
+    ];
+    
+    const option = {
+      title: {
+        text: `GRACE: ${params.name}`,
+        left: 'center'
+      },
+      tooltip: {
+        trigger: 'axis',
+        axisPointer: {type: 'cross'}
+      },
+      legend: {
+        data: ['Water Equivalent Thickness', 'Linear Trend'],
+        top: 30
+      },
+      grid: {
+        left: 80,
+        right: 40,
+        top: 80,
+        bottom: 60
+      },
+      xAxis: {
+        type: 'value',
+        name: 'Years',
+        nameLocation: 'middle',
+        nameGap: 30,
+        min: 0,
+        max: timeRange
+      },
+      yAxis: {
+        type: 'value',
+        name: 'Water Equivalent Thickness (m)',
+        nameLocation: 'middle',
+        nameGap: 50
+      },
+      series: series
+    };
+    
+    chart.setOption(option, true);
+  }
+  
+  document.getElementById('region').addEventListener('change', (e) => {
+    region = e.target.value;
+    render();
+  });
+  
+  document.getElementById('time-range').addEventListener('input', (e) => {
+    timeRange = parseFloat(e.target.value);
+    document.getElementById('time-val').textContent = timeRange;
+    render();
+  });
+  
+  render();
+  
+  window.addEventListener('resize', () => chart.resize());
+})();
+</script>
+<p><strong>Observations:</strong> - Greenland shows strong negative trend (ice loss: -280 Gt/year) - Amazon shows large seasonal variations (wet/dry seasons) - California shows drought signal with seasonal variation - Ganges shows groundwater depletion trend - Blue line: actual GRACE signal (trend + seasonal + noise) - Red dashed: linear trend component - Seasonal variations evident as annual oscillations</p>
+<p><strong>Key findings:</strong> - GRACE detects both long-term trends and seasonal cycles - Ice sheet mass loss clearly visible as negative trend - Groundwater depletion measurable in major aquifers - Seasonal water storage changes reach 10-25 cm equivalent</p>
+<hr>
+<h2 id="interpretation" class="anchored">6. Interpretation</h2>
+<h3 id="ice-sheet-mass-balance" class="anchored">Ice Sheet Mass Balance</h3>
+<p><strong>Greenland (2002-2023):</strong></p>
+<p>GRACE trend: -280 Gt/year average</p>
+<p><strong>Acceleration:</strong> -20 Gt/year² (increasing loss)</p>
+<p><strong>Contributions to sea level:</strong></p>
+<p>280 Gt/year ÷ (ocean area × density) = 0.8 mm/year</p>
+<p><strong>Regional patterns:</strong> - Southeast: Largest losses - Northwest: Moderate losses - Interior: Slight gains (snow accumulation)</p>
+<p><strong>Antarctica:</strong></p>
+<p>GRACE trend: -150 Gt/year</p>
+<p><strong>Variations:</strong> - West Antarctica: -160 Gt/year (marine ice sheet collapse) - East Antarctica: +10 Gt/year (slight snow increase) - Antarctic Peninsula: -20 Gt/year</p>
+<p><strong>Combined:</strong> ~1 mm/year sea level rise from ice sheets</p>
+<h3 id="groundwater-depletion" class="anchored">Groundwater Depletion</h3>
+<p><strong>North India (Ganges-Brahmaputra):</strong></p>
+<p>GRACE: -4 cm/year water storage loss</p>
+<p><strong>Cause:</strong> Irrigation extraction &gt; recharge</p>
+<p><strong>Volume:</strong> -54 km³/year</p>
+<p><strong>Unsustainable:</strong> Fossil aquifer depletion</p>
+<p><strong>California Central Valley:</strong></p>
+<p>2011-2015 drought: - GRACE: -15 cm/year peak loss - Groundwater contributed 60% of deficit - 50+ km³ cumulative loss</p>
+<p><strong>Recovery:</strong> 2017-2019 wet years partially replenished</p>
+<h3 id="drought-monitoring" class="anchored">Drought Monitoring</h3>
+<p><strong>2010-2011 Amazon drought:</strong></p>
+<p>GRACE detected: - -15 cm water storage anomaly - Preceded vegetation stress (optical NDVI) - Early warning capability</p>
+<p><strong>Operational use:</strong> - USDA drought monitor integrates GRACE - NASA FLDAS (Famine Early Warning System) - Water resource planning</p>
+<hr>
+<h2 id="what-could-go-wrong" class="anchored">7. What Could Go Wrong?</h2>
+<h3 id="spatial-leakage" class="anchored">Spatial Leakage</h3>
+<p><strong>Smoothing spreads signal:</strong></p>
+<p>300 km Gaussian filter → adjacent regions contaminate</p>
+<p><strong>Example:</strong></p>
+<p>Greenland ice loss “leaks” to ocean, land nearby.</p>
+<p><strong>Correction:</strong></p>
+<p>Forward modelling: - Assume spatial pattern (coast concentration) - Apply GRACE processing - Compute gain factors - Amplify observed signal</p>
+<p><strong>Typical:</strong> 10-30% underestimate without correction</p>
+<h3 id="glacial-isostatic-adjustment-gia" class="anchored">Glacial Isostatic Adjustment (GIA)</h3>
+<p><strong>Ice age deglaciation:</strong></p>
+<p>Mantle still rebounding.</p>
+<p><strong>GIA vertical motion:</strong></p>
+<p>Up to 10 mm/year (Scandinavia, Canada)</p>
+<p><strong>GRACE sees mass change:</strong></p>
+<p>Cannot distinguish GIA from contemporary changes.</p>
+<p><strong>Correction:</strong></p>
+<p>GIA models (ICE-6G, etc.) based on ice history.</p>
+<p><strong>Subtract from GRACE signal.</strong></p>
+<p><strong>Uncertainty:</strong> ±20-30% in some regions</p>
+<h3 id="geocenter-motion" class="anchored">Geocenter Motion</h3>
+<p><strong>Earth’s center of mass moves:</strong></p>
+<p>Relative to crust surface.</p>
+<p><strong>Degree 1 (l=1) coefficients:</strong></p>
+<p>Not measured by GRACE (both satellites affected equally).</p>
+<p><strong>Estimate from:</strong> - Ocean models - Station position networks - Combination solutions</p>
+<p><strong>Impact:</strong> Small global (few mm), important for sea level budget</p>
+<h3 id="earthquake-signals" class="anchored">Earthquake Signals</h3>
+<p><strong>Large earthquakes:</strong></p>
+<p>Redistribute mass (coseismic + postseismic).</p>
+<p><strong>2004 Sumatra M9.1:</strong></p>
+<p>GRACE detected: - Coseismic: -5 cm water equivalent (localized) - Postseismic: Years of relaxation</p>
+<p><strong>Challenge:</strong></p>
+<p>Separate earthquake from hydrologic signals.</p>
+<p><strong>Solution:</strong></p>
+<p>Model earthquake, subtract before hydrology analysis.</p>
+<hr>
+<h2 id="extension-grace-follow-on" class="anchored">8. Extension: GRACE Follow-On</h2>
+<p><strong>GRACE-FO (launched 2018):</strong></p>
+<p><strong>Improvements:</strong> - Laser ranging (addition to microwave) - Better accelerometers - Continuous from GRACE</p>
+<p><strong>Laser ranging:</strong></p>
+<p>10-100× better precision than microwave.</p>
+<p><strong>But:</strong> Atmospheric scattering limits (clouds block laser).</p>
+<p><strong>Combined system:</strong></p>
+<p>Microwave for continuous tracking, laser for highest precision.</p>
+<p><strong>Future missions:</strong></p>
+<p><strong>Mass Change mission (2028+):</strong> - Lower orbit (improve resolution) - Better instruments - Goal: 150 km resolution</p>
+<p><strong>Applications expansion:</strong> - Smaller aquifers - Individual drainage basins - Urban water use - Irrigation monitoring</p>
+<hr>
+<h2 id="math-refresher-spherical-harmonics" class="anchored">9. Math Refresher: Spherical Harmonics</h2>
+<h3 id="basis-functions" class="anchored">Basis Functions</h3>
+<p><strong>On sphere:</strong></p>
+<p><span class="math display">Y_{lm}(\theta, \phi) = P_{lm}(\cos\theta) e^{im\phi}</span></p>
+<p>Where: - <span class="math inline">\theta</span> = colatitude - <span class="math inline">\phi</span> = longitude - <span class="math inline">P_{lm}</span> = associated Legendre polynomial</p>
+<p><strong>Properties:</strong></p>
+<p>Orthogonal:</p>
+<p><span class="math display">\int Y_{lm} Y_{l'm'}^* \, d\Omega = \delta_{ll'} \delta_{mm'}</span></p>
+<p><strong>Complete:</strong> Any function on sphere can be expanded.</p>
+<h3 id="wavelength" class="anchored">Wavelength</h3>
+<p><strong>Degree <span class="math inline">l</span> corresponds to wavelength:</strong></p>
+<p><span class="math display">\lambda = \frac{2\pi a}{l}</span></p>
+<p>Where <span class="math inline">a</span> = Earth radius (6371 km)</p>
+<p><strong>Examples:</strong> - <span class="math inline">l = 2</span>: ~20,000 km (Earth’s flattening) - <span class="math inline">l = 10</span>: ~4,000 km (continents) - <span class="math inline">l = 60</span>: ~670 km (GRACE resolution) - <span class="math inline">l = 360</span>: ~110 km (EIGEN-6C4 model)</p>
+<hr>
+<h2 id="summary" class="anchored">Summary</h2>
+<ul>
+<li>GRACE satellites measure gravity variations from mass redistribution via inter-satellite ranging</li>
+<li>Gravitational acceleration changes of 10⁻⁸ m/s² detectable enabling water storage monitoring</li>
+<li>Mass anomalies inverted from spherical harmonic coefficients of gravitational potential</li>
+<li>Water equivalent thickness derived from surface density changes via gravity relationship</li>
+<li>Temporal resolution monthly with spatial resolution approximately 300-400 km</li>
+<li>Applications span ice sheet mass balance, groundwater depletion, drought monitoring</li>
+<li>Greenland losing 280 Gt/year, Antarctica 150 Gt/year contributing to sea level rise</li>
+<li>Challenges include spatial leakage, GIA correction, geocenter motion estimation</li>
+<li>GRACE Follow-On continues measurements with improved laser ranging capability</li>
+<li>Critical tool for water resources assessment and climate change monitoring</li>
+</ul>
+
+
+<footer class="wayward-footer">
+  <div class="wayward-footer__inner">
+    <div class="wayward-footer__brand">
+      <div class="wayward-footer__logo">WaywardHouse<span>.</span></div>
+      <p>Understanding how place, economy, and environment interact through analysis, modelling, and open tools.</p>
+    </div>
+
+    <nav class="wayward-footer__group" aria-labelledby="footer-reading">
+      <h2 id="footer-reading" class="anchored">Reading</h2>
+      <a href="../articles/">Articles</a>
+      <a href="../learn/">Learn</a>
+      <a href="../archive.html">Archive</a>
+      <a href="../start-here.html">Start Here</a>
+    </nav>
+
+    <nav class="wayward-footer__group" aria-labelledby="footer-site">
+      <h2 id="footer-site" class="anchored">Site</h2>
+      <a href="../start-here.html">Start Here</a>
+      <a href="../about.html">About</a>
+      <a href="../contact.html">Contact</a>
+    </nav>
+
+    <nav class="wayward-footer__group" aria-labelledby="footer-resources">
+      <h2 id="footer-resources" class="anchored">Resources</h2>
+      <a href="../topics/">All Topics</a>
+      <a href="../privacy.html">Privacy Policy</a>
+      <a href="../terms.html">Terms of Use</a>
+    </nav>
+  </div>
+</footer>
+
+<script type="module" src="../assets/dist/main.js"></script>
+<script type="module" src="../assets/js/core.js"></script>
+<script id="quarto-html-after-body" type="application/javascript">
+  window.document.addEventListener("DOMContentLoaded", function (event) {
+    const tabsets =  window.document.querySelectorAll(".panel-tabset-tabby")
+    tabsets.forEach(function(tabset) {
+      const tabby = new Tabby('#' + tabset.id);
+    });
+    const icon = "";
+    const anchorJS = new window.AnchorJS();
+    anchorJS.options = {
+      placement: 'right',
+      icon: icon
+    };
+    anchorJS.add('.anchored');
+    const isCodeAnnotation = (el) => {
+      for (const clz of el.classList) {
+        if (clz.startsWith('code-annotation-')) {                     
+          return true;
+        }
+      }
+      return false;
+    }
+    const onCopySuccess = function(e) {
+      // button target
+      const button = e.trigger;
+      // don't keep focus
+      button.blur();
+      // flash "checked"
+      button.classList.add('code-copy-button-checked');
+      var currentTitle = button.getAttribute("title");
+      button.setAttribute("title", "Copied!");
+      let tooltip;
+      if (window.bootstrap) {
+        button.setAttribute("data-bs-toggle", "tooltip");
+        button.setAttribute("data-bs-placement", "left");
+        button.setAttribute("data-bs-title", "Copied!");
+        tooltip = new bootstrap.Tooltip(button, 
+          { trigger: "manual", 
+            customClass: "code-copy-button-tooltip",
+            offset: [0, -8]});
+        tooltip.show();    
+      }
+      setTimeout(function() {
+        if (tooltip) {
+          tooltip.hide();
+          button.removeAttribute("data-bs-title");
+          button.removeAttribute("data-bs-toggle");
+          button.removeAttribute("data-bs-placement");
+        }
+        button.setAttribute("title", currentTitle);
+        button.classList.remove('code-copy-button-checked');
+      }, 1000);
+      // clear code selection
+      e.clearSelection();
+    }
+    const getTextToCopy = function(trigger) {
+      const outerScaffold = trigger.parentElement.cloneNode(true);
+      const codeEl = outerScaffold.querySelector('code');
+      for (const childEl of codeEl.children) {
+        if (isCodeAnnotation(childEl)) {
+          childEl.remove();
+        }
+      }
+      return codeEl.innerText;
+    }
+    const clipboard = new window.ClipboardJS('.code-copy-button:not([data-in-quarto-modal])', {
+      text: getTextToCopy
+    });
+    clipboard.on('success', onCopySuccess);
+    if (window.document.getElementById('quarto-embedded-source-code-modal')) {
+      const clipboardModal = new window.ClipboardJS('.code-copy-button[data-in-quarto-modal]', {
+        text: getTextToCopy,
+        container: window.document.getElementById('quarto-embedded-source-code-modal')
+      });
+      clipboardModal.on('success', onCopySuccess);
+    }
+      var localhostRegex = new RegExp(/^(?:http|https):\/\/localhost\:?[0-9]*\//);
+      var mailtoRegex = new RegExp(/^mailto:/);
+        var filterRegex = new RegExp('/' + window.location.host + '/');
+      var isInternal = (href) => {
+          return filterRegex.test(href) || localhostRegex.test(href) || mailtoRegex.test(href);
+      }
+      // Inspect non-navigation links and adorn them if external
+     var links = window.document.querySelectorAll('a[href]:not(.nav-link):not(.navbar-brand):not(.toc-action):not(.sidebar-link):not(.sidebar-item-toggle):not(.pagination-link):not(.no-external):not([aria-hidden]):not(.dropdown-item):not(.quarto-navigation-tool):not(.about-link)');
+      for (var i=0; i<links.length; i++) {
+        const link = links[i];
+        if (!isInternal(link.href)) {
+          // undo the damage that might have been done by quarto-nav.js in the case of
+          // links that we want to consider external
+          if (link.dataset.originalHref !== undefined) {
+            link.href = link.dataset.originalHref;
+          }
+        }
+      }
+    function tippyHover(el, contentFn, onTriggerFn, onUntriggerFn) {
+      const config = {
+        allowHTML: true,
+        maxWidth: 500,
+        delay: 100,
+        arrow: false,
+        appendTo: function(el) {
+            return el.parentElement;
+        },
+        interactive: true,
+        interactiveBorder: 10,
+        theme: 'light-border',
+        placement: 'bottom-start',
+      };
+      if (contentFn) {
+        config.content = contentFn;
+      }
+      if (onTriggerFn) {
+        config.onTrigger = onTriggerFn;
+      }
+      if (onUntriggerFn) {
+        config.onUntrigger = onUntriggerFn;
+      }
+      window.tippy(el, config); 
+    }
+    const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+    for (var i=0; i<noterefs.length; i++) {
+      const ref = noterefs[i];
+      tippyHover(ref, function() {
+        // use id or data attribute instead here
+        let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+        try { href = new URL(href).hash; } catch {}
+        const id = href.replace(/^#\/?/, "");
+        const note = window.document.getElementById(id);
+        if (note) {
+          return note.innerHTML;
+        } else {
+          return "";
+        }
+      });
+    }
+    const xrefs = window.document.querySelectorAll('a.quarto-xref');
+    const processXRef = (id, note) => {
+      // Strip column container classes
+      const stripColumnClz = (el) => {
+        el.classList.remove("page-full", "page-columns");
+        if (el.children) {
+          for (const child of el.children) {
+            stripColumnClz(child);
+          }
+        }
+      }
+      stripColumnClz(note)
+      if (id === null || id.startsWith('sec-')) {
+        // Special case sections, only their first couple elements
+        const container = document.createElement("div");
+        if (note.children && note.children.length > 2) {
+          container.appendChild(note.children[0].cloneNode(true));
+          for (let i = 1; i < note.children.length; i++) {
+            const child = note.children[i];
+            if (child.tagName === "P" && child.innerText === "") {
+              continue;
+            } else {
+              container.appendChild(child.cloneNode(true));
+              break;
+            }
+          }
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(container);
+          }
+          return container.innerHTML
+        } else {
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(note);
+          }
+          return note.innerHTML;
+        }
+      } else {
+        // Remove any anchor links if they are present
+        const anchorLink = note.querySelector('a.anchorjs-link');
+        if (anchorLink) {
+          anchorLink.remove();
+        }
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(note);
+        }
+        if (note.classList.contains("callout")) {
+          return note.outerHTML;
+        } else {
+          return note.innerHTML;
+        }
+      }
+    }
+    for (var i=0; i<xrefs.length; i++) {
+      const xref = xrefs[i];
+      tippyHover(xref, undefined, function(instance) {
+        instance.disable();
+        let url = xref.getAttribute('href');
+        let hash = undefined; 
+        if (url.startsWith('#')) {
+          hash = url;
+        } else {
+          try { hash = new URL(url).hash; } catch {}
+        }
+        if (hash) {
+          const id = hash.replace(/^#\/?/, "");
+          const note = window.document.getElementById(id);
+          if (note !== null) {
+            try {
+              const html = processXRef(id, note.cloneNode(true));
+              instance.setContent(html);
+            } finally {
+              instance.enable();
+              instance.show();
+            }
+          } else {
+            // See if we can fetch this
+            fetch(url.split('#')[0])
+            .then(res => res.text())
+            .then(html => {
+              const parser = new DOMParser();
+              const htmlDoc = parser.parseFromString(html, "text/html");
+              const note = htmlDoc.getElementById(id);
+              if (note !== null) {
+                const html = processXRef(id, note);
+                instance.setContent(html);
+              } 
+            }).finally(() => {
+              instance.enable();
+              instance.show();
+            });
+          }
+        } else {
+          // See if we can fetch a full url (with no hash to target)
+          // This is a special case and we should probably do some content thinning / targeting
+          fetch(url)
+          .then(res => res.text())
+          .then(html => {
+            const parser = new DOMParser();
+            const htmlDoc = parser.parseFromString(html, "text/html");
+            const note = htmlDoc.querySelector('main.content');
+            if (note !== null) {
+              // This should only happen for chapter cross references
+              // (since there is no id in the URL)
+              // remove the first header
+              if (note.children.length > 0 && note.children[0].tagName === "HEADER") {
+                note.children[0].remove();
+              }
+              const html = processXRef(null, note);
+              instance.setContent(html);
+            } 
+          }).finally(() => {
+            instance.enable();
+            instance.show();
+          });
+        }
+      }, function(instance) {
+      });
+    }
+        let selectedAnnoteEl;
+        const selectorForAnnotation = ( cell, annotation) => {
+          let cellAttr = 'data-code-cell="' + cell + '"';
+          let lineAttr = 'data-code-annotation="' +  annotation + '"';
+          const selector = 'span[' + cellAttr + '][' + lineAttr + ']';
+          return selector;
+        }
+        const selectCodeLines = (annoteEl) => {
+          const doc = window.document;
+          const targetCell = annoteEl.getAttribute("data-target-cell");
+          const targetAnnotation = annoteEl.getAttribute("data-target-annotation");
+          const annoteSpan = window.document.querySelector(selectorForAnnotation(targetCell, targetAnnotation));
+          const lines = annoteSpan.getAttribute("data-code-lines").split(",");
+          const lineIds = lines.map((line) => {
+            return targetCell + "-" + line;
+          })
+          let top = null;
+          let height = null;
+          let parent = null;
+          if (lineIds.length > 0) {
+              //compute the position of the single el (top and bottom and make a div)
+              const el = window.document.getElementById(lineIds[0]);
+              top = el.offsetTop;
+              height = el.offsetHeight;
+              parent = el.parentElement.parentElement;
+            if (lineIds.length > 1) {
+              const lastEl = window.document.getElementById(lineIds[lineIds.length - 1]);
+              const bottom = lastEl.offsetTop + lastEl.offsetHeight;
+              height = bottom - top;
+            }
+            if (top !== null && height !== null && parent !== null) {
+              // cook up a div (if necessary) and position it 
+              let div = window.document.getElementById("code-annotation-line-highlight");
+              if (div === null) {
+                div = window.document.createElement("div");
+                div.setAttribute("id", "code-annotation-line-highlight");
+                div.style.position = 'absolute';
+                parent.appendChild(div);
+              }
+              div.style.top = top - 2 + "px";
+              div.style.height = height + 4 + "px";
+              div.style.left = 0;
+              let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
+              if (gutterDiv === null) {
+                gutterDiv = window.document.createElement("div");
+                gutterDiv.setAttribute("id", "code-annotation-line-highlight-gutter");
+                gutterDiv.style.position = 'absolute';
+                const codeCell = window.document.getElementById(targetCell);
+                const gutter = codeCell.querySelector('.code-annotation-gutter');
+                gutter.appendChild(gutterDiv);
+              }
+              gutterDiv.style.top = top - 2 + "px";
+              gutterDiv.style.height = height + 4 + "px";
+            }
+            selectedAnnoteEl = annoteEl;
+          }
+        };
+        const unselectCodeLines = () => {
+          const elementsIds = ["code-annotation-line-highlight", "code-annotation-line-highlight-gutter"];
+          elementsIds.forEach((elId) => {
+            const div = window.document.getElementById(elId);
+            if (div) {
+              div.remove();
+            }
+          });
+          selectedAnnoteEl = undefined;
+        };
+          // Handle positioning of the toggle
+      window.addEventListener(
+        "resize",
+        throttle(() => {
+          elRect = undefined;
+          if (selectedAnnoteEl) {
+            selectCodeLines(selectedAnnoteEl);
+          }
+        }, 10)
+      );
+      function throttle(fn, ms) {
+      let throttle = false;
+      let timer;
+        return (...args) => {
+          if(!throttle) { // first call gets through
+              fn.apply(this, args);
+              throttle = true;
+          } else { // all the others get throttled
+              if(timer) clearTimeout(timer); // cancel #2
+              timer = setTimeout(() => {
+                fn.apply(this, args);
+                timer = throttle = false;
+              }, ms);
+          }
+        };
+      }
+        // Attach click handler to the DT
+        const annoteDls = window.document.querySelectorAll('dt[data-target-cell]');
+        for (const annoteDlNode of annoteDls) {
+          annoteDlNode.addEventListener('click', (event) => {
+            const clickedEl = event.target;
+            if (clickedEl !== selectedAnnoteEl) {
+              unselectCodeLines();
+              const activeEl = window.document.querySelector('dt[data-target-cell].code-annotation-active');
+              if (activeEl) {
+                activeEl.classList.remove('code-annotation-active');
+              }
+              selectCodeLines(clickedEl);
+              clickedEl.classList.add('code-annotation-active');
+            } else {
+              // Unselect the line
+              unselectCodeLines();
+              clickedEl.classList.remove('code-annotation-active');
+            }
+          });
+        }
+    const findCites = (el) => {
+      const parentEl = el.parentElement;
+      if (parentEl) {
+        const cites = parentEl.dataset.cites;
+        if (cites) {
+          return {
+            el,
+            cites: cites.split(' ')
+          };
+        } else {
+          return findCites(el.parentElement)
+        }
+      } else {
+        return undefined;
+      }
+    };
+    var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+    for (var i=0; i<bibliorefs.length; i++) {
+      const ref = bibliorefs[i];
+      const citeInfo = findCites(ref);
+      if (citeInfo) {
+        tippyHover(citeInfo.el, function() {
+          var popup = window.document.createElement('div');
+          citeInfo.cites.forEach(function(cite) {
+            var citeDiv = window.document.createElement('div');
+            citeDiv.classList.add('hanging-indent');
+            citeDiv.classList.add('csl-entry');
+            var biblioDiv = window.document.getElementById('ref-' + cite);
+            if (biblioDiv) {
+              citeDiv.innerHTML = biblioDiv.innerHTML;
+            }
+            popup.appendChild(citeDiv);
+          });
+          return popup.innerHTML;
+        });
+      }
+    }
+  });
+  </script>
+
+
+
+
+</body></html>
