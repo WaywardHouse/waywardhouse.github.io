@@ -451,13 +451,6 @@ function initQuartoBookLayout() {
 
   media.addEventListener('change', applyDesktopDefault);
   applyDesktopDefault();
-
-  // Quarto points the sidebar title back to the book root by default.
-  // In the maths subsite we want the visible "home" affordances to return
-  // to the main Wayward House homepage instead.
-  const siteHomeHref = '/';
-  sidebar.querySelector('.sidebar-title a')?.setAttribute('href', siteHomeHref);
-  sidebar.querySelector('.sidebar-item a.sidebar-link')?.setAttribute('href', siteHomeHref);
 }
 
 // ── Copy buttons ──────────────────────────────────────────────────────────────

@@ -105,14 +105,255 @@ function wireScrolly() {
   });
 }
 
+function initKeyboardNav() {
+  const steps = Array.from(document.querySelectorAll('.story-step'));
+  if (steps.length === 0) return;
+
+  document.addEventListener('keydown', (e) => {
+    if (e.target.matches('input, textarea, select, [contenteditable]')) return;
+
+    const active = document.querySelector('.story-step[data-active]');
+    const idx = active ? steps.indexOf(active) : -1;
+
+    if (e.key === 'ArrowDown' || e.key === 'ArrowRight') {
+      steps[Math.min(idx + 1, steps.length - 1)]
+        ?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      e.preventDefault();
+    } else if (e.key === 'ArrowUp' || e.key === 'ArrowLeft') {
+      steps[Math.max(idx - 1, 0)]
+        ?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      e.preventDefault();
+    }
+  });
+}
+
+let storyInited = false;
+
+async function initStorytelling() {
+  if (storyInited) return;
+  const sections = Array.from(document.querySelectorAll('.story-section'));
+  if (sections.length === 0) return;
+
+  sections.forEach((section, sectionIdx) => {
+    const graphic = section.querySelector('.story-graphic');
+    const stepEls = Array.from(section.querySelectorAll('.story-step'));
+    if (!graphic || stepEls.length === 0) return;
+
+    if (!section.id) section.id = `story-${sectionIdx + 1}`;
+    graphic.setAttribute('aria-live', 'polite');
+
+    function activateStep(stepEl, index = 0, direction = 'down') {
+      stepEls.forEach((step) => {
+        step.removeAttribute('data-active');
+        step.setAttribute('aria-hidden', 'true');
+      });
+
+      stepEl.setAttribute('data-active', '');
+      stepEl.removeAttribute('aria-hidden');
+
+      graphic.dispatchEvent(new CustomEvent('story:step', {
+        bubbles: true,
+        detail: {
+          index,
+          step: stepEl.dataset.step ?? String(index),
+          direction,
+          element: stepEl,
+        },
+      }));
+    }
+
+    activateStep(stepEls[0], 0, 'down');
+
+    const observer = new IntersectionObserver((entries) => {
+      const visible = entries
+        .filter((entry) => entry.isIntersecting)
+        .sort((a, b) => b.intersectionRatio - a.intersectionRatio)[0];
+
+      if (!visible) return;
+
+      const stepEl = visible.target;
+      const index = stepEls.indexOf(stepEl);
+      activateStep(stepEl, index, 'down');
+    }, {
+      root: null,
+      rootMargin: '-35% 0px -35% 0px',
+      threshold: [0.15, 0.4, 0.7],
+    });
+
+    stepEls.forEach((stepEl, index) => {
+      if (!stepEl.id) stepEl.id = `${section.id}-step-${index + 1}`;
+      observer.observe(stepEl);
+    });
+  });
+
+  initKeyboardNav();
+  storyInited = true;
+}
+
 // ── Reading progress bar ──────────────────────────────────────────────────────
 // Adds a fixed 2px progress bar at the top of the viewport on post pages.
 // Essay pages already get this from essay/progress.js; skipped here to avoid
 // double-mounting.
 
+function normalizePath(pathname) {
+  if (!pathname) return '/';
+  const cleaned = pathname
+    .replace(/index\.html$/, '')
+    .replace(/\.html$/, '/');
+  return cleaned.endsWith('/') ? cleaned : `${cleaned}/`;
+}
+
+function currentPath() {
+  return normalizePath(window.location.pathname);
+}
+
+function isHomeLikePath(pathname) {
+  return pathname === '/' || pathname === '/learn/';
+}
+
+function isReadingPage() {
+  const path = currentPath();
+  if (isHomeLikePath(path)) return false;
+  if (document.getElementById('essay-content')) return false;
+  if (document.body.classList.contains('reading-body')) return true;
+  if (document.querySelector('#TOC') && document.querySelector('h2, h3')) return true;
+  return false;
+}
+
+function updateThemeMeta(theme) {
+  document.documentElement.dataset.theme = theme;
+  try {
+    localStorage.setItem('theme', theme);
+  } catch {
+    // Ignore storage failures in locked-down contexts.
+  }
+}
+
+function injectWaywardChrome() {
+  if (document.querySelector('.wayward-header')) return;
+
+  const path = currentPath();
+  const body = document.body;
+
+  body.classList.add('wayward-shell');
+  if (isHomeLikePath(path)) body.classList.add('page-home');
+  if (isReadingPage()) body.classList.add('page-reading');
+  if (path.startsWith('/learn/')) body.classList.add('page-learn');
+
+  const header = document.createElement('header');
+  header.className = 'wayward-header';
+  header.innerHTML = `
+    <div class="wayward-header__inner">
+      <a class="wayward-brand" href="/" aria-label="Wayward House home">
+        <span class="wayward-brand__mark">WaywardHouse</span>
+        <span class="wayward-brand__dot" aria-hidden="true">.</span>
+      </a>
+      <nav class="wayward-nav" aria-label="Primary">
+        <a href="/articles/" data-nav="/articles/">Articles</a>
+        <a href="/learn/" data-nav="/learn/">Learn</a>
+        <a href="/pages/about.html" data-nav="/pages/about/">About</a>
+      </nav>
+      <button class="wayward-theme-toggle" type="button" aria-label="Toggle theme">
+        <span aria-hidden="true">${document.documentElement.dataset.theme === 'dark' ? 'Light' : 'Dark'}</span>
+      </button>
+    </div>
+  `;
+
+  header.querySelectorAll('[data-nav]').forEach((link) => {
+    const target = link.getAttribute('data-nav');
+    if (!target) return;
+    if (path === target || path.startsWith(target)) {
+      link.classList.add('is-active');
+    }
+  });
+
+  const toggle = header.querySelector('.wayward-theme-toggle');
+  toggle?.addEventListener('click', () => {
+    const nextTheme = document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark';
+    updateThemeMeta(nextTheme);
+    const label = nextTheme === 'dark' ? 'Light' : 'Dark';
+    const span = toggle.querySelector('span');
+    if (span) span.textContent = label;
+  });
+
+  const footer = document.querySelector('footer.wayward-footer');
+
+  const contentNodes = Array.from(body.children).filter((node) => {
+    if (node === header || node === footer) return false;
+    if (node.tagName === 'SCRIPT') return false;
+    if (node.classList.contains('wayward-header')) return false;
+    if (node.classList.contains('wayward-footer')) return false;
+    return true;
+  });
+
+  const main = document.createElement('main');
+  main.className = 'wayward-main';
+  contentNodes.forEach((node) => main.appendChild(node));
+
+  if (body.classList.contains('page-reading')) {
+    const toc = main.querySelector('#TOC');
+    const title = main.querySelector('#title-block-header');
+
+    if (toc && title) {
+      const layout = document.createElement('div');
+      layout.className = 'wayward-reading-layout';
+
+      const aside = document.createElement('aside');
+      aside.className = 'wayward-reading-toc';
+      aside.appendChild(toc);
+
+      const content = document.createElement('article');
+      content.className = 'wayward-reading-content';
+      Array.from(main.children).forEach((child) => {
+        if (child !== toc) content.appendChild(child);
+      });
+
+      layout.appendChild(aside);
+      layout.appendChild(content);
+      main.appendChild(layout);
+    }
+  }
+
+  body.prepend(main);
+  body.prepend(header);
+
+  if (!footer) {
+    const runtimeFooter = document.createElement('footer');
+    runtimeFooter.className = 'wayward-footer';
+    runtimeFooter.innerHTML = `
+      <div class="wayward-footer__inner">
+        <div class="wayward-footer__brand">
+          <div class="wayward-footer__logo">WaywardHouse <span>.</span></div>
+          <p>Understanding how place, economy, and environment interact through analysis, modelling, and open tools.</p>
+        </div>
+        <div class="wayward-footer__group">
+          <h2>Reading</h2>
+          <a href="/articles/">Articles</a>
+          <a href="/learn/">Learn</a>
+          <a href="/topics/">Topics</a>
+        </div>
+        <div class="wayward-footer__group">
+          <h2>Site</h2>
+          <a href="/">Home</a>
+          <a href="/pages/about.html">About</a>
+          <a href="/pages/contact.html">Contact</a>
+        </div>
+      </div>
+    `;
+
+    const firstScript = body.querySelector('script');
+    if (firstScript) {
+      body.insertBefore(runtimeFooter, firstScript);
+    } else {
+      body.appendChild(runtimeFooter);
+    }
+  }
+}
+
 function initPostProgress() {
   if (document.getElementById('essay-content')) return; // essay handles it
-  if (!document.querySelector('.post-main')) return;    // only on post pages
+  if (!isReadingPage()) return;
+  if (document.querySelector('.essay-progress-bar')) return;
 
   const prefersReduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
@@ -187,6 +428,8 @@ function addCopyButtons() {
 // ── Main init ─────────────────────────────────────────────────────────────────
 
 async function init() {
+  injectWaywardChrome();
+
   // Pass the main content element to detect() so it can check text content
   // (used by math detection to find bare $ signs).
   const content = document.querySelector('.gh-content, .essay-content, .post-content, article');
@@ -217,6 +460,7 @@ async function init() {
   initPostProgress();
   addCopyButtons();
   wireScrolly();
+  await initStorytelling();
 }
 
 if (document.readyState === 'loading') {
