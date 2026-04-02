@@ -230,34 +230,39 @@ function updateThemeMeta(theme) {
 }
 
 function injectWaywardChrome() {
-  if (document.querySelector('.wayward-header')) return;
-
   const path = currentPath();
   const body = document.body;
+  const existingHeader = document.querySelector('.wayward-header');
+  const existingFooter = document.querySelector('.wayward-footer');
+  const existingMain = document.querySelector('.wayward-main');
+
+  if (existingHeader && existingFooter && existingMain) return;
 
   body.classList.add('wayward-shell');
   if (isHomeLikePath(path)) body.classList.add('page-home');
   if (isReadingPage()) body.classList.add('page-reading');
   if (path.startsWith('/learn/')) body.classList.add('page-learn');
 
-  const header = document.createElement('header');
-  header.className = 'wayward-header';
-  header.innerHTML = `
-    <div class="wayward-header__inner">
-      <a class="wayward-brand" href="/" aria-label="Wayward House home">
-        <span class="wayward-brand__mark">WaywardHouse</span>
-        <span class="wayward-brand__dot" aria-hidden="true">.</span>
-      </a>
-      <nav class="wayward-nav" aria-label="Primary">
-        <a href="/articles/" data-nav="/articles/">Articles</a>
-        <a href="/learn/" data-nav="/learn/">Learn</a>
-        <a href="/pages/about.html" data-nav="/pages/about/">About</a>
-      </nav>
-      <button class="wayward-theme-toggle" type="button" aria-label="Toggle theme">
-        <span aria-hidden="true">${document.documentElement.dataset.theme === 'dark' ? 'Light' : 'Dark'}</span>
-      </button>
-    </div>
-  `;
+  const header = existingHeader || document.createElement('header');
+  if (!existingHeader) {
+    header.className = 'wayward-header';
+    header.innerHTML = `
+      <div class="wayward-header__inner">
+        <a class="wayward-brand" href="/" aria-label="Wayward House home">
+          <span class="wayward-brand__mark">WaywardHouse</span>
+          <span class="wayward-brand__dot" aria-hidden="true">.</span>
+        </a>
+        <nav class="wayward-nav" aria-label="Primary">
+          <a href="/articles/" data-nav="/articles/">Articles</a>
+          <a href="/learn/" data-nav="/learn/">Learn</a>
+          <a href="/pages/about.html" data-nav="/pages/about/">About</a>
+        </nav>
+        <button class="wayward-theme-toggle" type="button" aria-label="Toggle theme">
+          <span aria-hidden="true">${document.documentElement.dataset.theme === 'dark' ? 'Light' : 'Dark'}</span>
+        </button>
+      </div>
+    `;
+  }
 
   header.querySelectorAll('[data-nav]').forEach((link) => {
     const target = link.getAttribute('data-nav');
@@ -268,36 +273,42 @@ function injectWaywardChrome() {
   });
 
   const toggle = header.querySelector('.wayward-theme-toggle');
+  const span = toggle?.querySelector('span');
+  if (span) {
+    span.textContent = document.documentElement.dataset.theme === 'dark' ? 'Light' : 'Dark';
+  }
   toggle?.addEventListener('click', () => {
     const nextTheme = document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark';
     updateThemeMeta(nextTheme);
     const label = nextTheme === 'dark' ? 'Light' : 'Dark';
-    const span = toggle.querySelector('span');
-    if (span) span.textContent = label;
+    const toggleSpan = toggle.querySelector('span');
+    if (toggleSpan) toggleSpan.textContent = label;
   });
 
-  const footer = document.createElement('footer');
-  footer.className = 'wayward-footer';
-  footer.innerHTML = `
-    <div class="wayward-footer__inner">
-      <div class="wayward-footer__brand">
-        <div class="wayward-footer__logo">WaywardHouse <span>.</span></div>
-        <p>Understanding how place, economy, and environment interact through analysis, modelling, and open tools.</p>
+  const footer = existingFooter || document.createElement('footer');
+  if (!existingFooter) {
+    footer.className = 'wayward-footer';
+    footer.innerHTML = `
+      <div class="wayward-footer__inner">
+        <div class="wayward-footer__brand">
+          <div class="wayward-footer__logo">WaywardHouse <span>.</span></div>
+          <p>Understanding how place, economy, and environment interact through analysis, modelling, and open tools.</p>
+        </div>
+        <div class="wayward-footer__group">
+          <h2>Reading</h2>
+          <a href="/articles/">Articles</a>
+          <a href="/learn/">Learn</a>
+          <a href="/topics/">Topics</a>
+        </div>
+        <div class="wayward-footer__group">
+          <h2>Site</h2>
+          <a href="/">Home</a>
+          <a href="/pages/about.html">About</a>
+          <a href="/pages/contact.html">Contact</a>
+        </div>
       </div>
-      <div class="wayward-footer__group">
-        <h2>Reading</h2>
-        <a href="/articles/">Articles</a>
-        <a href="/learn/">Learn</a>
-        <a href="/topics/">Topics</a>
-      </div>
-      <div class="wayward-footer__group">
-        <h2>Site</h2>
-        <a href="/">Home</a>
-        <a href="/pages/about.html">About</a>
-        <a href="/pages/contact.html">Contact</a>
-      </div>
-    </div>
-  `;
+    `;
+  }
 
   const contentNodes = Array.from(body.children).filter((node) => {
     if (node === header || node === footer) return false;
@@ -336,13 +347,15 @@ function injectWaywardChrome() {
   }
 
   body.prepend(main);
-  body.prepend(header);
+  if (!existingHeader) body.prepend(header);
 
-  const firstScript = body.querySelector('script');
-  if (firstScript) {
-    body.insertBefore(footer, firstScript);
-  } else {
-    body.appendChild(footer);
+  if (!existingFooter) {
+    const firstScript = body.querySelector('script');
+    if (firstScript) {
+      body.insertBefore(footer, firstScript);
+    } else {
+      body.appendChild(footer);
+    }
   }
 }
 
@@ -385,6 +398,61 @@ function initPostProgress() {
   update();
 }
 
+function initQuartoBookLayout() {
+  const sidebar = document.getElementById('quarto-sidebar');
+  if (!sidebar) return;
+
+  const body = document.body;
+  const storageKey = 'wayward-maths-sidebar';
+  const media = window.matchMedia('(min-width: 1200px)');
+  const glass = document.getElementById('quarto-sidebar-glass');
+  const toggles = Array.from(document.querySelectorAll('[data-bs-target=".quarto-sidebar-collapse-item"]'));
+
+  function setDesktopState(open) {
+    body.classList.toggle('book-sidebar-collapsed', !open);
+    body.classList.toggle('book-sidebar-open', open);
+    try {
+      localStorage.setItem(storageKey, open ? 'open' : 'collapsed');
+    } catch {
+      // Ignore storage failures.
+    }
+  }
+
+  function applyDesktopDefault() {
+    if (!media.matches) {
+      body.classList.remove('book-sidebar-collapsed', 'book-sidebar-open');
+      return;
+    }
+
+    let stored = null;
+    try {
+      stored = localStorage.getItem(storageKey);
+    } catch {
+      // Ignore storage failures.
+    }
+
+    setDesktopState(stored === 'open' ? true : false);
+  }
+
+  toggles.forEach((toggle) => {
+    toggle.addEventListener('click', (event) => {
+      if (!media.matches) return;
+      event.preventDefault();
+      event.stopPropagation();
+      setDesktopState(body.classList.contains('book-sidebar-collapsed'));
+    });
+  });
+
+  glass?.addEventListener('click', (event) => {
+    if (!media.matches) return;
+    event.preventDefault();
+    setDesktopState(false);
+  });
+
+  media.addEventListener('change', applyDesktopDefault);
+  applyDesktopDefault();
+}
+
 // ── Copy buttons ──────────────────────────────────────────────────────────────
 // Adds a "Copy" button to every <pre><code> block in .gh-content.
 // essay/core.js does the same for #essay-content; this covers regular posts.
@@ -425,6 +493,7 @@ function addCopyButtons() {
 
 async function init() {
   injectWaywardChrome();
+  initQuartoBookLayout();
 
   // Pass the main content element to detect() so it can check text content
   // (used by math detection to find bare $ signs).
