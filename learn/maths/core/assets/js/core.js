@@ -220,13 +220,206 @@ function isReadingPage() {
   return false;
 }
 
-function updateThemeMeta(theme) {
-  document.documentElement.dataset.theme = theme;
+function escapeHtml(text = '') {
+  return text
+    .replaceAll('&', '&amp;')
+    .replaceAll('<', '&lt;')
+    .replaceAll('>', '&gt;')
+    .replaceAll('"', '&quot;')
+    .replaceAll("'", '&#39;');
+}
+
+function slugify(text = '') {
+  return text
+    .toLowerCase()
+    .trim()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '');
+}
+
+function formatDisplayDate(value) {
+  if (!value) return '';
+
+  const parsed = new Date(`${value}T12:00:00`);
+  if (Number.isNaN(parsed.getTime())) return value;
+
+  return new Intl.DateTimeFormat('en-CA', {
+    day: '2-digit',
+    month: 'short',
+    year: 'numeric',
+  }).format(parsed);
+}
+
+function computeReadingTime(text = '') {
+  const words = (text.match(/\b[\p{L}\p{N}'-]+\b/gu) || []).length;
+  const minutes = Math.max(1, Math.round(words / 225));
+  return `${minutes} min read`;
+}
+
+function getArticleUrl() {
+  const canonical = document.querySelector('link[rel="canonical"]')?.href;
+  return canonical || window.location.href;
+}
+
+function getBookmarkStorage() {
   try {
-    localStorage.setItem('theme', theme);
+    const raw = localStorage.getItem('wayward-bookmarks');
+    const parsed = raw ? JSON.parse(raw) : [];
+    return Array.isArray(parsed) ? parsed : [];
   } catch {
-    // Ignore storage failures in locked-down contexts.
+    return [];
   }
+}
+
+function setBookmarkStorage(items) {
+  try {
+    localStorage.setItem('wayward-bookmarks', JSON.stringify(items));
+  } catch {
+    // Ignore storage failures.
+  }
+}
+
+function bookmarkIcon(saved) {
+  const stroke = saved ? 'currentColor' : 'none';
+  return `
+    <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+      <path d="M7 4.75h10a1 1 0 0 1 1 1v13.5l-6-3.6-6 3.6V5.75a1 1 0 0 1 1-1Z" fill="${stroke}" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/>
+    </svg>
+  `;
+}
+
+function shareIcon(kind) {
+  const icons = {
+    email: '<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M4 7.5a1.5 1.5 0 0 1 1.5-1.5h13A1.5 1.5 0 0 1 20 7.5v9a1.5 1.5 0 0 1-1.5 1.5h-13A1.5 1.5 0 0 1 4 16.5v-9Zm1.6.1 6.4 5.1 6.4-5.1" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+    copy: '<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M10 7.75h7.25A1.75 1.75 0 0 1 19 9.5v8.75A1.75 1.75 0 0 1 17.25 20H8.5a1.75 1.75 0 0 1-1.75-1.75V11" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/><path d="M6.75 15H6A1.75 1.75 0 0 1 4.25 13.25V4.5A1.75 1.75 0 0 1 6 2.75h8.75A1.75 1.75 0 0 1 16.5 4.5v.75" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+    x: '<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M5 5l14 14M19 5 5 19" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>',
+    facebook: '<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M13.5 20v-7h2.4l.4-3h-2.8V8.2c0-.9.3-1.5 1.6-1.5H16.5V4.1c-.3 0-1.2-.1-2.3-.1-2.3 0-3.8 1.4-3.8 4V10H8v3h2.4v7h3.1Z" fill="currentColor"/></svg>',
+    linkedin: '<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M6.3 8.6a1.8 1.8 0 1 0 0-3.6 1.8 1.8 0 0 0 0 3.6ZM4.9 10.2h2.8V19H4.9zM10.1 10.2h2.7v1.2h.1c.4-.7 1.3-1.5 2.8-1.5 3 0 3.5 1.9 3.5 4.5V19h-2.8v-4c0-.9 0-2.2-1.4-2.2s-1.6 1-1.6 2.1V19h-2.8z" fill="currentColor"/></svg>',
+  };
+
+  return icons[kind] || '';
+}
+
+function enhanceReadingTitleBlock(main, title, toc) {
+  if (!title || title.dataset.enhanced === 'true') return;
+
+  const contentText = Array.from(main.children)
+    .filter((child) => child !== title && child !== toc)
+    .map((child) => child.textContent || '')
+    .join(' ');
+
+  const heading = title.querySelector('.title, .chapter-title');
+  if (!heading) return;
+
+  const subtitleEl = title.querySelector('.subtitle, .description');
+  const dateEl = title.querySelector('.date');
+  const authorEl = title.querySelector('.author');
+  const titleText = heading.textContent?.trim() || document.title;
+  const subtitle = subtitleEl?.textContent?.trim() || '';
+  const displayDate = formatDisplayDate(
+    dateEl?.textContent?.trim() ||
+    document.querySelector('meta[name="dcterms.date"]')?.getAttribute('content') ||
+    ''
+  );
+  const author = authorEl?.textContent?.trim() || '';
+  const readingTime = computeReadingTime(contentText);
+  const url = getArticleUrl();
+  const articleKey = slugify(url || titleText);
+  const metaBits = [];
+
+  if (author) {
+    metaBits.push(`<span class="post-meta-author">${escapeHtml(author)}</span>`);
+  }
+  if (displayDate) {
+    metaBits.push(`<span class="post-meta-date">${escapeHtml(displayDate)}</span>`);
+  }
+  metaBits.push(`<span class="post-meta-reading-time">${escapeHtml(readingTime)}</span>`);
+
+  title.classList.add('wayward-reading-head');
+  title.innerHTML = `
+    <div class="wayward-reading-head__meta-row">
+      <div class="post-meta" aria-label="Article details">
+        ${metaBits.map((bit, index) => `${index > 0 ? '<span class="post-meta-divider" aria-hidden="true">|</span>' : ''}${bit}`).join('')}
+      </div>
+      <div class="post-share" aria-label="Bookmark and share article">
+        <button class="post-bookmark-button" type="button" data-article-key="${escapeHtml(articleKey)}" data-article-url="${escapeHtml(url)}" data-article-title="${escapeHtml(titleText)}" aria-pressed="false" aria-label="Save article">
+          <span class="post-share-icon">${bookmarkIcon(false)}</span>
+          <span class="post-share-text">Save</span>
+        </button>
+        <a class="post-share-button" href="mailto:?subject=${encodeURIComponent(titleText)}&body=${encodeURIComponent(url)}" target="_blank" rel="noopener noreferrer" aria-label="Share by email">
+          <span class="post-share-icon">${shareIcon('email')}</span>
+          <span class="post-share-text">Email</span>
+        </a>
+        <button class="post-share-button post-share-button--copy" type="button" data-copy-url="${escapeHtml(url)}" aria-label="Copy link">
+          <span class="post-share-icon">${shareIcon('copy')}</span>
+          <span class="post-share-text">Copy link</span>
+        </button>
+        <a class="post-share-button" href="https://x.com/intent/tweet?url=${encodeURIComponent(url)}&text=${encodeURIComponent(titleText)}" target="_blank" rel="noopener noreferrer" aria-label="Share on X">
+          <span class="post-share-icon">${shareIcon('x')}</span>
+          <span class="post-share-text">X</span>
+        </a>
+        <a class="post-share-button" href="https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(url)}" target="_blank" rel="noopener noreferrer" aria-label="Share on Facebook">
+          <span class="post-share-icon">${shareIcon('facebook')}</span>
+          <span class="post-share-text">Facebook</span>
+        </a>
+        <a class="post-share-button" href="https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(url)}" target="_blank" rel="noopener noreferrer" aria-label="Share on LinkedIn">
+          <span class="post-share-icon">${shareIcon('linkedin')}</span>
+          <span class="post-share-text">LinkedIn</span>
+        </a>
+      </div>
+    </div>
+    <h1 class="title"><span class="chapter-title">${escapeHtml(titleText)}</span></h1>
+    ${subtitle ? `<p class="subtitle">${escapeHtml(subtitle)}</p>` : ''}
+  `;
+  title.dataset.enhanced = 'true';
+
+  const bookmarkButton = title.querySelector('.post-bookmark-button');
+  const copyButton = title.querySelector('.post-share-button--copy');
+
+  function syncBookmarkButton() {
+    if (!bookmarkButton) return;
+    const items = getBookmarkStorage();
+    const saved = items.some((item) => item.key === articleKey);
+    bookmarkButton.setAttribute('aria-pressed', saved ? 'true' : 'false');
+    bookmarkButton.querySelector('.post-share-icon').innerHTML = bookmarkIcon(saved);
+    bookmarkButton.querySelector('.post-share-text').textContent = saved ? 'Saved' : 'Save';
+    bookmarkButton.setAttribute('aria-label', saved ? 'Remove saved article' : 'Save article');
+  }
+
+  bookmarkButton?.addEventListener('click', () => {
+    const items = getBookmarkStorage();
+    const index = items.findIndex((item) => item.key === articleKey);
+    if (index >= 0) {
+      items.splice(index, 1);
+    } else {
+      items.unshift({
+        key: articleKey,
+        title: titleText,
+        url,
+        savedAt: new Date().toISOString(),
+      });
+    }
+    setBookmarkStorage(items.slice(0, 100));
+    syncBookmarkButton();
+  });
+
+  copyButton?.addEventListener('click', async () => {
+    const nextLabel = copyButton.querySelector('.post-share-text');
+    try {
+      await navigator.clipboard.writeText(url);
+      if (nextLabel) nextLabel.textContent = 'Copied';
+      window.setTimeout(() => {
+        if (nextLabel) nextLabel.textContent = 'Copy link';
+      }, 1800);
+    } catch {
+      if (nextLabel) nextLabel.textContent = 'Unavailable';
+      window.setTimeout(() => {
+        if (nextLabel) nextLabel.textContent = 'Copy link';
+      }, 1800);
+    }
+  });
+
+  syncBookmarkButton();
 }
 
 function injectWaywardChrome() {
@@ -261,9 +454,6 @@ function injectWaywardChrome() {
           <a href="/learn/" data-nav="/learn/">Learn</a>
           <a href="/pages/about.html" data-nav="/pages/about/">About</a>
         </nav>
-        <button class="wayward-theme-toggle" type="button" aria-label="Toggle theme">
-          <span aria-hidden="true">${document.documentElement.dataset.theme === 'dark' ? 'Light' : 'Dark'}</span>
-        </button>
       </div>
     `;
   }
@@ -291,21 +481,7 @@ function injectWaywardChrome() {
     }
   });
 
-  const toggle = header.querySelector('.wayward-theme-toggle');
-  const span = toggle?.querySelector('span');
-  if (span) {
-    span.textContent = document.documentElement.dataset.theme === 'dark' ? 'Light' : 'Dark';
-  }
-  if (toggle && !toggle.dataset.waywardBound) {
-    toggle.dataset.waywardBound = 'true';
-    toggle.addEventListener('click', () => {
-      const nextTheme = document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark';
-      updateThemeMeta(nextTheme);
-      const label = nextTheme === 'dark' ? 'Light' : 'Dark';
-      const toggleSpan = toggle.querySelector('span');
-      if (toggleSpan) toggleSpan.textContent = label;
-    });
-  }
+  header.querySelector('.wayward-theme-toggle')?.remove();
 
   if (existingHeader && existingFooter && existingMain) return;
 
@@ -365,6 +541,8 @@ function injectWaywardChrome() {
   if (body.classList.contains('page-reading')) {
     const toc = main.querySelector('#TOC');
     const title = main.querySelector('#title-block-header');
+
+    enhanceReadingTitleBlock(main, title, toc);
 
     if (toc && title) {
       const layout = document.createElement('div');
