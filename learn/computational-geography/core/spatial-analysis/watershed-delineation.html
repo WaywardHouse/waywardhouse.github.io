@@ -120,41 +120,6 @@ window.Quarto = {
   <li><a href="#stream-network-extraction" id="toc-stream-network-extraction">Stream Network Extraction</a></li>
   <li><a href="#watershed-delineation" id="toc-watershed-delineation">Watershed Delineation</a></li>
   </ul></li>
-  <li><a href="#building-the-mathematical-model" id="toc-building-the-mathematical-model">3. Building the Mathematical Model</a>
-  <ul>
-  <li><a href="#d8-flow-direction" id="toc-d8-flow-direction">D8 Flow Direction</a></li>
-  <li><a href="#depression-filling" id="toc-depression-filling">Depression Filling</a></li>
-  <li><a href="#flow-accumulation-algorithm" id="toc-flow-accumulation-algorithm">Flow Accumulation Algorithm</a></li>
-  <li><a href="#watershed-extraction" id="toc-watershed-extraction">Watershed Extraction</a></li>
-  </ul></li>
-  <li><a href="#worked-example-by-hand" id="toc-worked-example-by-hand">4. Worked Example by Hand</a>
-  <ul>
-  <li><a href="#solution" id="toc-solution">Solution</a></li>
-  </ul></li>
-  <li><a href="#computational-implementation" id="toc-computational-implementation">5. Computational Implementation</a></li>
-  <li><a href="#interpretation" id="toc-interpretation">6. Interpretation</a>
-  <ul>
-  <li><a href="#flood-risk-assessment" id="toc-flood-risk-assessment">Flood Risk Assessment</a></li>
-  <li><a href="#water-quality-management" id="toc-water-quality-management">Water Quality Management</a></li>
-  <li><a href="#stream-order-classification" id="toc-stream-order-classification">Stream Order Classification</a></li>
-  <li><a href="#reservoir-yield" id="toc-reservoir-yield">Reservoir Yield</a></li>
-  </ul></li>
-  <li><a href="#what-could-go-wrong" id="toc-what-could-go-wrong">7. What Could Go Wrong?</a>
-  <ul>
-  <li><a href="#flat-areas" id="toc-flat-areas">Flat Areas</a></li>
-  <li><a href="#depressions-and-sinks" id="toc-depressions-and-sinks">Depressions and Sinks</a></li>
-  <li><a href="#dem-resolution" id="toc-dem-resolution">DEM Resolution</a></li>
-  <li><a href="#edge-effects" id="toc-edge-effects">Edge Effects</a></li>
-  </ul></li>
-  <li><a href="#extension-d-infinity-algorithm" id="toc-extension-d-infinity-algorithm">8. Extension: D-Infinity Algorithm</a></li>
-  <li><a href="#math-refresher-topological-sorting" id="toc-math-refresher-topological-sorting">9. Math Refresher: Topological Sorting</a>
-  <ul>
-  <li><a href="#definition" id="toc-definition">Definition</a></li>
-  <li><a href="#application-to-flow" id="toc-application-to-flow">Application to Flow</a></li>
-  <li><a href="#kahns-algorithm" id="toc-kahns-algorithm">Kahn’s Algorithm</a></li>
-  <li><a href="#elevation-sorting" id="toc-elevation-sorting">Elevation Sorting</a></li>
-  </ul></li>
-  <li><a href="#summary" id="toc-summary">Summary</a></li>
   </ul>
 </nav>
 <h2 id="before-you-start" class="anchored">Before You Start</h2>
@@ -199,6 +164,104 @@ The simplest chain in the chapter: water goes downhill, many cells feed a few ch
 <p><strong>Pour point:</strong> Outlet location where we want to define watershed.</p>
 <p><strong>Watershed:</strong> All cells that drain to (flow through) pour point.</p>
 <p><strong>Algorithm:</strong> Trace upslope from pour point, marking all contributing cells.</p>
+<figure class="cg-ill" markdown="1">
+<div class="cg-ill__frame" data-markdown="1">
+<div class="cg-ill__eyebrow">
+Hydrology Pipeline
+</div>
+<h3 class="cg-ill__title anchored">
+Watershed Delineation Is A Sequence Of Terrain Decisions
+</h3>
+<p class="cg-ill__lede">
+A watershed boundary does not appear all at once. It emerges from a chain: shape the terrain, route the flow, count the contributors, identify channels, then trace everything feeding the outlet.
+</p>
+<div class="cg-ill__flow">
+<div class="cg-ill__flow-step">
+<h4 class="anchored">
+<ol type="1">
+<li>DEM
+</li></ol></h4>
+<p>
+Start with elevation as a gridded surface.
+</p>
+</div>
+<div class="cg-ill__flow-step">
+<h4 class="anchored">
+<ol start="2" type="1">
+<li>Flow Direction
+</li></ol></h4>
+<p>
+Each cell points to its steepest downslope neighbor.
+</p>
+</div>
+<div class="cg-ill__flow-step">
+<h4 class="anchored">
+<ol start="3" type="1">
+<li>Accumulation
+</li></ol></h4>
+<p>
+Count how many upstream cells pass through each location.
+</p>
+</div>
+<div class="cg-ill__flow-step">
+<h4 class="anchored">
+<ol start="4" type="1">
+<li>Streams
+</li></ol></h4>
+<p>
+High-accumulation cells become the channel network.
+</p>
+</div>
+<div class="cg-ill__flow-step">
+<h4 class="anchored">
+<ol start="5" type="1">
+<li>Watershed
+</li></ol></h4>
+<p>
+Trace all cells that eventually drain to one pour point.
+</p>
+</div>
+</div>
+<div class="cg-ill__grid cg-ill__grid--2">
+<div class="cg-ill__card">
+<svg viewbox="0 0 520 250" role="img" aria-label="Mini watershed workflow from terrain to outlet basin">
+<rect x="0" y="0" width="520" height="250" rx="22" fill="#eef4ef"></rect> <rect x="35" y="42" width="80" height="80" rx="12" fill="#c8d9b7" stroke="#587150" stroke-width="2"></rect> <path d="M43 106 C60 80, 78 84, 105 54" stroke="#6c835f" stroke-width="4" fill="none"></path> <text x="43" y="138" font-size="15" fill="#2f4632">terrain</text> <rect x="135" y="42" width="80" height="80" rx="12" fill="#dae6d6" stroke="#587150" stroke-width="2"></rect> <path d="M150 64 L170 64 L170 52" stroke="#1d5f7a" stroke-width="4" fill="none"></path> <path d="M174 86 L194 86 L194 74" stroke="#1d5f7a" stroke-width="4" fill="none"></path> <path d="M160 106 L180 106 L180 94" stroke="#1d5f7a" stroke-width="4" fill="none"></path> <text x="146" y="138" font-size="15" fill="#2f4632">directions</text> <rect x="235" y="42" width="80" height="80" rx="12" fill="#d9e6ef" stroke="#587150" stroke-width="2"></rect> <circle cx="250" cy="106" r="10" fill="#8ab2d1"></circle><circle cx="275" cy="90" r="14" fill="#6298c4"></circle><circle cx="298" cy="70" r="18" fill="#2a6f97"></circle> <text x="238" y="138" font-size="15" fill="#2f4632">accumulation</text> <rect x="335" y="42" width="80" height="80" rx="12" fill="#e7efdf" stroke="#587150" stroke-width="2"></rect> <path d="M350 108 C362 82, 380 90, 399 56" stroke="#256d85" stroke-width="6" fill="none"></path> <text x="355" y="138" font-size="15" fill="#2f4632">streams</text> <rect x="435" y="42" width="50" height="80" rx="12" fill="#f4e8c8" stroke="#587150" stroke-width="2"></rect> <path d="M440 54 C450 50, 468 58, 480 74 L480 100 C467 111, 448 109, 440 90 Z" fill="#d7c185" stroke="#8c7741" stroke-width="2"></path> <circle cx="477" cy="102" r="5" fill="#a64b2a"></circle> <text x="438" y="138" font-size="15" fill="#2f4632">basin</text> <line x1="115" y1="82" x2="135" y2="82" stroke="#6f7f73" stroke-width="3"></line> <polygon points="135,82 126,77 126,87" fill="#6f7f73"></polygon> <line x1="215" y1="82" x2="235" y2="82" stroke="#6f7f73" stroke-width="3"></line> <polygon points="235,82 226,77 226,87" fill="#6f7f73"></polygon> <line x1="315" y1="82" x2="335" y2="82" stroke="#6f7f73" stroke-width="3"></line> <polygon points="335,82 326,77 326,87" fill="#6f7f73"></polygon> <line x1="415" y1="82" x2="435" y2="82" stroke="#6f7f73" stroke-width="3"></line> <polygon points="435,82 426,77 426,87" fill="#6f7f73"></polygon> <text x="34" y="190" font-size="17" fill="#24424d" font-weight="700">Pour point logic</text> <text x="34" y="214" font-size="15" fill="#24424d">Choose one outlet, then work backward through the flow graph.</text> <text x="34" y="234" font-size="15" fill="#24424d">Every marked upstream cell belongs to the same watershed.</text>
+</svg>
+</div>
+<div class="cg-ill__card">
+<h4 class="anchored">
+Why this sequence helps
+</h4>
+<ul>
+<li>
+You do not need to imagine the whole basin at once.
+</li>
+<li>
+Flow direction is the local decision.
+</li>
+<li>
+Flow accumulation reveals where many local decisions converge.
+</li>
+<li>
+Channel thresholds turn convergence into a visible network.
+</li>
+<li>
+The watershed is everything upstream of one chosen outlet.
+</li>
+</ul>
+</div>
+</div>
+</div>
+</figure>
+
+
+
+
+
+
+
+
+
 <hr>
 <h2 id="building-the-mathematical-model" class="anchored">3. Building the Mathematical Model</h2>
 <h3 id="d8-flow-direction" class="anchored">D8 Flow Direction</h3>
@@ -811,6 +874,9 @@ while S not empty:
 <li>Critical for hydrological modelling and environmental management</li>
 </ul>
 <hr>
+
+
+
 
 
 <footer class="wayward-footer">

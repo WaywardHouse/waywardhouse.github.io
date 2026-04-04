@@ -31,6 +31,7 @@
  */
 
 import { REGISTRY } from './viz-registry.js';
+import { deriveTitleFromHref, getWayfindingForPath } from './book-wayfinding.js';
 
 // ── CDN loaders ───────────────────────────────────────────────────────────────
 
@@ -235,6 +236,84 @@ function slugify(text = '') {
     .trim()
     .replace(/[^a-z0-9]+/g, '-')
     .replace(/^-+|-+$/g, '');
+}
+
+function resolveNavTitle(href = '', explicit = '') {
+  return explicit || deriveTitleFromHref(href);
+}
+
+function renderTopWayfinding(pathname, chapterTitle) {
+  const state = getWayfindingForPath(pathname);
+  if (!state || state.isSectionHome) return '';
+
+  const sectionTitle = state.section.title;
+  const progress = state.chapterIndex >= 0
+    ? `Chapter ${state.chapterIndex + 1} of ${state.chapterCount}`
+    : `${state.chapterCount} chapters`;
+
+  return `
+    <div class="wayward-wayfinding">
+      <nav class="wayward-breadcrumbs" aria-label="Breadcrumb">
+        <a href="/">Computational Geography</a>
+        <span aria-hidden="true">/</span>
+        <a href="${escapeHtml(state.section.href)}">${escapeHtml(sectionTitle)}</a>
+        <span aria-hidden="true">/</span>
+        <span aria-current="page">${escapeHtml(chapterTitle)}</span>
+      </nav>
+      <div class="wayward-wayfinding__row">
+        <div class="wayward-wayfinding__identity">
+          <span class="wayward-wayfinding__eyebrow">Reading Path</span>
+          <div class="wayward-wayfinding__section">${escapeHtml(sectionTitle)}</div>
+          <div class="wayward-wayfinding__progress">${escapeHtml(progress)}</div>
+        </div>
+        <div class="wayward-wayfinding__actions">
+          <a class="wayward-wayfinding__action" href="${escapeHtml(state.section.href)}">Chapter index</a>
+          <a class="wayward-wayfinding__action" href="/">All parts</a>
+          ${document.querySelector('#TOC') ? '<a class="wayward-wayfinding__action" href="#TOC">Jump to contents</a>' : ''}
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+function renderPagerCard(kind, item, fallbackHref, fallbackLabel, description) {
+  if (!item) {
+    return `
+      <a class="wayward-pager-card wayward-pager-card--muted" href="${escapeHtml(fallbackHref)}">
+        <span class="wayward-pager-card__eyebrow">${escapeHtml(kind)}</span>
+        <strong>${escapeHtml(fallbackLabel)}</strong>
+        <p>${escapeHtml(description)}</p>
+      </a>
+    `;
+  }
+
+  return `
+    <a class="wayward-pager-card" href="${escapeHtml(item.href || fallbackHref)}">
+      <span class="wayward-pager-card__eyebrow">${escapeHtml(kind)}</span>
+      <strong>${escapeHtml(resolveNavTitle(item.href, item.title))}</strong>
+      <p>${escapeHtml(description)}</p>
+    </a>
+  `;
+}
+
+function renderBottomWayfinding(pathname) {
+  const state = getWayfindingForPath(pathname);
+  if (!state || state.isSectionHome) return null;
+
+  const nav = document.createElement('nav');
+  nav.className = 'wayward-reading-pager';
+  nav.setAttribute('aria-label', 'Chapter navigation');
+  nav.innerHTML = `
+    ${renderPagerCard('Previous', state.previous, state.section.href, 'Chapter index', 'Return to the chapter list for this section.')}
+    <a class="wayward-pager-card wayward-pager-card--section" href="${escapeHtml(state.section.href)}">
+      <span class="wayward-pager-card__eyebrow">Chapter index</span>
+      <strong>${escapeHtml(state.section.title)}</strong>
+      <p>Return to this section overview and choose your next chapter.</p>
+    </a>
+    ${renderPagerCard('Next', state.next, state.section.href, 'Section complete', 'You’ve reached the end of this section sequence.')}
+  `;
+
+  return nav;
 }
 
 function formatDisplayDate(value) {
@@ -528,6 +607,7 @@ function enhanceReadingTitleBlock(main, title, toc) {
 
   title.classList.add('wayward-reading-head');
   title.innerHTML = `
+    ${renderTopWayfinding(currentPath(), titleText)}
     <div class="wayward-reading-head__meta-row">
       <div class="post-meta" aria-label="Article details">
         ${metaBits.map((bit, index) => `${index > 0 ? '<span class="post-meta-divider" aria-hidden="true">|</span>' : ''}${bit}`).join('')}
@@ -645,6 +725,9 @@ function injectWaywardChrome() {
       Array.from(main.children).forEach((child) => {
         if (child !== toc) content.appendChild(child);
       });
+
+      const pager = renderBottomWayfinding(path);
+      if (pager) content.appendChild(pager);
 
       layout.appendChild(aside);
       layout.appendChild(content);
