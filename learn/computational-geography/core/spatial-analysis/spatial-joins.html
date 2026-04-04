@@ -206,7 +206,13 @@ The core idea that a spatial join asks “which feature is related to this one b
 <p><strong>Spatial joins use location:</strong></p>
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb2"><pre class="sourceCode sql code-with-copy"><code class="sourceCode sql"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="kw">SELECT</span> <span class="op">*</span> <span class="kw">FROM</span> addresses</span>
 <span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a><span class="kw">JOIN</span> census_tracts <span class="kw">ON</span> ST_Contains(census_tracts.geom, addresses.point)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
-<p><strong>Key operations:</strong> - <strong>Contains:</strong> Which polygon contains each point? - <strong>Intersects:</strong> Which features overlap? - <strong>Within distance:</strong> Which features are near each other? - <strong>Nearest neighbor:</strong> What’s the closest feature?</p>
+<p><strong>Key operations:</strong></p>
+<ul>
+<li><strong>Contains:</strong> Which polygon contains each point?</li>
+<li><strong>Intersects:</strong> Which features overlap?</li>
+<li><strong>Within distance:</strong> Which features are near each other?</li>
+<li><strong>Nearest neighbor:</strong> What’s the closest feature?</li>
+</ul>
 <p>The mathematical question: How do we efficiently find spatial relationships between thousands or millions of features?</p>
 <p><strong>The challenge:</strong> Naive approach tests every pair → <span class="math inline">O(n \times m)</span> complexity → too slow!</p>
 <hr>
@@ -338,7 +344,12 @@ Spatial joins are a family of predicates, not one operation. The visual relation
 <p><strong>Problem:</strong> Unacceptably slow for large datasets.</p>
 <h3 id="spatial-indexing-r-tree" class="anchored">Spatial Indexing: R-tree</h3>
 <p><strong>Idea:</strong> Organize spatial data into hierarchical bounding boxes.</p>
-<p><strong>R-tree structure:</strong> - Each node: Minimum Bounding Rectangle (MBR) containing child nodes - Leaf nodes: Actual geometries - Internal nodes: MBRs that bound groups of features</p>
+<p><strong>R-tree structure:</strong></p>
+<ul>
+<li>Each node: Minimum Bounding Rectangle (MBR) containing child nodes</li>
+<li>Leaf nodes: Actual geometries</li>
+<li>Internal nodes: MBRs that bound groups of features</li>
+</ul>
 <p><strong>Minimum Bounding Rectangle (MBR):</strong></p>
 <p>For geometry with vertices <span class="math inline">(x_i, y_i)</span>:</p>
 <p><span class="math display">\text{MBR} = [\min(x_i), \min(y_i), \max(x_i), \max(y_i)]</span></p>
@@ -360,7 +371,13 @@ Spatial joins are a family of predicates, not one operation. The visual relation
 <h3 id="k-d-tree-for-nearest-neighbor" class="anchored">K-d Tree for Nearest Neighbor</h3>
 <p><strong>Problem:</strong> Find nearest point in set B to query point <span class="math inline">q</span>.</p>
 <p><strong>K-d tree:</strong> Binary tree that partitions k-dimensional space.</p>
-<p><strong>For 2D (k=2):</strong> - Root level: split by x-coordinate (median) - Level 1: split by y-coordinate - Level 2: split by x-coordinate - Alternates…</p>
+<p><strong>For 2D (k=2):</strong></p>
+<ul>
+<li>Root level: split by x-coordinate (median)</li>
+<li>Level 1: split by y-coordinate</li>
+<li>Level 2: split by x-coordinate</li>
+<li>Alternates…</li>
+</ul>
 <p><strong>Construction:</strong></p>
 <pre><code>function buildKDTree(points, depth):
     if points is empty: return null
@@ -406,8 +423,19 @@ Spatial joins are a family of predicates, not one operation. The visual relation
 <hr>
 <h2 id="worked-example-by-hand" class="anchored">4. Worked Example by Hand</h2>
 <p><strong>Problem:</strong> Find which census tract contains each address.</p>
-<p><strong>Addresses (points):</strong> - A1: (2, 3) - A2: (7, 8) - A3: (5, 2)</p>
-<p><strong>Census tracts (polygons):</strong> - T1: Square from (0,0) to (5,5) - T2: Square from (5,0) to (10,5) - T3: Square from (0,5) to (5,10) - T4: Square from (5,5) to (10,10)</p>
+<p><strong>Addresses (points):</strong></p>
+<ul>
+<li>A1: (2, 3)</li>
+<li>A2: (7, 8)</li>
+<li>A3: (5, 2)</li>
+</ul>
+<p><strong>Census tracts (polygons):</strong></p>
+<ul>
+<li>T1: Square from (0,0) to (5,5)</li>
+<li>T2: Square from (5,0) to (10,5)</li>
+<li>T3: Square from (0,5) to (5,10)</li>
+<li>T4: Square from (5,5) to (10,10)</li>
+</ul>
 <h3 id="solution" class="anchored">Solution</h3>
 <p><strong>Step 1: Build spatial index (manually)</strong></p>
 <p>MBRs for tracts: - T1: [0, 0, 5, 5] - T2: [5, 0, 10, 5] - T3: [0, 5, 5, 10] - T4: [5, 5, 10, 10]</p>
@@ -425,7 +453,12 @@ Spatial joins are a family of predicates, not one operation. The visual relation
 <p><strong>Edge case!</strong> Point is exactly on boundary between T1 and T2.</p>
 <p>Point-in-polygon tests: - T1: (5,2) on right edge → convention: <strong>Not inside</strong> (use &lt; not ≤) - T2: (5,2) on left edge → convention: <strong>Inside</strong> (use ≤)</p>
 <p><strong>Result:</strong> A3 → T2</p>
-<p><strong>Final join results:</strong> - A1 (2,3) → T1 - A2 (7,8) → T4 - A3 (5,2) → T2</p>
+<p><strong>Final join results:</strong></p>
+<ul>
+<li>A1 (2,3) → T1</li>
+<li>A2 (7,8) → T4</li>
+<li>A3 (5,2) → T2</li>
+</ul>
 <hr>
 <h2 id="computational-implementation" class="anchored">5. Computational Implementation</h2>
 <p>Below is an interactive spatial join demonstration.</p>
@@ -726,13 +759,29 @@ render();
 render();
 })();
 </script>
-<p><strong>Try this:</strong> - <strong>Point-in-polygon:</strong> Green polygons contain red points - <strong>Nearest neighbor:</strong> Blue lines connect each point to nearest polygon - <strong>Within distance:</strong> Purple circles show search radius, lines show matches - <strong>Show spatial index:</strong> See MBR bounding boxes (dashed) - <strong>Adjust distance:</strong> Watch connections appear/disappear - Notice: Test count stays low because spatial index filters candidates</p>
+<p><strong>Try this:</strong></p>
+<ul>
+<li><strong>Point-in-polygon:</strong> Green polygons contain red points</li>
+<li><strong>Nearest neighbor:</strong> Blue lines connect each point to nearest polygon</li>
+<li><strong>Within distance:</strong> Purple circles show search radius, lines show matches</li>
+<li><strong>Show spatial index:</strong> See MBR bounding boxes (dashed)</li>
+<li><strong>Adjust distance:</strong> Watch connections appear/disappear</li>
+<li>Notice: Test count stays low because spatial index filters candidates</li>
+</ul>
 <p><strong>Key insight:</strong> Spatial indexing makes spatial joins practical—without it, large datasets would be impossibly slow.</p>
 <hr>
 <h2 id="interpretation" class="anchored">6. Interpretation</h2>
 <h3 id="real-world-performance" class="anchored">Real-World Performance</h3>
-<p><strong>Without spatial index:</strong> - 1 million addresses × 50,000 census tracts = 50 billion tests - At 1 μs per test: 50,000 seconds = 13.9 hours</p>
-<p><strong>With R-tree index:</strong> - 1 million addresses × log₂(50,000) ≈ 16 million tests - At 1 μs per test: 16 seconds</p>
+<p><strong>Without spatial index:</strong></p>
+<ul>
+<li>1 million addresses × 50,000 census tracts = 50 billion tests</li>
+<li>At 1 μs per test: 50,000 seconds = 13.9 hours</li>
+</ul>
+<p><strong>With R-tree index:</strong></p>
+<ul>
+<li>1 million addresses × log₂(50,000) ≈ 16 million tests</li>
+<li>At 1 μs per test: 16 seconds</li>
+</ul>
 <p><strong>Speedup: 3,000×</strong></p>
 <p><strong>This is why GIS software creates spatial indexes automatically.</strong></p>
 <h3 id="geocoding" class="anchored">Geocoding</h3>
@@ -762,7 +811,11 @@ Result: customers enriched with (population, income, ...)</code></pre>
 <p><strong>Solution:</strong> Convention (use &lt; or ≤ consistently) or assign to nearest centroid.</p>
 <p><strong>Multiple polygons contain point:</strong></p>
 <p>Overlapping polygons (e.g., political vs.&nbsp;statistical boundaries).</p>
-<p><strong>Solution:</strong> - Return all matches (one-to-many join) - Or prioritize by attribute (e.g., smallest polygon)</p>
+<p><strong>Solution:</strong></p>
+<ul>
+<li>Return all matches (one-to-many join)</li>
+<li>Or prioritize by attribute (e.g., smallest polygon)</li>
+</ul>
 <h3 id="performance-degradation" class="anchored">Performance Degradation</h3>
 <p><strong>Clustered data:</strong></p>
 <p>If all features are in one spatial region, R-tree becomes unbalanced.</p>
@@ -778,7 +831,12 @@ Polygons in UTM Zone 10 (meters)</code></pre>
 <p><strong>Spatial operations fail</strong> (comparing apples to oranges).</p>
 <p><strong>Solution:</strong> Reproject to common coordinate system before joining.</p>
 <h3 id="topology-errors" class="anchored">Topology Errors</h3>
-<p><strong>Invalid polygons:</strong> - Self-intersecting boundaries - Holes not properly encoded - Duplicate vertices</p>
+<p><strong>Invalid polygons:</strong></p>
+<ul>
+<li>Self-intersecting boundaries</li>
+<li>Holes not properly encoded</li>
+<li>Duplicate vertices</li>
+</ul>
 <p><strong>Result:</strong> Point-in-polygon tests give wrong results.</p>
 <p><strong>Solution:</strong> Validate and repair geometries before join.</p>
 <hr>
@@ -824,14 +882,23 @@ Rectangle 2: <span class="math inline">[x_2^{\min}, x_2^{\max}] \times [y_2^{\mi
 <h3 id="binary-search-trees" class="anchored">Binary Search Trees</h3>
 <p><strong>Property:</strong> For each node with value <span class="math inline">v</span>: - Left subtree: all values &lt; <span class="math inline">v</span> - Right subtree: all values ≥ <span class="math inline">v</span></p>
 <p><strong>Search complexity:</strong> <span class="math inline">O(\log n)</span> for balanced tree</p>
-<p><strong>K-d tree extends this to k dimensions:</strong> - Each level splits on one dimension - Alternates dimensions: x, y, x, y, …</p>
+<p><strong>K-d tree extends this to k dimensions:</strong></p>
+<ul>
+<li>Each level splits on one dimension</li>
+<li>Alternates dimensions: x, y, x, y, …</li>
+</ul>
 <p><strong>Median selection ensures balance.</strong></p>
 <h3 id="voronoi-diagrams" class="anchored">Voronoi Diagrams</h3>
 <p><strong>Definition:</strong> Partition of space into regions, each containing all points closest to one site.</p>
 <p><strong>Voronoi cell for site <span class="math inline">s_i</span>:</strong></p>
 <p><span class="math display">V(s_i) = \{p : d(p, s_i) \leq d(p, s_j) \text{ for all } j \neq i\}</span></p>
 <p><strong>Construction:</strong> Nearest neighbor join creates Voronoi assignment.</p>
-<p><strong>Applications:</strong> - Service territories - Catchment areas - Thiessen polygons (rainfall interpolation)</p>
+<p><strong>Applications:</strong></p>
+<ul>
+<li>Service territories</li>
+<li>Catchment areas</li>
+<li>Thiessen polygons (rainfall interpolation)</li>
+</ul>
 <hr>
 <h2 id="summary" class="anchored">Summary</h2>
 <ul>
