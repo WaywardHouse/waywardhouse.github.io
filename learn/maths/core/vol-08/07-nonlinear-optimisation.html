@@ -948,8 +948,8 @@ window.Quarto = {
 
 
 <p>Make the structure lighter without making it fail. Increase throughput without violating a pressure limit. Improve prediction quality without blowing the compute budget. Once the world stops being linear, “the best answer” is no longer a corner point on a clean polygon. It is a shape in a curved space, and getting there becomes part geometry, part computation, part judgment.</p>
-<p>This chapter closes Volume 8 because it gathers together the themes that the earlier chapters developed separately. Simulation creates a model of system behaviour. Estimation tells you what is known and uncertain. Reliability tells you what risk costs you. Optimisation turns all of that into a decision rule.</p>
-<p>The mathematics changes here because the objective and constraints are no longer linear in the design variables. That means the geometry changes, the algorithms change, and the meaning of “best” becomes more local and more conditional.</p>
+<p>This chapter gathers the themes that the earlier chapters developed separately. Simulation creates a model of system behaviour. Estimation tells you what is known and uncertain. Reliability tells you what risk costs you. Optimisation turns all of that into a decision rule.</p>
+<p>When the objective and constraints are nonlinear in the design variables, the geometry changes, the algorithms change, and the meaning of “best” becomes more local and more conditional.</p>
 <hr>
 <section id="from-linear-to-nonlinear-thinking" class="level2" data-number="65.1">
 <h2 data-number="65.1" class="anchored" data-anchor-id="from-linear-to-nonlinear-thinking"><span class="header-section-number">65.1</span> From linear to nonlinear thinking</h2>
@@ -964,19 +964,23 @@ window.Quarto = {
 <p>The simplest unconstrained update rule is gradient descent:</p>
 <p><span class="math display">\[\mathbf{x}_{k+1} = \mathbf{x}_k - \alpha \nabla f(\mathbf{x}_k)\]</span></p>
 <p>The negative gradient points in the direction of steepest local decrease. Choose a step size <span class="math inline">\(\alpha\)</span>, move, and repeat.</p>
-<p>This sounds easy. In practice the difficulties are exactly the ones you would expect in a curved space: the descent direction is only locally good, the step size can be too large or too small, and constraints can make the locally best direction infeasible.</p>
+<p>In practice the difficulties are exactly the ones you would expect in a curved space: the descent direction is only locally good, the step size can be too large or too small, and constraints can make the locally best direction infeasible.</p>
+<p><strong>Convergence and local optima.</strong> Gradient descent converges to a <em>local</em> minimum, not necessarily a global one. For <em>convex</em> problems — where the feasible set is convex and the objective has no local minima that are not also global — any stationary point found is a global optimum and convergence guarantees are strong. For <em>non-convex</em> problems, gradient descent may stop at a local minimum or saddle point. The algorithm has no way to know whether a better basin exists elsewhere in the space. Global optimisation (basin-hopping, simulated annealing, branch-and-bound for mixed-integer problems) is a separate, harder task. Most real engineering design problems and essentially all deep-learning objectives are non-convex.</p>
+<p><strong>Step size.</strong> A fixed <span class="math inline">\(\alpha\)</span> that is too large causes divergence; too small makes convergence impractically slow. In practice, the step size is set by a <em>line search</em> — a procedure that finds an <span class="math inline">\(\alpha\)</span> satisfying a formal sufficient-decrease condition. The Armijo condition requires that the objective drop by at least a fixed fraction of what a full gradient step would give; the stronger Wolfe conditions additionally bound how much the gradient is allowed to change. Either condition ensures progress without committing to a fixed schedule. Alternatively, an adaptive schedule decreases <span class="math inline">\(\alpha\)</span> over iterations. Automatic differentiation and adaptive-rate optimisers have made fixed-rate gradient descent rare in production systems.</p>
 <div class="callout callout-style-simple callout-note callout-titled">
 <div class="callout-header d-flex align-content-center">
 <div class="callout-icon-container">
 <i class="callout-icon"></i>
 </div>
 <div class="callout-title-container flex-fill">
-<span class="screen-reader-only">Note</span>Computing note: batch versus stochastic gradient descent
+<span class="screen-reader-only">Note</span>Computing note: batch, stochastic, and mini-batch gradient descent
 </div>
 </div>
 <div class="callout-body-container callout-body">
-<p>The rule above evaluates the full gradient over all data at each step — this is <strong>batch gradient descent</strong>. In machine learning, where <span class="math inline">\(f\)</span> is a loss summed over millions of examples, evaluating the full gradient per step is computationally prohibitive. <strong>Stochastic gradient descent</strong> (SGD) substitutes an estimate of the gradient computed on a randomly chosen mini-batch of examples. The update direction is noisy but cheap. Modern ML training uses variants of mini-batch SGD — Adam, AdaGrad, RMSProp — that also adapt the step size per parameter.</p>
-<p>The mathematics of convergence guarantees and step-size schedules for SGD is different from the deterministic case, but the core geometry is the same: move opposite to an estimate of the gradient, iterate, and check for convergence.</p>
+<p>The rule above evaluates the full gradient over all data at each step — this is <strong>batch gradient descent</strong>. In machine learning, where <span class="math inline">\(f\)</span> is a loss summed over millions of examples, evaluating the full gradient per step is computationally prohibitive.</p>
+<p><strong>Stochastic gradient descent</strong> (SGD) in its strict form uses a <em>single</em> randomly chosen example per step. The gradient estimate is very noisy but each step is cheap. In practice, training uses <strong>mini-batch SGD</strong>: the gradient is estimated from a randomly sampled subset (a mini-batch, typically 32–512 examples), balancing noise against computational cost.</p>
+<p>Modern optimisers — <strong>Adam</strong>, <strong>AdaGrad</strong>, <strong>RMSProp</strong> — extend mini-batch SGD by maintaining per-parameter step sizes. AdaGrad accumulates the squared gradients and divides by their square root, shrinking the effective step for parameters that receive large or frequent updates. RMSProp uses an exponential moving average of squared gradients rather than accumulating them, preventing the step size from decaying to zero. Adam combines an RMSProp-style second moment estimate with a first moment estimate (momentum), making it an adaptive gradient method with memory of both direction and curvature. All three are still gradient-based and inherit the local-minimum limitation of gradient descent.</p>
+<p>The convergence theory for stochastic methods differs from the deterministic case (requires diminishing step-size schedules or noise conditions), but the geometric intuition is the same: move opposite to an estimate of the gradient, iterate, and check for convergence.</p>
 </div>
 </div>
 <!-- VIZ: Nonlinear tradeoff surface explorer. Show a 2D contour map of a nonlinear objective with a feasible region overlay. Let the reader move a point, display the gradient vector, and step along a simple descent rule. Include a toggle for constrained versus unconstrained motion so the geometry of "best feasible direction" becomes visible. -->
@@ -989,12 +993,13 @@ window.Quarto = {
 <p><span class="math display">\[\mathcal{L}(\mathbf{x}, \lambda) = f(\mathbf{x}) + \lambda h(\mathbf{x})\]</span></p>
 <p>The stationary conditions are</p>
 <p><span class="math display">\[\nabla_{\mathbf{x}} \mathcal{L} = 0, \qquad h(\mathbf{x}) = 0\]</span></p>
+<p>This means constrained optimality is a balance condition: at the solution, the objective cannot improve without pushing against the geometry of the constraint.</p>
 <p>Geometrically, this means the gradient of the objective lines up with the gradient of the constraint. You cannot improve the objective without leaving feasibility.</p>
-<p>For inequality constraints the full Karush-Kuhn-Tucker (KKT) conditions are needed in general — these extend the Lagrangian stationarity conditions to handle inequalities by requiring that each active constraint contributes a non-negative multiplier and that inactive constraints exert no force on the optimum. The intuition is similar to the equality case: active constraints shape which directions are allowed at the optimum.</p>
+<p>For inequality constraints the full Karush-Kuhn-Tucker (KKT) conditions are needed. A constraint <span class="math inline">\(g_i(\mathbf{x}) \leq 0\)</span> is <em>active</em> at a point if <span class="math inline">\(g_i(\mathbf{x}) = 0\)</span> (the point sits on the constraint boundary) and <em>inactive</em> if the strict inequality holds (the constraint has slack). The KKT conditions extend the Lagrangian stationarity conditions by requiring that each active constraint contributes a non-negative multiplier and that inactive constraints contribute nothing (<span class="math inline">\(\lambda_i = 0\)</span>). The intuition is the same as the equality case: at an optimum you cannot improve the objective without violating at least one binding constraint, so the gradients of objective and active constraints must be in balance.</p>
 </section>
 <section id="tradeoffs-are-the-real-subject" class="level2" data-number="65.3">
 <h2 data-number="65.3" class="anchored" data-anchor-id="tradeoffs-are-the-real-subject"><span class="header-section-number">65.3</span> Tradeoffs are the real subject</h2>
-<p>Nonlinear optimisation is often introduced as an algorithm chapter. In upper year engineering, it is better understood as a tradeoff chapter.</p>
+<p>Nonlinear optimisation is a tradeoff chapter, not just an algorithm chapter.</p>
 <p>If you minimise mass, stress may rise. If you maximise throughput, queueing risk may rise. If you improve prediction accuracy, compute cost may rise. The objective function is therefore not neutral. It encodes what you are willing to care about and what you are willing to pay.</p>
 <p>That is why sensitivity analysis matters. A computed optimum is only useful if you can explain how it shifts when assumptions, weights, or constraints change.</p>
 <div class="callout callout-style-simple callout-note callout-titled">
@@ -1003,12 +1008,12 @@ window.Quarto = {
 <i class="callout-icon"></i>
 </div>
 <div class="callout-title-container flex-fill">
-<span class="screen-reader-only">Note</span>Why This Works
+<span class="screen-reader-only">Note</span>A self-check
 </div>
 </div>
 <div class="callout-body-container callout-body">
-<p>Optimisation turns design or operational judgment into geometry. The objective describes which direction counts as improvement. The constraints describe where you are allowed to move. A solution is optimal only relative to both.</p>
-<p>In nonlinear settings, there may be many locally good choices. The mathematics helps you navigate them, but it does not remove the need to interpret what the objective and constraints mean physically.</p>
+<p>Before running any solver, you should be able to answer three questions about your formulation: (1) What does the objective reward or penalise? (2) Are the constraints physically motivated, or are some just computational convenience? (3) If the optimum shifts when you tighten a constraint by 10%, does that shift make physical sense?</p>
+<p>If you cannot answer all three, the formulation is not ready.</p>
 </div>
 </div>
 </section>
@@ -1037,7 +1042,7 @@ window.Quarto = {
 <p><span class="math display">\[f''(x) = 2 &gt; 0\]</span></p>
 <p>so <span class="math inline">\(x=2\)</span> is a local minimum. The minimum value is</p>
 <p><span class="math display">\[f(2) = 4 - 8 + 7 = 3\]</span></p>
-<p>This is a simple example, but it already shows the core logic: stationary point plus curvature check.</p>
+<p>The core logic is visible here in its simplest form: stationary point, then curvature check.</p>
 </section>
 <section id="worked-example-2-equality-constrained-optimisation" class="level2" data-number="65.6">
 <h2 data-number="65.6" class="anchored" data-anchor-id="worked-example-2-equality-constrained-optimisation"><span class="header-section-number">65.6</span> Worked example 2: equality-constrained optimisation</h2>
@@ -1049,7 +1054,7 @@ window.Quarto = {
 <p><span class="math display">\[\mathcal{L}(x,y,\lambda) = x^2 + y^2 + \lambda(x+y-1)\]</span></p>
 <p>Take derivatives:</p>
 <p><span class="math display">\[\frac{\partial \mathcal{L}}{\partial x} = 2x + \lambda = 0\]</span> <span class="math display">\[\frac{\partial \mathcal{L}}{\partial y} = 2y + \lambda = 0\]</span> <span class="math display">\[x+y-1 = 0\]</span></p>
-<p>The first two equations imply</p>
+<p>The first two equations each give <span class="math inline">\(\lambda = -2x\)</span> and <span class="math inline">\(\lambda = -2y\)</span>, so</p>
 <p><span class="math display">\[x = y\]</span></p>
 <p>Then the constraint gives</p>
 <p><span class="math display">\[2x = 1 \qquad \Rightarrow \qquad x = y = \frac{1}{2}\]</span></p>
@@ -1059,16 +1064,16 @@ window.Quarto = {
 </section>
 <section id="worked-example-3-design-under-a-penalty-tradeoff" class="level2" data-number="65.7">
 <h2 data-number="65.7" class="anchored" data-anchor-id="worked-example-3-design-under-a-penalty-tradeoff"><span class="header-section-number">65.7</span> Worked example 3: design under a penalty tradeoff</h2>
-<p>Suppose an engineer uses the toy objective</p>
+<p>Suppose an engineer uses the objective</p>
 <p><span class="math display">\[J(x) = (x-3)^2 + 0.5x^4\]</span></p>
-<p>Here one term rewards staying near a target value <span class="math inline">\(x=3\)</span>, while the quartic term penalises large magnitude. This is not exotic. Real design objectives often mix performance and regularisation in exactly this way.</p>
+<p>One term rewards staying near a target value <span class="math inline">\(x=3\)</span>; the quartic term penalises large magnitude. Real design objectives often mix performance and regularisation in exactly this way.</p>
 <p>Different penalty weights produce different optima. That means the “best” design is partly a statement about priorities, not just about calculus.</p>
-<p>The same logic appears in many settings. In machine learning, <strong>ridge regression</strong> (L2 regularisation) adds a penalty <span class="math inline">\(\lambda\|\mathbf{w}\|^2\)</span> to the loss function, trading fit quality for smaller parameter magnitudes. The penalty weight <span class="math inline">\(\lambda\)</span> plays the same role as the 0.5 here: it encodes how strongly the solver is pushed away from large solutions, and changing it shifts the optimum. <strong>Lasso</strong> (L1 regularisation) uses <span class="math inline">\(\lambda\|\mathbf{w}\|_1\)</span> and produces sparse solutions for geometric reasons that the Lagrangian framework makes precise. Portfolio risk penalties and operations scheduling with nonlinear costs follow the same two-term structure.</p>
+<p>In machine learning the same structure recurs. <strong>Ridge regression</strong> (L2 regularisation) adds a penalty <span class="math inline">\(\lambda\|\mathbf{w}\|^2\)</span> to the loss function, trading fit quality for smaller parameter magnitudes. The penalty weight <span class="math inline">\(\lambda\)</span> plays the same role as the 0.5 here: it encodes how strongly the solver is pushed away from large solutions, and changing it shifts the optimum. <strong>Lasso</strong> (L1 regularisation) uses <span class="math inline">\(\lambda\|\mathbf{w}\|_1\)</span> and produces sparse solutions — many weights driven to exactly zero — for a geometric reason: the L1 ball has corners on the coordinate axes, and when the objective’s level sets first touch the constraint boundary they typically land at a corner. Note that the L1 norm is not differentiable at zero, so the standard Lagrangian gradient condition does not directly apply there; the analysis uses <em>subgradients</em>, which generalise gradients to non-smooth functions, but the physical intuition (level set touching constraint boundary at a corner) holds without that machinery. Portfolio risk penalties and operations scheduling with nonlinear costs follow the same two-term structure.</p>
 </section>
 <section id="where-this-goes" class="level2" data-number="65.8">
 <h2 data-number="65.8" class="anchored" data-anchor-id="where-this-goes"><span class="header-section-number">65.8</span> Where this goes</h2>
-<p>This is the terminal chapter of the current volume, so <code>opens_to</code> is empty on purpose. The continuation is not a single next topic. It is the practice of using the whole Volume 8 stack together: models, estimates, risks, and objectives inside one decision loop.</p>
-<p>By this point, mathematics in the engineering curriculum no longer appears as a supporting subject. It is the working medium of design judgment.</p>
+<p>There is no single next topic from here. The continuation is the practice of using the whole Volume 8 stack together: models, estimates, risks, and objectives inside one decision loop.</p>
+<p>The mathematics is no longer a supporting subject. It is the working medium of design judgment.</p>
 <div class="callout callout-style-simple callout-tip callout-titled">
 <div class="callout-header d-flex align-content-center">
 <div class="callout-icon-container">
@@ -1135,7 +1140,7 @@ steps:
     note: ~
   - op: "Relate x and y"
     eq: "2x = 8y \\Rightarrow x = 4y"
-    note: "Both equal -\\lambda."
+    note: "From the first two conditions, $-\\lambda = 2x$ and $-\\lambda = 8y$, so $2x = 8y$."
   - op: "Use the constraint"
     eq: "4y + y = 3 \\Rightarrow y = \\frac{3}{5}, \\qquad x = \\frac{12}{5}"
     note: ~

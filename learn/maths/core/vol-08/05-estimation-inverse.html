@@ -20,6 +20,41 @@ ul.task-list li input[type="checkbox"] {
   margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
   vertical-align: middle;
 }
+/* CSS for syntax highlighting */
+html { -webkit-text-size-adjust: 100%; }
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+  { counter-reset: source-line 0; }
+pre.numberSource code > span
+  { position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+  { content: counter(source-line);
+    position: relative; left: -1em; text-align: right; vertical-align: baseline;
+    border: none; display: inline-block;
+    -webkit-touch-callout: none; -webkit-user-select: none;
+    -khtml-user-select: none; -moz-user-select: none;
+    -ms-user-select: none; user-select: none;
+    padding: 0 4px; width: 4em;
+  }
+pre.numberSource { margin-left: 3em;  padding-left: 4px; }
+div.sourceCode
+  {   }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
 </style>
 
 
@@ -272,6 +307,8 @@ ul.task-list li input[type="checkbox"] {
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
 <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:ital,wght@0,300;0,400;0,600;0,700;0,800;0,900;1,700;1,800&amp;family=Barlow:wght@300;400;500;600&amp;family=IBM+Plex+Mono:ital,wght@0,300;0,400;0,500;1,300&amp;family=Literata:ital,opsz,wght@0,7..72,300;0,7..72,400;0,7..72,500;1,7..72,300;1,7..72,400&amp;display=swap" rel="stylesheet">
+<script type="module" src="../site_libs/quarto-ojs/quarto-ojs-runtime.js"></script>
+<link href="../site_libs/quarto-ojs/quarto-ojs.css" rel="stylesheet">
 
   <script src="https://cdnjs.cloudflare.com/polyfill/v3/polyfill.min.js?features=es6"></script>
   <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml-full.js" type="text/javascript"></script>
@@ -949,8 +986,8 @@ window.Quarto = {
 
 
 <p>You can measure vibration but not crack length. You can observe GPS, camera, and IMU signals but not the true state of the vehicle. You can see reflected radiation from a landscape but not the quantity you really care about on the ground. Inverse mathematics begins when the thing you want is not the thing you can measure.</p>
-<p>This chapter is about that gap between observation and quantity of interest. Forward modelling asks: if the state were known, what measurements would it produce? Inverse work asks the harder question: given the measurements, what can you recover about the state or parameters?</p>
-<p>That harder question is unstable unless handled carefully. Small measurement errors can create large errors in the recovered quantity. A good estimation method therefore does two jobs at once: it produces an estimate and it keeps track of how much trust the data deserves.</p>
+<p>The forward problem asks: if the state were known, what measurements would it produce? The inverse problem asks: given the measurements, what can you recover about the state or parameters?</p>
+<p>The inverse direction is unstable. Small measurement errors can produce large errors in the recovered quantity. A good estimation method therefore does two jobs at once: it produces an estimate and it keeps track of how much trust the data deserves.</p>
 <hr>
 <section id="forward-and-inverse-viewpoints" class="level2" data-number="63.1">
 <h2 data-number="63.1" class="anchored" data-anchor-id="forward-and-inverse-viewpoints"><span class="header-section-number">63.1</span> Forward and inverse viewpoints</h2>
@@ -965,9 +1002,312 @@ window.Quarto = {
 <ul>
 <li>given <span class="math inline">\(\mathbf{y}\)</span>, estimate <span class="math inline">\(\mathbf{x}\)</span></li>
 </ul>
-<p>The inverse direction is harder because the map may be noisy, incomplete, or many-to-one. Some parts of the state may be visible in the data. Others may be weakly observable or not observable at all.</p>
-<p>This is why estimation is not just algebraic rearrangement. It is controlled inference under limited information.</p>
+<p>The inverse direction is harder because the map may be noisy, incomplete, or many-to-one. Some parts of the state may be visible in the data. Others may be weakly observable or not observable at all. Estimation is not algebraic rearrangement. It is controlled inference under limited information.</p>
 <!-- VIZ: Hidden-state estimation board. Show a latent state evolving in time, a noisy measurement stream, and an updated estimate. Let the reader vary measurement noise and update weight K, and display the true state, measured data, and estimate together so the idea of filtering is visible as a compromise between trust in the model and trust in the sensor. -->
+<p>Use the controls to see how the estimate shifts as you trust the sensor more or less strongly.</p>
+<div class="cell">
+<details class="code-fold hidden">
+<summary>Code</summary>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code hidden" id="cb1" data-startfrom="136" data-source-offset="0"><pre class="sourceCode js code-with-copy"><code class="sourceCode javascript" style="counter-reset: source-line 135;"><span id="cb1-136"><a href="#cb1-136" aria-hidden="true" tabindex="-1"></a>{</span>
+<span id="cb1-137"><a href="#cb1-137" aria-hidden="true" tabindex="-1"></a>  <span class="kw">const</span> width <span class="op">=</span> <span class="dv">660</span><span class="op">;</span></span>
+<span id="cb1-138"><a href="#cb1-138" aria-hidden="true" tabindex="-1"></a>  <span class="kw">const</span> height <span class="op">=</span> <span class="dv">360</span><span class="op">;</span></span>
+<span id="cb1-139"><a href="#cb1-139" aria-hidden="true" tabindex="-1"></a>  <span class="kw">const</span> pad <span class="op">=</span> { <span class="dt">top</span><span class="op">:</span> <span class="dv">24</span><span class="op">,</span> <span class="dt">right</span><span class="op">:</span> <span class="dv">18</span><span class="op">,</span> <span class="dt">bottom</span><span class="op">:</span> <span class="dv">48</span><span class="op">,</span> <span class="dt">left</span><span class="op">:</span> <span class="dv">48</span> }<span class="op">;</span></span>
+<span id="cb1-140"><a href="#cb1-140" aria-hidden="true" tabindex="-1"></a>  <span class="kw">const</span> plotW <span class="op">=</span> width <span class="op">-</span> pad<span class="op">.</span><span class="at">left</span> <span class="op">-</span> pad<span class="op">.</span><span class="at">right</span><span class="op">;</span></span>
+<span id="cb1-141"><a href="#cb1-141" aria-hidden="true" tabindex="-1"></a>  <span class="kw">const</span> plotH <span class="op">=</span> height <span class="op">-</span> pad<span class="op">.</span><span class="at">top</span> <span class="op">-</span> pad<span class="op">.</span><span class="at">bottom</span><span class="op">;</span></span>
+<span id="cb1-142"><a href="#cb1-142" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-143"><a href="#cb1-143" aria-hidden="true" tabindex="-1"></a>  <span class="kw">const</span> BLUE <span class="op">=</span> <span class="st">"#2563eb"</span><span class="op">;</span></span>
+<span id="cb1-144"><a href="#cb1-144" aria-hidden="true" tabindex="-1"></a>  <span class="kw">const</span> AMBER <span class="op">=</span> <span class="st">"#f59e0b"</span><span class="op">;</span></span>
+<span id="cb1-145"><a href="#cb1-145" aria-hidden="true" tabindex="-1"></a>  <span class="kw">const</span> GREEN <span class="op">=</span> <span class="st">"#059669"</span><span class="op">;</span></span>
+<span id="cb1-146"><a href="#cb1-146" aria-hidden="true" tabindex="-1"></a>  <span class="kw">const</span> RED <span class="op">=</span> <span class="st">"#ef4444"</span><span class="op">;</span></span>
+<span id="cb1-147"><a href="#cb1-147" aria-hidden="true" tabindex="-1"></a>  <span class="kw">const</span> GREY <span class="op">=</span> <span class="st">"#6b7280"</span><span class="op">;</span></span>
+<span id="cb1-148"><a href="#cb1-148" aria-hidden="true" tabindex="-1"></a>  <span class="kw">const</span> GRID <span class="op">=</span> <span class="st">"#d1d5db"</span><span class="op">;</span></span>
+<span id="cb1-149"><a href="#cb1-149" aria-hidden="true" tabindex="-1"></a>  <span class="kw">const</span> BG <span class="op">=</span> <span class="st">"#f8fafc"</span><span class="op">;</span></span>
+<span id="cb1-150"><a href="#cb1-150" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-151"><a href="#cb1-151" aria-hidden="true" tabindex="-1"></a>  <span class="kw">const</span> N <span class="op">=</span> <span class="dv">36</span><span class="op">;</span></span>
+<span id="cb1-152"><a href="#cb1-152" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-153"><a href="#cb1-153" aria-hidden="true" tabindex="-1"></a>  <span class="kw">let</span> noise <span class="op">=</span> <span class="fl">1.2</span><span class="op">;</span></span>
+<span id="cb1-154"><a href="#cb1-154" aria-hidden="true" tabindex="-1"></a>  <span class="kw">let</span> gain <span class="op">=</span> <span class="fl">0.45</span><span class="op">;</span></span>
+<span id="cb1-155"><a href="#cb1-155" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-156"><a href="#cb1-156" aria-hidden="true" tabindex="-1"></a>  <span class="kw">function</span> <span class="fu">makeSvg</span>(tag) {</span>
+<span id="cb1-157"><a href="#cb1-157" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> <span class="bu">document</span><span class="op">.</span><span class="fu">createElementNS</span>(<span class="st">"http://www.w3.org/2000/svg"</span><span class="op">,</span> tag)<span class="op">;</span></span>
+<span id="cb1-158"><a href="#cb1-158" aria-hidden="true" tabindex="-1"></a>  }</span>
+<span id="cb1-159"><a href="#cb1-159" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-160"><a href="#cb1-160" aria-hidden="true" tabindex="-1"></a>  <span class="kw">function</span> <span class="fu">rng</span>(i) {</span>
+<span id="cb1-161"><a href="#cb1-161" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> x <span class="op">=</span> <span class="bu">Math</span><span class="op">.</span><span class="fu">sin</span>(<span class="fl">91.17</span> <span class="op">*</span> (i <span class="op">+</span> <span class="dv">1</span>) <span class="op">+</span> <span class="fl">0.37</span>) <span class="op">*</span> <span class="fl">43758.5453123</span><span class="op">;</span></span>
+<span id="cb1-162"><a href="#cb1-162" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> x <span class="op">-</span> <span class="bu">Math</span><span class="op">.</span><span class="fu">floor</span>(x)<span class="op">;</span></span>
+<span id="cb1-163"><a href="#cb1-163" aria-hidden="true" tabindex="-1"></a>  }</span>
+<span id="cb1-164"><a href="#cb1-164" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-165"><a href="#cb1-165" aria-hidden="true" tabindex="-1"></a>  <span class="kw">function</span> <span class="fu">xScale</span>(i) {</span>
+<span id="cb1-166"><a href="#cb1-166" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> pad<span class="op">.</span><span class="at">left</span> <span class="op">+</span> (i <span class="op">/</span> (N <span class="op">-</span> <span class="dv">1</span>)) <span class="op">*</span> plotW<span class="op">;</span></span>
+<span id="cb1-167"><a href="#cb1-167" aria-hidden="true" tabindex="-1"></a>  }</span>
+<span id="cb1-168"><a href="#cb1-168" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-169"><a href="#cb1-169" aria-hidden="true" tabindex="-1"></a>  <span class="kw">function</span> <span class="fu">buildSeries</span>(noiseLevel<span class="op">,</span> K) {</span>
+<span id="cb1-170"><a href="#cb1-170" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> truth <span class="op">=</span> []<span class="op">;</span></span>
+<span id="cb1-171"><a href="#cb1-171" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> meas <span class="op">=</span> []<span class="op">;</span></span>
+<span id="cb1-172"><a href="#cb1-172" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> prior <span class="op">=</span> []<span class="op">;</span></span>
+<span id="cb1-173"><a href="#cb1-173" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> post <span class="op">=</span> []<span class="op">;</span></span>
+<span id="cb1-174"><a href="#cb1-174" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-175"><a href="#cb1-175" aria-hidden="true" tabindex="-1"></a>    <span class="kw">let</span> xhat <span class="op">=</span> <span class="fl">17.5</span><span class="op">;</span></span>
+<span id="cb1-176"><a href="#cb1-176" aria-hidden="true" tabindex="-1"></a>    <span class="cf">for</span> (<span class="kw">let</span> i <span class="op">=</span> <span class="dv">0</span><span class="op">;</span> i <span class="op">&lt;</span> N<span class="op">;</span> i <span class="op">+=</span> <span class="dv">1</span>) {</span>
+<span id="cb1-177"><a href="#cb1-177" aria-hidden="true" tabindex="-1"></a>      <span class="kw">const</span> t <span class="op">=</span> i<span class="op">;</span></span>
+<span id="cb1-178"><a href="#cb1-178" aria-hidden="true" tabindex="-1"></a>      <span class="kw">const</span> trueVal <span class="op">=</span></span>
+<span id="cb1-179"><a href="#cb1-179" aria-hidden="true" tabindex="-1"></a>        <span class="dv">18</span></span>
+<span id="cb1-180"><a href="#cb1-180" aria-hidden="true" tabindex="-1"></a>        <span class="op">+</span> <span class="fl">0.18</span> <span class="op">*</span> i</span>
+<span id="cb1-181"><a href="#cb1-181" aria-hidden="true" tabindex="-1"></a>        <span class="op">+</span> <span class="fl">1.3</span> <span class="op">*</span> <span class="bu">Math</span><span class="op">.</span><span class="fu">sin</span>(<span class="fl">0.25</span> <span class="op">*</span> i)</span>
+<span id="cb1-182"><a href="#cb1-182" aria-hidden="true" tabindex="-1"></a>        <span class="op">+</span> <span class="fl">0.55</span> <span class="op">*</span> <span class="bu">Math</span><span class="op">.</span><span class="fu">cos</span>(<span class="fl">0.11</span> <span class="op">*</span> i <span class="op">+</span> <span class="fl">0.5</span>)<span class="op">;</span></span>
+<span id="cb1-183"><a href="#cb1-183" aria-hidden="true" tabindex="-1"></a>      <span class="kw">const</span> measurement <span class="op">=</span> trueVal <span class="op">+</span> (<span class="fu">rng</span>(i) <span class="op">-</span> <span class="fl">0.5</span>) <span class="op">*</span> <span class="dv">2</span> <span class="op">*</span> noiseLevel<span class="op">;</span></span>
+<span id="cb1-184"><a href="#cb1-184" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-185"><a href="#cb1-185" aria-hidden="true" tabindex="-1"></a>      <span class="kw">const</span> prediction <span class="op">=</span> i <span class="op">===</span> <span class="dv">0</span> <span class="op">?</span> xhat <span class="op">:</span> xhat <span class="op">+</span> <span class="fl">0.18</span><span class="op">;</span></span>
+<span id="cb1-186"><a href="#cb1-186" aria-hidden="true" tabindex="-1"></a>      <span class="kw">const</span> updated <span class="op">=</span> prediction <span class="op">+</span> K <span class="op">*</span> (measurement <span class="op">-</span> prediction)<span class="op">;</span></span>
+<span id="cb1-187"><a href="#cb1-187" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-188"><a href="#cb1-188" aria-hidden="true" tabindex="-1"></a>      truth<span class="op">.</span><span class="fu">push</span>({ i<span class="op">,</span> <span class="dt">y</span><span class="op">:</span> trueVal })<span class="op">;</span></span>
+<span id="cb1-189"><a href="#cb1-189" aria-hidden="true" tabindex="-1"></a>      meas<span class="op">.</span><span class="fu">push</span>({ i<span class="op">,</span> <span class="dt">y</span><span class="op">:</span> measurement })<span class="op">;</span></span>
+<span id="cb1-190"><a href="#cb1-190" aria-hidden="true" tabindex="-1"></a>      prior<span class="op">.</span><span class="fu">push</span>({ i<span class="op">,</span> <span class="dt">y</span><span class="op">:</span> prediction })<span class="op">;</span></span>
+<span id="cb1-191"><a href="#cb1-191" aria-hidden="true" tabindex="-1"></a>      post<span class="op">.</span><span class="fu">push</span>({ i<span class="op">,</span> <span class="dt">y</span><span class="op">:</span> updated<span class="op">,</span> <span class="dt">innovation</span><span class="op">:</span> measurement <span class="op">-</span> prediction })<span class="op">;</span></span>
+<span id="cb1-192"><a href="#cb1-192" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-193"><a href="#cb1-193" aria-hidden="true" tabindex="-1"></a>      xhat <span class="op">=</span> updated<span class="op">;</span></span>
+<span id="cb1-194"><a href="#cb1-194" aria-hidden="true" tabindex="-1"></a>      t<span class="op">;</span></span>
+<span id="cb1-195"><a href="#cb1-195" aria-hidden="true" tabindex="-1"></a>    }</span>
+<span id="cb1-196"><a href="#cb1-196" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-197"><a href="#cb1-197" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> ys <span class="op">=</span> [</span>
+<span id="cb1-198"><a href="#cb1-198" aria-hidden="true" tabindex="-1"></a>      <span class="op">...</span>truth<span class="op">.</span><span class="fu">map</span>(p <span class="kw">=&gt;</span> p<span class="op">.</span><span class="at">y</span>)<span class="op">,</span></span>
+<span id="cb1-199"><a href="#cb1-199" aria-hidden="true" tabindex="-1"></a>      <span class="op">...</span>meas<span class="op">.</span><span class="fu">map</span>(p <span class="kw">=&gt;</span> p<span class="op">.</span><span class="at">y</span>)<span class="op">,</span></span>
+<span id="cb1-200"><a href="#cb1-200" aria-hidden="true" tabindex="-1"></a>      <span class="op">...</span>prior<span class="op">.</span><span class="fu">map</span>(p <span class="kw">=&gt;</span> p<span class="op">.</span><span class="at">y</span>)<span class="op">,</span></span>
+<span id="cb1-201"><a href="#cb1-201" aria-hidden="true" tabindex="-1"></a>      <span class="op">...</span>post<span class="op">.</span><span class="fu">map</span>(p <span class="kw">=&gt;</span> p<span class="op">.</span><span class="at">y</span>)</span>
+<span id="cb1-202"><a href="#cb1-202" aria-hidden="true" tabindex="-1"></a>    ]<span class="op">;</span></span>
+<span id="cb1-203"><a href="#cb1-203" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> ymin <span class="op">=</span> <span class="bu">Math</span><span class="op">.</span><span class="fu">min</span>(<span class="op">...</span>ys) <span class="op">-</span> <span class="dv">1</span><span class="op">;</span></span>
+<span id="cb1-204"><a href="#cb1-204" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> ymax <span class="op">=</span> <span class="bu">Math</span><span class="op">.</span><span class="fu">max</span>(<span class="op">...</span>ys) <span class="op">+</span> <span class="dv">1</span><span class="op">;</span></span>
+<span id="cb1-205"><a href="#cb1-205" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> yScale <span class="op">=</span> y <span class="kw">=&gt;</span> pad<span class="op">.</span><span class="at">top</span> <span class="op">+</span> plotH <span class="op">*</span> (<span class="dv">1</span> <span class="op">-</span> (y <span class="op">-</span> ymin) <span class="op">/</span> (ymax <span class="op">-</span> ymin))<span class="op">;</span></span>
+<span id="cb1-206"><a href="#cb1-206" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-207"><a href="#cb1-207" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> { truth<span class="op">,</span> meas<span class="op">,</span> prior<span class="op">,</span> post<span class="op">,</span> yScale<span class="op">,</span> ymin<span class="op">,</span> ymax }<span class="op">;</span></span>
+<span id="cb1-208"><a href="#cb1-208" aria-hidden="true" tabindex="-1"></a>  }</span>
+<span id="cb1-209"><a href="#cb1-209" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-210"><a href="#cb1-210" aria-hidden="true" tabindex="-1"></a>  <span class="kw">function</span> <span class="fu">pathFor</span>(points<span class="op">,</span> yScale) {</span>
+<span id="cb1-211"><a href="#cb1-211" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> points<span class="op">.</span><span class="fu">map</span>((p<span class="op">,</span> idx) <span class="kw">=&gt;</span> <span class="vs">`</span><span class="sc">${</span>idx <span class="op">===</span> <span class="dv">0</span> <span class="op">?</span> <span class="st">"M"</span> <span class="op">:</span> <span class="st">"L"</span><span class="sc">}</span><span class="vs"> </span><span class="sc">${</span><span class="fu">xScale</span>(p<span class="op">.</span><span class="at">i</span>)<span class="op">.</span><span class="fu">toFixed</span>(<span class="dv">2</span>)<span class="sc">}</span><span class="vs"> </span><span class="sc">${</span><span class="fu">yScale</span>(p<span class="op">.</span><span class="at">y</span>)<span class="op">.</span><span class="fu">toFixed</span>(<span class="dv">2</span>)<span class="sc">}</span><span class="vs">`</span>)<span class="op">.</span><span class="fu">join</span>(<span class="st">" "</span>)<span class="op">;</span></span>
+<span id="cb1-212"><a href="#cb1-212" aria-hidden="true" tabindex="-1"></a>  }</span>
+<span id="cb1-213"><a href="#cb1-213" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-214"><a href="#cb1-214" aria-hidden="true" tabindex="-1"></a>  <span class="kw">const</span> container <span class="op">=</span> <span class="bu">document</span><span class="op">.</span><span class="fu">createElement</span>(<span class="st">"div"</span>)<span class="op">;</span></span>
+<span id="cb1-215"><a href="#cb1-215" aria-hidden="true" tabindex="-1"></a>  container<span class="op">.</span><span class="at">style</span><span class="op">.</span><span class="at">cssText</span> <span class="op">=</span> <span class="st">"max-width: 700px; margin: 1rem 0 1.25rem 0; font-family: inherit;"</span><span class="op">;</span></span>
+<span id="cb1-216"><a href="#cb1-216" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-217"><a href="#cb1-217" aria-hidden="true" tabindex="-1"></a>  <span class="kw">const</span> controls <span class="op">=</span> <span class="bu">document</span><span class="op">.</span><span class="fu">createElement</span>(<span class="st">"div"</span>)<span class="op">;</span></span>
+<span id="cb1-218"><a href="#cb1-218" aria-hidden="true" tabindex="-1"></a>  controls<span class="op">.</span><span class="at">style</span><span class="op">.</span><span class="at">cssText</span> <span class="op">=</span> <span class="st">"display:grid; grid-template-columns:auto 1fr auto; gap:0.5rem 0.75rem; align-items:center; margin-bottom:0.75rem;"</span><span class="op">;</span></span>
+<span id="cb1-219"><a href="#cb1-219" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-220"><a href="#cb1-220" aria-hidden="true" tabindex="-1"></a>  <span class="kw">const</span> noiseLabel <span class="op">=</span> <span class="bu">document</span><span class="op">.</span><span class="fu">createElement</span>(<span class="st">"label"</span>)<span class="op">;</span></span>
+<span id="cb1-221"><a href="#cb1-221" aria-hidden="true" tabindex="-1"></a>  noiseLabel<span class="op">.</span><span class="at">textContent</span> <span class="op">=</span> <span class="st">"Measurement noise"</span><span class="op">;</span></span>
+<span id="cb1-222"><a href="#cb1-222" aria-hidden="true" tabindex="-1"></a>  <span class="kw">const</span> noiseSlider <span class="op">=</span> <span class="bu">document</span><span class="op">.</span><span class="fu">createElement</span>(<span class="st">"input"</span>)<span class="op">;</span></span>
+<span id="cb1-223"><a href="#cb1-223" aria-hidden="true" tabindex="-1"></a>  noiseSlider<span class="op">.</span><span class="at">type</span> <span class="op">=</span> <span class="st">"range"</span><span class="op">;</span></span>
+<span id="cb1-224"><a href="#cb1-224" aria-hidden="true" tabindex="-1"></a>  noiseSlider<span class="op">.</span><span class="at">min</span> <span class="op">=</span> <span class="st">"0.2"</span><span class="op">;</span></span>
+<span id="cb1-225"><a href="#cb1-225" aria-hidden="true" tabindex="-1"></a>  noiseSlider<span class="op">.</span><span class="at">max</span> <span class="op">=</span> <span class="st">"3.0"</span><span class="op">;</span></span>
+<span id="cb1-226"><a href="#cb1-226" aria-hidden="true" tabindex="-1"></a>  noiseSlider<span class="op">.</span><span class="at">step</span> <span class="op">=</span> <span class="st">"0.1"</span><span class="op">;</span></span>
+<span id="cb1-227"><a href="#cb1-227" aria-hidden="true" tabindex="-1"></a>  noiseSlider<span class="op">.</span><span class="at">value</span> <span class="op">=</span> <span class="bu">String</span>(noise)<span class="op">;</span></span>
+<span id="cb1-228"><a href="#cb1-228" aria-hidden="true" tabindex="-1"></a>  <span class="kw">const</span> noiseValue <span class="op">=</span> <span class="bu">document</span><span class="op">.</span><span class="fu">createElement</span>(<span class="st">"span"</span>)<span class="op">;</span></span>
+<span id="cb1-229"><a href="#cb1-229" aria-hidden="true" tabindex="-1"></a>  noiseValue<span class="op">.</span><span class="at">style</span><span class="op">.</span><span class="at">cssText</span> <span class="op">=</span> <span class="st">"font-variant-numeric: tabular-nums; min-width:4rem;"</span><span class="op">;</span></span>
+<span id="cb1-230"><a href="#cb1-230" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-231"><a href="#cb1-231" aria-hidden="true" tabindex="-1"></a>  <span class="kw">const</span> gainLabel <span class="op">=</span> <span class="bu">document</span><span class="op">.</span><span class="fu">createElement</span>(<span class="st">"label"</span>)<span class="op">;</span></span>
+<span id="cb1-232"><a href="#cb1-232" aria-hidden="true" tabindex="-1"></a>  gainLabel<span class="op">.</span><span class="at">textContent</span> <span class="op">=</span> <span class="st">"Update weight K"</span><span class="op">;</span></span>
+<span id="cb1-233"><a href="#cb1-233" aria-hidden="true" tabindex="-1"></a>  <span class="kw">const</span> gainSlider <span class="op">=</span> <span class="bu">document</span><span class="op">.</span><span class="fu">createElement</span>(<span class="st">"input"</span>)<span class="op">;</span></span>
+<span id="cb1-234"><a href="#cb1-234" aria-hidden="true" tabindex="-1"></a>  gainSlider<span class="op">.</span><span class="at">type</span> <span class="op">=</span> <span class="st">"range"</span><span class="op">;</span></span>
+<span id="cb1-235"><a href="#cb1-235" aria-hidden="true" tabindex="-1"></a>  gainSlider<span class="op">.</span><span class="at">min</span> <span class="op">=</span> <span class="st">"0.05"</span><span class="op">;</span></span>
+<span id="cb1-236"><a href="#cb1-236" aria-hidden="true" tabindex="-1"></a>  gainSlider<span class="op">.</span><span class="at">max</span> <span class="op">=</span> <span class="st">"0.95"</span><span class="op">;</span></span>
+<span id="cb1-237"><a href="#cb1-237" aria-hidden="true" tabindex="-1"></a>  gainSlider<span class="op">.</span><span class="at">step</span> <span class="op">=</span> <span class="st">"0.05"</span><span class="op">;</span></span>
+<span id="cb1-238"><a href="#cb1-238" aria-hidden="true" tabindex="-1"></a>  gainSlider<span class="op">.</span><span class="at">value</span> <span class="op">=</span> <span class="bu">String</span>(gain)<span class="op">;</span></span>
+<span id="cb1-239"><a href="#cb1-239" aria-hidden="true" tabindex="-1"></a>  <span class="kw">const</span> gainValue <span class="op">=</span> <span class="bu">document</span><span class="op">.</span><span class="fu">createElement</span>(<span class="st">"span"</span>)<span class="op">;</span></span>
+<span id="cb1-240"><a href="#cb1-240" aria-hidden="true" tabindex="-1"></a>  gainValue<span class="op">.</span><span class="at">style</span><span class="op">.</span><span class="at">cssText</span> <span class="op">=</span> <span class="st">"font-variant-numeric: tabular-nums; min-width:4rem;"</span><span class="op">;</span></span>
+<span id="cb1-241"><a href="#cb1-241" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-242"><a href="#cb1-242" aria-hidden="true" tabindex="-1"></a>  controls<span class="op">.</span><span class="fu">append</span>(noiseLabel<span class="op">,</span> noiseSlider<span class="op">,</span> noiseValue<span class="op">,</span> gainLabel<span class="op">,</span> gainSlider<span class="op">,</span> gainValue)<span class="op">;</span></span>
+<span id="cb1-243"><a href="#cb1-243" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-244"><a href="#cb1-244" aria-hidden="true" tabindex="-1"></a>  <span class="kw">const</span> readout <span class="op">=</span> <span class="bu">document</span><span class="op">.</span><span class="fu">createElement</span>(<span class="st">"div"</span>)<span class="op">;</span></span>
+<span id="cb1-245"><a href="#cb1-245" aria-hidden="true" tabindex="-1"></a>  readout<span class="op">.</span><span class="at">style</span><span class="op">.</span><span class="at">cssText</span> <span class="op">=</span> <span class="st">"display:grid; grid-template-columns:repeat(5,minmax(0,1fr)); gap:0.5rem; margin-bottom:0.75rem;"</span><span class="op">;</span></span>
+<span id="cb1-246"><a href="#cb1-246" aria-hidden="true" tabindex="-1"></a>  <span class="kw">function</span> <span class="fu">makeCard</span>(keyText) {</span>
+<span id="cb1-247"><a href="#cb1-247" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> card <span class="op">=</span> <span class="bu">document</span><span class="op">.</span><span class="fu">createElement</span>(<span class="st">"div"</span>)<span class="op">;</span></span>
+<span id="cb1-248"><a href="#cb1-248" aria-hidden="true" tabindex="-1"></a>    card<span class="op">.</span><span class="at">style</span><span class="op">.</span><span class="at">cssText</span> <span class="op">=</span> <span class="st">"background:#f8fafc; border:1px solid #e5e7eb; border-radius:8px; padding:0.55rem 0.65rem;"</span><span class="op">;</span></span>
+<span id="cb1-249"><a href="#cb1-249" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> key <span class="op">=</span> <span class="bu">document</span><span class="op">.</span><span class="fu">createElement</span>(<span class="st">"div"</span>)<span class="op">;</span></span>
+<span id="cb1-250"><a href="#cb1-250" aria-hidden="true" tabindex="-1"></a>    key<span class="op">.</span><span class="at">style</span><span class="op">.</span><span class="at">cssText</span> <span class="op">=</span> <span class="st">"font-size:0.76rem; color:#6b7280; margin-bottom:0.15rem;"</span><span class="op">;</span></span>
+<span id="cb1-251"><a href="#cb1-251" aria-hidden="true" tabindex="-1"></a>    key<span class="op">.</span><span class="at">textContent</span> <span class="op">=</span> keyText<span class="op">;</span></span>
+<span id="cb1-252"><a href="#cb1-252" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> value <span class="op">=</span> <span class="bu">document</span><span class="op">.</span><span class="fu">createElement</span>(<span class="st">"div"</span>)<span class="op">;</span></span>
+<span id="cb1-253"><a href="#cb1-253" aria-hidden="true" tabindex="-1"></a>    value<span class="op">.</span><span class="at">style</span><span class="op">.</span><span class="at">cssText</span> <span class="op">=</span> <span class="st">"font-size:0.96rem; font-variant-numeric: tabular-nums;"</span><span class="op">;</span></span>
+<span id="cb1-254"><a href="#cb1-254" aria-hidden="true" tabindex="-1"></a>    card<span class="op">.</span><span class="fu">append</span>(key<span class="op">,</span> value)<span class="op">;</span></span>
+<span id="cb1-255"><a href="#cb1-255" aria-hidden="true" tabindex="-1"></a>    readout<span class="op">.</span><span class="fu">append</span>(card)<span class="op">;</span></span>
+<span id="cb1-256"><a href="#cb1-256" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> value<span class="op">;</span></span>
+<span id="cb1-257"><a href="#cb1-257" aria-hidden="true" tabindex="-1"></a>  }</span>
+<span id="cb1-258"><a href="#cb1-258" aria-hidden="true" tabindex="-1"></a>  <span class="kw">const</span> truthCard <span class="op">=</span> <span class="fu">makeCard</span>(<span class="st">"Current truth"</span>)<span class="op">;</span></span>
+<span id="cb1-259"><a href="#cb1-259" aria-hidden="true" tabindex="-1"></a>  <span class="kw">const</span> measCard <span class="op">=</span> <span class="fu">makeCard</span>(<span class="st">"Measurement"</span>)<span class="op">;</span></span>
+<span id="cb1-260"><a href="#cb1-260" aria-hidden="true" tabindex="-1"></a>  <span class="kw">const</span> priorCard <span class="op">=</span> <span class="fu">makeCard</span>(<span class="st">"Prior"</span>)<span class="op">;</span></span>
+<span id="cb1-261"><a href="#cb1-261" aria-hidden="true" tabindex="-1"></a>  <span class="kw">const</span> postCard <span class="op">=</span> <span class="fu">makeCard</span>(<span class="st">"Updated estimate"</span>)<span class="op">;</span></span>
+<span id="cb1-262"><a href="#cb1-262" aria-hidden="true" tabindex="-1"></a>  <span class="kw">const</span> innovationCard <span class="op">=</span> <span class="fu">makeCard</span>(<span class="st">"Innovation"</span>)<span class="op">;</span></span>
+<span id="cb1-263"><a href="#cb1-263" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-264"><a href="#cb1-264" aria-hidden="true" tabindex="-1"></a>  <span class="kw">const</span> svg <span class="op">=</span> <span class="fu">makeSvg</span>(<span class="st">"svg"</span>)<span class="op">;</span></span>
+<span id="cb1-265"><a href="#cb1-265" aria-hidden="true" tabindex="-1"></a>  svg<span class="op">.</span><span class="fu">setAttribute</span>(<span class="st">"viewBox"</span><span class="op">,</span> <span class="vs">`0 0 </span><span class="sc">${</span>width<span class="sc">}</span><span class="vs"> </span><span class="sc">${</span>height<span class="sc">}</span><span class="vs">`</span>)<span class="op">;</span></span>
+<span id="cb1-266"><a href="#cb1-266" aria-hidden="true" tabindex="-1"></a>  svg<span class="op">.</span><span class="fu">setAttribute</span>(<span class="st">"width"</span><span class="op">,</span> <span class="st">"100%"</span>)<span class="op">;</span></span>
+<span id="cb1-267"><a href="#cb1-267" aria-hidden="true" tabindex="-1"></a>  svg<span class="op">.</span><span class="at">style</span><span class="op">.</span><span class="at">cssText</span> <span class="op">=</span> <span class="st">"display:block; background:white; border:1px solid #e5e7eb; border-radius:10px;"</span><span class="op">;</span></span>
+<span id="cb1-268"><a href="#cb1-268" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-269"><a href="#cb1-269" aria-hidden="true" tabindex="-1"></a>  <span class="kw">const</span> bg <span class="op">=</span> <span class="fu">makeSvg</span>(<span class="st">"rect"</span>)<span class="op">;</span></span>
+<span id="cb1-270"><a href="#cb1-270" aria-hidden="true" tabindex="-1"></a>  bg<span class="op">.</span><span class="fu">setAttribute</span>(<span class="st">"x"</span><span class="op">,</span> <span class="st">"0"</span>)<span class="op">;</span></span>
+<span id="cb1-271"><a href="#cb1-271" aria-hidden="true" tabindex="-1"></a>  bg<span class="op">.</span><span class="fu">setAttribute</span>(<span class="st">"y"</span><span class="op">,</span> <span class="st">"0"</span>)<span class="op">;</span></span>
+<span id="cb1-272"><a href="#cb1-272" aria-hidden="true" tabindex="-1"></a>  bg<span class="op">.</span><span class="fu">setAttribute</span>(<span class="st">"width"</span><span class="op">,</span> width)<span class="op">;</span></span>
+<span id="cb1-273"><a href="#cb1-273" aria-hidden="true" tabindex="-1"></a>  bg<span class="op">.</span><span class="fu">setAttribute</span>(<span class="st">"height"</span><span class="op">,</span> height)<span class="op">;</span></span>
+<span id="cb1-274"><a href="#cb1-274" aria-hidden="true" tabindex="-1"></a>  bg<span class="op">.</span><span class="fu">setAttribute</span>(<span class="st">"fill"</span><span class="op">,</span> BG)<span class="op">;</span></span>
+<span id="cb1-275"><a href="#cb1-275" aria-hidden="true" tabindex="-1"></a>  svg<span class="op">.</span><span class="fu">appendChild</span>(bg)<span class="op">;</span></span>
+<span id="cb1-276"><a href="#cb1-276" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-277"><a href="#cb1-277" aria-hidden="true" tabindex="-1"></a>  <span class="kw">const</span> grid <span class="op">=</span> <span class="fu">makeSvg</span>(<span class="st">"g"</span>)<span class="op">;</span></span>
+<span id="cb1-278"><a href="#cb1-278" aria-hidden="true" tabindex="-1"></a>  <span class="kw">const</span> paths <span class="op">=</span> <span class="fu">makeSvg</span>(<span class="st">"g"</span>)<span class="op">;</span></span>
+<span id="cb1-279"><a href="#cb1-279" aria-hidden="true" tabindex="-1"></a>  <span class="kw">const</span> dots <span class="op">=</span> <span class="fu">makeSvg</span>(<span class="st">"g"</span>)<span class="op">;</span></span>
+<span id="cb1-280"><a href="#cb1-280" aria-hidden="true" tabindex="-1"></a>  svg<span class="op">.</span><span class="fu">append</span>(grid<span class="op">,</span> paths<span class="op">,</span> dots)<span class="op">;</span></span>
+<span id="cb1-281"><a href="#cb1-281" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-282"><a href="#cb1-282" aria-hidden="true" tabindex="-1"></a>  <span class="kw">const</span> truthPath <span class="op">=</span> <span class="fu">makeSvg</span>(<span class="st">"path"</span>)<span class="op">;</span></span>
+<span id="cb1-283"><a href="#cb1-283" aria-hidden="true" tabindex="-1"></a>  truthPath<span class="op">.</span><span class="fu">setAttribute</span>(<span class="st">"fill"</span><span class="op">,</span> <span class="st">"none"</span>)<span class="op">;</span></span>
+<span id="cb1-284"><a href="#cb1-284" aria-hidden="true" tabindex="-1"></a>  truthPath<span class="op">.</span><span class="fu">setAttribute</span>(<span class="st">"stroke"</span><span class="op">,</span> BLUE)<span class="op">;</span></span>
+<span id="cb1-285"><a href="#cb1-285" aria-hidden="true" tabindex="-1"></a>  truthPath<span class="op">.</span><span class="fu">setAttribute</span>(<span class="st">"stroke-width"</span><span class="op">,</span> <span class="st">"3"</span>)<span class="op">;</span></span>
+<span id="cb1-286"><a href="#cb1-286" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-287"><a href="#cb1-287" aria-hidden="true" tabindex="-1"></a>  <span class="kw">const</span> priorPath <span class="op">=</span> <span class="fu">makeSvg</span>(<span class="st">"path"</span>)<span class="op">;</span></span>
+<span id="cb1-288"><a href="#cb1-288" aria-hidden="true" tabindex="-1"></a>  priorPath<span class="op">.</span><span class="fu">setAttribute</span>(<span class="st">"fill"</span><span class="op">,</span> <span class="st">"none"</span>)<span class="op">;</span></span>
+<span id="cb1-289"><a href="#cb1-289" aria-hidden="true" tabindex="-1"></a>  priorPath<span class="op">.</span><span class="fu">setAttribute</span>(<span class="st">"stroke"</span><span class="op">,</span> GREY)<span class="op">;</span></span>
+<span id="cb1-290"><a href="#cb1-290" aria-hidden="true" tabindex="-1"></a>  priorPath<span class="op">.</span><span class="fu">setAttribute</span>(<span class="st">"stroke-width"</span><span class="op">,</span> <span class="st">"2"</span>)<span class="op">;</span></span>
+<span id="cb1-291"><a href="#cb1-291" aria-hidden="true" tabindex="-1"></a>  priorPath<span class="op">.</span><span class="fu">setAttribute</span>(<span class="st">"stroke-dasharray"</span><span class="op">,</span> <span class="st">"6 5"</span>)<span class="op">;</span></span>
+<span id="cb1-292"><a href="#cb1-292" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-293"><a href="#cb1-293" aria-hidden="true" tabindex="-1"></a>  <span class="kw">const</span> postPath <span class="op">=</span> <span class="fu">makeSvg</span>(<span class="st">"path"</span>)<span class="op">;</span></span>
+<span id="cb1-294"><a href="#cb1-294" aria-hidden="true" tabindex="-1"></a>  postPath<span class="op">.</span><span class="fu">setAttribute</span>(<span class="st">"fill"</span><span class="op">,</span> <span class="st">"none"</span>)<span class="op">;</span></span>
+<span id="cb1-295"><a href="#cb1-295" aria-hidden="true" tabindex="-1"></a>  postPath<span class="op">.</span><span class="fu">setAttribute</span>(<span class="st">"stroke"</span><span class="op">,</span> GREEN)<span class="op">;</span></span>
+<span id="cb1-296"><a href="#cb1-296" aria-hidden="true" tabindex="-1"></a>  postPath<span class="op">.</span><span class="fu">setAttribute</span>(<span class="st">"stroke-width"</span><span class="op">,</span> <span class="st">"3"</span>)<span class="op">;</span></span>
+<span id="cb1-297"><a href="#cb1-297" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-298"><a href="#cb1-298" aria-hidden="true" tabindex="-1"></a>  paths<span class="op">.</span><span class="fu">append</span>(truthPath<span class="op">,</span> priorPath<span class="op">,</span> postPath)<span class="op">;</span></span>
+<span id="cb1-299"><a href="#cb1-299" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-300"><a href="#cb1-300" aria-hidden="true" tabindex="-1"></a>  <span class="kw">const</span> xAxis <span class="op">=</span> <span class="fu">makeSvg</span>(<span class="st">"line"</span>)<span class="op">;</span></span>
+<span id="cb1-301"><a href="#cb1-301" aria-hidden="true" tabindex="-1"></a>  xAxis<span class="op">.</span><span class="fu">setAttribute</span>(<span class="st">"x1"</span><span class="op">,</span> pad<span class="op">.</span><span class="at">left</span>)<span class="op">;</span></span>
+<span id="cb1-302"><a href="#cb1-302" aria-hidden="true" tabindex="-1"></a>  xAxis<span class="op">.</span><span class="fu">setAttribute</span>(<span class="st">"x2"</span><span class="op">,</span> pad<span class="op">.</span><span class="at">left</span> <span class="op">+</span> plotW)<span class="op">;</span></span>
+<span id="cb1-303"><a href="#cb1-303" aria-hidden="true" tabindex="-1"></a>  xAxis<span class="op">.</span><span class="fu">setAttribute</span>(<span class="st">"y1"</span><span class="op">,</span> pad<span class="op">.</span><span class="at">top</span> <span class="op">+</span> plotH)<span class="op">;</span></span>
+<span id="cb1-304"><a href="#cb1-304" aria-hidden="true" tabindex="-1"></a>  xAxis<span class="op">.</span><span class="fu">setAttribute</span>(<span class="st">"y2"</span><span class="op">,</span> pad<span class="op">.</span><span class="at">top</span> <span class="op">+</span> plotH)<span class="op">;</span></span>
+<span id="cb1-305"><a href="#cb1-305" aria-hidden="true" tabindex="-1"></a>  xAxis<span class="op">.</span><span class="fu">setAttribute</span>(<span class="st">"stroke"</span><span class="op">,</span> GREY)<span class="op">;</span></span>
+<span id="cb1-306"><a href="#cb1-306" aria-hidden="true" tabindex="-1"></a>  xAxis<span class="op">.</span><span class="fu">setAttribute</span>(<span class="st">"stroke-width"</span><span class="op">,</span> <span class="st">"1.5"</span>)<span class="op">;</span></span>
+<span id="cb1-307"><a href="#cb1-307" aria-hidden="true" tabindex="-1"></a>  svg<span class="op">.</span><span class="fu">appendChild</span>(xAxis)<span class="op">;</span></span>
+<span id="cb1-308"><a href="#cb1-308" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-309"><a href="#cb1-309" aria-hidden="true" tabindex="-1"></a>  <span class="kw">const</span> yAxis <span class="op">=</span> <span class="fu">makeSvg</span>(<span class="st">"line"</span>)<span class="op">;</span></span>
+<span id="cb1-310"><a href="#cb1-310" aria-hidden="true" tabindex="-1"></a>  yAxis<span class="op">.</span><span class="fu">setAttribute</span>(<span class="st">"x1"</span><span class="op">,</span> pad<span class="op">.</span><span class="at">left</span>)<span class="op">;</span></span>
+<span id="cb1-311"><a href="#cb1-311" aria-hidden="true" tabindex="-1"></a>  yAxis<span class="op">.</span><span class="fu">setAttribute</span>(<span class="st">"x2"</span><span class="op">,</span> pad<span class="op">.</span><span class="at">left</span>)<span class="op">;</span></span>
+<span id="cb1-312"><a href="#cb1-312" aria-hidden="true" tabindex="-1"></a>  yAxis<span class="op">.</span><span class="fu">setAttribute</span>(<span class="st">"y1"</span><span class="op">,</span> pad<span class="op">.</span><span class="at">top</span>)<span class="op">;</span></span>
+<span id="cb1-313"><a href="#cb1-313" aria-hidden="true" tabindex="-1"></a>  yAxis<span class="op">.</span><span class="fu">setAttribute</span>(<span class="st">"y2"</span><span class="op">,</span> pad<span class="op">.</span><span class="at">top</span> <span class="op">+</span> plotH)<span class="op">;</span></span>
+<span id="cb1-314"><a href="#cb1-314" aria-hidden="true" tabindex="-1"></a>  yAxis<span class="op">.</span><span class="fu">setAttribute</span>(<span class="st">"stroke"</span><span class="op">,</span> GREY)<span class="op">;</span></span>
+<span id="cb1-315"><a href="#cb1-315" aria-hidden="true" tabindex="-1"></a>  yAxis<span class="op">.</span><span class="fu">setAttribute</span>(<span class="st">"stroke-width"</span><span class="op">,</span> <span class="st">"1.5"</span>)<span class="op">;</span></span>
+<span id="cb1-316"><a href="#cb1-316" aria-hidden="true" tabindex="-1"></a>  svg<span class="op">.</span><span class="fu">appendChild</span>(yAxis)<span class="op">;</span></span>
+<span id="cb1-317"><a href="#cb1-317" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-318"><a href="#cb1-318" aria-hidden="true" tabindex="-1"></a>  <span class="kw">const</span> note <span class="op">=</span> <span class="bu">document</span><span class="op">.</span><span class="fu">createElement</span>(<span class="st">"p"</span>)<span class="op">;</span></span>
+<span id="cb1-319"><a href="#cb1-319" aria-hidden="true" tabindex="-1"></a>  note<span class="op">.</span><span class="at">style</span><span class="op">.</span><span class="at">cssText</span> <span class="op">=</span> <span class="st">"font-size:0.9rem; color:#374151; margin:0.55rem 0 0 0;"</span><span class="op">;</span></span>
+<span id="cb1-320"><a href="#cb1-320" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-321"><a href="#cb1-321" aria-hidden="true" tabindex="-1"></a>  <span class="kw">const</span> legend <span class="op">=</span> <span class="bu">document</span><span class="op">.</span><span class="fu">createElement</span>(<span class="st">"div"</span>)<span class="op">;</span></span>
+<span id="cb1-322"><a href="#cb1-322" aria-hidden="true" tabindex="-1"></a>  legend<span class="op">.</span><span class="at">style</span><span class="op">.</span><span class="at">cssText</span> <span class="op">=</span> <span class="st">"display:flex; gap:1rem; flex-wrap:wrap; margin-top:0.55rem; font-size:0.9rem;"</span><span class="op">;</span></span>
+<span id="cb1-323"><a href="#cb1-323" aria-hidden="true" tabindex="-1"></a>  <span class="kw">function</span> <span class="fu">legendItem</span>(color<span class="op">,</span> dash<span class="op">,</span> text<span class="op">,</span> dot <span class="op">=</span> <span class="kw">false</span>) {</span>
+<span id="cb1-324"><a href="#cb1-324" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> item <span class="op">=</span> <span class="bu">document</span><span class="op">.</span><span class="fu">createElement</span>(<span class="st">"div"</span>)<span class="op">;</span></span>
+<span id="cb1-325"><a href="#cb1-325" aria-hidden="true" tabindex="-1"></a>    item<span class="op">.</span><span class="at">style</span><span class="op">.</span><span class="at">cssText</span> <span class="op">=</span> <span class="st">"display:inline-flex; align-items:center; gap:0.45rem;"</span><span class="op">;</span></span>
+<span id="cb1-326"><a href="#cb1-326" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> swatch <span class="op">=</span> <span class="bu">document</span><span class="op">.</span><span class="fu">createElement</span>(<span class="st">"span"</span>)<span class="op">;</span></span>
+<span id="cb1-327"><a href="#cb1-327" aria-hidden="true" tabindex="-1"></a>    <span class="cf">if</span> (dot) {</span>
+<span id="cb1-328"><a href="#cb1-328" aria-hidden="true" tabindex="-1"></a>      swatch<span class="op">.</span><span class="at">style</span><span class="op">.</span><span class="at">cssText</span> <span class="op">=</span> <span class="vs">`display:inline-block; width:0.7rem; height:0.7rem; border-radius:999px; background:</span><span class="sc">${</span>color<span class="sc">}</span><span class="vs">;`</span><span class="op">;</span></span>
+<span id="cb1-329"><a href="#cb1-329" aria-hidden="true" tabindex="-1"></a>    } <span class="cf">else</span> {</span>
+<span id="cb1-330"><a href="#cb1-330" aria-hidden="true" tabindex="-1"></a>      swatch<span class="op">.</span><span class="at">style</span><span class="op">.</span><span class="at">cssText</span> <span class="op">=</span> <span class="vs">`display:inline-block; width:1.6rem; height:0; border-top:3px </span><span class="sc">${</span>dash <span class="op">?</span> <span class="st">"dashed"</span> <span class="op">:</span> <span class="st">"solid"</span><span class="sc">}</span><span class="vs"> </span><span class="sc">${</span>color<span class="sc">}</span><span class="vs">;`</span><span class="op">;</span></span>
+<span id="cb1-331"><a href="#cb1-331" aria-hidden="true" tabindex="-1"></a>    }</span>
+<span id="cb1-332"><a href="#cb1-332" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> label <span class="op">=</span> <span class="bu">document</span><span class="op">.</span><span class="fu">createElement</span>(<span class="st">"span"</span>)<span class="op">;</span></span>
+<span id="cb1-333"><a href="#cb1-333" aria-hidden="true" tabindex="-1"></a>    label<span class="op">.</span><span class="at">textContent</span> <span class="op">=</span> text<span class="op">;</span></span>
+<span id="cb1-334"><a href="#cb1-334" aria-hidden="true" tabindex="-1"></a>    item<span class="op">.</span><span class="fu">append</span>(swatch<span class="op">,</span> label)<span class="op">;</span></span>
+<span id="cb1-335"><a href="#cb1-335" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> item<span class="op">;</span></span>
+<span id="cb1-336"><a href="#cb1-336" aria-hidden="true" tabindex="-1"></a>  }</span>
+<span id="cb1-337"><a href="#cb1-337" aria-hidden="true" tabindex="-1"></a>  legend<span class="op">.</span><span class="fu">append</span>(</span>
+<span id="cb1-338"><a href="#cb1-338" aria-hidden="true" tabindex="-1"></a>    <span class="fu">legendItem</span>(BLUE<span class="op">,</span> <span class="kw">false</span><span class="op">,</span> <span class="st">"true state"</span>)<span class="op">,</span></span>
+<span id="cb1-339"><a href="#cb1-339" aria-hidden="true" tabindex="-1"></a>    <span class="fu">legendItem</span>(AMBER<span class="op">,</span> <span class="kw">false</span><span class="op">,</span> <span class="st">"measurements"</span><span class="op">,</span> <span class="kw">true</span>)<span class="op">,</span></span>
+<span id="cb1-340"><a href="#cb1-340" aria-hidden="true" tabindex="-1"></a>    <span class="fu">legendItem</span>(GREY<span class="op">,</span> <span class="kw">true</span><span class="op">,</span> <span class="st">"prior estimate"</span>)<span class="op">,</span></span>
+<span id="cb1-341"><a href="#cb1-341" aria-hidden="true" tabindex="-1"></a>    <span class="fu">legendItem</span>(GREEN<span class="op">,</span> <span class="kw">false</span><span class="op">,</span> <span class="st">"updated estimate"</span>)</span>
+<span id="cb1-342"><a href="#cb1-342" aria-hidden="true" tabindex="-1"></a>  )<span class="op">;</span></span>
+<span id="cb1-343"><a href="#cb1-343" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-344"><a href="#cb1-344" aria-hidden="true" tabindex="-1"></a>  <span class="kw">function</span> <span class="fu">render</span>() {</span>
+<span id="cb1-345"><a href="#cb1-345" aria-hidden="true" tabindex="-1"></a>    noise <span class="op">=</span> <span class="pp">parseFloat</span>(noiseSlider<span class="op">.</span><span class="at">value</span>)<span class="op">;</span></span>
+<span id="cb1-346"><a href="#cb1-346" aria-hidden="true" tabindex="-1"></a>    gain <span class="op">=</span> <span class="pp">parseFloat</span>(gainSlider<span class="op">.</span><span class="at">value</span>)<span class="op">;</span></span>
+<span id="cb1-347"><a href="#cb1-347" aria-hidden="true" tabindex="-1"></a>    noiseValue<span class="op">.</span><span class="at">textContent</span> <span class="op">=</span> noise<span class="op">.</span><span class="fu">toFixed</span>(<span class="dv">1</span>)<span class="op">;</span></span>
+<span id="cb1-348"><a href="#cb1-348" aria-hidden="true" tabindex="-1"></a>    gainValue<span class="op">.</span><span class="at">textContent</span> <span class="op">=</span> gain<span class="op">.</span><span class="fu">toFixed</span>(<span class="dv">2</span>)<span class="op">;</span></span>
+<span id="cb1-349"><a href="#cb1-349" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-350"><a href="#cb1-350" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> { truth<span class="op">,</span> meas<span class="op">,</span> prior<span class="op">,</span> post<span class="op">,</span> yScale<span class="op">,</span> ymin<span class="op">,</span> ymax } <span class="op">=</span> <span class="fu">buildSeries</span>(noise<span class="op">,</span> gain)<span class="op">;</span></span>
+<span id="cb1-351"><a href="#cb1-351" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-352"><a href="#cb1-352" aria-hidden="true" tabindex="-1"></a>    grid<span class="op">.</span><span class="fu">replaceChildren</span>()<span class="op">;</span></span>
+<span id="cb1-353"><a href="#cb1-353" aria-hidden="true" tabindex="-1"></a>    [<span class="op">-</span><span class="dv">1</span><span class="op">,</span> <span class="op">-</span><span class="fl">0.5</span><span class="op">,</span> <span class="dv">0</span><span class="op">,</span> <span class="fl">0.5</span><span class="op">,</span> <span class="dv">1</span>]<span class="op">.</span><span class="fu">forEach</span>(() <span class="kw">=&gt;</span> {})<span class="op">;</span></span>
+<span id="cb1-354"><a href="#cb1-354" aria-hidden="true" tabindex="-1"></a>    <span class="cf">for</span> (<span class="kw">let</span> i <span class="op">=</span> <span class="dv">0</span><span class="op">;</span> i <span class="op">&lt;=</span> <span class="dv">6</span><span class="op">;</span> i <span class="op">+=</span> <span class="dv">1</span>) {</span>
+<span id="cb1-355"><a href="#cb1-355" aria-hidden="true" tabindex="-1"></a>      <span class="kw">const</span> x <span class="op">=</span> pad<span class="op">.</span><span class="at">left</span> <span class="op">+</span> (i <span class="op">/</span> <span class="dv">6</span>) <span class="op">*</span> plotW<span class="op">;</span></span>
+<span id="cb1-356"><a href="#cb1-356" aria-hidden="true" tabindex="-1"></a>      <span class="kw">const</span> line <span class="op">=</span> <span class="fu">makeSvg</span>(<span class="st">"line"</span>)<span class="op">;</span></span>
+<span id="cb1-357"><a href="#cb1-357" aria-hidden="true" tabindex="-1"></a>      line<span class="op">.</span><span class="fu">setAttribute</span>(<span class="st">"x1"</span><span class="op">,</span> x)<span class="op">;</span></span>
+<span id="cb1-358"><a href="#cb1-358" aria-hidden="true" tabindex="-1"></a>      line<span class="op">.</span><span class="fu">setAttribute</span>(<span class="st">"x2"</span><span class="op">,</span> x)<span class="op">;</span></span>
+<span id="cb1-359"><a href="#cb1-359" aria-hidden="true" tabindex="-1"></a>      line<span class="op">.</span><span class="fu">setAttribute</span>(<span class="st">"y1"</span><span class="op">,</span> pad<span class="op">.</span><span class="at">top</span>)<span class="op">;</span></span>
+<span id="cb1-360"><a href="#cb1-360" aria-hidden="true" tabindex="-1"></a>      line<span class="op">.</span><span class="fu">setAttribute</span>(<span class="st">"y2"</span><span class="op">,</span> pad<span class="op">.</span><span class="at">top</span> <span class="op">+</span> plotH)<span class="op">;</span></span>
+<span id="cb1-361"><a href="#cb1-361" aria-hidden="true" tabindex="-1"></a>      line<span class="op">.</span><span class="fu">setAttribute</span>(<span class="st">"stroke"</span><span class="op">,</span> GRID)<span class="op">;</span></span>
+<span id="cb1-362"><a href="#cb1-362" aria-hidden="true" tabindex="-1"></a>      line<span class="op">.</span><span class="fu">setAttribute</span>(<span class="st">"stroke-width"</span><span class="op">,</span> <span class="st">"1"</span>)<span class="op">;</span></span>
+<span id="cb1-363"><a href="#cb1-363" aria-hidden="true" tabindex="-1"></a>      line<span class="op">.</span><span class="fu">setAttribute</span>(<span class="st">"opacity"</span><span class="op">,</span> <span class="st">"0.75"</span>)<span class="op">;</span></span>
+<span id="cb1-364"><a href="#cb1-364" aria-hidden="true" tabindex="-1"></a>      grid<span class="op">.</span><span class="fu">appendChild</span>(line)<span class="op">;</span></span>
+<span id="cb1-365"><a href="#cb1-365" aria-hidden="true" tabindex="-1"></a>    }</span>
+<span id="cb1-366"><a href="#cb1-366" aria-hidden="true" tabindex="-1"></a>    <span class="cf">for</span> (<span class="kw">let</span> i <span class="op">=</span> <span class="dv">0</span><span class="op">;</span> i <span class="op">&lt;=</span> <span class="dv">4</span><span class="op">;</span> i <span class="op">+=</span> <span class="dv">1</span>) {</span>
+<span id="cb1-367"><a href="#cb1-367" aria-hidden="true" tabindex="-1"></a>      <span class="kw">const</span> yVal <span class="op">=</span> ymin <span class="op">+</span> (i <span class="op">/</span> <span class="dv">4</span>) <span class="op">*</span> (ymax <span class="op">-</span> ymin)<span class="op">;</span></span>
+<span id="cb1-368"><a href="#cb1-368" aria-hidden="true" tabindex="-1"></a>      <span class="kw">const</span> y <span class="op">=</span> <span class="fu">yScale</span>(yVal)<span class="op">;</span></span>
+<span id="cb1-369"><a href="#cb1-369" aria-hidden="true" tabindex="-1"></a>      <span class="kw">const</span> line <span class="op">=</span> <span class="fu">makeSvg</span>(<span class="st">"line"</span>)<span class="op">;</span></span>
+<span id="cb1-370"><a href="#cb1-370" aria-hidden="true" tabindex="-1"></a>      line<span class="op">.</span><span class="fu">setAttribute</span>(<span class="st">"x1"</span><span class="op">,</span> pad<span class="op">.</span><span class="at">left</span>)<span class="op">;</span></span>
+<span id="cb1-371"><a href="#cb1-371" aria-hidden="true" tabindex="-1"></a>      line<span class="op">.</span><span class="fu">setAttribute</span>(<span class="st">"x2"</span><span class="op">,</span> pad<span class="op">.</span><span class="at">left</span> <span class="op">+</span> plotW)<span class="op">;</span></span>
+<span id="cb1-372"><a href="#cb1-372" aria-hidden="true" tabindex="-1"></a>      line<span class="op">.</span><span class="fu">setAttribute</span>(<span class="st">"y1"</span><span class="op">,</span> y)<span class="op">;</span></span>
+<span id="cb1-373"><a href="#cb1-373" aria-hidden="true" tabindex="-1"></a>      line<span class="op">.</span><span class="fu">setAttribute</span>(<span class="st">"y2"</span><span class="op">,</span> y)<span class="op">;</span></span>
+<span id="cb1-374"><a href="#cb1-374" aria-hidden="true" tabindex="-1"></a>      line<span class="op">.</span><span class="fu">setAttribute</span>(<span class="st">"stroke"</span><span class="op">,</span> GRID)<span class="op">;</span></span>
+<span id="cb1-375"><a href="#cb1-375" aria-hidden="true" tabindex="-1"></a>      line<span class="op">.</span><span class="fu">setAttribute</span>(<span class="st">"stroke-width"</span><span class="op">,</span> <span class="st">"1"</span>)<span class="op">;</span></span>
+<span id="cb1-376"><a href="#cb1-376" aria-hidden="true" tabindex="-1"></a>      line<span class="op">.</span><span class="fu">setAttribute</span>(<span class="st">"opacity"</span><span class="op">,</span> <span class="st">"0.75"</span>)<span class="op">;</span></span>
+<span id="cb1-377"><a href="#cb1-377" aria-hidden="true" tabindex="-1"></a>      grid<span class="op">.</span><span class="fu">appendChild</span>(line)<span class="op">;</span></span>
+<span id="cb1-378"><a href="#cb1-378" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-379"><a href="#cb1-379" aria-hidden="true" tabindex="-1"></a>      <span class="kw">const</span> label <span class="op">=</span> <span class="fu">makeSvg</span>(<span class="st">"text"</span>)<span class="op">;</span></span>
+<span id="cb1-380"><a href="#cb1-380" aria-hidden="true" tabindex="-1"></a>      label<span class="op">.</span><span class="fu">setAttribute</span>(<span class="st">"x"</span><span class="op">,</span> pad<span class="op">.</span><span class="at">left</span> <span class="op">-</span> <span class="dv">10</span>)<span class="op">;</span></span>
+<span id="cb1-381"><a href="#cb1-381" aria-hidden="true" tabindex="-1"></a>      label<span class="op">.</span><span class="fu">setAttribute</span>(<span class="st">"y"</span><span class="op">,</span> y <span class="op">+</span> <span class="dv">4</span>)<span class="op">;</span></span>
+<span id="cb1-382"><a href="#cb1-382" aria-hidden="true" tabindex="-1"></a>      label<span class="op">.</span><span class="fu">setAttribute</span>(<span class="st">"fill"</span><span class="op">,</span> GREY)<span class="op">;</span></span>
+<span id="cb1-383"><a href="#cb1-383" aria-hidden="true" tabindex="-1"></a>      label<span class="op">.</span><span class="fu">setAttribute</span>(<span class="st">"font-size"</span><span class="op">,</span> <span class="st">"12"</span>)<span class="op">;</span></span>
+<span id="cb1-384"><a href="#cb1-384" aria-hidden="true" tabindex="-1"></a>      label<span class="op">.</span><span class="fu">setAttribute</span>(<span class="st">"text-anchor"</span><span class="op">,</span> <span class="st">"end"</span>)<span class="op">;</span></span>
+<span id="cb1-385"><a href="#cb1-385" aria-hidden="true" tabindex="-1"></a>      label<span class="op">.</span><span class="at">textContent</span> <span class="op">=</span> yVal<span class="op">.</span><span class="fu">toFixed</span>(<span class="dv">1</span>)<span class="op">;</span></span>
+<span id="cb1-386"><a href="#cb1-386" aria-hidden="true" tabindex="-1"></a>      grid<span class="op">.</span><span class="fu">appendChild</span>(label)<span class="op">;</span></span>
+<span id="cb1-387"><a href="#cb1-387" aria-hidden="true" tabindex="-1"></a>    }</span>
+<span id="cb1-388"><a href="#cb1-388" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-389"><a href="#cb1-389" aria-hidden="true" tabindex="-1"></a>    truthPath<span class="op">.</span><span class="fu">setAttribute</span>(<span class="st">"d"</span><span class="op">,</span> <span class="fu">pathFor</span>(truth<span class="op">,</span> yScale))<span class="op">;</span></span>
+<span id="cb1-390"><a href="#cb1-390" aria-hidden="true" tabindex="-1"></a>    priorPath<span class="op">.</span><span class="fu">setAttribute</span>(<span class="st">"d"</span><span class="op">,</span> <span class="fu">pathFor</span>(prior<span class="op">,</span> yScale))<span class="op">;</span></span>
+<span id="cb1-391"><a href="#cb1-391" aria-hidden="true" tabindex="-1"></a>    postPath<span class="op">.</span><span class="fu">setAttribute</span>(<span class="st">"d"</span><span class="op">,</span> <span class="fu">pathFor</span>(post<span class="op">,</span> yScale))<span class="op">;</span></span>
+<span id="cb1-392"><a href="#cb1-392" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-393"><a href="#cb1-393" aria-hidden="true" tabindex="-1"></a>    dots<span class="op">.</span><span class="fu">replaceChildren</span>()<span class="op">;</span></span>
+<span id="cb1-394"><a href="#cb1-394" aria-hidden="true" tabindex="-1"></a>    meas<span class="op">.</span><span class="fu">forEach</span>((p<span class="op">,</span> idx) <span class="kw">=&gt;</span> {</span>
+<span id="cb1-395"><a href="#cb1-395" aria-hidden="true" tabindex="-1"></a>      <span class="kw">const</span> circle <span class="op">=</span> <span class="fu">makeSvg</span>(<span class="st">"circle"</span>)<span class="op">;</span></span>
+<span id="cb1-396"><a href="#cb1-396" aria-hidden="true" tabindex="-1"></a>      circle<span class="op">.</span><span class="fu">setAttribute</span>(<span class="st">"cx"</span><span class="op">,</span> <span class="fu">xScale</span>(p<span class="op">.</span><span class="at">i</span>))<span class="op">;</span></span>
+<span id="cb1-397"><a href="#cb1-397" aria-hidden="true" tabindex="-1"></a>      circle<span class="op">.</span><span class="fu">setAttribute</span>(<span class="st">"cy"</span><span class="op">,</span> <span class="fu">yScale</span>(p<span class="op">.</span><span class="at">y</span>))<span class="op">;</span></span>
+<span id="cb1-398"><a href="#cb1-398" aria-hidden="true" tabindex="-1"></a>      circle<span class="op">.</span><span class="fu">setAttribute</span>(<span class="st">"r"</span><span class="op">,</span> idx <span class="op">===</span> N <span class="op">-</span> <span class="dv">1</span> <span class="op">?</span> <span class="st">"4.5"</span> <span class="op">:</span> <span class="st">"3.2"</span>)<span class="op">;</span></span>
+<span id="cb1-399"><a href="#cb1-399" aria-hidden="true" tabindex="-1"></a>      circle<span class="op">.</span><span class="fu">setAttribute</span>(<span class="st">"fill"</span><span class="op">,</span> AMBER)<span class="op">;</span></span>
+<span id="cb1-400"><a href="#cb1-400" aria-hidden="true" tabindex="-1"></a>      circle<span class="op">.</span><span class="fu">setAttribute</span>(<span class="st">"stroke"</span><span class="op">,</span> <span class="st">"#92400e"</span>)<span class="op">;</span></span>
+<span id="cb1-401"><a href="#cb1-401" aria-hidden="true" tabindex="-1"></a>      circle<span class="op">.</span><span class="fu">setAttribute</span>(<span class="st">"stroke-width"</span><span class="op">,</span> <span class="st">"1"</span>)<span class="op">;</span></span>
+<span id="cb1-402"><a href="#cb1-402" aria-hidden="true" tabindex="-1"></a>      dots<span class="op">.</span><span class="fu">appendChild</span>(circle)<span class="op">;</span></span>
+<span id="cb1-403"><a href="#cb1-403" aria-hidden="true" tabindex="-1"></a>    })<span class="op">;</span></span>
+<span id="cb1-404"><a href="#cb1-404" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-405"><a href="#cb1-405" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> last <span class="op">=</span> N <span class="op">-</span> <span class="dv">1</span><span class="op">;</span></span>
+<span id="cb1-406"><a href="#cb1-406" aria-hidden="true" tabindex="-1"></a>    truthCard<span class="op">.</span><span class="at">textContent</span> <span class="op">=</span> truth[last]<span class="op">.</span><span class="at">y</span><span class="op">.</span><span class="fu">toFixed</span>(<span class="dv">2</span>)<span class="op">;</span></span>
+<span id="cb1-407"><a href="#cb1-407" aria-hidden="true" tabindex="-1"></a>    measCard<span class="op">.</span><span class="at">textContent</span> <span class="op">=</span> meas[last]<span class="op">.</span><span class="at">y</span><span class="op">.</span><span class="fu">toFixed</span>(<span class="dv">2</span>)<span class="op">;</span></span>
+<span id="cb1-408"><a href="#cb1-408" aria-hidden="true" tabindex="-1"></a>    priorCard<span class="op">.</span><span class="at">textContent</span> <span class="op">=</span> prior[last]<span class="op">.</span><span class="at">y</span><span class="op">.</span><span class="fu">toFixed</span>(<span class="dv">2</span>)<span class="op">;</span></span>
+<span id="cb1-409"><a href="#cb1-409" aria-hidden="true" tabindex="-1"></a>    postCard<span class="op">.</span><span class="at">textContent</span> <span class="op">=</span> post[last]<span class="op">.</span><span class="at">y</span><span class="op">.</span><span class="fu">toFixed</span>(<span class="dv">2</span>)<span class="op">;</span></span>
+<span id="cb1-410"><a href="#cb1-410" aria-hidden="true" tabindex="-1"></a>    innovationCard<span class="op">.</span><span class="at">textContent</span> <span class="op">=</span> post[last]<span class="op">.</span><span class="at">innovation</span> <span class="op">&gt;=</span> <span class="dv">0</span></span>
+<span id="cb1-411"><a href="#cb1-411" aria-hidden="true" tabindex="-1"></a>      <span class="op">?</span> <span class="vs">`+</span><span class="sc">${</span>post[last]<span class="op">.</span><span class="at">innovation</span><span class="op">.</span><span class="fu">toFixed</span>(<span class="dv">2</span>)<span class="sc">}</span><span class="vs">`</span></span>
+<span id="cb1-412"><a href="#cb1-412" aria-hidden="true" tabindex="-1"></a>      <span class="op">:</span> post[last]<span class="op">.</span><span class="at">innovation</span><span class="op">.</span><span class="fu">toFixed</span>(<span class="dv">2</span>)<span class="op">;</span></span>
+<span id="cb1-413"><a href="#cb1-413" aria-hidden="true" tabindex="-1"></a>    innovationCard<span class="op">.</span><span class="at">style</span><span class="op">.</span><span class="at">color</span> <span class="op">=</span> <span class="bu">Math</span><span class="op">.</span><span class="fu">abs</span>(post[last]<span class="op">.</span><span class="at">innovation</span>) <span class="op">&gt;</span> noise <span class="op">?</span> RED <span class="op">:</span> GREY<span class="op">;</span></span>
+<span id="cb1-414"><a href="#cb1-414" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-415"><a href="#cb1-415" aria-hidden="true" tabindex="-1"></a>    note<span class="op">.</span><span class="at">textContent</span> <span class="op">=</span> gain <span class="op">&gt;</span> <span class="fl">0.7</span></span>
+<span id="cb1-416"><a href="#cb1-416" aria-hidden="true" tabindex="-1"></a>      <span class="op">?</span> <span class="st">"High K makes the estimate chase the measurements closely, which improves responsiveness but also passes more sensor noise into the estimate."</span></span>
+<span id="cb1-417"><a href="#cb1-417" aria-hidden="true" tabindex="-1"></a>      <span class="op">:</span> gain <span class="op">&lt;</span> <span class="fl">0.3</span></span>
+<span id="cb1-418"><a href="#cb1-418" aria-hidden="true" tabindex="-1"></a>        <span class="op">?</span> <span class="st">"Low K makes the estimate trust the prior strongly, which smooths noise but can lag behind real changes in the hidden state."</span></span>
+<span id="cb1-419"><a href="#cb1-419" aria-hidden="true" tabindex="-1"></a>        <span class="op">:</span> <span class="st">"Intermediate K balances responsiveness against noise suppression: the estimate moves toward the data without fully inheriting measurement jitter."</span><span class="op">;</span></span>
+<span id="cb1-420"><a href="#cb1-420" aria-hidden="true" tabindex="-1"></a>  }</span>
+<span id="cb1-421"><a href="#cb1-421" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-422"><a href="#cb1-422" aria-hidden="true" tabindex="-1"></a>  noiseSlider<span class="op">.</span><span class="fu">addEventListener</span>(<span class="st">"input"</span><span class="op">,</span> render)<span class="op">;</span></span>
+<span id="cb1-423"><a href="#cb1-423" aria-hidden="true" tabindex="-1"></a>  gainSlider<span class="op">.</span><span class="fu">addEventListener</span>(<span class="st">"input"</span><span class="op">,</span> render)<span class="op">;</span></span>
+<span id="cb1-424"><a href="#cb1-424" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-425"><a href="#cb1-425" aria-hidden="true" tabindex="-1"></a>  container<span class="op">.</span><span class="fu">append</span>(controls<span class="op">,</span> readout<span class="op">,</span> svg<span class="op">,</span> legend<span class="op">,</span> note)<span class="op">;</span></span>
+<span id="cb1-426"><a href="#cb1-426" aria-hidden="true" tabindex="-1"></a>  <span class="fu">render</span>()<span class="op">;</span></span>
+<span id="cb1-427"><a href="#cb1-427" aria-hidden="true" tabindex="-1"></a>  <span class="cf">return</span> container<span class="op">;</span></span>
+<span id="cb1-428"><a href="#cb1-428" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</details>
+<div class="cell-output cell-output-display">
+<div id="ojs-cell-1" data-nodetype="expression">
+
+</div>
+</div>
+</div>
 </section>
 <section id="the-simplest-update-logic" class="level2" data-number="63.2">
 <h2 data-number="63.2" class="anchored" data-anchor-id="the-simplest-update-logic"><span class="header-section-number">63.2</span> The simplest update logic</h2>
@@ -977,11 +1317,11 @@ window.Quarto = {
 <ul>
 <li><span class="math inline">\(\hat{x}^-\)</span> is the estimate before the measurement update</li>
 <li><span class="math inline">\(y - \hat{x}^-\)</span> is the innovation or residual</li>
-<li><span class="math inline">\(K\)</span> is the <strong>update weight</strong> — the same letter used for control gain in Chapter 1 and for the stiffness matrix in Chapter 4; here it plays a different role as a scalar between 0 and 1</li>
+<li><span class="math inline">\(K\)</span> is the <strong>update weight</strong> — the same letter used for control gain in Vol 8 Chapter 1 and for the stiffness matrix in Vol 8 Chapter 4; here it plays a different role as a scalar between 0 and 1</li>
 </ul>
 <p>In the general case with a non-trivial observation operator <span class="math inline">\(H\)</span>, the innovation becomes <span class="math inline">\(y - H\hat{x}^-\)</span>, but the structure of the weighted update is the same.</p>
-<p>If <span class="math inline">\(K\)</span> is close to 1, you trust the new measurement strongly. If <span class="math inline">\(K\)</span> is close to 0, you trust the existing estimate strongly. Filtering methods differ in how they compute or adapt this weight, but the logic is already visible here.</p>
-<p>This update rule is useful because it makes the compromise explicit. Estimation is never “use the measurement” or “use the model.” It is always some weighted combination of the two.</p>
+<p>If <span class="math inline">\(K\)</span> is close to 1, you trust the new measurement strongly. If <span class="math inline">\(K\)</span> is close to 0, you trust the existing estimate strongly. Filtering methods differ in how they compute or adapt this weight, but the logic is already visible here. This means the update is a controlled compromise, not a hard switch from model to measurement.</p>
+<p>The rule makes the compromise explicit. Estimation is never “use the measurement” or “use the model.” It is always a weighted combination of both.</p>
 </section>
 <section id="parameter-estimation-and-state-estimation" class="level2" data-number="63.3">
 <h2 data-number="63.3" class="anchored" data-anchor-id="parameter-estimation-and-state-estimation"><span class="header-section-number">63.3</span> Parameter estimation and state estimation</h2>
@@ -992,21 +1332,7 @@ window.Quarto = {
 <p>You want the unknown constant or slowly varying quantity in the model: diffusivity, drag coefficient, reaction rate, calibration factor.</p>
 <p><strong>Inverse field recovery</strong></p>
 <p>You want an entire spatially distributed quantity from indirect measurements: subsurface moisture, atmospheric state, or interior temperature.</p>
-<p>The mathematics overlaps, but the interpretation changes. This chapter keeps the common structure in view so those problems do not feel unrelated.</p>
-<div class="callout callout-style-simple callout-note callout-titled">
-<div class="callout-header d-flex align-content-center">
-<div class="callout-icon-container">
-<i class="callout-icon"></i>
-</div>
-<div class="callout-title-container flex-fill">
-<span class="screen-reader-only">Note</span>Why This Works
-</div>
-</div>
-<div class="callout-body-container callout-body">
-<p>An estimate improves when it combines two pieces of information that fail in different ways: a model prediction and a measurement. The model is coherent but incomplete. The measurement is immediate but noisy. Filtering succeeds when the weights are chosen so each source corrects the other’s weakness.</p>
-<p>That is the deeper reason estimation sits between control, signal processing, and statistics. It uses all three.</p>
-</div>
-</div>
+<p>The mathematics overlaps substantially. Keeping the common structure in view is what stops them looking like three unrelated problems.</p>
 </section>
 <section id="the-core-method" class="level2" data-number="63.4">
 <h2 data-number="63.4" class="anchored" data-anchor-id="the-core-method"><span class="header-section-number">63.4</span> The core method</h2>
@@ -1016,20 +1342,28 @@ window.Quarto = {
 <li>Write the forward relation from hidden quantity to measurement.</li>
 <li>Name the main source of uncertainty: measurement noise, model error, missing data, or poor observability.</li>
 <li>Choose an update or fitting rule.</li>
-<li>Interpret the residuals, not just the estimate.</li>
+<li>Interpret the <strong>residuals</strong> — the differences between what the model predicted and what was actually measured — not just the estimate itself.</li>
 <li>Ask what information the data still cannot recover.</li>
 </ol>
-<p>That last question matters. A polished estimate can still be misleading if the measurements never contained the needed information in the first place.</p>
+<p>The last question is the one most often skipped. A polished estimate can still be misleading if the measurements never contained the needed information.</p>
+<div class="callout callout-style-simple callout-note callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+<span class="screen-reader-only">Note</span>Why this works
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p>The update works because it combines two sources that are wrong in different ways. The model prediction is coherent but incomplete. The measurement is immediate but noisy. The weights are chosen so each source corrects the other’s weakness.</p>
+<p>That is why estimation sits at the intersection of control, signal processing, and statistics. It draws on all three.</p>
+</div>
+</div>
 </section>
 <section id="worked-example-1-one-step-scalar-filter" class="level2" data-number="63.5">
 <h2 data-number="63.5" class="anchored" data-anchor-id="worked-example-1-one-step-scalar-filter"><span class="header-section-number">63.5</span> Worked example 1: one-step scalar filter</h2>
-<p>Suppose the prior estimate of a temperature is</p>
-<p><span class="math display">\[\hat{x}^- = 18\]</span></p>
-<p>degrees, a new sensor reading is</p>
-<p><span class="math display">\[y = 20\]</span></p>
-<p>degrees, and the update weight is</p>
-<p><span class="math display">\[K = 0.3\]</span></p>
-<p>Then</p>
+<p>Suppose the prior estimate of a temperature is <span class="math inline">\(\hat{x}^- = 18\)</span> degrees, a new sensor reading is <span class="math inline">\(y = 20\)</span> degrees, and the update weight is <span class="math inline">\(K = 0.3\)</span>. Then</p>
 <p><span class="math display">\[\hat{x}^+ = \hat{x}^- + K(y - \hat{x}^-)
 = 18 + 0.3(20 - 18)
 = 18 + 0.6
@@ -1047,7 +1381,7 @@ window.Quarto = {
 \]</span></p>
 <p>the least-squares estimate minimises</p>
 <p><span class="math display">\[\sum_i (y_i - \theta x_i)^2\]</span></p>
-<p>Setting <span class="math inline">\(\dfrac{d}{d\theta}\sum_i (y_i - \theta x_i)^2 = 0\)</span> gives <span class="math inline">\(-2\sum_i x_i(y_i - \theta x_i) = 0\)</span>, which rearranges to</p>
+<p>Setting <span class="math inline">\(\dfrac{d}{d\theta}\sum_i (y_i - \theta x_i)^2 = 0\)</span> gives <span class="math inline">\(-2\sum_i x_i(y_i - \theta x_i) = 0\)</span>. Expanding gives <span class="math inline">\(\sum_i x_i y_i = \theta \sum_i x_i^2\)</span>, which rearranges to</p>
 <p><span class="math display">\[\hat{\theta}
 =
 \frac{\sum_i x_i y_i}{\sum_i x_i^2}
@@ -1068,29 +1402,29 @@ window.Quarto = {
 <li>there is noise and model mismatch</li>
 <li>the estimate must balance data fit against plausibility</li>
 </ul>
-<p>This is why optional viewpoints matter in Volume 8. Remote sensing and process monitoring can look unrelated socially, but mathematically they are close relatives.</p>
+<p>Remote sensing and process monitoring look unrelated on the surface. The mathematical structure is nearly identical.</p>
 </section>
 <section id="the-kalman-filter-as-the-canonical-example" class="level2" data-number="63.8">
 <h2 data-number="63.8" class="anchored" data-anchor-id="the-kalman-filter-as-the-canonical-example"><span class="header-section-number">63.8</span> The Kalman filter as the canonical example</h2>
 <p>The update rule in Worked Example 1 is not just a pedagogical toy. It is the core of the <strong>Kalman filter</strong>, which structures estimation around a predict-then-update cycle:</p>
 <ol type="1">
 <li><strong>Predict</strong>: use the system model to propagate the state estimate forward one step, together with an estimate of how uncertain that prediction is.</li>
-<li><strong>Update</strong>: when a measurement arrives, compute how much to trust it relative to the prediction. The Kalman gain <span class="math inline">\(K\)</span> sets that weight optimally when the noise is Gaussian.</li>
+<li><strong>Update</strong>: when a measurement arrives, compute how much to trust it relative to the prediction. The Kalman gain <span class="math inline">\(K\)</span> is chosen to minimise the mean-squared estimation error — the average squared distance between the estimate and the true state. When the noise is Gaussian this gives the globally optimal estimator. For any noise distribution with finite variance, it is the best linear unbiased estimator — the Gauss-Markov result, which says no linear estimator of the same form can have smaller variance.</li>
 </ol>
-<p>The two-step pattern generalises. Extended Kalman filters handle nonlinear models by linearising around the current estimate. Particle filters handle non-Gaussian noise by representing uncertainty as a cloud of samples. Variational data assimilation in weather prediction is a related method at continental scale. Hidden Markov models in ML use the same predict-update logic for discrete state spaces, and Bayesian filtering is the general probabilistic framing that includes all of these.</p>
+<p>The two-step pattern generalises. Extended Kalman filters handle nonlinear models by linearising around the current estimate. Particle filters handle nonlinear dynamics and non-Gaussian noise by representing uncertainty as a weighted cloud of samples. Variational data assimilation in weather prediction is a related method at continental scale. Hidden Markov models use the same predict-update logic for discrete state spaces. Bayesian filtering is the general probabilistic framing that contains all of these as special cases.</p>
 <p>The scalar example in this chapter already shows the logic. The rest is bookkeeping to handle vectors, covariances, and system models.</p>
 </section>
 <section id="where-this-goes" class="level2" data-number="63.9">
 <h2 data-number="63.9" class="anchored" data-anchor-id="where-this-goes"><span class="header-section-number">63.9</span> Where this goes</h2>
-<p>The next natural continuation is <a href="../vol-08/06-reliability-stochastic.html">Reliability, stochastic systems, and quality</a>. Once you are estimating hidden states and parameters from uncertain data, the next question is often what that uncertainty means for failure, quality, risk, or operational decision-making over time.</p>
-<p>This chapter also loops backward toward control. Modern control systems often need estimated states rather than directly measured ones. Estimation is not a sidebar to control. It is often the missing half.</p>
+<p>The next natural continuation is Chapter 6 of this volume, <a href="../vol-08/06-reliability-stochastic.html">Reliability, stochastic systems, and quality</a>. Once you are estimating hidden states and parameters from uncertain data, the next question is often what that uncertainty means for failure, quality, risk, or operational decision-making over time.</p>
+<p>There is also a direct connection back to control. Modern control systems often operate on estimated states rather than directly measured ones. Estimation is not a sidebar to control theory. It is often the missing half.</p>
 <div class="callout callout-style-simple callout-tip callout-titled">
 <div class="callout-header d-flex align-content-center">
 <div class="callout-icon-container">
 <i class="callout-icon"></i>
 </div>
 <div class="callout-title-container flex-fill">
-<span class="screen-reader-only">Tip</span>Applications
+<span class="screen-reader-only">Tip</span>Where this mathematics appears
 </div>
 </div>
 <div class="callout-body-container callout-body">
@@ -1171,7 +1505,7 @@ steps:
 <li>what the hidden state is</li>
 <li>what the measurements are</li>
 <li>one plausible forward model relation</li>
-<li>one reason the inverse problem may be ill-conditioned or ambiguous</li>
+<li>one reason the inverse problem may be ambiguous or poorly observable — for instance, two different hidden states that would produce very similar measurements (the formal term for this instability is “ill-conditioned”)</li>
 </ol>
 <!-- STEPPER
 exercise: 3
@@ -1211,6 +1545,17 @@ steps:
 </section>
 
 </main> <!-- /main -->
+<script type="ojs-module-contents">
+eyJjb250ZW50cyI6W3sibWV0aG9kTmFtZSI6ImludGVycHJldCIsImNlbGxOYW1lIjoib2pzLWNlbGwtMSIsImlubGluZSI6ZmFsc2UsInNvdXJjZSI6IntcbiAgY29uc3Qgd2lkdGggPSA2NjA7XG4gIGNvbnN0IGhlaWdodCA9IDM2MDtcbiAgY29uc3QgcGFkID0geyB0b3A6IDI0LCByaWdodDogMTgsIGJvdHRvbTogNDgsIGxlZnQ6IDQ4IH07XG4gIGNvbnN0IHBsb3RXID0gd2lkdGggLSBwYWQubGVmdCAtIHBhZC5yaWdodDtcbiAgY29uc3QgcGxvdEggPSBoZWlnaHQgLSBwYWQudG9wIC0gcGFkLmJvdHRvbTtcblxuICBjb25zdCBCTFVFID0gXCIjMjU2M2ViXCI7XG4gIGNvbnN0IEFNQkVSID0gXCIjZjU5ZTBiXCI7XG4gIGNvbnN0IEdSRUVOID0gXCIjMDU5NjY5XCI7XG4gIGNvbnN0IFJFRCA9IFwiI2VmNDQ0NFwiO1xuICBjb25zdCBHUkVZID0gXCIjNmI3MjgwXCI7XG4gIGNvbnN0IEdSSUQgPSBcIiNkMWQ1ZGJcIjtcbiAgY29uc3QgQkcgPSBcIiNmOGZhZmNcIjtcblxuICBjb25zdCBOID0gMzY7XG5cbiAgbGV0IG5vaXNlID0gMS4yO1xuICBsZXQgZ2FpbiA9IDAuNDU7XG5cbiAgZnVuY3Rpb24gbWFrZVN2Zyh0YWcpIHtcbiAgICByZXR1cm4gZG9jdW1lbnQuY3JlYXRlRWxlbWVudE5TKFwiaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmdcIiwgdGFnKTtcbiAgfVxuXG4gIGZ1bmN0aW9uIHJuZyhpKSB7XG4gICAgY29uc3QgeCA9IE1hdGguc2luKDkxLjE3ICogKGkgKyAxKSArIDAuMzcpICogNDM3NTguNTQ1MzEyMztcbiAgICByZXR1cm4geCAtIE1hdGguZmxvb3IoeCk7XG4gIH1cblxuICBmdW5jdGlvbiB4U2NhbGUoaSkge1xuICAgIHJldHVybiBwYWQubGVmdCArIChpIC8gKE4gLSAxKSkgKiBwbG90VztcbiAgfVxuXG4gIGZ1bmN0aW9uIGJ1aWxkU2VyaWVzKG5vaXNlTGV2ZWwsIEspIHtcbiAgICBjb25zdCB0cnV0aCA9IFtdO1xuICAgIGNvbnN0IG1lYXMgPSBbXTtcbiAgICBjb25zdCBwcmlvciA9IFtdO1xuICAgIGNvbnN0IHBvc3QgPSBbXTtcblxuICAgIGxldCB4aGF0ID0gMTcuNTtcbiAgICBmb3IgKGxldCBpID0gMDsgaSA8IE47IGkgKz0gMSkge1xuICAgICAgY29uc3QgdCA9IGk7XG4gICAgICBjb25zdCB0cnVlVmFsID1cbiAgICAgICAgMThcbiAgICAgICAgKyAwLjE4ICogaVxuICAgICAgICArIDEuMyAqIE1hdGguc2luKDAuMjUgKiBpKVxuICAgICAgICArIDAuNTUgKiBNYXRoLmNvcygwLjExICogaSArIDAuNSk7XG4gICAgICBjb25zdCBtZWFzdXJlbWVudCA9IHRydWVWYWwgKyAocm5nKGkpIC0gMC41KSAqIDIgKiBub2lzZUxldmVsO1xuXG4gICAgICBjb25zdCBwcmVkaWN0aW9uID0gaSA9PT0gMCA/IHhoYXQgOiB4aGF0ICsgMC4xODtcbiAgICAgIGNvbnN0IHVwZGF0ZWQgPSBwcmVkaWN0aW9uICsgSyAqIChtZWFzdXJlbWVudCAtIHByZWRpY3Rpb24pO1xuXG4gICAgICB0cnV0aC5wdXNoKHsgaSwgeTogdHJ1ZVZhbCB9KTtcbiAgICAgIG1lYXMucHVzaCh7IGksIHk6IG1lYXN1cmVtZW50IH0pO1xuICAgICAgcHJpb3IucHVzaCh7IGksIHk6IHByZWRpY3Rpb24gfSk7XG4gICAgICBwb3N0LnB1c2goeyBpLCB5OiB1cGRhdGVkLCBpbm5vdmF0aW9uOiBtZWFzdXJlbWVudCAtIHByZWRpY3Rpb24gfSk7XG5cbiAgICAgIHhoYXQgPSB1cGRhdGVkO1xuICAgICAgdDtcbiAgICB9XG5cbiAgICBjb25zdCB5cyA9IFtcbiAgICAgIC4uLnRydXRoLm1hcChwID0+IHAueSksXG4gICAgICAuLi5tZWFzLm1hcChwID0+IHAueSksXG4gICAgICAuLi5wcmlvci5tYXAocCA9PiBwLnkpLFxuICAgICAgLi4ucG9zdC5tYXAocCA9PiBwLnkpXG4gICAgXTtcbiAgICBjb25zdCB5bWluID0gTWF0aC5taW4oLi4ueXMpIC0gMTtcbiAgICBjb25zdCB5bWF4ID0gTWF0aC5tYXgoLi4ueXMpICsgMTtcbiAgICBjb25zdCB5U2NhbGUgPSB5ID0+IHBhZC50b3AgKyBwbG90SCAqICgxIC0gKHkgLSB5bWluKSAvICh5bWF4IC0geW1pbikpO1xuXG4gICAgcmV0dXJuIHsgdHJ1dGgsIG1lYXMsIHByaW9yLCBwb3N0LCB5U2NhbGUsIHltaW4sIHltYXggfTtcbiAgfVxuXG4gIGZ1bmN0aW9uIHBhdGhGb3IocG9pbnRzLCB5U2NhbGUpIHtcbiAgICByZXR1cm4gcG9pbnRzLm1hcCgocCwgaWR4KSA9PiBgJHtpZHggPT09IDAgPyBcIk1cIiA6IFwiTFwifSAke3hTY2FsZShwLmkpLnRvRml4ZWQoMil9ICR7eVNjYWxlKHAueSkudG9GaXhlZCgyKX1gKS5qb2luKFwiIFwiKTtcbiAgfVxuXG4gIGNvbnN0IGNvbnRhaW5lciA9IGRvY3VtZW50LmNyZWF0ZUVsZW1lbnQoXCJkaXZcIik7XG4gIGNvbnRhaW5lci5zdHlsZS5jc3NUZXh0ID0gXCJtYXgtd2lkdGg6IDcwMHB4OyBtYXJnaW46IDFyZW0gMCAxLjI1cmVtIDA7IGZvbnQtZmFtaWx5OiBpbmhlcml0O1wiO1xuXG4gIGNvbnN0IGNvbnRyb2xzID0gZG9jdW1lbnQuY3JlYXRlRWxlbWVudChcImRpdlwiKTtcbiAgY29udHJvbHMuc3R5bGUuY3NzVGV4dCA9IFwiZGlzcGxheTpncmlkOyBncmlkLXRlbXBsYXRlLWNvbHVtbnM6YXV0byAxZnIgYXV0bzsgZ2FwOjAuNXJlbSAwLjc1cmVtOyBhbGlnbi1pdGVtczpjZW50ZXI7IG1hcmdpbi1ib3R0b206MC43NXJlbTtcIjtcblxuICBjb25zdCBub2lzZUxhYmVsID0gZG9jdW1lbnQuY3JlYXRlRWxlbWVudChcImxhYmVsXCIpO1xuICBub2lzZUxhYmVsLnRleHRDb250ZW50ID0gXCJNZWFzdXJlbWVudCBub2lzZVwiO1xuICBjb25zdCBub2lzZVNsaWRlciA9IGRvY3VtZW50LmNyZWF0ZUVsZW1lbnQoXCJpbnB1dFwiKTtcbiAgbm9pc2VTbGlkZXIudHlwZSA9IFwicmFuZ2VcIjtcbiAgbm9pc2VTbGlkZXIubWluID0gXCIwLjJcIjtcbiAgbm9pc2VTbGlkZXIubWF4ID0gXCIzLjBcIjtcbiAgbm9pc2VTbGlkZXIuc3RlcCA9IFwiMC4xXCI7XG4gIG5vaXNlU2xpZGVyLnZhbHVlID0gU3RyaW5nKG5vaXNlKTtcbiAgY29uc3Qgbm9pc2VWYWx1ZSA9IGRvY3VtZW50LmNyZWF0ZUVsZW1lbnQoXCJzcGFuXCIpO1xuICBub2lzZVZhbHVlLnN0eWxlLmNzc1RleHQgPSBcImZvbnQtdmFyaWFudC1udW1lcmljOiB0YWJ1bGFyLW51bXM7IG1pbi13aWR0aDo0cmVtO1wiO1xuXG4gIGNvbnN0IGdhaW5MYWJlbCA9IGRvY3VtZW50LmNyZWF0ZUVsZW1lbnQoXCJsYWJlbFwiKTtcbiAgZ2FpbkxhYmVsLnRleHRDb250ZW50ID0gXCJVcGRhdGUgd2VpZ2h0IEtcIjtcbiAgY29uc3QgZ2FpblNsaWRlciA9IGRvY3VtZW50LmNyZWF0ZUVsZW1lbnQoXCJpbnB1dFwiKTtcbiAgZ2FpblNsaWRlci50eXBlID0gXCJyYW5nZVwiO1xuICBnYWluU2xpZGVyLm1pbiA9IFwiMC4wNVwiO1xuICBnYWluU2xpZGVyLm1heCA9IFwiMC45NVwiO1xuICBnYWluU2xpZGVyLnN0ZXAgPSBcIjAuMDVcIjtcbiAgZ2FpblNsaWRlci52YWx1ZSA9IFN0cmluZyhnYWluKTtcbiAgY29uc3QgZ2FpblZhbHVlID0gZG9jdW1lbnQuY3JlYXRlRWxlbWVudChcInNwYW5cIik7XG4gIGdhaW5WYWx1ZS5zdHlsZS5jc3NUZXh0ID0gXCJmb250LXZhcmlhbnQtbnVtZXJpYzogdGFidWxhci1udW1zOyBtaW4td2lkdGg6NHJlbTtcIjtcblxuICBjb250cm9scy5hcHBlbmQobm9pc2VMYWJlbCwgbm9pc2VTbGlkZXIsIG5vaXNlVmFsdWUsIGdhaW5MYWJlbCwgZ2FpblNsaWRlciwgZ2FpblZhbHVlKTtcblxuICBjb25zdCByZWFkb3V0ID0gZG9jdW1lbnQuY3JlYXRlRWxlbWVudChcImRpdlwiKTtcbiAgcmVhZG91dC5zdHlsZS5jc3NUZXh0ID0gXCJkaXNwbGF5OmdyaWQ7IGdyaWQtdGVtcGxhdGUtY29sdW1uczpyZXBlYXQoNSxtaW5tYXgoMCwxZnIpKTsgZ2FwOjAuNXJlbTsgbWFyZ2luLWJvdHRvbTowLjc1cmVtO1wiO1xuICBmdW5jdGlvbiBtYWtlQ2FyZChrZXlUZXh0KSB7XG4gICAgY29uc3QgY2FyZCA9IGRvY3VtZW50LmNyZWF0ZUVsZW1lbnQoXCJkaXZcIik7XG4gICAgY2FyZC5zdHlsZS5jc3NUZXh0ID0gXCJiYWNrZ3JvdW5kOiNmOGZhZmM7IGJvcmRlcjoxcHggc29saWQgI2U1ZTdlYjsgYm9yZGVyLXJhZGl1czo4cHg7IHBhZGRpbmc6MC41NXJlbSAwLjY1cmVtO1wiO1xuICAgIGNvbnN0IGtleSA9IGRvY3VtZW50LmNyZWF0ZUVsZW1lbnQoXCJkaXZcIik7XG4gICAga2V5LnN0eWxlLmNzc1RleHQgPSBcImZvbnQtc2l6ZTowLjc2cmVtOyBjb2xvcjojNmI3MjgwOyBtYXJnaW4tYm90dG9tOjAuMTVyZW07XCI7XG4gICAga2V5LnRleHRDb250ZW50ID0ga2V5VGV4dDtcbiAgICBjb25zdCB2YWx1ZSA9IGRvY3VtZW50LmNyZWF0ZUVsZW1lbnQoXCJkaXZcIik7XG4gICAgdmFsdWUuc3R5bGUuY3NzVGV4dCA9IFwiZm9udC1zaXplOjAuOTZyZW07IGZvbnQtdmFyaWFudC1udW1lcmljOiB0YWJ1bGFyLW51bXM7XCI7XG4gICAgY2FyZC5hcHBlbmQoa2V5LCB2YWx1ZSk7XG4gICAgcmVhZG91dC5hcHBlbmQoY2FyZCk7XG4gICAgcmV0dXJuIHZhbHVlO1xuICB9XG4gIGNvbnN0IHRydXRoQ2FyZCA9IG1ha2VDYXJkKFwiQ3VycmVudCB0cnV0aFwiKTtcbiAgY29uc3QgbWVhc0NhcmQgPSBtYWtlQ2FyZChcIk1lYXN1cmVtZW50XCIpO1xuICBjb25zdCBwcmlvckNhcmQgPSBtYWtlQ2FyZChcIlByaW9yXCIpO1xuICBjb25zdCBwb3N0Q2FyZCA9IG1ha2VDYXJkKFwiVXBkYXRlZCBlc3RpbWF0ZVwiKTtcbiAgY29uc3QgaW5ub3ZhdGlvbkNhcmQgPSBtYWtlQ2FyZChcIklubm92YXRpb25cIik7XG5cbiAgY29uc3Qgc3ZnID0gbWFrZVN2ZyhcInN2Z1wiKTtcbiAgc3ZnLnNldEF0dHJpYnV0ZShcInZpZXdCb3hcIiwgYDAgMCAke3dpZHRofSAke2hlaWdodH1gKTtcbiAgc3ZnLnNldEF0dHJpYnV0ZShcIndpZHRoXCIsIFwiMTAwJVwiKTtcbiAgc3ZnLnN0eWxlLmNzc1RleHQgPSBcImRpc3BsYXk6YmxvY2s7IGJhY2tncm91bmQ6d2hpdGU7IGJvcmRlcjoxcHggc29saWQgI2U1ZTdlYjsgYm9yZGVyLXJhZGl1czoxMHB4O1wiO1xuXG4gIGNvbnN0IGJnID0gbWFrZVN2ZyhcInJlY3RcIik7XG4gIGJnLnNldEF0dHJpYnV0ZShcInhcIiwgXCIwXCIpO1xuICBiZy5zZXRBdHRyaWJ1dGUoXCJ5XCIsIFwiMFwiKTtcbiAgYmcuc2V0QXR0cmlidXRlKFwid2lkdGhcIiwgd2lkdGgpO1xuICBiZy5zZXRBdHRyaWJ1dGUoXCJoZWlnaHRcIiwgaGVpZ2h0KTtcbiAgYmcuc2V0QXR0cmlidXRlKFwiZmlsbFwiLCBCRyk7XG4gIHN2Zy5hcHBlbmRDaGlsZChiZyk7XG5cbiAgY29uc3QgZ3JpZCA9IG1ha2VTdmcoXCJnXCIpO1xuICBjb25zdCBwYXRocyA9IG1ha2VTdmcoXCJnXCIpO1xuICBjb25zdCBkb3RzID0gbWFrZVN2ZyhcImdcIik7XG4gIHN2Zy5hcHBlbmQoZ3JpZCwgcGF0aHMsIGRvdHMpO1xuXG4gIGNvbnN0IHRydXRoUGF0aCA9IG1ha2VTdmcoXCJwYXRoXCIpO1xuICB0cnV0aFBhdGguc2V0QXR0cmlidXRlKFwiZmlsbFwiLCBcIm5vbmVcIik7XG4gIHRydXRoUGF0aC5zZXRBdHRyaWJ1dGUoXCJzdHJva2VcIiwgQkxVRSk7XG4gIHRydXRoUGF0aC5zZXRBdHRyaWJ1dGUoXCJzdHJva2Utd2lkdGhcIiwgXCIzXCIpO1xuXG4gIGNvbnN0IHByaW9yUGF0aCA9IG1ha2VTdmcoXCJwYXRoXCIpO1xuICBwcmlvclBhdGguc2V0QXR0cmlidXRlKFwiZmlsbFwiLCBcIm5vbmVcIik7XG4gIHByaW9yUGF0aC5zZXRBdHRyaWJ1dGUoXCJzdHJva2VcIiwgR1JFWSk7XG4gIHByaW9yUGF0aC5zZXRBdHRyaWJ1dGUoXCJzdHJva2Utd2lkdGhcIiwgXCIyXCIpO1xuICBwcmlvclBhdGguc2V0QXR0cmlidXRlKFwic3Ryb2tlLWRhc2hhcnJheVwiLCBcIjYgNVwiKTtcblxuICBjb25zdCBwb3N0UGF0aCA9IG1ha2VTdmcoXCJwYXRoXCIpO1xuICBwb3N0UGF0aC5zZXRBdHRyaWJ1dGUoXCJmaWxsXCIsIFwibm9uZVwiKTtcbiAgcG9zdFBhdGguc2V0QXR0cmlidXRlKFwic3Ryb2tlXCIsIEdSRUVOKTtcbiAgcG9zdFBhdGguc2V0QXR0cmlidXRlKFwic3Ryb2tlLXdpZHRoXCIsIFwiM1wiKTtcblxuICBwYXRocy5hcHBlbmQodHJ1dGhQYXRoLCBwcmlvclBhdGgsIHBvc3RQYXRoKTtcblxuICBjb25zdCB4QXhpcyA9IG1ha2VTdmcoXCJsaW5lXCIpO1xuICB4QXhpcy5zZXRBdHRyaWJ1dGUoXCJ4MVwiLCBwYWQubGVmdCk7XG4gIHhBeGlzLnNldEF0dHJpYnV0ZShcIngyXCIsIHBhZC5sZWZ0ICsgcGxvdFcpO1xuICB4QXhpcy5zZXRBdHRyaWJ1dGUoXCJ5MVwiLCBwYWQudG9wICsgcGxvdEgpO1xuICB4QXhpcy5zZXRBdHRyaWJ1dGUoXCJ5MlwiLCBwYWQudG9wICsgcGxvdEgpO1xuICB4QXhpcy5zZXRBdHRyaWJ1dGUoXCJzdHJva2VcIiwgR1JFWSk7XG4gIHhBeGlzLnNldEF0dHJpYnV0ZShcInN0cm9rZS13aWR0aFwiLCBcIjEuNVwiKTtcbiAgc3ZnLmFwcGVuZENoaWxkKHhBeGlzKTtcblxuICBjb25zdCB5QXhpcyA9IG1ha2VTdmcoXCJsaW5lXCIpO1xuICB5QXhpcy5zZXRBdHRyaWJ1dGUoXCJ4MVwiLCBwYWQubGVmdCk7XG4gIHlBeGlzLnNldEF0dHJpYnV0ZShcIngyXCIsIHBhZC5sZWZ0KTtcbiAgeUF4aXMuc2V0QXR0cmlidXRlKFwieTFcIiwgcGFkLnRvcCk7XG4gIHlBeGlzLnNldEF0dHJpYnV0ZShcInkyXCIsIHBhZC50b3AgKyBwbG90SCk7XG4gIHlBeGlzLnNldEF0dHJpYnV0ZShcInN0cm9rZVwiLCBHUkVZKTtcbiAgeUF4aXMuc2V0QXR0cmlidXRlKFwic3Ryb2tlLXdpZHRoXCIsIFwiMS41XCIpO1xuICBzdmcuYXBwZW5kQ2hpbGQoeUF4aXMpO1xuXG4gIGNvbnN0IG5vdGUgPSBkb2N1bWVudC5jcmVhdGVFbGVtZW50KFwicFwiKTtcbiAgbm90ZS5zdHlsZS5jc3NUZXh0ID0gXCJmb250LXNpemU6MC45cmVtOyBjb2xvcjojMzc0MTUxOyBtYXJnaW46MC41NXJlbSAwIDAgMDtcIjtcblxuICBjb25zdCBsZWdlbmQgPSBkb2N1bWVudC5jcmVhdGVFbGVtZW50KFwiZGl2XCIpO1xuICBsZWdlbmQuc3R5bGUuY3NzVGV4dCA9IFwiZGlzcGxheTpmbGV4OyBnYXA6MXJlbTsgZmxleC13cmFwOndyYXA7IG1hcmdpbi10b3A6MC41NXJlbTsgZm9udC1zaXplOjAuOXJlbTtcIjtcbiAgZnVuY3Rpb24gbGVnZW5kSXRlbShjb2xvciwgZGFzaCwgdGV4dCwgZG90ID0gZmFsc2UpIHtcbiAgICBjb25zdCBpdGVtID0gZG9jdW1lbnQuY3JlYXRlRWxlbWVudChcImRpdlwiKTtcbiAgICBpdGVtLnN0eWxlLmNzc1RleHQgPSBcImRpc3BsYXk6aW5saW5lLWZsZXg7IGFsaWduLWl0ZW1zOmNlbnRlcjsgZ2FwOjAuNDVyZW07XCI7XG4gICAgY29uc3Qgc3dhdGNoID0gZG9jdW1lbnQuY3JlYXRlRWxlbWVudChcInNwYW5cIik7XG4gICAgaWYgKGRvdCkge1xuICAgICAgc3dhdGNoLnN0eWxlLmNzc1RleHQgPSBgZGlzcGxheTppbmxpbmUtYmxvY2s7IHdpZHRoOjAuN3JlbTsgaGVpZ2h0OjAuN3JlbTsgYm9yZGVyLXJhZGl1czo5OTlweDsgYmFja2dyb3VuZDoke2NvbG9yfTtgO1xuICAgIH0gZWxzZSB7XG4gICAgICBzd2F0Y2guc3R5bGUuY3NzVGV4dCA9IGBkaXNwbGF5OmlubGluZS1ibG9jazsgd2lkdGg6MS42cmVtOyBoZWlnaHQ6MDsgYm9yZGVyLXRvcDozcHggJHtkYXNoID8gXCJkYXNoZWRcIiA6IFwic29saWRcIn0gJHtjb2xvcn07YDtcbiAgICB9XG4gICAgY29uc3QgbGFiZWwgPSBkb2N1bWVudC5jcmVhdGVFbGVtZW50KFwic3BhblwiKTtcbiAgICBsYWJlbC50ZXh0Q29udGVudCA9IHRleHQ7XG4gICAgaXRlbS5hcHBlbmQoc3dhdGNoLCBsYWJlbCk7XG4gICAgcmV0dXJuIGl0ZW07XG4gIH1cbiAgbGVnZW5kLmFwcGVuZChcbiAgICBsZWdlbmRJdGVtKEJMVUUsIGZhbHNlLCBcInRydWUgc3RhdGVcIiksXG4gICAgbGVnZW5kSXRlbShBTUJFUiwgZmFsc2UsIFwibWVhc3VyZW1lbnRzXCIsIHRydWUpLFxuICAgIGxlZ2VuZEl0ZW0oR1JFWSwgdHJ1ZSwgXCJwcmlvciBlc3RpbWF0ZVwiKSxcbiAgICBsZWdlbmRJdGVtKEdSRUVOLCBmYWxzZSwgXCJ1cGRhdGVkIGVzdGltYXRlXCIpXG4gICk7XG5cbiAgZnVuY3Rpb24gcmVuZGVyKCkge1xuICAgIG5vaXNlID0gcGFyc2VGbG9hdChub2lzZVNsaWRlci52YWx1ZSk7XG4gICAgZ2FpbiA9IHBhcnNlRmxvYXQoZ2FpblNsaWRlci52YWx1ZSk7XG4gICAgbm9pc2VWYWx1ZS50ZXh0Q29udGVudCA9IG5vaXNlLnRvRml4ZWQoMSk7XG4gICAgZ2FpblZhbHVlLnRleHRDb250ZW50ID0gZ2Fpbi50b0ZpeGVkKDIpO1xuXG4gICAgY29uc3QgeyB0cnV0aCwgbWVhcywgcHJpb3IsIHBvc3QsIHlTY2FsZSwgeW1pbiwgeW1heCB9ID0gYnVpbGRTZXJpZXMobm9pc2UsIGdhaW4pO1xuXG4gICAgZ3JpZC5yZXBsYWNlQ2hpbGRyZW4oKTtcbiAgICBbLTEsIC0wLjUsIDAsIDAuNSwgMV0uZm9yRWFjaCgoKSA9PiB7fSk7XG4gICAgZm9yIChsZXQgaSA9IDA7IGkgPD0gNjsgaSArPSAxKSB7XG4gICAgICBjb25zdCB4ID0gcGFkLmxlZnQgKyAoaSAvIDYpICogcGxvdFc7XG4gICAgICBjb25zdCBsaW5lID0gbWFrZVN2ZyhcImxpbmVcIik7XG4gICAgICBsaW5lLnNldEF0dHJpYnV0ZShcIngxXCIsIHgpO1xuICAgICAgbGluZS5zZXRBdHRyaWJ1dGUoXCJ4MlwiLCB4KTtcbiAgICAgIGxpbmUuc2V0QXR0cmlidXRlKFwieTFcIiwgcGFkLnRvcCk7XG4gICAgICBsaW5lLnNldEF0dHJpYnV0ZShcInkyXCIsIHBhZC50b3AgKyBwbG90SCk7XG4gICAgICBsaW5lLnNldEF0dHJpYnV0ZShcInN0cm9rZVwiLCBHUklEKTtcbiAgICAgIGxpbmUuc2V0QXR0cmlidXRlKFwic3Ryb2tlLXdpZHRoXCIsIFwiMVwiKTtcbiAgICAgIGxpbmUuc2V0QXR0cmlidXRlKFwib3BhY2l0eVwiLCBcIjAuNzVcIik7XG4gICAgICBncmlkLmFwcGVuZENoaWxkKGxpbmUpO1xuICAgIH1cbiAgICBmb3IgKGxldCBpID0gMDsgaSA8PSA0OyBpICs9IDEpIHtcbiAgICAgIGNvbnN0IHlWYWwgPSB5bWluICsgKGkgLyA0KSAqICh5bWF4IC0geW1pbik7XG4gICAgICBjb25zdCB5ID0geVNjYWxlKHlWYWwpO1xuICAgICAgY29uc3QgbGluZSA9IG1ha2VTdmcoXCJsaW5lXCIpO1xuICAgICAgbGluZS5zZXRBdHRyaWJ1dGUoXCJ4MVwiLCBwYWQubGVmdCk7XG4gICAgICBsaW5lLnNldEF0dHJpYnV0ZShcIngyXCIsIHBhZC5sZWZ0ICsgcGxvdFcpO1xuICAgICAgbGluZS5zZXRBdHRyaWJ1dGUoXCJ5MVwiLCB5KTtcbiAgICAgIGxpbmUuc2V0QXR0cmlidXRlKFwieTJcIiwgeSk7XG4gICAgICBsaW5lLnNldEF0dHJpYnV0ZShcInN0cm9rZVwiLCBHUklEKTtcbiAgICAgIGxpbmUuc2V0QXR0cmlidXRlKFwic3Ryb2tlLXdpZHRoXCIsIFwiMVwiKTtcbiAgICAgIGxpbmUuc2V0QXR0cmlidXRlKFwib3BhY2l0eVwiLCBcIjAuNzVcIik7XG4gICAgICBncmlkLmFwcGVuZENoaWxkKGxpbmUpO1xuXG4gICAgICBjb25zdCBsYWJlbCA9IG1ha2VTdmcoXCJ0ZXh0XCIpO1xuICAgICAgbGFiZWwuc2V0QXR0cmlidXRlKFwieFwiLCBwYWQubGVmdCAtIDEwKTtcbiAgICAgIGxhYmVsLnNldEF0dHJpYnV0ZShcInlcIiwgeSArIDQpO1xuICAgICAgbGFiZWwuc2V0QXR0cmlidXRlKFwiZmlsbFwiLCBHUkVZKTtcbiAgICAgIGxhYmVsLnNldEF0dHJpYnV0ZShcImZvbnQtc2l6ZVwiLCBcIjEyXCIpO1xuICAgICAgbGFiZWwuc2V0QXR0cmlidXRlKFwidGV4dC1hbmNob3JcIiwgXCJlbmRcIik7XG4gICAgICBsYWJlbC50ZXh0Q29udGVudCA9IHlWYWwudG9GaXhlZCgxKTtcbiAgICAgIGdyaWQuYXBwZW5kQ2hpbGQobGFiZWwpO1xuICAgIH1cblxuICAgIHRydXRoUGF0aC5zZXRBdHRyaWJ1dGUoXCJkXCIsIHBhdGhGb3IodHJ1dGgsIHlTY2FsZSkpO1xuICAgIHByaW9yUGF0aC5zZXRBdHRyaWJ1dGUoXCJkXCIsIHBhdGhGb3IocHJpb3IsIHlTY2FsZSkpO1xuICAgIHBvc3RQYXRoLnNldEF0dHJpYnV0ZShcImRcIiwgcGF0aEZvcihwb3N0LCB5U2NhbGUpKTtcblxuICAgIGRvdHMucmVwbGFjZUNoaWxkcmVuKCk7XG4gICAgbWVhcy5mb3JFYWNoKChwLCBpZHgpID0+IHtcbiAgICAgIGNvbnN0IGNpcmNsZSA9IG1ha2VTdmcoXCJjaXJjbGVcIik7XG4gICAgICBjaXJjbGUuc2V0QXR0cmlidXRlKFwiY3hcIiwgeFNjYWxlKHAuaSkpO1xuICAgICAgY2lyY2xlLnNldEF0dHJpYnV0ZShcImN5XCIsIHlTY2FsZShwLnkpKTtcbiAgICAgIGNpcmNsZS5zZXRBdHRyaWJ1dGUoXCJyXCIsIGlkeCA9PT0gTiAtIDEgPyBcIjQuNVwiIDogXCIzLjJcIik7XG4gICAgICBjaXJjbGUuc2V0QXR0cmlidXRlKFwiZmlsbFwiLCBBTUJFUik7XG4gICAgICBjaXJjbGUuc2V0QXR0cmlidXRlKFwic3Ryb2tlXCIsIFwiIzkyNDAwZVwiKTtcbiAgICAgIGNpcmNsZS5zZXRBdHRyaWJ1dGUoXCJzdHJva2Utd2lkdGhcIiwgXCIxXCIpO1xuICAgICAgZG90cy5hcHBlbmRDaGlsZChjaXJjbGUpO1xuICAgIH0pO1xuXG4gICAgY29uc3QgbGFzdCA9IE4gLSAxO1xuICAgIHRydXRoQ2FyZC50ZXh0Q29udGVudCA9IHRydXRoW2xhc3RdLnkudG9GaXhlZCgyKTtcbiAgICBtZWFzQ2FyZC50ZXh0Q29udGVudCA9IG1lYXNbbGFzdF0ueS50b0ZpeGVkKDIpO1xuICAgIHByaW9yQ2FyZC50ZXh0Q29udGVudCA9IHByaW9yW2xhc3RdLnkudG9GaXhlZCgyKTtcbiAgICBwb3N0Q2FyZC50ZXh0Q29udGVudCA9IHBvc3RbbGFzdF0ueS50b0ZpeGVkKDIpO1xuICAgIGlubm92YXRpb25DYXJkLnRleHRDb250ZW50ID0gcG9zdFtsYXN0XS5pbm5vdmF0aW9uID49IDBcbiAgICAgID8gYCske3Bvc3RbbGFzdF0uaW5ub3ZhdGlvbi50b0ZpeGVkKDIpfWBcbiAgICAgIDogcG9zdFtsYXN0XS5pbm5vdmF0aW9uLnRvRml4ZWQoMik7XG4gICAgaW5ub3ZhdGlvbkNhcmQuc3R5bGUuY29sb3IgPSBNYXRoLmFicyhwb3N0W2xhc3RdLmlubm92YXRpb24pID4gbm9pc2UgPyBSRUQgOiBHUkVZO1xuXG4gICAgbm90ZS50ZXh0Q29udGVudCA9IGdhaW4gPiAwLjdcbiAgICAgID8gXCJIaWdoIEsgbWFrZXMgdGhlIGVzdGltYXRlIGNoYXNlIHRoZSBtZWFzdXJlbWVudHMgY2xvc2VseSwgd2hpY2ggaW1wcm92ZXMgcmVzcG9uc2l2ZW5lc3MgYnV0IGFsc28gcGFzc2VzIG1vcmUgc2Vuc29yIG5vaXNlIGludG8gdGhlIGVzdGltYXRlLlwiXG4gICAgICA6IGdhaW4gPCAwLjNcbiAgICAgICAgPyBcIkxvdyBLIG1ha2VzIHRoZSBlc3RpbWF0ZSB0cnVzdCB0aGUgcHJpb3Igc3Ryb25nbHksIHdoaWNoIHNtb290aHMgbm9pc2UgYnV0IGNhbiBsYWcgYmVoaW5kIHJlYWwgY2hhbmdlcyBpbiB0aGUgaGlkZGVuIHN0YXRlLlwiXG4gICAgICAgIDogXCJJbnRlcm1lZGlhdGUgSyBiYWxhbmNlcyByZXNwb25zaXZlbmVzcyBhZ2FpbnN0IG5vaXNlIHN1cHByZXNzaW9uOiB0aGUgZXN0aW1hdGUgbW92ZXMgdG93YXJkIHRoZSBkYXRhIHdpdGhvdXQgZnVsbHkgaW5oZXJpdGluZyBtZWFzdXJlbWVudCBqaXR0ZXIuXCI7XG4gIH1cblxuICBub2lzZVNsaWRlci5hZGRFdmVudExpc3RlbmVyKFwiaW5wdXRcIiwgcmVuZGVyKTtcbiAgZ2FpblNsaWRlci5hZGRFdmVudExpc3RlbmVyKFwiaW5wdXRcIiwgcmVuZGVyKTtcblxuICBjb250YWluZXIuYXBwZW5kKGNvbnRyb2xzLCByZWFkb3V0LCBzdmcsIGxlZ2VuZCwgbm90ZSk7XG4gIHJlbmRlcigpO1xuICByZXR1cm4gY29udGFpbmVyO1xufVxuIn1dfQ==
+</script>
+<script type="module">
+if (window.location.protocol === "file:") { alert("The OJS runtime does not work with file:// URLs. Please use a web server to view this document."); }
+window._ojs.paths.runtimeToDoc = "../../vol-08";
+window._ojs.paths.runtimeToRoot = "../..";
+window._ojs.paths.docToRoot = "..";
+window._ojs.selfContained = false;
+window._ojs.runtime.interpretFromScriptTags();
+</script>
 <script id="quarto-html-after-body" type="application/javascript">
   window.document.addEventListener("DOMContentLoaded", function (event) {
     const icon = "";
