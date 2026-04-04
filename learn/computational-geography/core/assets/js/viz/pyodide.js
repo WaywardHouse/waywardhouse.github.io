@@ -54,9 +54,9 @@ export function renderPyodideCell(el) {
   const source = codeEl.textContent;
 
   el.innerHTML = `
-    <textarea class="pyodide-cell__editor" spellcheck="false" autocorrect="off" autocapitalize="off"></textarea>
+    <textarea class="pyodide-cell__editor" spellcheck="false" autocorrect="off" autocapitalize="off" aria-label="Editable Python code"></textarea>
     <div class="pyodide-cell__toolbar">
-      <button class="pyodide-cell__run-btn btn btn-primary" type="button">Run</button>
+      <button class="pyodide-cell__run-btn" type="button"><span class="pyodide-cell__run-label">Run</span></button>
       <span class="pyodide-cell__status"></span>
     </div>
     <div class="pyodide-cell__output" hidden></div>
@@ -89,7 +89,7 @@ export function renderPyodideCell(el) {
 
   if (pyodideInitError) {
     runBtn.disabled = true;
-    runBtn.textContent = 'Unavailable';
+    runBtn.innerHTML = '<span class="pyodide-cell__run-label">Unavailable</span>';
     statusEl.textContent = 'Python runtime unavailable on this page';
     outputEl.hidden = false;
     outputEl.className = 'pyodide-cell__output pyodide-cell__output--error';
@@ -104,7 +104,7 @@ export function renderPyodideCell(el) {
     }
 
     runBtn.disabled = true;
-    runBtn.textContent = 'Running…';
+    runBtn.innerHTML = '<span class="pyodide-cell__run-label">Running...</span>';
     statusEl.textContent = '';
     outputEl.hidden = true;
     outputEl.className = 'pyodide-cell__output';
@@ -130,7 +130,7 @@ export function renderPyodideCell(el) {
     } finally {
       outputEl.hidden = false;
       runBtn.disabled = false;
-      runBtn.textContent = 'Run';
+      runBtn.innerHTML = '<span class="pyodide-cell__run-label">Run</span>';
     }
   });
 }
