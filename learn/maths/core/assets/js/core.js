@@ -261,6 +261,119 @@ function getArticleUrl() {
   return canonical || window.location.href;
 }
 
+function extractSidebarSectionLinks(sidebar, activeLink) {
+  const section = activeLink?.closest('ul.sidebar-section');
+  if (!section) return [];
+
+  return Array.from(section.querySelectorAll('a.sidebar-item-text.sidebar-link[href]'))
+    .filter((link) => !link.hasAttribute('data-bs-toggle'));
+}
+
+function getMathsReadingNavState(titleText = '') {
+  const sidebar = document.getElementById('quarto-sidebar');
+  if (!sidebar) return null;
+
+  const active = sidebar.querySelector('a.sidebar-item-text.sidebar-link.active[href]');
+  if (!active) return null;
+
+  const sectionLinks = extractSidebarSectionLinks(sidebar, active);
+  if (sectionLinks.length === 0) return null;
+
+  const currentIndex = sectionLinks.indexOf(active);
+  if (currentIndex === -1) return null;
+
+  const breadcrumbs = Array.from(
+    document.querySelectorAll('#title-block-header .quarto-page-breadcrumbs .breadcrumb-item a')
+  );
+  const sectionCrumb = breadcrumbs[0] || sectionLinks[0];
+  const allChapters = sidebar.querySelector('.sidebar-title a');
+
+  return {
+    allChaptersHref: allChapters?.getAttribute('href') || '/',
+    chapterCount: sectionLinks.length,
+    chapterStart: sectionLinks[0],
+    currentIndex,
+    currentTitle: titleText || active.textContent?.trim() || document.title,
+    next: currentIndex < sectionLinks.length - 1 ? sectionLinks[currentIndex + 1] : null,
+    previous: currentIndex > 0 ? sectionLinks[currentIndex - 1] : null,
+    sectionTitle: sectionCrumb?.textContent?.replace(/\s+/g, ' ').trim() || 'Mathematics',
+  };
+}
+
+function wayfindingHref(link, fallback = '/') {
+  if (!link) return fallback;
+  return link.getAttribute('href') || fallback;
+}
+
+function wayfindingLabel(link, fallback = '') {
+  if (!link) return fallback;
+  return link.textContent?.replace(/\s+/g, ' ').trim() || fallback;
+}
+
+function renderMathsTopWayfinding(titleText = '') {
+  const state = getMathsReadingNavState(titleText);
+  if (!state) return '';
+
+  return `
+    <div class="wayward-book-wayfinding">
+      <nav class="wayward-book-breadcrumbs" aria-label="Breadcrumb">
+        <a href="${escapeHtml(state.allChaptersHref)}">Mathematics</a>
+        <span aria-hidden="true">/</span>
+        <a href="${escapeHtml(wayfindingHref(state.chapterStart, state.allChaptersHref))}">${escapeHtml(state.sectionTitle)}</a>
+        <span aria-hidden="true">/</span>
+        <span aria-current="page">${escapeHtml(state.currentTitle)}</span>
+      </nav>
+      <div class="wayward-book-wayfinding__actions">
+        <a class="wayward-book-wayfinding__action" href="${escapeHtml(wayfindingHref(state.chapterStart, state.allChaptersHref))}">Back to start of chapter</a>
+        <a class="wayward-book-wayfinding__action" href="${escapeHtml(state.allChaptersHref)}">All chapters</a>
+        ${document.querySelector('#TOC') ? '<a class="wayward-book-wayfinding__action" href="#TOC">Jump to contents</a>' : ''}
+      </div>
+    </div>
+  `;
+}
+
+function renderMathsPagerCard(kind, link, fallbackHref, fallbackTitle, description) {
+  return `
+    <a class="wayward-book-pager-card${link ? '' : ' wayward-book-pager-card--muted'}" href="${escapeHtml(wayfindingHref(link, fallbackHref))}">
+      <span class="wayward-book-pager-card__eyebrow">${escapeHtml(kind)}</span>
+      <strong>${escapeHtml(wayfindingLabel(link, fallbackTitle))}</strong>
+      <p>${escapeHtml(description)}</p>
+    </a>
+  `;
+}
+
+function renderMathsBottomWayfinding(titleText = '') {
+  const state = getMathsReadingNavState(titleText);
+  if (!state) return null;
+
+  const pager = document.createElement('nav');
+  pager.className = 'wayward-book-reading-pager';
+  pager.setAttribute('aria-label', 'Chapter navigation');
+  pager.innerHTML = `
+    ${renderMathsPagerCard(
+      'Previous',
+      state.previous,
+      wayfindingHref(state.chapterStart, state.allChaptersHref),
+      'Back to start of chapter',
+      state.previous ? 'Move to the previous page in this chapter path.' : 'Return to the chapter opener for this volume path.'
+    )}
+    <div class="wayward-book-pager-card wayward-book-pager-card--current" aria-current="page">
+      <span class="wayward-book-pager-card__eyebrow">Where you are</span>
+      <strong>${escapeHtml(state.currentTitle)}</strong>
+      <p>${escapeHtml(`${state.sectionTitle} · ${state.currentIndex + 1} of ${state.chapterCount}`)}</p>
+    </div>
+    ${renderMathsPagerCard(
+      'Next',
+      state.next,
+      state.allChaptersHref,
+      'Chapter path complete',
+      state.next ? 'Move to the next page in this chapter path.' : 'You have reached the end of this chapter path.'
+    )}
+  `;
+
+  return pager;
+}
+
 function getBookmarkStorage() {
   try {
     const raw = localStorage.getItem('wayward-bookmarks');
@@ -337,6 +450,7 @@ function enhanceReadingTitleBlock(main, title, toc) {
 
   title.classList.add('wayward-reading-head');
   title.innerHTML = `
+    ${renderMathsTopWayfinding(titleText)}
     <div class="wayward-reading-head__meta-row">
       <div class="post-meta" aria-label="Article details">
         ${metaBits.map((bit, index) => `${index > 0 ? '<span class="post-meta-divider" aria-hidden="true">|</span>' : ''}${bit}`).join('')}
@@ -557,6 +671,11 @@ function injectWaywardChrome() {
       Array.from(main.children).forEach((child) => {
         if (child !== toc) content.appendChild(child);
       });
+
+      const readingPager = renderMathsBottomWayfinding(
+        title.querySelector('.chapter-title')?.textContent?.trim() || document.title
+      );
+      if (readingPager) content.appendChild(readingPager);
 
       layout.appendChild(aside);
       layout.appendChild(content);
