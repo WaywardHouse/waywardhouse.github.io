@@ -267,8 +267,8 @@ function renderTopWayfinding(pathname, chapterTitle) {
           <div class="wayward-wayfinding__progress">${escapeHtml(progress)}</div>
         </div>
         <div class="wayward-wayfinding__actions">
-          <a class="wayward-wayfinding__action" href="${escapeHtml(state.section.href)}">Chapter index</a>
-          <a class="wayward-wayfinding__action" href="/">All parts</a>
+          <a class="wayward-wayfinding__action" href="${escapeHtml(state.section.href)}">Back to start of chapter</a>
+          <a class="wayward-wayfinding__action" href="/">All chapters</a>
           ${document.querySelector('#TOC') ? '<a class="wayward-wayfinding__action" href="#TOC">Jump to contents</a>' : ''}
         </div>
       </div>
@@ -299,18 +299,23 @@ function renderPagerCard(kind, item, fallbackHref, fallbackLabel, description) {
 function renderBottomWayfinding(pathname) {
   const state = getWayfindingForPath(pathname);
   if (!state || state.isSectionHome) return null;
+  const currentChapterTitle = document.querySelector('#title-block-header .title, main h1')?.textContent?.trim()
+    || resolveNavTitle(pathname);
+  const progress = state.chapterIndex >= 0
+    ? `In ${state.section.title}, chapter ${state.chapterIndex + 1} of ${state.chapterCount}.`
+    : `${state.chapterCount} chapters in this reading path.`;
 
   const nav = document.createElement('nav');
   nav.className = 'wayward-reading-pager';
   nav.setAttribute('aria-label', 'Chapter navigation');
   nav.innerHTML = `
-    ${renderPagerCard('Previous', state.previous, state.section.href, 'Chapter index', 'Return to the chapter list for this section.')}
-    <a class="wayward-pager-card wayward-pager-card--section" href="${escapeHtml(state.section.href)}">
-      <span class="wayward-pager-card__eyebrow">Chapter index</span>
-      <strong>${escapeHtml(state.section.title)}</strong>
-      <p>Return to this section overview and choose your next chapter.</p>
-    </a>
-    ${renderPagerCard('Next', state.next, state.section.href, 'Section complete', 'You’ve reached the end of this section sequence.')}
+    ${renderPagerCard('Previous', state.previous, state.section.href, 'Back to start of chapter', 'Return to the section opener for this chapter path.')}
+    <div class="wayward-pager-card wayward-pager-card--current" aria-current="page">
+      <span class="wayward-pager-card__eyebrow">Where you are</span>
+      <strong>${escapeHtml(currentChapterTitle)}</strong>
+      <p>${escapeHtml(progress)}</p>
+    </div>
+    ${renderPagerCard('Next', state.next, state.section.href, 'Chapter path complete', 'You’ve reached the end of this chapter path.')}
   `;
 
   return nav;
@@ -858,23 +863,27 @@ async function init() {
   for (const entry of REGISTRY) {
     if (!entry.detect(content)) continue;
 
-    await loadCDN(entry.cdn);
+    try {
+      await loadCDN(entry.cdn);
 
-    if (entry.init) await entry.init();
+      if (entry.init) await entry.init();
 
-    if (entry.selector) {
-      const els = Array.from(document.querySelectorAll(entry.selector));
-      for (const el of els) {
-        const id = ensureId(el);
-        let opts = {};
-        try {
-          if (el.dataset.options) opts = JSON.parse(el.dataset.options);
-        } catch {
-          console.warn('[loom] Invalid data-options JSON on', el);
+      if (entry.selector) {
+        const els = Array.from(document.querySelectorAll(entry.selector));
+        for (const el of els) {
+          const id = ensureId(el);
+          let opts = {};
+          try {
+            if (el.dataset.options) opts = JSON.parse(el.dataset.options);
+          } catch {
+            console.warn('[loom] Invalid data-options JSON on', el);
+          }
+          const instance = entry.render ? await entry.render(el, opts) : null;
+          instances.set(id, { entry, el, instance });
         }
-        const instance = entry.render ? await entry.render(el, opts) : null;
-        instances.set(id, { entry, el, instance });
       }
+    } catch (error) {
+      console.error(`[loom] Failed to initialize visual adapter "${entry.id}".`, error);
     }
   }
 

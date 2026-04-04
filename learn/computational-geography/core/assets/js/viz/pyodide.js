@@ -22,18 +22,24 @@
 const PYODIDE_CDN = 'https://cdn.jsdelivr.net/pyodide/v0.27.0/full/pyodide.mjs';
 
 let pyodideInstance = null;
+let pyodideInitError = null;
 
 /**
  * initPyodide — load Pyodide and pre-install numpy.
  * Called once by core.js before any renderPyodideCell() calls.
  */
 export async function initPyodide() {
-  if (pyodideInstance) return;
+  if (pyodideInstance || pyodideInitError) return;
 
-  const { loadPyodide } = await import(/* @vite-ignore */ PYODIDE_CDN);
-  const pyodide = await loadPyodide();
-  await pyodide.loadPackage('numpy');
-  pyodideInstance = pyodide;
+  try {
+    const { loadPyodide } = await import(/* @vite-ignore */ PYODIDE_CDN);
+    const pyodide = await loadPyodide();
+    await pyodide.loadPackage('numpy');
+    pyodideInstance = pyodide;
+  } catch (error) {
+    pyodideInitError = error;
+    console.error('[pyodide] Failed to initialize Python runtime.', error);
+  }
 }
 
 /**
@@ -80,6 +86,16 @@ export function renderPyodideCell(el) {
       editorEl.selectionStart = editorEl.selectionEnd = s + 4;
     }
   });
+
+  if (pyodideInitError) {
+    runBtn.disabled = true;
+    runBtn.textContent = 'Unavailable';
+    statusEl.textContent = 'Python runtime unavailable on this page';
+    outputEl.hidden = false;
+    outputEl.className = 'pyodide-cell__output pyodide-cell__output--error';
+    outputEl.textContent = 'This interactive editor could not load Pyodide. You can still read or copy the code above.';
+    return;
+  }
 
   runBtn.addEventListener('click', async () => {
     if (!pyodideInstance) {
