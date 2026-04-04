@@ -248,6 +248,20 @@ export const BOOK_SECTIONS = [
 const SECTION_BY_KEY = new Map(BOOK_SECTIONS.map((section) => [section.key, section]));
 const SECTION_BY_PATH = new Map(BOOK_SECTIONS.map((section) => [section.href, section]));
 
+export function getBookBasePath(pathname = '/') {
+  if (!pathname) return '';
+
+  const withoutQuery = pathname.split('#')[0].split('?')[0];
+  const normalized = withoutQuery
+    .replace(/index\.html$/, '')
+    .replace(/\.html$/, '/');
+  const parts = normalized.replace(/^\/|\/$/g, '').split('/').filter(Boolean);
+  const firstBookPartIndex = parts.findIndex((part) => SECTION_BY_KEY.has(part));
+
+  if (firstBookPartIndex <= 0) return '';
+  return `/${parts.slice(0, firstBookPartIndex).join('/')}`;
+}
+
 export function normalizeBookPath(pathname = '/') {
   if (!pathname) return '/';
 
@@ -265,6 +279,16 @@ export function normalizeBookPath(pathname = '/') {
   }
 
   return normalized;
+}
+
+export function resolveBookHref(pathname = '/', href = '/') {
+  const normalizedHref = normalizeBookPath(href);
+  const basePath = getBookBasePath(pathname);
+
+  if (!basePath) return normalizedHref;
+  if (normalizedHref === '/') return `${basePath}/`;
+
+  return `${basePath}${normalizedHref}`;
 }
 
 export function getSectionForPath(pathname = '/') {

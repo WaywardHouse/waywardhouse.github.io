@@ -31,7 +31,7 @@
  */
 
 import { REGISTRY } from './viz-registry.js';
-import { deriveTitleFromHref, getWayfindingForPath } from './book-wayfinding.js';
+import { deriveTitleFromHref, getWayfindingForPath, resolveBookHref } from './book-wayfinding.js';
 
 // ── CDN loaders ───────────────────────────────────────────────────────────────
 
@@ -247,6 +247,8 @@ function renderTopWayfinding(pathname, chapterTitle) {
   if (!state || state.isSectionHome) return '';
 
   const sectionTitle = state.section.title;
+  const bookHomeHref = resolveBookHref(pathname, '/');
+  const sectionHref = resolveBookHref(pathname, state.section.href);
   const progress = state.chapterIndex >= 0
     ? `Chapter ${state.chapterIndex + 1} of ${state.chapterCount}`
     : `${state.chapterCount} chapters`;
@@ -254,9 +256,9 @@ function renderTopWayfinding(pathname, chapterTitle) {
   return `
     <div class="wayward-wayfinding">
       <nav class="wayward-breadcrumbs" aria-label="Breadcrumb">
-        <a href="/">Computational Geography</a>
+        <a href="${escapeHtml(bookHomeHref)}">Computational Geography</a>
         <span aria-hidden="true">/</span>
-        <a href="${escapeHtml(state.section.href)}">${escapeHtml(sectionTitle)}</a>
+        <a href="${escapeHtml(sectionHref)}">${escapeHtml(sectionTitle)}</a>
         <span aria-hidden="true">/</span>
         <span aria-current="page">${escapeHtml(chapterTitle)}</span>
       </nav>
@@ -267,8 +269,8 @@ function renderTopWayfinding(pathname, chapterTitle) {
           <div class="wayward-wayfinding__progress">${escapeHtml(progress)}</div>
         </div>
         <div class="wayward-wayfinding__actions">
-          <a class="wayward-wayfinding__action" href="${escapeHtml(state.section.href)}">Back to start of chapter</a>
-          <a class="wayward-wayfinding__action" href="/">All chapters</a>
+          <a class="wayward-wayfinding__action" href="${escapeHtml(sectionHref)}">Back to start of chapter</a>
+          <a class="wayward-wayfinding__action" href="${escapeHtml(bookHomeHref)}">All chapters</a>
           ${document.querySelector('#TOC') ? '<a class="wayward-wayfinding__action" href="#TOC">Jump to contents</a>' : ''}
         </div>
       </div>
@@ -299,6 +301,13 @@ function renderPagerCard(kind, item, fallbackHref, fallbackLabel, description) {
 function renderBottomWayfinding(pathname) {
   const state = getWayfindingForPath(pathname);
   if (!state || state.isSectionHome) return null;
+  const sectionHref = resolveBookHref(pathname, state.section.href);
+  const previousItem = state.previous
+    ? { ...state.previous, href: resolveBookHref(pathname, state.previous.href) }
+    : null;
+  const nextItem = state.next
+    ? { ...state.next, href: resolveBookHref(pathname, state.next.href) }
+    : null;
   const currentChapterTitle = document.querySelector('#title-block-header .title, main h1')?.textContent?.trim()
     || resolveNavTitle(pathname);
   const progress = state.chapterIndex >= 0
@@ -309,13 +318,13 @@ function renderBottomWayfinding(pathname) {
   nav.className = 'wayward-reading-pager';
   nav.setAttribute('aria-label', 'Chapter navigation');
   nav.innerHTML = `
-    ${renderPagerCard('Previous', state.previous, state.section.href, 'Back to start of chapter', 'Return to the section opener for this chapter path.')}
+    ${renderPagerCard('Previous', previousItem, sectionHref, 'Back to start of chapter', 'Return to the section opener for this chapter path.')}
     <div class="wayward-pager-card wayward-pager-card--current" aria-current="page">
       <span class="wayward-pager-card__eyebrow">Where you are</span>
       <strong>${escapeHtml(currentChapterTitle)}</strong>
       <p>${escapeHtml(progress)}</p>
     </div>
-    ${renderPagerCard('Next', state.next, state.section.href, 'Chapter path complete', 'You’ve reached the end of this chapter path.')}
+    ${renderPagerCard('Next', nextItem, sectionHref, 'Chapter path complete', 'You’ve reached the end of this chapter path.')}
   `;
 
   return nav;
