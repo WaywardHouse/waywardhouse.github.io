@@ -282,11 +282,14 @@ export function normalizeBookPath(pathname = '/') {
 }
 
 export function resolveBookHref(pathname = '/', href = '/') {
+  const withoutQuery = href.split('#')[0].split('?')[0];
+  const isHtmlChapter = /\.html$/.test(withoutQuery) && !/index\.html$/.test(withoutQuery);
   const normalizedHref = normalizeBookPath(href);
   const basePath = getBookBasePath(pathname);
 
-  if (!basePath) return normalizedHref;
+  if (!basePath) return isHtmlChapter ? withoutQuery : normalizedHref;
   if (normalizedHref === '/') return `${basePath}/`;
+  if (isHtmlChapter) return `${basePath}${withoutQuery}`;
 
   return `${basePath}${normalizedHref}`;
 }
@@ -328,26 +331,25 @@ export function getWayfindingForPath(pathname = '/') {
   const section = getSectionForPath(normalized);
   if (!section) return null;
 
-  const chapters = section.chapters.map((href) => normalizeBookPath(href));
-  const chapterIndex = chapters.indexOf(normalized);
+  const chapterIndex = section.chapters.findIndex((href) => normalizeBookPath(href) === normalized);
   if (chapterIndex === -1) {
     return {
       section,
       chapterIndex: -1,
-      chapterCount: chapters.length,
+      chapterCount: section.chapters.length,
       previous: null,
       next: null,
       isSectionHome: normalized === section.href,
     };
   }
 
-  const previousHref = chapterIndex > 0 ? chapters[chapterIndex - 1] : null;
-  const nextHref = chapterIndex < chapters.length - 1 ? chapters[chapterIndex + 1] : null;
+  const previousHref = chapterIndex > 0 ? section.chapters[chapterIndex - 1] : null;
+  const nextHref = chapterIndex < section.chapters.length - 1 ? section.chapters[chapterIndex + 1] : null;
 
   return {
     section,
     chapterIndex,
-    chapterCount: chapters.length,
+    chapterCount: section.chapters.length,
     previous: previousHref ? { href: previousHref, title: deriveTitleFromHref(previousHref) } : null,
     next: nextHref ? { href: nextHref, title: deriveTitleFromHref(nextHref) } : null,
     isSectionHome: false,
