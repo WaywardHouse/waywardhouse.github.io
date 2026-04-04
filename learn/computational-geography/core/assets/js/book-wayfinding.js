@@ -256,7 +256,15 @@ export function normalizeBookPath(pathname = '/') {
     .replace(/index\.html$/, '')
     .replace(/\.html$/, '/');
 
-  return cleaned.endsWith('/') ? cleaned : `${cleaned}/`;
+  const normalized = cleaned.endsWith('/') ? cleaned : `${cleaned}/`;
+  const parts = normalized.replace(/^\/|\/$/g, '').split('/').filter(Boolean);
+  const firstBookPartIndex = parts.findIndex((part) => SECTION_BY_KEY.has(part));
+
+  if (firstBookPartIndex > 0) {
+    return `/${parts.slice(firstBookPartIndex).join('/')}/`;
+  }
+
+  return normalized;
 }
 
 export function getSectionForPath(pathname = '/') {
