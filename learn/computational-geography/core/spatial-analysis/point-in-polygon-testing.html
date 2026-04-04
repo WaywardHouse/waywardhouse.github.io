@@ -111,6 +111,7 @@ window.Quarto = {
     <h2 id="toc-title">Table of contents</h2>
    
   <ul>
+  <li><a href="#before-you-start" id="toc-before-you-start">Before You Start</a></li>
   <li><a href="#the-question" id="toc-the-question">1. The Question</a></li>
   <li><a href="#the-conceptual-model" id="toc-the-conceptual-model">2. The Conceptual Model</a>
   <ul>
@@ -150,6 +151,15 @@ window.Quarto = {
   <li><a href="#summary" id="toc-summary">Summary</a></li>
   </ul>
 </nav>
+<h2 id="before-you-start" class="anchored">Before You Start</h2>
+<p><strong>You should know</strong><br>
+What coordinates are, and that polygons represent bounded areas made from connected edges.</p>
+<p><strong>You will learn</strong><br>
+How point-in-polygon testing works, why ray casting solves the problem, and which edge cases make seemingly simple spatial queries harder than they first appear.</p>
+<p><strong>Why this matters</strong><br>
+This operation sits underneath delivery zones, electoral districts, habitat boundaries, parcel assignment, and many spatial joins. It is one of the core membership tests in vector GIS.</p>
+<p><strong>If this gets hard, focus on…</strong><br>
+The parity idea: each time a ray crosses a boundary, you switch between outside and inside.</p>
 <p>Every time you ask a mapping application whether a location is within a delivery zone, a ward boundary, or a protected area, it executes a point-in-polygon test. Every time a GPS track is intersected with a land-use map to compute time spent in each zone, point-in-polygon tests run for every logged coordinate. The operation is so fundamental to GIS that it is easy to take for granted — but the algorithm that makes it work is not obvious, and getting the edge cases right (what happens when the point is exactly on the boundary?) requires careful thinking.</p>
 <p>The ray casting algorithm provides the answer. Cast an infinite ray in any direction from the test point. Count how many times the ray crosses the polygon boundary. If the count is odd, the point is inside; if even, it is outside. The intuition: starting inside the polygon, each boundary crossing takes you outside and then back in, so an odd number of crossings means you are still inside. This topological argument — parity of crossing number — works for any polygon, however convoluted, as long as it does not self-intersect. It is one of the most elegant results in computational geometry, and implementing it robustly requires confronting exactly the kinds of degenerate cases — the ray passing through a vertex, the point on an edge — that separate working code from correct code.</p>
 <h2 id="the-question" class="anchored">1. The Question</h2>
@@ -221,21 +231,21 @@ Point C: Ray crosses 3 edges → inside
 <p>Polygon edges: <span class="math inline">A \to B \to C \to D \to A</span></p>
 <h3 id="solution" class="anchored">Solution</h3>
 <p><strong>Edge 1: <span class="math inline">A(1,1) \to B(5,2)</span></strong></p>
-<p>Y-check: Is $1 &lt; 2$? <strong>No</strong> (3 is not less than 2)<br>
+<p>Y-check: Is <span class="math inline">1 \leq 3 &lt; 2</span>? <strong>No</strong> (3 is not less than 2)<br>
 Skip this edge.</p>
 <p><strong>Edge 2: <span class="math inline">B(5,2) \to C(4,5)</span></strong></p>
-<p>Y-check: Is $2 &lt; 5$? <strong>Yes</strong></p>
+<p>Y-check: Is <span class="math inline">2 \leq 3 &lt; 5</span>? <strong>Yes</strong></p>
 <p>X-intersection:</p>
 <p><span class="math display">x = 5 + \frac{(3-2)(4-5)}{5-2} = 5 + \frac{1 \times (-1)}{3} = 5 - 0.33 = 4.67</span></p>
-<p>Is $4.67 &gt; 3$? <strong>Yes</strong> → Count = 1</p>
+<p>Is <span class="math inline">4.67 &gt; 3</span>? <strong>Yes</strong> → Count = 1</p>
 <p><strong>Edge 3: <span class="math inline">C(4,5) \to D(2,4)</span></strong></p>
-<p>Y-check: Is $4 &lt; 5$? <strong>No</strong> (3 is not ≥ 4)<br>
+<p>Y-check: Is <span class="math inline">4 \leq 3 &lt; 5</span>? <strong>No</strong> (3 is not ≥ 4)<br>
 Skip this edge.</p>
 <p><strong>Edge 4: <span class="math inline">D(2,4) \to A(1,1)</span></strong></p>
-<p>Y-check: Is $1 &lt; 4$? <strong>Yes</strong></p>
+<p>Y-check: Is <span class="math inline">1 \leq 3 &lt; 4</span>? <strong>Yes</strong></p>
 <p>X-intersection:</p>
 <p><span class="math display">x = 2 + \frac{(3-4)(1-2)}{1-4} = 2 + \frac{(-1)(-1)}{-3} = 2 + \frac{1}{-3} = 2 - 0.33 = 1.67</span></p>
-<p>Is $1.67 &gt; 3$? <strong>No</strong> (intersection is to the left)<br>
+<p>Is <span class="math inline">1.67 &gt; 3</span>? <strong>No</strong> (intersection is to the left)<br>
 Don’t count.</p>
 <p><strong>Final count: 1 (odd) → Point is INSIDE</strong></p>
 <hr>
@@ -578,7 +588,7 @@ return (winding_number != 0)</code></pre>
 <h3 id="why-use-instead-of-leq" class="anchored">Why Use <span class="math inline">&lt;</span> Instead of <span class="math inline">\leq</span>?</h3>
 <p><strong>Edge from <span class="math inline">(0, 0)</span> to <span class="math inline">(0, 10)</span>:</strong></p>
 <p>Two edges meet at <span class="math inline">(0, 10)</span>.</p>
-<p>If we use <span class="math inline">\leq</span> for both endpoints: - First edge: $0 y_p $ → counts crossing at <span class="math inline">y_p = 10</span> - Second edge: $10 y_p $ → counts crossing at <span class="math inline">y_p = 10</span></p>
+<p>If we use <span class="math inline">\leq</span> for both endpoints: - First edge: <span class="math inline">0 \leq y_p \leq 10</span> → counts crossing at <span class="math inline">y_p = 10</span> - Second edge: <span class="math inline">10 \leq y_p \leq 20</span> → counts crossing at <span class="math inline">y_p = 10</span></p>
 <p><strong>Double counting!</strong> Same vertex counted twice.</p>
 <p><strong>Solution:</strong> Use <span class="math inline">y_1 \leq y_p &lt; y_2</span> (include lower, exclude upper).</p>
 <p><strong>Result:</strong> Shared vertices counted exactly once.</p>

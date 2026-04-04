@@ -6,9 +6,10 @@
 
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 
-<meta name="description" content="An introduction to units, order of magnitude, and rough estimation as everyday tools for checking whether a model makes sense.">
+<meta name="dcterms.date" content="2026-04-04">
+<meta name="description" content="Between the surface and the sensor lies the atmosphere. This chapter explains scattering, absorption, and path radiance, and shows why remote-sensing products often need atmospheric correction before they can be treated as surface reflectance.">
 
-<title>Units, Scale, and Estimation – Computational Geography</title>
+<title>Atmospheric Effects and Surface Reflectance – Computational Geography</title>
 <style>
 code{white-space: pre-wrap;}
 span.smallcaps{font-variant: small-caps;}
@@ -96,13 +97,14 @@ window.Quarto = {
 <link rel="stylesheet" href="../assets/css/quarto-wayward.css">
 </head>
 
-<body>
+<body class="reading-body tag-hash-math tag-hash-viz">
 
 
 <header id="title-block-header">
-<h1 class="title"><span class="chapter-title">Units, Scale, and Estimation</span></h1>
-<p class="subtitle">The habits that keep models realistic before any heavy calculation begins</p>
+<h1 class="title"><span class="chapter-title">Atmospheric Effects and Surface Reflectance</span></h1>
+<p class="subtitle">Why the sensor does not see the surface alone</p>
 
+<p class="date">2026-04-04</p>
 </header>
 
 <nav id="TOC" role="doc-toc">
@@ -110,127 +112,141 @@ window.Quarto = {
    
   <ul>
   <li><a href="#before-you-start" id="toc-before-you-start">Before You Start</a></li>
-  <li><a href="#units-carry-meaning" id="toc-units-carry-meaning">1. Units Carry Meaning</a></li>
-  <li><a href="#scale-changes-interpretation" id="toc-scale-changes-interpretation">2. Scale Changes Interpretation</a></li>
-  <li><a href="#estimation-is-a-safety-rail" id="toc-estimation-is-a-safety-rail">3. Estimation Is A Safety Rail</a></li>
-  <li><a href="#order-of-magnitude" id="toc-order-of-magnitude">4. Order Of Magnitude</a></li>
-  <li><a href="#a-geography-example" id="toc-a-geography-example">5. A Geography Example</a></li>
-  <li><a href="#a-good-checking-routine" id="toc-a-good-checking-routine">6. A Good Checking Routine</a></li>
-  <li><a href="#if-this-gets-hard-focus-on" id="toc-if-this-gets-hard-focus-on">If This Gets Hard, Focus On</a></li>
+  <li><a href="#the-question" id="toc-the-question">1. The Question</a></li>
+  <li><a href="#the-core-components" id="toc-the-core-components">2. The Core Components</a>
+  <ul>
+  <li><a href="#scattering" id="toc-scattering">Scattering</a></li>
+  <li><a href="#absorption" id="toc-absorption">Absorption</a></li>
+  <li><a href="#path-radiance" id="toc-path-radiance">Path Radiance</a></li>
+  </ul></li>
+  <li><a href="#a-simple-measurement-model" id="toc-a-simple-measurement-model">3. A Simple Measurement Model</a>
+  <ul>
+  <li><a href="#worked-example-by-hand" id="toc-worked-example-by-hand">Worked Example By Hand</a></li>
+  </ul></li>
+  <li><a href="#why-blue-bands-often-look-hazy" id="toc-why-blue-bands-often-look-hazy">4. Why Blue Bands Often Look Hazy</a></li>
+  <li><a href="#a-visual-accounting-of-the-signal" id="toc-a-visual-accounting-of-the-signal">5. A Visual Accounting Of The Signal</a></li>
+  <li><a href="#top-of-atmosphere-versus-surface-reflectance" id="toc-top-of-atmosphere-versus-surface-reflectance">6. Top-Of-Atmosphere Versus Surface Reflectance</a></li>
+  <li><a href="#if-this-gets-hard-focus-on" id="toc-if-this-gets-hard-focus-on">7. If This Gets Hard, Focus On</a></li>
   </ul>
 </nav>
 <h2 id="before-you-start" class="anchored">Before You Start</h2>
 <p><strong>You should know</strong><br>
-That measurements need units, and that quantities can be compared as bigger, smaller, faster, slower, longer, or shorter.</p>
+That a sensor records energy arriving at the instrument, not at the ground surface itself.</p>
 <p><strong>You will learn</strong><br>
-Why units carry meaning, how scale changes interpretation, and how rough estimation can catch impossible claims before you do careful calculation.</p>
+How the atmosphere adds, removes, and redirects energy, and why top-of-atmosphere measurement is not the same thing as surface reflectance.</p>
 <p><strong>Why this matters</strong><br>
-Many modelling mistakes are not advanced mathematical errors. They are simpler than that: wrong units, wrong scale, or a number that should have felt suspicious much earlier.</p>
+If you ignore the atmosphere, you can mistake haze, water vapour, or scattering effects for real surface change.</p>
 <p><strong>If this gets hard, focus on…</strong><br>
-The habit of asking, “What are the units?” and “Does this number feel plausible at this scale?”</p>
-<p>Before exactness comes plausibility.</p>
-<p>If someone tells you a river is flowing at <code>300 km/h</code>, you should hesitate immediately. If someone says a neighbourhood park covers <code>0.002 m²</code>, that should also feel wrong. You do not need heavy mathematics to notice the problem. You need units, scale, and a rough sense of what the world is like.</p>
-<p>That is why these habits matter so much in computational geography. They are not optional extras. They are part of how we protect a model from nonsense.</p>
-<h2 id="units-carry-meaning" class="anchored">1. Units Carry Meaning</h2>
-<p>The number <code>20</code> means almost nothing by itself.</p>
-<p>Now compare:</p>
+The sensor sees the surface signal plus atmospheric effects, not the surface signal alone.</p>
+<p>A satellite looking at a wheat field on a clear day does not measure the wheat field by itself. Some incoming sunlight was already scattered before it reached the field. Some reflected light from the field is absorbed on its way back up. Some light is added by the atmosphere itself through scattering into the sensor’s line of sight. The sensor records the sum of those effects.</p>
+<p>That is why remote sensing often distinguishes between <strong>top-of-atmosphere</strong> measurement and <strong>surface reflectance</strong>. The first is what the instrument actually receives. The second is the quantity analysts usually want when they compare materials, dates, or places.</p>
+<h2 id="the-question" class="anchored">1. The Question</h2>
+<p>Why can the same surface appear different on two days even if the ground itself has not changed?</p>
+<p>Three common reasons are:</p>
 <ul>
-<li><code>20 m</code></li>
-<li><code>20 km</code></li>
-<li><code>20 people/km²</code></li>
-<li><code>20 °C</code></li>
+<li>different atmospheric scattering</li>
+<li>different atmospheric absorption</li>
+<li>different sun-sensor geometry</li>
 </ul>
-<p>The number stayed the same, but the meaning changed completely.</p>
-<p>Units tell us what kind of quantity we are looking at:</p>
+<p>So if we want to compare surface properties, we need a model that separates atmospheric influence from surface behaviour.</p>
+<hr>
+<h2 id="the-core-components" class="anchored">2. The Core Components</h2>
+<h3 id="scattering" class="anchored">Scattering</h3>
+<p>Scattering redirects light.</p>
+<p>Important types:</p>
 <ul>
-<li>metres describe length</li>
-<li>square kilometres describe area</li>
-<li>people per square kilometre describe density</li>
-<li>degrees Celsius describe temperature</li>
+<li><strong>Rayleigh scattering</strong>: strong at short wavelengths, helps explain why blue bands are haze-sensitive</li>
+<li><strong>Mie scattering</strong>: caused by larger particles such as dust, smoke, and haze</li>
 </ul>
-<p>So units are not decorations added after the fact. They are part of the quantity itself.</p>
-<h2 id="scale-changes-interpretation" class="anchored">2. Scale Changes Interpretation</h2>
-<p>A value that sounds large at one scale may be small at another.</p>
-<p>For example:</p>
+<h3 id="absorption" class="anchored">Absorption</h3>
+<p>Atmospheric gases remove energy at specific wavelengths.</p>
+<p>Important absorbers include:</p>
 <ul>
-<li><code>5 mm</code> of rain in one hour is modest in many storms</li>
-<li><code>5 mm</code> of vertical land movement can be a very important geophysical signal</li>
-<li><code>5 km</code> is short for a drive but long for a walk</li>
+<li>water vapour</li>
+<li>carbon dioxide</li>
+<li>ozone</li>
 </ul>
-<p>This is why modellers keep asking, “At what scale is this statement true?”</p>
-<p>A model might describe:</p>
+<p>This is why some wavelength regions are excellent atmospheric windows and others are difficult to use.</p>
+<h3 id="path-radiance" class="anchored">Path Radiance</h3>
+<p>Some radiation reaches the sensor without ever touching the surface of interest. It has been scattered into the sensor path by the atmosphere.</p>
+<p>That added component is called <strong>path radiance</strong>.</p>
+<hr>
+<h2 id="a-simple-measurement-model" class="anchored">3. A Simple Measurement Model</h2>
+<p>A beginner-safe conceptual model is:</p>
+<p><span class="math display">L_{\text{sensor}} = L_{\text{path}} + \tau \, L_{\text{surface}}</span></p>
+<p>where:</p>
 <ul>
-<li>a leaf</li>
-<li>a hillslope</li>
-<li>a neighbourhood</li>
-<li>a watershed</li>
-<li>a province</li>
+<li><span class="math inline">L_{\text{sensor}}</span> is the radiance at the sensor</li>
+<li><span class="math inline">L_{\text{path}}</span> is path radiance added by the atmosphere</li>
+<li><span class="math inline">L_{\text{surface}}</span> is the radiance leaving the surface</li>
+<li><span class="math inline">\tau</span> is atmospheric transmittance, a number between 0 and 1</li>
 </ul>
-<p>The same number can feel ordinary in one setting and extreme in another.</p>
-<h2 id="estimation-is-a-safety-rail" class="anchored">3. Estimation Is A Safety Rail</h2>
-<p>Exact calculation matters. Rough estimation keeps exact calculation honest.</p>
-<p>Suppose a chapter claims that a <code>2 km</code> walking trip takes <code>3 minutes</code>.</p>
-<p>You can estimate:</p>
+<p>This is not the full radiative-transfer equation, but it captures the logic:</p>
 <ul>
-<li>ordinary walking speed is around <code>5 km/h</code></li>
-<li>at that speed, <code>2 km</code> should take roughly <code>20</code> to <code>30 minutes</code></li>
+<li>one part is added by the atmosphere</li>
+<li>one part comes from the surface</li>
+<li>the surface part is weakened on its way to the sensor</li>
 </ul>
-<p>So the claim is not just a little off. It is wrong by a large margin.</p>
-<p>That kind of quick check is valuable because it is fast, and because it prevents us from trusting a polished but unreasonable result.</p>
-<h2 id="order-of-magnitude" class="anchored">4. Order Of Magnitude</h2>
-<p>Sometimes the first useful question is not “What is the exact number?”</p>
-<p>It is:</p>
+<h3 id="worked-example-by-hand" class="anchored">Worked Example By Hand</h3>
+<p>Suppose:</p>
 <ul>
-<li>Is this about <code>10</code>?</li>
-<li><code>100</code>?</li>
-<li><code>10,000</code>?</li>
-<li><code>1,000,000</code>?</li>
+<li><span class="math inline">L_{\text{path}} = 12</span></li>
+<li><span class="math inline">L_{\text{surface}} = 40</span></li>
+<li><span class="math inline">\tau = 0.70</span></li>
 </ul>
-<p>That is <strong>order-of-magnitude thinking</strong>.</p>
-<p>It is one of the most important habits in science because it helps us tell the difference between:</p>
+<p>Then:</p>
+<p><span class="math display">L_{\text{sensor}} = 12 + 0.70 \times 40 = 12 + 28 = 40</span></p>
+<p>Notice what happened: even though the surface emitted or reflected <code>40</code> units, the sensor also records <code>40</code> units for a different reason. The atmosphere added some signal and removed some signal at the same time.</p>
+<p>That is why interpretation without correction can be deceptive.</p>
+<hr>
+<h2 id="why-blue-bands-often-look-hazy" class="anchored">4. Why Blue Bands Often Look Hazy</h2>
+<p>Shorter wavelengths are more strongly affected by atmospheric scattering. That is why distant mountains often look bluish and washed out in photographs and why blue bands are especially sensitive to haze.</p>
+<p>This is not just a photography problem. In remote sensing it affects:</p>
 <ul>
-<li>small and large</li>
-<li>local and regional</li>
-<li>ordinary variation and truly extreme change</li>
+<li>water mapping</li>
+<li>vegetation indices using visible bands</li>
+<li>change detection across dates</li>
+<li>urban material interpretation</li>
 </ul>
-<p>If a glacier loses a few centimetres of water equivalent, that is one kind of story. If it loses several metres, that is another.</p>
-<h2 id="a-geography-example" class="anchored">5. A Geography Example</h2>
-<p>Population density can be written as:</p>
-<p><span class="math display">\rho = \frac{N}{A}</span></p>
-<p>Read the notation on first use:</p>
+<hr>
+<h2 id="a-visual-accounting-of-the-signal" class="anchored">5. A Visual Accounting Of The Signal</h2>
+<div data-viz="echarts" style="height:360px; min-height:280px" data-options="{
+&quot;title&quot;: {&quot;text&quot;: &quot;What Reaches the Sensor?&quot;, &quot;subtext&quot;: &quot;A stylized signal budget for one optical measurement&quot;, &quot;left&quot;: &quot;center&quot;},
+&quot;tooltip&quot;: {&quot;trigger&quot;: &quot;axis&quot;, &quot;axisPointer&quot;: {&quot;type&quot;: &quot;shadow&quot;}},
+&quot;grid&quot;: {&quot;left&quot;: &quot;8%&quot;, &quot;right&quot;: &quot;4%&quot;, &quot;bottom&quot;: &quot;14%&quot;, &quot;containLabel&quot;: true},
+&quot;xAxis&quot;: {&quot;type&quot;: &quot;category&quot;, &quot;data&quot;: [&quot;Clear day&quot;, &quot;Hazy day&quot;]},
+&quot;yAxis&quot;: {&quot;type&quot;: &quot;value&quot;, &quot;name&quot;: &quot;Relative contribution&quot;},
+&quot;legend&quot;: {&quot;bottom&quot;: 0, &quot;data&quot;: [&quot;Surface contribution after transmission&quot;, &quot;Path radiance&quot;]},
+&quot;series&quot;: [
+{&quot;name&quot;: &quot;Surface contribution after transmission&quot;, &quot;type&quot;: &quot;bar&quot;, &quot;stack&quot;: &quot;total&quot;, &quot;data&quot;: [70, 45], &quot;itemStyle&quot;: {&quot;color&quot;: &quot;#2563eb&quot;}},
+{&quot;name&quot;: &quot;Path radiance&quot;, &quot;type&quot;: &quot;bar&quot;, &quot;stack&quot;: &quot;total&quot;, &quot;data&quot;: [10, 30], &quot;itemStyle&quot;: {&quot;color&quot;: &quot;#f59e0b&quot;}}
+]
+}"></div>
+<p>On a hazier day, more of the signal may come from the atmosphere and less from the surface. If we compare those two scenes without correction, we risk treating atmospheric change as though it were land-surface change.</p>
+<hr>
+<h2 id="top-of-atmosphere-versus-surface-reflectance" class="anchored">6. Top-Of-Atmosphere Versus Surface Reflectance</h2>
+<p>Two common product levels are:</p>
 <ul>
-<li><span class="math inline">\rho</span> (rho) is density</li>
-<li><span class="math inline">N</span> is population count</li>
-<li><span class="math inline">A</span> is area</li>
+<li><strong>top-of-atmosphere reflectance</strong>: closer to what the sensor directly observes after calibration</li>
+<li><strong>surface reflectance</strong>: an estimate of what the surface would look like with atmospheric effects removed</li>
 </ul>
-<p>Suppose a city has:</p>
+<p>Surface reflectance is usually the better input for:</p>
 <ul>
-<li><code>500,000</code> people</li>
-<li><code>250 km²</code> of area</li>
+<li>comparing dates</li>
+<li>computing vegetation indices</li>
+<li>classification</li>
+<li>biophysical retrieval</li>
 </ul>
-<p>Then a quick estimate gives:</p>
-<p><span class="math display">\rho \approx \frac{500{,}000}{250} = 2{,}000 \text{ people/km}^2</span></p>
-<p>That number already tells you something useful. The city is not empty countryside, but it is not the densest part of a global megacity either.</p>
-<p>And the units matter:</p>
-<p><span class="math display">\frac{\text{people}}{\text{km}^2}</span></p>
-<p>This tells us the result is a density, not an area or a raw population total.</p>
-<h2 id="a-good-checking-routine" class="anchored">6. A Good Checking Routine</h2>
-<p>Before trusting a model output, ask:</p>
-<ol type="1">
-<li>What are the units?</li>
-<li>What spatial or time scale are we talking about?</li>
-<li>Is the number in the right order of magnitude?</li>
-<li>Would a rough estimate give something similar?</li>
-</ol>
-<p>If the answer to any of those feels shaky, slow down before doing anything more sophisticated.</p>
-<h2 id="if-this-gets-hard-focus-on" class="anchored">If This Gets Hard, Focus On</h2>
+<p>Top-of-atmosphere products can still be useful, but they require more caution.</p>
+<hr>
+<h2 id="if-this-gets-hard-focus-on" class="anchored">7. If This Gets Hard, Focus On</h2>
 <ul>
-<li>attach units to every quantity</li>
-<li>ask what scale you are working at</li>
-<li>estimate before calculating exactly</li>
-<li>use plausibility checks early and often</li>
+<li>the atmosphere both adds and removes signal</li>
+<li>path radiance is signal that did not come from the target surface</li>
+<li>top-of-atmosphere measurement is not the same thing as surface reflectance</li>
+<li>atmospheric correction is a modelling step, not just a button in software</li>
 </ul>
-<p>These habits make every later chapter easier.</p>
+<p>That is enough foundation for multispectral interpretation, vegetation indices, and the more advanced sensor-physics chapters.</p>
 
 
 <footer class="wayward-footer">
