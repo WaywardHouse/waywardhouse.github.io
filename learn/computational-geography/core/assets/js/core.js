@@ -248,6 +248,7 @@ function renderTopWayfinding(pathname, chapterTitle) {
 
   const sectionTitle = state.section.title;
   const bookHomeHref = resolveBookHref(pathname, '/');
+  const allModelsHref = resolveBookHref(pathname, '/all-models/');
   const sectionHref = resolveBookHref(pathname, state.section.href);
   const progress = state.chapterIndex >= 0
     ? `Chapter ${state.chapterIndex + 1} of ${state.chapterCount}`
@@ -270,7 +271,7 @@ function renderTopWayfinding(pathname, chapterTitle) {
         </div>
         <div class="wayward-wayfinding__actions">
           <a class="wayward-wayfinding__action" href="${escapeHtml(sectionHref)}">Back to start of chapter</a>
-          <a class="wayward-wayfinding__action" href="${escapeHtml(bookHomeHref)}">All chapters</a>
+          <a class="wayward-wayfinding__action" href="${escapeHtml(allModelsHref)}">All models</a>
           ${document.querySelector('#TOC') ? '<a class="wayward-wayfinding__action" href="#TOC">Jump to contents</a>' : ''}
         </div>
       </div>
