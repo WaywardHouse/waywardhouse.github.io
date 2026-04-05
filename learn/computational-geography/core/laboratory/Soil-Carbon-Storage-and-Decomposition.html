@@ -1,0 +1,856 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
+
+<meta charset="utf-8">
+<meta name="generator" content="quarto-1.9.36">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+
+<meta name="dcterms.date" content="2026-03-05">
+<meta name="description" content="Soils hold more carbon than the atmosphere and all living vegetation combined — approximately 1,500–2,400 billion tonnes. Most of this carbon is in slow-cycling pools with residence times of decades to centuries, but even small changes in decomposition rates driven by warming can release enormous carbon pulses. This essay derives the steady-state soil carbon model from first principles, defines and applies the Q₁₀ temperature sensitivity, models moisture effects on decomposition, and evaluates the potential for agricultural carbon sequestration.">
+
+<title>Soil Carbon Storage and Decomposition – Computational Geography</title>
+<style>
+/* Default styles provided by pandoc.
+** See https://pandoc.org/MANUAL.html#variables-for-html for config info.
+*/
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: min(4vw, 1.5em);}
+div.column{flex: auto; overflow-x: auto;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+  width: 0.8em;
+  margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
+  vertical-align: middle;
+}
+</style>
+
+
+<script src="../site_libs/clipboard/clipboard.min.js"></script>
+<script src="../site_libs/quarto-html/tabby.min.js"></script>
+<script src="../site_libs/quarto-html/popper.min.js"></script>
+<script src="../site_libs/quarto-html/tippy.umd.min.js"></script>
+<script src="../site_libs/quarto-html/anchor.min.js"></script>
+<link href="../site_libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="../site_libs/quarto-html/light-border.css" rel="stylesheet">
+<link href="../site_libs/quarto-html/quarto-html-640605f58ae58ee79329c070719e555b.min.css" rel="stylesheet" append-hash="true" data-mode="light">
+<link href="../site_libs/quarto-html/quarto-syntax-highlighting-845c23b38eaddc0f92fda52bfe77a8c8.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<script>
+  (function () {
+    document.documentElement.dataset.theme = 'light';
+    document.documentElement.dataset.brand = 'wayward';
+    try {
+      localStorage.removeItem('theme');
+    } catch (err) {
+      void err;
+    }
+  })();
+</script>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:ital,wght@0,300;0,400;0,600;0,700;0,800;0,900;1,700;1,800&amp;family=Barlow:wght@300;400;500;600&amp;family=IBM+Plex+Mono:ital,wght@0,300;0,400;0,500;1,300&amp;family=Literata:ital,opsz,wght@0,7..72,300;0,7..72,400;0,7..72,500;1,7..72,300;1,7..72,400&amp;display=swap" rel="stylesheet">
+
+  <script>window.backupDefine = window.define; window.define = undefined;</script><script src="https://cdn.jsdelivr.net/npm/katex@latest/dist/katex.min.js"></script>
+  <script>document.addEventListener("DOMContentLoaded", function () {
+ var mathElements = document.getElementsByClassName("math");
+ var macros = [];
+ for (var i = 0; i < mathElements.length; i++) {
+  var texText = mathElements[i].firstChild;
+  if (mathElements[i].tagName == "SPAN") {
+   katex.render(texText.data, mathElements[i], {
+    displayMode: mathElements[i].classList.contains('display'),
+    throwOnError: false,
+    macros: macros,
+    fleqn: false
+   });
+}}});
+  </script>
+  <script>window.define = window.backupDefine; window.backupDefine = undefined;</script><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@latest/dist/katex.min.css">
+
+<script type="text/javascript">
+const typesetMath = (el) => {
+  if (window.MathJax) {
+    // MathJax Typeset
+    window.MathJax.typeset([el]);
+  } else if (window.katex) {
+    // KaTeX Render
+    var mathElements = el.getElementsByClassName("math");
+    var macros = [];
+    for (var i = 0; i < mathElements.length; i++) {
+      var texText = mathElements[i].firstChild;
+      if (mathElements[i].tagName == "SPAN" && texText && texText.data) {
+        window.katex.render(texText.data, mathElements[i], {
+          displayMode: mathElements[i].classList.contains('display'),
+          throwOnError: false,
+          macros: macros,
+          fleqn: false
+        });
+      }
+    }
+  }
+}
+window.Quarto = {
+  typesetMath
+};
+</script>
+
+<link rel="stylesheet" href="../assets/css/quarto-wayward.css">
+</head>
+
+<body class="reading-body tag-hash-math tag-hash-viz">
+
+
+<header id="title-block-header">
+<h1 class="title"><span class="chapter-title">Soil Carbon Storage and Decomposition</span></h1>
+<p class="subtitle">Residence time, Q₁₀ temperature sensitivity, moisture effects, and steady-state analysis</p>
+
+<p class="date">2026-03-05</p>
+</header>
+
+<nav id="TOC" role="doc-toc">
+    <h2 id="toc-title">Table of contents</h2>
+   
+  <ul>
+  <li><a href="#before-you-start" id="toc-before-you-start">Before You Start</a></li>
+  <li><a href="#the-question" id="toc-the-question">1. The Question</a></li>
+  <li><a href="#the-conceptual-model" id="toc-the-conceptual-model">2. The Conceptual Model</a></li>
+  <li><a href="#building-the-mathematical-model" id="toc-building-the-mathematical-model">3. Building the Mathematical Model</a>
+  <ul>
+  <li><a href="#the-single-pool-first-order-decay-model" id="toc-the-single-pool-first-order-decay-model">3.1 The Single-Pool First-Order Decay Model</a></li>
+  <li><a href="#multi-pool-model" id="toc-multi-pool-model">3.2 Multi-Pool Model</a></li>
+  <li><a href="#temperature-sensitivity-q₁₀" id="toc-temperature-sensitivity-q₁₀">3.3 Temperature Sensitivity: Q₁₀</a></li>
+  <li><a href="#moisture-effects-on-decomposition" id="toc-moisture-effects-on-decomposition">3.4 Moisture Effects on Decomposition</a></li>
+  <li><a href="#agricultural-carbon-sequestration-potential" id="toc-agricultural-carbon-sequestration-potential">3.5 Agricultural Carbon Sequestration Potential</a></li>
+  </ul></li>
+  <li><a href="#worked-example-by-hand" id="toc-worked-example-by-hand">4. Worked Example by Hand</a></li>
+  <li><a href="#computational-implementation" id="toc-computational-implementation">5. Computational Implementation</a></li>
+  <li><a href="#visualization" id="toc-visualization">6. Visualization</a></li>
+  <li><a href="#interpretation" id="toc-interpretation">7. Interpretation</a></li>
+  <li><a href="#what-could-go-wrong" id="toc-what-could-go-wrong">8. What Could Go Wrong?</a></li>
+  <li><a href="#summary" id="toc-summary">9. Summary</a></li>
+  <li><a href="#math-refresher" id="toc-math-refresher">Math Refresher</a></li>
+  </ul>
+</nav>
+<h2 id="before-you-start" class="anchored">Before You Start</h2>
+<p><strong>You should know</strong><br>
+That soil carbon changes slowly because it is controlled by a balance between organic inputs and decomposition losses.</p>
+<p><strong>You will learn</strong><br>
+How steady-state soil-carbon models work, how temperature and moisture affect decomposition, and why small rate changes can matter over long timescales.</p>
+<p><strong>Why this matters</strong><br>
+Soils are one of the largest carbon reservoirs on Earth, so their stability matters for climate and land management.</p>
+<p><strong>If this gets hard, focus on…</strong><br>
+The equilibrium idea: inputs push stocks up, decomposition pulls them down.</p>
+<p>Under the boreal forests and peatlands of northern Canada lies one of the largest carbon reservoirs on Earth. Canadian peatlands alone hold an estimated 150 billion tonnes of carbon — comparable to 15 years of global fossil fuel emissions — accumulated over the past 10,000 years at rates of 15–30 g C m⁻² yr⁻¹. This accumulation rate is tiny: it requires centuries of slow peat formation to compensate for a single bad fire year. The security of this reservoir depends on the balance between organic matter inputs from plant litter and outputs from microbial decomposition. Change either side of this balance — through warming, drainage, or land use change — and the reservoir becomes a source.</p>
+<hr>
+<h2 id="the-question" class="anchored">1. The Question</h2>
+<p>What determines how much carbon a soil holds at steady state? How sensitive is decomposition to temperature, and what does this imply for climate feedbacks? How does moisture control microbial activity, and what is the mitigation potential of agricultural carbon sequestration?</p>
+<hr>
+<h2 id="the-conceptual-model" class="anchored">2. The Conceptual Model</h2>
+<p>Soil carbon dynamics are governed by a mass balance: inputs from plant litter and roots, minus outputs from microbial decomposition (heterotrophic respiration). At steady state, inputs equal outputs and soil carbon remains constant. Warming accelerates decomposition (potentially outpacing any increase in plant inputs), shifting soils from carbon sinks to sources. Waterlogging inhibits decomposition (peat formation); drainage accelerates it (peat loss).</p>
+<hr>
+<h2 id="building-the-mathematical-model" class="anchored">3. Building the Mathematical Model</h2>
+<h3 id="the-single-pool-first-order-decay-model" class="anchored">3.1 The Single-Pool First-Order Decay Model</h3>
+<p>The simplest soil carbon model treats the entire soil organic carbon pool <span class="math inline">C</span> (kg C m⁻²) as a single pool with constant input rate <span class="math inline">I</span> (kg C m⁻² yr⁻¹) and first-order decomposition rate <span class="math inline">k</span> (yr⁻¹):</p>
+<p><span class="math display">\frac{dC}{dt} = I - k \times C</span></p>
+<p><strong>Steady-state solution</strong> (<span class="math inline">dC/dt = 0</span>):</p>
+<p><span class="math display">C^* = \frac{I}{k}</span></p>
+<p>The equilibrium soil carbon stock is the ratio of input to decomposition rate. <strong>Mean residence time</strong> (MRT):</p>
+<p><span class="math display">\tau = \frac{1}{k} = \frac{C^*}{I}</span></p>
+<p><strong>Transient response:</strong> Starting from initial stock <span class="math inline">C_0</span>:</p>
+<p><span class="math display">C(t) = C^* + (C_0 - C^*)e^{-kt}</span></p>
+<p>The system approaches the new equilibrium exponentially with time constant <span class="math inline">\tau = 1/k</span>. A soil with <span class="math inline">k = 0.01</span> yr⁻¹ has MRT = 100 years — it takes ~500 years (5 time constants) to fully equilibrate after a change in inputs or temperature.</p>
+<p><strong>Example:</strong> Canadian boreal forest mineral soil. Input <span class="math inline">I = 100</span> g C m⁻² yr⁻¹ (litterfall + fine root turnover). Measured SOC = 8,000 g C m⁻² (8 kg C m⁻²). Implied <span class="math inline">k = I/C^* = 100/8000 = 0.0125</span> yr⁻¹, MRT = 80 years.</p>
+<h3 id="multi-pool-model" class="anchored">3.2 Multi-Pool Model</h3>
+<p>Real soils have carbon in multiple pools with different turnover rates. The IPCC Roth-C model (Jenkinson 1990, Coleman &amp; Jenkinson 1996) partitions SOC into:</p>
+<table class="caption-top">
+<thead>
+<tr class="header">
+<th>Pool</th>
+<th><span class="math inline">k</span> (yr⁻¹)</th>
+<th>MRT (yr)</th>
+<th>% of SOC</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>Decomposable plant material (DPM)</td>
+<td>10</td>
+<td>0.1</td>
+<td>0.1%</td>
+</tr>
+<tr class="even">
+<td>Resistant plant material (RPM)</td>
+<td>0.3</td>
+<td>3</td>
+<td>2%</td>
+</tr>
+<tr class="odd">
+<td>Microbial biomass (BIO)</td>
+<td>0.66</td>
+<td>1.5</td>
+<td>3%</td>
+</tr>
+<tr class="even">
+<td>Humified organic matter (HUM)</td>
+<td>0.02</td>
+<td>50</td>
+<td>65%</td>
+</tr>
+<tr class="odd">
+<td>Inert organic matter (IOM)</td>
+<td>0</td>
+<td>∞</td>
+<td>30%</td>
+</tr>
+</tbody>
+</table>
+<p>Each pool has its own differential equation:</p>
+<p><span class="math display">\frac{dC_i}{dt} = I_i - k_i C_i + \text{transfers from other pools}</span></p>
+<p>The multi-pool structure captures the observed biphasic response of soil carbon: fast early losses from labile pools (years to decades) followed by slow, centuries-scale losses from stable pools.</p>
+<h3 id="temperature-sensitivity-q₁₀" class="anchored">3.3 Temperature Sensitivity: Q₁₀</h3>
+<p>The <strong>Q₁₀ factor</strong> describes how decomposition rate changes with a 10°C temperature increase:</p>
+<p><span class="math display">Q_{10} = \frac{k(T + 10)}{k(T)}</span></p>
+<p>This can be derived from the Arrhenius equation:</p>
+<p><span class="math display">k(T) = A \times e^{-E_a / RT}</span></p>
+<p>where <span class="math inline">E_a</span> is the activation energy and <span class="math inline">R = 8.314</span> J mol⁻¹ K⁻¹. The Q₁₀ relationship:</p>
+<p><span class="math display">Q_{10} = e^{10 E_a / RT^2}</span></p>
+<p>For typical soil organic matter, <span class="math inline">E_a \approx 50\text{–}70</span> kJ mol⁻¹, giving <span class="math inline">Q_{10} \approx 2.0\text{–}3.0</span> at 10°C. This means a 10°C warming doubles to triples the decomposition rate.</p>
+<p><strong>Temperature scalar</strong> <span class="math inline">f(T)</span> in soil carbon models (commonly a <span class="math inline">Q_{10}</span> formulation):</p>
+<p><span class="math display">f(T) = Q_{10}^{(T - T_{\text{ref}})/10}</span></p>
+<p>where <span class="math inline">T_{\text{ref}}</span> = reference temperature (usually 10°C). At 20°C: <span class="math inline">f(20) = Q_{10}^{10/10} = Q_{10}</span> (double the reference rate for <span class="math inline">Q_{10} = 2</span>).</p>
+<p><strong>Climate feedback implication:</strong> If current global SOC = 1,500 Gt C, <span class="math inline">k = 0.015</span> yr⁻¹ at 10°C mean soil temperature, and <span class="math inline">Q_{10} = 2</span>:</p>
+<p>Under 3°C warming: <span class="math inline">k_{\text{new}} = 0.015 \times 2^{3/10} = 0.015 \times 1.231 = 0.0185</span> yr⁻¹</p>
+<p>New equilibrium SOC: <span class="math inline">C^*_{\text{new}} = I/k_{\text{new}}</span> — but if inputs <span class="math inline">I</span> also increase with warming (more plant growth), the net effect is smaller. The key uncertainty is whether photosynthesis increases faster or slower than decomposition under warming.</p>
+<p>If the system is perturbed out of steady state: excess decomposition = <span class="math inline">(k_{\text{new}} - k_{\text{old}}) \times C^* = 0.0035 \times 1500 = 5.25</span> Gt C yr⁻¹ of additional respiration — comparable to total fossil fuel emissions — until the system reaches the new (lower) equilibrium. This is the theoretical maximum of the soil carbon-climate feedback, but the actual feedback is much smaller because: (1) inputs also increase; (2) the stable pool has lower apparent <span class="math inline">Q_{10}</span>; (3) moisture constraints may counteract warming.</p>
+<h3 id="moisture-effects-on-decomposition" class="anchored">3.4 Moisture Effects on Decomposition</h3>
+<p>Soil moisture <span class="math inline">\theta</span> (m³ m⁻³) controls decomposition through:</p>
+<ol type="1">
+<li><strong>Solute diffusion:</strong> Below field capacity, decreasing moisture limits transport of substrates and products, reducing microbial activity</li>
+<li><strong>Oxygen availability:</strong> Above field capacity, water fills pores and restricts O₂ diffusion, limiting aerobic decomposition. In anoxic conditions, anaerobic decomposition predominates (much slower for organic matter; leads to CH₄ production in wetlands — Essay AO1)</li>
+</ol>
+<p><strong>Moisture response function</strong> (Rodrigo et al.&nbsp;1997):</p>
+<p><span class="math display">f(W) = \begin{cases}
+0 &amp; \theta &lt; \theta_{\text{wilt}} \\
+\frac{\theta - \theta_{\text{wilt}}}{\theta_{\text{fc}} - \theta_{\text{wilt}}} &amp; \theta_{\text{wilt}} &lt; \theta &lt; \theta_{\text{fc}} \\
+1 &amp; \theta = \theta_{\text{fc}} \\
+\left(\frac{\theta_{\text{sat}} - \theta}{\theta_{\text{sat}} - \theta_{\text{fc}}}\right)^{1.5} &amp; \theta &gt; \theta_{\text{fc}}
+\end{cases}</span></p>
+<p>where <span class="math inline">\theta_{\text{wilt}}</span> = wilting point, <span class="math inline">\theta_{\text{fc}}</span> = field capacity, <span class="math inline">\theta_{\text{sat}}</span> = saturation. Maximum decomposition occurs near field capacity; both drought and waterlogging suppress it.</p>
+<p><strong>Peat formation</strong> occurs when the annual mean moisture is so high that <span class="math inline">f(W)</span> stays low for most of the year, causing inputs to exceed decomposition year after year. Boreal peatlands have been accumulating carbon at this rate for ~10,000 years.</p>
+<h3 id="agricultural-carbon-sequestration-potential" class="anchored">3.5 Agricultural Carbon Sequestration Potential</h3>
+<p>Under changed management, agricultural soils can shift from carbon sources to sinks. The change in steady-state carbon:</p>
+<p><span class="math display">\Delta C^* = \frac{\Delta I}{k} + \frac{I \times (-\Delta k)}{k^2} = \frac{\Delta I}{k} - \frac{\Delta k \times C^*}{k}</span></p>
+<p><strong>Sequestration mechanisms and potential:</strong></p>
+<table class="caption-top">
+<colgroup>
+<col style="width: 25%">
+<col style="width: 25%">
+<col style="width: 25%">
+<col style="width: 25%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>Practice</th>
+<th>Annual rate (t CO₂ ha⁻¹ yr⁻¹)</th>
+<th>Duration (yr)</th>
+<th>Notes</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>Cover crops</td>
+<td>0.3–1.1</td>
+<td>20–50</td>
+<td>Increases <span class="math inline">I</span>; limited by N</td>
+</tr>
+<tr class="even">
+<td>Reduced tillage</td>
+<td>0.1–0.5</td>
+<td>20–40</td>
+<td>Reduces disturbance of aggregates</td>
+</tr>
+<tr class="odd">
+<td>No-till</td>
+<td>0.2–0.8</td>
+<td>20–50</td>
+<td>Surface-layer enrichment</td>
+</tr>
+<tr class="even">
+<td>Organic amendments</td>
+<td>0.5–2.0</td>
+<td>10–30</td>
+<td>Manure, compost additions</td>
+</tr>
+<tr class="odd">
+<td>Biochar application</td>
+<td>0.5–3.2</td>
+<td>50–1000</td>
+<td>Pyrogenic C; very long MRT</td>
+</tr>
+<tr class="even">
+<td>Grassland restoration</td>
+<td>0.5–2.0</td>
+<td>30–80</td>
+<td>High root inputs</td>
+</tr>
+</tbody>
+</table>
+<p>Sequestration rates decline over time as soils approach the new (higher) equilibrium — the “saturation effect.” Alberta prairie soils have large historical carbon deficits from cultivation, suggesting substantial sequestration potential if management is improved.</p>
+<hr>
+<h2 id="worked-example-by-hand" class="anchored">4. Worked Example by Hand</h2>
+<p><strong>Setting:</strong> Prairie cropland in southern Alberta converted from cultivated to no-till with cover crops. Initial SOC = 3,000 g C m⁻², input <span class="math inline">I = 80</span> g C m⁻² yr⁻¹, <span class="math inline">k = 0.025</span> yr⁻¹ (MRT = 40 yr). After conversion: input increases to <span class="math inline">I' = 110</span> g C m⁻² yr⁻¹ (<span class="math inline">+30</span> g, from cover crop roots and residues), <span class="math inline">k</span> slightly decreases to <span class="math inline">0.023</span> yr⁻¹ (less disturbance).</p>
+<p><strong>Initial steady state:</strong> <span class="math inline">C^*_0 = 80/0.025 = 3,200</span> g m⁻² (currently at 3,000 — below equilibrium, already building toward 3,200).</p>
+<p><strong>New equilibrium:</strong> <span class="math inline">C^*_{\text{new}} = 110/0.023 = 4,783</span> g m⁻²</p>
+<p><strong>Additional carbon to sequester:</strong> <span class="math inline">\Delta C^* = 4,783 - 3,200 = 1,583</span> g m⁻² ≈ 15.8 t C ha⁻¹</p>
+<p><strong>Annual sequestration rate</strong> (early years, exponential approach):</p>
+<p>Rate = <span class="math inline">(C^*_{\text{new}} - C(0)) \times k' = (4783 - 3000) \times 0.023 \approx 41</span> g C m⁻² yr⁻¹ initially, declining over decades.</p>
+<p>Equivalent to: <span class="math inline">41 \times 44/12 / 100 \approx 1.5</span> t CO₂ ha⁻¹ yr⁻¹ in first years.</p>
+<hr>
+<h2 id="computational-implementation" class="anchored">5. Computational Implementation</h2>
+<pre><code>function steady_state_SOC(I, k):
+    return I / k  # g C m-2
+
+function transient_SOC(C0, C_star, k, t_array):
+    return C_star + (C0 - C_star) * exp(-k * t_array)
+
+function decomp_rate_Q10(k_ref, T, T_ref=10, Q10=2.0):
+    return k_ref * Q10**((T - T_ref) / 10)
+
+function moisture_scalar(theta, theta_wilt, theta_fc, theta_sat):
+    if theta &lt; theta_wilt: return 0
+    if theta &lt;= theta_fc: return (theta - theta_wilt) / (theta_fc - theta_wilt)
+    return ((theta_sat - theta) / (theta_sat - theta_fc))**1.5
+
+function carbon_sequestration_timeseries(C0, C_new_eq, k_new, n_years):
+    t = arange(n_years)
+    C_t = transient_SOC(C0, C_new_eq, k_new, t)
+    annual_seq = diff(C_t)  # g C m-2 yr-1
+    return t[1:], annual_seq</code></pre>
+<pre class="{pyodide}"><code>import numpy as np
+
+def transient_SOC(C0, C_star, k, t):
+    return C_star + (C0 - C_star) * np.exp(-k * t)
+
+def Q10_rate(k_ref, T, T_ref=10, Q10=2.0):
+    return k_ref * Q10**((T - T_ref)/10)
+
+# Alberta prairie scenario
+print("Multi-scenario soil carbon evolution (50 years):")
+print(f"{'Scenario':&gt;30} {'ΔC (t C/ha)':&gt;13} {'Rate yr 5':&gt;12} {'Rate yr 20':&gt;12}")
+print("-"*70)
+
+scenarios = [
+    ('Current (business as usual)', 3000, 3200, 0.025, 80),
+    ('Cover crops + no-till',       3000, 4783, 0.023, 110),
+    ('Biochar addition (50 t/ha)',  3000, 5200, 0.020, 110),
+    ('Grassland restoration',       3000, 6500, 0.015, 130),
+]
+
+t = np.arange(0, 51)
+for name, C0, Cstar, k, I in scenarios:
+    C = transient_SOC(C0, Cstar, k, t)
+    dC_total = (C[50] - C[0]) / 100   # t C/ha
+    rate_y5  = (C[5] - C[4]) / 100
+    rate_y20 = (C[20] - C[19]) / 100
+    print(f"{name:&gt;30} {dC_total:&gt;13.1f} {rate_y5:&gt;12.3f} {rate_y20:&gt;12.3f}")
+
+# Q10 temperature sensitivity
+print(f"\nQ₁₀ effect: decomposition rate vs temperature (k_ref=0.025 at 10°C)")
+print(f"{'T (°C)':&gt;8} {'Q10=1.5':&gt;10} {'Q10=2.0':&gt;10} {'Q10=2.5':&gt;10} {'C* (Q10=2)':&gt;12}")
+I = 80  # g C/m2/yr
+for T in [0, 5, 10, 15, 20, 25]:
+    k15 = Q10_rate(0.025, T, Q10=1.5)
+    k20 = Q10_rate(0.025, T, Q10=2.0)
+    k25 = Q10_rate(0.025, T, Q10=2.5)
+    Cstar = I / k20
+    print(f"{T:&gt;8}  {k15:&gt;10.4f} {k20:&gt;10.4f} {k25:&gt;10.4f} {Cstar:&gt;10.0f} g/m²")</code></pre>
+<hr>
+<h2 id="visualization" class="anchored">6. Visualization</h2>
+<div data-viz="echarts" style="height:420px" data-options="{
+&quot;title&quot;: {&quot;text&quot;: &quot;Soil Carbon Approach to New Equilibrium Under Changed Management&quot;, &quot;textStyle&quot;: {&quot;fontSize&quot;: 14}},
+&quot;tooltip&quot;: {&quot;trigger&quot;: &quot;axis&quot;},
+&quot;legend&quot;: {&quot;data&quot;: [&quot;Business as usual&quot;,&quot;Cover crops + no-till&quot;,&quot;Grassland restoration&quot;], &quot;bottom&quot;: 0},
+&quot;xAxis&quot;: {&quot;name&quot;: &quot;Years after management change&quot;, &quot;nameLocation&quot;: &quot;middle&quot;, &quot;nameGap&quot;: 30,
+&quot;data&quot;: [0,5,10,15,20,25,30,40,50]},
+&quot;yAxis&quot;: {&quot;name&quot;: &quot;SOC (t C ha⁻¹)&quot;, &quot;nameLocation&quot;: &quot;middle&quot;, &quot;nameGap&quot;: 50, &quot;min&quot;: 25, &quot;max&quot;: 70},
+&quot;series&quot;: [
+{&quot;name&quot;: &quot;Business as usual&quot;, &quot;type&quot;: &quot;line&quot;, &quot;smooth&quot;: true,
+&quot;itemStyle&quot;: {&quot;color&quot;: &quot;#90A4AE&quot;},
+&quot;data&quot;: [30.0, 30.9, 31.4, 31.7, 31.9, 32.0, 32.0, 32.0, 32.0]},
+{&quot;name&quot;: &quot;Cover crops + no-till&quot;, &quot;type&quot;: &quot;line&quot;, &quot;smooth&quot;: true,
+&quot;itemStyle&quot;: {&quot;color&quot;: &quot;#2E7D32&quot;},
+&quot;data&quot;: [30.0, 33.5, 36.2, 38.4, 40.1, 41.5, 42.6, 44.2, 45.5]},
+{&quot;name&quot;: &quot;Grassland restoration&quot;, &quot;type&quot;: &quot;line&quot;, &quot;smooth&quot;: true,
+&quot;itemStyle&quot;: {&quot;color&quot;: &quot;#1565C0&quot;},
+&quot;data&quot;: [30.0, 35.5, 40.0, 43.8, 47.0, 49.6, 51.9, 55.4, 58.3]}
+]
+}"></div>
+<p>Sequestration rates are highest in the early years (large disequilibrium), declining as the system approaches the new equilibrium. After 50 years, cover crops + no-till have added ~15 t C ha⁻¹; grassland restoration adds ~28 t C ha⁻¹. Neither reaches the new equilibrium within 50 years — maximum sequestration potential requires centuries of consistent management.</p>
+<hr>
+<h2 id="interpretation" class="anchored">7. Interpretation</h2>
+<p>The steady-state result <span class="math inline">C^* = I/k</span> has a profound implication for climate feedback: if warming increases <span class="math inline">k</span> faster than it increases <span class="math inline">I</span> (net primary production), then <span class="math inline">C^*</span> decreases — soils release carbon to the atmosphere even as plants continue producing litter at the same rate. The question of whether NPP increases faster than decomposition under warming is the central uncertainty in the soil carbon-climate feedback, and it varies by ecosystem: in the tropics (already warm), decomposition is near its temperature optimum while NPP may be water-limited; in the Arctic (cold), warming strongly accelerates decomposition while plant growth may be less responsive.</p>
+<p>The agricultural sequestration numbers are real but bounded. Alberta’s cultivated soils have lost 30–50% of their pre-cultivation SOC; restoring even 20% of this deficit across 20 million ha of cultivated land would sequester 60–100 Mt CO₂ — meaningful at the provincial scale but small compared to Alberta’s ~275 Mt CO₂ yr⁻¹ emissions. Soil carbon sequestration is an important mitigation strategy but cannot substitute for emissions reductions.</p>
+<hr>
+<h2 id="what-could-go-wrong" class="anchored">8. What Could Go Wrong?</h2>
+<p><strong>Priming effects.</strong> Adding fresh, labile organic matter (manure, crop residues) to soil can accelerate the decomposition of older, stable SOC — the “priming effect.” This means that increasing inputs <span class="math inline">I</span> does not always increase SOC linearly; if the new inputs prime decomposition of existing SOC, the net sequestration is less than the single-pool model predicts. Priming effects can be positive (accelerated decomposition) or negative (old SOC protected), and their magnitude depends on substrate quality and microbial community composition.</p>
+<p><strong>Soil depth and vertical distribution.</strong> Most soil carbon measurements and models focus on the top 30 cm, but substantial carbon exists at 30–100 cm and deeper. Tillage homogenises the top 30 cm but does not change the deep layer; no-till enriches the surface but leaves deep layers unchanged. Deep soil carbon has longer MRT (often &gt;1000 years) but may be vulnerable to disturbance in ways that shallow measurements miss.</p>
+<p><strong>Spatial heterogeneity in Q₁₀.</strong> The Q₁₀ of the labile pool (~2.5–3.0) exceeds the Q₁₀ of the stable pool (~1.0–1.5), because recalcitrant compounds have higher activation energies. A spatially aggregated Q₁₀ of 2.0 applied to the total SOC pool overestimates warming-driven losses from stable pools (which dominate total SOC) and underestimates losses from labile pools (which are more responsive). Multi-pool models with pool-specific Q₁₀ values are necessary for accurate projections.</p>
+<hr>
+<h2 id="summary" class="anchored">9. Summary</h2>
+<p>The steady-state soil carbon model: <span class="math inline">C^* = I/k</span>, where <span class="math inline">I</span> = organic carbon input rate and <span class="math inline">k</span> = first-order decomposition rate. Residence time <span class="math inline">\tau = 1/k</span>. Transient response: <span class="math inline">C(t) = C^* + (C_0 - C^*)e^{-kt}</span>.</p>
+<p>Temperature sensitivity: <span class="math inline">k(T) = k_{\text{ref}} \times Q_{10}^{(T-T_{\text{ref}})/10}</span> with <span class="math inline">Q_{10} \approx 2.0</span>–2.5. A 3°C warming increases <span class="math inline">k</span> by ~23–48%, reducing <span class="math inline">C^*</span> and driving net carbon release until a new (lower) equilibrium is reached. Moisture response is non-monotonic: maximum decomposition near field capacity; suppressed by drought and waterlogging.</p>
+<p>Agricultural carbon sequestration: no-till + cover crops can sequester 0.2–1.5 t CO₂ ha⁻¹ yr⁻¹ for decades, approaching a new higher equilibrium. Rates decline as soils saturate.</p>
+<p><strong>Key equations:</strong></p>
+<p><span class="math display">\frac{dC}{dt} = I - kC, \quad C^* = \frac{I}{k}, \quad \tau = \frac{1}{k}</span></p>
+<p><span class="math display">k(T) = k_{\text{ref}} \times Q_{10}^{(T-T_{\text{ref}})/10}</span></p>
+<p><span class="math display">\Delta C^*_{\text{warming}} = -C^* \times \frac{\Delta k}{k} \approx -C^* \times (Q_{10}^{\Delta T/10} - 1)</span></p>
+<hr>
+<h2 id="math-refresher" class="anchored">Math Refresher</h2>
+<p><strong>Steady-state solutions of first-order ODEs.</strong> The equation <span class="math inline">dC/dt = I - kC</span> is a first-order linear ODE. At steady state, <span class="math inline">dC/dt = 0</span>, giving <span class="math inline">C^* = I/k</span> — the carbon stock where input exactly balances output. Starting from <span class="math inline">C_0 \neq C^*</span>, the solution is <span class="math inline">C(t) = C^* + (C_0 - C^*)e^{-kt}</span>, approaching <span class="math inline">C^*</span> exponentially. The time constant <span class="math inline">\tau = 1/k</span> characterises the approach speed: after one time constant, the gap <span class="math inline">(C - C^*)</span> has shrunk by factor <span class="math inline">e^{-1} \approx 63\%</span>. After five time constants, the system is within 1% of equilibrium. This is the same mathematics as radioactive decay (Essay A3) with the crucial difference that <span class="math inline">I &gt; 0</span> gives a non-zero steady state — the SOC accumulates until decomposition equals input, not until it disappears.</p>
+
+
+<footer class="wayward-footer">
+  <div class="wayward-footer__inner">
+    <div class="wayward-footer__brand">
+      <div class="wayward-footer__logo">WaywardHouse<span>.</span></div>
+      <p>Understanding how place, economy, and environment interact through analysis, modelling, and open tools.</p>
+    </div>
+
+    <nav class="wayward-footer__group" aria-labelledby="footer-reading">
+      <h2 id="footer-reading" class="anchored">Reading</h2>
+      <a href="https://wayward.house/articles/">Articles</a>
+      <a href="https://wayward.house/learn/">Library</a>
+      <a href="https://wayward.house/archive.html">Archive</a>
+      <a href="https://wayward.house/start-here.html">Choose Your Path</a>
+    </nav>
+
+    <nav class="wayward-footer__group" aria-labelledby="footer-site">
+      <h2 id="footer-site" class="anchored">Site</h2>
+      <a href="https://wayward.house/start-here.html">Choose Your Path</a>
+      <a href="https://wayward.house/about.html">About</a>
+      <a href="https://wayward.house/contact.html">Contact</a>
+    </nav>
+
+    <nav class="wayward-footer__group" aria-labelledby="footer-resources">
+      <h2 id="footer-resources" class="anchored">Resources</h2>
+      <a href="https://wayward.house/topics/">All Topics</a>
+      <a href="https://wayward.house/privacy.html">Privacy Policy</a>
+      <a href="https://wayward.house/terms.html">Terms of Use</a>
+    </nav>
+  </div>
+</footer>
+
+<script type="module" src="../assets/dist/main.js"></script>
+<script type="module" src="../assets/js/core.js"></script>
+<script id="quarto-html-after-body" type="application/javascript">
+  window.document.addEventListener("DOMContentLoaded", function (event) {
+    const tabsets =  window.document.querySelectorAll(".panel-tabset-tabby")
+    tabsets.forEach(function(tabset) {
+      const tabby = new Tabby('#' + tabset.id);
+    });
+    const icon = "";
+    const anchorJS = new window.AnchorJS();
+    anchorJS.options = {
+      placement: 'right',
+      icon: icon
+    };
+    anchorJS.add('.anchored');
+    const isCodeAnnotation = (el) => {
+      for (const clz of el.classList) {
+        if (clz.startsWith('code-annotation-')) {                     
+          return true;
+        }
+      }
+      return false;
+    }
+    const onCopySuccess = function(e) {
+      // button target
+      const button = e.trigger;
+      // don't keep focus
+      button.blur();
+      // flash "checked"
+      button.classList.add('code-copy-button-checked');
+      var currentTitle = button.getAttribute("title");
+      button.setAttribute("title", "Copied!");
+      let tooltip;
+      if (window.bootstrap) {
+        button.setAttribute("data-bs-toggle", "tooltip");
+        button.setAttribute("data-bs-placement", "left");
+        button.setAttribute("data-bs-title", "Copied!");
+        tooltip = new bootstrap.Tooltip(button, 
+          { trigger: "manual", 
+            customClass: "code-copy-button-tooltip",
+            offset: [0, -8]});
+        tooltip.show();    
+      }
+      setTimeout(function() {
+        if (tooltip) {
+          tooltip.hide();
+          button.removeAttribute("data-bs-title");
+          button.removeAttribute("data-bs-toggle");
+          button.removeAttribute("data-bs-placement");
+        }
+        button.setAttribute("title", currentTitle);
+        button.classList.remove('code-copy-button-checked');
+      }, 1000);
+      // clear code selection
+      e.clearSelection();
+    }
+    const getTextToCopy = function(trigger) {
+      const outerScaffold = trigger.parentElement.cloneNode(true);
+      const codeEl = outerScaffold.querySelector('code');
+      for (const childEl of codeEl.children) {
+        if (isCodeAnnotation(childEl)) {
+          childEl.remove();
+        }
+      }
+      return codeEl.innerText;
+    }
+    const clipboard = new window.ClipboardJS('.code-copy-button:not([data-in-quarto-modal])', {
+      text: getTextToCopy
+    });
+    clipboard.on('success', onCopySuccess);
+    if (window.document.getElementById('quarto-embedded-source-code-modal')) {
+      const clipboardModal = new window.ClipboardJS('.code-copy-button[data-in-quarto-modal]', {
+        text: getTextToCopy,
+        container: window.document.getElementById('quarto-embedded-source-code-modal')
+      });
+      clipboardModal.on('success', onCopySuccess);
+    }
+      var localhostRegex = new RegExp(/^(?:http|https):\/\/localhost\:?[0-9]*\//);
+      var mailtoRegex = new RegExp(/^mailto:/);
+        var filterRegex = new RegExp('/' + window.location.host + '/');
+      var isInternal = (href) => {
+          return filterRegex.test(href) || localhostRegex.test(href) || mailtoRegex.test(href);
+      }
+      // Inspect non-navigation links and adorn them if external
+     var links = window.document.querySelectorAll('a[href]:not(.nav-link):not(.navbar-brand):not(.toc-action):not(.sidebar-link):not(.sidebar-item-toggle):not(.pagination-link):not(.no-external):not([aria-hidden]):not(.dropdown-item):not(.quarto-navigation-tool):not(.about-link)');
+      for (var i=0; i<links.length; i++) {
+        const link = links[i];
+        if (!isInternal(link.href)) {
+          // undo the damage that might have been done by quarto-nav.js in the case of
+          // links that we want to consider external
+          if (link.dataset.originalHref !== undefined) {
+            link.href = link.dataset.originalHref;
+          }
+        }
+      }
+    function tippyHover(el, contentFn, onTriggerFn, onUntriggerFn) {
+      const config = {
+        allowHTML: true,
+        maxWidth: 500,
+        delay: 100,
+        arrow: false,
+        appendTo: function(el) {
+            return el.parentElement;
+        },
+        interactive: true,
+        interactiveBorder: 10,
+        theme: 'light-border',
+        placement: 'bottom-start',
+      };
+      if (contentFn) {
+        config.content = contentFn;
+      }
+      if (onTriggerFn) {
+        config.onTrigger = onTriggerFn;
+      }
+      if (onUntriggerFn) {
+        config.onUntrigger = onUntriggerFn;
+      }
+      window.tippy(el, config); 
+    }
+    const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+    for (var i=0; i<noterefs.length; i++) {
+      const ref = noterefs[i];
+      tippyHover(ref, function() {
+        // use id or data attribute instead here
+        let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+        try { href = new URL(href).hash; } catch {}
+        const id = href.replace(/^#\/?/, "");
+        const note = window.document.getElementById(id);
+        if (note) {
+          return note.innerHTML;
+        } else {
+          return "";
+        }
+      });
+    }
+    const xrefs = window.document.querySelectorAll('a.quarto-xref');
+    const processXRef = (id, note) => {
+      // Strip column container classes
+      const stripColumnClz = (el) => {
+        el.classList.remove("page-full", "page-columns");
+        if (el.children) {
+          for (const child of el.children) {
+            stripColumnClz(child);
+          }
+        }
+      }
+      stripColumnClz(note)
+      if (id === null || id.startsWith('sec-')) {
+        // Special case sections, only their first couple elements
+        const container = document.createElement("div");
+        if (note.children && note.children.length > 2) {
+          container.appendChild(note.children[0].cloneNode(true));
+          for (let i = 1; i < note.children.length; i++) {
+            const child = note.children[i];
+            if (child.tagName === "P" && child.innerText === "") {
+              continue;
+            } else {
+              container.appendChild(child.cloneNode(true));
+              break;
+            }
+          }
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(container);
+          }
+          return container.innerHTML
+        } else {
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(note);
+          }
+          return note.innerHTML;
+        }
+      } else {
+        // Remove any anchor links if they are present
+        const anchorLink = note.querySelector('a.anchorjs-link');
+        if (anchorLink) {
+          anchorLink.remove();
+        }
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(note);
+        }
+        if (note.classList.contains("callout")) {
+          return note.outerHTML;
+        } else {
+          return note.innerHTML;
+        }
+      }
+    }
+    for (var i=0; i<xrefs.length; i++) {
+      const xref = xrefs[i];
+      tippyHover(xref, undefined, function(instance) {
+        instance.disable();
+        let url = xref.getAttribute('href');
+        let hash = undefined; 
+        if (url.startsWith('#')) {
+          hash = url;
+        } else {
+          try { hash = new URL(url).hash; } catch {}
+        }
+        if (hash) {
+          const id = hash.replace(/^#\/?/, "");
+          const note = window.document.getElementById(id);
+          if (note !== null) {
+            try {
+              const html = processXRef(id, note.cloneNode(true));
+              instance.setContent(html);
+            } finally {
+              instance.enable();
+              instance.show();
+            }
+          } else {
+            // See if we can fetch this
+            fetch(url.split('#')[0])
+            .then(res => res.text())
+            .then(html => {
+              const parser = new DOMParser();
+              const htmlDoc = parser.parseFromString(html, "text/html");
+              const note = htmlDoc.getElementById(id);
+              if (note !== null) {
+                const html = processXRef(id, note);
+                instance.setContent(html);
+              } 
+            }).finally(() => {
+              instance.enable();
+              instance.show();
+            });
+          }
+        } else {
+          // See if we can fetch a full url (with no hash to target)
+          // This is a special case and we should probably do some content thinning / targeting
+          fetch(url)
+          .then(res => res.text())
+          .then(html => {
+            const parser = new DOMParser();
+            const htmlDoc = parser.parseFromString(html, "text/html");
+            const note = htmlDoc.querySelector('main.content');
+            if (note !== null) {
+              // This should only happen for chapter cross references
+              // (since there is no id in the URL)
+              // remove the first header
+              if (note.children.length > 0 && note.children[0].tagName === "HEADER") {
+                note.children[0].remove();
+              }
+              const html = processXRef(null, note);
+              instance.setContent(html);
+            } 
+          }).finally(() => {
+            instance.enable();
+            instance.show();
+          });
+        }
+      }, function(instance) {
+      });
+    }
+        let selectedAnnoteEl;
+        const selectorForAnnotation = ( cell, annotation) => {
+          let cellAttr = 'data-code-cell="' + cell + '"';
+          let lineAttr = 'data-code-annotation="' +  annotation + '"';
+          const selector = 'span[' + cellAttr + '][' + lineAttr + ']';
+          return selector;
+        }
+        const selectCodeLines = (annoteEl) => {
+          const doc = window.document;
+          const targetCell = annoteEl.getAttribute("data-target-cell");
+          const targetAnnotation = annoteEl.getAttribute("data-target-annotation");
+          const annoteSpan = window.document.querySelector(selectorForAnnotation(targetCell, targetAnnotation));
+          const lines = annoteSpan.getAttribute("data-code-lines").split(",");
+          const lineIds = lines.map((line) => {
+            return targetCell + "-" + line;
+          })
+          let top = null;
+          let height = null;
+          let parent = null;
+          if (lineIds.length > 0) {
+              //compute the position of the single el (top and bottom and make a div)
+              const el = window.document.getElementById(lineIds[0]);
+              top = el.offsetTop;
+              height = el.offsetHeight;
+              parent = el.parentElement.parentElement;
+            if (lineIds.length > 1) {
+              const lastEl = window.document.getElementById(lineIds[lineIds.length - 1]);
+              const bottom = lastEl.offsetTop + lastEl.offsetHeight;
+              height = bottom - top;
+            }
+            if (top !== null && height !== null && parent !== null) {
+              // cook up a div (if necessary) and position it 
+              let div = window.document.getElementById("code-annotation-line-highlight");
+              if (div === null) {
+                div = window.document.createElement("div");
+                div.setAttribute("id", "code-annotation-line-highlight");
+                div.style.position = 'absolute';
+                parent.appendChild(div);
+              }
+              div.style.top = top - 2 + "px";
+              div.style.height = height + 4 + "px";
+              div.style.left = 0;
+              let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
+              if (gutterDiv === null) {
+                gutterDiv = window.document.createElement("div");
+                gutterDiv.setAttribute("id", "code-annotation-line-highlight-gutter");
+                gutterDiv.style.position = 'absolute';
+                const codeCell = window.document.getElementById(targetCell);
+                const gutter = codeCell.querySelector('.code-annotation-gutter');
+                gutter.appendChild(gutterDiv);
+              }
+              gutterDiv.style.top = top - 2 + "px";
+              gutterDiv.style.height = height + 4 + "px";
+            }
+            selectedAnnoteEl = annoteEl;
+          }
+        };
+        const unselectCodeLines = () => {
+          const elementsIds = ["code-annotation-line-highlight", "code-annotation-line-highlight-gutter"];
+          elementsIds.forEach((elId) => {
+            const div = window.document.getElementById(elId);
+            if (div) {
+              div.remove();
+            }
+          });
+          selectedAnnoteEl = undefined;
+        };
+          // Handle positioning of the toggle
+      window.addEventListener(
+        "resize",
+        throttle(() => {
+          elRect = undefined;
+          if (selectedAnnoteEl) {
+            selectCodeLines(selectedAnnoteEl);
+          }
+        }, 10)
+      );
+      function throttle(fn, ms) {
+      let throttle = false;
+      let timer;
+        return (...args) => {
+          if(!throttle) { // first call gets through
+              fn.apply(this, args);
+              throttle = true;
+          } else { // all the others get throttled
+              if(timer) clearTimeout(timer); // cancel #2
+              timer = setTimeout(() => {
+                fn.apply(this, args);
+                timer = throttle = false;
+              }, ms);
+          }
+        };
+      }
+        // Attach click handler to the DT
+        const annoteDls = window.document.querySelectorAll('dt[data-target-cell]');
+        for (const annoteDlNode of annoteDls) {
+          annoteDlNode.addEventListener('click', (event) => {
+            const clickedEl = event.target;
+            if (clickedEl !== selectedAnnoteEl) {
+              unselectCodeLines();
+              const activeEl = window.document.querySelector('dt[data-target-cell].code-annotation-active');
+              if (activeEl) {
+                activeEl.classList.remove('code-annotation-active');
+              }
+              selectCodeLines(clickedEl);
+              clickedEl.classList.add('code-annotation-active');
+            } else {
+              // Unselect the line
+              unselectCodeLines();
+              clickedEl.classList.remove('code-annotation-active');
+            }
+          });
+        }
+    const findCites = (el) => {
+      const parentEl = el.parentElement;
+      if (parentEl) {
+        const cites = parentEl.dataset.cites;
+        if (cites) {
+          return {
+            el,
+            cites: cites.split(' ')
+          };
+        } else {
+          return findCites(el.parentElement)
+        }
+      } else {
+        return undefined;
+      }
+    };
+    var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+    for (var i=0; i<bibliorefs.length; i++) {
+      const ref = bibliorefs[i];
+      const citeInfo = findCites(ref);
+      if (citeInfo) {
+        tippyHover(citeInfo.el, function() {
+          var popup = window.document.createElement('div');
+          citeInfo.cites.forEach(function(cite) {
+            var citeDiv = window.document.createElement('div');
+            citeDiv.classList.add('hanging-indent');
+            citeDiv.classList.add('csl-entry');
+            var biblioDiv = window.document.getElementById('ref-' + cite);
+            if (biblioDiv) {
+              citeDiv.innerHTML = biblioDiv.innerHTML;
+            }
+            popup.appendChild(citeDiv);
+          });
+          return popup.innerHTML;
+        });
+      }
+    }
+  });
+  </script>
+
+
+
+
+</body></html>
