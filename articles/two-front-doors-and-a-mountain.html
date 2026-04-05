@@ -42,9 +42,9 @@ ul.task-list li input[type="checkbox"] {
   (function () {
     document.documentElement.dataset.theme = 'light';
     document.documentElement.dataset.brand = 'wayward';
-    document.documentElement.dataset.newsletterApi = "?var:newsletter_api_url";
+    document.documentElement.dataset.newsletterApi = "https://wayward.house/api/subscribe";
     window.MAPBOX_TOKEN = "pk.eyJ1IjoiYnJlYWRlZGNvZCIsImEiOiJjbW0xa25qc2EwMmtwMnJwejJlNndqdnoxIn0._7I9PwXuFLrOQINVZ84y1w";
-    window.NEWSLETTER_API_URL = "?var:newsletter_api_url";
+    window.NEWSLETTER_API_URL = "https://wayward.house/api/subscribe";
     try {
       localStorage.removeItem('theme');
     } catch (err) {
@@ -389,7 +389,43 @@ Source: Parks Canada Highway 1 Twinning Project monitoring data; Clevenger et al
     grid-template-columns: 1fr;
   }
 }
+
+/* Show newsletter CTA only on article/reading pages */
+.newsletter-page-cta {
+  display: none;
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 0 1.5rem;
+}
+body.reading-body .newsletter-page-cta { display: block; }
+/* Hide it on the subscribe page itself */
+body.subscribe-page .newsletter-page-cta { display: none !important; }
 </style>
+
+<div class="newsletter-page-cta" aria-label="Newsletter subscription">
+  <aside class="newsletter-inline">
+    <p class="newsletter-inline__kicker">Stay in the loop</p>
+    <h2>System Signals &amp; new articles</h2>
+    <p class="newsletter-inline__body">
+      A weekly digest of the signals worth watching — Alberta economics, energy transition,
+      trade geography — plus new articles as they publish. No noise.
+    </p>
+    <form class="newsletter-inline__form" id="newsletter-cta-form" novalidate="">
+      <input type="hidden" name="source" value="article-cta">
+      <div class="newsletter-inline__row">
+        <div class="newsletter-inline__field">
+          <label for="newsletter-cta-email">Email address</label>
+          <input type="email" id="newsletter-cta-email" name="email" placeholder="you@example.com" autocomplete="email" required="">
+        </div>
+        <button type="submit" class="newsletter-inline__submit">Subscribe</button>
+      </div>
+      <p class="newsletter-inline__status" id="newsletter-cta-status" role="status" aria-live="polite"></p>
+      <p class="newsletter-inline__note">
+        You'll receive a one-click confirmation email. Unsubscribe anytime.
+      </p>
+    </form>
+  </aside>
+</div>
 
 <footer class="wayward-footer">
   <div class="wayward-footer__inner">
@@ -423,6 +459,59 @@ Source: Parks Canada Highway 1 Twinning Project monitoring data; Clevenger et al
 
 <script type="module" src="../assets/dist/main.js"></script>
 <script type="module" src="../assets/js/core.js"></script>
+
+<script>
+(function () {
+  const form   = document.getElementById('newsletter-cta-form');
+  if (!form) return;
+
+  const status = document.getElementById('newsletter-cta-status');
+  const submit = form.querySelector('.newsletter-inline__submit');
+  const api    = window.NEWSLETTER_API_URL || '/api/subscribe';
+
+  form.addEventListener('submit', async function (e) {
+    e.preventDefault();
+
+    const email = (form.querySelector('input[name="email"]').value || '').trim();
+    if (!email) return;
+
+    const orig = submit.textContent;
+    submit.disabled   = true;
+    submit.textContent = 'Subscribing…';
+    status.textContent = '';
+    delete status.dataset.tone;
+
+    try {
+      const res  = await fetch(api, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body:    JSON.stringify({ email, source: 'article-cta' }),
+      });
+      const data = await res.json().catch(() => ({}));
+
+      if (res.ok) {
+        if (data.message === 'already_subscribed') {
+          status.textContent  = 'You\'re already subscribed — check your inbox!';
+          status.dataset.tone = 'success';
+        } else {
+          status.textContent  = 'Check your inbox — confirmation email on its way.';
+          status.dataset.tone = 'success';
+          form.querySelector('input[name="email"]').value = '';
+        }
+      } else {
+        status.textContent  = data.error || 'Something went wrong. Please try again.';
+        status.dataset.tone = 'error';
+      }
+    } catch {
+      status.textContent  = 'Network error. Please try again.';
+      status.dataset.tone = 'error';
+    }
+
+    submit.disabled   = false;
+    submit.textContent = orig;
+  });
+})();
+</script>
 <script id="quarto-html-after-body" type="application/javascript">
   window.document.addEventListener("DOMContentLoaded", function (event) {
     const tabsets =  window.document.querySelectorAll(".panel-tabset-tabby")
