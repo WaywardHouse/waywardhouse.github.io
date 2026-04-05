@@ -1,0 +1,1181 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
+
+<meta charset="utf-8">
+<meta name="generator" content="quarto-1.9.36">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+
+<meta name="dcterms.date" content="2026-02-27">
+<meta name="description" content="How do tornadoes form and how strong will they be? Tornado genesis requires vorticity generation, tilting, and stretching within supercell thunderstorms. This model derives vorticity equations, implements Rankine vortex models, demonstrates Enhanced Fujita Scale damage assessment, and predicts tornado intensity from environmental parameters.">
+
+<title>Tornado Formation and Intensity – Computational Geography</title>
+<style>
+/* Default styles provided by pandoc.
+** See https://pandoc.org/MANUAL.html#variables-for-html for config info.
+*/
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: min(4vw, 1.5em);}
+div.column{flex: auto; overflow-x: auto;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+  width: 0.8em;
+  margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
+  vertical-align: middle;
+}
+</style>
+
+
+<script src="../site_libs/clipboard/clipboard.min.js"></script>
+<script src="../site_libs/quarto-html/tabby.min.js"></script>
+<script src="../site_libs/quarto-html/popper.min.js"></script>
+<script src="../site_libs/quarto-html/tippy.umd.min.js"></script>
+<script src="../site_libs/quarto-html/anchor.min.js"></script>
+<link href="../site_libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="../site_libs/quarto-html/light-border.css" rel="stylesheet">
+<link href="../site_libs/quarto-html/quarto-html-640605f58ae58ee79329c070719e555b.min.css" rel="stylesheet" append-hash="true" data-mode="light">
+<link href="../site_libs/quarto-html/quarto-syntax-highlighting-845c23b38eaddc0f92fda52bfe77a8c8.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<script>
+  (function () {
+    document.documentElement.dataset.theme = 'light';
+    document.documentElement.dataset.brand = 'wayward';
+    try {
+      localStorage.removeItem('theme');
+    } catch (err) {
+      void err;
+    }
+  })();
+</script>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:ital,wght@0,300;0,400;0,600;0,700;0,800;0,900;1,700;1,800&amp;family=Barlow:wght@300;400;500;600&amp;family=IBM+Plex+Mono:ital,wght@0,300;0,400;0,500;1,300&amp;family=Literata:ital,opsz,wght@0,7..72,300;0,7..72,400;0,7..72,500;1,7..72,300;1,7..72,400&amp;display=swap" rel="stylesheet">
+
+  <script>window.backupDefine = window.define; window.define = undefined;</script><script src="https://cdn.jsdelivr.net/npm/katex@latest/dist/katex.min.js"></script>
+  <script>document.addEventListener("DOMContentLoaded", function () {
+ var mathElements = document.getElementsByClassName("math");
+ var macros = [];
+ for (var i = 0; i < mathElements.length; i++) {
+  var texText = mathElements[i].firstChild;
+  if (mathElements[i].tagName == "SPAN") {
+   katex.render(texText.data, mathElements[i], {
+    displayMode: mathElements[i].classList.contains('display'),
+    throwOnError: false,
+    macros: macros,
+    fleqn: false
+   });
+}}});
+  </script>
+  <script>window.define = window.backupDefine; window.backupDefine = undefined;</script><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@latest/dist/katex.min.css">
+
+<script type="text/javascript">
+const typesetMath = (el) => {
+  if (window.MathJax) {
+    // MathJax Typeset
+    window.MathJax.typeset([el]);
+  } else if (window.katex) {
+    // KaTeX Render
+    var mathElements = el.getElementsByClassName("math");
+    var macros = [];
+    for (var i = 0; i < mathElements.length; i++) {
+      var texText = mathElements[i].firstChild;
+      if (mathElements[i].tagName == "SPAN" && texText && texText.data) {
+        window.katex.render(texText.data, mathElements[i], {
+          displayMode: mathElements[i].classList.contains('display'),
+          throwOnError: false,
+          macros: macros,
+          fleqn: false
+        });
+      }
+    }
+  }
+}
+window.Quarto = {
+  typesetMath
+};
+</script>
+
+<link rel="stylesheet" href="../assets/css/quarto-wayward.css">
+</head>
+
+<body class="reading-body tag-hash-math tag-hash-viz">
+
+
+<header id="title-block-header">
+<h1 class="title"><span class="chapter-title">Tornado Formation and Intensity</span></h1>
+<p class="subtitle">Vortex dynamics and damage assessment from rotating thunderstorms</p>
+
+<p class="date">2026-02-27</p>
+</header>
+
+<nav id="TOC" role="doc-toc">
+    <h2 id="toc-title">Table of contents</h2>
+   
+  <ul>
+  <li><a href="#before-you-start" id="toc-before-you-start">Before You Start</a></li>
+  <li><a href="#the-question" id="toc-the-question">1. The Question</a></li>
+  <li><a href="#the-conceptual-model" id="toc-the-conceptual-model">2. The Conceptual Model</a>
+  <ul>
+  <li><a href="#vorticity" id="toc-vorticity">Vorticity</a></li>
+  <li><a href="#vorticity-equation" id="toc-vorticity-equation">Vorticity Equation</a></li>
+  <li><a href="#rankine-vortex" id="toc-rankine-vortex">Rankine Vortex</a></li>
+  </ul></li>
+  <li><a href="#building-the-mathematical-model" id="toc-building-the-mathematical-model">3. Building the Mathematical Model</a>
+  <ul>
+  <li><a href="#tornado-vortex-signature-tvs" id="toc-tornado-vortex-signature-tvs">Tornado Vortex Signature (TVS)</a></li>
+  <li><a href="#ef-scale-damage-indicators" id="toc-ef-scale-damage-indicators">EF-Scale Damage Indicators</a></li>
+  <li><a href="#conditional-tornado-probability" id="toc-conditional-tornado-probability">Conditional Tornado Probability</a></li>
+  </ul></li>
+  <li><a href="#worked-example-by-hand" id="toc-worked-example-by-hand">4. Worked Example by Hand</a>
+  <ul>
+  <li><a href="#solution" id="toc-solution">Solution</a></li>
+  </ul></li>
+  <li><a href="#computational-implementation" id="toc-computational-implementation">5. Computational Implementation</a></li>
+  <li><a href="#interpretation" id="toc-interpretation">6. Interpretation</a>
+  <ul>
+  <li><a href="#tornado-climatology" id="toc-tornado-climatology">Tornado Climatology</a></li>
+  <li><a href="#warning-performance" id="toc-warning-performance">Warning Performance</a></li>
+  <li><a href="#building-design" id="toc-building-design">Building Design</a></li>
+  </ul></li>
+  <li><a href="#what-could-go-wrong" id="toc-what-could-go-wrong">7. What Could Go Wrong?</a>
+  <ul>
+  <li><a href="#satellite-tornadoes" id="toc-satellite-tornadoes">Satellite Tornadoes</a></li>
+  <li><a href="#qlcs-tornadoes" id="toc-qlcs-tornadoes">QLCS Tornadoes</a></li>
+  <li><a href="#rapid-intensification" id="toc-rapid-intensification">Rapid Intensification</a></li>
+  <li><a href="#nocturnal-tornadoes" id="toc-nocturnal-tornadoes">Nocturnal Tornadoes</a></li>
+  </ul></li>
+  <li><a href="#extension-mobile-radar-observations" id="toc-extension-mobile-radar-observations">8. Extension: Mobile Radar Observations</a></li>
+  <li><a href="#math-refresher-conservation-of-angular-momentum" id="toc-math-refresher-conservation-of-angular-momentum">9. Math Refresher: Conservation of Angular Momentum</a>
+  <ul>
+  <li><a href="#angular-momentum" id="toc-angular-momentum">Angular Momentum</a></li>
+  </ul></li>
+  <li><a href="#summary" id="toc-summary">Summary</a></li>
+  </ul>
+</nav>
+<h2 id="before-you-start" class="anchored">Before You Start</h2>
+<p><strong>You should know</strong><br>
+That rotating thunderstorms can concentrate vorticity, and that stronger convergence and stretching can intensify rotation.</p>
+<p><strong>You will learn</strong><br>
+How vorticity tilting and stretching support tornado formation, how the Rankine vortex approximates tornado winds, and how damage surveys translate into EF ratings.</p>
+<p><strong>Why this matters</strong><br>
+Tornado risk assessment depends on connecting storm structure, radar signals, and near-surface damage to one coherent physical model.</p>
+<p><strong>If this gets hard, focus on…</strong><br>
+The core idea that existing rotation becomes stronger when it is concentrated into a smaller, more strongly stretched column.</p>
+<p>On 22 May 2011, a tornado of EF5 intensity — the highest category on the Enhanced Fujita Scale — struck Joplin, Missouri, killing 158 people and destroying a third of the city. The tornado was a mile wide at times and maintained that width for 22 miles. Wind speeds inside the vortex were estimated at over 320 km/h. The Storm Prediction Center had issued a tornado watch for the area that morning and a tornado warning 24 minutes before the Joplin tornado touched down. Most residents received the warning. Many did not have adequate shelter. The storm’s intensity, once the vortex formed, exceeded anything most residents had experienced or mentally prepared for.</p>
+<p>Tornadoes are the most violent atmospheric phenomenon that regularly occur at the surface of the Earth, and they are also among the least predictable. The atmosphere can produce their necessary ingredients — a supercell thunderstorm with a strong rotating updraft, or mesocyclone — fairly reliably, but which mesocyclones produce tornadoes and which do not remains an active research frontier. What we understand quantitatively is the vorticity dynamics: how horizontal wind shear is tilted into the vertical by a thunderstorm updraft, how the resulting rotation is then stretched by the updraft to produce the intense narrow vortex of a tornado, and how conservation of angular momentum governs the wind speed increase as the circulation contracts. The Rankine vortex model — solid-body rotation inside the core, irrotational flow outside — gives the velocity field that approximates real tornado structure. This model derives that framework, implements the vorticity equations, and connects storm environment parameters to tornado formation probability and intensity.</p>
+<h2 id="the-question" class="anchored">1. The Question</h2>
+<p>Will this supercell produce a violent tornado?</p>
+<p><strong>Tornado definition:</strong></p>
+<p>Violently rotating column of air in contact with ground and cloud base.</p>
+<p><strong>Formation requirements:</strong></p>
+<ol type="1">
+<li><strong>Vorticity:</strong> Rotation in atmosphere</li>
+<li><strong>Stretching:</strong> Vertical convergence amplifies rotation</li>
+<li><strong>Tilting:</strong> Horizontal to vertical vorticity</li>
+<li><strong>Concentration:</strong> Focus rotation into narrow column</li>
+</ol>
+<p><strong>Intensity scale (Enhanced Fujita):</strong></p>
+<p><strong>EF0:</strong> 65-85 mph (105-137 km/h) - Light damage<br>
+<strong>EF1:</strong> 86-110 mph (138-177 km/h) - Moderate<br>
+<strong>EF2:</strong> 111-135 mph (178-217 km/h) - Considerable<br>
+<strong>EF3:</strong> 136-165 mph (218-266 km/h) - Severe<br>
+<strong>EF4:</strong> 166-200 mph (267-322 km/h) - Devastating<br>
+<strong>EF5:</strong> &gt;200 mph (&gt;322 km/h) - Incredible</p>
+<p><strong>Statistics (USA):</strong></p>
+<ul>
+<li>~1200 tornadoes/year average</li>
+<li>80% EF0-EF1 (weak)</li>
+<li>&lt;1% EF5 (violent)</li>
+<li>Peak season: April-June</li>
+<li>Peak time: 4-9 PM local</li>
+</ul>
+<p><strong>Applications:</strong></p>
+<ul>
+<li>Tornado warning issuance</li>
+<li>Building design standards</li>
+<li>Risk assessment</li>
+<li>Climatology studies</li>
+</ul>
+<hr>
+<h2 id="the-conceptual-model" class="anchored">2. The Conceptual Model</h2>
+<h3 id="vorticity" class="anchored">Vorticity</h3>
+<p><strong>Rotation in fluid:</strong></p>
+<p><span class="math display">\omega = \nabla \times \mathbf{v}</span></p>
+<p>Where: - <span class="math inline">\omega</span> = vorticity vector (s⁻¹) - <span class="math inline">\mathbf{v}</span> = velocity field</p>
+<p><strong>Vertical vorticity:</strong></p>
+<p><span class="math display">\zeta = \frac{\partial v}{\partial x} - \frac{\partial u}{\partial y}</span></p>
+<p>Where <span class="math inline">u, v</span> = horizontal wind components.</p>
+<p><strong>Sources:</strong></p>
+<p><strong>Horizontal vorticity</strong> from wind shear (environmental)</p>
+<p><strong>Tilted</strong> into vertical by updraft</p>
+<p><strong>Stretched</strong> by vertical convergence</p>
+<h3 id="vorticity-equation" class="anchored">Vorticity Equation</h3>
+<p><strong>Evolution:</strong></p>
+<p><span class="math display">\frac{D\omega}{Dt} = (\omega \cdot \nabla)\mathbf{v} - \omega(\nabla \cdot \mathbf{v})</span></p>
+<p>Simplified (for vertical vorticity):</p>
+<p><strong>Stretching term:</strong></p>
+<p><span class="math display">\frac{D\zeta}{Dt} = -\zeta \frac{\partial w}{\partial z}</span></p>
+<p><strong>If updraft converges</strong> (<span class="math inline">\partial w/\partial z &gt; 0</span>):</p>
+<p>Vorticity amplifies!</p>
+<p><strong>Example:</strong></p>
+<p>Initial <span class="math inline">\zeta = 0.01</span> s⁻¹ (environmental)</p>
+<p>Updraft stretching: <span class="math inline">\partial w/\partial z = 0.01</span> s⁻¹</p>
+<p>After 100 seconds:</p>
+<p><span class="math display">\zeta \approx \zeta_0 e^{t \partial w/\partial z} = 0.01 \times e^{0.01 \times 100} = 0.01 \times e = 0.027 \text{ s}^{-1}</span></p>
+<p><strong>Nearly tripled!</strong></p>
+<h3 id="rankine-vortex" class="anchored">Rankine Vortex</h3>
+<p><strong>Idealized tornado structure:</strong></p>
+<p><strong>Core (r &lt; R):</strong> Solid-body rotation</p>
+<p><span class="math display">v(r) = \frac{V_{max}}{R} r</span></p>
+<p><strong>Outer (r &gt; R):</strong> Potential vortex</p>
+<p><span class="math display">v(r) = \frac{V_{max} R}{r}</span></p>
+<p>Where: - <span class="math inline">V_{max}</span> = maximum tangential velocity - <span class="math inline">R</span> = radius of maximum wind (RMW)</p>
+<p><strong>Typical:</strong> RMW = 100-500 m for tornadoes</p>
+<p><strong>Pressure deficit:</strong></p>
+<p><span class="math display">\Delta p = \frac{\rho V_{max}^2}{2}</span></p>
+<p><strong>For 100 m/s tornado:</strong></p>
+<p><span class="math display">\Delta p = \frac{1.2 \times 100^2}{2} = 6000 \text{ Pa} = 60 \text{ mb}</span></p>
+<p><strong>6% pressure drop!</strong></p>
+<figure class="cg-ill">
+<div class="cg-ill__frame" data-markdown="1">
+<div class="cg-ill__eyebrow">
+Tornado Dynamics
+</div>
+<h3 class="cg-ill__title anchored">
+Tilt, Stretch, Then Concentrate Rotation
+</h3>
+<p class="cg-ill__lede">
+A tornado does not appear from nowhere. Environmental shear creates horizontal spin, the storm updraft tilts that spin upright, and convergence stretches it into a tighter, faster vortex.
+</p>
+<div class="cg-ill__grid cg-ill__grid--2">
+<div class="cg-ill__card">
+<svg viewbox="0 0 560 300" role="img" aria-label="Tornado formation concept showing horizontal vorticity tilted vertical and stretched into a tighter vortex">
+  <rect x="0" y="0" width="560" height="300" rx="22" fill="#edf3f7"></rect>
+  <rect x="36" y="228" width="488" height="28" rx="12" fill="#7d8f5c"></rect>
+  <ellipse cx="116" cy="182" rx="58" ry="20" fill="none" stroke="#6d5ea8" stroke-width="8"></ellipse>
+  <ellipse cx="116" cy="182" rx="38" ry="13" fill="none" stroke="#9a8bc5" stroke-width="5"></ellipse>
+  <text x="54" y="146" font-size="17" fill="#5d4781" font-weight="700">horizontal vorticity</text>
+  <path d="M210 212 C228 170, 250 136, 280 100 C302 76, 326 68, 350 76" fill="none" stroke="#2a9d8f" stroke-width="16" stroke-linecap="round"></path>
+  <polygon points="350,76 333,73 339,89" fill="#2a9d8f"></polygon>
+  <text x="224" y="92" font-size="18" fill="#1f6f66" font-weight="700">updraft tilts rotation upright</text>
+  <path d="M364 212 C372 176, 382 142, 394 108 C402 86, 412 74, 422 66" fill="none" stroke="#6d5ea8" stroke-width="12" stroke-linecap="round"></path>
+  <path d="M392 214 C395 176, 400 144, 406 118 C410 96, 416 82, 424 74" fill="none" stroke="#9a8bc5" stroke-width="6" stroke-linecap="round"></path>
+  <text x="374" y="48" font-size="18" fill="#5d4781" font-weight="700">vertical vortex</text>
+  <path d="M430 212 C432 180, 438 154, 446 128 C454 104, 466 92, 480 84 C490 78, 500 80, 506 88" fill="none" stroke="#a63d40" stroke-width="10" stroke-linecap="round"></path>
+  <path d="M446 212 C448 184, 452 162, 458 142 C464 120, 472 106, 482 100 C488 96, 494 96, 500 100" fill="none" stroke="#d96b70" stroke-width="5" stroke-linecap="round"></path>
+  <text x="430" y="66" font-size="18" fill="#8c2f31" font-weight="700">stretched, tighter core</text>
+  <line x1="98" y1="86" x2="166" y2="72" stroke="#224f9c" stroke-width="6" stroke-linecap="round"></line>
+  <polygon points="166,72 152,66 155,80" fill="#224f9c"></polygon>
+  <line x1="96" y1="118" x2="184" y2="102" stroke="#224f9c" stroke-width="8" stroke-linecap="round"></line>
+  <polygon points="184,102 170,95 173,110" fill="#224f9c"></polygon>
+  <text x="58" y="52" font-size="17" fill="#224f9c" font-weight="700">wind shear with height</text>
+  <text x="74" y="280" font-size="16" fill="#35515f">Stronger stretching means faster spin for the same rotating air column.</text>
+</svg>
+</div>
+<div class="cg-ill__card">
+<h4 class="anchored">
+What to hold onto
+</h4>
+<ul>
+<li>
+Shear supplies the initial horizontal rotation in the environment.
+</li>
+<li>
+The updraft reorients that rotation into the vertical.
+</li>
+<li>
+Convergence and stretching tighten the rotating column and increase angular speed.
+</li>
+<li>
+The Rankine-vortex equations describe the idealized wind structure once that vortex exists.
+</li>
+</ul>
+</div>
+</div>
+</div>
+</figure>
+<hr>
+<h2 id="building-the-mathematical-model" class="anchored">3. Building the Mathematical Model</h2>
+<h3 id="tornado-vortex-signature-tvs" class="anchored">Tornado Vortex Signature (TVS)</h3>
+<p><strong>Doppler radar detects:</strong></p>
+<p>Rotation via velocity couplet.</p>
+<p><strong>Gate-to-gate shear:</strong></p>
+<p><span class="math display">S = \frac{V_{in} - V_{out}}{d}</span></p>
+<p>Where: - <span class="math inline">V_{in}</span> = inbound velocity - <span class="math inline">V_{out}</span> = outbound velocity - <span class="math inline">d</span> = distance between gates</p>
+<p><strong>TVS criteria:</strong></p>
+<p><span class="math inline">S &gt; 0.01</span> s⁻¹ and persistent</p>
+<p><strong>Example:</strong></p>
+<p><span class="math inline">V_{in} = -30</span> m/s, <span class="math inline">V_{out} = +30</span> m/s, <span class="math inline">d = 2</span> km</p>
+<p><span class="math display">S = \frac{30 - (-30)}{2000} = \frac{60}{2000} = 0.03 \text{ s}^{-1}</span></p>
+<p><strong>Strong rotation → tornado warning</strong></p>
+<h3 id="ef-scale-damage-indicators" class="anchored">EF-Scale Damage Indicators</h3>
+<p><strong>Degree of Damage (DOD):</strong></p>
+<p>Observable damage to specific structures.</p>
+<p><strong>Example - One/two family residence:</strong></p>
+<p><strong>DOD 1:</strong> Loss of roof covering (&lt;20%)<br>
+<strong>DOD 4:</strong> Loss of roof structure and outer walls<br>
+<strong>DOD 10:</strong> Complete destruction, swept away</p>
+<p><strong>Wind speed estimate:</strong></p>
+<p>Each DOD has expected wind range.</p>
+<p><strong>DOD 4:</strong> 110-135 mph → <strong>EF2</strong></p>
+<p><strong>Uncertainty:</strong> ±20 mph typical</p>
+<p><strong>Multiple indicators</strong> averaged for final rating.</p>
+<h3 id="conditional-tornado-probability" class="anchored">Conditional Tornado Probability</h3>
+<p><strong>Given supercell, what’s tornado probability?</strong></p>
+<p><strong>Environmental parameters:</strong></p>
+<p><span class="math display">P_{tor} = f(CAPE, SRH, LCL, shear)</span></p>
+<p><strong>Empirical model:</strong></p>
+<p><span class="math display">P_{tor} = \frac{1}{1 + e^{-z}}</span></p>
+<p>Where:</p>
+<p><span class="math display">z = a + b \times STP + c \times \log(CAPE) + d \times LCL</span></p>
+<p><strong>Typical calibration:</strong></p>
+<p>STP &gt; 1: P ~ 30%<br>
+STP &gt; 3: P ~ 60%<br>
+STP &gt; 6: P ~ 80%</p>
+<p><strong>Violent tornado (EF4+):</strong></p>
+<p>STP &gt; 4, low LCL (&lt;800 m), strong low-level shear</p>
+<hr>
+<h2 id="worked-example-by-hand" class="anchored">4. Worked Example by Hand</h2>
+<p><strong>Problem:</strong> Estimate tornado intensity from damage survey.</p>
+<p><strong>Damage observations:</strong></p>
+<p><strong>Structure 1:</strong> Single-family home - Roof completely removed - Some exterior walls collapsed - Frame mostly intact</p>
+<p><strong>Structure 2:</strong> Metal outbuilding - Completely destroyed - Debris scattered 200 m</p>
+<p><strong>Structure 3:</strong> Softwood trees - Debarked - Snapped at trunk</p>
+<p><strong>Radar data:</strong></p>
+<ul>
+<li>TVS detected: <span class="math inline">S = 0.025</span> s⁻¹</li>
+<li>Mesocyclone diameter: 4 km</li>
+</ul>
+<p>Estimate EF rating and wind speed.</p>
+<h3 id="solution" class="anchored">Solution</h3>
+<p><strong>Step 1: Analyze Structure 1</strong></p>
+<p>Single-family residence: - Roof removed completely: DOD 4-5 - Walls partially collapsed: DOD 5-6</p>
+<p><strong>EF-Scale lookup:</strong></p>
+<p>DOD 4-5: 111-135 mph → <strong>EF2</strong><br>
+DOD 5-6: 136-165 mph → <strong>EF3</strong></p>
+<p><strong>Conservative estimate:</strong> Lower bound = <strong>EF2 (111-135 mph)</strong></p>
+<p><strong>Step 2: Structure 2</strong></p>
+<p>Metal outbuilding completely destroyed:</p>
+<p>Weaker construction, expected failure at lower winds.</p>
+<p>DOD for complete destruction: 100-120 mph → <strong>EF1-EF2</strong></p>
+<p><strong>Consistent with Structure 1</strong></p>
+<p><strong>Step 3: Structure 3</strong></p>
+<p>Debarked softwood trees:</p>
+<p>High-end damage indicator.</p>
+<p>Expected: 130-160 mph → <strong>EF2-EF3</strong></p>
+<p><strong>Step 4: Synthesis</strong></p>
+<p>Multiple indicators point to <strong>EF2-EF3 boundary</strong>.</p>
+<p><strong>Best estimate: EF3 (low-end)</strong></p>
+<p><strong>Wind speed: 136-145 mph</strong></p>
+<p><strong>Step 5: Radar validation</strong></p>
+<p>TVS shear: 0.025 s⁻¹</p>
+<p>Estimated tangential velocity:</p>
+<p><span class="math display">V \approx S \times R = 0.025 \times 2000 = 50 \text{ m/s} = 112 \text{ mph}</span></p>
+<p><strong>Underestimate</strong> (radar at 1-2 km altitude, surface winds higher)</p>
+<p><strong>Surface factor:</strong> Typically 1.2-1.5×</p>
+<p><span class="math display">V_{surface} \approx 112 \times 1.3 = 146 \text{ mph}</span></p>
+<p><strong>Consistent with EF3 low-end!</strong></p>
+<p><strong>Final rating: EF3, estimated peak winds 140 mph</strong></p>
+<hr>
+<h2 id="computational-implementation" class="anchored">5. Computational Implementation</h2>
+<p>Below is an interactive tornado vortex simulator.</p>
+<div class="viz-container" id="tornado-viz">
+<div class="controls">
+<label>
+Max wind speed (mph):
+<input type="range" id="max-wind" min="65" max="250" step="5" value="140">
+<span id="wind-val">140</span>
+</label>
+<label>
+Radius of max wind (m):
+<input type="range" id="rmw" min="50" max="500" step="25" value="200">
+<span id="rmw-val">200</span>
+</label>
+<label>
+Vortex profile:
+<select id="profile">
+<option value="rankine" selected="">Rankine</option>
+<option value="modified">Modified (real)</option>
+</select>
+</label>
+<div class="tornado-info">
+<p><strong>EF Rating:</strong> <span id="ef-rating">--</span></p>
+<p><strong>Pressure deficit:</strong> <span id="pressure-deficit">--</span> mb</p>
+<p><strong>Core vorticity:</strong> <span id="vorticity">--</span> s⁻¹</p>
+<p><strong>Damage range:</strong> <span id="damage-range">--</span></p>
+</div>
+</div>
+<div id="tornado-canvas-container">
+<canvas id="tornado-canvas" width="700" height="400" style="border: 1px solid #ddd;"></canvas>
+</div>
+</div>
+
+<script type="module">
+await new Promise(resolve => {
+const checkECharts = () => {
+if (typeof echarts !== 'undefined') resolve();
+else setTimeout(checkECharts, 50);
+};
+checkECharts();
+});
+
+(function() {
+const chart = echarts.init(document.getElementById('tornado-canvas'));
+  
+let maxWind = 140; // mph
+let rmw = 200; // meters
+let profile = 'rankine';
+  
+function getEFRating(wind) {
+if (wind >= 200) return {ef: 'EF5', color: '#8B0000', damage: 'Incredible'};
+if (wind >= 166) return {ef: 'EF4', color: '#B71C1C', damage: 'Devastating'};
+if (wind >= 136) return {ef: 'EF3', color: '#E64A19', damage: 'Severe'};
+if (wind >= 111) return {ef: 'EF2', color: '#F57F17', damage: 'Considerable'};
+if (wind >= 86) return {ef: 'EF1', color: '#FFA726', damage: 'Moderate'};
+return {ef: 'EF0', color: '#66BB6A', damage: 'Light'};
+}
+  
+function calculateVortex() {
+const data = [];
+const maxR = 1500; // meters
+    
+const vMax = maxWind * 0.447; // Convert mph to m/s
+    
+for (let r = 0; r <= maxR; r += 10) {
+let v;
+      
+if (profile === 'rankine') {
+if (r <= rmw) {
+v = (vMax / rmw) * r; // Solid body
+} else {
+v = (vMax * rmw) / r; // Potential vortex
+}
+} else {
+// Modified profile (more realistic)
+const alpha = 0.7;
+v = vMax * Math.pow(r / rmw, alpha) * Math.exp(alpha * (1 - r / rmw));
+}
+      
+data.push([r, v * 2.237]); // Convert to mph
+}
+    
+return data;
+}
+  
+function render() {
+const rating = getEFRating(maxWind);
+    
+// Pressure deficit
+const vMaxMS = maxWind * 0.447;
+const pressureDeficit = (1.2 * vMaxMS * vMaxMS / 2) / 100; // mb
+    
+// Core vorticity
+const vorticity = (vMaxMS / rmw).toFixed(3);
+    
+document.getElementById('ef-rating').textContent = rating.ef;
+document.getElementById('ef-rating').style.color = rating.color;
+document.getElementById('pressure-deficit').textContent = pressureDeficit.toFixed(0);
+document.getElementById('vorticity').textContent = vorticity;
+document.getElementById('damage-range').textContent = rating.damage;
+    
+const vortexData = calculateVortex();
+    
+const series = [
+{
+name: 'Tangential Velocity',
+type: 'line',
+data: vortexData,
+lineStyle: {color: rating.color, width: 3},
+areaStyle: {
+color: {
+type: 'linear',
+x: 0, y: 0, x2: 0, y2: 1,
+colorStops: [
+{offset: 0, color: rating.color + 'AA'},
+{offset: 1, color: rating.color + '22'}
+]
+}
+}
+},
+{
+name: 'RMW',
+type: 'line',
+data: [[rmw, 0], [rmw, maxWind * 1.2]],
+lineStyle: {color: '#2196F3', width: 2, type: 'dashed'},
+markLine: {
+silent: true,
+label: {formatter: 'RMW', position: 'insideStartTop'}
+}
+}
+];
+    
+const option = {
+title: {
+text: `Tornado Vortex Profile (${rating.ef})`,
+left: 'center'
+},
+tooltip: {
+trigger: 'axis',
+axisPointer: {type: 'cross'},
+formatter: (params) => {
+if (params[0]) {
+return `Radius: ${params[0].value[0]} m<br/>Wind: ${params[0].value[1].toFixed(0)} mph`;
+}
+}
+},
+legend: {
+data: ['Tangential Velocity', 'RMW'],
+top: 30
+},
+grid: {
+left: 80,
+right: 40,
+top: 80,
+bottom: 60
+},
+xAxis: {
+type: 'value',
+name: 'Radius (m)',
+nameLocation: 'middle',
+nameGap: 30,
+min: 0,
+max: 1500
+},
+yAxis: {
+type: 'value',
+name: 'Wind Speed (mph)',
+nameLocation: 'middle',
+nameGap: 50,
+min: 0
+},
+series: series
+};
+    
+chart.setOption(option, true);
+}
+  
+document.getElementById('max-wind').addEventListener('input', (e) => {
+maxWind = parseFloat(e.target.value);
+document.getElementById('wind-val').textContent = maxWind;
+render();
+});
+  
+document.getElementById('rmw').addEventListener('input', (e) => {
+rmw = parseFloat(e.target.value);
+document.getElementById('rmw-val').textContent = rmw;
+render();
+});
+  
+document.getElementById('profile').addEventListener('change', (e) => {
+profile = e.target.value;
+render();
+});
+  
+render();
+  
+window.addEventListener('resize', () => chart.resize());
+})();
+</script>
+<p><strong>Observations:</strong></p>
+<ul>
+<li>Rankine vortex shows linear increase to RMW, then decay</li>
+<li>Maximum winds at radius of maximum wind (RMW)</li>
+<li>Modified profile more realistic with smoother peak</li>
+<li>Pressure deficit proportional to velocity squared</li>
+<li>Core vorticity highest in narrow tornadoes</li>
+<li>EF rating based on maximum wind speed</li>
+</ul>
+<p><strong>Key insights:</strong></p>
+<ul>
+<li>Violent tornadoes (EF4-EF5) have extreme pressure deficits</li>
+<li>Small RMW concentrates damage in narrow path</li>
+<li>Vorticity in core reaches 0.1-0.5 s⁻¹</li>
+<li>Wind profile critical for damage assessment</li>
+</ul>
+<hr>
+<h2 id="interpretation" class="anchored">6. Interpretation</h2>
+<h3 id="tornado-climatology" class="anchored">Tornado Climatology</h3>
+<p><strong>Spatial distribution (USA):</strong></p>
+<p><strong>Tornado Alley:</strong> Oklahoma, Kansas, Nebraska<br>
+<strong>Dixie Alley:</strong> Alabama, Mississippi, Tennessee</p>
+<p><strong>Seasonal variation:</strong></p>
+<ul>
+<li>Spring: Peak activity (April-June)</li>
+<li>Summer: Northern plains active</li>
+<li>Fall: Secondary peak (October-November)</li>
+<li>Winter: Minimal, Gulf Coast only</li>
+</ul>
+<p><strong>Diurnal:</strong></p>
+<ul>
+<li>Peak: 4-9 PM local</li>
+<li>Overnight tornadoes: More deadly (sleeping population)</li>
+</ul>
+<p><strong>Long-term trends:</strong></p>
+<p>Number increasing (better detection)<br>
+Variability increasing (fewer days, but more intense outbreaks)</p>
+<h3 id="warning-performance" class="anchored">Warning Performance</h3>
+<p><strong>Lead time:</strong></p>
+<p>Average ~15 minutes (2020s)<br>
+Historical ~5 minutes (1990s)</p>
+<p><strong>Improvement from:</strong></p>
+<ul>
+<li>Doppler radar (TVS detection)</li>
+<li>Dual-polarization (TDS)</li>
+<li>Spotter networks</li>
+<li>Probabilistic forecasts</li>
+</ul>
+<p><strong>False alarm ratio:</strong></p>
+<p>~70% (tornado warned but no tornado)</p>
+<p><strong>Challenge:</strong> Balance specificity vs safety</p>
+<p><strong>Probability of Detection:</strong></p>
+<p>~80% (tornado occurred, warning issued)</p>
+<p><strong>Misses:</strong> Weak tornadoes, radar limitations</p>
+<h3 id="building-design" class="anchored">Building Design</h3>
+<p><strong>Tornado-resistant construction:</strong></p>
+<p><strong>Safe rooms (FEMA):</strong></p>
+<ul>
+<li>Withstand 250 mph winds</li>
+<li>EF5-rated (3-second gust)</li>
+<li>Reinforced concrete or steel</li>
+</ul>
+<p><strong>Residential:</strong></p>
+<ul>
+<li>Interior room, lowest floor</li>
+<li>No windows</li>
+<li>Away from exterior walls</li>
+</ul>
+<p><strong>Critical infrastructure:</strong></p>
+<ul>
+<li>Hospitals: Hardened patient areas</li>
+<li>Schools: Gymnasiums as shelters</li>
+<li>Data centers: EF3+ rated</li>
+</ul>
+<p><strong>Cost-benefit:</strong></p>
+<p>$5,000-10,000 safe room vs potential lives saved.</p>
+<hr>
+<h2 id="what-could-go-wrong" class="anchored">7. What Could Go Wrong?</h2>
+<h3 id="satellite-tornadoes" class="anchored">Satellite Tornadoes</h3>
+<p><strong>Multiple vortices</strong> around main tornado.</p>
+<p><strong>Smaller, but intense</strong> (100+ mph).</p>
+<p><strong>Damage path:</strong> Cycloidal, unpredictable</p>
+<p><strong>Radar:</strong> May not resolve (too small)</p>
+<p><strong>Warning challenge:</strong> Unexpected damage swaths</p>
+<h3 id="qlcs-tornadoes" class="anchored">QLCS Tornadoes</h3>
+<p><strong>Quasi-linear convective system</strong> (squall line).</p>
+<p><strong>Different from supercell:</strong></p>
+<ul>
+<li>Weaker (typically EF0-EF2)</li>
+<li>Shorter-lived (minutes)</li>
+<li>Minimal warning time (5-10 min)</li>
+<li>Often rain-wrapped (invisible)</li>
+</ul>
+<p><strong>Mesovortices:</strong> Embedded rotation in QLCS</p>
+<p><strong>Forecast difficulty:</strong> Less predictable than supercells</p>
+<h3 id="rapid-intensification" class="anchored">Rapid Intensification</h3>
+<p><strong>EF1 → EF4 in minutes</strong></p>
+<p><strong>Example - El Reno 2013:</strong></p>
+<p>Widened from 1 mile to 2.6 miles in seconds<br>
+Accelerated violently<br>
+Killed storm chasers (thought safe distance)</p>
+<p><strong>Unpredictable</strong> via current models</p>
+<h3 id="nocturnal-tornadoes" class="anchored">Nocturnal Tornadoes</h3>
+<p><strong>Overnight tornadoes</strong> harder to detect:</p>
+<p><strong>Visual confirmation:</strong> Impossible (dark)<br>
+<strong>Spotters:</strong> Fewer active<br>
+<strong>Population:</strong> Asleep, miss warnings</p>
+<p><strong>Higher fatality rate:</strong> 2-3× daytime</p>
+<p><strong>2008 Super Tuesday outbreak:</strong></p>
+<p>57 tornadoes, 57 deaths (many overnight)</p>
+<hr>
+<h2 id="extension-mobile-radar-observations" class="anchored">8. Extension: Mobile Radar Observations</h2>
+<p><strong>Doppler on Wheels (DOW):</strong></p>
+<p>Truck-mounted X-band radar.</p>
+<p><strong>High resolution:</strong> 50-100 m</p>
+<p><strong>Close range:</strong> &lt;10 km</p>
+<p><strong>Observations:</strong></p>
+<p><strong>Record winds:</strong> 301 mph (EF5+), Bridge Creek 1999<br>
+<strong>RMW:</strong> As small as 50 m<br>
+<strong>Sub-vortices:</strong> Multiple resolved<br>
+<strong>Vertical structure:</strong> 3D mapping</p>
+<p><strong>Scientific value:</strong></p>
+<p>Validate models<br>
+Understand tornadogenesis<br>
+Improve warnings</p>
+<hr>
+<h2 id="math-refresher-conservation-of-angular-momentum" class="anchored">9. Math Refresher: Conservation of Angular Momentum</h2>
+<h3 id="angular-momentum" class="anchored">Angular Momentum</h3>
+<p><span class="math display">L = m r v</span></p>
+<p>Or for continuum:</p>
+<p><span class="math display">L = \int r^2 \omega \, dm</span></p>
+<p><strong>Conservation:</strong></p>
+<p>If no external torque:</p>
+<p><span class="math display">r_1 v_1 = r_2 v_2</span></p>
+<p><strong>Tornado application:</strong></p>
+<p>Air parcel drawn inward (r decreases)<br>
+Velocity must increase (v increases)</p>
+<p><strong>Example:</strong></p>
+<p><span class="math inline">r_1 = 1000</span> m, <span class="math inline">v_1 = 10</span> m/s</p>
+<p><span class="math inline">r_2 = 100</span> m</p>
+<p><span class="math display">v_2 = \frac{r_1 v_1}{r_2} = \frac{1000 \times 10}{100} = 100 \text{ m/s}</span></p>
+<p><strong>10× velocity increase from 10× radius decrease!</strong></p>
+<hr>
+<h2 id="summary" class="anchored">Summary</h2>
+<ul>
+<li>Tornado formation requires vorticity generation, tilting into vertical, and stretching by updraft</li>
+<li>Vorticity equation shows exponential amplification from vertical convergence in updrafts</li>
+<li>Rankine vortex provides idealized wind profile with maximum winds at RMW typically 100-500m</li>
+<li>Enhanced Fujita Scale rates tornado intensity EF0-EF5 based on damage indicators</li>
+<li>Pressure deficit in core reaches 40-100 mb for violent tornadoes from velocity squared relationship</li>
+<li>Tornado Vortex Signature on Doppler radar enables detection and warning issuance</li>
+<li>Average warning lead time improved from 5 to 15 minutes with modern technology</li>
+<li>Violent tornadoes (EF4-EF5) comprise &lt;1% of events but cause majority of fatalities</li>
+<li>Challenges include satellite tornadoes, QLCS events, rapid intensification, nocturnal occurrence</li>
+<li>Mobile radar observations measure record 301 mph winds validating EF5+ potential</li>
+</ul>
+<hr>
+
+
+<footer class="wayward-footer">
+  <div class="wayward-footer__inner">
+    <div class="wayward-footer__brand">
+      <div class="wayward-footer__logo">WaywardHouse<span>.</span></div>
+      <p>Understanding how place, economy, and environment interact through analysis, modelling, and open tools.</p>
+    </div>
+
+    <nav class="wayward-footer__group" aria-labelledby="footer-reading">
+      <h2 id="footer-reading" class="anchored">Reading</h2>
+      <a href="https://wayward.house/articles/">Articles</a>
+      <a href="https://wayward.house/learn/">Library</a>
+      <a href="https://wayward.house/archive.html">Archive</a>
+      <a href="https://wayward.house/start-here.html">Choose Your Path</a>
+    </nav>
+
+    <nav class="wayward-footer__group" aria-labelledby="footer-site">
+      <h2 id="footer-site" class="anchored">Site</h2>
+      <a href="https://wayward.house/start-here.html">Choose Your Path</a>
+      <a href="https://wayward.house/about.html">About</a>
+      <a href="https://wayward.house/contact.html">Contact</a>
+    </nav>
+
+    <nav class="wayward-footer__group" aria-labelledby="footer-resources">
+      <h2 id="footer-resources" class="anchored">Resources</h2>
+      <a href="https://wayward.house/topics/">All Topics</a>
+      <a href="https://wayward.house/privacy.html">Privacy Policy</a>
+      <a href="https://wayward.house/terms.html">Terms of Use</a>
+    </nav>
+  </div>
+</footer>
+
+<script type="module" src="../assets/dist/main.js"></script>
+<script type="module" src="../assets/js/core.js"></script>
+<script id="quarto-html-after-body" type="application/javascript">
+  window.document.addEventListener("DOMContentLoaded", function (event) {
+    const tabsets =  window.document.querySelectorAll(".panel-tabset-tabby")
+    tabsets.forEach(function(tabset) {
+      const tabby = new Tabby('#' + tabset.id);
+    });
+    const icon = "";
+    const anchorJS = new window.AnchorJS();
+    anchorJS.options = {
+      placement: 'right',
+      icon: icon
+    };
+    anchorJS.add('.anchored');
+    const isCodeAnnotation = (el) => {
+      for (const clz of el.classList) {
+        if (clz.startsWith('code-annotation-')) {                     
+          return true;
+        }
+      }
+      return false;
+    }
+    const onCopySuccess = function(e) {
+      // button target
+      const button = e.trigger;
+      // don't keep focus
+      button.blur();
+      // flash "checked"
+      button.classList.add('code-copy-button-checked');
+      var currentTitle = button.getAttribute("title");
+      button.setAttribute("title", "Copied!");
+      let tooltip;
+      if (window.bootstrap) {
+        button.setAttribute("data-bs-toggle", "tooltip");
+        button.setAttribute("data-bs-placement", "left");
+        button.setAttribute("data-bs-title", "Copied!");
+        tooltip = new bootstrap.Tooltip(button, 
+          { trigger: "manual", 
+            customClass: "code-copy-button-tooltip",
+            offset: [0, -8]});
+        tooltip.show();    
+      }
+      setTimeout(function() {
+        if (tooltip) {
+          tooltip.hide();
+          button.removeAttribute("data-bs-title");
+          button.removeAttribute("data-bs-toggle");
+          button.removeAttribute("data-bs-placement");
+        }
+        button.setAttribute("title", currentTitle);
+        button.classList.remove('code-copy-button-checked');
+      }, 1000);
+      // clear code selection
+      e.clearSelection();
+    }
+    const getTextToCopy = function(trigger) {
+      const outerScaffold = trigger.parentElement.cloneNode(true);
+      const codeEl = outerScaffold.querySelector('code');
+      for (const childEl of codeEl.children) {
+        if (isCodeAnnotation(childEl)) {
+          childEl.remove();
+        }
+      }
+      return codeEl.innerText;
+    }
+    const clipboard = new window.ClipboardJS('.code-copy-button:not([data-in-quarto-modal])', {
+      text: getTextToCopy
+    });
+    clipboard.on('success', onCopySuccess);
+    if (window.document.getElementById('quarto-embedded-source-code-modal')) {
+      const clipboardModal = new window.ClipboardJS('.code-copy-button[data-in-quarto-modal]', {
+        text: getTextToCopy,
+        container: window.document.getElementById('quarto-embedded-source-code-modal')
+      });
+      clipboardModal.on('success', onCopySuccess);
+    }
+      var localhostRegex = new RegExp(/^(?:http|https):\/\/localhost\:?[0-9]*\//);
+      var mailtoRegex = new RegExp(/^mailto:/);
+        var filterRegex = new RegExp('/' + window.location.host + '/');
+      var isInternal = (href) => {
+          return filterRegex.test(href) || localhostRegex.test(href) || mailtoRegex.test(href);
+      }
+      // Inspect non-navigation links and adorn them if external
+     var links = window.document.querySelectorAll('a[href]:not(.nav-link):not(.navbar-brand):not(.toc-action):not(.sidebar-link):not(.sidebar-item-toggle):not(.pagination-link):not(.no-external):not([aria-hidden]):not(.dropdown-item):not(.quarto-navigation-tool):not(.about-link)');
+      for (var i=0; i<links.length; i++) {
+        const link = links[i];
+        if (!isInternal(link.href)) {
+          // undo the damage that might have been done by quarto-nav.js in the case of
+          // links that we want to consider external
+          if (link.dataset.originalHref !== undefined) {
+            link.href = link.dataset.originalHref;
+          }
+        }
+      }
+    function tippyHover(el, contentFn, onTriggerFn, onUntriggerFn) {
+      const config = {
+        allowHTML: true,
+        maxWidth: 500,
+        delay: 100,
+        arrow: false,
+        appendTo: function(el) {
+            return el.parentElement;
+        },
+        interactive: true,
+        interactiveBorder: 10,
+        theme: 'light-border',
+        placement: 'bottom-start',
+      };
+      if (contentFn) {
+        config.content = contentFn;
+      }
+      if (onTriggerFn) {
+        config.onTrigger = onTriggerFn;
+      }
+      if (onUntriggerFn) {
+        config.onUntrigger = onUntriggerFn;
+      }
+      window.tippy(el, config); 
+    }
+    const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+    for (var i=0; i<noterefs.length; i++) {
+      const ref = noterefs[i];
+      tippyHover(ref, function() {
+        // use id or data attribute instead here
+        let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+        try { href = new URL(href).hash; } catch {}
+        const id = href.replace(/^#\/?/, "");
+        const note = window.document.getElementById(id);
+        if (note) {
+          return note.innerHTML;
+        } else {
+          return "";
+        }
+      });
+    }
+    const xrefs = window.document.querySelectorAll('a.quarto-xref');
+    const processXRef = (id, note) => {
+      // Strip column container classes
+      const stripColumnClz = (el) => {
+        el.classList.remove("page-full", "page-columns");
+        if (el.children) {
+          for (const child of el.children) {
+            stripColumnClz(child);
+          }
+        }
+      }
+      stripColumnClz(note)
+      if (id === null || id.startsWith('sec-')) {
+        // Special case sections, only their first couple elements
+        const container = document.createElement("div");
+        if (note.children && note.children.length > 2) {
+          container.appendChild(note.children[0].cloneNode(true));
+          for (let i = 1; i < note.children.length; i++) {
+            const child = note.children[i];
+            if (child.tagName === "P" && child.innerText === "") {
+              continue;
+            } else {
+              container.appendChild(child.cloneNode(true));
+              break;
+            }
+          }
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(container);
+          }
+          return container.innerHTML
+        } else {
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(note);
+          }
+          return note.innerHTML;
+        }
+      } else {
+        // Remove any anchor links if they are present
+        const anchorLink = note.querySelector('a.anchorjs-link');
+        if (anchorLink) {
+          anchorLink.remove();
+        }
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(note);
+        }
+        if (note.classList.contains("callout")) {
+          return note.outerHTML;
+        } else {
+          return note.innerHTML;
+        }
+      }
+    }
+    for (var i=0; i<xrefs.length; i++) {
+      const xref = xrefs[i];
+      tippyHover(xref, undefined, function(instance) {
+        instance.disable();
+        let url = xref.getAttribute('href');
+        let hash = undefined; 
+        if (url.startsWith('#')) {
+          hash = url;
+        } else {
+          try { hash = new URL(url).hash; } catch {}
+        }
+        if (hash) {
+          const id = hash.replace(/^#\/?/, "");
+          const note = window.document.getElementById(id);
+          if (note !== null) {
+            try {
+              const html = processXRef(id, note.cloneNode(true));
+              instance.setContent(html);
+            } finally {
+              instance.enable();
+              instance.show();
+            }
+          } else {
+            // See if we can fetch this
+            fetch(url.split('#')[0])
+            .then(res => res.text())
+            .then(html => {
+              const parser = new DOMParser();
+              const htmlDoc = parser.parseFromString(html, "text/html");
+              const note = htmlDoc.getElementById(id);
+              if (note !== null) {
+                const html = processXRef(id, note);
+                instance.setContent(html);
+              } 
+            }).finally(() => {
+              instance.enable();
+              instance.show();
+            });
+          }
+        } else {
+          // See if we can fetch a full url (with no hash to target)
+          // This is a special case and we should probably do some content thinning / targeting
+          fetch(url)
+          .then(res => res.text())
+          .then(html => {
+            const parser = new DOMParser();
+            const htmlDoc = parser.parseFromString(html, "text/html");
+            const note = htmlDoc.querySelector('main.content');
+            if (note !== null) {
+              // This should only happen for chapter cross references
+              // (since there is no id in the URL)
+              // remove the first header
+              if (note.children.length > 0 && note.children[0].tagName === "HEADER") {
+                note.children[0].remove();
+              }
+              const html = processXRef(null, note);
+              instance.setContent(html);
+            } 
+          }).finally(() => {
+            instance.enable();
+            instance.show();
+          });
+        }
+      }, function(instance) {
+      });
+    }
+        let selectedAnnoteEl;
+        const selectorForAnnotation = ( cell, annotation) => {
+          let cellAttr = 'data-code-cell="' + cell + '"';
+          let lineAttr = 'data-code-annotation="' +  annotation + '"';
+          const selector = 'span[' + cellAttr + '][' + lineAttr + ']';
+          return selector;
+        }
+        const selectCodeLines = (annoteEl) => {
+          const doc = window.document;
+          const targetCell = annoteEl.getAttribute("data-target-cell");
+          const targetAnnotation = annoteEl.getAttribute("data-target-annotation");
+          const annoteSpan = window.document.querySelector(selectorForAnnotation(targetCell, targetAnnotation));
+          const lines = annoteSpan.getAttribute("data-code-lines").split(",");
+          const lineIds = lines.map((line) => {
+            return targetCell + "-" + line;
+          })
+          let top = null;
+          let height = null;
+          let parent = null;
+          if (lineIds.length > 0) {
+              //compute the position of the single el (top and bottom and make a div)
+              const el = window.document.getElementById(lineIds[0]);
+              top = el.offsetTop;
+              height = el.offsetHeight;
+              parent = el.parentElement.parentElement;
+            if (lineIds.length > 1) {
+              const lastEl = window.document.getElementById(lineIds[lineIds.length - 1]);
+              const bottom = lastEl.offsetTop + lastEl.offsetHeight;
+              height = bottom - top;
+            }
+            if (top !== null && height !== null && parent !== null) {
+              // cook up a div (if necessary) and position it 
+              let div = window.document.getElementById("code-annotation-line-highlight");
+              if (div === null) {
+                div = window.document.createElement("div");
+                div.setAttribute("id", "code-annotation-line-highlight");
+                div.style.position = 'absolute';
+                parent.appendChild(div);
+              }
+              div.style.top = top - 2 + "px";
+              div.style.height = height + 4 + "px";
+              div.style.left = 0;
+              let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
+              if (gutterDiv === null) {
+                gutterDiv = window.document.createElement("div");
+                gutterDiv.setAttribute("id", "code-annotation-line-highlight-gutter");
+                gutterDiv.style.position = 'absolute';
+                const codeCell = window.document.getElementById(targetCell);
+                const gutter = codeCell.querySelector('.code-annotation-gutter');
+                gutter.appendChild(gutterDiv);
+              }
+              gutterDiv.style.top = top - 2 + "px";
+              gutterDiv.style.height = height + 4 + "px";
+            }
+            selectedAnnoteEl = annoteEl;
+          }
+        };
+        const unselectCodeLines = () => {
+          const elementsIds = ["code-annotation-line-highlight", "code-annotation-line-highlight-gutter"];
+          elementsIds.forEach((elId) => {
+            const div = window.document.getElementById(elId);
+            if (div) {
+              div.remove();
+            }
+          });
+          selectedAnnoteEl = undefined;
+        };
+          // Handle positioning of the toggle
+      window.addEventListener(
+        "resize",
+        throttle(() => {
+          elRect = undefined;
+          if (selectedAnnoteEl) {
+            selectCodeLines(selectedAnnoteEl);
+          }
+        }, 10)
+      );
+      function throttle(fn, ms) {
+      let throttle = false;
+      let timer;
+        return (...args) => {
+          if(!throttle) { // first call gets through
+              fn.apply(this, args);
+              throttle = true;
+          } else { // all the others get throttled
+              if(timer) clearTimeout(timer); // cancel #2
+              timer = setTimeout(() => {
+                fn.apply(this, args);
+                timer = throttle = false;
+              }, ms);
+          }
+        };
+      }
+        // Attach click handler to the DT
+        const annoteDls = window.document.querySelectorAll('dt[data-target-cell]');
+        for (const annoteDlNode of annoteDls) {
+          annoteDlNode.addEventListener('click', (event) => {
+            const clickedEl = event.target;
+            if (clickedEl !== selectedAnnoteEl) {
+              unselectCodeLines();
+              const activeEl = window.document.querySelector('dt[data-target-cell].code-annotation-active');
+              if (activeEl) {
+                activeEl.classList.remove('code-annotation-active');
+              }
+              selectCodeLines(clickedEl);
+              clickedEl.classList.add('code-annotation-active');
+            } else {
+              // Unselect the line
+              unselectCodeLines();
+              clickedEl.classList.remove('code-annotation-active');
+            }
+          });
+        }
+    const findCites = (el) => {
+      const parentEl = el.parentElement;
+      if (parentEl) {
+        const cites = parentEl.dataset.cites;
+        if (cites) {
+          return {
+            el,
+            cites: cites.split(' ')
+          };
+        } else {
+          return findCites(el.parentElement)
+        }
+      } else {
+        return undefined;
+      }
+    };
+    var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+    for (var i=0; i<bibliorefs.length; i++) {
+      const ref = bibliorefs[i];
+      const citeInfo = findCites(ref);
+      if (citeInfo) {
+        tippyHover(citeInfo.el, function() {
+          var popup = window.document.createElement('div');
+          citeInfo.cites.forEach(function(cite) {
+            var citeDiv = window.document.createElement('div');
+            citeDiv.classList.add('hanging-indent');
+            citeDiv.classList.add('csl-entry');
+            var biblioDiv = window.document.getElementById('ref-' + cite);
+            if (biblioDiv) {
+              citeDiv.innerHTML = biblioDiv.innerHTML;
+            }
+            popup.appendChild(citeDiv);
+          });
+          return popup.innerHTML;
+        });
+      }
+    }
+  });
+  </script>
+
+
+
+
+</body></html>

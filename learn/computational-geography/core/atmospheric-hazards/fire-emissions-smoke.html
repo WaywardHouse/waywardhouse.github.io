@@ -1,0 +1,1262 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
+
+<meta charset="utf-8">
+<meta name="generator" content="quarto-1.9.36">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+
+<meta name="dcterms.date" content="2026-02-27">
+<meta name="description" content="How much pollution does a wildfire release, and where will the smoke go? Fire emissions depend on fuel consumption and combustion efficiency, while smoke dispersion follows atmospheric transport. This model derives emission factor equations, implements plume rise models, demonstrates Gaussian dispersion, and maps air quality impacts from wildfire smoke.">
+
+<title>Fire Emissions and Smoke Dispersion – Computational Geography</title>
+<style>
+/* Default styles provided by pandoc.
+** See https://pandoc.org/MANUAL.html#variables-for-html for config info.
+*/
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: min(4vw, 1.5em);}
+div.column{flex: auto; overflow-x: auto;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+  width: 0.8em;
+  margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
+  vertical-align: middle;
+}
+</style>
+
+
+<script src="../site_libs/clipboard/clipboard.min.js"></script>
+<script src="../site_libs/quarto-html/tabby.min.js"></script>
+<script src="../site_libs/quarto-html/popper.min.js"></script>
+<script src="../site_libs/quarto-html/tippy.umd.min.js"></script>
+<script src="../site_libs/quarto-html/anchor.min.js"></script>
+<link href="../site_libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="../site_libs/quarto-html/light-border.css" rel="stylesheet">
+<link href="../site_libs/quarto-html/quarto-html-640605f58ae58ee79329c070719e555b.min.css" rel="stylesheet" append-hash="true" data-mode="light">
+<link href="../site_libs/quarto-html/quarto-syntax-highlighting-845c23b38eaddc0f92fda52bfe77a8c8.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<script>
+  (function () {
+    document.documentElement.dataset.theme = 'light';
+    document.documentElement.dataset.brand = 'wayward';
+    try {
+      localStorage.removeItem('theme');
+    } catch (err) {
+      void err;
+    }
+  })();
+</script>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:ital,wght@0,300;0,400;0,600;0,700;0,800;0,900;1,700;1,800&amp;family=Barlow:wght@300;400;500;600&amp;family=IBM+Plex+Mono:ital,wght@0,300;0,400;0,500;1,300&amp;family=Literata:ital,opsz,wght@0,7..72,300;0,7..72,400;0,7..72,500;1,7..72,300;1,7..72,400&amp;display=swap" rel="stylesheet">
+
+  <script>window.backupDefine = window.define; window.define = undefined;</script><script src="https://cdn.jsdelivr.net/npm/katex@latest/dist/katex.min.js"></script>
+  <script>document.addEventListener("DOMContentLoaded", function () {
+ var mathElements = document.getElementsByClassName("math");
+ var macros = [];
+ for (var i = 0; i < mathElements.length; i++) {
+  var texText = mathElements[i].firstChild;
+  if (mathElements[i].tagName == "SPAN") {
+   katex.render(texText.data, mathElements[i], {
+    displayMode: mathElements[i].classList.contains('display'),
+    throwOnError: false,
+    macros: macros,
+    fleqn: false
+   });
+}}});
+  </script>
+  <script>window.define = window.backupDefine; window.backupDefine = undefined;</script><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@latest/dist/katex.min.css">
+
+<script type="text/javascript">
+const typesetMath = (el) => {
+  if (window.MathJax) {
+    // MathJax Typeset
+    window.MathJax.typeset([el]);
+  } else if (window.katex) {
+    // KaTeX Render
+    var mathElements = el.getElementsByClassName("math");
+    var macros = [];
+    for (var i = 0; i < mathElements.length; i++) {
+      var texText = mathElements[i].firstChild;
+      if (mathElements[i].tagName == "SPAN" && texText && texText.data) {
+        window.katex.render(texText.data, mathElements[i], {
+          displayMode: mathElements[i].classList.contains('display'),
+          throwOnError: false,
+          macros: macros,
+          fleqn: false
+        });
+      }
+    }
+  }
+}
+window.Quarto = {
+  typesetMath
+};
+</script>
+
+<link rel="stylesheet" href="../assets/css/quarto-wayward.css">
+</head>
+
+<body class="reading-body tag-hash-math tag-hash-viz">
+
+
+<header id="title-block-header">
+<h1 class="title"><span class="chapter-title">Fire Emissions and Smoke Dispersion</span></h1>
+<p class="subtitle">Quantifying pollutant release and atmospheric transport from wildfires</p>
+
+<p class="date">2026-02-27</p>
+</header>
+
+<nav id="TOC" role="doc-toc">
+    <h2 id="toc-title">Table of contents</h2>
+   
+  <ul>
+  <li><a href="#before-you-start" id="toc-before-you-start">Before You Start</a></li>
+  <li><a href="#the-question" id="toc-the-question">1. The Question</a></li>
+  <li><a href="#the-conceptual-model" id="toc-the-conceptual-model">2. The Conceptual Model</a>
+  <ul>
+  <li><a href="#emission-factors" id="toc-emission-factors">Emission Factors</a></li>
+  <li><a href="#plume-rise" id="toc-plume-rise">Plume Rise</a></li>
+  <li><a href="#gaussian-dispersion" id="toc-gaussian-dispersion">Gaussian Dispersion</a></li>
+  </ul></li>
+  <li><a href="#building-the-mathematical-model" id="toc-building-the-mathematical-model">3. Building the Mathematical Model</a>
+  <ul>
+  <li><a href="#total-emissions-calculation" id="toc-total-emissions-calculation">Total Emissions Calculation</a></li>
+  <li><a href="#emission-rate" id="toc-emission-rate">Emission Rate</a></li>
+  <li><a href="#stability-class" id="toc-stability-class">Stability Class</a></li>
+  </ul></li>
+  <li><a href="#worked-example-by-hand" id="toc-worked-example-by-hand">4. Worked Example by Hand</a>
+  <ul>
+  <li><a href="#solution" id="toc-solution">Solution</a></li>
+  </ul></li>
+  <li><a href="#computational-implementation" id="toc-computational-implementation">5. Computational Implementation</a></li>
+  <li><a href="#interpretation" id="toc-interpretation">6. Interpretation</a>
+  <ul>
+  <li><a href="#health-impacts" id="toc-health-impacts">Health Impacts</a></li>
+  <li><a href="#air-quality-forecasting" id="toc-air-quality-forecasting">Air Quality Forecasting</a></li>
+  <li><a href="#carbon-accounting" id="toc-carbon-accounting">Carbon Accounting</a></li>
+  </ul></li>
+  <li><a href="#what-could-go-wrong" id="toc-what-could-go-wrong">7. What Could Go Wrong?</a>
+  <ul>
+  <li><a href="#injection-height-uncertain" id="toc-injection-height-uncertain">Injection Height Uncertain</a></li>
+  <li><a href="#complex-terrain" id="toc-complex-terrain">Complex Terrain</a></li>
+  <li><a href="#chemistry-ignored" id="toc-chemistry-ignored">Chemistry Ignored</a></li>
+  <li><a href="#background-pm-not-considered" id="toc-background-pm-not-considered">Background PM Not Considered</a></li>
+  </ul></li>
+  <li><a href="#extension-satellite-based-emissions" id="toc-extension-satellite-based-emissions">8. Extension: Satellite-Based Emissions</a></li>
+  <li><a href="#math-refresher-gaussian-function" id="toc-math-refresher-gaussian-function">9. Math Refresher: Gaussian Function</a>
+  <ul>
+  <li><a href="#standard-form" id="toc-standard-form">Standard Form</a></li>
+  <li><a href="#two-dimensional" id="toc-two-dimensional">Two-Dimensional</a></li>
+  </ul></li>
+  <li><a href="#summary" id="toc-summary">Summary</a></li>
+  </ul>
+</nav>
+<h2 id="before-you-start" class="anchored">Before You Start</h2>
+<p><strong>You should know</strong><br>
+That wildfires release heat and pollutants, and that wind and turbulence move those pollutants through the atmosphere.</p>
+<p><strong>You will learn</strong><br>
+How fuel consumption becomes emissions, how plume rise changes release height, and how dispersion models estimate downwind smoke concentration.</p>
+<p><strong>Why this matters</strong><br>
+Smoke forecasting connects fire behaviour to health risk, air-quality alerts, and regional hazard planning.</p>
+<p><strong>If this gets hard, focus on…</strong><br>
+The chain from fuel burned, to pollutant released, to plume transported, to concentration experienced downwind.</p>
+<p>In the summer of 2023, wildfire smoke from Quebec and Ontario turned the skies over New York City orange. PM2.5 concentrations reached 11 times the WHO daily guideline, schools cancelled outdoor activities, and the United States issued its worst-ever air quality alerts across the Northeast. The smoke had travelled more than 1,500 km from fires consuming millions of hectares of boreal forest. The public health impact — measured in respiratory hospital admissions, reduced visibility, and premature deaths — rivalled the fires’ direct destruction of property. And it was predictable: atmospheric transport models had been forecasting the smoke plume’s trajectory for days before it arrived.</p>
+<p>Wildfire smoke is a complex mixture of gases and particles produced by incomplete combustion of organic material. The quantities emitted depend on what is burning (fuel type and loading), how efficiently it is burning (flaming versus smouldering), and how much area has burned. Each fuel type has characteristic emission factors — grams of PM2.5, carbon monoxide, or volatile organic compounds per kilogram of fuel consumed — derived from laboratory burns and field measurements. Once released, the smoke plume rises due to thermal buoyancy (Briggs plume rise equations), is advected by the mean wind, and disperses by turbulent mixing. The Gaussian plume model — the workhorse of atmospheric dispersion for point and area sources — predicts concentrations downwind as a function of emission rate, wind speed, atmospheric stability, and distance. This model derives the emission accounting, implements plume rise, and calculates ground-level concentrations from wildfire smoke using the Gaussian framework.</p>
+<h2 id="the-question" class="anchored">1. The Question</h2>
+<p>What is the air quality impact 50 km downwind from this wildfire?</p>
+<p><strong>Fire emissions:</strong></p>
+<p>Pollutants released during combustion.</p>
+<p><strong>Major species:</strong></p>
+<ul>
+<li>CO₂ (carbon dioxide): ~1650 g/kg fuel</li>
+<li>CO (carbon monoxide): ~60-100 g/kg</li>
+<li>PM₂.₅ (fine particles): ~10-20 g/kg</li>
+<li>NOₓ (nitrogen oxides): ~1-3 g/kg</li>
+<li>VOCs (volatile organics): ~10-30 g/kg</li>
+<li>CH₄ (methane): ~5-10 g/kg</li>
+</ul>
+<p><strong>Health impacts:</strong></p>
+<p>PM₂.₅ primary concern: - Respiratory issues - Cardiovascular stress - Premature mortality</p>
+<p><strong>Air quality standards:</strong></p>
+<p>EPA: 35 μg/m³ (24-hour PM₂.₅)</p>
+<p>Wildfire smoke: 100-500 μg/m³ common, &gt;1000 μg/m³ near fires</p>
+<p><strong>Applications:</strong></p>
+<ul>
+<li>Air quality forecasting</li>
+<li>Evacuation decisions</li>
+<li>Health advisories</li>
+<li>Climate forcing calculations</li>
+<li>Carbon accounting</li>
+</ul>
+<hr>
+<h2 id="the-conceptual-model" class="anchored">2. The Conceptual Model</h2>
+<h3 id="emission-factors" class="anchored">Emission Factors</h3>
+<p><strong>Mass of pollutant per mass of fuel:</strong></p>
+<p><span class="math display">EF_i = \frac{m_i}{m_{\text{fuel}}}</span></p>
+<p>Where: - <span class="math inline">EF_i</span> = emission factor for species <span class="math inline">i</span> (g/kg) - <span class="math inline">m_i</span> = mass of species emitted - <span class="math inline">m_{\text{fuel}}</span> = dry fuel consumed</p>
+<p><strong>Total emissions:</strong></p>
+<p><span class="math display">E_i = A \times B \times C \times EF_i</span></p>
+<p>Where: - <span class="math inline">A</span> = area burned (ha) - <span class="math inline">B</span> = fuel loading (kg/ha) - <span class="math inline">C</span> = combustion completeness (fraction, 0-1)</p>
+<p><strong>Modified combustion efficiency (MCE):</strong></p>
+<p><span class="math display">MCE = \frac{\Delta CO_2}{\Delta CO_2 + \Delta CO}</span></p>
+<p><strong>Flaming:</strong> MCE &gt; 0.95 (high efficiency, less PM)<br>
+<strong>Smoldering:</strong> MCE &lt; 0.85 (low efficiency, more PM, CO)</p>
+<p><strong>PM₂.₅ increases as MCE decreases:</strong></p>
+<p><span class="math display">EF_{PM_{2.5}} = a - b \times MCE</span></p>
+<p>Typical: <span class="math inline">a = 60</span>, <span class="math inline">b = 50</span> → flaming = 12.5 g/kg, smoldering = 17.5 g/kg</p>
+<h3 id="plume-rise" class="anchored">Plume Rise</h3>
+<p><strong>Buoyancy-driven ascent:</strong></p>
+<p>Hot emissions rise above fire.</p>
+<p><strong>Final plume height:</strong></p>
+<p><span class="math display">H = H_s + \frac{1.6 F^{1/3}}{U s^{1/3}}</span></p>
+<p>Where: - <span class="math inline">H</span> = plume top height (m) - <span class="math inline">H_s</span> = stack (fire) height (m) - <span class="math inline">F</span> = buoyancy flux (m⁴/s³) - <span class="math inline">U</span> = wind speed (m/s) - <span class="math inline">s</span> = stability parameter</p>
+<p><strong>Buoyancy flux:</strong></p>
+<p><span class="math display">F = g \frac{Q_H}{c_p T_a \rho_a}</span></p>
+<p>Where: - <span class="math inline">g</span> = 9.81 m/s² - <span class="math inline">Q_H</span> = sensible heat flux (W) - <span class="math inline">c_p</span> = 1005 J/kg/K - <span class="math inline">T_a</span> = ambient temperature (K) - <span class="math inline">\rho_a</span> = air density (kg/m³)</p>
+<p><strong>Typical wildfire:</strong></p>
+<p><span class="math inline">Q_H = 10^8</span> W → plume rise 1000-3000 m</p>
+<h3 id="gaussian-dispersion" class="anchored">Gaussian Dispersion</h3>
+<p><strong>Concentration downwind:</strong></p>
+<p><span class="math display">C(x,y,z) = \frac{Q}{2\pi U \sigma_y \sigma_z} \exp\left(-\frac{y^2}{2\sigma_y^2}\right) \left[\exp\left(-\frac{(z-H)^2}{2\sigma_z^2}\right) + \exp\left(-\frac{(z+H)^2}{2\sigma_z^2}\right)\right]</span></p>
+<p>Where: - <span class="math inline">C</span> = concentration (μg/m³) - <span class="math inline">Q</span> = emission rate (μg/s) - <span class="math inline">U</span> = wind speed (m/s) - <span class="math inline">\sigma_y, \sigma_z</span> = dispersion parameters (m) - <span class="math inline">H</span> = effective release height (m) - Second exponential = ground reflection</p>
+<p><strong>Dispersion parameters:</strong></p>
+<p>Power-law with distance:</p>
+<p><span class="math display">\sigma_y = a x^b</span> <span class="math display">\sigma_z = c x^d</span></p>
+<p>Constants depend on atmospheric stability class.</p>
+<p><strong>Ground-level concentration (z=0):</strong></p>
+<p><span class="math display">C(x,y,0) = \frac{Q}{\pi U \sigma_y \sigma_z} \exp\left(-\frac{y^2}{2\sigma_y^2}\right) \exp\left(-\frac{H^2}{2\sigma_z^2}\right)</span></p>
+<figure class="cg-ill">
+<div class="cg-ill__frame" data-markdown="1">
+<div class="cg-ill__eyebrow">
+Smoke Modeling Chain
+</div>
+<h3 class="cg-ill__title anchored">
+From Burned Fuel To Downwind Concentration
+</h3>
+<p class="cg-ill__lede">
+Smoke impacts come from a linked process: fuel burns, pollutants are emitted, heat lifts the plume, wind transports it, and turbulence controls how concentrated it becomes near the ground.
+</p>
+<div class="cg-ill__flow">
+<div class="cg-ill__flow-step">
+<div class="cg-ill__label">
+Step 1
+</div>
+<h4 class="anchored">
+Fuel consumed
+</h4>
+<p>
+Area burned, fuel loading, and combustion completeness set the mass available.
+</p>
+</div>
+<div class="cg-ill__flow-step">
+<div class="cg-ill__label">
+Step 2
+</div>
+<h4 class="anchored">
+Emissions
+</h4>
+<p>
+Emission factors convert burned fuel into PM2.5, CO, VOCs, and other species.
+</p>
+</div>
+<div class="cg-ill__flow-step">
+<div class="cg-ill__label">
+Step 3
+</div>
+<h4 class="anchored">
+Plume rise
+</h4>
+<p>
+Heat lifts smoke above the fire to an effective release height.
+</p>
+</div>
+<div class="cg-ill__flow-step">
+<div class="cg-ill__label">
+Step 4
+</div>
+<h4 class="anchored">
+Transport + mixing
+</h4>
+<p>
+Wind moves the plume while turbulence spreads it sideways and vertically.
+</p>
+</div>
+<div class="cg-ill__flow-step">
+<div class="cg-ill__label">
+Step 5
+</div>
+<h4 class="anchored">
+Exposure
+</h4>
+<p>
+Ground-level concentration determines visibility and health impact.
+</p>
+</div>
+</div>
+<div class="cg-ill__grid cg-ill__grid--2">
+<div class="cg-ill__card">
+<svg viewbox="0 0 560 300" role="img" aria-label="Wildfire smoke modeling sequence from fire to plume rise to downwind concentration">
+  <rect x="0" y="0" width="560" height="300" rx="22" fill="#f4efe8"></rect>
+  <rect x="34" y="220" width="492" height="34" rx="12" fill="#8a6d4b"></rect>
+  <ellipse cx="106" cy="208" rx="56" ry="18" fill="#7d5f3f"></ellipse>
+  <path d="M86 208 C84 182, 94 164, 102 142 C110 164, 118 182, 116 208 Z" fill="#d1495b"></path>
+  <path d="M102 208 C101 186, 108 172, 112 152 C120 170, 128 182, 126 208 Z" fill="#edae49"></path>
+  <text x="54" y="132" font-size="18" fill="#6b3f25" font-weight="700">fire</text>
+  <line x1="148" y1="204" x2="210" y2="204" stroke="#6f7f73" stroke-width="4"></line>
+  <polygon points="210,204 198,197 198,211" fill="#6f7f73"></polygon>
+  <rect x="220" y="158" width="88" height="54" rx="12" fill="#e5d7bf" stroke="#8c7a59" stroke-width="3"></rect>
+  <text x="232" y="182" font-size="17" fill="#5b4a2e" font-weight="700">emission</text>
+  <text x="238" y="202" font-size="15" fill="#5b4a2e">factor step</text>
+  <line x1="308" y1="184" x2="348" y2="146" stroke="#6f7f73" stroke-width="4"></line>
+  <polygon points="348,146 333,149 339,161" fill="#6f7f73"></polygon>
+  <path d="M352 210 C372 128, 410 86, 466 82 C490 80, 512 88, 526 100" fill="none" stroke="#8f8f8f" stroke-width="14" stroke-linecap="round"></path>
+  <path d="M352 210 C372 128, 410 86, 466 82 C490 80, 512 88, 526 100" fill="none" stroke="#b7b7b7" stroke-width="7" stroke-linecap="round"></path>
+  <text x="366" y="128" font-size="18" fill="#5b5b5b" font-weight="700">plume rise</text>
+  <line x1="442" y1="102" x2="526" y2="102" stroke="#224f9c" stroke-width="7" stroke-linecap="round"></line>
+  <polygon points="526,102 512,94 512,110" fill="#224f9c"></polygon>
+  <text x="422" y="84" font-size="18" fill="#224f9c" font-weight="700">wind transport</text>
+  <ellipse cx="492" cy="150" rx="54" ry="24" fill="#c6d3dd" fill-opacity="0.9"></ellipse>
+  <ellipse cx="506" cy="186" rx="78" ry="28" fill="#d9e2e8" fill-opacity="0.72"></ellipse>
+  <text x="428" y="232" font-size="18" fill="#3d5968" font-weight="700">ground-level smoke</text>
+  <text x="46" y="278" font-size="16" fill="#4b4235">Higher plume rise can push peak concentration farther downwind.</text>
+  <text x="46" y="296" font-size="16" fill="#4b4235">More turbulence spreads the plume; more emissions intensify it.</text>
+</svg>
+</div>
+<div class="cg-ill__card">
+<h4 class="anchored">
+What each model component controls
+</h4>
+<ul>
+<li>
+Fuel and emission factors control how much pollutant exists to be transported.
+</li>
+<li>
+Plume rise controls the effective release height.
+</li>
+<li>
+Wind controls where the plume goes.
+</li>
+<li>
+Atmospheric stability controls how fast the plume spreads and dilutes.
+</li>
+<li>
+Exposure depends most directly on the concentration that reaches breathing height downwind.
+</li>
+</ul>
+</div>
+</div>
+</div>
+</figure>
+<hr>
+<h2 id="building-the-mathematical-model" class="anchored">3. Building the Mathematical Model</h2>
+<h3 id="total-emissions-calculation" class="anchored">Total Emissions Calculation</h3>
+<p><strong>Fuel consumption:</strong></p>
+<p><span class="math display">FC = A \times FL \times CC</span></p>
+<p>Where: - <span class="math inline">FC</span> = fuel consumed (kg) - <span class="math inline">A</span> = burned area (m²) - <span class="math inline">FL</span> = fuel loading (kg/m²) - <span class="math inline">CC</span> = combustion completeness</p>
+<p><strong>Species emission:</strong></p>
+<p><span class="math display">E_i = FC \times EF_i \times 10^{-6}</span> (tonnes)</p>
+<p><strong>Example:</strong></p>
+<p>Area = 1000 ha = 10⁷ m²<br>
+Fuel loading = 1.5 kg/m² (forest)<br>
+CC = 0.9<br>
+<span class="math inline">EF_{PM_{2.5}}</span> = 15 g/kg</p>
+<p><span class="math display">FC = 10^7 \times 1.5 \times 0.9 = 1.35 \times 10^7 \text{ kg}</span></p>
+<p><span class="math display">E_{PM_{2.5}} = 1.35 \times 10^7 \times 15 \times 10^{-6} = 202.5 \text{ tonnes}</span></p>
+<p><strong>Over 200 tonnes of PM₂.₅!</strong></p>
+<h3 id="emission-rate" class="anchored">Emission Rate</h3>
+<p><strong>Temporal distribution:</strong></p>
+<p>Fire burns over time <span class="math inline">T</span> (hours/days).</p>
+<p><strong>Emission rate:</strong></p>
+<p><span class="math display">Q(t) = \frac{E_i}{T} \times f(t)</span></p>
+<p>Where <span class="math inline">f(t)</span> = temporal distribution (peak during active burning).</p>
+<p><strong>Simplified:</strong> Assume constant during active burning period.</p>
+<p><span class="math display">Q = \frac{E_i}{T \times 3600}</span> (g/s)</p>
+<h3 id="stability-class" class="anchored">Stability Class</h3>
+<p><strong>Pasquill-Gifford classes:</strong></p>
+<p>A: Extremely unstable (strong solar heating, light winds)<br>
+B: Moderately unstable<br>
+C: Slightly unstable<br>
+D: Neutral<br>
+E: Slightly stable<br>
+F: Moderately stable (clear night, light winds)</p>
+<p><strong>Affects dispersion:</strong></p>
+<p>Unstable (A-C): Rapid vertical mixing, lower ground concentrations<br>
+Stable (E-F): Limited mixing, concentrated plume</p>
+<p><strong>Wildfire context:</strong></p>
+<p>Heat from fire creates instability → often class C-D even at night.</p>
+<hr>
+<h2 id="worked-example-by-hand" class="anchored">4. Worked Example by Hand</h2>
+<p><strong>Problem:</strong> Calculate PM₂.₅ emissions and downwind concentration.</p>
+<p><strong>Fire characteristics:</strong></p>
+<ul>
+<li>Burned area: 500 ha</li>
+<li>Fuel type: Conifer forest</li>
+<li>Fuel loading: 2.0 kg/m²</li>
+<li>Combustion completeness: 85%</li>
+<li>Burn duration: 8 hours</li>
+</ul>
+<p><strong>Meteorology:</strong></p>
+<ul>
+<li>Wind speed: 5 m/s</li>
+<li>Stability: Class C (slightly unstable)</li>
+<li>Plume height: 800 m</li>
+</ul>
+<p><strong>Location of interest:</strong></p>
+<ul>
+<li>Downwind distance: 20 km</li>
+<li>Lateral offset: 2 km</li>
+</ul>
+<p>Calculate total PM₂.₅ and ground-level concentration.</p>
+<h3 id="solution" class="anchored">Solution</h3>
+<p><strong>Step 1: Fuel consumed</strong></p>
+<p><span class="math display">A = 500 \times 10^4 = 5 \times 10^6 \text{ m}^2</span></p>
+<p><span class="math display">FC = 5 \times 10^6 \times 2.0 \times 0.85 = 8.5 \times 10^6 \text{ kg}</span></p>
+<p><strong>Step 2: PM₂.₅ emission</strong></p>
+<p><span class="math inline">EF_{PM_{2.5}} = 15</span> g/kg (typical conifer)</p>
+<p><span class="math display">E_{PM_{2.5}} = 8.5 \times 10^6 \times 15 = 1.275 \times 10^8 \text{ g} = 127.5 \text{ tonnes}</span></p>
+<p><strong>Step 3: Emission rate</strong></p>
+<p><span class="math display">Q = \frac{1.275 \times 10^8}{8 \times 3600} = \frac{1.275 \times 10^8}{28800} = 4427 \text{ g/s}</span></p>
+<p><strong>Step 4: Dispersion parameters (Class C, x=20 km)</strong></p>
+<p>From standard tables:</p>
+<p><span class="math display">\sigma_y = 0.20 \times 20000^{0.894} = 0.20 \times 8913 = 1783 \text{ m}</span></p>
+<p><span class="math display">\sigma_z = 0.14 \times 20000^{0.885} = 0.14 \times 8318 = 1164 \text{ m}</span></p>
+<p><strong>Step 5: Concentration at (x=20 km, y=2 km, z=0)</strong></p>
+<p><span class="math display">C = \frac{4427}{\pi \times 5 \times 1783 \times 1164} \exp\left(-\frac{2000^2}{2 \times 1783^2}\right) \exp\left(-\frac{800^2}{2 \times 1164^2}\right)</span></p>
+<p><span class="math display">= \frac{4427}{32.5 \times 10^6} \times \exp(-0.63) \times \exp(-0.24)</span></p>
+<p><span class="math display">= 1.36 \times 10^{-4} \times 0.533 \times 0.787</span></p>
+<p><span class="math display">= 5.7 \times 10^{-5} \text{ g/m}^3 = 57 \text{ μg/m}^3</span></p>
+<p><strong>Step 6: Interpret</strong></p>
+<p>57 μg/m³ <strong>exceeds EPA standard</strong> (35 μg/m³)</p>
+<p>Health advisory warranted at this location.</p>
+<p><strong>Directly downwind (y=0):</strong> Concentration would be ~107 μg/m³ (worse)</p>
+<hr>
+<h2 id="computational-implementation" class="anchored">5. Computational Implementation</h2>
+<p>Below is an interactive smoke dispersion simulator.</p>
+<div class="viz-container" id="smoke-viz">
+<div class="controls">
+<label>
+Burned area (ha):
+<input type="range" id="burned-area" min="100" max="5000" step="100" value="1000">
+<span id="area-val">1000</span>
+</label>
+<label>
+Wind speed (m/s):
+<input type="range" id="wind" min="2" max="15" step="1" value="5">
+<span id="wind-val">5</span>
+</label>
+<label>
+Plume height (m):
+<input type="range" id="plume-height" min="200" max="2000" step="100" value="800">
+<span id="height-val">800</span>
+</label>
+<label>
+Stability class:
+<select id="stability">
+<option value="A">A (Very unstable)</option>
+<option value="B">B (Unstable)</option>
+<option value="C" selected="">C (Slightly unstable)</option>
+<option value="D">D (Neutral)</option>
+<option value="E">E (Slightly stable)</option>
+</select>
+</label>
+<div class="smoke-info">
+<p><strong>Total PM₂.₅:</strong> <span id="total-pm">--</span> tonnes</p>
+<p><strong>Max concentration:</strong> <span id="max-conc">--</span> μg/m³</p>
+<p><strong>Distance to standard:</strong> <span id="dist-standard">--</span> km</p>
+</div>
+</div>
+<div id="smoke-canvas-container">
+<canvas id="smoke-canvas" width="700" height="400" style="border: 1px solid #ddd;"></canvas>
+</div>
+</div>
+
+<script type="module">
+await new Promise(resolve => {
+const checkECharts = () => {
+if (typeof echarts !== 'undefined') resolve();
+else setTimeout(checkECharts, 50);
+};
+checkECharts();
+});
+
+(function() {
+const chart = echarts.init(document.getElementById('smoke-canvas'));
+  
+let burnedArea = 1000;
+let windSpeed = 5;
+let plumeHeight = 800;
+let stabilityClass = 'C';
+  
+const stabilityParams = {
+'A': {a: 0.22, b: 0.894, c: 0.20, d: 0.894},
+'B': {a: 0.16, b: 0.894, c: 0.12, d: 0.894},
+'C': {a: 0.11, b: 0.894, c: 0.08, d: 0.894},
+'D': {a: 0.08, b: 0.894, c: 0.06, d: 0.894},
+'E': {a: 0.06, b: 0.894, c: 0.03, d: 0.894}
+};
+  
+function calculateEmissions() {
+const fuelLoading = 1.5; // kg/m²
+const CC = 0.85;
+const EF_PM25 = 15; // g/kg
+    
+const area = burnedArea * 10000; // m²
+const FC = area * fuelLoading * CC;
+const totalPM = FC * EF_PM25 / 1e6; // tonnes
+    
+const Q = FC * EF_PM25 / (8 * 3600); // g/s (8 hour burn)
+    
+return {totalPM, Q};
+}
+  
+function calculateConcentration(x, y) {
+const {Q} = calculateEmissions();
+const params = stabilityParams[stabilityClass];
+    
+const sigmaY = params.a * Math.pow(x, params.b);
+const sigmaZ = params.c * Math.pow(x, params.d);
+    
+const H = plumeHeight;
+    
+const C = (Q / (Math.PI * windSpeed * sigmaY * sigmaZ)) *
+Math.exp(-Math.pow(y, 2) / (2 * Math.pow(sigmaY, 2))) *
+Math.exp(-Math.pow(H, 2) / (2 * Math.pow(sigmaZ, 2)));
+    
+return C; // μg/m³
+}
+  
+function generatePlume() {
+const data = [];
+const maxDist = 50000; // 50 km
+    
+for (let x = 1000; x <= maxDist; x += 1000) {
+const C = calculateConcentration(x, 0); // centerline
+data.push([x/1000, C]);
+}
+    
+return data;
+}
+  
+function findDistanceToStandard() {
+const standard = 35; // μg/m³
+    
+for (let x = 1000; x <= 100000; x += 500) {
+const C = calculateConcentration(x, 0);
+if (C < standard) {
+return x / 1000;
+}
+}
+    
+return '>100';
+}
+  
+function render() {
+const {totalPM} = calculateEmissions();
+const plumeData = generatePlume();
+    
+const maxConc = Math.max(...plumeData.map(d => d[1]));
+const distStandard = findDistanceToStandard();
+    
+document.getElementById('total-pm').textContent = totalPM.toFixed(0);
+document.getElementById('max-conc').textContent = maxConc.toFixed(0);
+document.getElementById('dist-standard').textContent = 
+typeof distStandard === 'number' ? distStandard.toFixed(0) : distStandard;
+    
+const series = [
+{
+name: 'PM₂.₅ Concentration',
+type: 'line',
+data: plumeData,
+lineStyle: {color: '#F44336', width: 3},
+areaStyle: {color: 'rgba(244, 67, 54, 0.3)'}
+},
+{
+name: 'EPA Standard (35 μg/m³)',
+type: 'line',
+data: [[0, 35], [50, 35]],
+lineStyle: {color: '#FF9800', width: 2, type: 'dashed'},
+markLine: {
+silent: true,
+label: {formatter: 'EPA 24-hr standard'}
+}
+},
+{
+name: 'Unhealthy (55 μg/m³)',
+type: 'line',
+data: [[0, 55], [50, 55]],
+lineStyle: {color: '#F57F17', width: 2, type: 'dotted'}
+}
+];
+    
+const option = {
+title: {
+text: 'Smoke Concentration vs Distance',
+left: 'center'
+},
+tooltip: {
+trigger: 'axis',
+axisPointer: {type: 'cross'}
+},
+legend: {
+data: series.map(s => s.name),
+top: 30
+},
+grid: {
+left: 80,
+right: 40,
+top: 80,
+bottom: 60
+},
+xAxis: {
+type: 'value',
+name: 'Distance Downwind (km)',
+nameLocation: 'middle',
+nameGap: 30,
+min: 0,
+max: 50
+},
+yAxis: {
+type: 'value',
+name: 'PM₂.₅ (μg/m³)',
+nameLocation: 'middle',
+nameGap: 50,
+min: 0
+},
+series: series
+};
+    
+chart.setOption(option, true);
+}
+  
+document.getElementById('burned-area').addEventListener('input', (e) => {
+burnedArea = parseFloat(e.target.value);
+document.getElementById('area-val').textContent = burnedArea;
+render();
+});
+  
+document.getElementById('wind').addEventListener('input', (e) => {
+windSpeed = parseFloat(e.target.value);
+document.getElementById('wind-val').textContent = windSpeed;
+render();
+});
+  
+document.getElementById('plume-height').addEventListener('input', (e) => {
+plumeHeight = parseFloat(e.target.value);
+document.getElementById('height-val').textContent = plumeHeight;
+render();
+});
+  
+document.getElementById('stability').addEventListener('change', (e) => {
+stabilityClass = e.target.value;
+render();
+});
+  
+render();
+  
+window.addEventListener('resize', () => chart.resize());
+})();
+</script>
+<p><strong>Observations:</strong></p>
+<ul>
+<li>Concentration decreases with distance as plume disperses</li>
+<li>Higher plume rise reduces ground-level concentrations</li>
+<li>Unstable atmosphere promotes mixing (lower peak concentrations)</li>
+<li>EPA standard often exceeded 10-30 km downwind</li>
+<li>Larger fires produce proportionally more emissions</li>
+<li>Wind speed dilutes concentrations but transports farther</li>
+</ul>
+<p><strong>Key insights:</strong></p>
+<ul>
+<li>Smoke impacts extend far beyond fire perimeter</li>
+<li>Atmospheric stability critically affects dispersion</li>
+<li>PM₂.₅ health risks significant at large distances</li>
+<li>Multiple factors determine air quality impacts</li>
+</ul>
+<hr>
+<h2 id="interpretation" class="anchored">6. Interpretation</h2>
+<h3 id="health-impacts" class="anchored">Health Impacts</h3>
+<p><strong>PM₂.₅ exposure effects:</strong></p>
+<p><strong>Short-term (hours-days):</strong></p>
+<ul>
+<li>Respiratory irritation</li>
+<li>Asthma attacks</li>
+<li>Reduced lung function</li>
+</ul>
+<p><strong>Long-term (weeks-months):</strong></p>
+<ul>
+<li>Cardiovascular events</li>
+<li>Premature mortality</li>
+<li>Chronic conditions</li>
+</ul>
+<p><strong>Vulnerable populations:</strong></p>
+<ul>
+<li>Children</li>
+<li>Elderly</li>
+<li>Respiratory disease</li>
+<li>Cardiovascular disease</li>
+</ul>
+<p><strong>2020 California fires:</strong></p>
+<p>Estimated 1200-3000 premature deaths from smoke exposure.</p>
+<p><strong>Economic impact:</strong> $10-80 billion (health costs).</p>
+<h3 id="air-quality-forecasting" class="anchored">Air Quality Forecasting</h3>
+<p><strong>BlueSky framework:</strong></p>
+<ol type="1">
+<li><strong>Fuel consumption:</strong> From fire progression models</li>
+<li><strong>Emissions:</strong> Apply emission factors</li>
+<li><strong>Dispersion:</strong> HYSPLIT or CALPUFF models</li>
+<li><strong>Forecast:</strong> 1-3 day PM₂.₅ predictions</li>
+</ol>
+<p><strong>Operational use:</strong></p>
+<p>NOAA Smoke Forecasting System (daily products).</p>
+<p><strong>Applications:</strong></p>
+<ul>
+<li>Public health advisories</li>
+<li>School closures</li>
+<li>Outdoor event cancellations</li>
+<li>Hospital preparedness</li>
+</ul>
+<h3 id="carbon-accounting" class="anchored">Carbon Accounting</h3>
+<p><strong>CO₂ emissions:</strong></p>
+<p><span class="math display">E_{CO_2} = FC \times 1650 \text{ g/kg}</span></p>
+<p><strong>Example:</strong> 10 million hectares burned globally (annual average)</p>
+<p>Fuel loading ~1.5 kg/m², CC = 0.9:</p>
+<p><span class="math display">FC = 10^{10} \times 1.5 \times 0.9 = 1.35 \times 10^{10} \text{ kg}</span></p>
+<p><span class="math display">E_{CO_2} = 1.35 \times 10^{10} \times 1650 \times 10^{-12} = 22.3 \text{ Mt CO}_2</span></p>
+<p><strong>~5% of global fossil fuel emissions!</strong></p>
+<hr>
+<h2 id="what-could-go-wrong" class="anchored">7. What Could Go Wrong?</h2>
+<h3 id="injection-height-uncertain" class="anchored">Injection Height Uncertain</h3>
+<p><strong>Plume rise depends</strong> on fire intensity, atmospheric stability.</p>
+<p><strong>Under-prediction:</strong></p>
+<p>Plume rises higher than modelled → lower ground concentrations (false alarm).</p>
+<p><strong>Over-prediction:</strong></p>
+<p>Plume doesn’t rise → higher ground concentrations (missed hazard).</p>
+<p><strong>Example - 2003 Canberra:</strong></p>
+<p>Pyrocumulonimbus (fire-generated thunderstorm) injected smoke to 15 km (vs predicted 3 km).</p>
+<p><strong>Solution:</strong> Real-time satellite observations (GOES, MODIS).</p>
+<h3 id="complex-terrain" class="anchored">Complex Terrain</h3>
+<p><strong>Gaussian model assumes</strong> flat terrain, uniform meteorology.</p>
+<p><strong>Mountains:</strong></p>
+<ul>
+<li>Channeled flows (valleys)</li>
+<li>Slope winds</li>
+<li>Thermal circulations</li>
+</ul>
+<p><strong>Result:</strong> Smoke pooling in valleys, unpredicted transport.</p>
+<p><strong>Solution:</strong> CALPUFF (puff model) or WRF-Chem (3D meteorology + chemistry).</p>
+<h3 id="chemistry-ignored" class="anchored">Chemistry Ignored</h3>
+<p><strong>Simple models:</strong> Transport PM₂.₅ as inert tracer.</p>
+<p><strong>Reality:</strong></p>
+<p>Photochemical aging: - VOCs + NOₓ → ozone, secondary PM - PM₂.₅ mass increases downwind - Composition changes</p>
+<p><strong>Solution:</strong> Chemical transport models (CMAQ, WRF-Chem).</p>
+<h3 id="background-pm-not-considered" class="anchored">Background PM Not Considered</h3>
+<p><strong>Model predicts</strong> fire contribution only.</p>
+<p><strong>Total exposure:</strong></p>
+<p><span class="math display">PM_{total} = PM_{background} + PM_{fire}</span></p>
+<p><strong>Urban areas:</strong></p>
+<p><span class="math inline">PM_{background}</span> = 10-20 μg/m³ (normal)</p>
+<p>Fire adds 30 μg/m³ → total = 40-50 μg/m³</p>
+<p><strong>Exceeds standard</strong> even though fire alone wouldn’t.</p>
+<hr>
+<h2 id="extension-satellite-based-emissions" class="anchored">8. Extension: Satellite-Based Emissions</h2>
+<p><strong>Bottom-up (models):</strong></p>
+<p>Fire area × fuel × EF (this model’s approach).</p>
+<p><strong>Top-down (satellites):</strong></p>
+<p>Directly observe emissions from space.</p>
+<p><strong>Fire radiative power (FRP):</strong></p>
+<p>Thermal emission from fire (MW).</p>
+<p><strong>FRP to emissions:</strong></p>
+<p><span class="math display">E_i = FRP \times CE_i</span></p>
+<p>Where <span class="math inline">CE_i</span> = conversion efficiency (g/MJ).</p>
+<p><strong>Advantages:</strong></p>
+<ul>
+<li>Near real-time</li>
+<li>No fuel data needed</li>
+<li>Global coverage</li>
+</ul>
+<p><strong>Sensors:</strong></p>
+<ul>
+<li>MODIS: 1 km, 4× daily</li>
+<li>VIIRS: 375 m, 2× daily</li>
+<li>GOES: 2 km, 5-15 min</li>
+</ul>
+<p><strong>Example - GFAS (Global Fire Assimilation System):</strong></p>
+<p>Copernicus service, daily global fire emissions.</p>
+<hr>
+<h2 id="math-refresher-gaussian-function" class="anchored">9. Math Refresher: Gaussian Function</h2>
+<h3 id="standard-form" class="anchored">Standard Form</h3>
+<p><span class="math display">f(x) = \frac{1}{\sigma\sqrt{2\pi}} \exp\left(-\frac{(x-\mu)^2}{2\sigma^2}\right)</span></p>
+<p>Where: - <span class="math inline">\mu</span> = mean - <span class="math inline">\sigma</span> = standard deviation</p>
+<p><strong>Properties:</strong></p>
+<ul>
+<li>Symmetric around <span class="math inline">\mu</span></li>
+<li>Total area = 1 (probability distribution)</li>
+<li>68% within ±σ, 95% within ±2σ</li>
+</ul>
+<h3 id="two-dimensional" class="anchored">Two-Dimensional</h3>
+<p><span class="math display">f(x,y) = \frac{1}{2\pi\sigma_x\sigma_y} \exp\left(-\frac{x^2}{2\sigma_x^2} - \frac{y^2}{2\sigma_y^2}\right)</span></p>
+<p><strong>Dispersion plume:</strong></p>
+<p>Concentration follows Gaussian in crosswind (y) and vertical (z).</p>
+<p><strong>Peak concentration:</strong> On centerline (y=0, z=H).</p>
+<hr>
+<h2 id="summary" class="anchored">Summary</h2>
+<ul>
+<li>Fire emissions quantified using emission factors relating pollutant mass to fuel consumed</li>
+<li>PM₂.₅ primary health concern with emission factors 10-20 g/kg fuel varying by fire type</li>
+<li>Plume rise driven by buoyancy determines effective release height for dispersion</li>
+<li>Gaussian dispersion model predicts ground-level concentrations based on meteorology</li>
+<li>Atmospheric stability critically affects smoke dispersion and ground concentrations</li>
+<li>Applications span air quality forecasting, health advisories, carbon accounting</li>
+<li>2020 California fires estimated 1200-3000 premature deaths from smoke exposure</li>
+<li>Challenges include injection height uncertainty, complex terrain, atmospheric chemistry</li>
+<li>Satellite observations provide real-time emissions estimates via fire radiative power</li>
+<li>Critical tool for public health protection during wildfire events</li>
+</ul>
+
+
+<footer class="wayward-footer">
+  <div class="wayward-footer__inner">
+    <div class="wayward-footer__brand">
+      <div class="wayward-footer__logo">WaywardHouse<span>.</span></div>
+      <p>Understanding how place, economy, and environment interact through analysis, modelling, and open tools.</p>
+    </div>
+
+    <nav class="wayward-footer__group" aria-labelledby="footer-reading">
+      <h2 id="footer-reading" class="anchored">Reading</h2>
+      <a href="https://wayward.house/articles/">Articles</a>
+      <a href="https://wayward.house/learn/">Library</a>
+      <a href="https://wayward.house/archive.html">Archive</a>
+      <a href="https://wayward.house/start-here.html">Choose Your Path</a>
+    </nav>
+
+    <nav class="wayward-footer__group" aria-labelledby="footer-site">
+      <h2 id="footer-site" class="anchored">Site</h2>
+      <a href="https://wayward.house/start-here.html">Choose Your Path</a>
+      <a href="https://wayward.house/about.html">About</a>
+      <a href="https://wayward.house/contact.html">Contact</a>
+    </nav>
+
+    <nav class="wayward-footer__group" aria-labelledby="footer-resources">
+      <h2 id="footer-resources" class="anchored">Resources</h2>
+      <a href="https://wayward.house/topics/">All Topics</a>
+      <a href="https://wayward.house/privacy.html">Privacy Policy</a>
+      <a href="https://wayward.house/terms.html">Terms of Use</a>
+    </nav>
+  </div>
+</footer>
+
+<script type="module" src="../assets/dist/main.js"></script>
+<script type="module" src="../assets/js/core.js"></script>
+<script id="quarto-html-after-body" type="application/javascript">
+  window.document.addEventListener("DOMContentLoaded", function (event) {
+    const tabsets =  window.document.querySelectorAll(".panel-tabset-tabby")
+    tabsets.forEach(function(tabset) {
+      const tabby = new Tabby('#' + tabset.id);
+    });
+    const icon = "";
+    const anchorJS = new window.AnchorJS();
+    anchorJS.options = {
+      placement: 'right',
+      icon: icon
+    };
+    anchorJS.add('.anchored');
+    const isCodeAnnotation = (el) => {
+      for (const clz of el.classList) {
+        if (clz.startsWith('code-annotation-')) {                     
+          return true;
+        }
+      }
+      return false;
+    }
+    const onCopySuccess = function(e) {
+      // button target
+      const button = e.trigger;
+      // don't keep focus
+      button.blur();
+      // flash "checked"
+      button.classList.add('code-copy-button-checked');
+      var currentTitle = button.getAttribute("title");
+      button.setAttribute("title", "Copied!");
+      let tooltip;
+      if (window.bootstrap) {
+        button.setAttribute("data-bs-toggle", "tooltip");
+        button.setAttribute("data-bs-placement", "left");
+        button.setAttribute("data-bs-title", "Copied!");
+        tooltip = new bootstrap.Tooltip(button, 
+          { trigger: "manual", 
+            customClass: "code-copy-button-tooltip",
+            offset: [0, -8]});
+        tooltip.show();    
+      }
+      setTimeout(function() {
+        if (tooltip) {
+          tooltip.hide();
+          button.removeAttribute("data-bs-title");
+          button.removeAttribute("data-bs-toggle");
+          button.removeAttribute("data-bs-placement");
+        }
+        button.setAttribute("title", currentTitle);
+        button.classList.remove('code-copy-button-checked');
+      }, 1000);
+      // clear code selection
+      e.clearSelection();
+    }
+    const getTextToCopy = function(trigger) {
+      const outerScaffold = trigger.parentElement.cloneNode(true);
+      const codeEl = outerScaffold.querySelector('code');
+      for (const childEl of codeEl.children) {
+        if (isCodeAnnotation(childEl)) {
+          childEl.remove();
+        }
+      }
+      return codeEl.innerText;
+    }
+    const clipboard = new window.ClipboardJS('.code-copy-button:not([data-in-quarto-modal])', {
+      text: getTextToCopy
+    });
+    clipboard.on('success', onCopySuccess);
+    if (window.document.getElementById('quarto-embedded-source-code-modal')) {
+      const clipboardModal = new window.ClipboardJS('.code-copy-button[data-in-quarto-modal]', {
+        text: getTextToCopy,
+        container: window.document.getElementById('quarto-embedded-source-code-modal')
+      });
+      clipboardModal.on('success', onCopySuccess);
+    }
+      var localhostRegex = new RegExp(/^(?:http|https):\/\/localhost\:?[0-9]*\//);
+      var mailtoRegex = new RegExp(/^mailto:/);
+        var filterRegex = new RegExp('/' + window.location.host + '/');
+      var isInternal = (href) => {
+          return filterRegex.test(href) || localhostRegex.test(href) || mailtoRegex.test(href);
+      }
+      // Inspect non-navigation links and adorn them if external
+     var links = window.document.querySelectorAll('a[href]:not(.nav-link):not(.navbar-brand):not(.toc-action):not(.sidebar-link):not(.sidebar-item-toggle):not(.pagination-link):not(.no-external):not([aria-hidden]):not(.dropdown-item):not(.quarto-navigation-tool):not(.about-link)');
+      for (var i=0; i<links.length; i++) {
+        const link = links[i];
+        if (!isInternal(link.href)) {
+          // undo the damage that might have been done by quarto-nav.js in the case of
+          // links that we want to consider external
+          if (link.dataset.originalHref !== undefined) {
+            link.href = link.dataset.originalHref;
+          }
+        }
+      }
+    function tippyHover(el, contentFn, onTriggerFn, onUntriggerFn) {
+      const config = {
+        allowHTML: true,
+        maxWidth: 500,
+        delay: 100,
+        arrow: false,
+        appendTo: function(el) {
+            return el.parentElement;
+        },
+        interactive: true,
+        interactiveBorder: 10,
+        theme: 'light-border',
+        placement: 'bottom-start',
+      };
+      if (contentFn) {
+        config.content = contentFn;
+      }
+      if (onTriggerFn) {
+        config.onTrigger = onTriggerFn;
+      }
+      if (onUntriggerFn) {
+        config.onUntrigger = onUntriggerFn;
+      }
+      window.tippy(el, config); 
+    }
+    const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+    for (var i=0; i<noterefs.length; i++) {
+      const ref = noterefs[i];
+      tippyHover(ref, function() {
+        // use id or data attribute instead here
+        let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+        try { href = new URL(href).hash; } catch {}
+        const id = href.replace(/^#\/?/, "");
+        const note = window.document.getElementById(id);
+        if (note) {
+          return note.innerHTML;
+        } else {
+          return "";
+        }
+      });
+    }
+    const xrefs = window.document.querySelectorAll('a.quarto-xref');
+    const processXRef = (id, note) => {
+      // Strip column container classes
+      const stripColumnClz = (el) => {
+        el.classList.remove("page-full", "page-columns");
+        if (el.children) {
+          for (const child of el.children) {
+            stripColumnClz(child);
+          }
+        }
+      }
+      stripColumnClz(note)
+      if (id === null || id.startsWith('sec-')) {
+        // Special case sections, only their first couple elements
+        const container = document.createElement("div");
+        if (note.children && note.children.length > 2) {
+          container.appendChild(note.children[0].cloneNode(true));
+          for (let i = 1; i < note.children.length; i++) {
+            const child = note.children[i];
+            if (child.tagName === "P" && child.innerText === "") {
+              continue;
+            } else {
+              container.appendChild(child.cloneNode(true));
+              break;
+            }
+          }
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(container);
+          }
+          return container.innerHTML
+        } else {
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(note);
+          }
+          return note.innerHTML;
+        }
+      } else {
+        // Remove any anchor links if they are present
+        const anchorLink = note.querySelector('a.anchorjs-link');
+        if (anchorLink) {
+          anchorLink.remove();
+        }
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(note);
+        }
+        if (note.classList.contains("callout")) {
+          return note.outerHTML;
+        } else {
+          return note.innerHTML;
+        }
+      }
+    }
+    for (var i=0; i<xrefs.length; i++) {
+      const xref = xrefs[i];
+      tippyHover(xref, undefined, function(instance) {
+        instance.disable();
+        let url = xref.getAttribute('href');
+        let hash = undefined; 
+        if (url.startsWith('#')) {
+          hash = url;
+        } else {
+          try { hash = new URL(url).hash; } catch {}
+        }
+        if (hash) {
+          const id = hash.replace(/^#\/?/, "");
+          const note = window.document.getElementById(id);
+          if (note !== null) {
+            try {
+              const html = processXRef(id, note.cloneNode(true));
+              instance.setContent(html);
+            } finally {
+              instance.enable();
+              instance.show();
+            }
+          } else {
+            // See if we can fetch this
+            fetch(url.split('#')[0])
+            .then(res => res.text())
+            .then(html => {
+              const parser = new DOMParser();
+              const htmlDoc = parser.parseFromString(html, "text/html");
+              const note = htmlDoc.getElementById(id);
+              if (note !== null) {
+                const html = processXRef(id, note);
+                instance.setContent(html);
+              } 
+            }).finally(() => {
+              instance.enable();
+              instance.show();
+            });
+          }
+        } else {
+          // See if we can fetch a full url (with no hash to target)
+          // This is a special case and we should probably do some content thinning / targeting
+          fetch(url)
+          .then(res => res.text())
+          .then(html => {
+            const parser = new DOMParser();
+            const htmlDoc = parser.parseFromString(html, "text/html");
+            const note = htmlDoc.querySelector('main.content');
+            if (note !== null) {
+              // This should only happen for chapter cross references
+              // (since there is no id in the URL)
+              // remove the first header
+              if (note.children.length > 0 && note.children[0].tagName === "HEADER") {
+                note.children[0].remove();
+              }
+              const html = processXRef(null, note);
+              instance.setContent(html);
+            } 
+          }).finally(() => {
+            instance.enable();
+            instance.show();
+          });
+        }
+      }, function(instance) {
+      });
+    }
+        let selectedAnnoteEl;
+        const selectorForAnnotation = ( cell, annotation) => {
+          let cellAttr = 'data-code-cell="' + cell + '"';
+          let lineAttr = 'data-code-annotation="' +  annotation + '"';
+          const selector = 'span[' + cellAttr + '][' + lineAttr + ']';
+          return selector;
+        }
+        const selectCodeLines = (annoteEl) => {
+          const doc = window.document;
+          const targetCell = annoteEl.getAttribute("data-target-cell");
+          const targetAnnotation = annoteEl.getAttribute("data-target-annotation");
+          const annoteSpan = window.document.querySelector(selectorForAnnotation(targetCell, targetAnnotation));
+          const lines = annoteSpan.getAttribute("data-code-lines").split(",");
+          const lineIds = lines.map((line) => {
+            return targetCell + "-" + line;
+          })
+          let top = null;
+          let height = null;
+          let parent = null;
+          if (lineIds.length > 0) {
+              //compute the position of the single el (top and bottom and make a div)
+              const el = window.document.getElementById(lineIds[0]);
+              top = el.offsetTop;
+              height = el.offsetHeight;
+              parent = el.parentElement.parentElement;
+            if (lineIds.length > 1) {
+              const lastEl = window.document.getElementById(lineIds[lineIds.length - 1]);
+              const bottom = lastEl.offsetTop + lastEl.offsetHeight;
+              height = bottom - top;
+            }
+            if (top !== null && height !== null && parent !== null) {
+              // cook up a div (if necessary) and position it 
+              let div = window.document.getElementById("code-annotation-line-highlight");
+              if (div === null) {
+                div = window.document.createElement("div");
+                div.setAttribute("id", "code-annotation-line-highlight");
+                div.style.position = 'absolute';
+                parent.appendChild(div);
+              }
+              div.style.top = top - 2 + "px";
+              div.style.height = height + 4 + "px";
+              div.style.left = 0;
+              let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
+              if (gutterDiv === null) {
+                gutterDiv = window.document.createElement("div");
+                gutterDiv.setAttribute("id", "code-annotation-line-highlight-gutter");
+                gutterDiv.style.position = 'absolute';
+                const codeCell = window.document.getElementById(targetCell);
+                const gutter = codeCell.querySelector('.code-annotation-gutter');
+                gutter.appendChild(gutterDiv);
+              }
+              gutterDiv.style.top = top - 2 + "px";
+              gutterDiv.style.height = height + 4 + "px";
+            }
+            selectedAnnoteEl = annoteEl;
+          }
+        };
+        const unselectCodeLines = () => {
+          const elementsIds = ["code-annotation-line-highlight", "code-annotation-line-highlight-gutter"];
+          elementsIds.forEach((elId) => {
+            const div = window.document.getElementById(elId);
+            if (div) {
+              div.remove();
+            }
+          });
+          selectedAnnoteEl = undefined;
+        };
+          // Handle positioning of the toggle
+      window.addEventListener(
+        "resize",
+        throttle(() => {
+          elRect = undefined;
+          if (selectedAnnoteEl) {
+            selectCodeLines(selectedAnnoteEl);
+          }
+        }, 10)
+      );
+      function throttle(fn, ms) {
+      let throttle = false;
+      let timer;
+        return (...args) => {
+          if(!throttle) { // first call gets through
+              fn.apply(this, args);
+              throttle = true;
+          } else { // all the others get throttled
+              if(timer) clearTimeout(timer); // cancel #2
+              timer = setTimeout(() => {
+                fn.apply(this, args);
+                timer = throttle = false;
+              }, ms);
+          }
+        };
+      }
+        // Attach click handler to the DT
+        const annoteDls = window.document.querySelectorAll('dt[data-target-cell]');
+        for (const annoteDlNode of annoteDls) {
+          annoteDlNode.addEventListener('click', (event) => {
+            const clickedEl = event.target;
+            if (clickedEl !== selectedAnnoteEl) {
+              unselectCodeLines();
+              const activeEl = window.document.querySelector('dt[data-target-cell].code-annotation-active');
+              if (activeEl) {
+                activeEl.classList.remove('code-annotation-active');
+              }
+              selectCodeLines(clickedEl);
+              clickedEl.classList.add('code-annotation-active');
+            } else {
+              // Unselect the line
+              unselectCodeLines();
+              clickedEl.classList.remove('code-annotation-active');
+            }
+          });
+        }
+    const findCites = (el) => {
+      const parentEl = el.parentElement;
+      if (parentEl) {
+        const cites = parentEl.dataset.cites;
+        if (cites) {
+          return {
+            el,
+            cites: cites.split(' ')
+          };
+        } else {
+          return findCites(el.parentElement)
+        }
+      } else {
+        return undefined;
+      }
+    };
+    var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+    for (var i=0; i<bibliorefs.length; i++) {
+      const ref = bibliorefs[i];
+      const citeInfo = findCites(ref);
+      if (citeInfo) {
+        tippyHover(citeInfo.el, function() {
+          var popup = window.document.createElement('div');
+          citeInfo.cites.forEach(function(cite) {
+            var citeDiv = window.document.createElement('div');
+            citeDiv.classList.add('hanging-indent');
+            citeDiv.classList.add('csl-entry');
+            var biblioDiv = window.document.getElementById('ref-' + cite);
+            if (biblioDiv) {
+              citeDiv.innerHTML = biblioDiv.innerHTML;
+            }
+            popup.appendChild(citeDiv);
+          });
+          return popup.innerHTML;
+        });
+      }
+    }
+  });
+  </script>
+
+
+
+
+</body></html>

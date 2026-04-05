@@ -1,0 +1,1353 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
+
+<meta charset="utf-8">
+<meta name="generator" content="quarto-1.9.36">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+
+<meta name="dcterms.date" content="2026-03-01">
+<meta name="description" content="How do we predict continuous spatial variables like elevation, temperature, or soil moisture from satellite imagery and environmental data? Supervised regression learns functional relationships from training data to estimate values across entire landscapes. This model derives linear regression via gradient descent, implements regularization to prevent overfitting, demonstrates spatial cross-validation, and quantifies prediction uncertainty.">
+
+<title>Regression for Continuous Variables – Computational Geography</title>
+<style>
+/* Default styles provided by pandoc.
+** See https://pandoc.org/MANUAL.html#variables-for-html for config info.
+*/
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: min(4vw, 1.5em);}
+div.column{flex: auto; overflow-x: auto;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+  width: 0.8em;
+  margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
+  vertical-align: middle;
+}
+/* CSS for syntax highlighting */
+html { -webkit-text-size-adjust: 100%; }
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+  { counter-reset: source-line 0; }
+pre.numberSource code > span
+  { position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+  { content: counter(source-line);
+    position: relative; left: -1em; text-align: right; vertical-align: baseline;
+    border: none; display: inline-block;
+    -webkit-touch-callout: none; -webkit-user-select: none;
+    -khtml-user-select: none; -moz-user-select: none;
+    -ms-user-select: none; user-select: none;
+    padding: 0 4px; width: 4em;
+  }
+pre.numberSource { margin-left: 3em;  padding-left: 4px; }
+div.sourceCode
+  {   }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
+</style>
+
+
+<script src="../site_libs/clipboard/clipboard.min.js"></script>
+<script src="../site_libs/quarto-html/tabby.min.js"></script>
+<script src="../site_libs/quarto-html/popper.min.js"></script>
+<script src="../site_libs/quarto-html/tippy.umd.min.js"></script>
+<script src="../site_libs/quarto-html/anchor.min.js"></script>
+<link href="../site_libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="../site_libs/quarto-html/light-border.css" rel="stylesheet">
+<link href="../site_libs/quarto-html/quarto-html-640605f58ae58ee79329c070719e555b.min.css" rel="stylesheet" append-hash="true" data-mode="light">
+<link href="../site_libs/quarto-html/quarto-syntax-highlighting-845c23b38eaddc0f92fda52bfe77a8c8.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<script>
+  (function () {
+    document.documentElement.dataset.theme = 'light';
+    document.documentElement.dataset.brand = 'wayward';
+    try {
+      localStorage.removeItem('theme');
+    } catch (err) {
+      void err;
+    }
+  })();
+</script>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:ital,wght@0,300;0,400;0,600;0,700;0,800;0,900;1,700;1,800&amp;family=Barlow:wght@300;400;500;600&amp;family=IBM+Plex+Mono:ital,wght@0,300;0,400;0,500;1,300&amp;family=Literata:ital,opsz,wght@0,7..72,300;0,7..72,400;0,7..72,500;1,7..72,300;1,7..72,400&amp;display=swap" rel="stylesheet">
+
+  <script>window.backupDefine = window.define; window.define = undefined;</script><script src="https://cdn.jsdelivr.net/npm/katex@latest/dist/katex.min.js"></script>
+  <script>document.addEventListener("DOMContentLoaded", function () {
+ var mathElements = document.getElementsByClassName("math");
+ var macros = [];
+ for (var i = 0; i < mathElements.length; i++) {
+  var texText = mathElements[i].firstChild;
+  if (mathElements[i].tagName == "SPAN") {
+   katex.render(texText.data, mathElements[i], {
+    displayMode: mathElements[i].classList.contains('display'),
+    throwOnError: false,
+    macros: macros,
+    fleqn: false
+   });
+}}});
+  </script>
+  <script>window.define = window.backupDefine; window.backupDefine = undefined;</script><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@latest/dist/katex.min.css">
+
+<script type="text/javascript">
+const typesetMath = (el) => {
+  if (window.MathJax) {
+    // MathJax Typeset
+    window.MathJax.typeset([el]);
+  } else if (window.katex) {
+    // KaTeX Render
+    var mathElements = el.getElementsByClassName("math");
+    var macros = [];
+    for (var i = 0; i < mathElements.length; i++) {
+      var texText = mathElements[i].firstChild;
+      if (mathElements[i].tagName == "SPAN" && texText && texText.data) {
+        window.katex.render(texText.data, mathElements[i], {
+          displayMode: mathElements[i].classList.contains('display'),
+          throwOnError: false,
+          macros: macros,
+          fleqn: false
+        });
+      }
+    }
+  }
+}
+window.Quarto = {
+  typesetMath
+};
+</script>
+
+<link rel="stylesheet" href="../assets/css/quarto-wayward.css">
+</head>
+
+<body class="reading-body tag-hash-math tag-hash-viz">
+
+
+<header id="title-block-header">
+<h1 class="title"><span class="chapter-title">Regression for Continuous Variables</span></h1>
+<p class="subtitle">Predicting spatial fields from spectral and environmental features</p>
+
+<p class="date">2026-03-01</p>
+</header>
+
+<nav id="TOC" role="doc-toc">
+    <h2 id="toc-title">Table of contents</h2>
+   
+  <ul>
+  <li><a href="#before-you-start" id="toc-before-you-start">Before You Start</a></li>
+  <li><a href="#the-question" id="toc-the-question">1. The Question</a></li>
+  <li><a href="#the-conceptual-model" id="toc-the-conceptual-model">2. The Conceptual Model</a>
+  <ul>
+  <li><a href="#linear-regression" id="toc-linear-regression">Linear Regression</a></li>
+  <li><a href="#loss-function" id="toc-loss-function">Loss Function</a></li>
+  <li><a href="#gradient-descent" id="toc-gradient-descent">Gradient Descent</a></li>
+  <li><a href="#regularization" id="toc-regularization">Regularization</a></li>
+  </ul></li>
+  <li><a href="#building-the-mathematical-model" id="toc-building-the-mathematical-model">3. Building the Mathematical Model</a>
+  <ul>
+  <li><a href="#deriving-gradient-descent-update" id="toc-deriving-gradient-descent-update">Deriving Gradient Descent Update</a></li>
+  <li><a href="#ridge-regression-gradient" id="toc-ridge-regression-gradient">Ridge Regression Gradient</a></li>
+  <li><a href="#cross-validation" id="toc-cross-validation">Cross-Validation</a></li>
+  </ul></li>
+  <li><a href="#worked-example-by-hand" id="toc-worked-example-by-hand">4. Worked Example by Hand</a>
+  <ul>
+  <li><a href="#step-1-set-up-matrices" id="toc-step-1-set-up-matrices">Step 1: Set up matrices</a></li>
+  <li><a href="#step-2-initialize-coefficients" id="toc-step-2-initialize-coefficients">Step 2: Initialize coefficients</a></li>
+  <li><a href="#step-3-first-iteration" id="toc-step-3-first-iteration">Step 3: First iteration</a></li>
+  <li><a href="#step-4-second-iteration" id="toc-step-4-second-iteration">Step 4: Second iteration</a></li>
+  <li><a href="#step-5-convergence" id="toc-step-5-convergence">Step 5: Convergence</a></li>
+  <li><a href="#step-6-prediction" id="toc-step-6-prediction">Step 6: Prediction</a></li>
+  <li><a href="#step-7-evaluate" id="toc-step-7-evaluate">Step 7: Evaluate</a></li>
+  </ul></li>
+  <li><a href="#computational-implementation" id="toc-computational-implementation">5. Computational Implementation</a>
+  <ul>
+  <li><a href="#tier-1-foundation-path-pilaptop" id="toc-tier-1-foundation-path-pilaptop">Tier 1: Foundation Path (Pi/Laptop)</a></li>
+  <li><a href="#tier-2-professional-path-go-further" id="toc-tier-2-professional-path-go-further">Tier 2: Professional Path (Go Further)</a></li>
+  </ul></li>
+  <li><a href="#interpretation" id="toc-interpretation">6. Interpretation</a>
+  <ul>
+  <li><a href="#real-application-digital-soil-mapping" id="toc-real-application-digital-soil-mapping">Real Application: Digital Soil Mapping</a></li>
+  <li><a href="#residual-spatial-autocorrelation" id="toc-residual-spatial-autocorrelation">Residual Spatial Autocorrelation</a></li>
+  <li><a href="#prediction-uncertainty" id="toc-prediction-uncertainty">Prediction Uncertainty</a></li>
+  </ul></li>
+  <li><a href="#what-could-go-wrong" id="toc-what-could-go-wrong">7. What Could Go Wrong?</a>
+  <ul>
+  <li><a href="#multicollinearity" id="toc-multicollinearity">Multicollinearity</a></li>
+  <li><a href="#extrapolation" id="toc-extrapolation">Extrapolation</a></li>
+  <li><a href="#non-linear-relationships" id="toc-non-linear-relationships">Non-linear Relationships</a></li>
+  <li><a href="#heteroscedasticity" id="toc-heteroscedasticity">Heteroscedasticity</a></li>
+  </ul></li>
+  <li><a href="#extension-spatial-cross-validation" id="toc-extension-spatial-cross-validation">8. Extension: Spatial Cross-Validation</a>
+  <ul>
+  <li><a href="#why-standard-cv-fails" id="toc-why-standard-cv-fails">Why Standard CV Fails</a></li>
+  <li><a href="#spatial-block-cv" id="toc-spatial-block-cv">Spatial Block CV</a></li>
+  </ul></li>
+  <li><a href="#math-refresher-matrix-calculus" id="toc-math-refresher-matrix-calculus">9. Math Refresher: Matrix Calculus</a>
+  <ul>
+  <li><a href="#gradient-of-quadratic-form" id="toc-gradient-of-quadratic-form">Gradient of Quadratic Form</a></li>
+  </ul></li>
+  <li><a href="#summary" id="toc-summary">Summary</a></li>
+  </ul>
+</nav>
+<h2 id="before-you-start" class="anchored">Before You Start</h2>
+<p><strong>You should know</strong><br>
+That regression learns a relationship from examples, and that matrices can be used to organize many predictors at once.</p>
+<p><strong>You will learn</strong><br>
+How linear regression predicts continuous variables, why gradient descent finds the coefficients, and why geographic validation has to respect spatial dependence.</p>
+<p><strong>Why this matters</strong><br>
+A large share of geographic machine learning is really structured prediction of things like elevation, soil moisture, fire severity, yield, or biomass.</p>
+<p><strong>If this gets hard, focus on…</strong><br>
+The central idea that we fit a function from features to a numeric target, then check whether that function generalizes to new places.</p>
+<p>After the 2019–20 Australian Black Summer fires burned 18.6 million hectares — an area larger than Cambodia — ecologists needed rapid estimates of fire severity across landscapes too vast and too dangerous to survey on foot. The solution was regression. Spectral indices from Landsat and Sentinel-2 satellites, calibrated against 5,000 field plots where trained observers had recorded char depth, crown scorch height, and tree mortality, were used to predict a continuous fire severity score for every 10-metre pixel across the fire perimeter. The result was a map that would have taken a decade to produce in the field, delivered in weeks from a laptop.</p>
+<p>This is the core bargain of supervised regression: a small number of expensive, precise measurements (field plots, sensor deployments, laboratory analyses) are used to train a model that can then predict the same quantity cheaply, at every point in space, from easy-to-acquire satellite observations. The relationship between predictors and the target variable is learned from data, not hardcoded from theory — which makes regression enormously flexible, and also capable of learning relationships that exist only in the training set and nowhere else.</p>
+<p>The machinery underneath is elegant. Linear regression minimises a squared error loss by gradient descent, finding the weight vector that best fits the training data. Regularisation (L1 and L2 penalties) prevents the model from over-fitting by penalising extreme weights. Spatial cross-validation replaces standard k-fold validation, because geographic data violates independence: nearby pixels share the same weather, geology, and disturbance history, and a model that looks accurate in standard cross-validation may have simply memorised spatial autocorrelation. Getting the validation right is as important as getting the model right.</p>
+<figure class="cg-ill">
+<div class="cg-ill__frame" data-markdown="1">
+<div class="cg-ill__eyebrow">
+Regression Workflow
+</div>
+<h3 class="cg-ill__title anchored">
+Regression Turns Sparse Measurements Into A Continuous Surface, But Only If Validation Respects Geography
+</h3>
+<p class="cg-ill__lede">
+This chapter is easiest to hold together when the reader sees four distinct stages: expensive ground truth, cheap wall-to-wall features, a fitted function, and a validation step that tests the model on new places rather than nearby pixels from the same landscape patch.
+</p>
+<div class="cg-ill__route-map">
+<div class="cg-ill__route-stage">
+<span class="cg-ill__route-kicker">Field data</span>
+<h4 class="anchored">
+Measure A Small Sample Well
+</h4>
+<p>
+Probe points, field plots, or lab assays provide expensive but trustworthy target values.
+</p>
+</div>
+<div class="cg-ill__route-arrow">
+→
+</div>
+<div class="cg-ill__route-stage">
+<span class="cg-ill__route-kicker">Feature stack</span>
+<h4 class="anchored">
+Assemble Predictors Everywhere
+</h4>
+<p>
+Satellite bands, indices, terrain, and climate layers are available wall-to-wall across the map.
+</p>
+</div>
+<div class="cg-ill__route-arrow">
+→
+</div>
+<div class="cg-ill__route-stage">
+<span class="cg-ill__route-kicker">Model fit</span>
+<h4 class="anchored">
+Learn The Function
+</h4>
+<p>
+Regression estimates how each feature helps predict the continuous target and then maps predictions to every cell.
+</p>
+</div>
+</div>
+<div class="cg-ill__compare" style="margin-top: 1rem;">
+<div class="cg-ill__compare-card">
+<div class="cg-ill__label">
+Bad test
+</div>
+<h4 class="anchored">
+Random Nearby Holdouts
+</h4>
+<p>
+The model can look excellent simply because nearby pixels share the same landscape signal.
+</p>
+</div>
+<div class="cg-ill__compare-card">
+<div class="cg-ill__label">
+Better test
+</div>
+<h4 class="anchored">
+Spatially Separated Validation
+</h4>
+<p>
+Hold out entire areas so the model has to generalize to genuinely new places, not just neighboring cells.
+</p>
+</div>
+<div class="cg-ill__compare-card">
+<div class="cg-ill__label">
+Goal
+</div>
+<h4 class="anchored">
+A Surface You Can Trust
+</h4>
+<p>
+The output is not just a prediction map. It is a prediction map whose generalization error has been tested geographically.
+</p>
+</div>
+</div>
+<figcaption>
+Most of the real discipline in geographic regression sits at the validation step. A good-looking map is not enough if the test design leaks spatial autocorrelation.
+</figcaption>
+</div>
+</figure>
+<h2 id="the-question" class="anchored">1. The Question</h2>
+<p>Given satellite imagery and a few field measurements, can we predict soil moisture across an entire watershed?</p>
+<p><strong>Direct measurement doesn’t scale.</strong></p>
+<p>Soil moisture probe: One location = $500</p>
+<p>Watershed area: 100 km² = 10 million 10×10m cells</p>
+<p>Full coverage: $5 billion (impossible)</p>
+<p><strong>Regression provides solution:</strong></p>
+<p>Measure 100 locations with probes ($50,000).</p>
+<p>Extract satellite features (vegetation, thermal, topography).</p>
+<p>Learn relationship: Soil moisture = f(features)</p>
+<p>Predict all 10 million cells.</p>
+<p><strong>Applications:</strong></p>
+<ul>
+<li>Digital elevation models (DEM from spectral features)</li>
+<li>Soil property mapping (carbon, pH, texture)</li>
+<li>Biomass estimation (forest carbon stocks)</li>
+<li>Temperature mapping (urban heat islands)</li>
+<li>Crop yield prediction (precision agriculture)</li>
+<li>Snow water equivalent (mountain hydrology)</li>
+</ul>
+<p><strong>Why regression works:</strong></p>
+<p>Physical relationships exist between observables and targets.</p>
+<p><strong>Examples:</strong></p>
+<ul>
+<li>Higher NDVI → More biomass (vegetation absorbs carbon)</li>
+<li>Lower thermal radiance → Higher soil moisture (evaporative cooling)</li>
+<li>Steeper terrain → Lower soil depth (erosion)</li>
+<li>Higher NIR/Red ratio → Taller vegetation → More elevation locally</li>
+</ul>
+<p>Regression learns these patterns from data.</p>
+<hr>
+<h2 id="the-conceptual-model" class="anchored">2. The Conceptual Model</h2>
+<h3 id="linear-regression" class="anchored">Linear Regression</h3>
+<p><strong>Simplest model: Linear relationship</strong></p>
+<p><span class="math display">y = \beta_0 + \beta_1 x_1 + \beta_2 x_2 + ... + \beta_p x_p + \epsilon</span></p>
+<p>Where: - <span class="math inline">y</span> = target variable (e.g., elevation) - <span class="math inline">x_1, ..., x_p</span> = features (NDVI, slope, aspect, etc.) - <span class="math inline">\beta_0</span> = intercept - <span class="math inline">\beta_1, ..., \beta_p</span> = coefficients (weights) - <span class="math inline">\epsilon</span> = error term (noise)</p>
+<p><strong>Matrix notation:</strong></p>
+<p><span class="math display">\mathbf{y} = \mathbf{X}\boldsymbol{\beta} + \boldsymbol{\epsilon}</span></p>
+<p>Where: - <span class="math inline">\mathbf{y}</span> = <span class="math inline">n \times 1</span> vector of observations - <span class="math inline">\mathbf{X}</span> = <span class="math inline">n \times (p+1)</span> design matrix (includes intercept column) - <span class="math inline">\boldsymbol{\beta}</span> = <span class="math inline">(p+1) \times 1</span> coefficient vector - <span class="math inline">\boldsymbol{\epsilon}</span> = <span class="math inline">n \times 1</span> error vector</p>
+<p><strong>Goal:</strong> Find <span class="math inline">\boldsymbol{\beta}</span> minimizing prediction error</p>
+<h3 id="loss-function" class="anchored">Loss Function</h3>
+<p><strong>Mean Squared Error (MSE):</strong></p>
+<p><span class="math display">L(\boldsymbol{\beta}) = \frac{1}{n} \sum_{i=1}^n (y_i - \hat{y}_i)^2 = \frac{1}{n} \|\mathbf{y} - \mathbf{X}\boldsymbol{\beta}\|^2</span></p>
+<p><strong>Why squared error?</strong> - Differentiable (enables gradient descent) - Penalizes large errors more (quadratic) - Corresponds to maximum likelihood under Gaussian noise</p>
+<p><strong>Minimization:</strong></p>
+<p>Take derivative, set to zero:</p>
+<p><span class="math display">\frac{\partial L}{\partial \boldsymbol{\beta}} = -\frac{2}{n}\mathbf{X}^T(\mathbf{y} - \mathbf{X}\boldsymbol{\beta}) = 0</span></p>
+<p><strong>Closed-form solution (Normal Equation):</strong></p>
+<p><span class="math display">\boldsymbol{\beta}^* = (\mathbf{X}^T\mathbf{X})^{-1}\mathbf{X}^T\mathbf{y}</span></p>
+<p><strong>Issues with Normal Equation:</strong></p>
+<ul>
+<li>Requires matrix inversion (<span class="math inline">O(p^3)</span> computation)</li>
+<li>Fails if <span class="math inline">\mathbf{X}^T\mathbf{X}</span> singular (correlated features)</li>
+<li>Memory intensive for large datasets</li>
+</ul>
+<p><strong>Alternative: Gradient Descent</strong></p>
+<h3 id="gradient-descent" class="anchored">Gradient Descent</h3>
+<p><strong>Iterative optimization:</strong></p>
+<p>Start with random <span class="math inline">\boldsymbol{\beta}^{(0)}</span></p>
+<p>Repeat until convergence:</p>
+<p><span class="math display">\boldsymbol{\beta}^{(t+1)} = \boldsymbol{\beta}^{(t)} - \alpha \nabla L(\boldsymbol{\beta}^{(t)})</span></p>
+<p>Where: - <span class="math inline">\alpha</span> = learning rate (step size) - <span class="math inline">\nabla L</span> = gradient of loss function</p>
+<p><strong>Gradient calculation:</strong></p>
+<p><span class="math display">\nabla L(\boldsymbol{\beta}) = \frac{\partial L}{\partial \boldsymbol{\beta}} = -\frac{2}{n}\mathbf{X}^T(\mathbf{y} - \mathbf{X}\boldsymbol{\beta})</span></p>
+<p><strong>Algorithm:</strong></p>
+<pre><code>Initialize β randomly
+for epoch in 1 to max_epochs:
+    predictions = X @ β
+    errors = y - predictions
+    gradient = -(2/n) * X.T @ errors
+    β = β - learning_rate * gradient
+    
+    if ||gradient|| &lt; tolerance:
+        break</code></pre>
+<p><strong>Advantages:</strong></p>
+<ul>
+<li>Scalable to large datasets</li>
+<li>No matrix inversion</li>
+<li>Works with regularization</li>
+</ul>
+<h3 id="regularization" class="anchored">Regularization</h3>
+<p><strong>Problem: Overfitting</strong></p>
+<p>Complex model fits training noise.</p>
+<p><strong>Solution: Penalty on coefficient magnitude</strong></p>
+<p><strong>Ridge Regression (L2):</strong></p>
+<p><span class="math display">L_{ridge}(\boldsymbol{\beta}) = \frac{1}{n}\|\mathbf{y} - \mathbf{X}\boldsymbol{\beta}\|^2 + \lambda \|\boldsymbol{\beta}\|^2</span></p>
+<p>Penalizes large coefficients, shrinks toward zero.</p>
+<p><strong>Lasso Regression (L1):</strong></p>
+<p><span class="math display">L_{lasso}(\boldsymbol{\beta}) = \frac{1}{n}\|\mathbf{y} - \mathbf{X}\boldsymbol{\beta}\|^2 + \lambda \sum_{j=1}^p |\beta_j|</span></p>
+<p>Encourages sparsity (some coefficients exactly zero).</p>
+<p><strong>Elastic Net (combination):</strong></p>
+<p><span class="math display">L_{elastic}(\boldsymbol{\beta}) = \frac{1}{n}\|\mathbf{y} - \mathbf{X}\boldsymbol{\beta}\|^2 + \lambda_1 \|\boldsymbol{\beta}\|^2 + \lambda_2 \sum_{j=1}^p |\beta_j|</span></p>
+<p><strong>Hyperparameter <span class="math inline">\lambda</span>:</strong></p>
+<ul>
+<li><span class="math inline">\lambda = 0</span>: No regularization (ordinary least squares)</li>
+<li><span class="math inline">\lambda \to \infty</span>: All coefficients → 0</li>
+<li>Optimal <span class="math inline">\lambda</span>: Found via cross-validation</li>
+</ul>
+<hr>
+<h2 id="building-the-mathematical-model" class="anchored">3. Building the Mathematical Model</h2>
+<h3 id="deriving-gradient-descent-update" class="anchored">Deriving Gradient Descent Update</h3>
+<p><strong>Loss function:</strong></p>
+<p><span class="math display">L(\boldsymbol{\beta}) = \frac{1}{n}\sum_{i=1}^n (y_i - \mathbf{x}_i^T\boldsymbol{\beta})^2</span></p>
+<p><strong>Expand:</strong></p>
+<p><span class="math display">L(\boldsymbol{\beta}) = \frac{1}{n}\sum_{i=1}^n y_i^2 - 2y_i\mathbf{x}_i^T\boldsymbol{\beta} + (\mathbf{x}_i^T\boldsymbol{\beta})^2</span></p>
+<p><strong>Gradient with respect to <span class="math inline">\boldsymbol{\beta}</span>:</strong></p>
+<p><span class="math display">\frac{\partial L}{\partial \boldsymbol{\beta}} = \frac{1}{n}\sum_{i=1}^n -2y_i\mathbf{x}_i + 2\mathbf{x}_i(\mathbf{x}_i^T\boldsymbol{\beta})</span></p>
+<p><span class="math display">= \frac{2}{n}\sum_{i=1}^n \mathbf{x}_i(\mathbf{x}_i^T\boldsymbol{\beta} - y_i)</span></p>
+<p><strong>Matrix form:</strong></p>
+<p><span class="math display">\nabla L = \frac{2}{n}\mathbf{X}^T(\mathbf{X}\boldsymbol{\beta} - \mathbf{y})</span></p>
+<p><strong>Update rule:</strong></p>
+<p><span class="math display">\boldsymbol{\beta}^{(t+1)} = \boldsymbol{\beta}^{(t)} - \frac{2\alpha}{n}\mathbf{X}^T(\mathbf{X}\boldsymbol{\beta}^{(t)} - \mathbf{y})</span></p>
+<p><strong>Learning rate selection:</strong></p>
+<p>Too small: Slow convergence<br>
+Too large: Divergence (overshoots minimum)</p>
+<p>Typical: <span class="math inline">\alpha = 0.01</span> to <span class="math inline">0.1</span>, or adaptive (decrease over time)</p>
+<h3 id="ridge-regression-gradient" class="anchored">Ridge Regression Gradient</h3>
+<p><strong>Loss with L2 penalty:</strong></p>
+<p><span class="math display">L_{ridge}(\boldsymbol{\beta}) = \frac{1}{n}\|\mathbf{y} - \mathbf{X}\boldsymbol{\beta}\|^2 + \lambda \|\boldsymbol{\beta}\|^2</span></p>
+<p><strong>Gradient:</strong></p>
+<p><span class="math display">\nabla L_{ridge} = \frac{2}{n}\mathbf{X}^T(\mathbf{X}\boldsymbol{\beta} - \mathbf{y}) + 2\lambda\boldsymbol{\beta}</span></p>
+<p><strong>Update:</strong></p>
+<p><span class="math display">\boldsymbol{\beta}^{(t+1)} = \boldsymbol{\beta}^{(t)} - \alpha[\frac{2}{n}\mathbf{X}^T(\mathbf{X}\boldsymbol{\beta}^{(t)} - \mathbf{y}) + 2\lambda\boldsymbol{\beta}^{(t)}]</span></p>
+<p><strong>Closed form (if desired):</strong></p>
+<p><span class="math display">\boldsymbol{\beta}^*_{ridge} = (\mathbf{X}^T\mathbf{X} + n\lambda\mathbf{I})^{-1}\mathbf{X}^T\mathbf{y}</span></p>
+<p>Adding <span class="math inline">\lambda\mathbf{I}</span> ensures invertibility even with correlated features.</p>
+<h3 id="cross-validation" class="anchored">Cross-Validation</h3>
+<p><strong>K-Fold Cross-Validation:</strong></p>
+<ol type="1">
+<li>Split data into <span class="math inline">K</span> folds (typical: <span class="math inline">K=5</span> or <span class="math inline">10</span>)</li>
+<li>For each fold <span class="math inline">k</span>:
+<ul>
+<li>Train on <span class="math inline">K-1</span> folds</li>
+<li>Test on fold <span class="math inline">k</span></li>
+<li>Record error <span class="math inline">E_k</span></li>
+</ul></li>
+<li>Average: <span class="math inline">CV_{error} = \frac{1}{K}\sum_{k=1}^K E_k</span></li>
+</ol>
+<p><strong>Use for:</strong></p>
+<ul>
+<li>Hyperparameter tuning (<span class="math inline">\lambda</span> selection)</li>
+<li>Model selection (compare algorithms)</li>
+<li>Performance estimation (unbiased error estimate)</li>
+</ul>
+<p><strong>Spatial Cross-Validation:</strong></p>
+<p>Standard CV invalid for spatial data (autocorrelation).</p>
+<p><strong>Solution: Spatial blocks</strong></p>
+<p>Divide region into spatial blocks.</p>
+<p>Each fold = one or more blocks.</p>
+<p>Ensures test data spatially separated from training.</p>
+<hr>
+<h2 id="worked-example-by-hand" class="anchored">4. Worked Example by Hand</h2>
+<p><strong>Problem:</strong> Predict elevation from NDVI and slope.</p>
+<p><strong>Training data:</strong></p>
+<table class="caption-top">
+<thead>
+<tr class="header">
+<th>Location</th>
+<th>NDVI</th>
+<th>Slope</th>
+<th>Elevation (m)</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>1</td>
+<td>0.7</td>
+<td>5°</td>
+<td>450</td>
+</tr>
+<tr class="even">
+<td>2</td>
+<td>0.4</td>
+<td>15°</td>
+<td>850</td>
+</tr>
+<tr class="odd">
+<td>3</td>
+<td>0.6</td>
+<td>8°</td>
+<td>600</td>
+</tr>
+<tr class="even">
+<td>4</td>
+<td>0.3</td>
+<td>20°</td>
+<td>1100</td>
+</tr>
+<tr class="odd">
+<td>5</td>
+<td>0.5</td>
+<td>12°</td>
+<td>750</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Goal:</strong> Fit linear model manually using gradient descent.</p>
+<h3 id="step-1-set-up-matrices" class="anchored">Step 1: Set up matrices</h3>
+<p><strong>Feature matrix <span class="math inline">\mathbf{X}</span> (with intercept):</strong></p>
+<p><span class="math display">\mathbf{X} = \begin{bmatrix} 1 &amp; 0.7 &amp; 5 \\ 1 &amp; 0.4 &amp; 15 \\ 1 &amp; 0.6 &amp; 8 \\ 1 &amp; 0.3 &amp; 20 \\ 1 &amp; 0.5 &amp; 12 \end{bmatrix}</span></p>
+<p><strong>Target vector <span class="math inline">\mathbf{y}</span>:</strong></p>
+<p><span class="math display">\mathbf{y} = \begin{bmatrix} 450 \\ 850 \\ 600 \\ 1100 \\ 750 \end{bmatrix}</span></p>
+<h3 id="step-2-initialize-coefficients" class="anchored">Step 2: Initialize coefficients</h3>
+<p><span class="math display">\boldsymbol{\beta}^{(0)} = \begin{bmatrix} 0 \\ 0 \\ 0 \end{bmatrix}</span> (start at origin)</p>
+<h3 id="step-3-first-iteration" class="anchored">Step 3: First iteration</h3>
+<p><strong>Predictions:</strong></p>
+<p><span class="math display">\hat{\mathbf{y}}^{(0)} = \mathbf{X}\boldsymbol{\beta}^{(0)} = \begin{bmatrix} 0 \\ 0 \\ 0 \\ 0 \\ 0 \end{bmatrix}</span></p>
+<p><strong>Errors:</strong></p>
+<p><span class="math display">\mathbf{y} - \hat{\mathbf{y}}^{(0)} = \begin{bmatrix} 450 \\ 850 \\ 600 \\ 1100 \\ 750 \end{bmatrix}</span></p>
+<p><strong>Gradient:</strong></p>
+<p><span class="math display">\nabla L^{(0)} = -\frac{2}{5}\mathbf{X}^T(\mathbf{y} - \hat{\mathbf{y}}^{(0)})</span></p>
+<p><span class="math display">\mathbf{X}^T = \begin{bmatrix} 1 &amp; 1 &amp; 1 &amp; 1 &amp; 1 \\ 0.7 &amp; 0.4 &amp; 0.6 &amp; 0.3 &amp; 0.5 \\ 5 &amp; 15 &amp; 8 &amp; 20 &amp; 12 \end{bmatrix}</span></p>
+<p><span class="math display">\mathbf{X}^T(\mathbf{y} - \hat{\mathbf{y}}^{(0)}) = \begin{bmatrix} 3750 \\ 1970 \\ 48500 \end{bmatrix}</span></p>
+<p><span class="math display">\nabla L^{(0)} = -\frac{2}{5}\begin{bmatrix} 3750 \\ 1970 \\ 48500 \end{bmatrix} = \begin{bmatrix} -1500 \\ -788 \\ -19400 \end{bmatrix}</span></p>
+<p><strong>Update (learning rate <span class="math inline">\alpha = 0.001</span>):</strong></p>
+<p><span class="math display">\boldsymbol{\beta}^{(1)} = \boldsymbol{\beta}^{(0)} - 0.001 \times \begin{bmatrix} -1500 \\ -788 \\ -19400 \end{bmatrix}</span></p>
+<p><span class="math display">= \begin{bmatrix} 1.5 \\ 0.788 \\ 19.4 \end{bmatrix}</span></p>
+<h3 id="step-4-second-iteration" class="anchored">Step 4: Second iteration</h3>
+<p><strong>Predictions:</strong></p>
+<p><span class="math display">\hat{y}_1^{(1)} = 1.5 + 0.788(0.7) + 19.4(5) = 1.5 + 0.552 + 97 = 99.05</span></p>
+<p><span class="math display">\hat{y}_2^{(1)} = 1.5 + 0.788(0.4) + 19.4(15) = 1.5 + 0.315 + 291 = 292.82</span></p>
+<p>(Continue for all 5 samples…)</p>
+<p><strong>New errors, gradient, update…</strong></p>
+<h3 id="step-5-convergence" class="anchored">Step 5: Convergence</h3>
+<p>After ~1000 iterations (or until <span class="math inline">\|\nabla L\| &lt; 0.01</span>):</p>
+<p><strong>Final coefficients (approximate):</strong></p>
+<p><span class="math display">\boldsymbol{\beta}^* \approx \begin{bmatrix} 200 \\ -300 \\ 45 \end{bmatrix}</span></p>
+<p><strong>Model:</strong></p>
+<p><span class="math display">Elevation = 200 - 300 \times NDVI + 45 \times Slope</span></p>
+<p><strong>Interpretation:</strong></p>
+<ul>
+<li>Intercept: 200m baseline</li>
+<li>NDVI: -300 coefficient (higher vegetation → lower elevation in this dataset)</li>
+<li>Slope: +45 coefficient (steeper slopes → higher elevation)</li>
+</ul>
+<h3 id="step-6-prediction" class="anchored">Step 6: Prediction</h3>
+<p><strong>New location:</strong> NDVI = 0.5, Slope = 10°</p>
+<p><span class="math display">\hat{Elevation} = 200 - 300(0.5) + 45(10) = 200 - 150 + 450 = 500 \text{ m}</span></p>
+<h3 id="step-7-evaluate" class="anchored">Step 7: Evaluate</h3>
+<p><strong>Test on training data (for illustration):</strong></p>
+<table class="caption-top">
+<thead>
+<tr class="header">
+<th>Actual</th>
+<th>Predicted</th>
+<th>Error</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>450</td>
+<td>435</td>
+<td>15</td>
+</tr>
+<tr class="even">
+<td>850</td>
+<td>820</td>
+<td>30</td>
+</tr>
+<tr class="odd">
+<td>600</td>
+<td>590</td>
+<td>10</td>
+</tr>
+<tr class="even">
+<td>1100</td>
+<td>1095</td>
+<td>5</td>
+</tr>
+<tr class="odd">
+<td>750</td>
+<td>740</td>
+<td>10</td>
+</tr>
+</tbody>
+</table>
+<p><strong>RMSE:</strong> <span class="math inline">\sqrt{\frac{15^2+30^2+10^2+5^2+10^2}{5}} = \sqrt{\frac{1350}{5}} = 16.4</span> m</p>
+<p><strong>R²:</strong> (coefficient of determination)</p>
+<p><span class="math display">R^2 = 1 - \frac{SS_{res}}{SS_{tot}} = 1 - \frac{1350}{...} \approx 0.95</span></p>
+<p>Good fit on training data. (Would need test set for true evaluation.)</p>
+<hr>
+<h2 id="computational-implementation" class="anchored">5. Computational Implementation</h2>
+<h3 id="tier-1-foundation-path-pilaptop" class="anchored">Tier 1: Foundation Path (Pi/Laptop)</h3>
+<p><strong>Implementation from scratch (Python/NumPy):</strong></p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb2"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> numpy <span class="im">as</span> np</span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a><span class="kw">class</span> LinearRegression:</span>
+<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a>    <span class="kw">def</span> <span class="fu">__init__</span>(<span class="va">self</span>, learning_rate<span class="op">=</span><span class="fl">0.01</span>, n_iterations<span class="op">=</span><span class="dv">1000</span>, </span>
+<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a>                 regularization<span class="op">=</span><span class="st">'none'</span>, lambda_<span class="op">=</span><span class="fl">0.1</span>):</span>
+<span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a>        <span class="va">self</span>.lr <span class="op">=</span> learning_rate</span>
+<span id="cb2-7"><a href="#cb2-7" aria-hidden="true" tabindex="-1"></a>        <span class="va">self</span>.n_iter <span class="op">=</span> n_iterations</span>
+<span id="cb2-8"><a href="#cb2-8" aria-hidden="true" tabindex="-1"></a>        <span class="va">self</span>.regularization <span class="op">=</span> regularization</span>
+<span id="cb2-9"><a href="#cb2-9" aria-hidden="true" tabindex="-1"></a>        <span class="va">self</span>.lambda_ <span class="op">=</span> lambda_</span>
+<span id="cb2-10"><a href="#cb2-10" aria-hidden="true" tabindex="-1"></a>        <span class="va">self</span>.weights <span class="op">=</span> <span class="va">None</span></span>
+<span id="cb2-11"><a href="#cb2-11" aria-hidden="true" tabindex="-1"></a>        <span class="va">self</span>.bias <span class="op">=</span> <span class="va">None</span></span>
+<span id="cb2-12"><a href="#cb2-12" aria-hidden="true" tabindex="-1"></a>        <span class="va">self</span>.loss_history <span class="op">=</span> []</span>
+<span id="cb2-13"><a href="#cb2-13" aria-hidden="true" tabindex="-1"></a>    </span>
+<span id="cb2-14"><a href="#cb2-14" aria-hidden="true" tabindex="-1"></a>    <span class="kw">def</span> fit(<span class="va">self</span>, X, y):</span>
+<span id="cb2-15"><a href="#cb2-15" aria-hidden="true" tabindex="-1"></a>        <span class="co">"""Train linear regression via gradient descent"""</span></span>
+<span id="cb2-16"><a href="#cb2-16" aria-hidden="true" tabindex="-1"></a>        n_samples, n_features <span class="op">=</span> X.shape</span>
+<span id="cb2-17"><a href="#cb2-17" aria-hidden="true" tabindex="-1"></a>        </span>
+<span id="cb2-18"><a href="#cb2-18" aria-hidden="true" tabindex="-1"></a>        <span class="co"># Initialize parameters</span></span>
+<span id="cb2-19"><a href="#cb2-19" aria-hidden="true" tabindex="-1"></a>        <span class="va">self</span>.weights <span class="op">=</span> np.zeros(n_features)</span>
+<span id="cb2-20"><a href="#cb2-20" aria-hidden="true" tabindex="-1"></a>        <span class="va">self</span>.bias <span class="op">=</span> <span class="dv">0</span></span>
+<span id="cb2-21"><a href="#cb2-21" aria-hidden="true" tabindex="-1"></a>        </span>
+<span id="cb2-22"><a href="#cb2-22" aria-hidden="true" tabindex="-1"></a>        <span class="co"># Gradient descent</span></span>
+<span id="cb2-23"><a href="#cb2-23" aria-hidden="true" tabindex="-1"></a>        <span class="cf">for</span> i <span class="kw">in</span> <span class="bu">range</span>(<span class="va">self</span>.n_iter):</span>
+<span id="cb2-24"><a href="#cb2-24" aria-hidden="true" tabindex="-1"></a>            <span class="co"># Forward pass</span></span>
+<span id="cb2-25"><a href="#cb2-25" aria-hidden="true" tabindex="-1"></a>            y_pred <span class="op">=</span> <span class="va">self</span>.predict(X)</span>
+<span id="cb2-26"><a href="#cb2-26" aria-hidden="true" tabindex="-1"></a>            </span>
+<span id="cb2-27"><a href="#cb2-27" aria-hidden="true" tabindex="-1"></a>            <span class="co"># Compute loss</span></span>
+<span id="cb2-28"><a href="#cb2-28" aria-hidden="true" tabindex="-1"></a>            loss <span class="op">=</span> np.mean((y <span class="op">-</span> y_pred)<span class="op">**</span><span class="dv">2</span>)</span>
+<span id="cb2-29"><a href="#cb2-29" aria-hidden="true" tabindex="-1"></a>            </span>
+<span id="cb2-30"><a href="#cb2-30" aria-hidden="true" tabindex="-1"></a>            <span class="co"># Add regularization to loss</span></span>
+<span id="cb2-31"><a href="#cb2-31" aria-hidden="true" tabindex="-1"></a>            <span class="cf">if</span> <span class="va">self</span>.regularization <span class="op">==</span> <span class="st">'ridge'</span>:</span>
+<span id="cb2-32"><a href="#cb2-32" aria-hidden="true" tabindex="-1"></a>                loss <span class="op">+=</span> <span class="va">self</span>.lambda_ <span class="op">*</span> np.<span class="bu">sum</span>(<span class="va">self</span>.weights<span class="op">**</span><span class="dv">2</span>)</span>
+<span id="cb2-33"><a href="#cb2-33" aria-hidden="true" tabindex="-1"></a>            <span class="cf">elif</span> <span class="va">self</span>.regularization <span class="op">==</span> <span class="st">'lasso'</span>:</span>
+<span id="cb2-34"><a href="#cb2-34" aria-hidden="true" tabindex="-1"></a>                loss <span class="op">+=</span> <span class="va">self</span>.lambda_ <span class="op">*</span> np.<span class="bu">sum</span>(np.<span class="bu">abs</span>(<span class="va">self</span>.weights))</span>
+<span id="cb2-35"><a href="#cb2-35" aria-hidden="true" tabindex="-1"></a>            </span>
+<span id="cb2-36"><a href="#cb2-36" aria-hidden="true" tabindex="-1"></a>            <span class="va">self</span>.loss_history.append(loss)</span>
+<span id="cb2-37"><a href="#cb2-37" aria-hidden="true" tabindex="-1"></a>            </span>
+<span id="cb2-38"><a href="#cb2-38" aria-hidden="true" tabindex="-1"></a>            <span class="co"># Compute gradients</span></span>
+<span id="cb2-39"><a href="#cb2-39" aria-hidden="true" tabindex="-1"></a>            dw <span class="op">=</span> <span class="op">-</span>(<span class="dv">2</span><span class="op">/</span>n_samples) <span class="op">*</span> X.T <span class="op">@</span> (y <span class="op">-</span> y_pred)</span>
+<span id="cb2-40"><a href="#cb2-40" aria-hidden="true" tabindex="-1"></a>            db <span class="op">=</span> <span class="op">-</span>(<span class="dv">2</span><span class="op">/</span>n_samples) <span class="op">*</span> np.<span class="bu">sum</span>(y <span class="op">-</span> y_pred)</span>
+<span id="cb2-41"><a href="#cb2-41" aria-hidden="true" tabindex="-1"></a>            </span>
+<span id="cb2-42"><a href="#cb2-42" aria-hidden="true" tabindex="-1"></a>            <span class="co"># Add regularization to gradients</span></span>
+<span id="cb2-43"><a href="#cb2-43" aria-hidden="true" tabindex="-1"></a>            <span class="cf">if</span> <span class="va">self</span>.regularization <span class="op">==</span> <span class="st">'ridge'</span>:</span>
+<span id="cb2-44"><a href="#cb2-44" aria-hidden="true" tabindex="-1"></a>                dw <span class="op">+=</span> <span class="dv">2</span> <span class="op">*</span> <span class="va">self</span>.lambda_ <span class="op">*</span> <span class="va">self</span>.weights</span>
+<span id="cb2-45"><a href="#cb2-45" aria-hidden="true" tabindex="-1"></a>            <span class="cf">elif</span> <span class="va">self</span>.regularization <span class="op">==</span> <span class="st">'lasso'</span>:</span>
+<span id="cb2-46"><a href="#cb2-46" aria-hidden="true" tabindex="-1"></a>                dw <span class="op">+=</span> <span class="va">self</span>.lambda_ <span class="op">*</span> np.sign(<span class="va">self</span>.weights)</span>
+<span id="cb2-47"><a href="#cb2-47" aria-hidden="true" tabindex="-1"></a>            </span>
+<span id="cb2-48"><a href="#cb2-48" aria-hidden="true" tabindex="-1"></a>            <span class="co"># Update parameters</span></span>
+<span id="cb2-49"><a href="#cb2-49" aria-hidden="true" tabindex="-1"></a>            <span class="va">self</span>.weights <span class="op">-=</span> <span class="va">self</span>.lr <span class="op">*</span> dw</span>
+<span id="cb2-50"><a href="#cb2-50" aria-hidden="true" tabindex="-1"></a>            <span class="va">self</span>.bias <span class="op">-=</span> <span class="va">self</span>.lr <span class="op">*</span> db</span>
+<span id="cb2-51"><a href="#cb2-51" aria-hidden="true" tabindex="-1"></a>            </span>
+<span id="cb2-52"><a href="#cb2-52" aria-hidden="true" tabindex="-1"></a>            <span class="co"># Check convergence</span></span>
+<span id="cb2-53"><a href="#cb2-53" aria-hidden="true" tabindex="-1"></a>            <span class="cf">if</span> i <span class="op">&gt;</span> <span class="dv">0</span> <span class="kw">and</span> <span class="bu">abs</span>(<span class="va">self</span>.loss_history[<span class="op">-</span><span class="dv">1</span>] <span class="op">-</span> <span class="va">self</span>.loss_history[<span class="op">-</span><span class="dv">2</span>]) <span class="op">&lt;</span> <span class="fl">1e-6</span>:</span>
+<span id="cb2-54"><a href="#cb2-54" aria-hidden="true" tabindex="-1"></a>                <span class="bu">print</span>(<span class="ss">f"Converged at iteration </span><span class="sc">{</span>i<span class="sc">}</span><span class="ss">"</span>)</span>
+<span id="cb2-55"><a href="#cb2-55" aria-hidden="true" tabindex="-1"></a>                <span class="cf">break</span></span>
+<span id="cb2-56"><a href="#cb2-56" aria-hidden="true" tabindex="-1"></a>        </span>
+<span id="cb2-57"><a href="#cb2-57" aria-hidden="true" tabindex="-1"></a>        <span class="cf">return</span> <span class="va">self</span></span>
+<span id="cb2-58"><a href="#cb2-58" aria-hidden="true" tabindex="-1"></a>    </span>
+<span id="cb2-59"><a href="#cb2-59" aria-hidden="true" tabindex="-1"></a>    <span class="kw">def</span> predict(<span class="va">self</span>, X):</span>
+<span id="cb2-60"><a href="#cb2-60" aria-hidden="true" tabindex="-1"></a>        <span class="co">"""Make predictions"""</span></span>
+<span id="cb2-61"><a href="#cb2-61" aria-hidden="true" tabindex="-1"></a>        <span class="cf">return</span> X <span class="op">@</span> <span class="va">self</span>.weights <span class="op">+</span> <span class="va">self</span>.bias</span>
+<span id="cb2-62"><a href="#cb2-62" aria-hidden="true" tabindex="-1"></a>    </span>
+<span id="cb2-63"><a href="#cb2-63" aria-hidden="true" tabindex="-1"></a>    <span class="kw">def</span> score(<span class="va">self</span>, X, y):</span>
+<span id="cb2-64"><a href="#cb2-64" aria-hidden="true" tabindex="-1"></a>        <span class="co">"""Calculate R² score"""</span></span>
+<span id="cb2-65"><a href="#cb2-65" aria-hidden="true" tabindex="-1"></a>        y_pred <span class="op">=</span> <span class="va">self</span>.predict(X)</span>
+<span id="cb2-66"><a href="#cb2-66" aria-hidden="true" tabindex="-1"></a>        ss_res <span class="op">=</span> np.<span class="bu">sum</span>((y <span class="op">-</span> y_pred)<span class="op">**</span><span class="dv">2</span>)</span>
+<span id="cb2-67"><a href="#cb2-67" aria-hidden="true" tabindex="-1"></a>        ss_tot <span class="op">=</span> np.<span class="bu">sum</span>((y <span class="op">-</span> np.mean(y))<span class="op">**</span><span class="dv">2</span>)</span>
+<span id="cb2-68"><a href="#cb2-68" aria-hidden="true" tabindex="-1"></a>        <span class="cf">return</span> <span class="dv">1</span> <span class="op">-</span> (ss_res <span class="op">/</span> ss_tot)</span>
+<span id="cb2-69"><a href="#cb2-69" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-70"><a href="#cb2-70" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-71"><a href="#cb2-71" aria-hidden="true" tabindex="-1"></a><span class="co"># Example usage</span></span>
+<span id="cb2-72"><a href="#cb2-72" aria-hidden="true" tabindex="-1"></a><span class="cf">if</span> <span class="va">__name__</span> <span class="op">==</span> <span class="st">"__main__"</span>:</span>
+<span id="cb2-73"><a href="#cb2-73" aria-hidden="true" tabindex="-1"></a>    <span class="co"># Generate synthetic data</span></span>
+<span id="cb2-74"><a href="#cb2-74" aria-hidden="true" tabindex="-1"></a>    np.random.seed(<span class="dv">42</span>)</span>
+<span id="cb2-75"><a href="#cb2-75" aria-hidden="true" tabindex="-1"></a>    X <span class="op">=</span> np.random.randn(<span class="dv">100</span>, <span class="dv">2</span>)  <span class="co"># NDVI, Slope</span></span>
+<span id="cb2-76"><a href="#cb2-76" aria-hidden="true" tabindex="-1"></a>    true_weights <span class="op">=</span> np.array([<span class="op">-</span><span class="dv">300</span>, <span class="dv">45</span>])</span>
+<span id="cb2-77"><a href="#cb2-77" aria-hidden="true" tabindex="-1"></a>    true_bias <span class="op">=</span> <span class="dv">200</span></span>
+<span id="cb2-78"><a href="#cb2-78" aria-hidden="true" tabindex="-1"></a>    y <span class="op">=</span> X <span class="op">@</span> true_weights <span class="op">+</span> true_bias <span class="op">+</span> np.random.randn(<span class="dv">100</span>) <span class="op">*</span> <span class="dv">20</span></span>
+<span id="cb2-79"><a href="#cb2-79" aria-hidden="true" tabindex="-1"></a>    </span>
+<span id="cb2-80"><a href="#cb2-80" aria-hidden="true" tabindex="-1"></a>    <span class="co"># Split train/test</span></span>
+<span id="cb2-81"><a href="#cb2-81" aria-hidden="true" tabindex="-1"></a>    n_train <span class="op">=</span> <span class="dv">80</span></span>
+<span id="cb2-82"><a href="#cb2-82" aria-hidden="true" tabindex="-1"></a>    X_train, X_test <span class="op">=</span> X[:n_train], X[n_train:]</span>
+<span id="cb2-83"><a href="#cb2-83" aria-hidden="true" tabindex="-1"></a>    y_train, y_test <span class="op">=</span> y[:n_train], y[n_train:]</span>
+<span id="cb2-84"><a href="#cb2-84" aria-hidden="true" tabindex="-1"></a>    </span>
+<span id="cb2-85"><a href="#cb2-85" aria-hidden="true" tabindex="-1"></a>    <span class="co"># Train model</span></span>
+<span id="cb2-86"><a href="#cb2-86" aria-hidden="true" tabindex="-1"></a>    model <span class="op">=</span> LinearRegression(learning_rate<span class="op">=</span><span class="fl">0.01</span>, n_iterations<span class="op">=</span><span class="dv">1000</span>,</span>
+<span id="cb2-87"><a href="#cb2-87" aria-hidden="true" tabindex="-1"></a>                            regularization<span class="op">=</span><span class="st">'ridge'</span>, lambda_<span class="op">=</span><span class="fl">0.1</span>)</span>
+<span id="cb2-88"><a href="#cb2-88" aria-hidden="true" tabindex="-1"></a>    model.fit(X_train, y_train)</span>
+<span id="cb2-89"><a href="#cb2-89" aria-hidden="true" tabindex="-1"></a>    </span>
+<span id="cb2-90"><a href="#cb2-90" aria-hidden="true" tabindex="-1"></a>    <span class="co"># Evaluate</span></span>
+<span id="cb2-91"><a href="#cb2-91" aria-hidden="true" tabindex="-1"></a>    train_score <span class="op">=</span> model.score(X_train, y_train)</span>
+<span id="cb2-92"><a href="#cb2-92" aria-hidden="true" tabindex="-1"></a>    test_score <span class="op">=</span> model.score(X_test, y_test)</span>
+<span id="cb2-93"><a href="#cb2-93" aria-hidden="true" tabindex="-1"></a>    </span>
+<span id="cb2-94"><a href="#cb2-94" aria-hidden="true" tabindex="-1"></a>    <span class="bu">print</span>(<span class="ss">f"Learned weights: </span><span class="sc">{</span>model<span class="sc">.</span>weights<span class="sc">}</span><span class="ss">"</span>)</span>
+<span id="cb2-95"><a href="#cb2-95" aria-hidden="true" tabindex="-1"></a>    <span class="bu">print</span>(<span class="ss">f"Learned bias: </span><span class="sc">{</span>model<span class="sc">.</span>bias<span class="sc">:.2f}</span><span class="ss">"</span>)</span>
+<span id="cb2-96"><a href="#cb2-96" aria-hidden="true" tabindex="-1"></a>    <span class="bu">print</span>(<span class="ss">f"Train R²: </span><span class="sc">{</span>train_score<span class="sc">:.3f}</span><span class="ss">"</span>)</span>
+<span id="cb2-97"><a href="#cb2-97" aria-hidden="true" tabindex="-1"></a>    <span class="bu">print</span>(<span class="ss">f"Test R²: </span><span class="sc">{</span>test_score<span class="sc">:.3f}</span><span class="ss">"</span>)</span>
+<span id="cb2-98"><a href="#cb2-98" aria-hidden="true" tabindex="-1"></a>    </span>
+<span id="cb2-99"><a href="#cb2-99" aria-hidden="true" tabindex="-1"></a>    <span class="co"># Predictions</span></span>
+<span id="cb2-100"><a href="#cb2-100" aria-hidden="true" tabindex="-1"></a>    y_pred <span class="op">=</span> model.predict(X_test)</span>
+<span id="cb2-101"><a href="#cb2-101" aria-hidden="true" tabindex="-1"></a>    rmse <span class="op">=</span> np.sqrt(np.mean((y_test <span class="op">-</span> y_pred)<span class="op">**</span><span class="dv">2</span>))</span>
+<span id="cb2-102"><a href="#cb2-102" aria-hidden="true" tabindex="-1"></a>    <span class="bu">print</span>(<span class="ss">f"Test RMSE: </span><span class="sc">{</span>rmse<span class="sc">:.2f}</span><span class="ss">"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p><strong>Runtime:</strong> Training &lt;1 second for 100 samples, 2 features</p>
+<p><strong>Memory:</strong> Minimal (~1 KB for this dataset)</p>
+<hr>
+<h3 id="tier-2-professional-path-go-further" class="anchored">Tier 2: Professional Path (Go Further)</h3>
+<p><strong>Scikit-learn with cross-validation:</strong></p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb3"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> sklearn.linear_model <span class="im">import</span> Ridge, Lasso, ElasticNet</span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> sklearn.model_selection <span class="im">import</span> GridSearchCV, KFold</span>
+<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> sklearn.metrics <span class="im">import</span> mean_squared_error, r2_score</span>
+<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> numpy <span class="im">as</span> np</span>
+<span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-6"><a href="#cb3-6" aria-hidden="true" tabindex="-1"></a><span class="co"># Load larger dataset (assume 10,000 samples, 20 features)</span></span>
+<span id="cb3-7"><a href="#cb3-7" aria-hidden="true" tabindex="-1"></a><span class="co"># X_large, y_large</span></span>
+<span id="cb3-8"><a href="#cb3-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-9"><a href="#cb3-9" aria-hidden="true" tabindex="-1"></a><span class="co"># Set up spatial cross-validation</span></span>
+<span id="cb3-10"><a href="#cb3-10" aria-hidden="true" tabindex="-1"></a><span class="co"># (In reality, would use spatial blocks)</span></span>
+<span id="cb3-11"><a href="#cb3-11" aria-hidden="true" tabindex="-1"></a>cv <span class="op">=</span> KFold(n_splits<span class="op">=</span><span class="dv">5</span>, shuffle<span class="op">=</span><span class="va">True</span>, random_state<span class="op">=</span><span class="dv">42</span>)</span>
+<span id="cb3-12"><a href="#cb3-12" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-13"><a href="#cb3-13" aria-hidden="true" tabindex="-1"></a><span class="co"># Hyperparameter grid</span></span>
+<span id="cb3-14"><a href="#cb3-14" aria-hidden="true" tabindex="-1"></a>param_grid <span class="op">=</span> {</span>
+<span id="cb3-15"><a href="#cb3-15" aria-hidden="true" tabindex="-1"></a>    <span class="st">'alpha'</span>: [<span class="fl">0.001</span>, <span class="fl">0.01</span>, <span class="fl">0.1</span>, <span class="fl">1.0</span>, <span class="fl">10.0</span>, <span class="fl">100.0</span>]</span>
+<span id="cb3-16"><a href="#cb3-16" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb3-17"><a href="#cb3-17" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-18"><a href="#cb3-18" aria-hidden="true" tabindex="-1"></a><span class="co"># Grid search for ridge regression</span></span>
+<span id="cb3-19"><a href="#cb3-19" aria-hidden="true" tabindex="-1"></a>ridge <span class="op">=</span> Ridge()</span>
+<span id="cb3-20"><a href="#cb3-20" aria-hidden="true" tabindex="-1"></a>grid_search <span class="op">=</span> GridSearchCV(ridge, param_grid, cv<span class="op">=</span>cv, </span>
+<span id="cb3-21"><a href="#cb3-21" aria-hidden="true" tabindex="-1"></a>                          scoring<span class="op">=</span><span class="st">'neg_mean_squared_error'</span>,</span>
+<span id="cb3-22"><a href="#cb3-22" aria-hidden="true" tabindex="-1"></a>                          n_jobs<span class="op">=-</span><span class="dv">1</span>)</span>
+<span id="cb3-23"><a href="#cb3-23" aria-hidden="true" tabindex="-1"></a>grid_search.fit(X_large, y_large)</span>
+<span id="cb3-24"><a href="#cb3-24" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-25"><a href="#cb3-25" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f"Best lambda: </span><span class="sc">{</span>grid_search<span class="sc">.</span>best_params_[<span class="st">'alpha'</span>]<span class="sc">}</span><span class="ss">"</span>)</span>
+<span id="cb3-26"><a href="#cb3-26" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f"Best CV score: </span><span class="sc">{</span><span class="op">-</span>grid_search<span class="sc">.</span>best_score_<span class="sc">:.2f}</span><span class="ss"> RMSE"</span>)</span>
+<span id="cb3-27"><a href="#cb3-27" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-28"><a href="#cb3-28" aria-hidden="true" tabindex="-1"></a><span class="co"># Train final model</span></span>
+<span id="cb3-29"><a href="#cb3-29" aria-hidden="true" tabindex="-1"></a>best_model <span class="op">=</span> grid_search.best_estimator_</span>
+<span id="cb3-30"><a href="#cb3-30" aria-hidden="true" tabindex="-1"></a>y_pred <span class="op">=</span> best_model.predict(X_test)</span>
+<span id="cb3-31"><a href="#cb3-31" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-32"><a href="#cb3-32" aria-hidden="true" tabindex="-1"></a><span class="co"># Detailed evaluation</span></span>
+<span id="cb3-33"><a href="#cb3-33" aria-hidden="true" tabindex="-1"></a>rmse <span class="op">=</span> np.sqrt(mean_squared_error(y_test, y_pred))</span>
+<span id="cb3-34"><a href="#cb3-34" aria-hidden="true" tabindex="-1"></a>r2 <span class="op">=</span> r2_score(y_test, y_pred)</span>
+<span id="cb3-35"><a href="#cb3-35" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-36"><a href="#cb3-36" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f"Test RMSE: </span><span class="sc">{</span>rmse<span class="sc">:.2f}</span><span class="ss">"</span>)</span>
+<span id="cb3-37"><a href="#cb3-37" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f"Test R²: </span><span class="sc">{</span>r2<span class="sc">:.3f}</span><span class="ss">"</span>)</span>
+<span id="cb3-38"><a href="#cb3-38" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-39"><a href="#cb3-39" aria-hidden="true" tabindex="-1"></a><span class="co"># Feature importance (coefficient magnitudes)</span></span>
+<span id="cb3-40"><a href="#cb3-40" aria-hidden="true" tabindex="-1"></a>importance <span class="op">=</span> np.<span class="bu">abs</span>(best_model.coef_)</span>
+<span id="cb3-41"><a href="#cb3-41" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> i, imp <span class="kw">in</span> <span class="bu">enumerate</span>(importance):</span>
+<span id="cb3-42"><a href="#cb3-42" aria-hidden="true" tabindex="-1"></a>    <span class="bu">print</span>(<span class="ss">f"Feature </span><span class="sc">{</span>i<span class="sc">}</span><span class="ss">: </span><span class="sc">{</span>imp<span class="sc">:.3f}</span><span class="ss">"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p><strong>Runtime:</strong> 10-30 seconds for 10k samples with grid search</p>
+<p><strong>With GPU:</strong> XGBoost or LightGBM for larger datasets</p>
+<hr>
+<h2 id="interpretation" class="anchored">6. Interpretation</h2>
+<h3 id="real-application-digital-soil-mapping" class="anchored">Real Application: Digital Soil Mapping</h3>
+<p><strong>GlobalSoilMap project:</strong></p>
+<p>Predict soil properties (carbon, pH, texture) globally at 90m resolution.</p>
+<p><strong>Training data:</strong></p>
+<ul>
+<li>~50,000 soil profile observations worldwide</li>
+<li>Soil databases (ISRIC, USDA)</li>
+</ul>
+<p><strong>Features:</strong></p>
+<ul>
+<li>Landsat spectral bands</li>
+<li>Elevation, slope, curvature</li>
+<li>Climate (temperature, precipitation)</li>
+<li>Land cover</li>
+<li>Parent material geology</li>
+</ul>
+<p><strong>Target:</strong> Soil organic carbon (SOC) at 0-30 cm depth</p>
+<p><strong>Model:</strong> Random forest regression (ensemble of decision trees)</p>
+<p><strong>Performance:</strong></p>
+<ul>
+<li>RMSE: 10-15 g C/kg soil</li>
+<li>R²: 0.40-0.60 (moderate, high natural variability)</li>
+</ul>
+<p><strong>Insights from coefficients:</strong></p>
+<p>Positive predictors (higher SOC): - Higher precipitation (+) - Lower temperature (+) [decomposition slower when cold] - Forest land cover (+) - Higher clay content (+) [protects carbon]</p>
+<p>Negative predictors (lower SOC): - Higher elevation (-) [thin soils] - Steeper slopes (-) [erosion] - Cropland (-) [tillage oxidizes carbon]</p>
+<h3 id="residual-spatial-autocorrelation" class="anchored">Residual Spatial Autocorrelation</h3>
+<p><strong>Problem:</strong></p>
+<p>Regression residuals (errors) spatially clustered.</p>
+<p>Indicates missing spatial structure in model.</p>
+<p><strong>Moran’s I test:</strong></p>
+<p><span class="math display">I = \frac{n}{W}\frac{\sum_i\sum_j w_{ij}(e_i - \bar{e})(e_j - \bar{e})}{\sum_i (e_i - \bar{e})^2}</span></p>
+<p>Where: - <span class="math inline">e_i</span> = residual at location <span class="math inline">i</span> - <span class="math inline">w_{ij}</span> = spatial weights (1 if neighbors, 0 otherwise) - <span class="math inline">W</span> = sum of all weights</p>
+<p><span class="math inline">I &gt; 0</span>: Positive autocorrelation (clustered errors)<br>
+<span class="math inline">I \approx 0</span>: No autocorrelation<br>
+<span class="math inline">I &lt; 0</span>: Negative autocorrelation (dispersed errors)</p>
+<p><strong>Solutions:</strong></p>
+<ol type="1">
+<li>Add spatial features (coordinates, distance to…)</li>
+<li>Use spatial regression models (SAR, CAR)</li>
+<li>Ensemble predictions with kriging residuals</li>
+</ol>
+<h3 id="prediction-uncertainty" class="anchored">Prediction Uncertainty</h3>
+<p><strong>Point predictions insufficient.</strong></p>
+<p>Need: Prediction intervals.</p>
+<p><strong>Bootstrap method:</strong></p>
+<ol type="1">
+<li>Resample training data with replacement (1000 times)</li>
+<li>Train model on each bootstrap sample</li>
+<li>Predict test point with all 1000 models</li>
+<li>Calculate 95% interval from predictions</li>
+</ol>
+<p><strong>Example:</strong></p>
+<p>Predicted elevation: 750m<br>
+95% interval: [720m, 780m]<br>
+Uncertainty: ±30m</p>
+<p>Wider intervals when: - Extrapolating beyond training data - High noise in training data - Few training samples near test location</p>
+<hr>
+<h2 id="what-could-go-wrong" class="anchored">7. What Could Go Wrong?</h2>
+<h3 id="multicollinearity" class="anchored">Multicollinearity</h3>
+<p><strong>Problem:</strong></p>
+<p>Features highly correlated (e.g., NDVI and NIR: <span class="math inline">r = 0.95</span>).</p>
+<p>Coefficient estimates unstable, variance inflated.</p>
+<p><strong>Symptoms:</strong></p>
+<ul>
+<li>Coefficients change dramatically with small data changes</li>
+<li>Large standard errors</li>
+<li>Counterintuitive coefficient signs</li>
+</ul>
+<p><strong>Solution:</strong></p>
+<ul>
+<li>Ridge regression (L2 penalty stabilizes)</li>
+<li>Remove correlated features (keep one from each pair)</li>
+<li>PCA to decorrelate features (Model 73)</li>
+</ul>
+<h3 id="extrapolation" class="anchored">Extrapolation</h3>
+<p><strong>Problem:</strong></p>
+<p>Predict outside range of training data.</p>
+<p>Linear model extrapolates to absurdity.</p>
+<p><strong>Example:</strong></p>
+<p>Training elevation: 200-1000m<br>
+Test location: 1500m (outside range)<br>
+Prediction: May be wildly inaccurate</p>
+<p><strong>Solution:</strong></p>
+<ul>
+<li>Flag predictions outside training range</li>
+<li>Use domain knowledge constraints</li>
+<li>Non-linear models (polynomial, splines)</li>
+</ul>
+<h3 id="non-linear-relationships" class="anchored">Non-linear Relationships</h3>
+<p><strong>Problem:</strong></p>
+<p>True relationship non-linear, linear model fits poorly.</p>
+<p><strong>Example:</strong></p>
+<p>Temperature vs elevation: <span class="math inline">T = T_0 - \Gamma \times elevation</span></p>
+<p>Linear works.</p>
+<p>Soil moisture vs precipitation: Saturates at high rainfall.</p>
+<p>Linear fails (needs logistic or power transform).</p>
+<p><strong>Solution:</strong></p>
+<ul>
+<li>Feature engineering (polynomial terms, interactions)</li>
+<li>Non-linear models (decision trees, neural networks)</li>
+<li>Transform target (log, sqrt)</li>
+</ul>
+<h3 id="heteroscedasticity" class="anchored">Heteroscedasticity</h3>
+<p><strong>Problem:</strong></p>
+<p>Error variance not constant.</p>
+<p><strong>Example:</strong></p>
+<p>High elevation: ±50m error<br>
+Low elevation: ±10m error</p>
+<p>Violates regression assumptions.</p>
+<p><strong>Detection:</strong></p>
+<p>Plot residuals vs predictions. Funnel shape = heteroscedasticity.</p>
+<p><strong>Solution:</strong></p>
+<ul>
+<li>Transform target (log, Box-Cox)</li>
+<li>Weighted least squares</li>
+<li>Robust regression (Huber loss)</li>
+</ul>
+<hr>
+<h2 id="extension-spatial-cross-validation" class="anchored">8. Extension: Spatial Cross-Validation</h2>
+<h3 id="why-standard-cv-fails" class="anchored">Why Standard CV Fails</h3>
+<p><strong>Spatial autocorrelation:</strong></p>
+<p>Nearby locations similar (Tobler’s Law).</p>
+<p>Standard random CV: Test points near training points.</p>
+<p>Overestimates accuracy (information leakage).</p>
+<h3 id="spatial-block-cv" class="anchored">Spatial Block CV</h3>
+<p><strong>Method:</strong></p>
+<ol type="1">
+<li>Divide region into spatial blocks (e.g., 10×10 grid)</li>
+<li>Each fold = contiguous block(s)</li>
+<li>Train on distant blocks, test on held-out block</li>
+</ol>
+<p><strong>Effect:</strong></p>
+<p>Test data truly independent (spatially).</p>
+<p>Realistic accuracy estimate.</p>
+<p><strong>Typical result:</strong></p>
+<p>Standard CV: R² = 0.85<br>
+Spatial CV: R² = 0.65</p>
+<p>Difference reveals spatial leakage.</p>
+<hr>
+<h2 id="math-refresher-matrix-calculus" class="anchored">9. Math Refresher: Matrix Calculus</h2>
+<h3 id="gradient-of-quadratic-form" class="anchored">Gradient of Quadratic Form</h3>
+<p><strong>Function:</strong></p>
+<p><span class="math display">f(\mathbf{x}) = \mathbf{x}^T\mathbf{A}\mathbf{x}</span></p>
+<p><strong>Gradient:</strong></p>
+<p><span class="math display">\nabla f = (\mathbf{A} + \mathbf{A}^T)\mathbf{x}</span></p>
+<p>If <span class="math inline">\mathbf{A}</span> symmetric: <span class="math inline">\nabla f = 2\mathbf{A}\mathbf{x}</span></p>
+<p><strong>Example:</strong></p>
+<p><span class="math display">L(\boldsymbol{\beta}) = (\mathbf{y} - \mathbf{X}\boldsymbol{\beta})^T(\mathbf{y} - \mathbf{X}\boldsymbol{\beta})</span></p>
+<p>Expand:</p>
+<p><span class="math display">= \mathbf{y}^T\mathbf{y} - 2\mathbf{y}^T\mathbf{X}\boldsymbol{\beta} + \boldsymbol{\beta}^T\mathbf{X}^T\mathbf{X}\boldsymbol{\beta}</span></p>
+<p>Gradient:</p>
+<p><span class="math display">\nabla L = -2\mathbf{X}^T\mathbf{y} + 2\mathbf{X}^T\mathbf{X}\boldsymbol{\beta}</span></p>
+<hr>
+<h2 id="summary" class="anchored">Summary</h2>
+<ul>
+<li>Linear regression predicts continuous targets via weighted sum of features minimizing mean squared error loss function</li>
+<li>Gradient descent iteratively updates coefficients β via β^(t+1) = β^(t) - α∇L converging to optimal solution</li>
+<li>Ridge regularization adds λ||β||² penalty shrinking coefficients preventing overfitting with correlated features</li>
+<li>Cross-validation estimates generalization error splitting data into training and validation folds averaging performance metrics</li>
+<li>Spatial cross-validation uses geographic blocks ensuring test data spatially separated from training avoiding autocorrelation bias</li>
+<li>Real-world soil mapping achieves R² 0.40-0.60 predicting carbon content from climate terrain and spectral features</li>
+<li>Multicollinearity inflates coefficient variance solved via ridge regression or removing correlated predictors</li>
+<li>Residual spatial autocorrelation detected via Moran’s I indicating missing spatial structure requiring additional features</li>
+<li>Prediction uncertainty quantified via bootstrap resampling generating confidence intervals around point estimates</li>
+<li>Professional implementation uses scikit-learn grid search optimizing hyperparameters across regularization strengths</li>
+</ul>
+<hr>
+
+
+<footer class="wayward-footer">
+  <div class="wayward-footer__inner">
+    <div class="wayward-footer__brand">
+      <div class="wayward-footer__logo">WaywardHouse<span>.</span></div>
+      <p>Understanding how place, economy, and environment interact through analysis, modelling, and open tools.</p>
+    </div>
+
+    <nav class="wayward-footer__group" aria-labelledby="footer-reading">
+      <h2 id="footer-reading" class="anchored">Reading</h2>
+      <a href="https://wayward.house/articles/">Articles</a>
+      <a href="https://wayward.house/learn/">Library</a>
+      <a href="https://wayward.house/archive.html">Archive</a>
+      <a href="https://wayward.house/start-here.html">Choose Your Path</a>
+    </nav>
+
+    <nav class="wayward-footer__group" aria-labelledby="footer-site">
+      <h2 id="footer-site" class="anchored">Site</h2>
+      <a href="https://wayward.house/start-here.html">Choose Your Path</a>
+      <a href="https://wayward.house/about.html">About</a>
+      <a href="https://wayward.house/contact.html">Contact</a>
+    </nav>
+
+    <nav class="wayward-footer__group" aria-labelledby="footer-resources">
+      <h2 id="footer-resources" class="anchored">Resources</h2>
+      <a href="https://wayward.house/topics/">All Topics</a>
+      <a href="https://wayward.house/privacy.html">Privacy Policy</a>
+      <a href="https://wayward.house/terms.html">Terms of Use</a>
+    </nav>
+  </div>
+</footer>
+
+<script type="module" src="../assets/dist/main.js"></script>
+<script type="module" src="../assets/js/core.js"></script>
+<script id="quarto-html-after-body" type="application/javascript">
+  window.document.addEventListener("DOMContentLoaded", function (event) {
+    const tabsets =  window.document.querySelectorAll(".panel-tabset-tabby")
+    tabsets.forEach(function(tabset) {
+      const tabby = new Tabby('#' + tabset.id);
+    });
+    const icon = "";
+    const anchorJS = new window.AnchorJS();
+    anchorJS.options = {
+      placement: 'right',
+      icon: icon
+    };
+    anchorJS.add('.anchored');
+    const isCodeAnnotation = (el) => {
+      for (const clz of el.classList) {
+        if (clz.startsWith('code-annotation-')) {                     
+          return true;
+        }
+      }
+      return false;
+    }
+    const onCopySuccess = function(e) {
+      // button target
+      const button = e.trigger;
+      // don't keep focus
+      button.blur();
+      // flash "checked"
+      button.classList.add('code-copy-button-checked');
+      var currentTitle = button.getAttribute("title");
+      button.setAttribute("title", "Copied!");
+      let tooltip;
+      if (window.bootstrap) {
+        button.setAttribute("data-bs-toggle", "tooltip");
+        button.setAttribute("data-bs-placement", "left");
+        button.setAttribute("data-bs-title", "Copied!");
+        tooltip = new bootstrap.Tooltip(button, 
+          { trigger: "manual", 
+            customClass: "code-copy-button-tooltip",
+            offset: [0, -8]});
+        tooltip.show();    
+      }
+      setTimeout(function() {
+        if (tooltip) {
+          tooltip.hide();
+          button.removeAttribute("data-bs-title");
+          button.removeAttribute("data-bs-toggle");
+          button.removeAttribute("data-bs-placement");
+        }
+        button.setAttribute("title", currentTitle);
+        button.classList.remove('code-copy-button-checked');
+      }, 1000);
+      // clear code selection
+      e.clearSelection();
+    }
+    const getTextToCopy = function(trigger) {
+      const outerScaffold = trigger.parentElement.cloneNode(true);
+      const codeEl = outerScaffold.querySelector('code');
+      for (const childEl of codeEl.children) {
+        if (isCodeAnnotation(childEl)) {
+          childEl.remove();
+        }
+      }
+      return codeEl.innerText;
+    }
+    const clipboard = new window.ClipboardJS('.code-copy-button:not([data-in-quarto-modal])', {
+      text: getTextToCopy
+    });
+    clipboard.on('success', onCopySuccess);
+    if (window.document.getElementById('quarto-embedded-source-code-modal')) {
+      const clipboardModal = new window.ClipboardJS('.code-copy-button[data-in-quarto-modal]', {
+        text: getTextToCopy,
+        container: window.document.getElementById('quarto-embedded-source-code-modal')
+      });
+      clipboardModal.on('success', onCopySuccess);
+    }
+      var localhostRegex = new RegExp(/^(?:http|https):\/\/localhost\:?[0-9]*\//);
+      var mailtoRegex = new RegExp(/^mailto:/);
+        var filterRegex = new RegExp('/' + window.location.host + '/');
+      var isInternal = (href) => {
+          return filterRegex.test(href) || localhostRegex.test(href) || mailtoRegex.test(href);
+      }
+      // Inspect non-navigation links and adorn them if external
+     var links = window.document.querySelectorAll('a[href]:not(.nav-link):not(.navbar-brand):not(.toc-action):not(.sidebar-link):not(.sidebar-item-toggle):not(.pagination-link):not(.no-external):not([aria-hidden]):not(.dropdown-item):not(.quarto-navigation-tool):not(.about-link)');
+      for (var i=0; i<links.length; i++) {
+        const link = links[i];
+        if (!isInternal(link.href)) {
+          // undo the damage that might have been done by quarto-nav.js in the case of
+          // links that we want to consider external
+          if (link.dataset.originalHref !== undefined) {
+            link.href = link.dataset.originalHref;
+          }
+        }
+      }
+    function tippyHover(el, contentFn, onTriggerFn, onUntriggerFn) {
+      const config = {
+        allowHTML: true,
+        maxWidth: 500,
+        delay: 100,
+        arrow: false,
+        appendTo: function(el) {
+            return el.parentElement;
+        },
+        interactive: true,
+        interactiveBorder: 10,
+        theme: 'light-border',
+        placement: 'bottom-start',
+      };
+      if (contentFn) {
+        config.content = contentFn;
+      }
+      if (onTriggerFn) {
+        config.onTrigger = onTriggerFn;
+      }
+      if (onUntriggerFn) {
+        config.onUntrigger = onUntriggerFn;
+      }
+      window.tippy(el, config); 
+    }
+    const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+    for (var i=0; i<noterefs.length; i++) {
+      const ref = noterefs[i];
+      tippyHover(ref, function() {
+        // use id or data attribute instead here
+        let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+        try { href = new URL(href).hash; } catch {}
+        const id = href.replace(/^#\/?/, "");
+        const note = window.document.getElementById(id);
+        if (note) {
+          return note.innerHTML;
+        } else {
+          return "";
+        }
+      });
+    }
+    const xrefs = window.document.querySelectorAll('a.quarto-xref');
+    const processXRef = (id, note) => {
+      // Strip column container classes
+      const stripColumnClz = (el) => {
+        el.classList.remove("page-full", "page-columns");
+        if (el.children) {
+          for (const child of el.children) {
+            stripColumnClz(child);
+          }
+        }
+      }
+      stripColumnClz(note)
+      if (id === null || id.startsWith('sec-')) {
+        // Special case sections, only their first couple elements
+        const container = document.createElement("div");
+        if (note.children && note.children.length > 2) {
+          container.appendChild(note.children[0].cloneNode(true));
+          for (let i = 1; i < note.children.length; i++) {
+            const child = note.children[i];
+            if (child.tagName === "P" && child.innerText === "") {
+              continue;
+            } else {
+              container.appendChild(child.cloneNode(true));
+              break;
+            }
+          }
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(container);
+          }
+          return container.innerHTML
+        } else {
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(note);
+          }
+          return note.innerHTML;
+        }
+      } else {
+        // Remove any anchor links if they are present
+        const anchorLink = note.querySelector('a.anchorjs-link');
+        if (anchorLink) {
+          anchorLink.remove();
+        }
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(note);
+        }
+        if (note.classList.contains("callout")) {
+          return note.outerHTML;
+        } else {
+          return note.innerHTML;
+        }
+      }
+    }
+    for (var i=0; i<xrefs.length; i++) {
+      const xref = xrefs[i];
+      tippyHover(xref, undefined, function(instance) {
+        instance.disable();
+        let url = xref.getAttribute('href');
+        let hash = undefined; 
+        if (url.startsWith('#')) {
+          hash = url;
+        } else {
+          try { hash = new URL(url).hash; } catch {}
+        }
+        if (hash) {
+          const id = hash.replace(/^#\/?/, "");
+          const note = window.document.getElementById(id);
+          if (note !== null) {
+            try {
+              const html = processXRef(id, note.cloneNode(true));
+              instance.setContent(html);
+            } finally {
+              instance.enable();
+              instance.show();
+            }
+          } else {
+            // See if we can fetch this
+            fetch(url.split('#')[0])
+            .then(res => res.text())
+            .then(html => {
+              const parser = new DOMParser();
+              const htmlDoc = parser.parseFromString(html, "text/html");
+              const note = htmlDoc.getElementById(id);
+              if (note !== null) {
+                const html = processXRef(id, note);
+                instance.setContent(html);
+              } 
+            }).finally(() => {
+              instance.enable();
+              instance.show();
+            });
+          }
+        } else {
+          // See if we can fetch a full url (with no hash to target)
+          // This is a special case and we should probably do some content thinning / targeting
+          fetch(url)
+          .then(res => res.text())
+          .then(html => {
+            const parser = new DOMParser();
+            const htmlDoc = parser.parseFromString(html, "text/html");
+            const note = htmlDoc.querySelector('main.content');
+            if (note !== null) {
+              // This should only happen for chapter cross references
+              // (since there is no id in the URL)
+              // remove the first header
+              if (note.children.length > 0 && note.children[0].tagName === "HEADER") {
+                note.children[0].remove();
+              }
+              const html = processXRef(null, note);
+              instance.setContent(html);
+            } 
+          }).finally(() => {
+            instance.enable();
+            instance.show();
+          });
+        }
+      }, function(instance) {
+      });
+    }
+        let selectedAnnoteEl;
+        const selectorForAnnotation = ( cell, annotation) => {
+          let cellAttr = 'data-code-cell="' + cell + '"';
+          let lineAttr = 'data-code-annotation="' +  annotation + '"';
+          const selector = 'span[' + cellAttr + '][' + lineAttr + ']';
+          return selector;
+        }
+        const selectCodeLines = (annoteEl) => {
+          const doc = window.document;
+          const targetCell = annoteEl.getAttribute("data-target-cell");
+          const targetAnnotation = annoteEl.getAttribute("data-target-annotation");
+          const annoteSpan = window.document.querySelector(selectorForAnnotation(targetCell, targetAnnotation));
+          const lines = annoteSpan.getAttribute("data-code-lines").split(",");
+          const lineIds = lines.map((line) => {
+            return targetCell + "-" + line;
+          })
+          let top = null;
+          let height = null;
+          let parent = null;
+          if (lineIds.length > 0) {
+              //compute the position of the single el (top and bottom and make a div)
+              const el = window.document.getElementById(lineIds[0]);
+              top = el.offsetTop;
+              height = el.offsetHeight;
+              parent = el.parentElement.parentElement;
+            if (lineIds.length > 1) {
+              const lastEl = window.document.getElementById(lineIds[lineIds.length - 1]);
+              const bottom = lastEl.offsetTop + lastEl.offsetHeight;
+              height = bottom - top;
+            }
+            if (top !== null && height !== null && parent !== null) {
+              // cook up a div (if necessary) and position it 
+              let div = window.document.getElementById("code-annotation-line-highlight");
+              if (div === null) {
+                div = window.document.createElement("div");
+                div.setAttribute("id", "code-annotation-line-highlight");
+                div.style.position = 'absolute';
+                parent.appendChild(div);
+              }
+              div.style.top = top - 2 + "px";
+              div.style.height = height + 4 + "px";
+              div.style.left = 0;
+              let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
+              if (gutterDiv === null) {
+                gutterDiv = window.document.createElement("div");
+                gutterDiv.setAttribute("id", "code-annotation-line-highlight-gutter");
+                gutterDiv.style.position = 'absolute';
+                const codeCell = window.document.getElementById(targetCell);
+                const gutter = codeCell.querySelector('.code-annotation-gutter');
+                gutter.appendChild(gutterDiv);
+              }
+              gutterDiv.style.top = top - 2 + "px";
+              gutterDiv.style.height = height + 4 + "px";
+            }
+            selectedAnnoteEl = annoteEl;
+          }
+        };
+        const unselectCodeLines = () => {
+          const elementsIds = ["code-annotation-line-highlight", "code-annotation-line-highlight-gutter"];
+          elementsIds.forEach((elId) => {
+            const div = window.document.getElementById(elId);
+            if (div) {
+              div.remove();
+            }
+          });
+          selectedAnnoteEl = undefined;
+        };
+          // Handle positioning of the toggle
+      window.addEventListener(
+        "resize",
+        throttle(() => {
+          elRect = undefined;
+          if (selectedAnnoteEl) {
+            selectCodeLines(selectedAnnoteEl);
+          }
+        }, 10)
+      );
+      function throttle(fn, ms) {
+      let throttle = false;
+      let timer;
+        return (...args) => {
+          if(!throttle) { // first call gets through
+              fn.apply(this, args);
+              throttle = true;
+          } else { // all the others get throttled
+              if(timer) clearTimeout(timer); // cancel #2
+              timer = setTimeout(() => {
+                fn.apply(this, args);
+                timer = throttle = false;
+              }, ms);
+          }
+        };
+      }
+        // Attach click handler to the DT
+        const annoteDls = window.document.querySelectorAll('dt[data-target-cell]');
+        for (const annoteDlNode of annoteDls) {
+          annoteDlNode.addEventListener('click', (event) => {
+            const clickedEl = event.target;
+            if (clickedEl !== selectedAnnoteEl) {
+              unselectCodeLines();
+              const activeEl = window.document.querySelector('dt[data-target-cell].code-annotation-active');
+              if (activeEl) {
+                activeEl.classList.remove('code-annotation-active');
+              }
+              selectCodeLines(clickedEl);
+              clickedEl.classList.add('code-annotation-active');
+            } else {
+              // Unselect the line
+              unselectCodeLines();
+              clickedEl.classList.remove('code-annotation-active');
+            }
+          });
+        }
+    const findCites = (el) => {
+      const parentEl = el.parentElement;
+      if (parentEl) {
+        const cites = parentEl.dataset.cites;
+        if (cites) {
+          return {
+            el,
+            cites: cites.split(' ')
+          };
+        } else {
+          return findCites(el.parentElement)
+        }
+      } else {
+        return undefined;
+      }
+    };
+    var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+    for (var i=0; i<bibliorefs.length; i++) {
+      const ref = bibliorefs[i];
+      const citeInfo = findCites(ref);
+      if (citeInfo) {
+        tippyHover(citeInfo.el, function() {
+          var popup = window.document.createElement('div');
+          citeInfo.cites.forEach(function(cite) {
+            var citeDiv = window.document.createElement('div');
+            citeDiv.classList.add('hanging-indent');
+            citeDiv.classList.add('csl-entry');
+            var biblioDiv = window.document.getElementById('ref-' + cite);
+            if (biblioDiv) {
+              citeDiv.innerHTML = biblioDiv.innerHTML;
+            }
+            popup.appendChild(citeDiv);
+          });
+          return popup.innerHTML;
+        });
+      }
+    }
+  });
+  </script>
+
+
+
+
+</body></html>

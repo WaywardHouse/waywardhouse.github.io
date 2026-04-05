@@ -1,0 +1,1296 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
+
+<meta charset="utf-8">
+<meta name="generator" content="quarto-1.9.36">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+
+<meta name="dcterms.date" content="2026-02-27">
+<meta name="description" content="What is the surface temperature of that field? How much water is being lost through evaporation? Thermal infrared sensors measure emitted radiation in 8-14 μm window, enabling temperature mapping and energy flux estimation. This model derives brightness temperature conversion, implements split-window atmospheric correction, calculates evapotranspiration from thermal data, and maps urban heat islands.">
+
+<title>Thermal Infrared Remote Sensing – Computational Geography</title>
+<style>
+/* Default styles provided by pandoc.
+** See https://pandoc.org/MANUAL.html#variables-for-html for config info.
+*/
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: min(4vw, 1.5em);}
+div.column{flex: auto; overflow-x: auto;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+  width: 0.8em;
+  margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
+  vertical-align: middle;
+}
+</style>
+
+
+<script src="../site_libs/clipboard/clipboard.min.js"></script>
+<script src="../site_libs/quarto-html/tabby.min.js"></script>
+<script src="../site_libs/quarto-html/popper.min.js"></script>
+<script src="../site_libs/quarto-html/tippy.umd.min.js"></script>
+<script src="../site_libs/quarto-html/anchor.min.js"></script>
+<link href="../site_libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="../site_libs/quarto-html/light-border.css" rel="stylesheet">
+<link href="../site_libs/quarto-html/quarto-html-640605f58ae58ee79329c070719e555b.min.css" rel="stylesheet" append-hash="true" data-mode="light">
+<link href="../site_libs/quarto-html/quarto-syntax-highlighting-845c23b38eaddc0f92fda52bfe77a8c8.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<script>
+  (function () {
+    document.documentElement.dataset.theme = 'light';
+    document.documentElement.dataset.brand = 'wayward';
+    try {
+      localStorage.removeItem('theme');
+    } catch (err) {
+      void err;
+    }
+  })();
+</script>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:ital,wght@0,300;0,400;0,600;0,700;0,800;0,900;1,700;1,800&amp;family=Barlow:wght@300;400;500;600&amp;family=IBM+Plex+Mono:ital,wght@0,300;0,400;0,500;1,300&amp;family=Literata:ital,opsz,wght@0,7..72,300;0,7..72,400;0,7..72,500;1,7..72,300;1,7..72,400&amp;display=swap" rel="stylesheet">
+
+  <script>window.backupDefine = window.define; window.define = undefined;</script><script src="https://cdn.jsdelivr.net/npm/katex@latest/dist/katex.min.js"></script>
+  <script>document.addEventListener("DOMContentLoaded", function () {
+ var mathElements = document.getElementsByClassName("math");
+ var macros = [];
+ for (var i = 0; i < mathElements.length; i++) {
+  var texText = mathElements[i].firstChild;
+  if (mathElements[i].tagName == "SPAN") {
+   katex.render(texText.data, mathElements[i], {
+    displayMode: mathElements[i].classList.contains('display'),
+    throwOnError: false,
+    macros: macros,
+    fleqn: false
+   });
+}}});
+  </script>
+  <script>window.define = window.backupDefine; window.backupDefine = undefined;</script><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@latest/dist/katex.min.css">
+
+<script type="text/javascript">
+const typesetMath = (el) => {
+  if (window.MathJax) {
+    // MathJax Typeset
+    window.MathJax.typeset([el]);
+  } else if (window.katex) {
+    // KaTeX Render
+    var mathElements = el.getElementsByClassName("math");
+    var macros = [];
+    for (var i = 0; i < mathElements.length; i++) {
+      var texText = mathElements[i].firstChild;
+      if (mathElements[i].tagName == "SPAN" && texText && texText.data) {
+        window.katex.render(texText.data, mathElements[i], {
+          displayMode: mathElements[i].classList.contains('display'),
+          throwOnError: false,
+          macros: macros,
+          fleqn: false
+        });
+      }
+    }
+  }
+}
+window.Quarto = {
+  typesetMath
+};
+</script>
+
+<link rel="stylesheet" href="../assets/css/quarto-wayward.css">
+</head>
+
+<body class="reading-body tag-hash-math tag-hash-viz">
+
+
+<header id="title-block-header">
+<h1 class="title"><span class="chapter-title">Thermal Infrared Remote Sensing</span></h1>
+<p class="subtitle">Measuring temperature and heat flux from emitted radiation</p>
+
+<p class="date">2026-02-27</p>
+</header>
+
+<nav id="TOC" role="doc-toc">
+    <h2 id="toc-title">Table of contents</h2>
+   
+  <ul>
+  <li><a href="#before-you-start" id="toc-before-you-start">Before You Start</a></li>
+  <li><a href="#the-question" id="toc-the-question">1. The Question</a></li>
+  <li><a href="#the-conceptual-model" id="toc-the-conceptual-model">2. The Conceptual Model</a>
+  <ul>
+  <li><a href="#thermal-radiation-fundamentals" id="toc-thermal-radiation-fundamentals">Thermal Radiation Fundamentals</a></li>
+  <li><a href="#emissivity" id="toc-emissivity">Emissivity</a></li>
+  <li><a href="#brightness-temperature-vs-kinetic-temperature" id="toc-brightness-temperature-vs-kinetic-temperature">Brightness Temperature vs Kinetic Temperature</a></li>
+  </ul></li>
+  <li><a href="#building-the-mathematical-model" id="toc-building-the-mathematical-model">3. Building the Mathematical Model</a>
+  <ul>
+  <li><a href="#at-sensor-radiance" id="toc-at-sensor-radiance">At-Sensor Radiance</a></li>
+  <li><a href="#split-window-algorithm" id="toc-split-window-algorithm">Split-Window Algorithm</a></li>
+  <li><a href="#surface-energy-balance" id="toc-surface-energy-balance">Surface Energy Balance</a></li>
+  <li><a href="#evapotranspiration-estimation" id="toc-evapotranspiration-estimation">Evapotranspiration Estimation</a></li>
+  </ul></li>
+  <li><a href="#worked-example-by-hand" id="toc-worked-example-by-hand">4. Worked Example by Hand</a>
+  <ul>
+  <li><a href="#solution" id="toc-solution">Solution</a></li>
+  </ul></li>
+  <li><a href="#computational-implementation" id="toc-computational-implementation">5. Computational Implementation</a></li>
+  <li><a href="#interpretation" id="toc-interpretation">6. Interpretation</a>
+  <ul>
+  <li><a href="#urban-heat-islands" id="toc-urban-heat-islands">Urban Heat Islands</a></li>
+  <li><a href="#agricultural-water-stress" id="toc-agricultural-water-stress">Agricultural Water Stress</a></li>
+  <li><a href="#volcanic-monitoring" id="toc-volcanic-monitoring">Volcanic Monitoring</a></li>
+  <li><a href="#sea-surface-temperature" id="toc-sea-surface-temperature">Sea Surface Temperature</a></li>
+  </ul></li>
+  <li><a href="#what-could-go-wrong" id="toc-what-could-go-wrong">7. What Could Go Wrong?</a>
+  <ul>
+  <li><a href="#emissivity-uncertainty" id="toc-emissivity-uncertainty">Emissivity Uncertainty</a></li>
+  <li><a href="#atmospheric-effects" id="toc-atmospheric-effects">Atmospheric Effects</a></li>
+  <li><a href="#mixed-pixels" id="toc-mixed-pixels">Mixed Pixels</a></li>
+  <li><a href="#diurnal-sampling" id="toc-diurnal-sampling">Diurnal Sampling</a></li>
+  </ul></li>
+  <li><a href="#extension-temperature-emissivity-separation" id="toc-extension-temperature-emissivity-separation">8. Extension: Temperature-Emissivity Separation</a></li>
+  <li><a href="#math-refresher-blackbody-radiation" id="toc-math-refresher-blackbody-radiation">9. Math Refresher: Blackbody Radiation</a>
+  <ul>
+  <li><a href="#stefan-boltzmann-law" id="toc-stefan-boltzmann-law">Stefan-Boltzmann Law</a></li>
+  <li><a href="#wiens-law" id="toc-wiens-law">Wien’s Law</a></li>
+  <li><a href="#kirchhoffs-law" id="toc-kirchhoffs-law">Kirchhoff’s Law</a></li>
+  </ul></li>
+  <li><a href="#summary" id="toc-summary">Summary</a></li>
+  </ul>
+</nav>
+<p>In the early hours of 18 July 2022, an Aqua satellite passed over Sicily during the most severe heat wave in the island’s recorded history. The MODIS thermal infrared sensor recorded land surface temperatures of 47–49°C over the bare limestone hillsides and agricultural fields — temperatures hot enough to kill vegetation, accelerate wildfires, and push human physiology to its limits. On the same day, a fire that had started near Palermo burned through 37,000 hectares in 48 hours. The thermal imagery captured both the extreme surface heating and the active fire fronts — distinguishable from the background because their brightness temperatures exceeded 500°C, far beyond the normal surface range, saturating the sensor.</p>
+<p>Thermal infrared remote sensing measures the electromagnetic radiation emitted by surfaces in the 8–14 µm wavelength range. Unlike visible and near-infrared sensors that detect reflected sunlight, thermal sensors detect radiation that the surface itself emits because it has temperature above absolute zero — in accordance with Planck’s law and the Stefan-Boltzmann relation. The brightness temperature measured by the sensor is not exactly the surface kinetic temperature: it is modified by the surface emissivity (how efficiently the surface radiates compared to a perfect blackbody) and by atmospheric absorption and emission along the path. Converting from brightness temperature to actual land surface temperature requires knowing the emissivity — which varies by surface type from about 0.90 for dry sand to 0.995 for water — and correcting for atmospheric effects using a split-window algorithm that exploits the differential absorption in two adjacent thermal channels. This model derives the complete chain from Planck’s law through brightness temperature to land surface temperature retrieval.</p>
+<h2 id="before-you-start" class="anchored">Before You Start</h2>
+<p>This chapter becomes much easier once you keep three temperatures separate. The sensor measures radiance, we convert that to brightness temperature, and only then do we estimate the actual surface temperature after accounting for emissivity and atmosphere. Those are related quantities, but they are not identical.</p>
+<h2 id="the-question" class="anchored">1. The Question</h2>
+<p>How hot is that parking lot compared to the adjacent park?</p>
+<p><strong>Thermal infrared (TIR) remote sensing</strong> measures emitted radiation from Earth’s surface.</p>
+<p><strong>Wavelength range:</strong></p>
+<ul>
+<li>Thermal infrared: 8-14 μm (micrometers)</li>
+<li>Also called longwave infrared or far-infrared</li>
+<li>Atmospheric window: Minimal atmospheric absorption</li>
+</ul>
+<p><strong>Key difference from visible/NIR:</strong></p>
+<ul>
+<li>Visible/NIR: Reflected solar radiation (daytime only)</li>
+<li>Thermal IR: Emitted thermal radiation (day or night)</li>
+</ul>
+<p><strong>Applications:</strong></p>
+<ul>
+<li>Land surface temperature mapping</li>
+<li>Urban heat island quantification</li>
+<li>Evapotranspiration estimation</li>
+<li>Volcanic hot spot detection</li>
+<li>Building heat loss assessment</li>
+<li>Wildfire monitoring</li>
+<li>Sea surface temperature</li>
+</ul>
+<p><strong>Sensors:</strong></p>
+<ul>
+<li>Landsat 8/9: TIRS (100m resolution)</li>
+<li>MODIS: TIR bands (1km resolution)</li>
+<li>ASTER: TIR (90m resolution)</li>
+<li>ECOSTRESS: (70m resolution, diurnal coverage)</li>
+<li>GOES-R: ABI (2km resolution, geostationary)</li>
+</ul>
+<hr>
+<h2 id="the-conceptual-model" class="anchored">2. The Conceptual Model</h2>
+<h3 id="thermal-radiation-fundamentals" class="anchored">Thermal Radiation Fundamentals</h3>
+<p><strong>Planck’s Law:</strong></p>
+<p>Every object above absolute zero emits electromagnetic radiation.</p>
+<p><strong>Spectral radiance:</strong></p>
+<p><span class="math display">L_\lambda(T) = \frac{2hc^2}{\lambda^5} \frac{1}{e^{hc/\lambda k T} - 1}</span></p>
+<p>Where: - <span class="math inline">L_\lambda</span> = spectral radiance (W/m²/sr/μm) - <span class="math inline">h</span> = Planck constant (6.626 × 10⁻³⁴ J·s) - <span class="math inline">c</span> = speed of light (3 × 10⁸ m/s) - <span class="math inline">k</span> = Boltzmann constant (1.381 × 10⁻²³ J/K) - <span class="math inline">\lambda</span> = wavelength (m) - <span class="math inline">T</span> = temperature (K)</p>
+<p><strong>Wien’s Displacement Law:</strong></p>
+<p>Peak emission wavelength:</p>
+<p><span class="math display">\lambda_{max} = \frac{2898}{T}</span></p>
+<p>Where <span class="math inline">T</span> in Kelvin, <span class="math inline">\lambda_{max}</span> in μm.</p>
+<p><strong>Example:</strong></p>
+<ul>
+<li>Sun (5800 K): <span class="math inline">\lambda_{max} = 0.5</span> μm (visible, green)</li>
+<li>Earth (288 K): <span class="math inline">\lambda_{max} = 10</span> μm (thermal infrared)</li>
+</ul>
+<h3 id="emissivity" class="anchored">Emissivity</h3>
+<p><strong>Not all objects are perfect blackbodies.</strong></p>
+<p><strong>Spectral emissivity:</strong></p>
+<p><span class="math display">\varepsilon_\lambda = \frac{L_\lambda^{actual}}{L_\lambda^{blackbody}}</span></p>
+<p><strong>Typical values (8-14 μm):</strong></p>
+<ul>
+<li>Water: 0.98-0.99</li>
+<li>Vegetation: 0.96-0.98</li>
+<li>Soil (moist): 0.95-0.97</li>
+<li>Soil (dry): 0.92-0.95</li>
+<li>Asphalt: 0.93-0.96</li>
+<li>Concrete: 0.88-0.92</li>
+<li>Metal (polished): 0.05-0.30</li>
+</ul>
+<p><strong>Lower emissivity</strong> → reflects more, emits less → appears cooler than true temperature.</p>
+<h3 id="brightness-temperature-vs-kinetic-temperature" class="anchored">Brightness Temperature vs Kinetic Temperature</h3>
+<p><strong>Brightness temperature <span class="math inline">T_B</span>:</strong></p>
+<p>Temperature a blackbody would have to produce observed radiance.</p>
+<p><strong>Kinetic temperature <span class="math inline">T_s</span>:</strong></p>
+<p>Actual surface temperature.</p>
+<p><strong>Relationship:</strong></p>
+<p><span class="math display">T_s = \frac{T_B}{\varepsilon^{1/4}}</span></p>
+<p>(Approximate, valid for <span class="math inline">\varepsilon</span> near 1)</p>
+<p><strong>Example:</strong></p>
+<p>Concrete with <span class="math inline">\varepsilon = 0.90</span>, <span class="math inline">T_B = 300</span> K:</p>
+<p><span class="math display">T_s = \frac{300}{0.90^{0.25}} = \frac{300}{0.974} = 308 \text{ K}</span></p>
+<p><strong>Actual temperature 8 K warmer</strong> than brightness temperature.</p>
+<figure class="cg-ill">
+<div class="cg-ill__frame" data-markdown="1">
+<div class="cg-ill__eyebrow">
+Thermal Retrieval Chain
+</div>
+<h3 class="cg-ill__title anchored">
+A Thermal Sensor Measures Radiance First, Not Temperature Directly
+</h3>
+<p class="cg-ill__lede">
+The chapter gets easier when you separate the retrieval into stages: surface emission, atmospheric modification, sensor radiance, brightness temperature, then corrected land surface temperature.
+</p>
+<div class="cg-ill__grid cg-ill__grid--2">
+<div class="cg-ill__card">
+<svg viewbox="0 0 560 320" role="img" aria-label="Thermal infrared sensing chain from surface emission through atmosphere to sensor and retrieved land surface temperature.">
+  <rect x="0" y="0" width="560" height="320" rx="22" fill="#f8fbff"></rect>
+  <rect x="62" y="214" width="182" height="44" rx="14" fill="#c08457"></rect>
+  <text x="102" y="242" font-size="18" fill="#fff" font-weight="700">surface</text>
+  <path d="M96 214 C112 182, 130 154, 152 122" fill="none" stroke="#ef4444" stroke-width="5" marker-end="url(#tir-red)"></path>
+  <path d="M136 214 C152 182, 170 154, 192 122" fill="none" stroke="#ef4444" stroke-width="5" marker-end="url(#tir-red)"></path>
+  <text x="76" y="194" font-size="15" fill="#991b1b">emitted thermal radiance</text>
+
+  <ellipse cx="292" cy="128" rx="68" ry="28" fill="#dbeafe" stroke="#93c5fd"></ellipse>
+  <ellipse cx="274" cy="146" rx="48" ry="18" fill="#e0f2fe" stroke="#93c5fd"></ellipse>
+  <ellipse cx="316" cy="148" rx="44" ry="16" fill="#e0f2fe" stroke="#93c5fd"></ellipse>
+  <text x="254" y="126" font-size="18" fill="#1d4ed8" font-weight="700">atmosphere</text>
+  <text x="226" y="176" font-size="15" fill="#475569">absorbs, emits, and transmits</text>
+
+  <rect x="412" y="72" width="46" height="18" rx="8" fill="#334155"></rect>
+  <polygon points="458,81 490,68 490,94" fill="#64748b"></polygon>
+  <text x="410" y="56" font-size="16" fill="#334155">sensor</text>
+  <line x1="350" y1="118" x2="432" y2="84" stroke="#64748b" stroke-width="4" marker-end="url(#tir-gray)"></line>
+
+  <rect x="344" y="218" width="154" height="34" rx="12" fill="#fee2e2" stroke="#fca5a5"></rect>
+  <text x="370" y="240" font-size="16" fill="#991b1b">brightness temperature</text>
+  <rect x="344" y="264" width="154" height="34" rx="12" fill="#dcfce7" stroke="#86efac"></rect>
+  <text x="366" y="286" font-size="16" fill="#166534">surface temperature</text>
+  <line x1="430" y1="94" x2="420" y2="218" stroke="#64748b" stroke-width="4" marker-end="url(#tir-gray)"></line>
+  <line x1="420" y1="252" x2="420" y2="264" stroke="#64748b" stroke-width="4" marker-end="url(#tir-gray)"></line>
+  <text x="440" y="258" font-size="14" fill="#475569">emissivity + atmosphere correction</text>
+
+  <defs>
+    <marker id="tir-red" markerwidth="8" markerheight="8" refx="6" refy="4" orient="auto">
+      <path d="M0,0 L8,4 L0,8 z" fill="#ef4444"></path>
+    </marker>
+    <marker id="tir-gray" markerwidth="8" markerheight="8" refx="6" refy="4" orient="auto">
+      <path d="M0,0 L8,4 L0,8 z" fill="#64748b"></path>
+    </marker>
+  </defs>
+</svg>
+</div>
+<div class="cg-ill__card">
+<h4 class="anchored">
+Reading the retrieval correctly
+</h4>
+<p>
+<strong>Surface temperature is inferred.</strong> The instrument records radiance, not a thermometer reading.
+</p>
+<p>
+<strong>Brightness temperature is intermediate.</strong> It is the blackbody-equivalent temperature for the measured radiance.
+</p>
+<p>
+<strong>Emissivity and atmosphere matter.</strong> Those corrections are why a parking lot, a lake, and a vegetated field with similar brightness temperatures may not share the same actual surface temperature.
+</p>
+</div>
+</div>
+</div>
+<figcaption>
+Thermal infrared remote sensing is a retrieval chain. Surface emission is altered by emissivity and atmosphere before the sensor sees it, so land surface temperature must be estimated rather than read directly.
+</figcaption>
+</figure>
+<hr>
+<h2 id="building-the-mathematical-model" class="anchored">3. Building the Mathematical Model</h2>
+<h3 id="at-sensor-radiance" class="anchored">At-Sensor Radiance</h3>
+<p><strong>Radiative transfer equation:</strong></p>
+<p><span class="math display">L_{sensor} = \varepsilon L_{surface} \tau + L_{atm}^{\uparrow} + (1-\varepsilon) L_{atm}^{\downarrow} \tau</span></p>
+<p>Where: - <span class="math inline">L_{sensor}</span> = radiance at sensor - <span class="math inline">L_{surface}</span> = surface emission (Planck function at <span class="math inline">T_s</span>) - <span class="math inline">\tau</span> = atmospheric transmittance - <span class="math inline">L_{atm}^{\uparrow}</span> = upwelling atmospheric emission - <span class="math inline">L_{atm}^{\downarrow}</span> = downwelling atmospheric emission - <span class="math inline">(1-\varepsilon)</span> = reflectance (Kirchhoff’s law)</p>
+<p><strong>Three terms:</strong></p>
+<ol type="1">
+<li>Surface emission attenuated by atmosphere</li>
+<li>Atmosphere emits upward</li>
+<li>Downwelling atmospheric radiation reflected off surface</li>
+</ol>
+<h3 id="split-window-algorithm" class="anchored">Split-Window Algorithm</h3>
+<p><strong>Uses two TIR bands</strong> to correct for atmospheric water vapor.</p>
+<p><strong>Landsat 8 TIRS:</strong></p>
+<ul>
+<li>Band 10: 10.6-11.2 μm</li>
+<li>Band 11: 11.5-12.5 μm</li>
+</ul>
+<p><strong>Algorithm:</strong></p>
+<p><span class="math display">T_s = T_{10} + c_1(T_{10} - T_{11}) + c_2(T_{10} - T_{11})^2 + c_0</span></p>
+<p>Where: - <span class="math inline">T_{10}, T_{11}</span> = brightness temperatures in bands 10, 11 - <span class="math inline">c_0, c_1, c_2</span> = coefficients (depend on atmospheric conditions)</p>
+<p><strong>Typical coefficients:</strong></p>
+<p><span class="math display">T_s \approx 1.38 T_{10} - 0.38 T_{11} + 0.5</span></p>
+<p><strong>Principle:</strong></p>
+<p>Differential absorption by water vapor between two bands enables atmospheric correction.</p>
+<h3 id="surface-energy-balance" class="anchored">Surface Energy Balance</h3>
+<p><strong>Net radiation partitioning:</strong></p>
+<p><span class="math display">R_n = H + LE + G</span></p>
+<p>Where: - <span class="math inline">R_n</span> = net radiation (W/m²) - <span class="math inline">H</span> = sensible heat flux - <span class="math inline">LE</span> = latent heat flux (evapotranspiration) - <span class="math inline">G</span> = ground heat flux</p>
+<p><strong>Sensible heat parameterization:</strong></p>
+<p><span class="math display">H = \rho c_p \frac{T_s - T_a}{r_a}</span></p>
+<p>Where: - <span class="math inline">\rho</span> = air density - <span class="math inline">c_p</span> = specific heat of air - <span class="math inline">T_s</span> = surface temperature (from TIR) - <span class="math inline">T_a</span> = air temperature - <span class="math inline">r_a</span> = aerodynamic resistance</p>
+<p><strong>Large <span class="math inline">T_s - T_a</span></strong> → large <span class="math inline">H</span> → low <span class="math inline">LE</span> → water stressed</p>
+<p><strong>Applications:</strong></p>
+<ul>
+<li>Irrigation scheduling</li>
+<li>Drought monitoring</li>
+<li>Crop water stress detection</li>
+</ul>
+<h3 id="evapotranspiration-estimation" class="anchored">Evapotranspiration Estimation</h3>
+<p><strong>SEBAL algorithm:</strong></p>
+<p>Surface Energy Balance Algorithm for Land</p>
+<p><strong>Steps:</strong></p>
+<ol type="1">
+<li>Calculate net radiation from reflectance and TIR data</li>
+<li>Estimate ground heat flux: <span class="math inline">G \approx 0.3 R_n</span> (bare soil)</li>
+<li>Identify “hot” (dry) and “cold” (wet) pixels</li>
+<li>Derive sensible heat as linear function of <span class="math inline">T_s</span></li>
+<li>Solve for <span class="math inline">LE</span> as residual: <span class="math inline">LE = R_n - H - G</span></li>
+</ol>
+<p><strong>Evapotranspiration:</strong></p>
+<p><span class="math display">ET = \frac{LE}{\lambda}</span></p>
+<p>Where <span class="math inline">\lambda</span> = latent heat of vaporization (2.45 MJ/kg)</p>
+<p><strong>Output:</strong> ET in mm/day</p>
+<hr>
+<h2 id="worked-example-by-hand" class="anchored">4. Worked Example by Hand</h2>
+<p><strong>Problem:</strong> Calculate land surface temperature from Landsat thermal data.</p>
+<p><strong>At-sensor brightness temperatures:</strong></p>
+<ul>
+<li>Band 10: <span class="math inline">T_{10} = 300</span> K</li>
+<li>Band 11: <span class="math inline">T_{11} = 298</span> K</li>
+</ul>
+<p><strong>Surface properties:</strong></p>
+<ul>
+<li>Emissivity: <span class="math inline">\varepsilon = 0.96</span> (vegetation)</li>
+</ul>
+<p><strong>Atmospheric correction coefficients:</strong></p>
+<ul>
+<li><span class="math inline">c_0 = 0.5</span>, <span class="math inline">c_1 = 1.38</span>, <span class="math inline">c_2 = 0</span> (simplified)</li>
+</ul>
+<p>Calculate land surface temperature.</p>
+<h3 id="solution" class="anchored">Solution</h3>
+<p><strong>Step 1: Split-window correction</strong></p>
+<p><span class="math display">T_s = c_1 T_{10} - (c_1 - 1) T_{11} + c_0</span></p>
+<p><span class="math display">= 1.38(300) - 0.38(298) + 0.5</span></p>
+<p><span class="math display">= 414 - 113.24 + 0.5 = 301.26 \text{ K}</span></p>
+<p><strong>Step 2: Convert to Celsius</strong></p>
+<p><span class="math display">T_s = 301.26 - 273.15 = 28.1°\text{C}</span></p>
+<p><strong>Step 3: Emissivity correction (if needed)</strong></p>
+<p>For vegetation with <span class="math inline">\varepsilon = 0.96</span>, already accounted for in split-window coefficients.</p>
+<p>If not using split-window:</p>
+<p><span class="math display">T_s = \frac{T_B}{\varepsilon^{0.25}} = \frac{300}{0.96^{0.25}} = \frac{300}{0.990} = 303.0 \text{ K} = 29.8°\text{C}</span></p>
+<p><strong>Summary:</strong></p>
+<ul>
+<li>Split-window LST: 28.1°C</li>
+<li>Single-channel with emissivity correction: 29.8°C</li>
+<li>Difference reflects atmospheric correction importance</li>
+</ul>
+<p><strong>Interpretation:</strong></p>
+<p>Surface temperature of ~28°C typical for vegetated surface on warm day.</p>
+<hr>
+<h2 id="computational-implementation" class="anchored">5. Computational Implementation</h2>
+<p>Below is an interactive thermal remote sensing simulator.</p>
+<div class="viz-container" id="thermal-viz">
+<div class="controls">
+<label>
+Surface type:
+<select id="surface-type">
+<option value="water">Water</option>
+<option value="vegetation">Vegetation</option>
+<option value="soil-wet">Soil (wet)</option>
+<option value="soil-dry">Soil (dry)</option>
+<option value="asphalt">Asphalt</option>
+<option value="concrete">Concrete</option>
+<option value="metal">Metal roof</option>
+</select>
+</label>
+<label>
+Air temperature (°C):
+<input type="range" id="air-temp" min="15" max="35" step="1" value="25">
+<span id="air-val">25</span>
+</label>
+<label>
+Solar radiation (W/m²):
+<input type="range" id="solar-rad" min="0" max="1000" step="50" value="600">
+<span id="solar-val">600</span>
+</label>
+<label>
+Time of day:
+<input type="range" id="time-hour" min="0" max="23" step="1" value="12">
+<span id="time-val">12</span>:00
+</label>
+<div class="thermal-info">
+<p><strong>Surface temp:</strong> <span id="surf-temp">--</span> °C</p>
+<p><strong>Brightness temp:</strong> <span id="bright-temp">--</span> K</p>
+<p><strong>Emissivity:</strong> <span id="emissivity">--</span></p>
+<p><strong>Net radiation:</strong> <span id="net-rad">--</span> W/m²</p>
+<p><strong>Sensible heat:</strong> <span id="sens-heat">--</span> W/m²</p>
+<p><strong>Latent heat:</strong> <span id="lat-heat">--</span> W/m²</p>
+</div>
+</div>
+<div id="thermal-canvas-container">
+<canvas id="thermal-canvas" width="700" height="400" style="border: 1px solid #ddd;"></canvas>
+</div>
+</div>
+
+<script type="module">
+await new Promise(resolve => {
+const checkECharts = () => {
+if (typeof echarts !== 'undefined') resolve();
+else setTimeout(checkECharts, 50);
+};
+checkECharts();
+});
+
+(function() {
+const chart = echarts.init(document.getElementById('thermal-canvas'));
+  
+let surfaceType = 'vegetation';
+let airTemp = 25;
+let solarRad = 600;
+let timeHour = 12;
+  
+const surfaceProps = {
+water: {emissivity: 0.98, albedo: 0.06, name: 'Water'},
+vegetation: {emissivity: 0.97, albedo: 0.20, name: 'Vegetation'},
+'soil-wet': {emissivity: 0.96, albedo: 0.15, name: 'Soil (wet)'},
+'soil-dry': {emissivity: 0.93, albedo: 0.25, name: 'Soil (dry)'},
+asphalt: {emissivity: 0.95, albedo: 0.08, name: 'Asphalt'},
+concrete: {emissivity: 0.90, albedo: 0.30, name: 'Concrete'},
+metal: {emissivity: 0.15, albedo: 0.60, name: 'Metal roof'}
+};
+  
+function calculateThermal() {
+const props = surfaceProps[surfaceType];
+const emis = props.emissivity;
+const albedo = props.albedo;
+    
+// Net radiation (simplified)
+const Rsw = (1 - albedo) * solarRad;
+const sigma = 5.67e-8;
+const Rlw_down = 0.85 * sigma * Math.pow(airTemp + 273.15, 4);
+    
+// Surface temperature estimation (energy balance)
+const Tair_K = airTemp + 273.15;
+    
+// Simplified: Ts increases with absorbed radiation, decreases with cooling
+const radiativeHeating = (Rsw + Rlw_down) / 100;
+const coolingFactor = emis * 5;
+const Ts_K = Tair_K + radiativeHeating / coolingFactor;
+const Ts_C = Ts_K - 273.15;
+    
+// Brightness temperature (what sensor measures)
+const Tb_K = Ts_K * Math.pow(emis, 0.25);
+    
+// Energy fluxes
+const Rn = Rsw + Rlw_down - emis * sigma * Math.pow(Ts_K, 4);
+const G = 0.1 * Rn; // ground heat flux
+    
+// Sensible heat (simplified)
+const H = 20 * (Ts_C - airTemp);
+    
+// Latent heat (residual)
+const LE = Math.max(0, Rn - H - G);
+    
+return {
+Ts_C, Tb_K, emis, Rn, H, LE, props
+};
+}
+  
+function generateDiurnalCycle() {
+const data = [];
+    
+for (let hour = 0; hour < 24; hour++) {
+timeHour = hour;
+      
+// Solar radiation varies with time
+const solarFactor = Math.max(0, Math.sin((hour - 6) * Math.PI / 12));
+solarRad = 800 * solarFactor;
+      
+const result = calculateThermal();
+data.push({
+hour,
+Ts: result.Ts_C,
+Ta: airTemp
+});
+}
+    
+// Reset
+timeHour = parseInt(document.getElementById('time-hour').value);
+solarRad = parseInt(document.getElementById('solar-rad').value);
+    
+return data;
+}
+  
+function render() {
+const result = calculateThermal();
+    
+document.getElementById('surf-temp').textContent = result.Ts_C.toFixed(1);
+document.getElementById('bright-temp').textContent = result.Tb_K.toFixed(1);
+document.getElementById('emissivity').textContent = result.emis.toFixed(2);
+document.getElementById('net-rad').textContent = result.Rn.toFixed(0);
+document.getElementById('sens-heat').textContent = result.H.toFixed(0);
+document.getElementById('lat-heat').textContent = result.LE.toFixed(0);
+    
+const diurnal = generateDiurnalCycle();
+    
+const series = [
+{
+name: 'Surface Temperature',
+type: 'line',
+data: diurnal.map(d => [d.hour, d.Ts]),
+lineStyle: {color: '#D32F2F', width: 3},
+areaStyle: {color: 'rgba(211, 47, 47, 0.2)'}
+},
+{
+name: 'Air Temperature',
+type: 'line',
+data: diurnal.map(d => [d.hour, d.Ta]),
+lineStyle: {color: '#1976D2', width: 2, type: 'dashed'}
+},
+{
+name: 'Current Time',
+type: 'scatter',
+data: [[timeHour, result.Ts_C]],
+symbolSize: 15,
+itemStyle: {color: '#E91E63'},
+label: {
+show: true,
+formatter: 'Now',
+position: 'top',
+fontWeight: 'bold'
+}
+}
+];
+    
+const option = {
+title: {
+text: `Diurnal Temperature Cycle - ${result.props.name}`,
+left: 'center'
+},
+tooltip: {
+trigger: 'axis',
+axisPointer: {type: 'cross'}
+},
+legend: {
+data: ['Surface Temperature', 'Air Temperature', 'Current Time'],
+top: 30
+},
+grid: {
+left: 80,
+right: 40,
+top: 80,
+bottom: 60
+},
+xAxis: {
+type: 'value',
+name: 'Hour of Day',
+nameLocation: 'middle',
+nameGap: 30,
+min: 0,
+max: 23,
+interval: 3
+},
+yAxis: {
+type: 'value',
+name: 'Temperature (°C)',
+nameLocation: 'middle',
+nameGap: 50
+},
+series: series
+};
+    
+chart.setOption(option, true);
+}
+  
+document.getElementById('surface-type').addEventListener('change', (e) => {
+surfaceType = e.target.value;
+render();
+});
+  
+document.getElementById('air-temp').addEventListener('input', (e) => {
+airTemp = parseFloat(e.target.value);
+document.getElementById('air-val').textContent = airTemp;
+render();
+});
+  
+document.getElementById('solar-rad').addEventListener('input', (e) => {
+solarRad = parseFloat(e.target.value);
+document.getElementById('solar-val').textContent = solarRad;
+render();
+});
+  
+document.getElementById('time-hour').addEventListener('input', (e) => {
+timeHour = parseInt(e.target.value);
+document.getElementById('time-val').textContent = timeHour;
+render();
+});
+  
+render();
+  
+window.addEventListener('resize', () => chart.resize());
+})();
+</script>
+<p><strong>Observations:</strong></p>
+<ul>
+<li>Red line shows surface temperature varying through day</li>
+<li>Blue dashed line shows constant air temperature for reference</li>
+<li>Surface temperature peaks in afternoon, not at noon (thermal inertia)</li>
+<li>Asphalt reaches much higher temperatures than vegetation</li>
+<li>Metal roofs show extreme temperatures due to low emissivity</li>
+<li>Water shows minimal temperature variation (high thermal capacity)</li>
+<li>Temperature difference (Ts - Ta) drives sensible heat flux</li>
+<li>Energy partitioning varies by surface type affecting local climate</li>
+</ul>
+<p><strong>Key findings:</strong></p>
+<ul>
+<li>Different surfaces exhibit different thermal behaviors</li>
+<li>Urban materials (asphalt, concrete) create heat islands</li>
+<li>Vegetation moderates temperature through evapotranspiration</li>
+<li>Surface emissivity affects both measured brightness temperature and actual cooling rate</li>
+<li>Diurnal cycle reveals thermal properties and energy partitioning</li>
+</ul>
+<hr>
+<h2 id="interpretation" class="anchored">6. Interpretation</h2>
+<h3 id="urban-heat-islands" class="anchored">Urban Heat Islands</h3>
+<p><strong>Phenomenon:</strong></p>
+<p>Cities warmer than surrounding rural areas.</p>
+<p><strong>Magnitude:</strong></p>
+<ul>
+<li>Daytime: 1-3°C warmer</li>
+<li>Nighttime: 3-5°C warmer (sometimes 10°C)</li>
+</ul>
+<p><strong>Thermal remote sensing reveals:</strong></p>
+<ul>
+<li>Hot spots: Parking lots, roofs, roads</li>
+<li>Cool spots: Parks, water bodies, tree canopy</li>
+<li>Spatial patterns: Correlate with land use</li>
+</ul>
+<p><strong>Example - Phoenix, Arizona:</strong></p>
+<p>Landsat TIR shows: - Asphalt parking lots: 65-70°C - Vegetated parks: 35-40°C - <strong>Difference: 30°C!</strong></p>
+<p><strong>Health impacts:</strong></p>
+<ul>
+<li>Heat-related mortality</li>
+<li>Air quality degradation</li>
+<li>Energy demand for cooling</li>
+</ul>
+<p><strong>Mitigation strategies:</strong></p>
+<ul>
+<li>Cool roofs (high albedo, high emissivity)</li>
+<li>Urban tree canopy</li>
+<li>Green roofs</li>
+<li>Reflective pavements</li>
+</ul>
+<h3 id="agricultural-water-stress" class="anchored">Agricultural Water Stress</h3>
+<p><strong>Crop Water Stress Index (CWSI):</strong></p>
+<p><span class="math display">CWSI = \frac{(T_s - T_a) - (T_s - T_a)_{LL}}{(T_s - T_a)_{UL} - (T_s - T_a)_{LL}}</span></p>
+<p>Where: - <span class="math inline">LL</span> = lower limit (well-watered) - <span class="math inline">UL</span> = upper limit (water-stressed)</p>
+<p><strong>Range:</strong> 0 (no stress) to 1 (maximum stress)</p>
+<p><strong>Application:</strong></p>
+<p>ECOSTRESS provides 70m resolution thermal data with diurnal coverage enabling: - Within-field stress mapping - Irrigation scheduling - Yield prediction</p>
+<p><strong>Economic value:</strong></p>
+<p>Precision irrigation based on thermal data reduces water use 20-30% while maintaining yield.</p>
+<h3 id="volcanic-monitoring" class="anchored">Volcanic Monitoring</h3>
+<p><strong>Thermal anomalies</strong> indicate: - Active lava flows - Lava lake temperature - Fumarole activity - Dome growth</p>
+<p><strong>MODIS thermal bands:</strong></p>
+<ul>
+<li>Nightly global coverage</li>
+<li>Detect temperature increases weeks before eruption</li>
+<li>Track eruption intensity</li>
+</ul>
+<p><strong>Example - Kilauea, Hawaii 2018:</strong></p>
+<p>MODIS detected thermal anomaly increase before major eruption.</p>
+<p>Enabled evacuation planning and hazard assessment.</p>
+<h3 id="sea-surface-temperature" class="anchored">Sea Surface Temperature</h3>
+<p><strong>MODIS SST product:</strong></p>
+<ul>
+<li>Daily global coverage</li>
+<li>1 km resolution</li>
+<li>Accuracy: ±0.5°C</li>
+</ul>
+<p><strong>Applications:</strong></p>
+<ul>
+<li>Ocean circulation mapping</li>
+<li>El Niño monitoring</li>
+<li>Coral bleaching prediction (thermal stress)</li>
+<li>Fisheries (temperature gradients concentrate fish)</li>
+</ul>
+<p><strong>Coral bleaching threshold:</strong></p>
+<p>Sustained SST &gt; 1°C above climatological maximum triggers bleaching.</p>
+<p>Thermal remote sensing provides early warning.</p>
+<hr>
+<h2 id="what-could-go-wrong" class="anchored">7. What Could Go Wrong?</h2>
+<h3 id="emissivity-uncertainty" class="anchored">Emissivity Uncertainty</h3>
+<p><strong>Problem:</strong></p>
+<p>Don’t know exact emissivity of surface.</p>
+<p><strong>Error propagation:</strong></p>
+<p><span class="math display">\Delta T_s \approx \frac{T_s}{\varepsilon} \Delta\varepsilon</span></p>
+<p><strong>Example:</strong></p>
+<p><span class="math inline">T_s = 300</span> K, <span class="math inline">\varepsilon = 0.95 \pm 0.03</span>:</p>
+<p><span class="math display">\Delta T_s \approx \frac{300}{0.95} \times 0.03 = 9.5 \text{ K}</span></p>
+<p><strong>Large uncertainty!</strong></p>
+<p><strong>Solution:</strong></p>
+<ul>
+<li>Use emissivity databases (ASTER spectral library)</li>
+<li>Estimate from NDVI (empirical relationships)</li>
+<li>Temperature-emissivity separation algorithms</li>
+</ul>
+<h3 id="atmospheric-effects" class="anchored">Atmospheric Effects</h3>
+<p><strong>Water vapor absorption</strong> (especially 8-9 μm):</p>
+<p>Can reduce apparent temperature by 5-10 K.</p>
+<p><strong>Aerosols:</strong></p>
+<p>Scatter and absorb, further complicating retrieval.</p>
+<p><strong>Solution:</strong></p>
+<ul>
+<li>Split-window algorithms</li>
+<li>Atmospheric correction with radiosonde data</li>
+<li>In-situ calibration/validation</li>
+</ul>
+<h3 id="mixed-pixels" class="anchored">Mixed Pixels</h3>
+<p><strong>Landsat thermal: 100m resolution</strong></p>
+<p>Pixel may contain: - 50% vegetation (25°C) - 50% bare soil (45°C)</p>
+<p><strong>Measured:</strong> ~35°C (area-weighted average)</p>
+<p><strong>But:</strong> Not representative of either component.</p>
+<p><strong>Problem for applications:</strong></p>
+<p>Crop stress detection needs pure vegetation pixels.</p>
+<p><strong>Solution:</strong></p>
+<ul>
+<li>Unmix thermal signal (if know components)</li>
+<li>Use higher resolution (ECOSTRESS 70m)</li>
+<li>Aggregate to coarser resolution</li>
+</ul>
+<h3 id="diurnal-sampling" class="anchored">Diurnal Sampling</h3>
+<p><strong>Most satellites:</strong> Fixed overpass time (e.g., Landsat ~10:30 AM)</p>
+<p><strong>Misses:</strong></p>
+<ul>
+<li>Peak afternoon temperature</li>
+<li>Nighttime cooling</li>
+<li>Full diurnal cycle</li>
+</ul>
+<p><strong>Problem:</strong></p>
+<p>Can’t distinguish thermal inertia differences.</p>
+<p><strong>Solution:</strong></p>
+<ul>
+<li>Geostationary satellites (GOES, MSG) - hourly</li>
+<li>ECOSTRESS - variable overpass times</li>
+<li>Model diurnal cycle from limited observations</li>
+</ul>
+<hr>
+<h2 id="extension-temperature-emissivity-separation" class="anchored">8. Extension: Temperature-Emissivity Separation</h2>
+<p><strong>Challenge:</strong> Retrieve both <span class="math inline">T_s</span> and <span class="math inline">\varepsilon</span> from single thermal measurement.</p>
+<p><strong>Underdetermined problem:</strong> One equation, two unknowns.</p>
+<p><strong>Solution:</strong> Use multiple TIR bands with different emissivity contrast.</p>
+<p><strong>ASTER TIR:</strong> 5 bands in 8-12 μm</p>
+<p><strong>Algorithm:</strong></p>
+<ol type="1">
+<li>Assume initial emissivity (from NDVI)</li>
+<li>Retrieve temperature</li>
+<li>Update emissivity using spectral shape</li>
+<li>Iterate until convergence</li>
+</ol>
+<p><strong>Emissivity spectrum reveals:</strong></p>
+<ul>
+<li>Quartz: Peak at 8.6 μm</li>
+<li>Carbonates: Trough at 11.2 μm</li>
+<li>Vegetation: Flat, high emissivity</li>
+</ul>
+<p><strong>Applications:</strong></p>
+<ul>
+<li>Mineral mapping from emissivity</li>
+<li>Surface composition without field work</li>
+</ul>
+<hr>
+<h2 id="math-refresher-blackbody-radiation" class="anchored">9. Math Refresher: Blackbody Radiation</h2>
+<h3 id="stefan-boltzmann-law" class="anchored">Stefan-Boltzmann Law</h3>
+<p><strong>Total emitted power:</strong></p>
+<p><span class="math display">M = \sigma T^4</span></p>
+<p>Where: - <span class="math inline">M</span> = exitance (W/m²) - <span class="math inline">\sigma = 5.67 \times 10^{-8}</span> W/(m²·K⁴) - <span class="math inline">T</span> = temperature (K)</p>
+<p><strong>Integration of Planck function</strong> over all wavelengths.</p>
+<h3 id="wiens-law" class="anchored">Wien’s Law</h3>
+<p><strong>Peak wavelength:</strong></p>
+<p><span class="math display">\lambda_{max} T = 2898 \text{ μm·K}</span></p>
+<p><strong>Explains why:</strong></p>
+<ul>
+<li>Hot objects glow red (shorter wavelengths)</li>
+<li>Room temperature objects emit in infrared (invisible)</li>
+</ul>
+<h3 id="kirchhoffs-law" class="anchored">Kirchhoff’s Law</h3>
+<p><strong>At thermal equilibrium:</strong></p>
+<p><span class="math display">\alpha_\lambda = \varepsilon_\lambda</span></p>
+<p>Where: - <span class="math inline">\alpha</span> = absorptivity - <span class="math inline">\varepsilon</span> = emissivity</p>
+<p><strong>Good absorbers are good emitters.</strong></p>
+<p><strong>Corollary:</strong></p>
+<p><span class="math display">\rho_\lambda = 1 - \varepsilon_\lambda</span></p>
+<p>Where <span class="math inline">\rho</span> = reflectivity (for opaque surfaces).</p>
+<p><strong>Low emissivity</strong> → high reflectivity → shiny surfaces appear cooler.</p>
+<hr>
+<h2 id="summary" class="anchored">Summary</h2>
+<ul>
+<li>Thermal infrared remote sensing measures emitted radiation in 8-14 μm atmospheric window</li>
+<li>Land surface temperature derived from brightness temperature requires emissivity correction</li>
+<li>Split-window algorithms use differential atmospheric absorption between two bands for correction</li>
+<li>Surface energy balance partitions net radiation into sensible, latent, and ground heat fluxes</li>
+<li>Urban heat islands mapped with temperature differences of 10-30°C between materials</li>
+<li>Evapotranspiration estimated from thermal data enables precision irrigation and drought monitoring</li>
+<li>Applications span urban climate, agriculture, volcanology, oceanography, and wildfire detection</li>
+<li>Challenges include emissivity uncertainty, atmospheric effects, mixed pixels, and diurnal sampling</li>
+<li>MODIS, Landsat TIRS, ASTER, and ECOSTRESS provide operational thermal data at various resolutions</li>
+<li>Critical tool for energy balance studies and temperature-dependent processes</li>
+</ul>
+<hr>
+
+
+<footer class="wayward-footer">
+  <div class="wayward-footer__inner">
+    <div class="wayward-footer__brand">
+      <div class="wayward-footer__logo">WaywardHouse<span>.</span></div>
+      <p>Understanding how place, economy, and environment interact through analysis, modelling, and open tools.</p>
+    </div>
+
+    <nav class="wayward-footer__group" aria-labelledby="footer-reading">
+      <h2 id="footer-reading" class="anchored">Reading</h2>
+      <a href="https://wayward.house/articles/">Articles</a>
+      <a href="https://wayward.house/learn/">Library</a>
+      <a href="https://wayward.house/archive.html">Archive</a>
+      <a href="https://wayward.house/start-here.html">Choose Your Path</a>
+    </nav>
+
+    <nav class="wayward-footer__group" aria-labelledby="footer-site">
+      <h2 id="footer-site" class="anchored">Site</h2>
+      <a href="https://wayward.house/start-here.html">Choose Your Path</a>
+      <a href="https://wayward.house/about.html">About</a>
+      <a href="https://wayward.house/contact.html">Contact</a>
+    </nav>
+
+    <nav class="wayward-footer__group" aria-labelledby="footer-resources">
+      <h2 id="footer-resources" class="anchored">Resources</h2>
+      <a href="https://wayward.house/topics/">All Topics</a>
+      <a href="https://wayward.house/privacy.html">Privacy Policy</a>
+      <a href="https://wayward.house/terms.html">Terms of Use</a>
+    </nav>
+  </div>
+</footer>
+
+<script type="module" src="../assets/dist/main.js"></script>
+<script type="module" src="../assets/js/core.js"></script>
+<script id="quarto-html-after-body" type="application/javascript">
+  window.document.addEventListener("DOMContentLoaded", function (event) {
+    const tabsets =  window.document.querySelectorAll(".panel-tabset-tabby")
+    tabsets.forEach(function(tabset) {
+      const tabby = new Tabby('#' + tabset.id);
+    });
+    const icon = "";
+    const anchorJS = new window.AnchorJS();
+    anchorJS.options = {
+      placement: 'right',
+      icon: icon
+    };
+    anchorJS.add('.anchored');
+    const isCodeAnnotation = (el) => {
+      for (const clz of el.classList) {
+        if (clz.startsWith('code-annotation-')) {                     
+          return true;
+        }
+      }
+      return false;
+    }
+    const onCopySuccess = function(e) {
+      // button target
+      const button = e.trigger;
+      // don't keep focus
+      button.blur();
+      // flash "checked"
+      button.classList.add('code-copy-button-checked');
+      var currentTitle = button.getAttribute("title");
+      button.setAttribute("title", "Copied!");
+      let tooltip;
+      if (window.bootstrap) {
+        button.setAttribute("data-bs-toggle", "tooltip");
+        button.setAttribute("data-bs-placement", "left");
+        button.setAttribute("data-bs-title", "Copied!");
+        tooltip = new bootstrap.Tooltip(button, 
+          { trigger: "manual", 
+            customClass: "code-copy-button-tooltip",
+            offset: [0, -8]});
+        tooltip.show();    
+      }
+      setTimeout(function() {
+        if (tooltip) {
+          tooltip.hide();
+          button.removeAttribute("data-bs-title");
+          button.removeAttribute("data-bs-toggle");
+          button.removeAttribute("data-bs-placement");
+        }
+        button.setAttribute("title", currentTitle);
+        button.classList.remove('code-copy-button-checked');
+      }, 1000);
+      // clear code selection
+      e.clearSelection();
+    }
+    const getTextToCopy = function(trigger) {
+      const outerScaffold = trigger.parentElement.cloneNode(true);
+      const codeEl = outerScaffold.querySelector('code');
+      for (const childEl of codeEl.children) {
+        if (isCodeAnnotation(childEl)) {
+          childEl.remove();
+        }
+      }
+      return codeEl.innerText;
+    }
+    const clipboard = new window.ClipboardJS('.code-copy-button:not([data-in-quarto-modal])', {
+      text: getTextToCopy
+    });
+    clipboard.on('success', onCopySuccess);
+    if (window.document.getElementById('quarto-embedded-source-code-modal')) {
+      const clipboardModal = new window.ClipboardJS('.code-copy-button[data-in-quarto-modal]', {
+        text: getTextToCopy,
+        container: window.document.getElementById('quarto-embedded-source-code-modal')
+      });
+      clipboardModal.on('success', onCopySuccess);
+    }
+      var localhostRegex = new RegExp(/^(?:http|https):\/\/localhost\:?[0-9]*\//);
+      var mailtoRegex = new RegExp(/^mailto:/);
+        var filterRegex = new RegExp('/' + window.location.host + '/');
+      var isInternal = (href) => {
+          return filterRegex.test(href) || localhostRegex.test(href) || mailtoRegex.test(href);
+      }
+      // Inspect non-navigation links and adorn them if external
+     var links = window.document.querySelectorAll('a[href]:not(.nav-link):not(.navbar-brand):not(.toc-action):not(.sidebar-link):not(.sidebar-item-toggle):not(.pagination-link):not(.no-external):not([aria-hidden]):not(.dropdown-item):not(.quarto-navigation-tool):not(.about-link)');
+      for (var i=0; i<links.length; i++) {
+        const link = links[i];
+        if (!isInternal(link.href)) {
+          // undo the damage that might have been done by quarto-nav.js in the case of
+          // links that we want to consider external
+          if (link.dataset.originalHref !== undefined) {
+            link.href = link.dataset.originalHref;
+          }
+        }
+      }
+    function tippyHover(el, contentFn, onTriggerFn, onUntriggerFn) {
+      const config = {
+        allowHTML: true,
+        maxWidth: 500,
+        delay: 100,
+        arrow: false,
+        appendTo: function(el) {
+            return el.parentElement;
+        },
+        interactive: true,
+        interactiveBorder: 10,
+        theme: 'light-border',
+        placement: 'bottom-start',
+      };
+      if (contentFn) {
+        config.content = contentFn;
+      }
+      if (onTriggerFn) {
+        config.onTrigger = onTriggerFn;
+      }
+      if (onUntriggerFn) {
+        config.onUntrigger = onUntriggerFn;
+      }
+      window.tippy(el, config); 
+    }
+    const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+    for (var i=0; i<noterefs.length; i++) {
+      const ref = noterefs[i];
+      tippyHover(ref, function() {
+        // use id or data attribute instead here
+        let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+        try { href = new URL(href).hash; } catch {}
+        const id = href.replace(/^#\/?/, "");
+        const note = window.document.getElementById(id);
+        if (note) {
+          return note.innerHTML;
+        } else {
+          return "";
+        }
+      });
+    }
+    const xrefs = window.document.querySelectorAll('a.quarto-xref');
+    const processXRef = (id, note) => {
+      // Strip column container classes
+      const stripColumnClz = (el) => {
+        el.classList.remove("page-full", "page-columns");
+        if (el.children) {
+          for (const child of el.children) {
+            stripColumnClz(child);
+          }
+        }
+      }
+      stripColumnClz(note)
+      if (id === null || id.startsWith('sec-')) {
+        // Special case sections, only their first couple elements
+        const container = document.createElement("div");
+        if (note.children && note.children.length > 2) {
+          container.appendChild(note.children[0].cloneNode(true));
+          for (let i = 1; i < note.children.length; i++) {
+            const child = note.children[i];
+            if (child.tagName === "P" && child.innerText === "") {
+              continue;
+            } else {
+              container.appendChild(child.cloneNode(true));
+              break;
+            }
+          }
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(container);
+          }
+          return container.innerHTML
+        } else {
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(note);
+          }
+          return note.innerHTML;
+        }
+      } else {
+        // Remove any anchor links if they are present
+        const anchorLink = note.querySelector('a.anchorjs-link');
+        if (anchorLink) {
+          anchorLink.remove();
+        }
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(note);
+        }
+        if (note.classList.contains("callout")) {
+          return note.outerHTML;
+        } else {
+          return note.innerHTML;
+        }
+      }
+    }
+    for (var i=0; i<xrefs.length; i++) {
+      const xref = xrefs[i];
+      tippyHover(xref, undefined, function(instance) {
+        instance.disable();
+        let url = xref.getAttribute('href');
+        let hash = undefined; 
+        if (url.startsWith('#')) {
+          hash = url;
+        } else {
+          try { hash = new URL(url).hash; } catch {}
+        }
+        if (hash) {
+          const id = hash.replace(/^#\/?/, "");
+          const note = window.document.getElementById(id);
+          if (note !== null) {
+            try {
+              const html = processXRef(id, note.cloneNode(true));
+              instance.setContent(html);
+            } finally {
+              instance.enable();
+              instance.show();
+            }
+          } else {
+            // See if we can fetch this
+            fetch(url.split('#')[0])
+            .then(res => res.text())
+            .then(html => {
+              const parser = new DOMParser();
+              const htmlDoc = parser.parseFromString(html, "text/html");
+              const note = htmlDoc.getElementById(id);
+              if (note !== null) {
+                const html = processXRef(id, note);
+                instance.setContent(html);
+              } 
+            }).finally(() => {
+              instance.enable();
+              instance.show();
+            });
+          }
+        } else {
+          // See if we can fetch a full url (with no hash to target)
+          // This is a special case and we should probably do some content thinning / targeting
+          fetch(url)
+          .then(res => res.text())
+          .then(html => {
+            const parser = new DOMParser();
+            const htmlDoc = parser.parseFromString(html, "text/html");
+            const note = htmlDoc.querySelector('main.content');
+            if (note !== null) {
+              // This should only happen for chapter cross references
+              // (since there is no id in the URL)
+              // remove the first header
+              if (note.children.length > 0 && note.children[0].tagName === "HEADER") {
+                note.children[0].remove();
+              }
+              const html = processXRef(null, note);
+              instance.setContent(html);
+            } 
+          }).finally(() => {
+            instance.enable();
+            instance.show();
+          });
+        }
+      }, function(instance) {
+      });
+    }
+        let selectedAnnoteEl;
+        const selectorForAnnotation = ( cell, annotation) => {
+          let cellAttr = 'data-code-cell="' + cell + '"';
+          let lineAttr = 'data-code-annotation="' +  annotation + '"';
+          const selector = 'span[' + cellAttr + '][' + lineAttr + ']';
+          return selector;
+        }
+        const selectCodeLines = (annoteEl) => {
+          const doc = window.document;
+          const targetCell = annoteEl.getAttribute("data-target-cell");
+          const targetAnnotation = annoteEl.getAttribute("data-target-annotation");
+          const annoteSpan = window.document.querySelector(selectorForAnnotation(targetCell, targetAnnotation));
+          const lines = annoteSpan.getAttribute("data-code-lines").split(",");
+          const lineIds = lines.map((line) => {
+            return targetCell + "-" + line;
+          })
+          let top = null;
+          let height = null;
+          let parent = null;
+          if (lineIds.length > 0) {
+              //compute the position of the single el (top and bottom and make a div)
+              const el = window.document.getElementById(lineIds[0]);
+              top = el.offsetTop;
+              height = el.offsetHeight;
+              parent = el.parentElement.parentElement;
+            if (lineIds.length > 1) {
+              const lastEl = window.document.getElementById(lineIds[lineIds.length - 1]);
+              const bottom = lastEl.offsetTop + lastEl.offsetHeight;
+              height = bottom - top;
+            }
+            if (top !== null && height !== null && parent !== null) {
+              // cook up a div (if necessary) and position it 
+              let div = window.document.getElementById("code-annotation-line-highlight");
+              if (div === null) {
+                div = window.document.createElement("div");
+                div.setAttribute("id", "code-annotation-line-highlight");
+                div.style.position = 'absolute';
+                parent.appendChild(div);
+              }
+              div.style.top = top - 2 + "px";
+              div.style.height = height + 4 + "px";
+              div.style.left = 0;
+              let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
+              if (gutterDiv === null) {
+                gutterDiv = window.document.createElement("div");
+                gutterDiv.setAttribute("id", "code-annotation-line-highlight-gutter");
+                gutterDiv.style.position = 'absolute';
+                const codeCell = window.document.getElementById(targetCell);
+                const gutter = codeCell.querySelector('.code-annotation-gutter');
+                gutter.appendChild(gutterDiv);
+              }
+              gutterDiv.style.top = top - 2 + "px";
+              gutterDiv.style.height = height + 4 + "px";
+            }
+            selectedAnnoteEl = annoteEl;
+          }
+        };
+        const unselectCodeLines = () => {
+          const elementsIds = ["code-annotation-line-highlight", "code-annotation-line-highlight-gutter"];
+          elementsIds.forEach((elId) => {
+            const div = window.document.getElementById(elId);
+            if (div) {
+              div.remove();
+            }
+          });
+          selectedAnnoteEl = undefined;
+        };
+          // Handle positioning of the toggle
+      window.addEventListener(
+        "resize",
+        throttle(() => {
+          elRect = undefined;
+          if (selectedAnnoteEl) {
+            selectCodeLines(selectedAnnoteEl);
+          }
+        }, 10)
+      );
+      function throttle(fn, ms) {
+      let throttle = false;
+      let timer;
+        return (...args) => {
+          if(!throttle) { // first call gets through
+              fn.apply(this, args);
+              throttle = true;
+          } else { // all the others get throttled
+              if(timer) clearTimeout(timer); // cancel #2
+              timer = setTimeout(() => {
+                fn.apply(this, args);
+                timer = throttle = false;
+              }, ms);
+          }
+        };
+      }
+        // Attach click handler to the DT
+        const annoteDls = window.document.querySelectorAll('dt[data-target-cell]');
+        for (const annoteDlNode of annoteDls) {
+          annoteDlNode.addEventListener('click', (event) => {
+            const clickedEl = event.target;
+            if (clickedEl !== selectedAnnoteEl) {
+              unselectCodeLines();
+              const activeEl = window.document.querySelector('dt[data-target-cell].code-annotation-active');
+              if (activeEl) {
+                activeEl.classList.remove('code-annotation-active');
+              }
+              selectCodeLines(clickedEl);
+              clickedEl.classList.add('code-annotation-active');
+            } else {
+              // Unselect the line
+              unselectCodeLines();
+              clickedEl.classList.remove('code-annotation-active');
+            }
+          });
+        }
+    const findCites = (el) => {
+      const parentEl = el.parentElement;
+      if (parentEl) {
+        const cites = parentEl.dataset.cites;
+        if (cites) {
+          return {
+            el,
+            cites: cites.split(' ')
+          };
+        } else {
+          return findCites(el.parentElement)
+        }
+      } else {
+        return undefined;
+      }
+    };
+    var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+    for (var i=0; i<bibliorefs.length; i++) {
+      const ref = bibliorefs[i];
+      const citeInfo = findCites(ref);
+      if (citeInfo) {
+        tippyHover(citeInfo.el, function() {
+          var popup = window.document.createElement('div');
+          citeInfo.cites.forEach(function(cite) {
+            var citeDiv = window.document.createElement('div');
+            citeDiv.classList.add('hanging-indent');
+            citeDiv.classList.add('csl-entry');
+            var biblioDiv = window.document.getElementById('ref-' + cite);
+            if (biblioDiv) {
+              citeDiv.innerHTML = biblioDiv.innerHTML;
+            }
+            popup.appendChild(citeDiv);
+          });
+          return popup.innerHTML;
+        });
+      }
+    }
+  });
+  </script>
+
+
+
+
+</body></html>
