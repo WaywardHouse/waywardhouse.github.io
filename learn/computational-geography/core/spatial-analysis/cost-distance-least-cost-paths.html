@@ -1,0 +1,1359 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
+
+<meta charset="utf-8">
+<meta name="generator" content="quarto-1.9.36">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+
+<meta name="dcterms.date" content="2026-02-27">
+<meta name="description" content="Where should a trail go to minimize slope? What’s the easiest route for wildlife between habitats? How do you route a pipeline across variable terrain? Cost-distance analysis finds accumulated cost surfaces, and least-cost paths trace optimal routes through them. This model derives Dijkstra’s algorithm and implements it on raster grids.">
+
+<title>Cost-Distance and Least-Cost Paths – Computational Geography</title>
+<style>
+/* Default styles provided by pandoc.
+** See https://pandoc.org/MANUAL.html#variables-for-html for config info.
+*/
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: min(4vw, 1.5em);}
+div.column{flex: auto; overflow-x: auto;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+  width: 0.8em;
+  margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
+  vertical-align: middle;
+}
+</style>
+
+
+<script src="../site_libs/clipboard/clipboard.min.js"></script>
+<script src="../site_libs/quarto-html/tabby.min.js"></script>
+<script src="../site_libs/quarto-html/popper.min.js"></script>
+<script src="../site_libs/quarto-html/tippy.umd.min.js"></script>
+<script src="../site_libs/quarto-html/anchor.min.js"></script>
+<link href="../site_libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="../site_libs/quarto-html/light-border.css" rel="stylesheet">
+<link href="../site_libs/quarto-html/quarto-html-640605f58ae58ee79329c070719e555b.min.css" rel="stylesheet" append-hash="true" data-mode="light">
+<link href="../site_libs/quarto-html/quarto-syntax-highlighting-845c23b38eaddc0f92fda52bfe77a8c8.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<script>
+  (function () {
+    document.documentElement.dataset.theme = 'light';
+    document.documentElement.dataset.brand = 'wayward';
+    try {
+      localStorage.removeItem('theme');
+    } catch (err) {
+      void err;
+    }
+  })();
+</script>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:ital,wght@0,300;0,400;0,600;0,700;0,800;0,900;1,700;1,800&amp;family=Barlow:wght@300;400;500;600&amp;family=IBM+Plex+Mono:ital,wght@0,300;0,400;0,500;1,300&amp;family=Literata:ital,opsz,wght@0,7..72,300;0,7..72,400;0,7..72,500;1,7..72,300;1,7..72,400&amp;display=swap" rel="stylesheet">
+
+  <script>window.backupDefine = window.define; window.define = undefined;</script><script src="https://cdn.jsdelivr.net/npm/katex@latest/dist/katex.min.js"></script>
+  <script>document.addEventListener("DOMContentLoaded", function () {
+ var mathElements = document.getElementsByClassName("math");
+ var macros = [];
+ for (var i = 0; i < mathElements.length; i++) {
+  var texText = mathElements[i].firstChild;
+  if (mathElements[i].tagName == "SPAN") {
+   katex.render(texText.data, mathElements[i], {
+    displayMode: mathElements[i].classList.contains('display'),
+    throwOnError: false,
+    macros: macros,
+    fleqn: false
+   });
+}}});
+  </script>
+  <script>window.define = window.backupDefine; window.backupDefine = undefined;</script><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@latest/dist/katex.min.css">
+
+<script type="text/javascript">
+const typesetMath = (el) => {
+  if (window.MathJax) {
+    // MathJax Typeset
+    window.MathJax.typeset([el]);
+  } else if (window.katex) {
+    // KaTeX Render
+    var mathElements = el.getElementsByClassName("math");
+    var macros = [];
+    for (var i = 0; i < mathElements.length; i++) {
+      var texText = mathElements[i].firstChild;
+      if (mathElements[i].tagName == "SPAN" && texText && texText.data) {
+        window.katex.render(texText.data, mathElements[i], {
+          displayMode: mathElements[i].classList.contains('display'),
+          throwOnError: false,
+          macros: macros,
+          fleqn: false
+        });
+      }
+    }
+  }
+}
+window.Quarto = {
+  typesetMath
+};
+</script>
+
+<link rel="stylesheet" href="../assets/css/quarto-wayward.css">
+</head>
+
+<body class="reading-body tag-hash-math tag-hash-viz">
+
+
+<header id="title-block-header">
+<h1 class="title"><span class="chapter-title">Cost-Distance and Least-Cost Paths</span></h1>
+<p class="subtitle">Finding optimal routes across variable terrain</p>
+
+<p class="date">2026-02-27</p>
+</header>
+
+<nav id="TOC" role="doc-toc">
+    <h2 id="toc-title">Table of contents</h2>
+   
+  <ul>
+  <li><a href="#the-question" id="toc-the-question">1. The Question</a></li>
+  <li><a href="#the-conceptual-model" id="toc-the-conceptual-model">2. The Conceptual Model</a>
+  <ul>
+  <li><a href="#cost-surface" id="toc-cost-surface">Cost Surface</a></li>
+  <li><a href="#accumulated-cost-surface" id="toc-accumulated-cost-surface">Accumulated Cost Surface</a></li>
+  <li><a href="#least-cost-path" id="toc-least-cost-path">Least-Cost Path</a></li>
+  </ul></li>
+  <li><a href="#building-the-mathematical-model" id="toc-building-the-mathematical-model">3. Building the Mathematical Model</a>
+  <ul>
+  <li><a href="#graph-representation" id="toc-graph-representation">Graph Representation</a></li>
+  <li><a href="#dijkstras-algorithm" id="toc-dijkstras-algorithm">Dijkstra’s Algorithm</a></li>
+  <li><a href="#path-reconstruction" id="toc-path-reconstruction">Path Reconstruction</a></li>
+  <li><a href="#anisotropic-cost-direction-dependent" id="toc-anisotropic-cost-direction-dependent">Anisotropic Cost (Direction-Dependent)</a></li>
+  </ul></li>
+  <li><a href="#worked-example-by-hand" id="toc-worked-example-by-hand">4. Worked Example by Hand</a>
+  <ul>
+  <li><a href="#solution" id="toc-solution">Solution</a></li>
+  </ul></li>
+  <li><a href="#computational-implementation" id="toc-computational-implementation">5. Computational Implementation</a></li>
+  <li><a href="#interpretation" id="toc-interpretation">6. Interpretation</a>
+  <ul>
+  <li><a href="#wildlife-corridor-design" id="toc-wildlife-corridor-design">Wildlife Corridor Design</a></li>
+  <li><a href="#pipeline-routing" id="toc-pipeline-routing">Pipeline Routing</a></li>
+  <li><a href="#trail-design" id="toc-trail-design">Trail Design</a></li>
+  </ul></li>
+  <li><a href="#what-could-go-wrong" id="toc-what-could-go-wrong">7. What Could Go Wrong?</a>
+  <ul>
+  <li><a href="#local-minima" id="toc-local-minima">Local Minima</a></li>
+  <li><a href="#diagonal-bias" id="toc-diagonal-bias">Diagonal Bias</a></li>
+  <li><a href="#raster-resolution" id="toc-raster-resolution">Raster Resolution</a></li>
+  <li><a href="#memory-limits" id="toc-memory-limits">Memory Limits</a></li>
+  </ul></li>
+  <li><a href="#extension-a-algorithm" id="toc-extension-a-algorithm">8. Extension: A* Algorithm</a></li>
+  <li><a href="#math-refresher-priority-queues" id="toc-math-refresher-priority-queues">9. Math Refresher: Priority Queues</a>
+  <ul>
+  <li><a href="#definition" id="toc-definition">Definition</a></li>
+  <li><a href="#implementation-options" id="toc-implementation-options">Implementation Options</a></li>
+  <li><a href="#dijkstra-with-priority-queue" id="toc-dijkstra-with-priority-queue">Dijkstra with Priority Queue</a></li>
+  </ul></li>
+  <li><a href="#summary" id="toc-summary">Summary</a></li>
+  </ul>
+</nav>
+<p>The Trans Mountain Pipeline expansion, approved in 2019 and completed in 2024, required routing 1,150 km of new pipeline from Edmonton to Burnaby through some of the most topographically complex terrain in North America. The route had to balance multiple competing cost surfaces: slope (steep terrain means expensive construction and higher risk), proximity to existing infrastructure (cheaper where right-of-way already exists), geological hazards (landslide-prone slopes, river crossings), and environmental sensitivities (avoiding wetlands, fish-bearing streams, and protected areas). The final route is not a straight line — it is the minimum-cost path through a multidimensional cost surface, exactly the problem that Dijkstra’s algorithm was designed to solve.</p>
+<p>Cost-distance analysis extends the simple Euclidean distance buffer by replacing distance with a generalised cost that varies across the landscape. Instead of asking “how far is it?”, it asks “how expensive or difficult is it to reach?” — where the cost per unit distance varies by terrain steepness, land cover, regulatory restriction, or any combination of factors that can be encoded in a raster. The accumulated cost surface assigns a total cost to each cell: the minimum cost of reaching that cell from the source. From the cost surface, the least-cost path — the route that minimises total cost from source to destination — is found by tracing the steepest descent on the cost surface back to the source. The underlying algorithm is Dijkstra’s shortest-path algorithm on a grid graph, one of the most important and widely implemented algorithms in computational geography.</p>
+<h2 id="the-question" class="anchored">1. The Question</h2>
+<p>What’s the easiest hiking route from the trailhead to the summit?</p>
+<p><strong>Euclidean distance</strong> doesn’t account for terrain difficulty: - Steep slopes are harder to traverse - Roads are easier than off-trail - Rivers may be impassable</p>
+<p><strong>Cost-distance</strong> accumulates travel cost across a surface:</p>
+<p><strong>Applications:</strong></p>
+<ul>
+<li><strong>Hiking trails:</strong> Minimize elevation gain and distance</li>
+<li><strong>Wildlife corridors:</strong> Connect habitats through suitable terrain</li>
+<li><strong>Pipelines:</strong> Minimize construction cost (avoid wetlands, steep slopes)</li>
+<li><strong>Power lines:</strong> Balance distance vs.&nbsp;terrain difficulty</li>
+<li><strong>Emergency response:</strong> Fastest route considering traffic and terrain</li>
+</ul>
+<p>The mathematical question: Given a cost surface (where each cell has a traversal cost), find the minimum accumulated cost to reach any location, and trace the optimal path.</p>
+<hr>
+<h2 id="the-conceptual-model" class="anchored">2. The Conceptual Model</h2>
+<h3 id="cost-surface" class="anchored">Cost Surface</h3>
+<p><strong>Cost raster:</strong> Each cell has a value representing difficulty/cost of traversal.</p>
+<p><strong>Examples:</strong></p>
+<p><strong>Slope-based cost:</strong></p>
+<p><span class="math display">\text{cost} = e^{3.5 \times |\tan(\text{slope}) + 0.05|}</span></p>
+<p>(Tobler’s hiking function—models walking speed on slopes)</p>
+<p><strong>Land cover cost:</strong></p>
+<table class="caption-top">
+<thead>
+<tr class="header">
+<th>Type</th>
+<th>Cost</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>Road</td>
+<td>1</td>
+</tr>
+<tr class="even">
+<td>Grass</td>
+<td>5</td>
+</tr>
+<tr class="odd">
+<td>Forest</td>
+<td>10</td>
+</tr>
+<tr class="even">
+<td>Wetland</td>
+<td>50</td>
+</tr>
+<tr class="odd">
+<td>Water</td>
+<td>∞ (impassable)</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Combined cost:</strong></p>
+<p><span class="math display">\text{cost}_{\text{total}} = w_1 \times \text{cost}_{\text{slope}} + w_2 \times \text{cost}_{\text{landcover}}</span></p>
+<h3 id="accumulated-cost-surface" class="anchored">Accumulated Cost Surface</h3>
+<p><strong>For each cell:</strong> Minimum total cost to reach it from source.</p>
+<p><strong>Initialization:</strong></p>
+<ul>
+<li>Source cell: cost = 0</li>
+<li>All others: cost = ∞</li>
+</ul>
+<p><strong>Propagation:</strong> Iteratively update neighbors, choosing minimum cost path.</p>
+<p><strong>Result:</strong> Raster where value = minimum accumulated cost from source.</p>
+<h3 id="least-cost-path" class="anchored">Least-Cost Path</h3>
+<p><strong>Trace route</strong> from destination back to source following steepest descent in cost surface.</p>
+<p><strong>Backtracking:</strong></p>
+<ul>
+<li>Start at destination</li>
+<li>Move to neighbor with lowest accumulated cost</li>
+<li>Repeat until reaching source</li>
+</ul>
+<p><strong>Result:</strong> Polyline representing optimal route.</p>
+<figure class="cg-ill">
+<div class="cg-ill__frame" data-markdown="1">
+<div class="cg-ill__eyebrow">
+Cost Surface Logic
+</div>
+<h3 class="cg-ill__title anchored">
+The Best Route Minimizes Total Resistance, Not Straight-Line Distance
+</h3>
+<p class="cg-ill__lede">
+Least-cost paths bend because the algorithm is balancing cheap terrain against expensive terrain. A longer route can still be better if it avoids enough high-cost cells.
+</p>
+<div class="cg-ill__cost-grid">
+<div class="cg-ill__cost-map">
+<div class="cg-ill__cost-zone" style="left:58%; top:14%; width:18%; height:56%;">
+
+</div>
+<div class="cg-ill__cost-zone" style="left:24%; top:58%; width:26%; height:18%;">
+
+</div>
+<div class="cg-ill__observer" style="left:11%; top:68%;">
+
+</div>
+<div class="cg-ill__target" style="left:83%; top:18%;">
+
+</div>
+<svg class="cg-ill__cost-path" viewbox="0 0 100 100" preserveaspectratio="none" role="img" aria-label="Least-cost path curving around expensive terrain">
+<path d="M12 70 C22 66, 28 56, 36 50 S52 38, 58 30 S70 20, 84 20" fill="none" stroke="#e02020" stroke-width="2.4"></path> <path d="M12 70 L84 20" fill="none" stroke="#0a0a0a" stroke-width="1.4" stroke-dasharray="3 2" opacity="0.55"></path>
+</svg>
+<div class="cg-ill__geometry-note" style="left:7%; top:78%;">
+source
+</div>
+<div class="cg-ill__geometry-note" style="right:6%; top:8%;">
+destination
+</div>
+<div class="cg-ill__geometry-note" style="left:54%; top:74%;">
+high-cost barrier
+</div>
+</div>
+<div class="cg-ill__cost-legend">
+<div class="cg-ill__cost-key">
+<div class="cg-ill__cost-chip cg-ill__cost-chip--low">
+
+</div>
+<div>
+Low cost: easy terrain or preferred land cover.
+</div>
+</div>
+<div class="cg-ill__cost-key">
+<div class="cg-ill__cost-chip cg-ill__cost-chip--mid">
+
+</div>
+<div>
+Medium cost: workable but less efficient to cross.
+</div>
+</div>
+<div class="cg-ill__cost-key">
+<div class="cg-ill__cost-chip cg-ill__cost-chip--high">
+
+</div>
+<div>
+High cost: steep, hazardous, or restricted terrain.
+</div>
+</div>
+<div class="cg-ill__cost-key">
+<div class="cg-ill__cost-route">
+
+</div>
+<div>
+Least-cost path: optimal route through the accumulated cost surface.
+</div>
+</div>
+<div class="cg-ill__card">
+<div class="cg-ill__label">
+Mental model
+</div>
+<h4 class="anchored">
+Dijkstra On A Grid
+</h4>
+<p>
+Think of each cell as a node. The algorithm spreads outward from the source, keeping the cheapest known way to reach every next cell.
+</p>
+</div>
+</div>
+</div>
+</div>
+<figcaption>
+Least-cost routing chooses the path with the smallest total accumulated resistance, which is often not the shortest geometric line.
+</figcaption>
+</figure>
+<hr>
+<h2 id="building-the-mathematical-model" class="anchored">3. Building the Mathematical Model</h2>
+<h3 id="graph-representation" class="anchored">Graph Representation</h3>
+<p><strong>Raster as graph:</strong></p>
+<ul>
+<li><strong>Nodes:</strong> Grid cells</li>
+<li><strong>Edges:</strong> Connections to neighbors (4-neighbor or 8-neighbor)</li>
+<li><strong>Edge weights:</strong> Cost to traverse from cell to neighbor</li>
+</ul>
+<p><strong>Edge cost from cell <span class="math inline">i</span> to neighbor <span class="math inline">j</span>:</strong></p>
+<p><span class="math display">c_{ij} = \text{distance}_{ij} \times \frac{\text{cost}_i + \text{cost}_j}{2}</span></p>
+<p><strong>Distance:</strong></p>
+<ul>
+<li>Cardinal neighbors (N, S, E, W): distance = 1 (cell size)</li>
+<li>Diagonal neighbors: distance = <span class="math inline">\sqrt{2}</span> (cell size)</li>
+</ul>
+<p><strong>Average cost:</strong> Use mean of source and destination cell costs.</p>
+<h3 id="dijkstras-algorithm" class="anchored">Dijkstra’s Algorithm</h3>
+<p><strong>Classic shortest-path algorithm</strong> (Edsger Dijkstra, 1956).</p>
+<p><strong>Data structures:</strong></p>
+<ul>
+<li><code>dist[v]</code>: Minimum distance from source to node <code>v</code></li>
+<li><code>visited</code>: Set of nodes with finalized distances</li>
+<li><code>priority_queue</code>: Nodes to process, ordered by distance</li>
+</ul>
+<p><strong>Algorithm:</strong></p>
+<pre><code>function dijkstra(graph, source):
+    dist[source] = 0
+    dist[all others] = ∞
+    priority_queue = {source: 0}
+    
+    while priority_queue not empty:
+        u = node with minimum dist in queue
+        remove u from queue
+        add u to visited
+        
+        for each neighbor v of u:
+            if v not in visited:
+                new_dist = dist[u] + edge_cost(u, v)
+                if new_dist &lt; dist[v]:
+                    dist[v] = new_dist
+                    parent[v] = u
+                    add/update v in queue
+    
+    return dist, parent</code></pre>
+<p><strong>Complexity:</strong> <span class="math inline">O((V + E) \log V)</span> with priority queue</p>
+<p>Where <span class="math inline">V</span> = cells, <span class="math inline">E</span> = edges (typically 8V for 8-neighbor grid)</p>
+<p><strong>For <span class="math inline">n \times n</span> grid:</strong> <span class="math inline">O(n^2 \log n)</span></p>
+<h3 id="path-reconstruction" class="anchored">Path Reconstruction</h3>
+<p><strong>After Dijkstra’s, trace back using parent pointers:</strong></p>
+<pre><code>function reconstruct_path(parent, source, destination):
+    path = []
+    current = destination
+    
+    while current != source:
+        path.append(current)
+        current = parent[current]
+    
+    path.append(source)
+    return reverse(path)</code></pre>
+<p><strong>Result:</strong> Sequence of cells from source to destination.</p>
+<h3 id="anisotropic-cost-direction-dependent" class="anchored">Anisotropic Cost (Direction-Dependent)</h3>
+<p><strong>Cost may vary by direction:</strong></p>
+<p><strong>Uphill vs.&nbsp;downhill:</strong></p>
+<p><span class="math display">\text{cost}_{\text{uphill}} = \text{base} \times e^{k \times \text{slope}}</span> <span class="math display">\text{cost}_{\text{downhill}} = \text{base} \times e^{-k \times \text{slope}}</span></p>
+<p><strong>Wind resistance:</strong></p>
+<p><span class="math display">\text{cost}_{\text{headwind}} &gt; \text{cost}_{\text{tailwind}}</span></p>
+<p><strong>Implementation:</strong> Edge cost depends on both source and destination cells plus direction.</p>
+<hr>
+<h2 id="worked-example-by-hand" class="anchored">4. Worked Example by Hand</h2>
+<p><strong>Problem:</strong> Find least-cost path from (0,0) to (3,3) in this cost grid.</p>
+<p><strong>Cost surface:</strong></p>
+<pre><code>      j=0  j=1  j=2  j=3
+i=0    1    5   10    5
+i=1    1    1    5   10
+i=2    5    1    1    5
+i=3   10    5    1    1</code></pre>
+<p>Use 4-neighbor connectivity (N, S, E, W only).</p>
+<h3 id="solution" class="anchored">Solution</h3>
+<p><strong>Initialization:</strong></p>
+<pre><code>dist[0,0] = 0
+dist[all others] = ∞</code></pre>
+<p><strong>Iteration 1:</strong> Process (0,0), cost = 0</p>
+<p>Neighbors: (0,1) and (1,0)</p>
+<p>Update (0,1): - Edge cost = $1 = 3$ - <code>dist[0,1] = 0 + 3 = 3</code></p>
+<p>Update (1,0): - Edge cost = $1 = 1$ - <code>dist[1,0] = 0 + 1 = 1</code></p>
+<p><strong>Iteration 2:</strong> Process (1,0), cost = 1 (minimum unvisited)</p>
+<p>Neighbors: (0,0) [visited], (1,1), (2,0)</p>
+<p>Update (1,1): - Edge cost = $1 = 1$ - <code>dist[1,1] = 1 + 1 = 2</code></p>
+<p>Update (2,0): - Edge cost = $1 = 3$ - <code>dist[2,0] = 1 + 3 = 4</code></p>
+<p><strong>Continue…</strong></p>
+<p><strong>After full algorithm:</strong></p>
+<pre><code>Accumulated cost:
+      j=0  j=1  j=2  j=3
+i=0    0    3    8   11
+i=1    1    2    4    9
+i=2    4    3    3    5
+i=3    9    6    4    4</code></pre>
+<p><strong>Least-cost path from (0,0) to (3,3):</strong></p>
+<p>Trace back from (3,3): - (3,3) cost=4, parent=(3,2) - (3,2) cost=4, parent=(2,2) - (2,2) cost=3, parent=(2,1) - (2,1) cost=3, parent=(1,1) - (1,1) cost=2, parent=(1,0) - (1,0) cost=1, parent=(0,0) - (0,0) source</p>
+<p><strong>Path:</strong> (0,0) → (1,0) → (1,1) → (2,1) → (2,2) → (3,2) → (3,3)</p>
+<p><strong>Total cost:</strong> 4 units</p>
+<p><strong>Path avoids high-cost cells</strong> in top-right and bottom-left corners.</p>
+<hr>
+<h2 id="computational-implementation" class="anchored">5. Computational Implementation</h2>
+<p>Below is an interactive cost-distance path finder.</p>
+<div class="viz-container" id="costpath-viz">
+<div class="controls">
+<label>
+Cost type:
+<select id="cost-type">
+<option value="slope" selected="">Slope-based</option>
+<option value="landcover">Land Cover</option>
+<option value="random">Random Terrain</option>
+</select>
+</label>
+<label>
+Connectivity:
+<select id="connectivity">
+<option value="4">4-neighbor</option>
+<option value="8" selected="">8-neighbor</option>
+</select>
+</label>
+<label>
+Show cost surface:
+<input type="checkbox" id="show-cost" checked="">
+</label>
+<label>
+Show accumulated cost:
+<input type="checkbox" id="show-accum">
+</label>
+<div class="path-info">
+<p><strong>Path length:</strong> <span id="path-length">--</span> cells</p>
+<p><strong>Total cost:</strong> <span id="total-cost">--</span></p>
+<p><strong>Avg cost/cell:</strong> <span id="avg-cost">--</span></p>
+</div>
+</div>
+<div id="costpath-canvas-container">
+<canvas id="costpath-canvas" width="600" height="600" style="border: 1px solid #ddd; cursor: crosshair;"></canvas>
+</div>
+<div class="instructions">
+<p><em>Click to set start (green) and end (red) points, then path will compute automatically.</em></p>
+</div>
+</div>
+
+<script type="module">
+(function() {
+const canvas = document.getElementById('costpath-canvas');
+const ctx = canvas.getContext('2d');
+  
+let costType = 'slope';
+let connectivity = 8;
+let showCost = true;
+let showAccum = false;
+  
+const size = 40;
+const cellSize = 600 / size;
+  
+let startCell = null;
+let endCell = null;
+  
+// Generate cost surfaces
+const costs = {
+slope: [],
+landcover: [],
+random: []
+};
+  
+// Slope-based (hill in center)
+for (let i = 0; i < size; i++) {
+const row = [];
+for (let j = 0; j < size; j++) {
+const cx = size / 2, cy = size / 2;
+const dist = Math.sqrt((i - cx) ** 2 + (j - cy) ** 2);
+const elevation = 100 * Math.exp(-dist / 10);
+const slope = Math.abs(elevation - 50) / 10;
+row.push(1 + slope * 2);
+}
+costs.slope.push(row);
+}
+  
+// Land cover (patches)
+for (let i = 0; i < size; i++) {
+const row = [];
+for (let j = 0; j < size; j++) {
+const noise = Math.sin(i / 5) * Math.cos(j / 5);
+const cost = noise > 0 ? 1 : (noise > -0.5 ? 5 : 20);
+row.push(cost);
+}
+costs.landcover.push(row);
+}
+  
+// Random
+for (let i = 0; i < size; i++) {
+const row = [];
+for (let j = 0; j < size; j++) {
+row.push(1 + Math.random() * 10);
+}
+costs.random.push(row);
+}
+  
+function getCost() {
+return costs[costType];
+}
+  
+function dijkstra(cost, start, end) {
+const dist = Array(size).fill(null).map(() => Array(size).fill(Infinity));
+const parent = Array(size).fill(null).map(() => Array(size).fill(null));
+const visited = Array(size).fill(null).map(() => Array(size).fill(false));
+    
+dist[start.i][start.j] = 0;
+    
+const queue = [{i: start.i, j: start.j, dist: 0}];
+    
+const neighbors = connectivity === 4 ? 
+[{di: -1, dj: 0}, {di: 1, dj: 0}, {di: 0, dj: -1}, {di: 0, dj: 1}] :
+[{di: -1, dj: 0}, {di: 1, dj: 0}, {di: 0, dj: -1}, {di: 0, dj: 1},
+{di: -1, dj: -1}, {di: -1, dj: 1}, {di: 1, dj: -1}, {di: 1, dj: 1}];
+    
+while (queue.length > 0) {
+// Find minimum
+queue.sort((a, b) => a.dist - b.dist);
+const u = queue.shift();
+      
+if (visited[u.i][u.j]) continue;
+visited[u.i][u.j] = true;
+      
+if (u.i === end.i && u.j === end.j) break;
+      
+for (let {di, dj} of neighbors) {
+const ni = u.i + di;
+const nj = u.j + dj;
+        
+if (ni < 0 || ni >= size || nj < 0 || nj >= size) continue;
+if (visited[ni][nj]) continue;
+        
+const edgeDist = Math.sqrt(di * di + dj * dj);
+const edgeCost = edgeDist * (cost[u.i][u.j] + cost[ni][nj]) / 2;
+const newDist = dist[u.i][u.j] + edgeCost;
+        
+if (newDist < dist[ni][nj]) {
+dist[ni][nj] = newDist;
+parent[ni][nj] = {i: u.i, j: u.j};
+queue.push({i: ni, j: nj, dist: newDist});
+}
+}
+}
+    
+return {dist, parent};
+}
+  
+function reconstructPath(parent, start, end) {
+const path = [];
+let current = {i: end.i, j: end.j};
+    
+while (current) {
+path.push(current);
+if (current.i === start.i && current.j === start.j) break;
+current = parent[current.i][current.j];
+}
+    
+return path.reverse();
+}
+  
+function drawCostSurface(cost) {
+let min = Infinity, max = -Infinity;
+for (let row of cost) {
+for (let val of row) {
+min = Math.min(min, val);
+max = Math.max(max, val);
+}
+}
+    
+for (let i = 0; i < size; i++) {
+for (let j = 0; j < size; j++) {
+const normalized = (cost[i][j] - min) / (max - min);
+const gray = Math.floor(255 * (1 - normalized));
+        
+ctx.fillStyle = `rgb(${gray}, ${gray}, ${gray})`;
+ctx.fillRect(j * cellSize, i * cellSize, cellSize, cellSize);
+}
+}
+}
+  
+function drawAccumCost(dist) {
+let min = Infinity, max = -Infinity;
+for (let row of dist) {
+for (let val of row) {
+if (isFinite(val)) {
+min = Math.min(min, val);
+max = Math.max(max, val);
+}
+}
+}
+    
+for (let i = 0; i < size; i++) {
+for (let j = 0; j < size; j++) {
+if (!isFinite(dist[i][j])) continue;
+        
+const normalized = (dist[i][j] - min) / (max - min);
+const hue = 240 * (1 - normalized); // Blue to red
+        
+ctx.fillStyle = `hsl(${hue}, 70%, 50%)`;
+ctx.fillRect(j * cellSize, i * cellSize, cellSize, cellSize);
+}
+}
+}
+  
+function drawPath(path) {
+if (!path || path.length < 2) return;
+    
+ctx.strokeStyle = '#F39C12';
+ctx.lineWidth = 3;
+ctx.lineCap = 'round';
+ctx.lineJoin = 'round';
+    
+ctx.beginPath();
+ctx.moveTo(
+path[0].j * cellSize + cellSize / 2,
+path[0].i * cellSize + cellSize / 2
+);
+    
+for (let i = 1; i < path.length; i++) {
+ctx.lineTo(
+path[i].j * cellSize + cellSize / 2,
+path[i].i * cellSize + cellSize / 2
+);
+}
+    
+ctx.stroke();
+}
+  
+function drawMarkers() {
+if (startCell) {
+ctx.fillStyle = '#2ECC71';
+ctx.beginPath();
+ctx.arc(
+startCell.j * cellSize + cellSize / 2,
+startCell.i * cellSize + cellSize / 2,
+cellSize / 3, 0, 2 * Math.PI
+);
+ctx.fill();
+}
+    
+if (endCell) {
+ctx.fillStyle = '#E74C3C';
+ctx.beginPath();
+ctx.arc(
+endCell.j * cellSize + cellSize / 2,
+endCell.i * cellSize + cellSize / 2,
+cellSize / 3, 0, 2 * Math.PI
+);
+ctx.fill();
+}
+}
+  
+function render() {
+ctx.clearRect(0, 0, canvas.width, canvas.height);
+    
+const cost = getCost();
+    
+if (showCost && !showAccum) {
+drawCostSurface(cost);
+}
+    
+let path = null;
+let totalCost = 0;
+    
+if (startCell && endCell) {
+const {dist, parent} = dijkstra(cost, startCell, endCell);
+      
+if (showAccum) {
+drawAccumCost(dist);
+}
+      
+path = reconstructPath(parent, startCell, endCell);
+totalCost = dist[endCell.i][endCell.j];
+      
+drawPath(path);
+      
+document.getElementById('path-length').textContent = path.length;
+document.getElementById('total-cost').textContent = totalCost.toFixed(1);
+document.getElementById('avg-cost').textContent = (totalCost / path.length).toFixed(2);
+} else {
+document.getElementById('path-length').textContent = '--';
+document.getElementById('total-cost').textContent = '--';
+document.getElementById('avg-cost').textContent = '--';
+}
+    
+drawMarkers();
+}
+  
+canvas.addEventListener('click', (e) => {
+const rect = canvas.getBoundingClientRect();
+const x = e.clientX - rect.left;
+const y = e.clientY - rect.top;
+    
+const j = Math.floor(x / cellSize);
+const i = Math.floor(y / cellSize);
+    
+if (!startCell) {
+startCell = {i, j};
+} else if (!endCell) {
+endCell = {i, j};
+} else {
+startCell = {i, j};
+endCell = null;
+}
+    
+render();
+});
+  
+document.getElementById('cost-type').addEventListener('change', (e) => {
+costType = e.target.value;
+render();
+});
+  
+document.getElementById('connectivity').addEventListener('change', (e) => {
+connectivity = parseInt(e.target.value);
+render();
+});
+  
+document.getElementById('show-cost').addEventListener('change', (e) => {
+showCost = e.target.checked;
+render();
+});
+  
+document.getElementById('show-accum').addEventListener('change', (e) => {
+showAccum = e.target.checked;
+render();
+});
+  
+render();
+})();
+</script>
+<p><strong>Try this:</strong></p>
+<ul>
+<li><strong>Click to set start (green) and end (red)</strong> - path computes automatically</li>
+<li><strong>Slope-based:</strong> Path avoids steep center (darker = higher cost)</li>
+<li><strong>Land cover:</strong> Path finds low-cost patches</li>
+<li><strong>8-neighbor vs 4-neighbor:</strong> Diagonal moves allowed vs cardinal only</li>
+<li><strong>Show accumulated cost:</strong> Blue (near start) to red (far) - distance from source</li>
+<li><strong>Path (orange):</strong> Follows minimum cost, not straight line</li>
+<li>Notice: Path curves around high-cost areas even if that means longer distance!</li>
+</ul>
+<p><strong>Key insight:</strong> Optimal path balances distance vs.&nbsp;terrain cost—sometimes the long way is easier!</p>
+<hr>
+<h2 id="interpretation" class="anchored">6. Interpretation</h2>
+<h3 id="wildlife-corridor-design" class="anchored">Wildlife Corridor Design</h3>
+<p><strong>Problem:</strong> Connect two habitat patches for animal movement.</p>
+<p><strong>Approach:</strong></p>
+<ol type="1">
+<li>Create cost surface from habitat suitability
+<ul>
+<li>Low cost: Forest, grassland</li>
+<li>High cost: Urban, agricultural</li>
+<li>Infinite: Highways (impassable)</li>
+</ul></li>
+<li>Compute accumulated cost from source habitat</li>
+<li>Find least-cost path to destination habitat</li>
+<li>Widen path to create corridor (buffer)</li>
+</ol>
+<p><strong>Result:</strong> Protected corridor enabling wildlife movement.</p>
+<p><strong>Example:</strong> Mountain lion corridors in Southern California.</p>
+<h3 id="pipeline-routing" class="anchored">Pipeline Routing</h3>
+<p><strong>Cost factors:</strong></p>
+<ul>
+<li>Slope (steep = expensive construction)</li>
+<li>Land ownership (private &gt; public)</li>
+<li>Environmental sensitivity (wetlands = regulatory cost)</li>
+<li>Crossings (rivers, roads = high cost)</li>
+</ul>
+<p><strong>Optimization:</strong></p>
+<p><span class="math display">\text{cost} = w_1 \times \text{construction} + w_2 \times \text{permits} + w_3 \times \text{maintenance}</span></p>
+<p><strong>Least-cost path</strong> minimizes total project cost.</p>
+<h3 id="trail-design" class="anchored">Trail Design</h3>
+<p><strong>Tobler’s hiking function</strong> (optimal walking speed vs.&nbsp;slope):</p>
+<p><span class="math display">v = 6 e^{-3.5|\tan(\text{slope}) + 0.05|}</span></p>
+<p>Where <span class="math inline">v</span> is speed in km/h.</p>
+<p><strong>Travel time:</strong></p>
+<p><span class="math display">t = \frac{d}{v}</span></p>
+<p><strong>Trail routing:</strong></p>
+<ul>
+<li>Minimize total time</li>
+<li>Avoid slopes &gt; 15% (too steep)</li>
+<li>Stay near scenic viewpoints (negative cost)</li>
+</ul>
+<p><strong>Result:</strong> Enjoyable, efficient trail.</p>
+<hr>
+<h2 id="what-could-go-wrong" class="anchored">7. What Could Go Wrong?</h2>
+<h3 id="local-minima" class="anchored">Local Minima</h3>
+<p><strong>Greedy algorithms can get stuck:</strong></p>
+<pre><code>High cost barrier surrounds low-cost destination
+Greedy descent stops at barrier (local minimum)
+Never finds global optimum (go around barrier)</code></pre>
+<p><strong>Dijkstra avoids this</strong> by exploring all possibilities.</p>
+<h3 id="diagonal-bias" class="anchored">Diagonal Bias</h3>
+<p><strong>In 4-neighbor grid:</strong></p>
+<p>Diagonal moves unavailable → Manhattan distance artifacts</p>
+<p><strong>In 8-neighbor grid:</strong></p>
+<p>Diagonal cost = <span class="math inline">\sqrt{2} \approx 1.41</span> but often approximated as 1.5 or 1</p>
+<p><strong>Bias:</strong> Paths may zigzag when straight diagonal is optimal</p>
+<p><strong>Solution:</strong> Use correct <span class="math inline">\sqrt{2}</span> weight for diagonals</p>
+<h3 id="raster-resolution" class="anchored">Raster Resolution</h3>
+<p><strong>Coarse DEM misses fine-scale barriers:</strong></p>
+<ul>
+<li>Small cliffs</li>
+<li>Narrow canyons<br>
+</li>
+<li>Local hazards</li>
+</ul>
+<p><strong>10m DEM:</strong> Can route through 5m cliff (invisible at this resolution)</p>
+<p><strong>Solution:</strong> Use finest available resolution for critical applications</p>
+<h3 id="memory-limits" class="anchored">Memory Limits</h3>
+<p><strong>Large grids require huge memory:</strong></p>
+<p>10,000 × 10,000 grid = 100 million cells</p>
+<p>Each cell needs: - Distance value (8 bytes) - Parent pointer (8 bytes) - Priority queue entry (variable)</p>
+<p><strong>Total:</strong> ~2 GB minimum</p>
+<p><strong>Solution:</strong></p>
+<ul>
+<li>Process in tiles</li>
+<li>Use sparse data structures</li>
+<li>Hierarchical pathfinding (coarse → fine)</li>
+</ul>
+<hr>
+<h2 id="extension-a-algorithm" class="anchored">8. Extension: A* Algorithm</h2>
+<p><strong>A* improves Dijkstra with heuristic guidance.</strong></p>
+<p><strong>Heuristic:</strong> Estimated cost from node to goal.</p>
+<p><strong>For spatial grids:</strong> Euclidean distance to goal</p>
+<p><span class="math display">h(n) = \sqrt{(x_n - x_{\text{goal}})^2 + (y_n - y_{\text{goal}})^2}</span></p>
+<p><strong>Priority:</strong> <span class="math inline">f(n) = g(n) + h(n)</span></p>
+<p>Where: - <span class="math inline">g(n)</span> = actual cost from start to <span class="math inline">n</span> - <span class="math inline">h(n)</span> = estimated cost from <span class="math inline">n</span> to goal - <span class="math inline">f(n)</span> = estimated total cost</p>
+<p><strong>Advantage:</strong> Explores toward goal → faster than Dijkstra</p>
+<p><strong>Requirement:</strong> Heuristic must be <strong>admissible</strong> (never overestimate)</p>
+<p><strong>For grid:</strong> Euclidean distance is admissible (straight line is shortest)</p>
+<p><strong>Speedup:</strong> 2-10× faster for long paths</p>
+<hr>
+<h2 id="math-refresher-priority-queues" class="anchored">9. Math Refresher: Priority Queues</h2>
+<h3 id="definition" class="anchored">Definition</h3>
+<p><strong>Priority queue:</strong> Data structure supporting: - <code>insert(item, priority)</code>: Add item with priority - <code>extract_min()</code>: Remove and return item with minimum priority - <code>decrease_priority(item, new_priority)</code>: Update priority</p>
+<h3 id="implementation-options" class="anchored">Implementation Options</h3>
+<p><strong>Array (unsorted):</strong></p>
+<ul>
+<li>Insert: <span class="math inline">O(1)</span></li>
+<li>Extract min: <span class="math inline">O(n)</span> (must scan)</li>
+</ul>
+<p><strong>Array (sorted):</strong></p>
+<ul>
+<li>Insert: <span class="math inline">O(n)</span> (maintain order)</li>
+<li>Extract min: <span class="math inline">O(1)</span> (first element)</li>
+</ul>
+<p><strong>Binary heap:</strong></p>
+<ul>
+<li>Insert: <span class="math inline">O(\log n)</span></li>
+<li>Extract min: <span class="math inline">O(\log n)</span></li>
+<li><strong>Best for Dijkstra</strong></li>
+</ul>
+<p><strong>Fibonacci heap:</strong></p>
+<ul>
+<li>Decrease priority: <span class="math inline">O(1)</span> amortized</li>
+<li>Theoretical improvement for Dijkstra</li>
+<li>Complex implementation, rarely used in practice</li>
+</ul>
+<h3 id="dijkstra-with-priority-queue" class="anchored">Dijkstra with Priority Queue</h3>
+<pre><code>dist[source] = 0
+pq.insert(source, 0)
+
+while pq not empty:
+    u = pq.extract_min()
+    
+    for each neighbor v:
+        alt = dist[u] + cost(u, v)
+        if alt &lt; dist[v]:
+            dist[v] = alt
+            if v in pq:
+                pq.decrease_priority(v, alt)
+            else:
+                pq.insert(v, alt)</code></pre>
+<p><strong>Complexity:</strong> <span class="math inline">O((V + E) \log V)</span> with binary heap</p>
+<hr>
+<h2 id="summary" class="anchored">Summary</h2>
+<ul>
+<li><strong>Cost-distance</strong> accumulates travel cost across variable terrain</li>
+<li><strong>Cost surface</strong> assigns traversal cost to each cell (slope, land cover, etc.)</li>
+<li><strong>Dijkstra’s algorithm</strong> finds minimum accumulated cost to all reachable cells</li>
+<li><strong>Least-cost path</strong> traces optimal route by backtracking through cost surface</li>
+<li><strong>Edge cost</strong> combines cell costs and distance: <span class="math inline">c = d \times (c_1 + c_2)/2</span></li>
+<li><strong>8-neighbor connectivity</strong> allows diagonal movement (more realistic paths)</li>
+<li><strong>Applications:</strong> Wildlife corridors, pipeline routing, trail design, emergency response</li>
+<li><strong>Challenges:</strong> Memory limits, raster resolution, diagonal bias</li>
+<li><strong>A* algorithm</strong> improves performance with heuristic guidance</li>
+<li>Critical for infrastructure planning, conservation, and spatial optimization</li>
+</ul>
+<hr>
+
+
+<footer class="wayward-footer">
+  <div class="wayward-footer__inner">
+    <div class="wayward-footer__brand">
+      <div class="wayward-footer__logo">WaywardHouse<span>.</span></div>
+      <p>Understanding how place, economy, and environment interact through analysis, modelling, and open tools.</p>
+    </div>
+
+    <nav class="wayward-footer__group" aria-labelledby="footer-reading">
+      <h2 id="footer-reading" class="anchored">Reading</h2>
+      <a href="https://wayward.house/articles/">Articles</a>
+      <a href="https://wayward.house/learn/">Library</a>
+      <a href="https://wayward.house/archive.html">Archive</a>
+      <a href="https://wayward.house/start-here.html">Choose Your Path</a>
+    </nav>
+
+    <nav class="wayward-footer__group" aria-labelledby="footer-site">
+      <h2 id="footer-site" class="anchored">Site</h2>
+      <a href="https://wayward.house/start-here.html">Choose Your Path</a>
+      <a href="https://wayward.house/about.html">About</a>
+      <a href="https://wayward.house/contact.html">Contact</a>
+    </nav>
+
+    <nav class="wayward-footer__group" aria-labelledby="footer-resources">
+      <h2 id="footer-resources" class="anchored">Resources</h2>
+      <a href="https://wayward.house/topics/">All Topics</a>
+      <a href="https://wayward.house/privacy.html">Privacy Policy</a>
+      <a href="https://wayward.house/terms.html">Terms of Use</a>
+    </nav>
+  </div>
+</footer>
+
+<script type="module" src="../assets/dist/main.js"></script>
+<script type="module" src="../assets/js/core.js"></script>
+<script id="quarto-html-after-body" type="application/javascript">
+  window.document.addEventListener("DOMContentLoaded", function (event) {
+    const tabsets =  window.document.querySelectorAll(".panel-tabset-tabby")
+    tabsets.forEach(function(tabset) {
+      const tabby = new Tabby('#' + tabset.id);
+    });
+    const icon = "";
+    const anchorJS = new window.AnchorJS();
+    anchorJS.options = {
+      placement: 'right',
+      icon: icon
+    };
+    anchorJS.add('.anchored');
+    const isCodeAnnotation = (el) => {
+      for (const clz of el.classList) {
+        if (clz.startsWith('code-annotation-')) {                     
+          return true;
+        }
+      }
+      return false;
+    }
+    const onCopySuccess = function(e) {
+      // button target
+      const button = e.trigger;
+      // don't keep focus
+      button.blur();
+      // flash "checked"
+      button.classList.add('code-copy-button-checked');
+      var currentTitle = button.getAttribute("title");
+      button.setAttribute("title", "Copied!");
+      let tooltip;
+      if (window.bootstrap) {
+        button.setAttribute("data-bs-toggle", "tooltip");
+        button.setAttribute("data-bs-placement", "left");
+        button.setAttribute("data-bs-title", "Copied!");
+        tooltip = new bootstrap.Tooltip(button, 
+          { trigger: "manual", 
+            customClass: "code-copy-button-tooltip",
+            offset: [0, -8]});
+        tooltip.show();    
+      }
+      setTimeout(function() {
+        if (tooltip) {
+          tooltip.hide();
+          button.removeAttribute("data-bs-title");
+          button.removeAttribute("data-bs-toggle");
+          button.removeAttribute("data-bs-placement");
+        }
+        button.setAttribute("title", currentTitle);
+        button.classList.remove('code-copy-button-checked');
+      }, 1000);
+      // clear code selection
+      e.clearSelection();
+    }
+    const getTextToCopy = function(trigger) {
+      const outerScaffold = trigger.parentElement.cloneNode(true);
+      const codeEl = outerScaffold.querySelector('code');
+      for (const childEl of codeEl.children) {
+        if (isCodeAnnotation(childEl)) {
+          childEl.remove();
+        }
+      }
+      return codeEl.innerText;
+    }
+    const clipboard = new window.ClipboardJS('.code-copy-button:not([data-in-quarto-modal])', {
+      text: getTextToCopy
+    });
+    clipboard.on('success', onCopySuccess);
+    if (window.document.getElementById('quarto-embedded-source-code-modal')) {
+      const clipboardModal = new window.ClipboardJS('.code-copy-button[data-in-quarto-modal]', {
+        text: getTextToCopy,
+        container: window.document.getElementById('quarto-embedded-source-code-modal')
+      });
+      clipboardModal.on('success', onCopySuccess);
+    }
+      var localhostRegex = new RegExp(/^(?:http|https):\/\/localhost\:?[0-9]*\//);
+      var mailtoRegex = new RegExp(/^mailto:/);
+        var filterRegex = new RegExp('/' + window.location.host + '/');
+      var isInternal = (href) => {
+          return filterRegex.test(href) || localhostRegex.test(href) || mailtoRegex.test(href);
+      }
+      // Inspect non-navigation links and adorn them if external
+     var links = window.document.querySelectorAll('a[href]:not(.nav-link):not(.navbar-brand):not(.toc-action):not(.sidebar-link):not(.sidebar-item-toggle):not(.pagination-link):not(.no-external):not([aria-hidden]):not(.dropdown-item):not(.quarto-navigation-tool):not(.about-link)');
+      for (var i=0; i<links.length; i++) {
+        const link = links[i];
+        if (!isInternal(link.href)) {
+          // undo the damage that might have been done by quarto-nav.js in the case of
+          // links that we want to consider external
+          if (link.dataset.originalHref !== undefined) {
+            link.href = link.dataset.originalHref;
+          }
+        }
+      }
+    function tippyHover(el, contentFn, onTriggerFn, onUntriggerFn) {
+      const config = {
+        allowHTML: true,
+        maxWidth: 500,
+        delay: 100,
+        arrow: false,
+        appendTo: function(el) {
+            return el.parentElement;
+        },
+        interactive: true,
+        interactiveBorder: 10,
+        theme: 'light-border',
+        placement: 'bottom-start',
+      };
+      if (contentFn) {
+        config.content = contentFn;
+      }
+      if (onTriggerFn) {
+        config.onTrigger = onTriggerFn;
+      }
+      if (onUntriggerFn) {
+        config.onUntrigger = onUntriggerFn;
+      }
+      window.tippy(el, config); 
+    }
+    const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+    for (var i=0; i<noterefs.length; i++) {
+      const ref = noterefs[i];
+      tippyHover(ref, function() {
+        // use id or data attribute instead here
+        let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+        try { href = new URL(href).hash; } catch {}
+        const id = href.replace(/^#\/?/, "");
+        const note = window.document.getElementById(id);
+        if (note) {
+          return note.innerHTML;
+        } else {
+          return "";
+        }
+      });
+    }
+    const xrefs = window.document.querySelectorAll('a.quarto-xref');
+    const processXRef = (id, note) => {
+      // Strip column container classes
+      const stripColumnClz = (el) => {
+        el.classList.remove("page-full", "page-columns");
+        if (el.children) {
+          for (const child of el.children) {
+            stripColumnClz(child);
+          }
+        }
+      }
+      stripColumnClz(note)
+      if (id === null || id.startsWith('sec-')) {
+        // Special case sections, only their first couple elements
+        const container = document.createElement("div");
+        if (note.children && note.children.length > 2) {
+          container.appendChild(note.children[0].cloneNode(true));
+          for (let i = 1; i < note.children.length; i++) {
+            const child = note.children[i];
+            if (child.tagName === "P" && child.innerText === "") {
+              continue;
+            } else {
+              container.appendChild(child.cloneNode(true));
+              break;
+            }
+          }
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(container);
+          }
+          return container.innerHTML
+        } else {
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(note);
+          }
+          return note.innerHTML;
+        }
+      } else {
+        // Remove any anchor links if they are present
+        const anchorLink = note.querySelector('a.anchorjs-link');
+        if (anchorLink) {
+          anchorLink.remove();
+        }
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(note);
+        }
+        if (note.classList.contains("callout")) {
+          return note.outerHTML;
+        } else {
+          return note.innerHTML;
+        }
+      }
+    }
+    for (var i=0; i<xrefs.length; i++) {
+      const xref = xrefs[i];
+      tippyHover(xref, undefined, function(instance) {
+        instance.disable();
+        let url = xref.getAttribute('href');
+        let hash = undefined; 
+        if (url.startsWith('#')) {
+          hash = url;
+        } else {
+          try { hash = new URL(url).hash; } catch {}
+        }
+        if (hash) {
+          const id = hash.replace(/^#\/?/, "");
+          const note = window.document.getElementById(id);
+          if (note !== null) {
+            try {
+              const html = processXRef(id, note.cloneNode(true));
+              instance.setContent(html);
+            } finally {
+              instance.enable();
+              instance.show();
+            }
+          } else {
+            // See if we can fetch this
+            fetch(url.split('#')[0])
+            .then(res => res.text())
+            .then(html => {
+              const parser = new DOMParser();
+              const htmlDoc = parser.parseFromString(html, "text/html");
+              const note = htmlDoc.getElementById(id);
+              if (note !== null) {
+                const html = processXRef(id, note);
+                instance.setContent(html);
+              } 
+            }).finally(() => {
+              instance.enable();
+              instance.show();
+            });
+          }
+        } else {
+          // See if we can fetch a full url (with no hash to target)
+          // This is a special case and we should probably do some content thinning / targeting
+          fetch(url)
+          .then(res => res.text())
+          .then(html => {
+            const parser = new DOMParser();
+            const htmlDoc = parser.parseFromString(html, "text/html");
+            const note = htmlDoc.querySelector('main.content');
+            if (note !== null) {
+              // This should only happen for chapter cross references
+              // (since there is no id in the URL)
+              // remove the first header
+              if (note.children.length > 0 && note.children[0].tagName === "HEADER") {
+                note.children[0].remove();
+              }
+              const html = processXRef(null, note);
+              instance.setContent(html);
+            } 
+          }).finally(() => {
+            instance.enable();
+            instance.show();
+          });
+        }
+      }, function(instance) {
+      });
+    }
+        let selectedAnnoteEl;
+        const selectorForAnnotation = ( cell, annotation) => {
+          let cellAttr = 'data-code-cell="' + cell + '"';
+          let lineAttr = 'data-code-annotation="' +  annotation + '"';
+          const selector = 'span[' + cellAttr + '][' + lineAttr + ']';
+          return selector;
+        }
+        const selectCodeLines = (annoteEl) => {
+          const doc = window.document;
+          const targetCell = annoteEl.getAttribute("data-target-cell");
+          const targetAnnotation = annoteEl.getAttribute("data-target-annotation");
+          const annoteSpan = window.document.querySelector(selectorForAnnotation(targetCell, targetAnnotation));
+          const lines = annoteSpan.getAttribute("data-code-lines").split(",");
+          const lineIds = lines.map((line) => {
+            return targetCell + "-" + line;
+          })
+          let top = null;
+          let height = null;
+          let parent = null;
+          if (lineIds.length > 0) {
+              //compute the position of the single el (top and bottom and make a div)
+              const el = window.document.getElementById(lineIds[0]);
+              top = el.offsetTop;
+              height = el.offsetHeight;
+              parent = el.parentElement.parentElement;
+            if (lineIds.length > 1) {
+              const lastEl = window.document.getElementById(lineIds[lineIds.length - 1]);
+              const bottom = lastEl.offsetTop + lastEl.offsetHeight;
+              height = bottom - top;
+            }
+            if (top !== null && height !== null && parent !== null) {
+              // cook up a div (if necessary) and position it 
+              let div = window.document.getElementById("code-annotation-line-highlight");
+              if (div === null) {
+                div = window.document.createElement("div");
+                div.setAttribute("id", "code-annotation-line-highlight");
+                div.style.position = 'absolute';
+                parent.appendChild(div);
+              }
+              div.style.top = top - 2 + "px";
+              div.style.height = height + 4 + "px";
+              div.style.left = 0;
+              let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
+              if (gutterDiv === null) {
+                gutterDiv = window.document.createElement("div");
+                gutterDiv.setAttribute("id", "code-annotation-line-highlight-gutter");
+                gutterDiv.style.position = 'absolute';
+                const codeCell = window.document.getElementById(targetCell);
+                const gutter = codeCell.querySelector('.code-annotation-gutter');
+                gutter.appendChild(gutterDiv);
+              }
+              gutterDiv.style.top = top - 2 + "px";
+              gutterDiv.style.height = height + 4 + "px";
+            }
+            selectedAnnoteEl = annoteEl;
+          }
+        };
+        const unselectCodeLines = () => {
+          const elementsIds = ["code-annotation-line-highlight", "code-annotation-line-highlight-gutter"];
+          elementsIds.forEach((elId) => {
+            const div = window.document.getElementById(elId);
+            if (div) {
+              div.remove();
+            }
+          });
+          selectedAnnoteEl = undefined;
+        };
+          // Handle positioning of the toggle
+      window.addEventListener(
+        "resize",
+        throttle(() => {
+          elRect = undefined;
+          if (selectedAnnoteEl) {
+            selectCodeLines(selectedAnnoteEl);
+          }
+        }, 10)
+      );
+      function throttle(fn, ms) {
+      let throttle = false;
+      let timer;
+        return (...args) => {
+          if(!throttle) { // first call gets through
+              fn.apply(this, args);
+              throttle = true;
+          } else { // all the others get throttled
+              if(timer) clearTimeout(timer); // cancel #2
+              timer = setTimeout(() => {
+                fn.apply(this, args);
+                timer = throttle = false;
+              }, ms);
+          }
+        };
+      }
+        // Attach click handler to the DT
+        const annoteDls = window.document.querySelectorAll('dt[data-target-cell]');
+        for (const annoteDlNode of annoteDls) {
+          annoteDlNode.addEventListener('click', (event) => {
+            const clickedEl = event.target;
+            if (clickedEl !== selectedAnnoteEl) {
+              unselectCodeLines();
+              const activeEl = window.document.querySelector('dt[data-target-cell].code-annotation-active');
+              if (activeEl) {
+                activeEl.classList.remove('code-annotation-active');
+              }
+              selectCodeLines(clickedEl);
+              clickedEl.classList.add('code-annotation-active');
+            } else {
+              // Unselect the line
+              unselectCodeLines();
+              clickedEl.classList.remove('code-annotation-active');
+            }
+          });
+        }
+    const findCites = (el) => {
+      const parentEl = el.parentElement;
+      if (parentEl) {
+        const cites = parentEl.dataset.cites;
+        if (cites) {
+          return {
+            el,
+            cites: cites.split(' ')
+          };
+        } else {
+          return findCites(el.parentElement)
+        }
+      } else {
+        return undefined;
+      }
+    };
+    var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+    for (var i=0; i<bibliorefs.length; i++) {
+      const ref = bibliorefs[i];
+      const citeInfo = findCites(ref);
+      if (citeInfo) {
+        tippyHover(citeInfo.el, function() {
+          var popup = window.document.createElement('div');
+          citeInfo.cites.forEach(function(cite) {
+            var citeDiv = window.document.createElement('div');
+            citeDiv.classList.add('hanging-indent');
+            citeDiv.classList.add('csl-entry');
+            var biblioDiv = window.document.getElementById('ref-' + cite);
+            if (biblioDiv) {
+              citeDiv.innerHTML = biblioDiv.innerHTML;
+            }
+            popup.appendChild(citeDiv);
+          });
+          return popup.innerHTML;
+        });
+      }
+    }
+  });
+  </script>
+
+
+
+
+</body></html>

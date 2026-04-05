@@ -1,0 +1,989 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
+
+<meta charset="utf-8">
+<meta name="generator" content="quarto-1.9.36">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+
+<meta name="dcterms.date" content="2026-02-26">
+<meta name="description" content="A south-facing slope receives more solar energy than a north-facing slope at the same latitude. Why? Because the angle between the sun’s rays and the surface normal determines the energy per unit area. This model introduces trigonometry and vector geometry to model solar radiation on tilted surfaces.">
+
+<title>Solar Geometry and Projection – Computational Geography</title>
+<style>
+/* Default styles provided by pandoc.
+** See https://pandoc.org/MANUAL.html#variables-for-html for config info.
+*/
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: min(4vw, 1.5em);}
+div.column{flex: auto; overflow-x: auto;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+  width: 0.8em;
+  margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
+  vertical-align: middle;
+}
+</style>
+
+
+<script src="../site_libs/clipboard/clipboard.min.js"></script>
+<script src="../site_libs/quarto-html/tabby.min.js"></script>
+<script src="../site_libs/quarto-html/popper.min.js"></script>
+<script src="../site_libs/quarto-html/tippy.umd.min.js"></script>
+<script src="../site_libs/quarto-html/anchor.min.js"></script>
+<link href="../site_libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="../site_libs/quarto-html/light-border.css" rel="stylesheet">
+<link href="../site_libs/quarto-html/quarto-html-640605f58ae58ee79329c070719e555b.min.css" rel="stylesheet" append-hash="true" data-mode="light">
+<link href="../site_libs/quarto-html/quarto-syntax-highlighting-845c23b38eaddc0f92fda52bfe77a8c8.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<script>
+  (function () {
+    document.documentElement.dataset.theme = 'light';
+    document.documentElement.dataset.brand = 'wayward';
+    try {
+      localStorage.removeItem('theme');
+    } catch (err) {
+      void err;
+    }
+  })();
+</script>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:ital,wght@0,300;0,400;0,600;0,700;0,800;0,900;1,700;1,800&amp;family=Barlow:wght@300;400;500;600&amp;family=IBM+Plex+Mono:ital,wght@0,300;0,400;0,500;1,300&amp;family=Literata:ital,opsz,wght@0,7..72,300;0,7..72,400;0,7..72,500;1,7..72,300;1,7..72,400&amp;display=swap" rel="stylesheet">
+
+  <script>window.backupDefine = window.define; window.define = undefined;</script><script src="https://cdn.jsdelivr.net/npm/katex@latest/dist/katex.min.js"></script>
+  <script>document.addEventListener("DOMContentLoaded", function () {
+ var mathElements = document.getElementsByClassName("math");
+ var macros = [];
+ for (var i = 0; i < mathElements.length; i++) {
+  var texText = mathElements[i].firstChild;
+  if (mathElements[i].tagName == "SPAN") {
+   katex.render(texText.data, mathElements[i], {
+    displayMode: mathElements[i].classList.contains('display'),
+    throwOnError: false,
+    macros: macros,
+    fleqn: false
+   });
+}}});
+  </script>
+  <script>window.define = window.backupDefine; window.backupDefine = undefined;</script><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@latest/dist/katex.min.css">
+
+<script type="text/javascript">
+const typesetMath = (el) => {
+  if (window.MathJax) {
+    // MathJax Typeset
+    window.MathJax.typeset([el]);
+  } else if (window.katex) {
+    // KaTeX Render
+    var mathElements = el.getElementsByClassName("math");
+    var macros = [];
+    for (var i = 0; i < mathElements.length; i++) {
+      var texText = mathElements[i].firstChild;
+      if (mathElements[i].tagName == "SPAN" && texText && texText.data) {
+        window.katex.render(texText.data, mathElements[i], {
+          displayMode: mathElements[i].classList.contains('display'),
+          throwOnError: false,
+          macros: macros,
+          fleqn: false
+        });
+      }
+    }
+  }
+}
+window.Quarto = {
+  typesetMath
+};
+</script>
+
+<link rel="stylesheet" href="../assets/css/quarto-wayward.css">
+</head>
+
+<body class="reading-body tag-hash-math tag-hash-viz">
+
+
+<header id="title-block-header">
+<h1 class="title"><span class="chapter-title">Solar Geometry and Projection</span></h1>
+<p class="subtitle">Trigonometry and the dot product — how surface orientation affects energy receipt</p>
+
+<p class="date">2026-02-26</p>
+</header>
+
+<nav id="TOC" role="doc-toc">
+    <h2 id="toc-title">Table of contents</h2>
+   
+  <ul>
+  <li><a href="#the-question" id="toc-the-question">1. The Question</a></li>
+  <li><a href="#the-conceptual-model" id="toc-the-conceptual-model">2. The Conceptual Model</a>
+  <ul>
+  <li><a href="#projection-the-core-idea" id="toc-projection-the-core-idea">Projection: The Core Idea</a></li>
+  <li><a href="#surface-normal-vector" id="toc-surface-normal-vector">Surface Normal Vector</a></li>
+  </ul></li>
+  <li><a href="#building-the-mathematical-model" id="toc-building-the-mathematical-model">3. Building the Mathematical Model</a>
+  <ul>
+  <li><a href="#trigonometry-of-projection" id="toc-trigonometry-of-projection">Trigonometry of Projection</a></li>
+  <li><a href="#the-dot-product" id="toc-the-dot-product">The Dot Product</a></li>
+  </ul></li>
+  <li><a href="#worked-example-by-hand" id="toc-worked-example-by-hand">4. Worked Example by Hand</a>
+  <ul>
+  <li><a href="#solution" id="toc-solution">Solution</a></li>
+  </ul></li>
+  <li><a href="#vector-calculation-example" id="toc-vector-calculation-example">5. Vector Calculation Example</a>
+  <ul>
+  <li><a href="#solution-1" id="toc-solution-1">Solution</a></li>
+  </ul></li>
+  <li><a href="#computational-implementation" id="toc-computational-implementation">6. Computational Implementation</a></li>
+  <li><a href="#interpretation" id="toc-interpretation">7. Interpretation</a>
+  <ul>
+  <li><a href="#why-south-facing-slopes-are-warmer-northern-hemisphere" id="toc-why-south-facing-slopes-are-warmer-northern-hemisphere">Why South-Facing Slopes Are Warmer (Northern Hemisphere)</a></li>
+  <li><a href="#seasonal-variation" id="toc-seasonal-variation">Seasonal Variation</a></li>
+  <li><a href="#optimal-solar-panel-tilt" id="toc-optimal-solar-panel-tilt">Optimal Solar Panel Tilt</a></li>
+  </ul></li>
+  <li><a href="#what-could-go-wrong" id="toc-what-could-go-wrong">8. What Could Go Wrong?</a>
+  <ul>
+  <li><a href="#confusing-slope-and-aspect" id="toc-confusing-slope-and-aspect">Confusing Slope and Aspect</a></li>
+  <li><a href="#forgetting-the-cosine-can-be-negative" id="toc-forgetting-the-cosine-can-be-negative">Forgetting the Cosine Can Be Negative</a></li>
+  <li><a href="#ignoring-diffuse-radiation" id="toc-ignoring-diffuse-radiation">Ignoring Diffuse Radiation</a></li>
+  <li><a href="#neglecting-terrain-shading" id="toc-neglecting-terrain-shading">Neglecting Terrain Shading</a></li>
+  </ul></li>
+  <li><a href="#math-refresher-trigonometry-and-vectors" id="toc-math-refresher-trigonometry-and-vectors">9. Math Refresher: Trigonometry and Vectors</a>
+  <ul>
+  <li><a href="#right-triangle-trigonometry" id="toc-right-triangle-trigonometry">Right Triangle Trigonometry</a></li>
+  <li><a href="#unit-circle" id="toc-unit-circle">Unit Circle</a></li>
+  <li><a href="#dot-product-properties" id="toc-dot-product-properties">Dot Product Properties</a></li>
+  </ul></li>
+  <li><a href="#summary" id="toc-summary">Summary</a></li>
+  </ul>
+</nav>
+<p>At solar noon on the summer solstice in Banff, Alberta, the sun stands about 60° above the southern horizon. A solar panel mounted flat on a horizontal roof intercepts a certain amount of energy. Tilt that panel to face the sun directly — perpendicular to the incoming rays — and the energy per unit area roughly doubles, because the same beam is concentrated over a smaller surface. This is why rooftop installers angle panels south at a fixed inclination, why the equator-facing slopes of mountain valleys host vineyards and meadows while north-facing slopes support dense conifer stands, and why the seasonal variation of solar energy with latitude is steeper than a naive calculation would suggest.</p>
+<p>The mathematical tool that makes this precise is the dot product — a single operation that converts the angle between a surface’s normal vector and the direction to the sun into the fraction of maximum possible energy the surface receives. A surface facing directly at the sun gets the full beam; a surface parallel to the beam gets nothing; every other orientation falls between these extremes as a cosine function of the angle. This model introduces trigonometry and vector geometry through the practical problem of solar energy receipt on sloped terrain, building from the definition of angle through to hillshade calculation and the explanation of aspect-dependent microclimates.</p>
+<figure class="cg-ill">
+<div class="cg-ill__frame" data-markdown="1">
+<div class="cg-ill__eyebrow">
+Projection Geometry
+</div>
+<h3 class="cg-ill__title anchored">
+Energy Receipt Depends On How Closely The Surface Normal Points Toward The Sun
+</h3>
+<p class="cg-ill__lede">
+The most useful visual habit in this chapter is to stop looking at the surface itself and look at its normal vector. Once the sun direction and the surface normal are in the same picture, the dot product stops feeling abstract and starts reading like a geometric overlap score.
+</p>
+<div class="cg-ill__grid cg-ill__grid--2">
+<div class="cg-ill__card">
+<div class="cg-ill__label">
+Beam Spread
+</div>
+<h4 class="anchored">
+Oblique Illumination Spreads The Same Beam Across More Ground
+</h4>
+<svg viewbox="0 0 560 320" role="img" aria-label="Perpendicular and oblique sunlight beams hitting surfaces and creating small versus stretched footprints">
+<rect x="24" y="18" width="512" height="284" rx="12" fill="#f7f5ef" stroke="#d0d0c8"></rect> <g> <rect x="68" y="204" width="160" height="18" fill="#c7b08c"></rect> <path d="M148 54 V204" stroke="#f0a800" stroke-width="18" stroke-linecap="round"></path> <ellipse cx="148" cy="194" rx="28" ry="12" fill="rgba(240,168,0,0.28)" stroke="#f0a800" stroke-width="3"></ellipse> <text x="74" y="246" font-size="15" fill="#5a5a56">perpendicular beam</text> <text x="74" y="268" font-size="15" fill="#5a5a56">small footprint, high W/m²</text> </g> <g> <path d="M314 214 L472 176" stroke="#c7b08c" stroke-width="18" stroke-linecap="round"></path> <path d="M344 66 L408 192" stroke="#f0a800" stroke-width="18" stroke-linecap="round"></path> <ellipse cx="404" cy="191" rx="48" ry="16" transform="rotate(-12 404 191)" fill="rgba(240,168,0,0.22)" stroke="#f0a800" stroke-width="3"></ellipse> <text x="314" y="246" font-size="15" fill="#5a5a56">oblique beam</text> <text x="314" y="268" font-size="15" fill="#5a5a56">stretched footprint, lower W/m²</text> </g>
+</svg>
+<p>
+The beam carries the same total energy in both cases. What changes is the area over which that energy is distributed.
+</p>
+</div>
+<div class="cg-ill__card">
+<div class="cg-ill__label">
+Dot Product
+</div>
+<h4 class="anchored">
+The Normal Vector Is The Quantity That Matters
+</h4>
+<svg viewbox="0 0 560 320" role="img" aria-label="Surface normal and sun vector with incidence angle theta and cosine values for direct, oblique, and grazing illumination">
+<rect x="24" y="18" width="512" height="284" rx="12" fill="#f7f5ef" stroke="#d0d0c8"></rect> <path d="M88 238 L472 168" stroke="#c7b08c" stroke-width="14" stroke-linecap="round"></path> <path d="M250 208 L292 92" stroke="#e02020" stroke-width="5" marker-end="url(#cg-sun-arrow)"></path> <path d="M432 60 L302 146" stroke="#f0a800" stroke-width="5" marker-end="url(#cg-sun-arrow2)"></path> <path d="M296 118 A38 38 0 0 0 320 146" fill="none" stroke="#3f7fb3" stroke-width="3"></path> <defs> <marker id="cg-sun-arrow" markerwidth="10" markerheight="10" refx="8" refy="5" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#e02020"></path></marker> <marker id="cg-sun-arrow2" markerwidth="10" markerheight="10" refx="8" refy="5" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#f0a800"></path></marker> </defs> <text x="212" y="92" font-size="15" fill="#e02020">surface normal n̂</text> <text x="408" y="58" font-size="15" fill="#f0a800">sun vector ŝ</text> <text x="326" y="136" font-size="15" fill="#3f7fb3">θ</text> <g transform="translate(324 176)"> <rect x="0" y="0" width="160" height="84" rx="10" fill="#ffffff" stroke="#d0d0c8"></rect> <text x="16" y="24" font-size="15" fill="#5a5a56">θ = 0° → cos θ = 1.00</text> <text x="16" y="46" font-size="15" fill="#5a5a56">θ = 45° → cos θ = 0.71</text> <text x="16" y="68" font-size="15" fill="#5a5a56">θ = 90° → cos θ = 0.00</text> </g>
+</svg>
+<p>
+If the vectors align, the surface gets the full beam. As the vectors diverge, the cosine term reduces the effective flux smoothly toward zero.
+</p>
+</div>
+</div>
+<figcaption>
+The geometry is a projection problem: the dot product measures how much of the sun vector falls onto the surface normal, and that overlap sets energy receipt per unit area.
+</figcaption>
+</div>
+</figure>
+<h2 id="the-question" class="anchored">1. The Question</h2>
+<p>Why does the same incoming solar radiation produce different heating rates on slopes of different orientations?</p>
+<p>A horizontal surface in Denver receives a certain amount of solar energy per square meter. A south-facing slope (tilted toward the equator) receives <strong>more</strong> energy per unit area. A north-facing slope receives <strong>less</strong>. The total radiation from the sun hasn’t changed — but the <strong>effective area</strong> intercepting the light has.</p>
+<p>This is a <strong>projection effect</strong>, and it’s fundamental to: - Topographic climate (microclimates in mountainous terrain) - Seasonal energy balance (why summer is warmer than winter) - Solar panel placement (tilt angle matters) - Glacier mass balance (north vs.&nbsp;south aspects)</p>
+<p>The mathematical question: How do we quantify the relationship between surface orientation and energy receipt?</p>
+<hr>
+<h2 id="the-conceptual-model" class="anchored">2. The Conceptual Model</h2>
+<h3 id="projection-the-core-idea" class="anchored">Projection: The Core Idea</h3>
+<p>Imagine a flashlight shining on a wall: - When the flashlight is perpendicular to the wall, the beam creates a small, bright circle. - When you tilt the flashlight, the beam spreads out into an ellipse — <strong>same total light, larger area, lower intensity</strong>.</p>
+<p>The <strong>intensity</strong> (energy per unit area) depends on the angle between the light direction and the surface orientation.</p>
+<p><strong>Key principle:</strong> Energy flux is maximized when the light hits the surface <strong>perpendicularly</strong> and decreases as the angle becomes more oblique.</p>
+<h3 id="surface-normal-vector" class="anchored">Surface Normal Vector</h3>
+<p>To describe surface orientation, we use the <strong>normal vector</strong> — a unit vector pointing <strong>perpendicular</strong> to the surface, away from it.</p>
+<p><strong>Examples:</strong></p>
+<ul>
+<li>Horizontal surface: normal points straight up (0, 0, 1)</li>
+<li>Vertical wall facing east: normal points east (1, 0, 0)</li>
+<li>30° south-facing slope: normal tilts south and up</li>
+</ul>
+<p>The angle between the <strong>sun’s direction</strong> and the <strong>surface normal</strong> determines the projection factor.</p>
+<hr>
+<h2 id="building-the-mathematical-model" class="anchored">3. Building the Mathematical Model</h2>
+<h3 id="trigonometry-of-projection" class="anchored">Trigonometry of Projection</h3>
+<p>Consider a surface tilted at angle <span class="math inline">\beta</span> from horizontal, receiving light from an angle <span class="math inline">\theta</span> from the surface normal.</p>
+<p>The <strong>effective area</strong> intercepting the light is:</p>
+<p><span class="math display">A_{\text{eff}} = A \cos \theta</span></p>
+<p>Where: - <span class="math inline">A</span> is the physical area of the surface (m²) - <span class="math inline">\theta</span> is the <strong>angle of incidence</strong> (angle between light direction and surface normal)</p>
+<p><strong>Energy flux density</strong> (W/m² on the surface):</p>
+<p><span class="math display">S = S_0 \cos \theta</span></p>
+<p>Where <span class="math inline">S_0</span> is the incoming solar flux density (W/m² perpendicular to the sun’s rays).</p>
+<p><strong>Special cases:</strong></p>
+<ul>
+<li><span class="math inline">\theta = 0°</span> (sun perpendicular to surface): <span class="math inline">\cos 0° = 1</span> → full intensity</li>
+<li><span class="math inline">\theta = 45°</span>: <span class="math inline">\cos 45° = 0.707</span> → 70.7% of perpendicular intensity</li>
+<li><span class="math inline">\theta = 90°</span> (sun parallel to surface): <span class="math inline">\cos 90° = 0</span> → no energy received</li>
+</ul>
+<h3 id="the-dot-product" class="anchored">The Dot Product</h3>
+<p>We can express <span class="math inline">\cos \theta</span> using the <strong>dot product</strong> of two unit vectors:</p>
+<p><span class="math display">\cos \theta = \hat{\mathbf{n}} \cdot \hat{\mathbf{s}}</span></p>
+<p>Where: - <span class="math inline">\hat{\mathbf{n}}</span> is the unit normal vector to the surface - <span class="math inline">\hat{\mathbf{s}}</span> is the unit vector pointing toward the sun</p>
+<p><strong>The dot product</strong> of two vectors <span class="math inline">\mathbf{a} = (a_x, a_y, a_z)</span> and <span class="math inline">\mathbf{b} = (b_x, b_y, b_z)</span> is:</p>
+<p><span class="math display">\mathbf{a} \cdot \mathbf{b} = a_x b_x + a_y b_y + a_z b_z</span></p>
+<p><strong>Geometric interpretation:</strong></p>
+<p><span class="math display">\mathbf{a} \cdot \mathbf{b} = |\mathbf{a}| |\mathbf{b}| \cos \theta</span></p>
+<p>For <strong>unit vectors</strong> (<span class="math inline">|\hat{\mathbf{a}}| = |\hat{\mathbf{b}}| = 1</span>):</p>
+<p><span class="math display">\hat{\mathbf{a}} \cdot \hat{\mathbf{b}} = \cos \theta</span></p>
+<p>The dot product directly gives us the cosine of the angle between the vectors!</p>
+<hr>
+<h2 id="worked-example-by-hand" class="anchored">4. Worked Example by Hand</h2>
+<p><strong>Problem:</strong> A solar panel is tilted 35° from horizontal, facing due south. At solar noon on the equinox, the sun is at an elevation angle of 50° above the horizon (also due south).</p>
+<ol type="a">
+<li>What is the angle of incidence <span class="math inline">\theta</span> (angle between sun and surface normal)?<br>
+</li>
+<li>If incoming solar radiation is <span class="math inline">S_0 = 1000</span> W/m², what is the effective flux on the panel?</li>
+</ol>
+<h3 id="solution" class="anchored">Solution</h3>
+<p><strong>(a) Angle of incidence</strong></p>
+<p><strong>Surface normal:</strong> The panel tilts 35° from horizontal toward the south. The normal tilts 35° from vertical toward the south.</p>
+<p>In spherical coordinates (measuring from vertical): - Normal elevation from horizontal: $90° - 35° = 55°$</p>
+<p><strong>Sun direction:</strong> Elevation 50° above horizon, so zenith angle <span class="math inline">= 90° - 50° = 40°</span></p>
+<p>Both the sun and the surface normal are in the <strong>same vertical plane</strong> (the north-south meridian). The angle between them is:</p>
+<p><span class="math display">\theta = |55° - 40°| = 15°</span></p>
+<p><strong>(b) Effective flux</strong></p>
+<p><span class="math display">S = S_0 \cos \theta = 1000 \times \cos(15°)</span></p>
+<p><span class="math display">\cos(15°) \approx 0.966</span></p>
+<p><span class="math display">S \approx 966 \text{ W/m}^2</span></p>
+<p>The panel receives <strong>96.6%</strong> of the perpendicular solar flux — very nearly optimal!</p>
+<p><strong>Note:</strong> If the panel were horizontal, the flux would be:</p>
+<p><span class="math display">S_{\text{horiz}} = 1000 \times \cos(40°) = 1000 \times 0.766 = 766 \text{ W/m}^2</span></p>
+<p>The tilted panel receives <strong>26% more energy</strong> than a horizontal surface.</p>
+<hr>
+<h2 id="vector-calculation-example" class="anchored">5. Vector Calculation Example</h2>
+<p><strong>Problem:</strong> A surface has normal vector <span class="math inline">\mathbf{n} = (0.5, 0, 0.866)</span> (pointing northeast and upward). The sun direction is <span class="math inline">\mathbf{s} = (0.3, 0.3, 0.9)</span> (pointing slightly south and upward). Both are unit vectors.</p>
+<ol type="a">
+<li>Compute the angle of incidence.<br>
+</li>
+<li>If <span class="math inline">S_0 = 1200</span> W/m², what is the flux on the surface?</li>
+</ol>
+<h3 id="solution-1" class="anchored">Solution</h3>
+<p><strong>(a) Angle of incidence</strong></p>
+<p><span class="math display">\cos \theta = \mathbf{n} \cdot \mathbf{s} = (0.5)(0.3) + (0)(0.3) + (0.866)(0.9)</span></p>
+<p><span class="math display">= 0.15 + 0 + 0.779 = 0.929</span></p>
+<p><span class="math display">\theta = \arccos(0.929) \approx 21.6°</span></p>
+<p><strong>(b) Effective flux</strong></p>
+<p><span class="math display">S = 1200 \times 0.929 = 1115 \text{ W/m}^2</span></p>
+<hr>
+<h2 id="computational-implementation" class="anchored">6. Computational Implementation</h2>
+<p>Below is an interactive model showing solar flux on a tilted surface.</p>
+<div class="viz-container" id="solar-geometry-viz">
+<div class="controls">
+<label>
+Surface slope (β):
+<input type="range" id="slope-slider" min="0" max="60" step="5" value="30">
+<span id="slope-value">30</span>°
+</label>
+<label>
+Surface aspect (0° = N, 90° = E, 180° = S, 270° = W):
+<input type="range" id="aspect-slider" min="0" max="360" step="15" value="180">
+<span id="aspect-value">180</span>° (S)
+</label>
+<label>
+Solar elevation:
+<input type="range" id="elevation-slider" min="10" max="90" step="5" value="45">
+<span id="elevation-value">45</span>°
+</label>
+<label>
+Solar azimuth (0° = N, 90° = E, 180° = S):
+<input type="range" id="azimuth-slider" min="0" max="360" step="15" value="180">
+<span id="azimuth-value">180</span>° (S)
+</label>
+<label>
+Incoming flux (S₀):
+<input type="range" id="flux-slider" min="500" max="1200" step="50" value="1000">
+<span id="flux-value">1000</span> W/m²
+</label>
+</div>
+<div class="results-panel">
+<p id="incidence-angle"></p>
+<p id="effective-flux"></p>
+<p id="comparison"></p>
+</div>
+<div id="solar-diagram" style="width: 100%; height: 500px;"></div>
+</div>
+
+<script type="module">
+while (!window.echarts) await new Promise(r => setTimeout(r, 50));
+
+const chart = window.echarts.init(document.getElementById('solar-diagram'));
+
+let slope = 30;
+let aspect = 180;
+let solarElev = 45;
+let solarAz = 180;
+let S0 = 1000;
+
+function deg2rad(deg) { return deg * Math.PI / 180; }
+function rad2deg(rad) { return rad * 180 / Math.PI; }
+
+function sphericalToCartesian(elevation, azimuth) {
+const elev_rad = deg2rad(elevation);
+const az_rad = deg2rad(azimuth);
+return {
+x: Math.cos(elev_rad) * Math.sin(az_rad),
+y: Math.cos(elev_rad) * Math.cos(az_rad),
+z: Math.sin(elev_rad)
+};
+}
+
+function surfaceNormal(slope_deg, aspect_deg) {
+const slope_rad = deg2rad(slope_deg);
+const aspect_rad = deg2rad(aspect_deg);
+return {
+x: Math.sin(slope_rad) * Math.sin(aspect_rad),
+y: Math.sin(slope_rad) * Math.cos(aspect_rad),
+z: Math.cos(slope_rad)
+};
+}
+
+function dotProduct(a, b) {
+return a.x * b.x + a.y * b.y + a.z * b.z;
+}
+
+function updateCalculation() {
+const sunVec = sphericalToCartesian(solarElev, solarAz);
+const normalVec = surfaceNormal(slope, aspect);
+
+const cosTheta = dotProduct(sunVec, normalVec);
+const theta = rad2deg(Math.acos(Math.max(0, Math.min(1, cosTheta))));
+const effectiveFlux = Math.max(0, S0 * cosTheta);
+
+const horizontalCos = Math.sin(deg2rad(solarElev));
+const horizontalFlux = S0 * horizontalCos;
+const percentDiff = ((effectiveFlux - horizontalFlux) / horizontalFlux * 100).toFixed(1);
+
+document.getElementById('incidence-angle').innerHTML =
+`<strong>Angle of incidence:</strong> ${theta.toFixed(1)}°`;
+document.getElementById('effective-flux').innerHTML =
+`<strong>Effective flux on surface:</strong> ${effectiveFlux.toFixed(1)} W/m²`;
+document.getElementById('comparison').innerHTML =
+`<strong>Compared to horizontal:</strong> ${percentDiff > 0 ? '+' : ''}${percentDiff}% (${horizontalFlux.toFixed(1)} W/m² on horizontal surface)`;
+
+updateChart();
+}
+
+function updateChart() {
+const polarData = [];
+const aspectValues = [];
+
+for (let asp = 0; asp <= 360; asp += 10) {
+const normalVec = surfaceNormal(slope, asp);
+const sunVec = sphericalToCartesian(solarElev, solarAz);
+const cosTheta = dotProduct(sunVec, normalVec);
+aspectValues.push(asp);
+polarData.push(Math.max(0, S0 * cosTheta));
+}
+
+const option = {
+title: {
+text: `Solar Flux vs. Aspect (slope = ${slope}°, sun elev = ${solarElev}°)`,
+left: 'center'
+},
+polar: { radius: '70%' },
+angleAxis: {
+type: 'value',
+startAngle: 90,
+min: 0,
+max: 360,
+interval: 45,
+axisLabel: {
+formatter: value => {
+const dirs = {0: 'N', 45: 'NE', 90: 'E', 135: 'SE', 180: 'S', 225: 'SW', 270: 'W', 315: 'NW'};
+return dirs[value] || value + '°';
+}
+}
+},
+radiusAxis: {
+min: 0,
+max: S0,
+axisLabel: { formatter: '{value} W/m²' }
+},
+series: [{
+type: 'line',
+data: polarData.map((flux, i) => [aspectValues[i], flux]),
+coordinateSystem: 'polar',
+lineStyle: { color: '#F0177A', width: 3 },
+areaStyle: { color: 'rgba(240, 23, 122, 0.2)' },
+markPoint: {
+data: [{
+coord: [aspect, Math.max(0, S0 * dotProduct(
+sphericalToCartesian(solarElev, solarAz),
+surfaceNormal(slope, aspect)
+))],
+symbol: 'circle',
+symbolSize: 12,
+itemStyle: { color: '#00A8E8' },
+label: { show: true, formatter: 'Current', position: 'top' }
+}]
+}
+}]
+};
+
+chart.setOption(option);
+}
+
+document.getElementById('slope-slider').addEventListener('input', e => {
+slope = parseFloat(e.target.value);
+document.getElementById('slope-value').textContent = slope;
+updateCalculation();
+});
+
+document.getElementById('aspect-slider').addEventListener('input', e => {
+aspect = parseFloat(e.target.value);
+const dir = {0: 'N', 90: 'E', 180: 'S', 270: 'W'}[aspect] || '';
+document.getElementById('aspect-value').textContent = `${aspect}° ${dir ? '(' + dir + ')' : ''}`;
+updateCalculation();
+});
+
+document.getElementById('elevation-slider').addEventListener('input', e => {
+solarElev = parseFloat(e.target.value);
+document.getElementById('elevation-value').textContent = solarElev;
+updateCalculation();
+});
+
+document.getElementById('azimuth-slider').addEventListener('input', e => {
+solarAz = parseFloat(e.target.value);
+const dir = {0: 'N', 90: 'E', 180: 'S', 270: 'W'}[solarAz] || '';
+document.getElementById('azimuth-value').textContent = `${solarAz}° ${dir ? '(' + dir + ')' : ''}`;
+updateCalculation();
+});
+
+document.getElementById('flux-slider').addEventListener('input', e => {
+S0 = parseFloat(e.target.value);
+document.getElementById('flux-value').textContent = S0;
+updateCalculation();
+});
+
+updateCalculation();
+window.addEventListener('resize', () => chart.resize());
+</script>
+<p><strong>Try this:</strong></p>
+<ul>
+<li>Default (30° south-facing slope, sun at 45° elevation due south): Near-optimal alignment, high flux</li>
+<li>Change aspect to 0° (north-facing): Flux drops dramatically</li>
+<li>Set slope to 0° (horizontal): See how flux varies only with sun angle, not aspect</li>
+<li>Solar elevation to 90° (sun directly overhead): Horizontal surface receives maximum; all slopes receive equal flux</li>
+<li>Explore the polar plot: shows how flux varies with aspect for the current slope and sun position</li>
+</ul>
+<hr>
+<h2 id="interpretation" class="anchored">7. Interpretation</h2>
+<h3 id="why-south-facing-slopes-are-warmer-northern-hemisphere" class="anchored">Why South-Facing Slopes Are Warmer (Northern Hemisphere)</h3>
+<p>In the Northern Hemisphere: - The sun is always in the southern part of the sky at midday - South-facing slopes tilt <strong>toward</strong> the sun → smaller angle of incidence → more energy - North-facing slopes tilt <strong>away</strong> from the sun → larger angle of incidence → less energy</p>
+<p>This creates <strong>topoclimate</strong> effects: - South-facing slopes: warmer, drier, different vegetation (e.g., grassland vs.&nbsp;forest) - North-facing slopes: cooler, moister, more shade-tolerant species - Snowpack persists longer on north-facing slopes</p>
+<h3 id="seasonal-variation" class="anchored">Seasonal Variation</h3>
+<p>The sun’s elevation changes with season: - <strong>Summer solstice:</strong> High solar elevation → even horizontal surfaces receive high energy - <strong>Winter solstice:</strong> Low solar elevation → south-facing slopes receive much more than horizontal surfaces</p>
+<p>This is why <strong>winter heating</strong> in buildings benefits more from south-facing windows than summer cooling suffers from them.</p>
+<h3 id="optimal-solar-panel-tilt" class="anchored">Optimal Solar Panel Tilt</h3>
+<p>For maximum <strong>annual</strong> energy collection at latitude <span class="math inline">\phi</span>: - Tilt angle <span class="math inline">\approx \phi</span> (equal to latitude) - Face south (Northern Hemisphere) or north (Southern Hemisphere)</p>
+<p>For maximum <strong>winter</strong> energy (heating season): - Tilt angle <span class="math inline">\approx \phi + 15°</span></p>
+<p>For maximum <strong>summer</strong> energy (if needed): - Tilt angle <span class="math inline">\approx \phi - 15°</span></p>
+<hr>
+<h2 id="what-could-go-wrong" class="anchored">8. What Could Go Wrong?</h2>
+<h3 id="confusing-slope-and-aspect" class="anchored">Confusing Slope and Aspect</h3>
+<p><strong>Slope</strong> is how steep the surface is (0° = flat, 90° = vertical).<br>
+<strong>Aspect</strong> is which direction the surface faces (0° = north, 180° = south).</p>
+<p>A 30° north-facing slope and a 30° south-facing slope have the same slope but <strong>opposite</strong> energy receipts.</p>
+<h3 id="forgetting-the-cosine-can-be-negative" class="anchored">Forgetting the Cosine Can Be Negative</h3>
+<p>If <span class="math inline">\theta &gt; 90°</span>, then <span class="math inline">\cos \theta &lt; 0</span>. This means the surface is tilted <strong>away</strong> from the sun (backside).</p>
+<p>In reality, a backside surface receives zero direct solar radiation. The model should set negative values to zero:</p>
+<p><span class="math display">S = S_0 \max(0, \cos \theta)</span></p>
+<h3 id="ignoring-diffuse-radiation" class="anchored">Ignoring Diffuse Radiation</h3>
+<p>Our model assumes all radiation is <strong>direct</strong> (straight from the sun). In reality: - <strong>Diffuse radiation</strong> (scattered by atmosphere and clouds) comes from all directions - On cloudy days, diffuse radiation dominates (50–100% of total) - Diffuse radiation is less sensitive to surface orientation</p>
+<p>Full solar models separate direct and diffuse components.</p>
+<h3 id="neglecting-terrain-shading" class="anchored">Neglecting Terrain Shading</h3>
+<p>A slope may be oriented toward the sun but still in shadow due to adjacent ridges or peaks. This requires <strong>viewshed analysis</strong> (Model 9 previews this).</p>
+<hr>
+<h2 id="math-refresher-trigonometry-and-vectors" class="anchored">9. Math Refresher: Trigonometry and Vectors</h2>
+<h3 id="right-triangle-trigonometry" class="anchored">Right Triangle Trigonometry</h3>
+<p>For a right triangle with angle <span class="math inline">\theta</span>:</p>
+<p><span class="math display">\sin \theta = \frac{\text{opposite}}{\text{hypotenuse}}</span></p>
+<p><span class="math display">\cos \theta = \frac{\text{adjacent}}{\text{hypotenuse}}</span></p>
+<p><span class="math display">\tan \theta = \frac{\text{opposite}}{\text{adjacent}}</span></p>
+<h3 id="unit-circle" class="anchored">Unit Circle</h3>
+<p>On the unit circle (radius = 1): - <span class="math inline">\cos \theta</span> is the x-coordinate - <span class="math inline">\sin \theta</span> is the y-coordinate - <span class="math inline">\theta</span> is measured counterclockwise from the positive x-axis</p>
+<h3 id="dot-product-properties" class="anchored">Dot Product Properties</h3>
+<p><span class="math display">\mathbf{a} \cdot \mathbf{b} = \mathbf{b} \cdot \mathbf{a}</span> (commutative)</p>
+<p><span class="math display">\mathbf{a} \cdot (\mathbf{b} + \mathbf{c}) = \mathbf{a} \cdot \mathbf{b} + \mathbf{a} \cdot \mathbf{c}</span> (distributive)</p>
+<p><span class="math display">\mathbf{a} \cdot \mathbf{a} = |\mathbf{a}|^2</span> (magnitude squared)</p>
+<p>If <span class="math inline">\mathbf{a} \cdot \mathbf{b} = 0</span>, the vectors are <strong>perpendicular</strong>.</p>
+<hr>
+<h2 id="summary" class="anchored">Summary</h2>
+<ul>
+<li>Solar flux on a surface: <span class="math inline">S = S_0 \cos \theta</span>, where <span class="math inline">\theta</span> is the angle of incidence</li>
+<li><span class="math inline">\theta</span> is the angle between the sun direction and the surface normal</li>
+<li>The dot product <span class="math inline">\hat{\mathbf{n}} \cdot \hat{\mathbf{s}} = \cos \theta</span> gives us the projection factor</li>
+<li>South-facing slopes receive more energy than north-facing slopes (Northern Hemisphere)</li>
+<li>Optimal solar panel tilt ≈ latitude for annual energy maximization</li>
+<li>Real surfaces also receive diffuse radiation and may be shaded by terrain</li>
+</ul>
+<hr>
+
+
+<footer class="wayward-footer">
+  <div class="wayward-footer__inner">
+    <div class="wayward-footer__brand">
+      <div class="wayward-footer__logo">WaywardHouse<span>.</span></div>
+      <p>Understanding how place, economy, and environment interact through analysis, modelling, and open tools.</p>
+    </div>
+
+    <nav class="wayward-footer__group" aria-labelledby="footer-reading">
+      <h2 id="footer-reading" class="anchored">Reading</h2>
+      <a href="https://wayward.house/articles/">Articles</a>
+      <a href="https://wayward.house/learn/">Library</a>
+      <a href="https://wayward.house/archive.html">Archive</a>
+      <a href="https://wayward.house/start-here.html">Choose Your Path</a>
+    </nav>
+
+    <nav class="wayward-footer__group" aria-labelledby="footer-site">
+      <h2 id="footer-site" class="anchored">Site</h2>
+      <a href="https://wayward.house/start-here.html">Choose Your Path</a>
+      <a href="https://wayward.house/about.html">About</a>
+      <a href="https://wayward.house/contact.html">Contact</a>
+    </nav>
+
+    <nav class="wayward-footer__group" aria-labelledby="footer-resources">
+      <h2 id="footer-resources" class="anchored">Resources</h2>
+      <a href="https://wayward.house/topics/">All Topics</a>
+      <a href="https://wayward.house/privacy.html">Privacy Policy</a>
+      <a href="https://wayward.house/terms.html">Terms of Use</a>
+    </nav>
+  </div>
+</footer>
+
+<script type="module" src="../assets/dist/main.js"></script>
+<script type="module" src="../assets/js/core.js"></script>
+<script id="quarto-html-after-body" type="application/javascript">
+  window.document.addEventListener("DOMContentLoaded", function (event) {
+    const tabsets =  window.document.querySelectorAll(".panel-tabset-tabby")
+    tabsets.forEach(function(tabset) {
+      const tabby = new Tabby('#' + tabset.id);
+    });
+    const icon = "";
+    const anchorJS = new window.AnchorJS();
+    anchorJS.options = {
+      placement: 'right',
+      icon: icon
+    };
+    anchorJS.add('.anchored');
+    const isCodeAnnotation = (el) => {
+      for (const clz of el.classList) {
+        if (clz.startsWith('code-annotation-')) {                     
+          return true;
+        }
+      }
+      return false;
+    }
+    const onCopySuccess = function(e) {
+      // button target
+      const button = e.trigger;
+      // don't keep focus
+      button.blur();
+      // flash "checked"
+      button.classList.add('code-copy-button-checked');
+      var currentTitle = button.getAttribute("title");
+      button.setAttribute("title", "Copied!");
+      let tooltip;
+      if (window.bootstrap) {
+        button.setAttribute("data-bs-toggle", "tooltip");
+        button.setAttribute("data-bs-placement", "left");
+        button.setAttribute("data-bs-title", "Copied!");
+        tooltip = new bootstrap.Tooltip(button, 
+          { trigger: "manual", 
+            customClass: "code-copy-button-tooltip",
+            offset: [0, -8]});
+        tooltip.show();    
+      }
+      setTimeout(function() {
+        if (tooltip) {
+          tooltip.hide();
+          button.removeAttribute("data-bs-title");
+          button.removeAttribute("data-bs-toggle");
+          button.removeAttribute("data-bs-placement");
+        }
+        button.setAttribute("title", currentTitle);
+        button.classList.remove('code-copy-button-checked');
+      }, 1000);
+      // clear code selection
+      e.clearSelection();
+    }
+    const getTextToCopy = function(trigger) {
+      const outerScaffold = trigger.parentElement.cloneNode(true);
+      const codeEl = outerScaffold.querySelector('code');
+      for (const childEl of codeEl.children) {
+        if (isCodeAnnotation(childEl)) {
+          childEl.remove();
+        }
+      }
+      return codeEl.innerText;
+    }
+    const clipboard = new window.ClipboardJS('.code-copy-button:not([data-in-quarto-modal])', {
+      text: getTextToCopy
+    });
+    clipboard.on('success', onCopySuccess);
+    if (window.document.getElementById('quarto-embedded-source-code-modal')) {
+      const clipboardModal = new window.ClipboardJS('.code-copy-button[data-in-quarto-modal]', {
+        text: getTextToCopy,
+        container: window.document.getElementById('quarto-embedded-source-code-modal')
+      });
+      clipboardModal.on('success', onCopySuccess);
+    }
+      var localhostRegex = new RegExp(/^(?:http|https):\/\/localhost\:?[0-9]*\//);
+      var mailtoRegex = new RegExp(/^mailto:/);
+        var filterRegex = new RegExp('/' + window.location.host + '/');
+      var isInternal = (href) => {
+          return filterRegex.test(href) || localhostRegex.test(href) || mailtoRegex.test(href);
+      }
+      // Inspect non-navigation links and adorn them if external
+     var links = window.document.querySelectorAll('a[href]:not(.nav-link):not(.navbar-brand):not(.toc-action):not(.sidebar-link):not(.sidebar-item-toggle):not(.pagination-link):not(.no-external):not([aria-hidden]):not(.dropdown-item):not(.quarto-navigation-tool):not(.about-link)');
+      for (var i=0; i<links.length; i++) {
+        const link = links[i];
+        if (!isInternal(link.href)) {
+          // undo the damage that might have been done by quarto-nav.js in the case of
+          // links that we want to consider external
+          if (link.dataset.originalHref !== undefined) {
+            link.href = link.dataset.originalHref;
+          }
+        }
+      }
+    function tippyHover(el, contentFn, onTriggerFn, onUntriggerFn) {
+      const config = {
+        allowHTML: true,
+        maxWidth: 500,
+        delay: 100,
+        arrow: false,
+        appendTo: function(el) {
+            return el.parentElement;
+        },
+        interactive: true,
+        interactiveBorder: 10,
+        theme: 'light-border',
+        placement: 'bottom-start',
+      };
+      if (contentFn) {
+        config.content = contentFn;
+      }
+      if (onTriggerFn) {
+        config.onTrigger = onTriggerFn;
+      }
+      if (onUntriggerFn) {
+        config.onUntrigger = onUntriggerFn;
+      }
+      window.tippy(el, config); 
+    }
+    const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+    for (var i=0; i<noterefs.length; i++) {
+      const ref = noterefs[i];
+      tippyHover(ref, function() {
+        // use id or data attribute instead here
+        let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+        try { href = new URL(href).hash; } catch {}
+        const id = href.replace(/^#\/?/, "");
+        const note = window.document.getElementById(id);
+        if (note) {
+          return note.innerHTML;
+        } else {
+          return "";
+        }
+      });
+    }
+    const xrefs = window.document.querySelectorAll('a.quarto-xref');
+    const processXRef = (id, note) => {
+      // Strip column container classes
+      const stripColumnClz = (el) => {
+        el.classList.remove("page-full", "page-columns");
+        if (el.children) {
+          for (const child of el.children) {
+            stripColumnClz(child);
+          }
+        }
+      }
+      stripColumnClz(note)
+      if (id === null || id.startsWith('sec-')) {
+        // Special case sections, only their first couple elements
+        const container = document.createElement("div");
+        if (note.children && note.children.length > 2) {
+          container.appendChild(note.children[0].cloneNode(true));
+          for (let i = 1; i < note.children.length; i++) {
+            const child = note.children[i];
+            if (child.tagName === "P" && child.innerText === "") {
+              continue;
+            } else {
+              container.appendChild(child.cloneNode(true));
+              break;
+            }
+          }
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(container);
+          }
+          return container.innerHTML
+        } else {
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(note);
+          }
+          return note.innerHTML;
+        }
+      } else {
+        // Remove any anchor links if they are present
+        const anchorLink = note.querySelector('a.anchorjs-link');
+        if (anchorLink) {
+          anchorLink.remove();
+        }
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(note);
+        }
+        if (note.classList.contains("callout")) {
+          return note.outerHTML;
+        } else {
+          return note.innerHTML;
+        }
+      }
+    }
+    for (var i=0; i<xrefs.length; i++) {
+      const xref = xrefs[i];
+      tippyHover(xref, undefined, function(instance) {
+        instance.disable();
+        let url = xref.getAttribute('href');
+        let hash = undefined; 
+        if (url.startsWith('#')) {
+          hash = url;
+        } else {
+          try { hash = new URL(url).hash; } catch {}
+        }
+        if (hash) {
+          const id = hash.replace(/^#\/?/, "");
+          const note = window.document.getElementById(id);
+          if (note !== null) {
+            try {
+              const html = processXRef(id, note.cloneNode(true));
+              instance.setContent(html);
+            } finally {
+              instance.enable();
+              instance.show();
+            }
+          } else {
+            // See if we can fetch this
+            fetch(url.split('#')[0])
+            .then(res => res.text())
+            .then(html => {
+              const parser = new DOMParser();
+              const htmlDoc = parser.parseFromString(html, "text/html");
+              const note = htmlDoc.getElementById(id);
+              if (note !== null) {
+                const html = processXRef(id, note);
+                instance.setContent(html);
+              } 
+            }).finally(() => {
+              instance.enable();
+              instance.show();
+            });
+          }
+        } else {
+          // See if we can fetch a full url (with no hash to target)
+          // This is a special case and we should probably do some content thinning / targeting
+          fetch(url)
+          .then(res => res.text())
+          .then(html => {
+            const parser = new DOMParser();
+            const htmlDoc = parser.parseFromString(html, "text/html");
+            const note = htmlDoc.querySelector('main.content');
+            if (note !== null) {
+              // This should only happen for chapter cross references
+              // (since there is no id in the URL)
+              // remove the first header
+              if (note.children.length > 0 && note.children[0].tagName === "HEADER") {
+                note.children[0].remove();
+              }
+              const html = processXRef(null, note);
+              instance.setContent(html);
+            } 
+          }).finally(() => {
+            instance.enable();
+            instance.show();
+          });
+        }
+      }, function(instance) {
+      });
+    }
+        let selectedAnnoteEl;
+        const selectorForAnnotation = ( cell, annotation) => {
+          let cellAttr = 'data-code-cell="' + cell + '"';
+          let lineAttr = 'data-code-annotation="' +  annotation + '"';
+          const selector = 'span[' + cellAttr + '][' + lineAttr + ']';
+          return selector;
+        }
+        const selectCodeLines = (annoteEl) => {
+          const doc = window.document;
+          const targetCell = annoteEl.getAttribute("data-target-cell");
+          const targetAnnotation = annoteEl.getAttribute("data-target-annotation");
+          const annoteSpan = window.document.querySelector(selectorForAnnotation(targetCell, targetAnnotation));
+          const lines = annoteSpan.getAttribute("data-code-lines").split(",");
+          const lineIds = lines.map((line) => {
+            return targetCell + "-" + line;
+          })
+          let top = null;
+          let height = null;
+          let parent = null;
+          if (lineIds.length > 0) {
+              //compute the position of the single el (top and bottom and make a div)
+              const el = window.document.getElementById(lineIds[0]);
+              top = el.offsetTop;
+              height = el.offsetHeight;
+              parent = el.parentElement.parentElement;
+            if (lineIds.length > 1) {
+              const lastEl = window.document.getElementById(lineIds[lineIds.length - 1]);
+              const bottom = lastEl.offsetTop + lastEl.offsetHeight;
+              height = bottom - top;
+            }
+            if (top !== null && height !== null && parent !== null) {
+              // cook up a div (if necessary) and position it 
+              let div = window.document.getElementById("code-annotation-line-highlight");
+              if (div === null) {
+                div = window.document.createElement("div");
+                div.setAttribute("id", "code-annotation-line-highlight");
+                div.style.position = 'absolute';
+                parent.appendChild(div);
+              }
+              div.style.top = top - 2 + "px";
+              div.style.height = height + 4 + "px";
+              div.style.left = 0;
+              let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
+              if (gutterDiv === null) {
+                gutterDiv = window.document.createElement("div");
+                gutterDiv.setAttribute("id", "code-annotation-line-highlight-gutter");
+                gutterDiv.style.position = 'absolute';
+                const codeCell = window.document.getElementById(targetCell);
+                const gutter = codeCell.querySelector('.code-annotation-gutter');
+                gutter.appendChild(gutterDiv);
+              }
+              gutterDiv.style.top = top - 2 + "px";
+              gutterDiv.style.height = height + 4 + "px";
+            }
+            selectedAnnoteEl = annoteEl;
+          }
+        };
+        const unselectCodeLines = () => {
+          const elementsIds = ["code-annotation-line-highlight", "code-annotation-line-highlight-gutter"];
+          elementsIds.forEach((elId) => {
+            const div = window.document.getElementById(elId);
+            if (div) {
+              div.remove();
+            }
+          });
+          selectedAnnoteEl = undefined;
+        };
+          // Handle positioning of the toggle
+      window.addEventListener(
+        "resize",
+        throttle(() => {
+          elRect = undefined;
+          if (selectedAnnoteEl) {
+            selectCodeLines(selectedAnnoteEl);
+          }
+        }, 10)
+      );
+      function throttle(fn, ms) {
+      let throttle = false;
+      let timer;
+        return (...args) => {
+          if(!throttle) { // first call gets through
+              fn.apply(this, args);
+              throttle = true;
+          } else { // all the others get throttled
+              if(timer) clearTimeout(timer); // cancel #2
+              timer = setTimeout(() => {
+                fn.apply(this, args);
+                timer = throttle = false;
+              }, ms);
+          }
+        };
+      }
+        // Attach click handler to the DT
+        const annoteDls = window.document.querySelectorAll('dt[data-target-cell]');
+        for (const annoteDlNode of annoteDls) {
+          annoteDlNode.addEventListener('click', (event) => {
+            const clickedEl = event.target;
+            if (clickedEl !== selectedAnnoteEl) {
+              unselectCodeLines();
+              const activeEl = window.document.querySelector('dt[data-target-cell].code-annotation-active');
+              if (activeEl) {
+                activeEl.classList.remove('code-annotation-active');
+              }
+              selectCodeLines(clickedEl);
+              clickedEl.classList.add('code-annotation-active');
+            } else {
+              // Unselect the line
+              unselectCodeLines();
+              clickedEl.classList.remove('code-annotation-active');
+            }
+          });
+        }
+    const findCites = (el) => {
+      const parentEl = el.parentElement;
+      if (parentEl) {
+        const cites = parentEl.dataset.cites;
+        if (cites) {
+          return {
+            el,
+            cites: cites.split(' ')
+          };
+        } else {
+          return findCites(el.parentElement)
+        }
+      } else {
+        return undefined;
+      }
+    };
+    var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+    for (var i=0; i<bibliorefs.length; i++) {
+      const ref = bibliorefs[i];
+      const citeInfo = findCites(ref);
+      if (citeInfo) {
+        tippyHover(citeInfo.el, function() {
+          var popup = window.document.createElement('div');
+          citeInfo.cites.forEach(function(cite) {
+            var citeDiv = window.document.createElement('div');
+            citeDiv.classList.add('hanging-indent');
+            citeDiv.classList.add('csl-entry');
+            var biblioDiv = window.document.getElementById('ref-' + cite);
+            if (biblioDiv) {
+              citeDiv.innerHTML = biblioDiv.innerHTML;
+            }
+            popup.appendChild(citeDiv);
+          });
+          return popup.innerHTML;
+        });
+      }
+    }
+  });
+  </script>
+
+
+
+
+</body></html>

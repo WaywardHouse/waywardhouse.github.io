@@ -1,0 +1,1249 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
+
+<meta charset="utf-8">
+<meta name="generator" content="quarto-1.9.36">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+
+<meta name="dcterms.date" content="2026-02-27">
+<meta name="description" content="How do we image Earth through clouds and darkness? Synthetic Aperture Radar (SAR) transmits microwave pulses and processes returns to achieve high-resolution imaging independent of weather and illumination. This model derives range and azimuth resolution equations, implements backscatter analysis, demonstrates polarimetric decomposition, and shows applications from flood mapping to ship detection.">
+
+<title>SAR Fundamentals and Applications – Computational Geography</title>
+<style>
+/* Default styles provided by pandoc.
+** See https://pandoc.org/MANUAL.html#variables-for-html for config info.
+*/
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: min(4vw, 1.5em);}
+div.column{flex: auto; overflow-x: auto;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+  width: 0.8em;
+  margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
+  vertical-align: middle;
+}
+</style>
+
+
+<script src="../site_libs/clipboard/clipboard.min.js"></script>
+<script src="../site_libs/quarto-html/tabby.min.js"></script>
+<script src="../site_libs/quarto-html/popper.min.js"></script>
+<script src="../site_libs/quarto-html/tippy.umd.min.js"></script>
+<script src="../site_libs/quarto-html/anchor.min.js"></script>
+<link href="../site_libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="../site_libs/quarto-html/light-border.css" rel="stylesheet">
+<link href="../site_libs/quarto-html/quarto-html-640605f58ae58ee79329c070719e555b.min.css" rel="stylesheet" append-hash="true" data-mode="light">
+<link href="../site_libs/quarto-html/quarto-syntax-highlighting-845c23b38eaddc0f92fda52bfe77a8c8.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<script>
+  (function () {
+    document.documentElement.dataset.theme = 'light';
+    document.documentElement.dataset.brand = 'wayward';
+    try {
+      localStorage.removeItem('theme');
+    } catch (err) {
+      void err;
+    }
+  })();
+</script>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:ital,wght@0,300;0,400;0,600;0,700;0,800;0,900;1,700;1,800&amp;family=Barlow:wght@300;400;500;600&amp;family=IBM+Plex+Mono:ital,wght@0,300;0,400;0,500;1,300&amp;family=Literata:ital,opsz,wght@0,7..72,300;0,7..72,400;0,7..72,500;1,7..72,300;1,7..72,400&amp;display=swap" rel="stylesheet">
+
+  <script>window.backupDefine = window.define; window.define = undefined;</script><script src="https://cdn.jsdelivr.net/npm/katex@latest/dist/katex.min.js"></script>
+  <script>document.addEventListener("DOMContentLoaded", function () {
+ var mathElements = document.getElementsByClassName("math");
+ var macros = [];
+ for (var i = 0; i < mathElements.length; i++) {
+  var texText = mathElements[i].firstChild;
+  if (mathElements[i].tagName == "SPAN") {
+   katex.render(texText.data, mathElements[i], {
+    displayMode: mathElements[i].classList.contains('display'),
+    throwOnError: false,
+    macros: macros,
+    fleqn: false
+   });
+}}});
+  </script>
+  <script>window.define = window.backupDefine; window.backupDefine = undefined;</script><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@latest/dist/katex.min.css">
+
+<script type="text/javascript">
+const typesetMath = (el) => {
+  if (window.MathJax) {
+    // MathJax Typeset
+    window.MathJax.typeset([el]);
+  } else if (window.katex) {
+    // KaTeX Render
+    var mathElements = el.getElementsByClassName("math");
+    var macros = [];
+    for (var i = 0; i < mathElements.length; i++) {
+      var texText = mathElements[i].firstChild;
+      if (mathElements[i].tagName == "SPAN" && texText && texText.data) {
+        window.katex.render(texText.data, mathElements[i], {
+          displayMode: mathElements[i].classList.contains('display'),
+          throwOnError: false,
+          macros: macros,
+          fleqn: false
+        });
+      }
+    }
+  }
+}
+window.Quarto = {
+  typesetMath
+};
+</script>
+
+<link rel="stylesheet" href="../assets/css/quarto-wayward.css">
+</head>
+
+<body class="reading-body tag-hash-math tag-hash-viz">
+
+
+<header id="title-block-header">
+<h1 class="title"><span class="chapter-title">SAR Fundamentals and Applications</span></h1>
+<p class="subtitle">Synthetic aperture radar for all-weather Earth observation</p>
+
+<p class="date">2026-02-27</p>
+</header>
+
+<nav id="TOC" role="doc-toc">
+    <h2 id="toc-title">Table of contents</h2>
+   
+  <ul>
+  <li><a href="#before-you-start" id="toc-before-you-start">Before You Start</a></li>
+  <li><a href="#the-question" id="toc-the-question">1. The Question</a></li>
+  <li><a href="#the-conceptual-model" id="toc-the-conceptual-model">2. The Conceptual Model</a>
+  <ul>
+  <li><a href="#radar-fundamentals" id="toc-radar-fundamentals">Radar Fundamentals</a></li>
+  <li><a href="#synthetic-aperture" id="toc-synthetic-aperture">Synthetic Aperture</a></li>
+  <li><a href="#backscatter-coefficient" id="toc-backscatter-coefficient">Backscatter Coefficient</a></li>
+  </ul></li>
+  <li><a href="#building-the-mathematical-model" id="toc-building-the-mathematical-model">3. Building the Mathematical Model</a>
+  <ul>
+  <li><a href="#radar-range-equation" id="toc-radar-range-equation">Radar Range Equation</a></li>
+  <li><a href="#doppler-processing" id="toc-doppler-processing">Doppler Processing</a></li>
+  <li><a href="#polarimetry" id="toc-polarimetry">Polarimetry</a></li>
+  </ul></li>
+  <li><a href="#worked-example-by-hand" id="toc-worked-example-by-hand">4. Worked Example by Hand</a>
+  <ul>
+  <li><a href="#solution" id="toc-solution">Solution</a></li>
+  </ul></li>
+  <li><a href="#computational-implementation" id="toc-computational-implementation">5. Computational Implementation</a></li>
+  <li><a href="#interpretation" id="toc-interpretation">6. Interpretation</a>
+  <ul>
+  <li><a href="#flood-mapping" id="toc-flood-mapping">Flood Mapping</a></li>
+  <li><a href="#ship-detection" id="toc-ship-detection">Ship Detection</a></li>
+  <li><a href="#agriculture" id="toc-agriculture">Agriculture</a></li>
+  </ul></li>
+  <li><a href="#what-could-go-wrong" id="toc-what-could-go-wrong">7. What Could Go Wrong?</a>
+  <ul>
+  <li><a href="#speckle-noise" id="toc-speckle-noise">Speckle Noise</a></li>
+  <li><a href="#geometric-distortions" id="toc-geometric-distortions">Geometric Distortions</a></li>
+  <li><a href="#temporal-decorrelation" id="toc-temporal-decorrelation">Temporal Decorrelation</a></li>
+  <li><a href="#ambiguities" id="toc-ambiguities">Ambiguities</a></li>
+  </ul></li>
+  <li><a href="#extension-polarimetric-sar" id="toc-extension-polarimetric-sar">8. Extension: Polarimetric SAR</a></li>
+  <li><a href="#math-refresher-doppler-effect" id="toc-math-refresher-doppler-effect">9. Math Refresher: Doppler Effect</a>
+  <ul>
+  <li><a href="#frequency-shift" id="toc-frequency-shift">Frequency Shift</a></li>
+  <li><a href="#two-way-doppler-radar" id="toc-two-way-doppler-radar">Two-Way Doppler (Radar)</a></li>
+  </ul></li>
+  <li><a href="#summary" id="toc-summary">Summary</a></li>
+  </ul>
+</nav>
+<p>When Cyclone Idai made landfall in Mozambique in March 2019, it triggered floods that inundated hundreds of square kilometres of the Beira coastal plain. In the days following the storm, the sky remained cloudy — traditional optical satellites were blind. Sentinel-1, a European Space Agency radar satellite, imaged the flood extent through the cloud cover using C-band synthetic aperture radar. The flooded areas appeared dark in the radar imagery (smooth water reflects the radar pulse away from the satellite) against a brighter background of rough vegetation and soil. Emergency responders used those images to direct rescue operations, prioritise road repairs, and identify where populations were cut off. The flood maps were available within 24 hours of each satellite pass.</p>
+<p>Synthetic Aperture Radar operates fundamentally differently from optical remote sensing. Instead of detecting reflected sunlight, SAR transmits its own microwave pulses and records the backscattered energy. Microwaves penetrate cloud, haze, and smoke. They work equally well at night. Long-wavelength SAR can even penetrate the forest canopy to measure soil moisture or surface topography beneath. The “synthetic aperture” refers to the way the radar uses the satellite’s forward motion to synthesise a very long antenna — far longer than could be physically mounted on a spacecraft — achieving fine spatial resolution in the along-track direction. The mathematics of this synthesis is Fourier processing: the variation in Doppler shift across many transmitted pulses is the signal from which the image is focused. This model derives the resolution equations, explains the backscatter physics, and introduces the interferometric phase measurement that underlies InSAR deformation monitoring.</p>
+<h2 id="before-you-start" class="anchored">Before You Start</h2>
+<p>This chapter is advanced, but the conceptual spine is simple. SAR sends out its own microwave pulses, records the backscatter, and uses platform motion to create much finer along-track resolution than a short antenna should allow. If the signal-processing details get dense, keep returning to that core trick.</p>
+<h2 id="the-question" class="anchored">1. The Question</h2>
+<p>Can we monitor flooding in real-time even when clouds obscure optical satellites?</p>
+<p><strong>SAR (Synthetic Aperture Radar):</strong></p>
+<p>Active microwave sensor that creates its own illumination.</p>
+<p><strong>Key advantages:</strong></p>
+<p><strong>All-weather:</strong> Microwaves penetrate clouds, rain, smoke</p>
+<p><strong>Day/night:</strong> Active sensor, no sunlight needed</p>
+<p><strong>Penetration:</strong> Sees through vegetation canopy (long wavelengths)</p>
+<p><strong>Coherent:</strong> Phase information enables interferometry</p>
+<p><strong>Wavelength bands:</strong></p>
+<ul>
+<li>X-band: 3 cm (9.6 GHz) - High resolution, urban</li>
+<li>C-band: 6 cm (5.4 GHz) - General purpose, Sentinel-1</li>
+<li>L-band: 24 cm (1.3 GHz) - Vegetation penetration, ALOS-2</li>
+<li>P-band: 70 cm (430 MHz) - Deep penetration, biomass</li>
+</ul>
+<p><strong>Applications:</strong></p>
+<ul>
+<li>Flood mapping (water appears dark)</li>
+<li>Oil spill detection (dampens ocean waves)</li>
+<li>Ship detection (bright against dark ocean)</li>
+<li>Deformation monitoring (InSAR, Model 57)</li>
+<li>Sea ice mapping</li>
+<li>Agriculture (crop type, soil moisture)</li>
+<li>Disaster response (rapid mapping)</li>
+</ul>
+<hr>
+<h2 id="the-conceptual-model" class="anchored">2. The Conceptual Model</h2>
+<h3 id="radar-fundamentals" class="anchored">Radar Fundamentals</h3>
+<p><strong>Transmitted pulse:</strong></p>
+<p><span class="math display">P_t = P_{\text{peak}} \times \tau</span></p>
+<p>Where: - <span class="math inline">P_t</span> = transmitted power (W) - <span class="math inline">\tau</span> = pulse duration (seconds)</p>
+<p><strong>Range resolution:</strong></p>
+<p><span class="math display">\delta_r = \frac{c \tau}{2}</span></p>
+<p>Where <span class="math inline">c</span> = speed of light.</p>
+<p><strong>Example:</strong> <span class="math inline">\tau = 10</span> μs</p>
+<p><span class="math display">\delta_r = \frac{3 \times 10^8 \times 10 \times 10^{-6}}{2} = 1500 \text{ m}</span></p>
+<p><strong>Too coarse!</strong></p>
+<p><strong>Pulse compression:</strong></p>
+<p>Use chirped pulse (frequency modulation).</p>
+<p>Achieves:</p>
+<p><span class="math display">\delta_r = \frac{c}{2B}</span></p>
+<p>Where <span class="math inline">B</span> = bandwidth.</p>
+<p><strong>Example:</strong> <span class="math inline">B = 100</span> MHz</p>
+<p><span class="math display">\delta_r = \frac{3 \times 10^8}{2 \times 100 \times 10^6} = 1.5 \text{ m}</span></p>
+<p><strong>Much better resolution!</strong></p>
+<h3 id="synthetic-aperture" class="anchored">Synthetic Aperture</h3>
+<p><strong>Real aperture:</strong> Physical antenna size limits resolution.</p>
+<p><strong>Azimuth resolution (real aperture):</strong></p>
+<p><span class="math display">\delta_a = \frac{\lambda R}{L}</span></p>
+<p>Where: - <span class="math inline">\lambda</span> = wavelength - <span class="math inline">R</span> = range (distance to target) - <span class="math inline">L</span> = antenna length</p>
+<p><strong>Problem:</strong> For <span class="math inline">\lambda = 0.06</span> m (C-band), <span class="math inline">R = 800</span> km, <span class="math inline">L = 10</span> m:</p>
+<p><span class="math display">\delta_a = \frac{0.06 \times 800000}{10} = 4800 \text{ m}</span></p>
+<p><strong>4.8 km resolution - poor!</strong></p>
+<p><strong>Synthetic aperture:</strong></p>
+<p>Platform motion creates long virtual antenna.</p>
+<p><strong>Processing multiple pulses</strong> coherently.</p>
+<p><strong>Achieves:</strong></p>
+<p><span class="math display">\delta_a = \frac{L}{2}</span></p>
+<p><strong>Independent of range!</strong></p>
+<p>For <span class="math inline">L = 10</span> m: <span class="math inline">\delta_a = 5</span> m</p>
+<p><strong>Orders of magnitude improvement.</strong></p>
+<figure class="cg-ill">
+<div class="cg-ill__frame" data-markdown="1">
+<div class="cg-ill__eyebrow">
+SAR Geometry
+</div>
+<h3 class="cg-ill__title anchored">
+Motion Creates The Aperture That The Hardware Cannot Carry
+</h3>
+<p class="cg-ill__lede">
+SAR works because the same ground target is viewed from many nearby platform positions. The processor combines those repeated looks into one much longer synthetic aperture.
+</p>
+<div class="cg-ill__grid cg-ill__grid--2">
+<div class="cg-ill__card">
+<svg viewbox="0 0 560 300" role="img" aria-label="Synthetic aperture radar geometry with multiple pulse positions viewing the same target patch">
+  <rect x="0" y="0" width="560" height="300" rx="22" fill="#edf2f6"></rect>
+  <line x1="65" y1="68" x2="485" y2="68" stroke="#6b8191" stroke-width="5"></line>
+  <polygon points="485,68 469,60 469,76" fill="#6b8191"></polygon>
+  <text x="72" y="50" font-size="17" fill="#294657" font-weight="700">platform motion</text>
+  <rect x="120" y="56" width="18" height="18" rx="4" fill="#264653"></rect>
+  <rect x="220" y="56" width="18" height="18" rx="4" fill="#264653"></rect>
+  <rect x="320" y="56" width="18" height="18" rx="4" fill="#264653"></rect>
+  <rect x="420" y="56" width="18" height="18" rx="4" fill="#264653"></rect>
+  <text x="92" y="96" font-size="14" fill="#294657">pulse 1</text>
+  <text x="192" y="96" font-size="14" fill="#294657">pulse 2</text>
+  <text x="292" y="96" font-size="14" fill="#294657">pulse 3</text>
+  <text x="392" y="96" font-size="14" fill="#294657">pulse 4</text>
+  <polygon points="180,228 470,176 515,242 227,276" fill="#c6d3b7" stroke="#667a57" stroke-width="3"></polygon>
+  <ellipse cx="345" cy="222" rx="40" ry="22" fill="#f4d35e" stroke="#a77b00" stroke-width="3"></ellipse>
+  <text x="312" y="226" font-size="16" fill="#6f4e00" font-weight="700">target</text>
+  <line x1="129" y1="74" x2="326" y2="204" stroke="#2a9d8f" stroke-width="3" stroke-dasharray="7 6"></line>
+  <line x1="229" y1="74" x2="338" y2="203" stroke="#2a9d8f" stroke-width="3" stroke-dasharray="7 6"></line>
+  <line x1="329" y1="74" x2="352" y2="201" stroke="#2a9d8f" stroke-width="3" stroke-dasharray="7 6"></line>
+  <line x1="429" y1="74" x2="364" y2="202" stroke="#2a9d8f" stroke-width="3" stroke-dasharray="7 6"></line>
+  <text x="420" y="150" font-size="16" fill="#1f6f66">repeated looks</text>
+  <line x1="120" y1="120" x2="438" y2="120" stroke="#224f9c" stroke-width="6"></line>
+  <polygon points="120,120 132,114 132,126" fill="#224f9c"></polygon>
+  <polygon points="438,120 426,114 426,126" fill="#224f9c"></polygon>
+  <text x="188" y="114" font-size="17" fill="#224f9c" font-weight="700">synthetic aperture length</text>
+  <line x1="120" y1="45" x2="138" y2="45" stroke="#a64b2a" stroke-width="6"></line>
+  <text x="145" y="50" font-size="16" fill="#a64b2a">physical antenna</text>
+  <text x="54" y="260" font-size="16" fill="#294657">Range = across-track distance to target</text>
+  <text x="54" y="282" font-size="16" fill="#294657">Azimuth = along-track direction built from motion</text>
+</svg>
+</div>
+<div class="cg-ill__card">
+<h4 class="anchored">
+What the diagram is teaching
+</h4>
+<ul>
+<li>
+A real antenna only occupies one short platform position at a time.
+</li>
+<li>
+The same target stays in view across many pulses as the satellite moves forward.
+</li>
+<li>
+Those repeated observations are combined coherently, which is why azimuth resolution improves so dramatically.
+</li>
+<li>
+Range resolution comes from pulse bandwidth, but azimuth resolution comes from synthetic aperture formation.
+</li>
+</ul>
+<p>
+<strong>Memory aid:</strong> range is solved by timing, azimuth is solved by motion plus processing.
+</p>
+</div>
+</div>
+</div>
+</figure>
+<h3 id="backscatter-coefficient" class="anchored">Backscatter Coefficient</h3>
+<p><strong>Radar cross-section normalized by area:</strong></p>
+<p><span class="math display">\sigma^0 = \frac{P_r}{P_t} \times \frac{(4\pi)^3 R^4}{G^2 \lambda^2 A}</span></p>
+<p>Where: - <span class="math inline">\sigma^0</span> = backscatter coefficient (unitless, often dB) - <span class="math inline">G</span> = antenna gain - <span class="math inline">A</span> = illuminated area</p>
+<p><strong>Typical values (dB):</strong></p>
+<ul>
+<li>Water (calm): -25 to -15 dB (dark)</li>
+<li>Vegetation: -15 to -5 dB</li>
+<li>Urban: -5 to +5 dB (bright)</li>
+<li>Metal (corner reflector): +20 to +40 dB (very bright)</li>
+</ul>
+<p><strong>Image formation:</strong></p>
+<p>Pixel brightness ∝ <span class="math inline">\sigma^0</span></p>
+<p><strong>Interpretation:</strong></p>
+<ul>
+<li>Bright: Strong backscatter (rough, metallic)</li>
+<li>Dark: Weak backscatter (smooth, water)</li>
+</ul>
+<hr>
+<h2 id="building-the-mathematical-model" class="anchored">3. Building the Mathematical Model</h2>
+<h3 id="radar-range-equation" class="anchored">Radar Range Equation</h3>
+<p><strong>Received power:</strong></p>
+<p><span class="math display">P_r = \frac{P_t G^2 \lambda^2 \sigma}{(4\pi)^3 R^4}</span></p>
+<p><strong>Key:</strong> <span class="math inline">R^{-4}</span> dependence (two-way path loss)</p>
+<p><strong>Solving for range:</strong></p>
+<p><span class="math display">R = \left(\frac{P_t G^2 \lambda^2 \sigma}{(4\pi)^3 P_r}\right)^{1/4}</span></p>
+<p><strong>Maximum range:</strong></p>
+<p>Limited by signal-to-noise ratio:</p>
+<p><span class="math display">SNR = \frac{P_r}{P_n} &gt; SNR_{\text{threshold}}</span></p>
+<p>Typically <span class="math inline">SNR_{\text{threshold}} = 10</span> dB</p>
+<h3 id="doppler-processing" class="anchored">Doppler Processing</h3>
+<p><strong>Doppler shift from platform motion:</strong></p>
+<p><span class="math display">f_d = \frac{2v_r}{\lambda}</span></p>
+<p>Where: - <span class="math inline">v_r</span> = radial velocity component - <span class="math inline">\lambda</span> = wavelength</p>
+<p><strong>For satellite moving at 7 km/s, C-band:</strong></p>
+<p><span class="math display">f_d = \frac{2 \times 7000}{0.06} = 233 \text{ kHz}</span></p>
+<p><strong>Doppler history</strong> of point target creates chirp.</p>
+<p><strong>Azimuth compression:</strong></p>
+<p>Match filter to Doppler chirp → focus image.</p>
+<p><strong>Resolution:</strong></p>
+<p><span class="math display">\delta_a = \frac{L}{2}</span></p>
+<p>Half the real antenna length!</p>
+<h3 id="polarimetry" class="anchored">Polarimetry</h3>
+<p><strong>Transmit/receive polarization:</strong></p>
+<p><strong>HH:</strong> Horizontal transmit, horizontal receive<br>
+<strong>VV:</strong> Vertical transmit, vertical receive<br>
+<strong>HV:</strong> Horizontal transmit, vertical receive<br>
+<strong>VH:</strong> Vertical transmit, horizontal receive</p>
+<p><strong>Scattering matrix:</strong></p>
+<p><span class="math display">\mathbf{S} = \begin{bmatrix} S_{HH} &amp; S_{HV} \\ S_{VH} &amp; S_{VV} \end{bmatrix}</span></p>
+<p><strong>Different targets, different polarizations:</strong></p>
+<p><strong>Surface scattering (water):</strong> HH ≈ VV, HV ≈ 0<br>
+<strong>Double-bounce (urban):</strong> HH ≈ VV, strong<br>
+<strong>Volume scattering (forest):</strong> HV strong<br>
+<strong>Single-bounce (bare soil):</strong> HH &gt; VV</p>
+<p><strong>Decomposition:</strong></p>
+<p>Pauli basis:</p>
+<p><span class="math display">\mathbf{k} = \frac{1}{\sqrt{2}} \begin{bmatrix} S_{HH} + S_{VV} \\ S_{HH} - S_{VV} \\ 2S_{HV} \end{bmatrix}</span></p>
+<p><strong>Components:</strong></p>
+<ul>
+<li>Surface</li>
+<li>Double-bounce</li>
+<li>Volume</li>
+</ul>
+<hr>
+<h2 id="worked-example-by-hand" class="anchored">4. Worked Example by Hand</h2>
+<p><strong>Problem:</strong> Calculate SAR resolution and classify target.</p>
+<p><strong>SAR parameters:</strong></p>
+<ul>
+<li>Wavelength: 5.6 cm (C-band)</li>
+<li>Antenna length: 12 m</li>
+<li>Bandwidth: 150 MHz</li>
+<li>Range to target: 850 km</li>
+</ul>
+<p><strong>Target backscatter:</strong></p>
+<ul>
+<li>HH: -8 dB</li>
+<li>VV: -9 dB</li>
+<li>HV: -18 dB</li>
+</ul>
+<p>Calculate resolution and identify scattering mechanism.</p>
+<h3 id="solution" class="anchored">Solution</h3>
+<p><strong>Step 1: Range resolution</strong></p>
+<p><span class="math display">\delta_r = \frac{c}{2B} = \frac{3 \times 10^8}{2 \times 150 \times 10^6} = 1.0 \text{ m}</span></p>
+<p><strong>Step 2: Azimuth resolution</strong></p>
+<p><span class="math display">\delta_a = \frac{L}{2} = \frac{12}{2} = 6 \text{ m}</span></p>
+<p><strong>Step 3: Compare to real aperture</strong></p>
+<p><span class="math display">\delta_{a,\text{real}} = \frac{\lambda R}{L} = \frac{0.056 \times 850000}{12} = 3967 \text{ m}</span></p>
+<p><strong>Synthetic aperture improvement:</strong> 3967 / 6 = 661×</p>
+<p><strong>Step 4: Analyze polarimetry</strong></p>
+<p>HH ≈ VV (similar, both -8 to -9 dB)<br>
+HV weak (-18 dB, 10 dB below co-pol)</p>
+<p><strong>Ratio:</strong></p>
+<p><span class="math display">\frac{\sigma_{HV}}{\sigma_{HH}} = 10^{(-18 - (-8))/10} = 10^{-1} = 0.1</span></p>
+<p><strong>Cross-pol 10% of co-pol</strong></p>
+<p><strong>Step 5: Classification</strong></p>
+<p>Similar HH/VV → surface or double-bounce<br>
+Weak HV → not volume scattering</p>
+<p><strong>If bright (positive dB):</strong> Urban/double-bounce<br>
+<strong>If moderate (near 0 dB):</strong> Bare soil/surface<br>
+<strong>If dark (negative dB):</strong> Smooth surface</p>
+<p>Given -8 dB: <strong>Moderately rough surface</strong> (agricultural field, rough terrain)</p>
+<p><strong>Not:</strong> Forest (would have strong HV)<br>
+<strong>Not:</strong> Water (would be much darker, -20 dB)<br>
+<strong>Not:</strong> Urban (would be brighter, +5 dB)</p>
+<hr>
+<h2 id="computational-implementation" class="anchored">5. Computational Implementation</h2>
+<p>Below is an interactive SAR simulator.</p>
+<div class="viz-container" id="sar-viz">
+<div class="controls">
+<label>
+Wavelength band:
+<select id="wavelength-band">
+<option value="x">X-band (3 cm)</option>
+<option value="c" selected="">C-band (6 cm)</option>
+<option value="l">L-band (24 cm)</option>
+</select>
+</label>
+<label>
+Scene type:
+<select id="scene-type">
+<option value="water">Open water</option>
+<option value="urban" selected="">Urban area</option>
+<option value="forest">Forest</option>
+<option value="agriculture">Agriculture</option>
+</select>
+</label>
+<label>
+Incidence angle (°):
+<input type="range" id="incidence-angle" min="20" max="60" step="5" value="35">
+<span id="angle-val">35</span>
+</label>
+<div class="sar-info">
+<p><strong>Range resolution:</strong> <span id="range-res">--</span> m</p>
+<p><strong>Azimuth resolution:</strong> <span id="azimuth-res">--</span> m</p>
+<p><strong>Backscatter (HH):</strong> <span id="backscatter-hh">--</span> dB</p>
+<p><strong>Backscatter (VV):</strong> <span id="backscatter-vv">--</span> dB</p>
+<p><strong>Scattering type:</strong> <span id="scatter-type">--</span></p>
+</div>
+</div>
+<div id="sar-canvas-container">
+<canvas id="sar-canvas" width="700" height="400" style="border: 1px solid #ddd;"></canvas>
+</div>
+</div>
+
+<script type="module">
+(function() {
+const canvas = document.getElementById('sar-canvas');
+const ctx = canvas.getContext('2d');
+  
+let wavelengthBand = 'c';
+let sceneType = 'urban';
+let incidenceAngle = 35;
+  
+const bands = {
+'x': {wavelength: 0.03, name: 'X-band', bandwidth: 150e6},
+'c': {wavelength: 0.056, name: 'C-band', bandwidth: 100e6},
+'l': {wavelength: 0.24, name: 'L-band', bandwidth: 50e6}
+};
+  
+function getBackscatter(scene, angle) {
+// Simplified backscatter models (angle-dependent)
+const angleRad = angle * Math.PI / 180;
+const cosTheta = Math.cos(angleRad);
+    
+const models = {
+'water': {
+hh: -25 + 10 * (1 - cosTheta),
+vv: -23 + 10 * (1 - cosTheta),
+type: 'Surface (specular)'
+},
+'urban': {
+hh: 5 - 15 * (1 - cosTheta),
+vv: 3 - 15 * (1 - cosTheta),
+type: 'Double-bounce (dihedral)'
+},
+'forest': {
+hh: -10,
+vv: -12,
+type: 'Volume (multiple scatter)'
+},
+'agriculture': {
+hh: -8 - 5 * Math.sin(angleRad),
+vv: -10 - 5 * Math.sin(angleRad),
+type: 'Surface (diffuse)'
+}
+};
+    
+return models[scene];
+}
+  
+function render() {
+ctx.clearRect(0, 0, canvas.width, canvas.height);
+    
+const band = bands[wavelengthBand];
+const c = 3e8;
+    
+// Calculate resolutions
+const rangeRes = c / (2 * band.bandwidth);
+const antennaLength = 12; // m
+const azimuthRes = antennaLength / 2;
+    
+const backscatter = getBackscatter(sceneType, incidenceAngle);
+    
+// Update display
+document.getElementById('range-res').textContent = rangeRes.toFixed(1);
+document.getElementById('azimuth-res').textContent = azimuthRes.toFixed(1);
+document.getElementById('backscatter-hh').textContent = backscatter.hh.toFixed(1);
+document.getElementById('backscatter-vv').textContent = backscatter.vv.toFixed(1);
+document.getElementById('scatter-type').textContent = backscatter.type;
+    
+// Draw SAR geometry
+const satX = 100;
+const satY = 50;
+const targetX = 500;
+const targetY = 300;
+    
+// Satellite
+ctx.fillStyle = '#424242';
+ctx.fillRect(satX - 15, satY - 10, 30, 20);
+ctx.fillStyle = '#1976D2';
+ctx.fillRect(satX + 15, satY - 5, 30, 10); // Solar panel
+ctx.fillRect(satX - 45, satY - 5, 30, 10);
+    
+ctx.fillStyle = '#263238';
+ctx.font = '12px sans-serif';
+ctx.fillText('SAR Satellite', satX - 20, satY - 15);
+    
+// Radar beam
+ctx.strokeStyle = '#FFC107';
+ctx.lineWidth = 3;
+ctx.setLineDash([10, 5]);
+ctx.beginPath();
+ctx.moveTo(satX, satY + 10);
+ctx.lineTo(targetX, targetY);
+ctx.stroke();
+ctx.setLineDash([]);
+    
+// Incidence angle arc
+ctx.strokeStyle = '#F44336';
+ctx.lineWidth = 1;
+ctx.beginPath();
+const nadirX = satX;
+const nadirY = targetY;
+ctx.moveTo(nadirX, satY + 10);
+ctx.lineTo(nadirX, nadirY);
+ctx.stroke();
+    
+// Angle arc
+ctx.beginPath();
+ctx.arc(satX, satY + 10, 50, Math.PI / 2, Math.PI / 2 + incidenceAngle * Math.PI / 180);
+ctx.stroke();
+    
+ctx.fillText(`θ = ${incidenceAngle}°`, satX + 20, satY + 40);
+    
+// Target/ground
+const groundY = targetY + 20;
+ctx.fillStyle = '#8D6E63';
+ctx.fillRect(0, groundY, canvas.width, canvas.height - groundY);
+    
+// Target representation based on type
+if (sceneType === 'urban') {
+// Buildings
+ctx.fillStyle = '#757575';
+ctx.fillRect(targetX - 20, targetY - 30, 15, 30);
+ctx.fillRect(targetX + 5, targetY - 40, 20, 40);
+ctx.fillRect(targetX + 30, targetY - 25, 15, 25);
+} else if (sceneType === 'forest') {
+// Trees
+ctx.fillStyle = '#4CAF50';
+for (let i = 0; i < 5; i++) {
+const tx = targetX - 30 + i * 15;
+ctx.beginPath();
+ctx.arc(tx, targetY - 15, 8, 0, 2 * Math.PI);
+ctx.fill();
+}
+} else if (sceneType === 'water') {
+// Water surface
+ctx.fillStyle = '#2196F3';
+ctx.globalAlpha = 0.3;
+ctx.fillRect(targetX - 50, targetY - 5, 100, 5);
+ctx.globalAlpha = 1.0;
+} else {
+// Agriculture
+ctx.fillStyle = '#CDDC39';
+ctx.fillRect(targetX - 40, targetY - 10, 80, 10);
+}
+    
+// Backscatter visualization (brightness)
+const brightness = Math.max(0, Math.min(255, (backscatter.hh + 30) / 40 * 255));
+ctx.fillStyle = `rgb(${brightness}, ${brightness}, ${brightness})`;
+ctx.fillRect(600, 50, 80, 80);
+ctx.strokeStyle = '#000';
+ctx.strokeRect(600, 50, 80, 80);
+ctx.fillStyle = '#263238';
+ctx.fillText('SAR Image', 605, 145);
+ctx.fillText(`${brightness > 200 ? 'Bright' : brightness > 100 ? 'Moderate' : 'Dark'}`,
+610, 160);
+}
+  
+document.getElementById('wavelength-band').addEventListener('change', (e) => {
+wavelengthBand = e.target.value;
+render();
+});
+  
+document.getElementById('scene-type').addEventListener('change', (e) => {
+sceneType = e.target.value;
+render();
+});
+  
+document.getElementById('incidence-angle').addEventListener('input', (e) => {
+incidenceAngle = parseFloat(e.target.value);
+document.getElementById('angle-val').textContent = incidenceAngle;
+render();
+});
+  
+render();
+})();
+</script>
+<p><strong>Observations:</strong></p>
+<ul>
+<li>Urban areas show strong backscatter (bright in SAR images)</li>
+<li>Water appears dark (specular reflection away from sensor)</li>
+<li>Forest shows moderate backscatter with volume scattering</li>
+<li>Incidence angle affects backscatter magnitude</li>
+<li>Resolution independent of range (synthetic aperture advantage)</li>
+<li>Different wavelengths penetrate differently</li>
+</ul>
+<p><strong>Key insights:</strong></p>
+<ul>
+<li>SAR brightness reveals surface properties</li>
+<li>Polarimetry distinguishes scattering mechanisms</li>
+<li>All-weather capability critical for operational monitoring</li>
+<li>Synthetic aperture achieves fine resolution from space</li>
+</ul>
+<hr>
+<h2 id="interpretation" class="anchored">6. Interpretation</h2>
+<h3 id="flood-mapping" class="anchored">Flood Mapping</h3>
+<p><strong>Water detection:</strong></p>
+<p>SAR backscatter from water: -25 to -15 dB (dark)</p>
+<p><strong>Flooded areas:</strong> Very dark compared to surrounding land</p>
+<p><strong>Automated detection:</strong></p>
+<p>Threshold: <span class="math inline">\sigma^0 &lt; -15</span> dB → Water</p>
+<p><strong>Challenges:</strong></p>
+<ul>
+<li>Wind roughens water (brighter)</li>
+<li>Vegetation emergence (wet but not dark)</li>
+<li>Urban flooding (double-bounce from buildings)</li>
+</ul>
+<p><strong>Sentinel-1 operational:</strong></p>
+<ul>
+<li>6-day repeat (2 satellites)</li>
+<li>Free and open data</li>
+<li>Copernicus Emergency Management Service</li>
+</ul>
+<p><strong>Example - 2017 Texas flooding:</strong></p>
+<ul>
+<li>SAR mapped extent when clouds obscured optical</li>
+<li>Enabled emergency response routing</li>
+</ul>
+<h3 id="ship-detection" class="anchored">Ship Detection</h3>
+<p><strong>Ships = bright targets</strong> against dark ocean.</p>
+<p><strong>CFAR (Constant False Alarm Rate):</strong></p>
+<p><span class="math display">T = \mu + k\sigma</span></p>
+<p>Where: - <span class="math inline">T</span> = threshold - <span class="math inline">\mu</span> = background mean - <span class="math inline">\sigma</span> = background standard deviation - <span class="math inline">k</span> = constant (typically 3-5)</p>
+<p><strong>Pixel &gt; <span class="math inline">T</span> → Potential ship</strong></p>
+<p><strong>False alarms:</strong></p>
+<ul>
+<li>Waves (in high seas)</li>
+<li>Oil platforms</li>
+<li>Icebergs</li>
+</ul>
+<p><strong>Discrimination:</strong></p>
+<ul>
+<li>Size filter (ships 10-400 m)</li>
+<li>Shape analysis (elongated)</li>
+<li>AIS correlation (automatic identification system)</li>
+</ul>
+<p><strong>Applications:</strong></p>
+<ul>
+<li>Maritime surveillance</li>
+<li>Illegal fishing detection</li>
+<li>Search and rescue</li>
+<li>Traffic monitoring</li>
+</ul>
+<h3 id="agriculture" class="anchored">Agriculture</h3>
+<p><strong>Crop monitoring:</strong></p>
+<p><strong>Backscatter varies with:</strong></p>
+<ul>
+<li>Crop type (structure)</li>
+<li>Growth stage (biomass)</li>
+<li>Soil moisture (dielectric)</li>
+<li>Roughness</li>
+</ul>
+<p><strong>VV polarization:</strong> Sensitive to vertical structure (stems)</p>
+<p><strong>HH polarization:</strong> Sensitive to horizontal elements (leaves)</p>
+<p><strong>Temporal analysis:</strong></p>
+<p>Track backscatter through season: - Planting (low, bare soil) - Growth (increasing) - Maturity (peak) - Harvest (decrease)</p>
+<p><strong>Crop type classification:</strong></p>
+<p>Combine temporal signature with optical data.</p>
+<p><strong>Accuracy:</strong> 85-95% for major crops</p>
+<hr>
+<h2 id="what-could-go-wrong" class="anchored">7. What Could Go Wrong?</h2>
+<h3 id="speckle-noise" class="anchored">Speckle Noise</h3>
+<p><strong>Coherent imaging</strong> produces granular noise.</p>
+<p><strong>Speckle:</strong> Random constructive/destructive interference</p>
+<p><strong>Standard deviation = mean</strong> for single-look</p>
+<p><strong>Reduction:</strong></p>
+<p>Multi-looking: Average independent looks</p>
+<p><span class="math display">\sigma_{\text{speckle}} = \frac{\sigma}{\sqrt{N}}</span></p>
+<p>Where <span class="math inline">N</span> = number of looks.</p>
+<p><strong>Trade-off:</strong> Noise reduction vs resolution degradation</p>
+<p><strong>Filtering:</strong></p>
+<ul>
+<li>Lee filter</li>
+<li>Frost filter</li>
+<li>Gamma-MAP</li>
+</ul>
+<h3 id="geometric-distortions" class="anchored">Geometric Distortions</h3>
+<p><strong>Layover:</strong></p>
+<p>Targets closer to sensor than base → appear reversed</p>
+<p><strong>Common:</strong> Mountains toward sensor</p>
+<p><strong>Shadow:</strong></p>
+<p>Terrain blocks radar → no signal return</p>
+<p><strong>Common:</strong> Mountains away from sensor</p>
+<p><strong>Foreshortening:</strong></p>
+<p>Slopes compressed in range direction</p>
+<p><strong>Correction:</strong></p>
+<p>DEM required for geometric terrain correction (GTC)</p>
+<h3 id="temporal-decorrelation" class="anchored">Temporal Decorrelation</h3>
+<p><strong>Phase coherence</strong> required for InSAR.</p>
+<p><strong>Decorrelation sources:</strong></p>
+<ul>
+<li>Vegetation motion (wind)</li>
+<li>Soil moisture changes</li>
+<li>Snow melt/accumulation</li>
+</ul>
+<p><strong>Coherence:</strong></p>
+<p><span class="math display">\gamma = \frac{|\langle s_1 s_2^* \rangle|}{\sqrt{\langle |s_1|^2 \rangle \langle |s_2|^2 \rangle}}</span></p>
+<p>Where <span class="math inline">s_1</span>, <span class="math inline">s_2</span> = complex signals from two acquisitions.</p>
+<p><strong><span class="math inline">\gamma = 1</span>:</strong> Perfect coherence<br>
+<strong><span class="math inline">\gamma = 0</span>:</strong> Complete decorrelation</p>
+<p><strong>L-band better:</strong> Less decorrelation than C-band</p>
+<h3 id="ambiguities" class="anchored">Ambiguities</h3>
+<p><strong>Range ambiguities:</strong></p>
+<p>Signal from wrong swath enters image</p>
+<p><strong>Azimuth ambiguities:</strong></p>
+<p>Doppler aliasing creates ghost targets</p>
+<p><strong>Mitigation:</strong></p>
+<ul>
+<li>Careful PRF (pulse repetition frequency) selection</li>
+<li>Antenna pattern shaping</li>
+<li>Azimuth filtering</li>
+</ul>
+<hr>
+<h2 id="extension-polarimetric-sar" class="anchored">8. Extension: Polarimetric SAR</h2>
+<p><strong>Full polarimetry:</strong></p>
+<p>Measure complete scattering matrix <span class="math inline">\mathbf{S}</span></p>
+<p><strong>Freeman-Durden decomposition:</strong></p>
+<p><span class="math display">\langle T \rangle = f_s T_s + f_d T_d + f_v T_v</span></p>
+<p>Where: - <span class="math inline">f_s</span> = surface scattering fraction - <span class="math inline">f_d</span> = double-bounce fraction - <span class="math inline">f_v</span> = volume scattering fraction</p>
+<p><strong>RGB composite:</strong></p>
+<ul>
+<li>Red: Double-bounce (urban)</li>
+<li>Green: Volume (vegetation)</li>
+<li>Blue: Surface (bare soil, water)</li>
+</ul>
+<p><strong>Applications:</strong></p>
+<ul>
+<li>Land cover classification</li>
+<li>Crop type mapping</li>
+<li>Wetland characterization</li>
+<li>Snow/ice discrimination</li>
+</ul>
+<p><strong>Sensors:</strong></p>
+<ul>
+<li>ALOS-2 PALSAR-2 (L-band)</li>
+<li>RADARSAT-2 (C-band)</li>
+<li>Upcoming: NISAR (L+S band)</li>
+</ul>
+<hr>
+<h2 id="math-refresher-doppler-effect" class="anchored">9. Math Refresher: Doppler Effect</h2>
+<h3 id="frequency-shift" class="anchored">Frequency Shift</h3>
+<p><strong>Approaching source:</strong></p>
+<p><span class="math display">f' = f \frac{c + v_r}{c}</span></p>
+<p><strong>Receding source:</strong></p>
+<p><span class="math display">f' = f \frac{c - v_r}{c}</span></p>
+<p><strong>For <span class="math inline">v_r \ll c</span>:</strong></p>
+<p><span class="math display">\Delta f = f \frac{v_r}{c}</span></p>
+<h3 id="two-way-doppler-radar" class="anchored">Two-Way Doppler (Radar)</h3>
+<p><strong>Signal travels to and from target:</strong></p>
+<p><span class="math display">f_d = \frac{2v_r}{\lambda}</span></p>
+<p><strong>Independent of transmitted frequency!</strong></p>
+<p><strong>Example:</strong></p>
+<p>Satellite velocity: 7 km/s<br>
+Wavelength: 6 cm (C-band)</p>
+<p><span class="math display">f_d = \frac{2 \times 7000}{0.06} = 233 \text{ kHz}</span></p>
+<p><strong>Phase history</strong> creates azimuth signal.</p>
+<hr>
+<h2 id="summary" class="anchored">Summary</h2>
+<ul>
+<li>Synthetic Aperture Radar achieves fine resolution through coherent processing of multiple pulses</li>
+<li>Range resolution determined by bandwidth while azimuth resolution equals half antenna length</li>
+<li>All-weather capability enables imaging through clouds, rain, and darkness</li>
+<li>Backscatter coefficient reveals surface roughness and material properties</li>
+<li>Polarimetry distinguishes surface, double-bounce, and volume scattering mechanisms</li>
+<li>Applications span flood mapping, ship detection, agriculture monitoring, disaster response</li>
+<li>Speckle noise inherent to coherent imaging requires multi-looking or filtering</li>
+<li>Geometric distortions (layover, shadow) require DEM-based correction</li>
+<li>SAR interferometry enables millimeter-scale deformation measurement</li>
+<li>Critical technology for operational Earth observation and emergency response</li>
+</ul>
+<hr>
+
+
+<footer class="wayward-footer">
+  <div class="wayward-footer__inner">
+    <div class="wayward-footer__brand">
+      <div class="wayward-footer__logo">WaywardHouse<span>.</span></div>
+      <p>Understanding how place, economy, and environment interact through analysis, modelling, and open tools.</p>
+    </div>
+
+    <nav class="wayward-footer__group" aria-labelledby="footer-reading">
+      <h2 id="footer-reading" class="anchored">Reading</h2>
+      <a href="https://wayward.house/articles/">Articles</a>
+      <a href="https://wayward.house/learn/">Library</a>
+      <a href="https://wayward.house/archive.html">Archive</a>
+      <a href="https://wayward.house/start-here.html">Choose Your Path</a>
+    </nav>
+
+    <nav class="wayward-footer__group" aria-labelledby="footer-site">
+      <h2 id="footer-site" class="anchored">Site</h2>
+      <a href="https://wayward.house/start-here.html">Choose Your Path</a>
+      <a href="https://wayward.house/about.html">About</a>
+      <a href="https://wayward.house/contact.html">Contact</a>
+    </nav>
+
+    <nav class="wayward-footer__group" aria-labelledby="footer-resources">
+      <h2 id="footer-resources" class="anchored">Resources</h2>
+      <a href="https://wayward.house/topics/">All Topics</a>
+      <a href="https://wayward.house/privacy.html">Privacy Policy</a>
+      <a href="https://wayward.house/terms.html">Terms of Use</a>
+    </nav>
+  </div>
+</footer>
+
+<script type="module" src="../assets/dist/main.js"></script>
+<script type="module" src="../assets/js/core.js"></script>
+<script id="quarto-html-after-body" type="application/javascript">
+  window.document.addEventListener("DOMContentLoaded", function (event) {
+    const tabsets =  window.document.querySelectorAll(".panel-tabset-tabby")
+    tabsets.forEach(function(tabset) {
+      const tabby = new Tabby('#' + tabset.id);
+    });
+    const icon = "";
+    const anchorJS = new window.AnchorJS();
+    anchorJS.options = {
+      placement: 'right',
+      icon: icon
+    };
+    anchorJS.add('.anchored');
+    const isCodeAnnotation = (el) => {
+      for (const clz of el.classList) {
+        if (clz.startsWith('code-annotation-')) {                     
+          return true;
+        }
+      }
+      return false;
+    }
+    const onCopySuccess = function(e) {
+      // button target
+      const button = e.trigger;
+      // don't keep focus
+      button.blur();
+      // flash "checked"
+      button.classList.add('code-copy-button-checked');
+      var currentTitle = button.getAttribute("title");
+      button.setAttribute("title", "Copied!");
+      let tooltip;
+      if (window.bootstrap) {
+        button.setAttribute("data-bs-toggle", "tooltip");
+        button.setAttribute("data-bs-placement", "left");
+        button.setAttribute("data-bs-title", "Copied!");
+        tooltip = new bootstrap.Tooltip(button, 
+          { trigger: "manual", 
+            customClass: "code-copy-button-tooltip",
+            offset: [0, -8]});
+        tooltip.show();    
+      }
+      setTimeout(function() {
+        if (tooltip) {
+          tooltip.hide();
+          button.removeAttribute("data-bs-title");
+          button.removeAttribute("data-bs-toggle");
+          button.removeAttribute("data-bs-placement");
+        }
+        button.setAttribute("title", currentTitle);
+        button.classList.remove('code-copy-button-checked');
+      }, 1000);
+      // clear code selection
+      e.clearSelection();
+    }
+    const getTextToCopy = function(trigger) {
+      const outerScaffold = trigger.parentElement.cloneNode(true);
+      const codeEl = outerScaffold.querySelector('code');
+      for (const childEl of codeEl.children) {
+        if (isCodeAnnotation(childEl)) {
+          childEl.remove();
+        }
+      }
+      return codeEl.innerText;
+    }
+    const clipboard = new window.ClipboardJS('.code-copy-button:not([data-in-quarto-modal])', {
+      text: getTextToCopy
+    });
+    clipboard.on('success', onCopySuccess);
+    if (window.document.getElementById('quarto-embedded-source-code-modal')) {
+      const clipboardModal = new window.ClipboardJS('.code-copy-button[data-in-quarto-modal]', {
+        text: getTextToCopy,
+        container: window.document.getElementById('quarto-embedded-source-code-modal')
+      });
+      clipboardModal.on('success', onCopySuccess);
+    }
+      var localhostRegex = new RegExp(/^(?:http|https):\/\/localhost\:?[0-9]*\//);
+      var mailtoRegex = new RegExp(/^mailto:/);
+        var filterRegex = new RegExp('/' + window.location.host + '/');
+      var isInternal = (href) => {
+          return filterRegex.test(href) || localhostRegex.test(href) || mailtoRegex.test(href);
+      }
+      // Inspect non-navigation links and adorn them if external
+     var links = window.document.querySelectorAll('a[href]:not(.nav-link):not(.navbar-brand):not(.toc-action):not(.sidebar-link):not(.sidebar-item-toggle):not(.pagination-link):not(.no-external):not([aria-hidden]):not(.dropdown-item):not(.quarto-navigation-tool):not(.about-link)');
+      for (var i=0; i<links.length; i++) {
+        const link = links[i];
+        if (!isInternal(link.href)) {
+          // undo the damage that might have been done by quarto-nav.js in the case of
+          // links that we want to consider external
+          if (link.dataset.originalHref !== undefined) {
+            link.href = link.dataset.originalHref;
+          }
+        }
+      }
+    function tippyHover(el, contentFn, onTriggerFn, onUntriggerFn) {
+      const config = {
+        allowHTML: true,
+        maxWidth: 500,
+        delay: 100,
+        arrow: false,
+        appendTo: function(el) {
+            return el.parentElement;
+        },
+        interactive: true,
+        interactiveBorder: 10,
+        theme: 'light-border',
+        placement: 'bottom-start',
+      };
+      if (contentFn) {
+        config.content = contentFn;
+      }
+      if (onTriggerFn) {
+        config.onTrigger = onTriggerFn;
+      }
+      if (onUntriggerFn) {
+        config.onUntrigger = onUntriggerFn;
+      }
+      window.tippy(el, config); 
+    }
+    const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+    for (var i=0; i<noterefs.length; i++) {
+      const ref = noterefs[i];
+      tippyHover(ref, function() {
+        // use id or data attribute instead here
+        let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+        try { href = new URL(href).hash; } catch {}
+        const id = href.replace(/^#\/?/, "");
+        const note = window.document.getElementById(id);
+        if (note) {
+          return note.innerHTML;
+        } else {
+          return "";
+        }
+      });
+    }
+    const xrefs = window.document.querySelectorAll('a.quarto-xref');
+    const processXRef = (id, note) => {
+      // Strip column container classes
+      const stripColumnClz = (el) => {
+        el.classList.remove("page-full", "page-columns");
+        if (el.children) {
+          for (const child of el.children) {
+            stripColumnClz(child);
+          }
+        }
+      }
+      stripColumnClz(note)
+      if (id === null || id.startsWith('sec-')) {
+        // Special case sections, only their first couple elements
+        const container = document.createElement("div");
+        if (note.children && note.children.length > 2) {
+          container.appendChild(note.children[0].cloneNode(true));
+          for (let i = 1; i < note.children.length; i++) {
+            const child = note.children[i];
+            if (child.tagName === "P" && child.innerText === "") {
+              continue;
+            } else {
+              container.appendChild(child.cloneNode(true));
+              break;
+            }
+          }
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(container);
+          }
+          return container.innerHTML
+        } else {
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(note);
+          }
+          return note.innerHTML;
+        }
+      } else {
+        // Remove any anchor links if they are present
+        const anchorLink = note.querySelector('a.anchorjs-link');
+        if (anchorLink) {
+          anchorLink.remove();
+        }
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(note);
+        }
+        if (note.classList.contains("callout")) {
+          return note.outerHTML;
+        } else {
+          return note.innerHTML;
+        }
+      }
+    }
+    for (var i=0; i<xrefs.length; i++) {
+      const xref = xrefs[i];
+      tippyHover(xref, undefined, function(instance) {
+        instance.disable();
+        let url = xref.getAttribute('href');
+        let hash = undefined; 
+        if (url.startsWith('#')) {
+          hash = url;
+        } else {
+          try { hash = new URL(url).hash; } catch {}
+        }
+        if (hash) {
+          const id = hash.replace(/^#\/?/, "");
+          const note = window.document.getElementById(id);
+          if (note !== null) {
+            try {
+              const html = processXRef(id, note.cloneNode(true));
+              instance.setContent(html);
+            } finally {
+              instance.enable();
+              instance.show();
+            }
+          } else {
+            // See if we can fetch this
+            fetch(url.split('#')[0])
+            .then(res => res.text())
+            .then(html => {
+              const parser = new DOMParser();
+              const htmlDoc = parser.parseFromString(html, "text/html");
+              const note = htmlDoc.getElementById(id);
+              if (note !== null) {
+                const html = processXRef(id, note);
+                instance.setContent(html);
+              } 
+            }).finally(() => {
+              instance.enable();
+              instance.show();
+            });
+          }
+        } else {
+          // See if we can fetch a full url (with no hash to target)
+          // This is a special case and we should probably do some content thinning / targeting
+          fetch(url)
+          .then(res => res.text())
+          .then(html => {
+            const parser = new DOMParser();
+            const htmlDoc = parser.parseFromString(html, "text/html");
+            const note = htmlDoc.querySelector('main.content');
+            if (note !== null) {
+              // This should only happen for chapter cross references
+              // (since there is no id in the URL)
+              // remove the first header
+              if (note.children.length > 0 && note.children[0].tagName === "HEADER") {
+                note.children[0].remove();
+              }
+              const html = processXRef(null, note);
+              instance.setContent(html);
+            } 
+          }).finally(() => {
+            instance.enable();
+            instance.show();
+          });
+        }
+      }, function(instance) {
+      });
+    }
+        let selectedAnnoteEl;
+        const selectorForAnnotation = ( cell, annotation) => {
+          let cellAttr = 'data-code-cell="' + cell + '"';
+          let lineAttr = 'data-code-annotation="' +  annotation + '"';
+          const selector = 'span[' + cellAttr + '][' + lineAttr + ']';
+          return selector;
+        }
+        const selectCodeLines = (annoteEl) => {
+          const doc = window.document;
+          const targetCell = annoteEl.getAttribute("data-target-cell");
+          const targetAnnotation = annoteEl.getAttribute("data-target-annotation");
+          const annoteSpan = window.document.querySelector(selectorForAnnotation(targetCell, targetAnnotation));
+          const lines = annoteSpan.getAttribute("data-code-lines").split(",");
+          const lineIds = lines.map((line) => {
+            return targetCell + "-" + line;
+          })
+          let top = null;
+          let height = null;
+          let parent = null;
+          if (lineIds.length > 0) {
+              //compute the position of the single el (top and bottom and make a div)
+              const el = window.document.getElementById(lineIds[0]);
+              top = el.offsetTop;
+              height = el.offsetHeight;
+              parent = el.parentElement.parentElement;
+            if (lineIds.length > 1) {
+              const lastEl = window.document.getElementById(lineIds[lineIds.length - 1]);
+              const bottom = lastEl.offsetTop + lastEl.offsetHeight;
+              height = bottom - top;
+            }
+            if (top !== null && height !== null && parent !== null) {
+              // cook up a div (if necessary) and position it 
+              let div = window.document.getElementById("code-annotation-line-highlight");
+              if (div === null) {
+                div = window.document.createElement("div");
+                div.setAttribute("id", "code-annotation-line-highlight");
+                div.style.position = 'absolute';
+                parent.appendChild(div);
+              }
+              div.style.top = top - 2 + "px";
+              div.style.height = height + 4 + "px";
+              div.style.left = 0;
+              let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
+              if (gutterDiv === null) {
+                gutterDiv = window.document.createElement("div");
+                gutterDiv.setAttribute("id", "code-annotation-line-highlight-gutter");
+                gutterDiv.style.position = 'absolute';
+                const codeCell = window.document.getElementById(targetCell);
+                const gutter = codeCell.querySelector('.code-annotation-gutter');
+                gutter.appendChild(gutterDiv);
+              }
+              gutterDiv.style.top = top - 2 + "px";
+              gutterDiv.style.height = height + 4 + "px";
+            }
+            selectedAnnoteEl = annoteEl;
+          }
+        };
+        const unselectCodeLines = () => {
+          const elementsIds = ["code-annotation-line-highlight", "code-annotation-line-highlight-gutter"];
+          elementsIds.forEach((elId) => {
+            const div = window.document.getElementById(elId);
+            if (div) {
+              div.remove();
+            }
+          });
+          selectedAnnoteEl = undefined;
+        };
+          // Handle positioning of the toggle
+      window.addEventListener(
+        "resize",
+        throttle(() => {
+          elRect = undefined;
+          if (selectedAnnoteEl) {
+            selectCodeLines(selectedAnnoteEl);
+          }
+        }, 10)
+      );
+      function throttle(fn, ms) {
+      let throttle = false;
+      let timer;
+        return (...args) => {
+          if(!throttle) { // first call gets through
+              fn.apply(this, args);
+              throttle = true;
+          } else { // all the others get throttled
+              if(timer) clearTimeout(timer); // cancel #2
+              timer = setTimeout(() => {
+                fn.apply(this, args);
+                timer = throttle = false;
+              }, ms);
+          }
+        };
+      }
+        // Attach click handler to the DT
+        const annoteDls = window.document.querySelectorAll('dt[data-target-cell]');
+        for (const annoteDlNode of annoteDls) {
+          annoteDlNode.addEventListener('click', (event) => {
+            const clickedEl = event.target;
+            if (clickedEl !== selectedAnnoteEl) {
+              unselectCodeLines();
+              const activeEl = window.document.querySelector('dt[data-target-cell].code-annotation-active');
+              if (activeEl) {
+                activeEl.classList.remove('code-annotation-active');
+              }
+              selectCodeLines(clickedEl);
+              clickedEl.classList.add('code-annotation-active');
+            } else {
+              // Unselect the line
+              unselectCodeLines();
+              clickedEl.classList.remove('code-annotation-active');
+            }
+          });
+        }
+    const findCites = (el) => {
+      const parentEl = el.parentElement;
+      if (parentEl) {
+        const cites = parentEl.dataset.cites;
+        if (cites) {
+          return {
+            el,
+            cites: cites.split(' ')
+          };
+        } else {
+          return findCites(el.parentElement)
+        }
+      } else {
+        return undefined;
+      }
+    };
+    var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+    for (var i=0; i<bibliorefs.length; i++) {
+      const ref = bibliorefs[i];
+      const citeInfo = findCites(ref);
+      if (citeInfo) {
+        tippyHover(citeInfo.el, function() {
+          var popup = window.document.createElement('div');
+          citeInfo.cites.forEach(function(cite) {
+            var citeDiv = window.document.createElement('div');
+            citeDiv.classList.add('hanging-indent');
+            citeDiv.classList.add('csl-entry');
+            var biblioDiv = window.document.getElementById('ref-' + cite);
+            if (biblioDiv) {
+              citeDiv.innerHTML = biblioDiv.innerHTML;
+            }
+            popup.appendChild(citeDiv);
+          });
+          return popup.innerHTML;
+        });
+      }
+    }
+  });
+  </script>
+
+
+
+
+</body></html>
