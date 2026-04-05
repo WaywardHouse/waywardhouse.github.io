@@ -278,13 +278,13 @@ function renderTopWayfinding(pathname, chapterTitle) {
   `;
 }
 
-function renderPagerCard(kind, item, fallbackHref, fallbackLabel, description) {
+function renderPagerCard(kind, item, fallbackHref, fallbackLabel, itemDescription, fallbackDescription) {
   if (!item) {
     return `
       <a class="wayward-pager-card wayward-pager-card--muted" href="${escapeHtml(fallbackHref)}">
         <span class="wayward-pager-card__eyebrow">${escapeHtml(kind)}</span>
         <strong>${escapeHtml(fallbackLabel)}</strong>
-        <p>${escapeHtml(description)}</p>
+        <p>${escapeHtml(fallbackDescription)}</p>
       </a>
     `;
   }
@@ -293,7 +293,7 @@ function renderPagerCard(kind, item, fallbackHref, fallbackLabel, description) {
     <a class="wayward-pager-card" href="${escapeHtml(item.href || fallbackHref)}">
       <span class="wayward-pager-card__eyebrow">${escapeHtml(kind)}</span>
       <strong>${escapeHtml(resolveNavTitle(item.href, item.title))}</strong>
-      <p>${escapeHtml(description)}</p>
+      <p>${escapeHtml(itemDescription)}</p>
     </a>
   `;
 }
@@ -318,13 +318,27 @@ function renderBottomWayfinding(pathname) {
   nav.className = 'wayward-reading-pager';
   nav.setAttribute('aria-label', 'Chapter navigation');
   nav.innerHTML = `
-    ${renderPagerCard('Previous', previousItem, sectionHref, 'Back to start of chapter', 'Return to the section opener for this chapter path.')}
+    ${renderPagerCard(
+      'Previous',
+      previousItem,
+      sectionHref,
+      'Back to start of chapter',
+      'Read the previous chapter in this path.',
+      'Return to the section opener for this chapter path.',
+    )}
     <div class="wayward-pager-card wayward-pager-card--current" aria-current="page">
       <span class="wayward-pager-card__eyebrow">Where you are</span>
       <strong>${escapeHtml(currentChapterTitle)}</strong>
       <p>${escapeHtml(progress)}</p>
     </div>
-    ${renderPagerCard('Next', nextItem, sectionHref, 'Chapter path complete', 'You’ve reached the end of this chapter path.')}
+    ${renderPagerCard(
+      'Next',
+      nextItem,
+      sectionHref,
+      'Chapter path complete',
+      'Continue to the next chapter in this path.',
+      'You’ve reached the end of this chapter path.',
+    )}
   `;
 
   return nav;
