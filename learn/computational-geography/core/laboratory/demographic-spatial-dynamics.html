@@ -1,0 +1,842 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
+
+<meta charset="utf-8">
+<meta name="generator" content="quarto-1.9.36">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+
+<meta name="dcterms.date" content="2026-03-05">
+<meta name="description" content="A city that was growing in 1990 may be shrinking in 2025 — not because people are leaving, but because the cohorts that drove its growth have aged past childbearing, their children have moved elsewhere, and in-migration has slowed. Demographic change is not just a count — it is a structured process involving age-sex-specific fertility, mortality, and migration rates that compound over decades. This essay derives the cohort-component model, builds the Leslie matrix, applies the gravity model to migration flows, and examines the geography of population ageing and shrinking cities.">
+
+<title>Demographic Spatial Dynamics – Computational Geography</title>
+<style>
+/* Default styles provided by pandoc.
+** See https://pandoc.org/MANUAL.html#variables-for-html for config info.
+*/
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: min(4vw, 1.5em);}
+div.column{flex: auto; overflow-x: auto;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+  width: 0.8em;
+  margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
+  vertical-align: middle;
+}
+</style>
+
+
+<script src="../site_libs/clipboard/clipboard.min.js"></script>
+<script src="../site_libs/quarto-html/tabby.min.js"></script>
+<script src="../site_libs/quarto-html/popper.min.js"></script>
+<script src="../site_libs/quarto-html/tippy.umd.min.js"></script>
+<script src="../site_libs/quarto-html/anchor.min.js"></script>
+<link href="../site_libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="../site_libs/quarto-html/light-border.css" rel="stylesheet">
+<link href="../site_libs/quarto-html/quarto-html-640605f58ae58ee79329c070719e555b.min.css" rel="stylesheet" append-hash="true" data-mode="light">
+<link href="../site_libs/quarto-html/quarto-syntax-highlighting-845c23b38eaddc0f92fda52bfe77a8c8.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<script>
+  (function () {
+    document.documentElement.dataset.theme = 'light';
+    document.documentElement.dataset.brand = 'wayward';
+    try {
+      localStorage.removeItem('theme');
+    } catch (err) {
+      void err;
+    }
+  })();
+</script>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:ital,wght@0,300;0,400;0,600;0,700;0,800;0,900;1,700;1,800&amp;family=Barlow:wght@300;400;500;600&amp;family=IBM+Plex+Mono:ital,wght@0,300;0,400;0,500;1,300&amp;family=Literata:ital,opsz,wght@0,7..72,300;0,7..72,400;0,7..72,500;1,7..72,300;1,7..72,400&amp;display=swap" rel="stylesheet">
+
+  <script>window.backupDefine = window.define; window.define = undefined;</script><script src="https://cdn.jsdelivr.net/npm/katex@latest/dist/katex.min.js"></script>
+  <script>document.addEventListener("DOMContentLoaded", function () {
+ var mathElements = document.getElementsByClassName("math");
+ var macros = [];
+ for (var i = 0; i < mathElements.length; i++) {
+  var texText = mathElements[i].firstChild;
+  if (mathElements[i].tagName == "SPAN") {
+   katex.render(texText.data, mathElements[i], {
+    displayMode: mathElements[i].classList.contains('display'),
+    throwOnError: false,
+    macros: macros,
+    fleqn: false
+   });
+}}});
+  </script>
+  <script>window.define = window.backupDefine; window.backupDefine = undefined;</script><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@latest/dist/katex.min.css">
+
+<script type="text/javascript">
+const typesetMath = (el) => {
+  if (window.MathJax) {
+    // MathJax Typeset
+    window.MathJax.typeset([el]);
+  } else if (window.katex) {
+    // KaTeX Render
+    var mathElements = el.getElementsByClassName("math");
+    var macros = [];
+    for (var i = 0; i < mathElements.length; i++) {
+      var texText = mathElements[i].firstChild;
+      if (mathElements[i].tagName == "SPAN" && texText && texText.data) {
+        window.katex.render(texText.data, mathElements[i], {
+          displayMode: mathElements[i].classList.contains('display'),
+          throwOnError: false,
+          macros: macros,
+          fleqn: false
+        });
+      }
+    }
+  }
+}
+window.Quarto = {
+  typesetMath
+};
+</script>
+
+<link rel="stylesheet" href="../assets/css/quarto-wayward.css">
+</head>
+
+<body class="reading-body tag-hash-math tag-hash-viz">
+
+
+<header id="title-block-header">
+<h1 class="title"><span class="chapter-title">Demographic Spatial Dynamics</span></h1>
+<p class="subtitle">Cohort-component projection, migration flows, and the geography of ageing</p>
+
+<p class="date">2026-03-05</p>
+</header>
+
+<nav id="TOC" role="doc-toc">
+    <h2 id="toc-title">Table of contents</h2>
+   
+  <ul>
+  <li><a href="#before-you-start" id="toc-before-you-start">Before You Start</a></li>
+  <li><a href="#the-question" id="toc-the-question">1. The Question</a></li>
+  <li><a href="#the-conceptual-model" id="toc-the-conceptual-model">2. The Conceptual Model</a></li>
+  <li><a href="#building-the-mathematical-model" id="toc-building-the-mathematical-model">3. Building the Mathematical Model</a>
+  <ul>
+  <li><a href="#the-cohort-component-model-single-region" id="toc-the-cohort-component-model-single-region">3.1 The Cohort-Component Model: Single Region</a></li>
+  <li><a href="#the-leslie-matrix" id="toc-the-leslie-matrix">3.2 The Leslie Matrix</a></li>
+  <li><a href="#multi-region-extension-and-migration" id="toc-multi-region-extension-and-migration">3.3 Multi-Region Extension and Migration</a></li>
+  <li><a href="#gravity-model-for-migration-flows" id="toc-gravity-model-for-migration-flows">3.4 Gravity Model for Migration Flows</a></li>
+  <li><a href="#population-ageing-and-the-dependency-ratio" id="toc-population-ageing-and-the-dependency-ratio">3.5 Population Ageing and the Dependency Ratio</a></li>
+  <li><a href="#shrinking-cities" id="toc-shrinking-cities">3.6 Shrinking Cities</a></li>
+  </ul></li>
+  <li><a href="#worked-example-by-hand" id="toc-worked-example-by-hand">4. Worked Example by Hand</a></li>
+  <li><a href="#computational-implementation" id="toc-computational-implementation">5. Computational Implementation</a></li>
+  <li><a href="#visualization" id="toc-visualization">6. Visualization</a></li>
+  <li><a href="#interpretation" id="toc-interpretation">7. Interpretation</a></li>
+  <li><a href="#what-could-go-wrong" id="toc-what-could-go-wrong">8. What Could Go Wrong?</a></li>
+  <li><a href="#summary" id="toc-summary">9. Summary</a></li>
+  <li><a href="#math-refresher" id="toc-math-refresher">Math Refresher</a></li>
+  </ul>
+</nav>
+<h2 id="before-you-start" class="anchored">Before You Start</h2>
+<p><strong>You should know</strong><br>
+That population change depends on births, deaths, and migration, and that age structure matters as much as total population size.</p>
+<p><strong>You will learn</strong><br>
+How cohort-component and Leslie-matrix models work, how migration redistributes population, and why ageing and shrinkage have distinct spatial signatures.</p>
+<p><strong>Why this matters</strong><br>
+Demographic change reshapes cities and regions through structured processes that can be modeled rather than guessed.</p>
+<p><strong>If this gets hard, focus on…</strong><br>
+The idea that each age cohort moves forward in time with survival, births, and migration applied separately.</p>
+<p>In 2022, for the first time in its recorded history, Japan’s total population fell below 125 million — a milestone that demographers had been projecting for decades. Japan’s fertility rate had been below replacement since 1974, but the demographic momentum of its large working-age population had sustained numerical growth for another 48 years. That momentum is now exhausted. Japan’s population is projected to fall to 88 million by 2060, with a median age exceeding 55.</p>
+<p>Japan is the leading edge of a global phenomenon. Germany, South Korea, Italy, and dozens of other countries face the same trajectory on a 10–30 year delay. Canada is not exempt: without immigration, its natural population growth rate would already be negative. The spatial expression of this transition — shrinking cities, ageing rural areas, concentrated growth in immigrant-receiving metros — is reshaping the geography of every country that has passed through the demographic transition.</p>
+<p>Understanding it quantitatively requires the cohort-component model — the mathematical framework that projects population by age, sex, and location simultaneously.</p>
+<hr>
+<h2 id="the-question" class="anchored">1. The Question</h2>
+<p>How do age-structured demographic models project population forward in time? How does migration redistribute population spatially? What drives population ageing, and how do we model the spatial dynamics of shrinking cities?</p>
+<hr>
+<h2 id="the-conceptual-model" class="anchored">2. The Conceptual Model</h2>
+<p>Population is not a single number — it is a distribution across ages, sexes, and geographic locations. The <strong>cohort-component model</strong> tracks this distribution over time by applying three demographic processes to each cohort (age-sex group) in each location:</p>
+<ol type="1">
+<li><strong>Mortality:</strong> some fraction of each cohort dies in each period</li>
+<li><strong>Fertility:</strong> women in childbearing age groups produce children who enter the youngest cohort</li>
+<li><strong>Migration:</strong> some fraction of each cohort moves to a different location</li>
+</ol>
+<p>The model is exact in the sense that it conserves population: every person either survives to the next period, dies, or moves — no one is created or destroyed except through birth and death.</p>
+<hr>
+<h2 id="building-the-mathematical-model" class="anchored">3. Building the Mathematical Model</h2>
+<h3 id="the-cohort-component-model-single-region" class="anchored">3.1 The Cohort-Component Model: Single Region</h3>
+<p>Divide the population into <span class="math inline">n</span> age groups (5-year intervals: 0–4, 5–9, …, 80+). Let <span class="math inline">N_i(t)</span> be the population in age group <span class="math inline">i</span> at time <span class="math inline">t</span>, with <span class="math inline">i = 1</span> for the youngest group.</p>
+<p><strong>Survival:</strong> Each age group <span class="math inline">i</span> has a survival rate <span class="math inline">s_i</span> — the probability of surviving through one 5-year period to enter age group <span class="math inline">i+1</span>:</p>
+<p><span class="math display">N_{i+1}(t+1) = s_i \cdot N_i(t)</span></p>
+<p>Survival rates are computed from age-specific mortality rates <span class="math inline">m_i</span> [deaths per person per year]. For a 5-year interval:</p>
+<p><span class="math display">s_i = e^{-5 m_i} \approx 1 - 5m_i \quad \text{(for small } m_i\text{)}</span></p>
+<p><strong>Fertility:</strong> Age-specific fertility rates <span class="math inline">f_i</span> [births per woman per year] for female cohorts in ages 15–49 (groups <span class="math inline">i = 4, 5, ..., 10</span> in 5-year age groups starting at 0). The number of births in one 5-year period:</p>
+<p><span class="math display">B(t) = 5 \sum_{i=4}^{10} f_i \cdot N_i^F(t)</span></p>
+<p>where <span class="math inline">N_i^F</span> is the female population in age group <span class="math inline">i</span>. Births are allocated to the youngest age group at <span class="math inline">t+1</span>, split by sex ratio at birth (<span class="math inline">\approx 1.05</span> males per female):</p>
+<p><span class="math display">N_1^M(t+1) = B(t) \times \frac{1.05}{2.05} \times s_0^M, \quad N_1^F(t+1) = B(t) \times \frac{1}{2.05} \times s_0^F</span></p>
+<p><strong>Total Fertility Rate (TFR)</strong> — the average number of children a woman would have over her lifetime at current age-specific rates:</p>
+<p><span class="math display">\text{TFR} = 5 \sum_{i=4}^{10} f_i</span></p>
+<p>Replacement-level TFR in most countries: <span class="math inline">\approx 2.1</span> (slightly above 2 to account for childhood mortality and sex ratio). Canada’s TFR in 2023: <span class="math inline">\approx 1.44</span>.</p>
+<h3 id="the-leslie-matrix" class="anchored">3.2 The Leslie Matrix</h3>
+<p>The cohort-component model can be written compactly as a <strong>matrix equation</strong>. The <strong>Leslie matrix</strong> <span class="math inline">\mathbf{L}</span> collects all the demographic rates:</p>
+<p><span class="math display">\mathbf{N}(t+1) = \mathbf{L} \cdot \mathbf{N}(t)</span></p>
+<p>For a simple 5-age-group model (ages 0–4, 5–9, 10–14, 15–19, 20+), the Leslie matrix has: - Survival rates <span class="math inline">s_i</span> on the <strong>subdiagonal</strong> (ageing from group <span class="math inline">i</span> to <span class="math inline">i+1</span>) - Fertility rates in the <strong>first row</strong> (births from each fertile group enter the youngest group)</p>
+<p><span class="math display">\mathbf{L} = \begin{pmatrix} 0 &amp; 0 &amp; F_3 &amp; F_4 &amp; 0 \\ s_1 &amp; 0 &amp; 0 &amp; 0 &amp; 0 \\ 0 &amp; s_2 &amp; 0 &amp; 0 &amp; 0 \\ 0 &amp; 0 &amp; s_3 &amp; 0 &amp; 0 \\ 0 &amp; 0 &amp; 0 &amp; s_4 &amp; s_5 \end{pmatrix}</span></p>
+<p>where <span class="math inline">F_i = 5 f_i s_0 / 2</span> (adjusted for sex ratio and infant survival). The last element <span class="math inline">s_5</span> in the corner represents survival within the open-ended oldest age group.</p>
+<p><strong>The dominant eigenvalue <span class="math inline">\lambda_1</span> of <span class="math inline">\mathbf{L}</span></strong> determines long-run population growth rate: if <span class="math inline">\lambda_1 &gt; 1</span>, the population eventually grows geometrically at rate <span class="math inline">\lambda_1</span> per period; if <span class="math inline">\lambda_1 &lt; 1</span>, it eventually declines. The corresponding eigenvector is the <strong>stable age distribution</strong> — the age structure that the population converges to regardless of its initial structure.</p>
+<p>For Canada in 2023: <span class="math inline">\lambda_1 \approx 0.98</span> (ignoring immigration) — natural population decline of <span class="math inline">\approx 2\%</span> per 5-year period, or <span class="math inline">\approx 0.4\%</span> per year.</p>
+<h3 id="multi-region-extension-and-migration" class="anchored">3.3 Multi-Region Extension and Migration</h3>
+<p>In the multi-region cohort-component model, the population vector <span class="math inline">\mathbf{N}</span> has <span class="math inline">n \times r</span> elements — <span class="math inline">n</span> age groups across <span class="math inline">r</span> regions. Migration rates <span class="math inline">m_{ij,k}</span> [per person per year] express the probability that a person in age group <span class="math inline">k</span> moves from region <span class="math inline">i</span> to region <span class="math inline">j</span> in one period.</p>
+<p>The migration component updates each region:</p>
+<p><span class="math display">N_j^{k}(t+1)_{\text{after migration}} = N_j^k(t+1)_{\text{before migration}} + \sum_{i \neq j} m_{ij,k} N_i^k(t) - \sum_{i \neq j} m_{ji,k} N_j^k(t)</span></p>
+<p>The net in-migration to region <span class="math inline">j</span> for age group <span class="math inline">k</span>: <span class="math inline">\sum_i m_{ij,k} N_i^k - m_{j \cdot, k} N_j^k</span> where <span class="math inline">m_{j\cdot,k} = \sum_{i \neq j} m_{ji,k}</span> is the out-migration rate.</p>
+<h3 id="gravity-model-for-migration-flows" class="anchored">3.4 Gravity Model for Migration Flows</h3>
+<p>Migration flows between regions follow the gravity model (Essay D10):</p>
+<p><span class="math display">M_{ij} = k \frac{O_i D_j}{d_{ij}^\beta}</span></p>
+<p>where <span class="math inline">M_{ij}</span> is the number of migrants from <span class="math inline">i</span> to <span class="math inline">j</span>, <span class="math inline">O_i</span> is the sending population of <span class="math inline">i</span>, <span class="math inline">D_j</span> is the attractiveness of <span class="math inline">j</span> (employment rate, wage level, housing cost), and <span class="math inline">d_{ij}</span> is distance. The exponent <span class="math inline">\beta \approx 1.5</span>-<span class="math inline">2.0</span> for interprovincial migration in Canada.</p>
+<p>The <strong>push-pull framework</strong> decomposes migration probability into: - <strong>Push factors</strong> in origin <span class="math inline">i</span>: unemployment, low wages, high cost of living, natural disasters - <strong>Pull factors</strong> in destination <span class="math inline">j</span>: job opportunities, family networks, amenities - <strong>Distance friction:</strong> cost and disruption of moving</p>
+<p>The migration-calibrated gravity model requires balancing observed in- and out-flows, typically using the same doubly-constrained Furness algorithm as the trip distribution model (Essay AK2).</p>
+<p><strong>Age selectivity of migration.</strong> Migration rates are highly age-selective: - Peak migration ages: 20–30 (young adults pursuing education and first employment) - Secondary peaks: childhood (moving with parents) - Trough: 30–50 (established households, children in school) - Very low: 60+ (retirement migration is real but smaller than young-adult flows)</p>
+<p>The age-migration schedule <span class="math inline">m(a)</span> typically follows a Rogers-Castro model with a dominant working-age peak and a minor retirement peak.</p>
+<h3 id="population-ageing-and-the-dependency-ratio" class="anchored">3.5 Population Ageing and the Dependency Ratio</h3>
+<p>The <strong>old-age dependency ratio</strong> (OADR) measures the burden of supporting elderly populations:</p>
+<p><span class="math display">\text{OADR} = \frac{N_{65+}}{N_{15-64}}</span></p>
+<p>As TFR falls below replacement and life expectancy rises, OADR increases. Canada’s OADR was <span class="math inline">0.21</span> in 2000, <span class="math inline">0.31</span> in 2020, and is projected at <span class="math inline">0.45</span>-<span class="math inline">0.50</span> by 2040 (assuming continued immigration).</p>
+<p>The <strong>demographic dividend</strong> occurs when the working-age population is large relative to both young and old dependents — a transitional phase when fertility has fallen but the large cohort born during the high-fertility period has not yet aged into the elderly group. Countries in the demographic dividend experience rapid economic growth potential from a large, productive workforce with low dependency. East Asian economic growth from 1965–1995 was partly attributable to this dividend; Sub-Saharan Africa is currently entering it.</p>
+<h3 id="shrinking-cities" class="anchored">3.6 Shrinking Cities</h3>
+<p>A <strong>shrinking city</strong> experiences sustained population loss driven by natural decrease (deaths &gt; births), out-migration, or both. Demographic shrinkage has distinctive spatial consequences:</p>
+<p><strong>Selective out-migration:</strong> Young educated adults leave first, leaving behind an older, less mobile population with lower average income. This reduces the tax base while increasing demand for elderly services — a fiscal trap.</p>
+<p><strong>Vacancy cascades:</strong> As housing demand falls, property values decline, which encourages remaining residents to leave rather than invest in property maintenance. Vacancy rates above approximately 7–10% are associated with neighbourhood tipping toward rapid decline.</p>
+<p>The <strong>vacancy rate dynamics</strong> can be modelled as:</p>
+<p><span class="math display">\frac{dV}{dt} = \alpha(V_{\text{eq}} - V) + \beta \frac{dN}{dt}</span></p>
+<p>where <span class="math inline">V</span> is the vacancy rate, <span class="math inline">V_{\text{eq}}</span> is the natural vacancy rate (the frictional rate in a healthy market, <span class="math inline">\approx 3</span>-<span class="math inline">5\%</span>), and <span class="math inline">dN/dt</span> is the population change rate. Population decline (<span class="math inline">dN/dt &lt; 0</span>) pushes vacancy above equilibrium; the market adjustment rate <span class="math inline">\alpha</span> determines how quickly demolition and conversion respond.</p>
+<p>For a city losing 1% of population per year (<span class="math inline">dN/dt = -0.01 N</span>), the excess vacancy rate accumulates at <span class="math inline">\beta \times 0.01</span> per year — generating vacancy concentrations that, if not managed through demolition and land bank programmes, create persistent derelict landscapes.</p>
+<hr>
+<h2 id="worked-example-by-hand" class="anchored">4. Worked Example by Hand</h2>
+<p><strong>Setting:</strong> A simplified cohort-component projection for a small northern Alberta community (pop. 5,000) facing out-migration of young adults.</p>
+<p><strong>Given (initial population by 5-year age group):</strong></p>
+<table class="caption-top">
+<thead>
+<tr class="header">
+<th>Age</th>
+<th><span class="math inline">N</span></th>
+<th><span class="math inline">s</span> (5-yr)</th>
+<th><span class="math inline">f</span> (annual, women)</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>0–4</td>
+<td>350</td>
+<td>0.9978</td>
+<td>—</td>
+</tr>
+<tr class="even">
+<td>5–14</td>
+<td>700</td>
+<td>0.9985</td>
+<td>—</td>
+</tr>
+<tr class="odd">
+<td>15–24</td>
+<td>600</td>
+<td>0.9970</td>
+<td>0.032</td>
+</tr>
+<tr class="even">
+<td>25–34</td>
+<td>900</td>
+<td>0.9940</td>
+<td>0.065</td>
+</tr>
+<tr class="odd">
+<td>35–44</td>
+<td>850</td>
+<td>0.9890</td>
+<td>0.025</td>
+</tr>
+<tr class="even">
+<td>45–54</td>
+<td>750</td>
+<td>0.9780</td>
+<td>—</td>
+</tr>
+<tr class="odd">
+<td>55–64</td>
+<td>500</td>
+<td>0.9540</td>
+<td>—</td>
+</tr>
+<tr class="even">
+<td>65+</td>
+<td>350</td>
+<td>0.8000</td>
+<td>—</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Step 1: Births (5-year period, assuming female population ≈ 50% of age group)</strong></p>
+<p><span class="math display">B = 5 \times [(0.032)(600/2) + (0.065)(900/2) + (0.025)(850/2)]</span> <span class="math display">= 5 \times [9.6 + 29.25 + 10.625] = 5 \times 49.475 = 247.4 \approx 247 \text{ births}</span></p>
+<p><span class="math display">\text{TFR} = 5(0.032 + 0.065 + 0.025) = 5 \times 0.122 = 0.61</span></p>
+<p>This TFR of 0.61 is extremely low — characteristic of a young-adult out-migration community where most women in prime childbearing years have left for urban centres. With only the women who stayed behind contributing to fertility, the effective rate is a fraction of a woman’s potential lifetime fertility.</p>
+<p><strong>Step 2: Natural population change (5-year period)</strong></p>
+<p>Deaths <span class="math inline">\approx \sum (1-s_i) N_i \approx (1-0.9978)(350) + ... \approx</span> roughly 180 deaths over 5 years.</p>
+<p>Natural increase = 247 − 180 = +67 persons over 5 years.</p>
+<p><strong>Step 3: Net migration (young adult out-migration)</strong></p>
+<p>Assume 15% of 15–24 year olds leave in 5 years (net out-migration): <span class="math inline">0.15 \times 600 = 90</span> persons.</p>
+<p><strong>Net population change:</strong> <span class="math inline">+67 - 90 = -23</span> persons → community is shrinking slightly.</p>
+<p>Over 20 years (4 periods) with the same rates, the 15–24 cohort continuously depletes, reducing both labour force and future fertility. The community enters a demographic spiral: fewer young adults → fewer births → smaller young adult cohort in the next generation → even fewer births.</p>
+<hr>
+<h2 id="computational-implementation" class="anchored">5. Computational Implementation</h2>
+<pre><code>function leslie_matrix(survival_rates, fertility_rates, sex_ratio=1.05):
+    n = len(survival_rates)
+    L = zeros(n, n)
+    # Subdiagonal: survival
+    for i in 0..n-2:
+        L[i+1, i] = survival_rates[i]
+    # Open last age group:
+    L[n-1, n-1] = survival_rates[n-1]
+    # First row: effective fertility (accounting for 5-year period)
+    for i in fertile_ages:
+        L[0, i] = 5 * fertility_rates[i] * survival_rates[0] / 2
+    return L
+
+function project_population(N0, L, n_periods):
+    N = N0.copy()
+    trajectory = [N.copy()]
+    for t in range(n_periods):
+        N = L @ N
+        trajectory.append(N.copy())
+    return trajectory
+
+function migration_update(N, out_rates, in_flows):
+    # out_rates[i]: fraction leaving region per period by age group i
+    # in_flows[i]: persons arriving to region in age group i
+    N_after = N * (1 - out_rates) + in_flows
+    return N_after</code></pre>
+<pre class="{pyodide}"><code>import numpy as np
+
+def leslie_project(N0, s, f_ages, f_rates, n_periods=4):
+    """
+    N0: initial pop by age group (all genders combined)
+    s: survival rates (same length as N0)
+    f_ages: indices of fertile age groups
+    f_rates: annual fertility rates for those groups
+    """
+    n = len(N0)
+    L = np.zeros((n, n))
+    for i in range(n-1):
+        L[i+1, i] = s[i]
+    L[n-1, n-1] = s[-1]  # open last group
+    for idx, age in enumerate(f_ages):
+        # births per 5-year period, 50% female, times infant survival
+        L[0, age] += 5 * f_rates[idx] * s[0] / 2
+    
+    N = N0.copy()
+    traj = [N.copy()]
+    for _ in range(n_periods):
+        N = L @ N
+        traj.append(N.copy())
+    return np.array(traj), L
+
+# Northern Alberta community (8 age groups)
+N0 = np.array([350,700,600,900,850,750,500,350], dtype=float)
+s  = np.array([0.9978,0.9985,0.9970,0.9940,0.9890,0.9780,0.9540,0.8000])
+f_ages = [2, 3, 4]      # age groups 15-24, 25-34, 35-44
+f_rates = [0.032, 0.065, 0.025]
+
+traj, L = leslie_project(N0, s, f_ages, f_rates)
+lam = np.max(np.abs(np.linalg.eigvals(L)))
+labels = ['0-4','5-14','15-24','25-34','35-44','45-54','55-64','65+']
+
+print(f"Dominant eigenvalue λ₁ = {lam:.4f} (per 5-year period)")
+print(f"Annual growth rate = {(lam**(0.2)-1)*100:.2f}% per year (natural, no migration)")
+print("\nPopulation trajectory (natural change only):")
+for t, N in enumerate(traj):
+    print(f"  t+{t*5:2d}yr: total={N.sum():,.0f}  median age≈{sum(i*N[i] for i in range(8))/N.sum()*5+2:.1f}yrs")</code></pre>
+<hr>
+<h2 id="visualization" class="anchored">6. Visualization</h2>
+<div data-viz="echarts" style="height:420px" data-options="{
+&quot;title&quot;: {&quot;text&quot;: &quot;Age Pyramid Shift: Northern Alberta Community (2025 vs 2045 projection)&quot;, &quot;textStyle&quot;: {&quot;fontSize&quot;: 14}},
+&quot;tooltip&quot;: {&quot;trigger&quot;: &quot;axis&quot;},
+&quot;legend&quot;: {&quot;data&quot;: [&quot;2025 population&quot;, &quot;2045 projected&quot;], &quot;bottom&quot;: 0},
+&quot;xAxis&quot;: {&quot;name&quot;: &quot;Population count&quot;, &quot;nameLocation&quot;: &quot;middle&quot;, &quot;nameGap&quot;: 30},
+&quot;yAxis&quot;: {&quot;type&quot;: &quot;category&quot;,
+&quot;data&quot;: [&quot;0–4&quot;,&quot;5–14&quot;,&quot;15–24&quot;,&quot;25–34&quot;,&quot;35–44&quot;,&quot;45–54&quot;,&quot;55–64&quot;,&quot;65+&quot;]},
+&quot;series&quot;: [
+{&quot;name&quot;: &quot;2025 population&quot;, &quot;type&quot;: &quot;bar&quot;, &quot;barGap&quot;: &quot;-100%&quot;,
+&quot;data&quot;: [350,700,600,900,850,750,500,350],
+&quot;itemStyle&quot;: {&quot;color&quot;: &quot;#42A5F5&quot;, &quot;opacity&quot;: 0.8}},
+{&quot;name&quot;: &quot;2045 projected&quot;, &quot;type&quot;: &quot;bar&quot;,
+&quot;data&quot;: [210,440,340,560,700,780,620,520],
+&quot;itemStyle&quot;: {&quot;color&quot;: &quot;#EF5350&quot;, &quot;opacity&quot;: 0.8}}
+]
+}"></div>
+<p>The 2045 projection shows population decline concentrated in the young adult (15–44) and child (0–14) age groups, while older cohorts grow as the 2025 middle-age population ages in place. This is the classic shrinking-city demographic signature: an hourglass shape, pinched in the middle where young adults have out-migrated, expanding at the top as an ageing population accumulates. The community’s tax base shrinks while its elderly service demand grows — the fiscal trap of demographic decline.</p>
+<hr>
+<h2 id="interpretation" class="anchored">7. Interpretation</h2>
+<p>The Leslie matrix is more than a computational device — it encodes the demographic structure of a population and reveals the long-run trajectory encoded in current vital rates. The dominant eigenvalue <span class="math inline">\lambda_1 &lt; 1</span> for the Alberta community reflects not the current year’s growth rate but the long-run trajectory implied by the age-specific rates: if nothing changes, the community’s age structure will converge to the stable distribution and decline at rate <span class="math inline">1 - \lambda_1</span> per period.</p>
+<p>The spatial dimension adds critical complexity. National-level demographic decline is a slow, reversible process with policy levers (immigration, pronatalist incentives). Local decline, driven by selective out-migration, is faster and harder to reverse: the young adults who leave take their future fertility, productivity, and tax payments with them. Their departure reduces the services and social vibrancy that might have attracted others, accelerating the spiral.</p>
+<p>Canadian municipal policy has begun to grapple with this. The Alberta government’s Regional Municipality Act requires municipalities to produce long-range demographic projections for infrastructure and service planning. The challenge is that most planning tools project linear extrapolations of current trends — they miss the demographic momentum effects (existing age structures propagating into the future) that the cohort-component model captures. A municipality that plans for stable population based on last year’s growth rate may find that demographic momentum has already locked in 15 years of decline.</p>
+<hr>
+<h2 id="what-could-go-wrong" class="anchored">8. What Could Go Wrong?</h2>
+<p><strong>Cohort-component models are not forecasts.</strong> They project populations conditional on assumed rates of fertility, mortality, and migration. These rates are observed in the recent past and may not persist. A single large employer opening or closing can reverse a decade of migration trends within two years. The model produces demographically consistent trajectories, not probabilistic forecasts with confidence intervals — a distinction that is frequently lost when projections are used in planning documents.</p>
+<p><strong>Migration is the hardest component to model.</strong> Fertility and mortality rates change slowly and are well-measured by vital statistics systems. Migration rates change rapidly (in response to labour markets, housing prices, policy changes) and are measured with more error (particularly internal migration between census periods). The gravity model calibrated on historical flows may miss structural shifts in migration patterns driven by remote work, housing affordability crises, or climate displacement.</p>
+<p><strong>Sex and age disaggregation is incomplete.</strong> The model treats each age-sex cohort as homogeneous, but migration and fertility behaviour vary enormously within cohorts by education, ethnicity, income, and immigration status. A 25–34 age group that is 60% recent immigrants will have very different fertility and migration rates than one that is 60% Canadian-born. Disaggregated models (by country of birth, educational attainment) are more accurate but require more data and are harder to communicate.</p>
+<p><strong>The vacancy cascade is non-linear.</strong> The simple differential equation model of vacancy dynamics misses the threshold effects and neighbourhood tipping points that characterise actual shrinking city dynamics. When vacancy exceeds roughly 10–15%, social disorder increases, property insurance becomes expensive or unavailable, and anchor institutions (grocery stores, banks, pharmacies) close — creating step changes in residential desirability that the linear model cannot represent.</p>
+<hr>
+<h2 id="summary" class="anchored">9. Summary</h2>
+<p>The cohort-component model projects population by applying age-sex-specific survival rates, fertility rates, and migration rates to each cohort. The Leslie matrix formulation expresses this as a matrix multiplication <span class="math inline">\mathbf{N}(t+1) = \mathbf{L}\mathbf{N}(t)</span>, whose dominant eigenvalue determines the long-run growth rate and whose eigenvector gives the stable age distribution.</p>
+<p>Multi-region extension adds migration flows calibrated via the gravity model, distributing population change across space. Selective out-migration of young adults drives shrinking cities into demographic spirals: declining fertility, ageing population, rising dependency ratios, and fiscal stress. Understanding these dynamics at the local scale — not just the national scale — is essential for infrastructure planning, service delivery, and housing market assessment in every Canadian municipality.</p>
+<p><strong>Key equations:</strong></p>
+<p><span class="math display">N_{i+1}(t+1) = s_i N_i(t) \quad \text{[cohort survival]}</span></p>
+<p><span class="math display">\text{TFR} = 5\sum_i f_i \quad \text{[total fertility rate]}</span></p>
+<p><span class="math display">\mathbf{N}(t+1) = \mathbf{L}\mathbf{N}(t) \quad \text{[Leslie matrix projection]}</span></p>
+<p><span class="math display">\text{OADR} = N_{65+}/N_{15-64} \quad \text{[old-age dependency ratio]}</span></p>
+<p><span class="math display">M_{ij} = k O_i D_j d_{ij}^{-\beta} \quad \text{[gravity migration model]}</span></p>
+<hr>
+<h2 id="math-refresher" class="anchored">Math Refresher</h2>
+<p><strong>Matrix multiplication review.</strong> The product <span class="math inline">\mathbf{y} = \mathbf{L}\mathbf{x}</span> computes each element as <span class="math inline">y_i = \sum_j L_{ij} x_j</span> — a weighted sum of all input elements. For the Leslie matrix, <span class="math inline">y_1 = \sum_j L_{1j} x_j = \sum_j F_j x_j</span> (total births from all fertile age groups), and <span class="math inline">y_{i+1} = L_{i+1,i} x_i = s_i x_i</span> (survivors from age group <span class="math inline">i</span> enter group <span class="math inline">i+1</span>). Applied repeatedly, the matrix “ages” the population forward by one period with each multiplication.</p>
+<p><strong>Eigenvalues and long-run growth.</strong> The eigenvalue <span class="math inline">\lambda</span> of a matrix <span class="math inline">\mathbf{L}</span> satisfies <span class="math inline">\mathbf{L}\mathbf{v} = \lambda\mathbf{v}</span> — the matrix scales the eigenvector <span class="math inline">\mathbf{v}</span> without changing its direction. Applied repeatedly: <span class="math inline">\mathbf{L}^t\mathbf{v} = \lambda^t\mathbf{v}</span>. For a population starting near the stable age distribution (the dominant eigenvector), the population grows by a factor <span class="math inline">\lambda^t</span> after <span class="math inline">t</span> periods. <span class="math inline">\lambda &gt; 1</span> means growth; <span class="math inline">\lambda &lt; 1</span> means decline; <span class="math inline">\lambda = 1</span> means stationarity. The time to double (or halve) the population is <span class="math inline">T = \ln 2 / |\ln \lambda|</span> periods.</p>
+<p><strong>Demographic momentum.</strong> A population with <span class="math inline">\lambda_1 &lt; 1</span> (sub-replacement fertility) does not immediately start declining if it has a young age structure. The large young cohorts continue producing more births than deaths for decades, maintaining positive natural growth even as the underlying rates imply eventual decline. This is demographic momentum: the inertia of an age structure shaped by past high fertility. Japan’s population grew until 2008 despite sub-replacement fertility since 1974 — 34 years of momentum. Canada’s population would continue growing for another 10–15 years even if immigration stopped and fertility stayed constant.</p>
+
+
+<footer class="wayward-footer">
+  <div class="wayward-footer__inner">
+    <div class="wayward-footer__brand">
+      <div class="wayward-footer__logo">WaywardHouse<span>.</span></div>
+      <p>Understanding how place, economy, and environment interact through analysis, modelling, and open tools.</p>
+    </div>
+
+    <nav class="wayward-footer__group" aria-labelledby="footer-reading">
+      <h2 id="footer-reading" class="anchored">Reading</h2>
+      <a href="https://wayward.house/articles/">Articles</a>
+      <a href="https://wayward.house/learn/">Library</a>
+      <a href="https://wayward.house/archive.html">Archive</a>
+      <a href="https://wayward.house/start-here.html">Choose Your Path</a>
+    </nav>
+
+    <nav class="wayward-footer__group" aria-labelledby="footer-site">
+      <h2 id="footer-site" class="anchored">Site</h2>
+      <a href="https://wayward.house/start-here.html">Choose Your Path</a>
+      <a href="https://wayward.house/about.html">About</a>
+      <a href="https://wayward.house/contact.html">Contact</a>
+    </nav>
+
+    <nav class="wayward-footer__group" aria-labelledby="footer-resources">
+      <h2 id="footer-resources" class="anchored">Resources</h2>
+      <a href="https://wayward.house/topics/">All Topics</a>
+      <a href="https://wayward.house/privacy.html">Privacy Policy</a>
+      <a href="https://wayward.house/terms.html">Terms of Use</a>
+    </nav>
+  </div>
+</footer>
+
+<script type="module" src="../assets/dist/main.js"></script>
+<script type="module" src="../assets/js/core.js"></script>
+<script id="quarto-html-after-body" type="application/javascript">
+  window.document.addEventListener("DOMContentLoaded", function (event) {
+    const tabsets =  window.document.querySelectorAll(".panel-tabset-tabby")
+    tabsets.forEach(function(tabset) {
+      const tabby = new Tabby('#' + tabset.id);
+    });
+    const icon = "";
+    const anchorJS = new window.AnchorJS();
+    anchorJS.options = {
+      placement: 'right',
+      icon: icon
+    };
+    anchorJS.add('.anchored');
+    const isCodeAnnotation = (el) => {
+      for (const clz of el.classList) {
+        if (clz.startsWith('code-annotation-')) {                     
+          return true;
+        }
+      }
+      return false;
+    }
+    const onCopySuccess = function(e) {
+      // button target
+      const button = e.trigger;
+      // don't keep focus
+      button.blur();
+      // flash "checked"
+      button.classList.add('code-copy-button-checked');
+      var currentTitle = button.getAttribute("title");
+      button.setAttribute("title", "Copied!");
+      let tooltip;
+      if (window.bootstrap) {
+        button.setAttribute("data-bs-toggle", "tooltip");
+        button.setAttribute("data-bs-placement", "left");
+        button.setAttribute("data-bs-title", "Copied!");
+        tooltip = new bootstrap.Tooltip(button, 
+          { trigger: "manual", 
+            customClass: "code-copy-button-tooltip",
+            offset: [0, -8]});
+        tooltip.show();    
+      }
+      setTimeout(function() {
+        if (tooltip) {
+          tooltip.hide();
+          button.removeAttribute("data-bs-title");
+          button.removeAttribute("data-bs-toggle");
+          button.removeAttribute("data-bs-placement");
+        }
+        button.setAttribute("title", currentTitle);
+        button.classList.remove('code-copy-button-checked');
+      }, 1000);
+      // clear code selection
+      e.clearSelection();
+    }
+    const getTextToCopy = function(trigger) {
+      const outerScaffold = trigger.parentElement.cloneNode(true);
+      const codeEl = outerScaffold.querySelector('code');
+      for (const childEl of codeEl.children) {
+        if (isCodeAnnotation(childEl)) {
+          childEl.remove();
+        }
+      }
+      return codeEl.innerText;
+    }
+    const clipboard = new window.ClipboardJS('.code-copy-button:not([data-in-quarto-modal])', {
+      text: getTextToCopy
+    });
+    clipboard.on('success', onCopySuccess);
+    if (window.document.getElementById('quarto-embedded-source-code-modal')) {
+      const clipboardModal = new window.ClipboardJS('.code-copy-button[data-in-quarto-modal]', {
+        text: getTextToCopy,
+        container: window.document.getElementById('quarto-embedded-source-code-modal')
+      });
+      clipboardModal.on('success', onCopySuccess);
+    }
+      var localhostRegex = new RegExp(/^(?:http|https):\/\/localhost\:?[0-9]*\//);
+      var mailtoRegex = new RegExp(/^mailto:/);
+        var filterRegex = new RegExp('/' + window.location.host + '/');
+      var isInternal = (href) => {
+          return filterRegex.test(href) || localhostRegex.test(href) || mailtoRegex.test(href);
+      }
+      // Inspect non-navigation links and adorn them if external
+     var links = window.document.querySelectorAll('a[href]:not(.nav-link):not(.navbar-brand):not(.toc-action):not(.sidebar-link):not(.sidebar-item-toggle):not(.pagination-link):not(.no-external):not([aria-hidden]):not(.dropdown-item):not(.quarto-navigation-tool):not(.about-link)');
+      for (var i=0; i<links.length; i++) {
+        const link = links[i];
+        if (!isInternal(link.href)) {
+          // undo the damage that might have been done by quarto-nav.js in the case of
+          // links that we want to consider external
+          if (link.dataset.originalHref !== undefined) {
+            link.href = link.dataset.originalHref;
+          }
+        }
+      }
+    function tippyHover(el, contentFn, onTriggerFn, onUntriggerFn) {
+      const config = {
+        allowHTML: true,
+        maxWidth: 500,
+        delay: 100,
+        arrow: false,
+        appendTo: function(el) {
+            return el.parentElement;
+        },
+        interactive: true,
+        interactiveBorder: 10,
+        theme: 'light-border',
+        placement: 'bottom-start',
+      };
+      if (contentFn) {
+        config.content = contentFn;
+      }
+      if (onTriggerFn) {
+        config.onTrigger = onTriggerFn;
+      }
+      if (onUntriggerFn) {
+        config.onUntrigger = onUntriggerFn;
+      }
+      window.tippy(el, config); 
+    }
+    const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+    for (var i=0; i<noterefs.length; i++) {
+      const ref = noterefs[i];
+      tippyHover(ref, function() {
+        // use id or data attribute instead here
+        let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+        try { href = new URL(href).hash; } catch {}
+        const id = href.replace(/^#\/?/, "");
+        const note = window.document.getElementById(id);
+        if (note) {
+          return note.innerHTML;
+        } else {
+          return "";
+        }
+      });
+    }
+    const xrefs = window.document.querySelectorAll('a.quarto-xref');
+    const processXRef = (id, note) => {
+      // Strip column container classes
+      const stripColumnClz = (el) => {
+        el.classList.remove("page-full", "page-columns");
+        if (el.children) {
+          for (const child of el.children) {
+            stripColumnClz(child);
+          }
+        }
+      }
+      stripColumnClz(note)
+      if (id === null || id.startsWith('sec-')) {
+        // Special case sections, only their first couple elements
+        const container = document.createElement("div");
+        if (note.children && note.children.length > 2) {
+          container.appendChild(note.children[0].cloneNode(true));
+          for (let i = 1; i < note.children.length; i++) {
+            const child = note.children[i];
+            if (child.tagName === "P" && child.innerText === "") {
+              continue;
+            } else {
+              container.appendChild(child.cloneNode(true));
+              break;
+            }
+          }
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(container);
+          }
+          return container.innerHTML
+        } else {
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(note);
+          }
+          return note.innerHTML;
+        }
+      } else {
+        // Remove any anchor links if they are present
+        const anchorLink = note.querySelector('a.anchorjs-link');
+        if (anchorLink) {
+          anchorLink.remove();
+        }
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(note);
+        }
+        if (note.classList.contains("callout")) {
+          return note.outerHTML;
+        } else {
+          return note.innerHTML;
+        }
+      }
+    }
+    for (var i=0; i<xrefs.length; i++) {
+      const xref = xrefs[i];
+      tippyHover(xref, undefined, function(instance) {
+        instance.disable();
+        let url = xref.getAttribute('href');
+        let hash = undefined; 
+        if (url.startsWith('#')) {
+          hash = url;
+        } else {
+          try { hash = new URL(url).hash; } catch {}
+        }
+        if (hash) {
+          const id = hash.replace(/^#\/?/, "");
+          const note = window.document.getElementById(id);
+          if (note !== null) {
+            try {
+              const html = processXRef(id, note.cloneNode(true));
+              instance.setContent(html);
+            } finally {
+              instance.enable();
+              instance.show();
+            }
+          } else {
+            // See if we can fetch this
+            fetch(url.split('#')[0])
+            .then(res => res.text())
+            .then(html => {
+              const parser = new DOMParser();
+              const htmlDoc = parser.parseFromString(html, "text/html");
+              const note = htmlDoc.getElementById(id);
+              if (note !== null) {
+                const html = processXRef(id, note);
+                instance.setContent(html);
+              } 
+            }).finally(() => {
+              instance.enable();
+              instance.show();
+            });
+          }
+        } else {
+          // See if we can fetch a full url (with no hash to target)
+          // This is a special case and we should probably do some content thinning / targeting
+          fetch(url)
+          .then(res => res.text())
+          .then(html => {
+            const parser = new DOMParser();
+            const htmlDoc = parser.parseFromString(html, "text/html");
+            const note = htmlDoc.querySelector('main.content');
+            if (note !== null) {
+              // This should only happen for chapter cross references
+              // (since there is no id in the URL)
+              // remove the first header
+              if (note.children.length > 0 && note.children[0].tagName === "HEADER") {
+                note.children[0].remove();
+              }
+              const html = processXRef(null, note);
+              instance.setContent(html);
+            } 
+          }).finally(() => {
+            instance.enable();
+            instance.show();
+          });
+        }
+      }, function(instance) {
+      });
+    }
+        let selectedAnnoteEl;
+        const selectorForAnnotation = ( cell, annotation) => {
+          let cellAttr = 'data-code-cell="' + cell + '"';
+          let lineAttr = 'data-code-annotation="' +  annotation + '"';
+          const selector = 'span[' + cellAttr + '][' + lineAttr + ']';
+          return selector;
+        }
+        const selectCodeLines = (annoteEl) => {
+          const doc = window.document;
+          const targetCell = annoteEl.getAttribute("data-target-cell");
+          const targetAnnotation = annoteEl.getAttribute("data-target-annotation");
+          const annoteSpan = window.document.querySelector(selectorForAnnotation(targetCell, targetAnnotation));
+          const lines = annoteSpan.getAttribute("data-code-lines").split(",");
+          const lineIds = lines.map((line) => {
+            return targetCell + "-" + line;
+          })
+          let top = null;
+          let height = null;
+          let parent = null;
+          if (lineIds.length > 0) {
+              //compute the position of the single el (top and bottom and make a div)
+              const el = window.document.getElementById(lineIds[0]);
+              top = el.offsetTop;
+              height = el.offsetHeight;
+              parent = el.parentElement.parentElement;
+            if (lineIds.length > 1) {
+              const lastEl = window.document.getElementById(lineIds[lineIds.length - 1]);
+              const bottom = lastEl.offsetTop + lastEl.offsetHeight;
+              height = bottom - top;
+            }
+            if (top !== null && height !== null && parent !== null) {
+              // cook up a div (if necessary) and position it 
+              let div = window.document.getElementById("code-annotation-line-highlight");
+              if (div === null) {
+                div = window.document.createElement("div");
+                div.setAttribute("id", "code-annotation-line-highlight");
+                div.style.position = 'absolute';
+                parent.appendChild(div);
+              }
+              div.style.top = top - 2 + "px";
+              div.style.height = height + 4 + "px";
+              div.style.left = 0;
+              let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
+              if (gutterDiv === null) {
+                gutterDiv = window.document.createElement("div");
+                gutterDiv.setAttribute("id", "code-annotation-line-highlight-gutter");
+                gutterDiv.style.position = 'absolute';
+                const codeCell = window.document.getElementById(targetCell);
+                const gutter = codeCell.querySelector('.code-annotation-gutter');
+                gutter.appendChild(gutterDiv);
+              }
+              gutterDiv.style.top = top - 2 + "px";
+              gutterDiv.style.height = height + 4 + "px";
+            }
+            selectedAnnoteEl = annoteEl;
+          }
+        };
+        const unselectCodeLines = () => {
+          const elementsIds = ["code-annotation-line-highlight", "code-annotation-line-highlight-gutter"];
+          elementsIds.forEach((elId) => {
+            const div = window.document.getElementById(elId);
+            if (div) {
+              div.remove();
+            }
+          });
+          selectedAnnoteEl = undefined;
+        };
+          // Handle positioning of the toggle
+      window.addEventListener(
+        "resize",
+        throttle(() => {
+          elRect = undefined;
+          if (selectedAnnoteEl) {
+            selectCodeLines(selectedAnnoteEl);
+          }
+        }, 10)
+      );
+      function throttle(fn, ms) {
+      let throttle = false;
+      let timer;
+        return (...args) => {
+          if(!throttle) { // first call gets through
+              fn.apply(this, args);
+              throttle = true;
+          } else { // all the others get throttled
+              if(timer) clearTimeout(timer); // cancel #2
+              timer = setTimeout(() => {
+                fn.apply(this, args);
+                timer = throttle = false;
+              }, ms);
+          }
+        };
+      }
+        // Attach click handler to the DT
+        const annoteDls = window.document.querySelectorAll('dt[data-target-cell]');
+        for (const annoteDlNode of annoteDls) {
+          annoteDlNode.addEventListener('click', (event) => {
+            const clickedEl = event.target;
+            if (clickedEl !== selectedAnnoteEl) {
+              unselectCodeLines();
+              const activeEl = window.document.querySelector('dt[data-target-cell].code-annotation-active');
+              if (activeEl) {
+                activeEl.classList.remove('code-annotation-active');
+              }
+              selectCodeLines(clickedEl);
+              clickedEl.classList.add('code-annotation-active');
+            } else {
+              // Unselect the line
+              unselectCodeLines();
+              clickedEl.classList.remove('code-annotation-active');
+            }
+          });
+        }
+    const findCites = (el) => {
+      const parentEl = el.parentElement;
+      if (parentEl) {
+        const cites = parentEl.dataset.cites;
+        if (cites) {
+          return {
+            el,
+            cites: cites.split(' ')
+          };
+        } else {
+          return findCites(el.parentElement)
+        }
+      } else {
+        return undefined;
+      }
+    };
+    var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+    for (var i=0; i<bibliorefs.length; i++) {
+      const ref = bibliorefs[i];
+      const citeInfo = findCites(ref);
+      if (citeInfo) {
+        tippyHover(citeInfo.el, function() {
+          var popup = window.document.createElement('div');
+          citeInfo.cites.forEach(function(cite) {
+            var citeDiv = window.document.createElement('div');
+            citeDiv.classList.add('hanging-indent');
+            citeDiv.classList.add('csl-entry');
+            var biblioDiv = window.document.getElementById('ref-' + cite);
+            if (biblioDiv) {
+              citeDiv.innerHTML = biblioDiv.innerHTML;
+            }
+            popup.appendChild(citeDiv);
+          });
+          return popup.innerHTML;
+        });
+      }
+    }
+  });
+  </script>
+
+
+
+
+</body></html>

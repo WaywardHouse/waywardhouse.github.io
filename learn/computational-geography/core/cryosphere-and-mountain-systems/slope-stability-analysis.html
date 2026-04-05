@@ -1,0 +1,1238 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
+
+<meta charset="utf-8">
+<meta name="generator" content="quarto-1.9.36">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+
+<meta name="dcterms.date" content="2026-02-27">
+<meta name="description" content="Which slopes are stable, and which will fail? Slope stability analysis balances driving forces (gravity) against resisting forces (friction, cohesion). This model derives the infinite slope model, implements factor of safety calculations, shows how water pressure and earthquakes reduce stability, and maps landslide susceptibility.">
+
+<title>Slope Stability Analysis – Computational Geography</title>
+<style>
+/* Default styles provided by pandoc.
+** See https://pandoc.org/MANUAL.html#variables-for-html for config info.
+*/
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: min(4vw, 1.5em);}
+div.column{flex: auto; overflow-x: auto;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+  width: 0.8em;
+  margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
+  vertical-align: middle;
+}
+</style>
+
+
+<script src="../site_libs/clipboard/clipboard.min.js"></script>
+<script src="../site_libs/quarto-html/tabby.min.js"></script>
+<script src="../site_libs/quarto-html/popper.min.js"></script>
+<script src="../site_libs/quarto-html/tippy.umd.min.js"></script>
+<script src="../site_libs/quarto-html/anchor.min.js"></script>
+<link href="../site_libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="../site_libs/quarto-html/light-border.css" rel="stylesheet">
+<link href="../site_libs/quarto-html/quarto-html-640605f58ae58ee79329c070719e555b.min.css" rel="stylesheet" append-hash="true" data-mode="light">
+<link href="../site_libs/quarto-html/quarto-syntax-highlighting-845c23b38eaddc0f92fda52bfe77a8c8.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<script>
+  (function () {
+    document.documentElement.dataset.theme = 'light';
+    document.documentElement.dataset.brand = 'wayward';
+    try {
+      localStorage.removeItem('theme');
+    } catch (err) {
+      void err;
+    }
+  })();
+</script>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:ital,wght@0,300;0,400;0,600;0,700;0,800;0,900;1,700;1,800&amp;family=Barlow:wght@300;400;500;600&amp;family=IBM+Plex+Mono:ital,wght@0,300;0,400;0,500;1,300&amp;family=Literata:ital,opsz,wght@0,7..72,300;0,7..72,400;0,7..72,500;1,7..72,300;1,7..72,400&amp;display=swap" rel="stylesheet">
+
+  <script>window.backupDefine = window.define; window.define = undefined;</script><script src="https://cdn.jsdelivr.net/npm/katex@latest/dist/katex.min.js"></script>
+  <script>document.addEventListener("DOMContentLoaded", function () {
+ var mathElements = document.getElementsByClassName("math");
+ var macros = [];
+ for (var i = 0; i < mathElements.length; i++) {
+  var texText = mathElements[i].firstChild;
+  if (mathElements[i].tagName == "SPAN") {
+   katex.render(texText.data, mathElements[i], {
+    displayMode: mathElements[i].classList.contains('display'),
+    throwOnError: false,
+    macros: macros,
+    fleqn: false
+   });
+}}});
+  </script>
+  <script>window.define = window.backupDefine; window.backupDefine = undefined;</script><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@latest/dist/katex.min.css">
+
+<script type="text/javascript">
+const typesetMath = (el) => {
+  if (window.MathJax) {
+    // MathJax Typeset
+    window.MathJax.typeset([el]);
+  } else if (window.katex) {
+    // KaTeX Render
+    var mathElements = el.getElementsByClassName("math");
+    var macros = [];
+    for (var i = 0; i < mathElements.length; i++) {
+      var texText = mathElements[i].firstChild;
+      if (mathElements[i].tagName == "SPAN" && texText && texText.data) {
+        window.katex.render(texText.data, mathElements[i], {
+          displayMode: mathElements[i].classList.contains('display'),
+          throwOnError: false,
+          macros: macros,
+          fleqn: false
+        });
+      }
+    }
+  }
+}
+window.Quarto = {
+  typesetMath
+};
+</script>
+
+<link rel="stylesheet" href="../assets/css/quarto-wayward.css">
+</head>
+
+<body class="reading-body tag-hash-math tag-hash-viz">
+
+
+<header id="title-block-header">
+<h1 class="title"><span class="chapter-title">Slope Stability Analysis</span></h1>
+<p class="subtitle">When will this hillslope fail? Forces, failure planes, and landslide prediction</p>
+
+<p class="date">2026-02-27</p>
+</header>
+
+<nav id="TOC" role="doc-toc">
+    <h2 id="toc-title">Table of contents</h2>
+   
+  <ul>
+  <li><a href="#before-you-start" id="toc-before-you-start">Before You Start</a></li>
+  <li><a href="#the-question" id="toc-the-question">1. The Question</a></li>
+  <li><a href="#the-conceptual-model" id="toc-the-conceptual-model">2. The Conceptual Model</a>
+  <ul>
+  <li><a href="#landslide-types" id="toc-landslide-types">Landslide Types</a></li>
+  <li><a href="#mohr-coulomb-failure-criterion" id="toc-mohr-coulomb-failure-criterion">Mohr-Coulomb Failure Criterion</a></li>
+  <li><a href="#factor-of-safety" id="toc-factor-of-safety">Factor of Safety</a></li>
+  </ul></li>
+  <li><a href="#building-the-mathematical-model" id="toc-building-the-mathematical-model">3. Building the Mathematical Model</a>
+  <ul>
+  <li><a href="#infinite-slope-model" id="toc-infinite-slope-model">Infinite Slope Model</a></li>
+  <li><a href="#effect-of-water" id="toc-effect-of-water">Effect of Water</a></li>
+  <li><a href="#seismic-loading" id="toc-seismic-loading">Seismic Loading</a></li>
+  </ul></li>
+  <li><a href="#worked-example-by-hand" id="toc-worked-example-by-hand">4. Worked Example by Hand</a>
+  <ul>
+  <li><a href="#solution" id="toc-solution">Solution</a></li>
+  </ul></li>
+  <li><a href="#computational-implementation" id="toc-computational-implementation">5. Computational Implementation</a></li>
+  <li><a href="#interpretation" id="toc-interpretation">6. Interpretation</a>
+  <ul>
+  <li><a href="#rainfall-induced-landslides" id="toc-rainfall-induced-landslides">Rainfall-Induced Landslides</a></li>
+  <li><a href="#earthquake-induced-landslides" id="toc-earthquake-induced-landslides">Earthquake-Induced Landslides</a></li>
+  <li><a href="#cut-slope-design" id="toc-cut-slope-design">Cut Slope Design</a></li>
+  </ul></li>
+  <li><a href="#what-could-go-wrong" id="toc-what-could-go-wrong">7. What Could Go Wrong?</a>
+  <ul>
+  <li><a href="#assuming-homogeneous-soil" id="toc-assuming-homogeneous-soil">Assuming Homogeneous Soil</a></li>
+  <li><a href="#ignoring-time-dependent-strength" id="toc-ignoring-time-dependent-strength">Ignoring Time-Dependent Strength</a></li>
+  <li><a href="#d-vs-3d-effects" id="toc-d-vs-3d-effects">2D vs 3D Effects</a></li>
+  <li><a href="#vegetation-effects" id="toc-vegetation-effects">Vegetation Effects</a></li>
+  </ul></li>
+  <li><a href="#extension-landslide-susceptibility-mapping" id="toc-extension-landslide-susceptibility-mapping">8. Extension: Landslide Susceptibility Mapping</a></li>
+  <li><a href="#math-refresher-free-body-diagrams" id="toc-math-refresher-free-body-diagrams">9. Math Refresher: Free Body Diagrams</a>
+  <ul>
+  <li><a href="#force-resolution" id="toc-force-resolution">Force Resolution</a></li>
+  <li><a href="#equilibrium-conditions" id="toc-equilibrium-conditions">Equilibrium Conditions</a></li>
+  <li><a href="#slope-forces" id="toc-slope-forces">Slope Forces</a></li>
+  </ul></li>
+  <li><a href="#summary" id="toc-summary">Summary</a></li>
+  </ul>
+</nav>
+<p>On the morning of 9 August 2010, a hillside above the village of Gansu in northwestern China had stood for centuries. By that evening it was gone. A combination of weeks of saturation from unusually heavy rainfall and a steep slope angle produced a landslide that buried more than 700 homes and killed over 1,700 people. The slope had failed because the pore water pressure from saturated soils had reduced the effective friction holding the soil to the bedrock below — the resisting force dropped below the driving force of gravity, and the whole mass began to move.</p>
+<p>Slope stability analysis is the quantitative answer to a question that engineers, geologists, and land-use planners need to answer precisely: given this slope geometry, these soil properties, and these groundwater conditions, how close is this hillside to failure? The tool is the Factor of Safety — the ratio of resisting to driving forces — derived from the Mohr-Coulomb failure criterion that describes how soils and rocks resist shear. A Factor of Safety above 1 means the slope is stable; below 1 means it has already failed; exactly 1 is the critical condition. The power of the method is that it converts a qualitative question about hazard into a number that can be mapped, compared across landscapes, and updated as conditions change with rainfall, earthquake shaking, or excavation.</p>
+<h2 id="before-you-start" class="anchored">Before You Start</h2>
+<p>This chapter becomes much easier once you read the factor of safety as a comparison, not a mysterious formula. It is simply resisting force divided by driving force. Values above 1 mean the slope has some margin; values below 1 mean failure is expected.</p>
+<h2 id="the-question" class="anchored">1. The Question</h2>
+<p>After heavy rain, which hillslopes will fail as landslides?</p>
+<p><strong>Slope stability</strong> determines whether soil/rock remains in place or slides downslope.</p>
+<p><strong>Driving forces:</strong></p>
+<ul>
+<li>Gravity (weight component parallel to slope)</li>
+<li>Water pressure (reduces effective stress)</li>
+<li>Earthquakes (dynamic loading)</li>
+<li>External loads (buildings, traffic)</li>
+</ul>
+<p><strong>Resisting forces:</strong></p>
+<ul>
+<li>Friction (depends on normal stress)</li>
+<li>Cohesion (soil/rock strength)</li>
+<li>Vegetation (root reinforcement)</li>
+</ul>
+<p><strong>Critical question:</strong> Does resistance exceed driving force?</p>
+<p><strong>Applications:</strong></p>
+<ul>
+<li>Landslide hazard mapping</li>
+<li>Cut/fill slope design (roads, buildings)</li>
+<li>Dam stability</li>
+<li>Mine pit walls</li>
+<li>Post-earthquake assessment</li>
+</ul>
+<hr>
+<h2 id="the-conceptual-model" class="anchored">2. The Conceptual Model</h2>
+<h3 id="landslide-types" class="anchored">Landslide Types</h3>
+<p><strong>By material:</strong></p>
+<ul>
+<li><strong>Rock slide:</strong> Bedrock failure</li>
+<li><strong>Debris slide:</strong> Soil + rock fragments</li>
+<li><strong>Earth slide:</strong> Predominantly soil</li>
+</ul>
+<p><strong>By mechanism:</strong></p>
+<ul>
+<li><strong>Rotational:</strong> Curved failure surface</li>
+<li><strong>Translational:</strong> Planar failure surface</li>
+<li><strong>Complex:</strong> Multiple failure modes</li>
+</ul>
+<p><strong>By movement:</strong></p>
+<ul>
+<li><strong>Slide:</strong> Mass moves as coherent unit</li>
+<li><strong>Flow:</strong> Fluid-like behavior</li>
+<li><strong>Fall:</strong> Free-fall from cliff</li>
+<li><strong>Topple:</strong> Forward rotation</li>
+</ul>
+<h3 id="mohr-coulomb-failure-criterion" class="anchored">Mohr-Coulomb Failure Criterion</h3>
+<p><strong>Shear strength:</strong></p>
+<p><span class="math display">\tau_f = c + \sigma' \tan\phi</span></p>
+<p>Where: - <span class="math inline">\tau_f</span> = shear strength (kPa) - <span class="math inline">c</span> = cohesion (kPa) - <span class="math inline">\sigma'</span> = effective normal stress (kPa) - <span class="math inline">\phi</span> = friction angle (degrees)</p>
+<p><strong>Effective stress:</strong></p>
+<p><span class="math display">\sigma' = \sigma - u</span></p>
+<p>Where: - <span class="math inline">\sigma</span> = total stress - <span class="math inline">u</span> = pore water pressure</p>
+<p><strong>Key insight:</strong> Water reduces effective stress → reduces shear strength!</p>
+<h3 id="factor-of-safety" class="anchored">Factor of Safety</h3>
+<p><span class="math display">FS = \frac{\text{Resisting Forces}}{\text{Driving Forces}} = \frac{\tau_f}{\tau}</span></p>
+<p><strong>Interpretation:</strong></p>
+<ul>
+<li><span class="math inline">FS &gt; 1.5</span>: Stable (safe)</li>
+<li><span class="math inline">FS = 1.0-1.5</span>: Marginal (monitor)</li>
+<li><span class="math inline">FS &lt; 1.0</span>: <strong>Failure</strong> (landslide occurs)</li>
+</ul>
+<p><strong>Design criterion:</strong> Typically require <span class="math inline">FS &gt; 1.5</span> for permanent slopes.</p>
+<figure class="cg-ill">
+<div class="cg-ill__frame" data-markdown="1">
+<div class="cg-ill__eyebrow">
+Force Balance
+</div>
+<h3 class="cg-ill__title anchored">
+Slope Failure Starts When Driving Forces Overtake Shear Resistance
+</h3>
+<p class="cg-ill__lede">
+The factor of safety is easier to remember when the hillside is drawn as a force problem. Gravity pulls downslope, normal stress and friction resist, and pore water pressure weakens the contact with the underlying plane.
+</p>
+<div class="cg-ill__slope-grid">
+<div class="cg-ill__card">
+<svg viewbox="0 0 560 320" role="img" aria-label="Slope stability diagram showing failure plane, driving force, resisting friction, and pore water pressure">
+  <rect x="0" y="0" width="560" height="320" rx="22" fill="#eef3ef"></rect>
+  <polygon points="60,252 262,130 500,252" fill="#ceb28d" stroke="#8b7456" stroke-width="3"></polygon>
+  <polygon points="172,194 318,140 404,214 256,250" fill="#d9c4a2" stroke="#7c684f" stroke-width="3"></polygon>
+  <line x1="156" y1="220" x2="390" y2="220" stroke="#8e4d2c" stroke-width="5" stroke-dasharray="10 8"></line>
+  <text x="396" y="225" font-size="17" fill="#8e4d2c" font-weight="700">failure plane</text>
+  <line x1="282" y1="182" x2="338" y2="244" stroke="#8f5632" stroke-width="5"></line>
+  <polygon points="338,244 324,238 334,228" fill="#8f5632"></polygon>
+  <text x="344" y="252" font-size="16" fill="#8f5632">driving force</text>
+  <line x1="300" y1="224" x2="238" y2="206" stroke="#557b58" stroke-width="5"></line>
+  <polygon points="238,206 252,202 248,216" fill="#557b58"></polygon>
+  <text x="142" y="198" font-size="16" fill="#557b58">friction + cohesion</text>
+  <line x1="230" y1="228" x2="230" y2="182" stroke="#4d83a1" stroke-width="5"></line>
+  <polygon points="230,182 224,196 236,196" fill="#4d83a1"></polygon>
+  <text x="92" y="174" font-size="16" fill="#4d83a1">pore water pressure</text>
+  <line x1="282" y1="182" x2="282" y2="112" stroke="#3f4c56" stroke-width="5"></line>
+  <polygon points="282,112 276,126 288,126" fill="#3f4c56"></polygon>
+  <text x="292" y="118" font-size="16" fill="#3f4c56">weight</text>
+  <text x="78" y="286" font-size="16" fill="#35515f">Rainfall raises pore pressure, which lowers effective stress and weakens resistance.</text>
+</svg>
+</div>
+<div class="cg-ill__card">
+<h4 class="anchored">
+What changes stability fastest
+</h4>
+<ul>
+<li>
+Steeper slopes increase the downslope gravity component.
+</li>
+<li>
+Water pressure reduces effective normal stress and therefore friction.
+</li>
+<li>
+Cohesion and root reinforcement add resisting strength.
+</li>
+<li>
+Failure begins once resisting force divided by driving force drops below 1.
+</li>
+</ul>
+</div>
+</div>
+</div>
+<figcaption>
+Slope stability is a competition between downslope driving force and shear resistance along a potential failure plane. Water is often the decisive term because it weakens resistance without removing the slope mass.
+</figcaption>
+</figure>
+<hr>
+<h2 id="building-the-mathematical-model" class="anchored">3. Building the Mathematical Model</h2>
+<h3 id="infinite-slope-model" class="anchored">Infinite Slope Model</h3>
+<p><strong>Assumptions:</strong></p>
+<ul>
+<li>Uniform slope angle <span class="math inline">\theta</span></li>
+<li>Failure parallel to surface</li>
+<li>Infinite extent (no edge effects)</li>
+</ul>
+<p><strong>Forces on soil element:</strong></p>
+<p><strong>Weight:</strong> <span class="math inline">W = \gamma z b L</span></p>
+<p>Where: - <span class="math inline">\gamma</span> = unit weight of soil (kN/m³) - <span class="math inline">z</span> = depth to failure plane (m) - <span class="math inline">b</span> = width (m) - <span class="math inline">L</span> = length along slope (m)</p>
+<p><strong>Weight components:</strong></p>
+<p><strong>Parallel to slope (driving):</strong></p>
+<p><span class="math display">W_\parallel = W \sin\theta = \gamma z b L \sin\theta</span></p>
+<p><strong>Perpendicular (normal):</strong></p>
+<p><span class="math display">W_\perp = W \cos\theta = \gamma z b L \cos\theta</span></p>
+<p><strong>Normal stress:</strong></p>
+<p><span class="math display">\sigma = \frac{W_\perp}{b L / \cos\theta} = \gamma z \cos^2\theta</span></p>
+<p><strong>Shear stress (driving):</strong></p>
+<p><span class="math display">\tau = \frac{W_\parallel}{b L / \cos\theta} = \gamma z \sin\theta \cos\theta</span></p>
+<p><strong>Shear strength (resisting):</strong></p>
+<p><span class="math display">\tau_f = c + \sigma' \tan\phi = c + \gamma z \cos^2\theta \tan\phi</span></p>
+<p>(Assuming dry slope: <span class="math inline">\sigma' = \sigma</span>)</p>
+<p><strong>Factor of Safety:</strong></p>
+<p><span class="math display">FS = \frac{\tau_f}{\tau} = \frac{c + \gamma z \cos^2\theta \tan\phi}{\gamma z \sin\theta \cos\theta}</span></p>
+<p><strong>Simplified:</strong></p>
+<p><span class="math display">FS = \frac{c}{\gamma z \sin\theta \cos\theta} + \frac{\tan\phi}{\tan\theta}</span></p>
+<p><strong>For cohesionless soil (<span class="math inline">c = 0</span>):</strong></p>
+<p><span class="math display">FS = \frac{\tan\phi}{\tan\theta}</span></p>
+<p><strong>Critical slope angle:</strong> <span class="math inline">\theta_{\text{crit}} = \phi</span> (where <span class="math inline">FS = 1</span>)</p>
+<h3 id="effect-of-water" class="anchored">Effect of Water</h3>
+<p><strong>Saturated slope with seepage parallel to surface:</strong></p>
+<p><strong>Pore pressure:</strong> <span class="math inline">u = \gamma_w z_w \cos^2\theta</span></p>
+<p>Where: - <span class="math inline">\gamma_w</span> = unit weight of water (9.81 kN/m³) - <span class="math inline">z_w</span> = depth to water table</p>
+<p><strong>Effective stress:</strong></p>
+<p><span class="math display">\sigma' = \gamma z \cos^2\theta - \gamma_w z_w \cos^2\theta</span></p>
+<p><strong>If fully saturated (<span class="math inline">z_w = z</span>):</strong></p>
+<p><span class="math display">\sigma' = (\gamma - \gamma_w) z \cos^2\theta = \gamma' z \cos^2\theta</span></p>
+<p>Where <span class="math inline">\gamma' = \gamma - \gamma_w</span> = buoyant unit weight</p>
+<p><strong>Factor of Safety (saturated):</strong></p>
+<p><span class="math display">FS = \frac{c}{\gamma z \sin\theta \cos\theta} + \frac{\gamma'}{\gamma} \frac{\tan\phi}{\tan\theta}</span></p>
+<p><strong>Key result:</strong> <span class="math inline">\gamma'/\gamma \approx 0.5</span> for typical soils → <strong>FS reduced by ~50%</strong> when saturated!</p>
+<h3 id="seismic-loading" class="anchored">Seismic Loading</h3>
+<p><strong>Earthquake adds horizontal force:</strong></p>
+<p><strong>Pseudo-static approach:</strong></p>
+<p><span class="math display">F_h = k_h W</span></p>
+<p>Where <span class="math inline">k_h</span> = horizontal seismic coefficient (~0.1-0.3 for strong shaking)</p>
+<p><strong>Modified driving stress:</strong></p>
+<p><span class="math display">\tau_{\text{seismic}} = \gamma z (\sin\theta + k_h \cos\theta) \cos\theta</span></p>
+<p><strong>Factor of Safety:</strong></p>
+<p><span class="math display">FS_{\text{seismic}} = \frac{c + \gamma z \cos^2\theta \tan\phi}{\gamma z (\sin\theta + k_h \cos\theta) \cos\theta}</span></p>
+<p><strong>Earthquake reduces FS</strong> by increasing driving force.</p>
+<hr>
+<h2 id="worked-example-by-hand" class="anchored">4. Worked Example by Hand</h2>
+<p><strong>Problem:</strong> Calculate factor of safety for hillslope.</p>
+<p><strong>Slope conditions:</strong></p>
+<ul>
+<li>Angle: <span class="math inline">\theta = 30°</span></li>
+<li>Soil depth to bedrock: <span class="math inline">z = 3</span> m</li>
+<li>Unit weight: <span class="math inline">\gamma = 18</span> kN/m³</li>
+<li>Cohesion: <span class="math inline">c = 5</span> kPa</li>
+<li>Friction angle: <span class="math inline">\phi = 35°</span></li>
+</ul>
+<p><strong>Calculate FS for:</strong></p>
+<ol type="1">
+<li>Dry slope</li>
+<li>Fully saturated slope</li>
+<li>Saturated slope with earthquake (<span class="math inline">k_h = 0.15</span>)</li>
+</ol>
+<h3 id="solution" class="anchored">Solution</h3>
+<p><strong>Case 1: Dry slope</strong></p>
+<p><span class="math display">\tau = \gamma z \sin\theta \cos\theta = 18 \times 3 \times \sin(30°) \times \cos(30°)</span></p>
+<p><span class="math display">= 18 \times 3 \times 0.5 \times 0.866 = 23.4 \text{ kPa}</span></p>
+<p><span class="math display">\sigma = \gamma z \cos^2\theta = 18 \times 3 \times (0.866)^2 = 40.5 \text{ kPa}</span></p>
+<p><span class="math display">\tau_f = c + \sigma \tan\phi = 5 + 40.5 \times \tan(35°) = 5 + 40.5 \times 0.700 = 33.4 \text{ kPa}</span></p>
+<p><span class="math display">FS = \frac{33.4}{23.4} = 1.43</span></p>
+<p><strong>Marginal stability</strong> (just below typical design criterion of 1.5)</p>
+<p><strong>Case 2: Saturated slope</strong></p>
+<p>Buoyant unit weight: <span class="math inline">\gamma' = 18 - 9.81 = 8.19</span> kN/m³</p>
+<p><span class="math display">\sigma' = \gamma' z \cos^2\theta = 8.19 \times 3 \times 0.75 = 18.4 \text{ kPa}</span></p>
+<p><span class="math display">\tau_f = 5 + 18.4 \times 0.700 = 17.9 \text{ kPa}</span></p>
+<p><span class="math display">FS = \frac{17.9}{23.4} = 0.76</span></p>
+<p><strong>FAILURE!</strong> (FS &lt; 1.0)</p>
+<p><strong>Case 3: Saturated + earthquake</strong></p>
+<p><span class="math display">\tau_{\text{eq}} = \gamma z (\sin\theta + k_h\cos\theta) \cos\theta</span></p>
+<p><span class="math display">= 18 \times 3 \times (0.5 + 0.15 \times 0.866) \times 0.866</span></p>
+<p><span class="math display">= 18 \times 3 \times (0.5 + 0.130) \times 0.866 = 29.4 \text{ kPa}</span></p>
+<p><span class="math display">FS = \frac{17.9}{29.4} = 0.61</span></p>
+<p><strong>Catastrophic failure</strong> (FS well below 1.0)</p>
+<p><strong>Summary:</strong></p>
+<ul>
+<li>Dry: FS = 1.43 (marginal)</li>
+<li>Saturated: FS = 0.76 (fails)</li>
+<li>Saturated + earthquake: FS = 0.61 (catastrophic)</li>
+</ul>
+<p><strong>This explains why landslides often occur during/after heavy rain or earthquakes!</strong></p>
+<hr>
+<h2 id="computational-implementation" class="anchored">5. Computational Implementation</h2>
+<p>Below is an interactive slope stability calculator.</p>
+<div class="viz-container" id="stability-viz">
+<div class="controls">
+<label>
+Slope angle (°):
+<input type="range" id="slope-angle" min="10" max="50" step="1" value="30">
+<span id="angle-val">30</span>°
+</label>
+<label>
+Friction angle φ (°):
+<input type="range" id="friction-angle" min="20" max="45" step="1" value="35">
+<span id="friction-val">35</span>°
+</label>
+<label>
+Cohesion (kPa):
+<input type="range" id="cohesion" min="0" max="20" step="1" value="5">
+<span id="cohesion-val">5</span>
+</label>
+<label>
+Water table depth (m):
+<input type="range" id="water-depth" min="0" max="3" step="0.5" value="3">
+<span id="water-val">3.0</span> (3m = dry)
+</label>
+<label>
+Seismic coefficient:
+<input type="range" id="seismic" min="0" max="0.3" step="0.05" value="0">
+<span id="seismic-val">0.00</span>
+</label>
+<div class="stability-info">
+<p><strong>Factor of Safety:</strong> <span id="fs-value">--</span></p>
+<p><strong>Status:</strong> <span id="stability-status">--</span></p>
+<p><strong>Driving stress:</strong> <span id="tau-drive">--</span> kPa</p>
+<p><strong>Resisting stress:</strong> <span id="tau-resist">--</span> kPa</p>
+</div>
+</div>
+<div id="stability-canvas-container">
+<canvas id="stability-canvas" width="700" height="400" style="border: 1px solid #ddd;"></canvas>
+</div>
+</div>
+
+<script type="module">
+await new Promise(resolve => {
+const checkECharts = () => {
+if (typeof echarts !== 'undefined') resolve();
+else setTimeout(checkECharts, 50);
+};
+checkECharts();
+});
+
+(function() {
+const chart = echarts.init(document.getElementById('stability-canvas'));
+  
+let slopeAngle = 30;
+let frictionAngle = 35;
+let cohesion = 5;
+let waterDepth = 3;
+let seismicCoef = 0;
+  
+const z = 3; // depth to failure (m)
+const gamma = 18; // unit weight (kN/m³)
+const gammaW = 9.81; // water unit weight
+  
+function calculateStability() {
+const thetaRad = slopeAngle * Math.PI / 180;
+const phiRad = frictionAngle * Math.PI / 180;
+    
+const sinTheta = Math.sin(thetaRad);
+const cosTheta = Math.cos(thetaRad);
+const tanPhi = Math.tan(phiRad);
+    
+// Effective stress
+let gammaPrime = gamma;
+if (waterDepth < z) {
+// Partially saturated
+const satFraction = (z - waterDepth) / z;
+gammaPrime = gamma - satFraction * gammaW;
+}
+    
+const sigma = gammaPrime * z * cosTheta * cosTheta;
+    
+// Driving stress
+const tauDrive = gamma * z * (sinTheta + seismicCoef * cosTheta) * cosTheta;
+    
+// Resisting stress
+const tauResist = cohesion + sigma * tanPhi;
+    
+// Factor of Safety
+const FS = tauResist / tauDrive;
+    
+let status;
+if (FS > 1.5) status = 'Stable';
+else if (FS > 1.2) status = 'Marginally Stable';
+else if (FS > 1.0) status = 'Critical';
+else status = 'FAILURE';
+    
+return {FS, status, tauDrive, tauResist, sigma};
+}
+  
+function generateFSvsAngle() {
+const data = [];
+    
+for (let angle = 10; angle <= 50; angle += 1) {
+slopeAngle = angle;
+const result = calculateStability();
+data.push([angle, result.FS]);
+}
+    
+slopeAngle = parseFloat(document.getElementById('slope-angle').value);
+return data;
+}
+  
+function render() {
+const result = calculateStability();
+    
+document.getElementById('fs-value').textContent = result.FS.toFixed(2);
+document.getElementById('stability-status').textContent = result.status;
+document.getElementById('tau-drive').textContent = result.tauDrive.toFixed(1);
+document.getElementById('tau-resist').textContent = result.tauResist.toFixed(1);
+    
+const statusEl = document.getElementById('stability-status');
+if (result.status === 'Stable') statusEl.style.color = '#2E7D32';
+else if (result.status.includes('Marginal')) statusEl.style.color = '#F57F17';
+else if (result.status === 'Critical') statusEl.style.color = '#E64A19';
+else statusEl.style.color = '#B71C1C';
+    
+const fsData = generateFSvsAngle();
+    
+const series = [
+{
+name: 'Factor of Safety',
+type: 'line',
+data: fsData,
+lineStyle: {color: '#1976D2', width: 3},
+areaStyle: {
+color: {
+type: 'linear',
+x: 0, y: 0, x2: 0, y2: 1,
+colorStops: [
+{offset: 0, color: 'rgba(76, 175, 80, 0.3)'},
+{offset: 0.5, color: 'rgba(255, 193, 7, 0.3)'},
+{offset: 1, color: 'rgba(244, 67, 54, 0.3)'}
+]
+}
+}
+},
+{
+name: 'FS = 1.0 (Failure)',
+type: 'line',
+data: [[10, 1.0], [50, 1.0]],
+lineStyle: {color: '#D32F2F', width: 2, type: 'dashed'},
+markLine: {
+silent: true,
+lineStyle: {color: '#D32F2F', width: 2, type: 'dashed'},
+data: [{yAxis: 1.0}],
+label: {formatter: 'Failure threshold', position: 'insideEndTop'}
+}
+},
+{
+name: 'FS = 1.5 (Design)',
+type: 'line',
+data: [[10, 1.5], [50, 1.5]],
+lineStyle: {color: '#FF9800', width: 2, type: 'dotted'},
+markLine: {
+silent: true,
+lineStyle: {color: '#FF9800', width: 2, type: 'dotted'},
+data: [{yAxis: 1.5}],
+label: {formatter: 'Design criterion', position: 'insideEndTop'}
+}
+},
+{
+name: 'Current Slope',
+type: 'scatter',
+data: [[slopeAngle, result.FS]],
+symbolSize: 15,
+itemStyle: {color: '#E91E63'},
+label: {
+show: true,
+formatter: `${slopeAngle}°`,
+position: 'top',
+color: '#E91E63',
+fontWeight: 'bold'
+}
+}
+];
+    
+const option = {
+title: {
+text: 'Factor of Safety vs Slope Angle',
+left: 'center'
+},
+tooltip: {
+trigger: 'axis',
+axisPointer: {type: 'cross'}
+},
+legend: {
+data: ['Factor of Safety', 'FS = 1.0 (Failure)', 'FS = 1.5 (Design)', 'Current Slope'],
+top: 30
+},
+grid: {
+left: 80,
+right: 40,
+top: 80,
+bottom: 60
+},
+xAxis: {
+type: 'value',
+name: 'Slope Angle (degrees)',
+nameLocation: 'middle',
+nameGap: 30,
+min: 10,
+max: 50
+},
+yAxis: {
+type: 'value',
+name: 'Factor of Safety',
+nameLocation: 'middle',
+nameGap: 50,
+min: 0,
+max: 3
+},
+series: series
+};
+    
+chart.setOption(option, true);
+}
+  
+document.getElementById('slope-angle').addEventListener('input', (e) => {
+slopeAngle = parseFloat(e.target.value);
+document.getElementById('angle-val').textContent = slopeAngle;
+render();
+});
+  
+document.getElementById('friction-angle').addEventListener('input', (e) => {
+frictionAngle = parseFloat(e.target.value);
+document.getElementById('friction-val').textContent = frictionAngle;
+render();
+});
+  
+document.getElementById('cohesion').addEventListener('input', (e) => {
+cohesion = parseFloat(e.target.value);
+document.getElementById('cohesion-val').textContent = cohesion;
+render();
+});
+  
+document.getElementById('water-depth').addEventListener('input', (e) => {
+waterDepth = parseFloat(e.target.value);
+document.getElementById('water-val').textContent = waterDepth.toFixed(1);
+render();
+});
+  
+document.getElementById('seismic').addEventListener('input', (e) => {
+seismicCoef = parseFloat(e.target.value);
+document.getElementById('seismic-val').textContent = seismicCoef.toFixed(2);
+render();
+});
+  
+render();
+  
+window.addEventListener('resize', () => chart.resize());
+})();
+</script>
+<p><strong>Try this:</strong></p>
+<ul>
+<li><strong>Increase slope angle:</strong> FS drops (steeper = less stable)</li>
+<li><strong>Lower water table (0m = saturated):</strong> FS drops dramatically!</li>
+<li><strong>Add seismic loading:</strong> FS drops further</li>
+<li><strong>Increase friction angle:</strong> Higher FS (stronger soil)</li>
+<li><strong>Add cohesion:</strong> Raises FS curve (especially at steep angles)</li>
+<li><strong>Green area:</strong> Stable (FS &gt; 1.5)</li>
+<li><strong>Yellow area:</strong> Marginal (FS 1.0-1.5)</li>
+<li><strong>Red area:</strong> Failure (FS &lt; 1.0)</li>
+<li><strong>Pink dot:</strong> Current slope condition</li>
+<li>Watch FS cross failure threshold!</li>
+</ul>
+<p><strong>Key insight:</strong> Water + earthquakes = catastrophic combination for slope stability!</p>
+<hr>
+<h2 id="interpretation" class="anchored">6. Interpretation</h2>
+<h3 id="rainfall-induced-landslides" class="anchored">Rainfall-Induced Landslides</h3>
+<p><strong>Mechanism:</strong></p>
+<ol type="1">
+<li>Rain infiltrates soil</li>
+<li>Water table rises</li>
+<li>Pore pressure increases</li>
+<li>Effective stress decreases</li>
+<li>Shear strength drops</li>
+<li><strong>Failure</strong> when FS &lt; 1.0</li>
+</ol>
+<p><strong>Threshold rainfall:</strong></p>
+<ul>
+<li>Short duration, high intensity: Shallow slides</li>
+<li>Long duration, moderate intensity: Deep-seated slides</li>
+</ul>
+<p><strong>Example - Pacific Northwest:</strong></p>
+<ul>
+<li>Threshold: ~200mm in 3 days</li>
+<li>Thousands of landslides triggered</li>
+</ul>
+<h3 id="earthquake-induced-landslides" class="anchored">Earthquake-Induced Landslides</h3>
+<p><strong>Case study - 2015 Nepal:</strong></p>
+<ul>
+<li>Magnitude 7.8 earthquake</li>
+<li>25,000+ landslides triggered</li>
+<li>Some on slopes previously stable (FS &gt; 1.5 dry)</li>
+<li>Liquefaction in saturated soils</li>
+</ul>
+<p><strong>Newmark displacement:</strong></p>
+<ul>
+<li>Permanent downslope movement during shaking</li>
+<li>Depends on: Peak acceleration, critical acceleration, duration</li>
+</ul>
+<h3 id="cut-slope-design" class="anchored">Cut Slope Design</h3>
+<p><strong>Road construction:</strong></p>
+<p><strong>Typical criterion:</strong> FS &gt; 1.5 for permanent cuts</p>
+<p><strong>Design strategies:</strong></p>
+<ul>
+<li>Flatten slope (reduce <span class="math inline">\theta</span>)</li>
+<li>Improve drainage (keep dry)</li>
+<li>Soil nails/anchors (add resistance)</li>
+<li>Retaining walls</li>
+</ul>
+<p><strong>Cost trade-off:</strong></p>
+<ul>
+<li>Steeper → less excavation → cheaper</li>
+<li>BUT steeper → lower FS → higher failure risk</li>
+</ul>
+<hr>
+<h2 id="what-could-go-wrong" class="anchored">7. What Could Go Wrong?</h2>
+<h3 id="assuming-homogeneous-soil" class="anchored">Assuming Homogeneous Soil</h3>
+<p><strong>Reality:</strong> Soil has layers with different properties.</p>
+<p><strong>Weak layer</strong> controls failure (lowest strength).</p>
+<p><strong>Example:</strong></p>
+<ul>
+<li>Strong surface soil (c=10 kPa, φ=40°)</li>
+<li>Weak clay layer at depth (c=2 kPa, φ=25°)</li>
+<li><strong>Failure occurs along clay</strong></li>
+</ul>
+<p><strong>Solution:</strong> Multilayer analysis, find critical surface.</p>
+<h3 id="ignoring-time-dependent-strength" class="anchored">Ignoring Time-Dependent Strength</h3>
+<p><strong>Creep:</strong> Slow downslope movement</p>
+<p><strong>Residual strength:</strong> After movement starts, strength drops to residual value (&lt; peak).</p>
+<p><strong>Progressive failure:</strong> Small movements → strength reduction → more movement</p>
+<p><strong>Solution:</strong> Use residual strength for long-term stability.</p>
+<h3 id="d-vs-3d-effects" class="anchored">2D vs 3D Effects</h3>
+<p><strong>Infinite slope = 2D</strong> (no edge effects)</p>
+<p><strong>Real slopes:</strong> 3D geometry matters - Converging topography (gullies) → less stable - Diverging topography (ridges) → more stable</p>
+<p><strong>Solution:</strong> 3D limit equilibrium or FEM analysis.</p>
+<h3 id="vegetation-effects" class="anchored">Vegetation Effects</h3>
+<p><strong>Roots:</strong> Add tensile strength (resistance)</p>
+<p><strong>But:</strong> Trees add weight (driving force) + wind loading</p>
+<p><strong>Net effect:</strong> Usually stabilizing for shallow slides, destabilizing for deep slides</p>
+<p><strong>Deforestation:</strong> Increases landslide risk (roots decay in 2-5 years)</p>
+<hr>
+<h2 id="extension-landslide-susceptibility-mapping" class="anchored">8. Extension: Landslide Susceptibility Mapping</h2>
+<p><strong>Combine factors spatially:</strong></p>
+<p><strong>From DEM:</strong></p>
+<ul>
+<li>Slope angle</li>
+<li>Aspect (wetness)</li>
+<li>Curvature (convergent topography)</li>
+<li>Upslope contributing area (water accumulation)</li>
+</ul>
+<p><strong>From soils:</strong></p>
+<ul>
+<li>Soil type (strength parameters)</li>
+<li>Depth to bedrock</li>
+</ul>
+<p><strong>From land cover:</strong></p>
+<ul>
+<li>Vegetation (root strength)</li>
+<li>Land use</li>
+</ul>
+<p><strong>Statistical model (logistic regression):</strong></p>
+<p><span class="math display">P(\text{landslide}) = \frac{1}{1 + e^{-(\beta_0 + \beta_1 \theta + \beta_2 c + \cdots)}}</span></p>
+<p><strong>Or physically-based (SHALSTAB, SINMAP):</strong></p>
+<p>Apply infinite slope model to every pixel, calculate FS.</p>
+<p><strong>Output:</strong> Landslide susceptibility map (high/medium/low)</p>
+<hr>
+<h2 id="math-refresher-free-body-diagrams" class="anchored">9. Math Refresher: Free Body Diagrams</h2>
+<h3 id="force-resolution" class="anchored">Force Resolution</h3>
+<p><strong>Vector components:</strong></p>
+<p>Force <span class="math inline">F</span> at angle <span class="math inline">\alpha</span>:</p>
+<p><span class="math display">F_x = F \cos\alpha</span> <span class="math display">F_y = F \sin\alpha</span></p>
+<h3 id="equilibrium-conditions" class="anchored">Equilibrium Conditions</h3>
+<p><strong>Translational equilibrium:</strong></p>
+<p><span class="math display">\sum F_x = 0</span> <span class="math display">\sum F_y = 0</span></p>
+<p><strong>Rotational equilibrium:</strong></p>
+<p><span class="math display">\sum M = 0</span></p>
+<p>(Sum of moments about any point)</p>
+<h3 id="slope-forces" class="anchored">Slope Forces</h3>
+<p><strong>Weight <span class="math inline">W</span> on slope angle <span class="math inline">\theta</span>:</strong></p>
+<p><strong>Parallel to slope:</strong></p>
+<p><span class="math display">W_\parallel = W \sin\theta</span></p>
+<p><strong>Normal to slope:</strong></p>
+<p><span class="math display">W_\perp = W \cos\theta</span></p>
+<p><strong>These satisfy:</strong> <span class="math inline">W_\parallel^2 + W_\perp^2 = W^2</span></p>
+<hr>
+<h2 id="summary" class="anchored">Summary</h2>
+<ul>
+<li><strong>Slope stability:</strong> Balance of driving forces (gravity) vs resisting forces (friction + cohesion)</li>
+<li><strong>Mohr-Coulomb criterion:</strong> <span class="math inline">\tau_f = c + \sigma' \tan\phi</span> (shear strength)</li>
+<li><strong>Factor of Safety:</strong> FS = resisting/driving, failure when FS &lt; 1.0</li>
+<li><strong>Infinite slope model:</strong> Simplified analysis for uniform slopes</li>
+<li><strong>Water effect:</strong> Reduces effective stress by ~50%, can drop FS from 1.5 to 0.75</li>
+<li><strong>Earthquake effect:</strong> Adds horizontal force, further reduces FS</li>
+<li><strong>Critical slope angle:</strong> <span class="math inline">\theta_{crit} = \phi</span> for cohesionless soils</li>
+<li><strong>Applications:</strong> Landslide hazard, road cuts, dam stability, earthquake response</li>
+<li><strong>Challenges:</strong> Heterogeneous soils, 3D geometry, time-dependent strength</li>
+<li><strong>Susceptibility mapping:</strong> Combine DEM + soils + vegetation for spatial risk</li>
+<li>Foundation for understanding when and where landslides occur</li>
+</ul>
+
+
+<footer class="wayward-footer">
+  <div class="wayward-footer__inner">
+    <div class="wayward-footer__brand">
+      <div class="wayward-footer__logo">WaywardHouse<span>.</span></div>
+      <p>Understanding how place, economy, and environment interact through analysis, modelling, and open tools.</p>
+    </div>
+
+    <nav class="wayward-footer__group" aria-labelledby="footer-reading">
+      <h2 id="footer-reading" class="anchored">Reading</h2>
+      <a href="https://wayward.house/articles/">Articles</a>
+      <a href="https://wayward.house/learn/">Library</a>
+      <a href="https://wayward.house/archive.html">Archive</a>
+      <a href="https://wayward.house/start-here.html">Choose Your Path</a>
+    </nav>
+
+    <nav class="wayward-footer__group" aria-labelledby="footer-site">
+      <h2 id="footer-site" class="anchored">Site</h2>
+      <a href="https://wayward.house/start-here.html">Choose Your Path</a>
+      <a href="https://wayward.house/about.html">About</a>
+      <a href="https://wayward.house/contact.html">Contact</a>
+    </nav>
+
+    <nav class="wayward-footer__group" aria-labelledby="footer-resources">
+      <h2 id="footer-resources" class="anchored">Resources</h2>
+      <a href="https://wayward.house/topics/">All Topics</a>
+      <a href="https://wayward.house/privacy.html">Privacy Policy</a>
+      <a href="https://wayward.house/terms.html">Terms of Use</a>
+    </nav>
+  </div>
+</footer>
+
+<script type="module" src="../assets/dist/main.js"></script>
+<script type="module" src="../assets/js/core.js"></script>
+<script id="quarto-html-after-body" type="application/javascript">
+  window.document.addEventListener("DOMContentLoaded", function (event) {
+    const tabsets =  window.document.querySelectorAll(".panel-tabset-tabby")
+    tabsets.forEach(function(tabset) {
+      const tabby = new Tabby('#' + tabset.id);
+    });
+    const icon = "";
+    const anchorJS = new window.AnchorJS();
+    anchorJS.options = {
+      placement: 'right',
+      icon: icon
+    };
+    anchorJS.add('.anchored');
+    const isCodeAnnotation = (el) => {
+      for (const clz of el.classList) {
+        if (clz.startsWith('code-annotation-')) {                     
+          return true;
+        }
+      }
+      return false;
+    }
+    const onCopySuccess = function(e) {
+      // button target
+      const button = e.trigger;
+      // don't keep focus
+      button.blur();
+      // flash "checked"
+      button.classList.add('code-copy-button-checked');
+      var currentTitle = button.getAttribute("title");
+      button.setAttribute("title", "Copied!");
+      let tooltip;
+      if (window.bootstrap) {
+        button.setAttribute("data-bs-toggle", "tooltip");
+        button.setAttribute("data-bs-placement", "left");
+        button.setAttribute("data-bs-title", "Copied!");
+        tooltip = new bootstrap.Tooltip(button, 
+          { trigger: "manual", 
+            customClass: "code-copy-button-tooltip",
+            offset: [0, -8]});
+        tooltip.show();    
+      }
+      setTimeout(function() {
+        if (tooltip) {
+          tooltip.hide();
+          button.removeAttribute("data-bs-title");
+          button.removeAttribute("data-bs-toggle");
+          button.removeAttribute("data-bs-placement");
+        }
+        button.setAttribute("title", currentTitle);
+        button.classList.remove('code-copy-button-checked');
+      }, 1000);
+      // clear code selection
+      e.clearSelection();
+    }
+    const getTextToCopy = function(trigger) {
+      const outerScaffold = trigger.parentElement.cloneNode(true);
+      const codeEl = outerScaffold.querySelector('code');
+      for (const childEl of codeEl.children) {
+        if (isCodeAnnotation(childEl)) {
+          childEl.remove();
+        }
+      }
+      return codeEl.innerText;
+    }
+    const clipboard = new window.ClipboardJS('.code-copy-button:not([data-in-quarto-modal])', {
+      text: getTextToCopy
+    });
+    clipboard.on('success', onCopySuccess);
+    if (window.document.getElementById('quarto-embedded-source-code-modal')) {
+      const clipboardModal = new window.ClipboardJS('.code-copy-button[data-in-quarto-modal]', {
+        text: getTextToCopy,
+        container: window.document.getElementById('quarto-embedded-source-code-modal')
+      });
+      clipboardModal.on('success', onCopySuccess);
+    }
+      var localhostRegex = new RegExp(/^(?:http|https):\/\/localhost\:?[0-9]*\//);
+      var mailtoRegex = new RegExp(/^mailto:/);
+        var filterRegex = new RegExp('/' + window.location.host + '/');
+      var isInternal = (href) => {
+          return filterRegex.test(href) || localhostRegex.test(href) || mailtoRegex.test(href);
+      }
+      // Inspect non-navigation links and adorn them if external
+     var links = window.document.querySelectorAll('a[href]:not(.nav-link):not(.navbar-brand):not(.toc-action):not(.sidebar-link):not(.sidebar-item-toggle):not(.pagination-link):not(.no-external):not([aria-hidden]):not(.dropdown-item):not(.quarto-navigation-tool):not(.about-link)');
+      for (var i=0; i<links.length; i++) {
+        const link = links[i];
+        if (!isInternal(link.href)) {
+          // undo the damage that might have been done by quarto-nav.js in the case of
+          // links that we want to consider external
+          if (link.dataset.originalHref !== undefined) {
+            link.href = link.dataset.originalHref;
+          }
+        }
+      }
+    function tippyHover(el, contentFn, onTriggerFn, onUntriggerFn) {
+      const config = {
+        allowHTML: true,
+        maxWidth: 500,
+        delay: 100,
+        arrow: false,
+        appendTo: function(el) {
+            return el.parentElement;
+        },
+        interactive: true,
+        interactiveBorder: 10,
+        theme: 'light-border',
+        placement: 'bottom-start',
+      };
+      if (contentFn) {
+        config.content = contentFn;
+      }
+      if (onTriggerFn) {
+        config.onTrigger = onTriggerFn;
+      }
+      if (onUntriggerFn) {
+        config.onUntrigger = onUntriggerFn;
+      }
+      window.tippy(el, config); 
+    }
+    const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+    for (var i=0; i<noterefs.length; i++) {
+      const ref = noterefs[i];
+      tippyHover(ref, function() {
+        // use id or data attribute instead here
+        let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+        try { href = new URL(href).hash; } catch {}
+        const id = href.replace(/^#\/?/, "");
+        const note = window.document.getElementById(id);
+        if (note) {
+          return note.innerHTML;
+        } else {
+          return "";
+        }
+      });
+    }
+    const xrefs = window.document.querySelectorAll('a.quarto-xref');
+    const processXRef = (id, note) => {
+      // Strip column container classes
+      const stripColumnClz = (el) => {
+        el.classList.remove("page-full", "page-columns");
+        if (el.children) {
+          for (const child of el.children) {
+            stripColumnClz(child);
+          }
+        }
+      }
+      stripColumnClz(note)
+      if (id === null || id.startsWith('sec-')) {
+        // Special case sections, only their first couple elements
+        const container = document.createElement("div");
+        if (note.children && note.children.length > 2) {
+          container.appendChild(note.children[0].cloneNode(true));
+          for (let i = 1; i < note.children.length; i++) {
+            const child = note.children[i];
+            if (child.tagName === "P" && child.innerText === "") {
+              continue;
+            } else {
+              container.appendChild(child.cloneNode(true));
+              break;
+            }
+          }
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(container);
+          }
+          return container.innerHTML
+        } else {
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(note);
+          }
+          return note.innerHTML;
+        }
+      } else {
+        // Remove any anchor links if they are present
+        const anchorLink = note.querySelector('a.anchorjs-link');
+        if (anchorLink) {
+          anchorLink.remove();
+        }
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(note);
+        }
+        if (note.classList.contains("callout")) {
+          return note.outerHTML;
+        } else {
+          return note.innerHTML;
+        }
+      }
+    }
+    for (var i=0; i<xrefs.length; i++) {
+      const xref = xrefs[i];
+      tippyHover(xref, undefined, function(instance) {
+        instance.disable();
+        let url = xref.getAttribute('href');
+        let hash = undefined; 
+        if (url.startsWith('#')) {
+          hash = url;
+        } else {
+          try { hash = new URL(url).hash; } catch {}
+        }
+        if (hash) {
+          const id = hash.replace(/^#\/?/, "");
+          const note = window.document.getElementById(id);
+          if (note !== null) {
+            try {
+              const html = processXRef(id, note.cloneNode(true));
+              instance.setContent(html);
+            } finally {
+              instance.enable();
+              instance.show();
+            }
+          } else {
+            // See if we can fetch this
+            fetch(url.split('#')[0])
+            .then(res => res.text())
+            .then(html => {
+              const parser = new DOMParser();
+              const htmlDoc = parser.parseFromString(html, "text/html");
+              const note = htmlDoc.getElementById(id);
+              if (note !== null) {
+                const html = processXRef(id, note);
+                instance.setContent(html);
+              } 
+            }).finally(() => {
+              instance.enable();
+              instance.show();
+            });
+          }
+        } else {
+          // See if we can fetch a full url (with no hash to target)
+          // This is a special case and we should probably do some content thinning / targeting
+          fetch(url)
+          .then(res => res.text())
+          .then(html => {
+            const parser = new DOMParser();
+            const htmlDoc = parser.parseFromString(html, "text/html");
+            const note = htmlDoc.querySelector('main.content');
+            if (note !== null) {
+              // This should only happen for chapter cross references
+              // (since there is no id in the URL)
+              // remove the first header
+              if (note.children.length > 0 && note.children[0].tagName === "HEADER") {
+                note.children[0].remove();
+              }
+              const html = processXRef(null, note);
+              instance.setContent(html);
+            } 
+          }).finally(() => {
+            instance.enable();
+            instance.show();
+          });
+        }
+      }, function(instance) {
+      });
+    }
+        let selectedAnnoteEl;
+        const selectorForAnnotation = ( cell, annotation) => {
+          let cellAttr = 'data-code-cell="' + cell + '"';
+          let lineAttr = 'data-code-annotation="' +  annotation + '"';
+          const selector = 'span[' + cellAttr + '][' + lineAttr + ']';
+          return selector;
+        }
+        const selectCodeLines = (annoteEl) => {
+          const doc = window.document;
+          const targetCell = annoteEl.getAttribute("data-target-cell");
+          const targetAnnotation = annoteEl.getAttribute("data-target-annotation");
+          const annoteSpan = window.document.querySelector(selectorForAnnotation(targetCell, targetAnnotation));
+          const lines = annoteSpan.getAttribute("data-code-lines").split(",");
+          const lineIds = lines.map((line) => {
+            return targetCell + "-" + line;
+          })
+          let top = null;
+          let height = null;
+          let parent = null;
+          if (lineIds.length > 0) {
+              //compute the position of the single el (top and bottom and make a div)
+              const el = window.document.getElementById(lineIds[0]);
+              top = el.offsetTop;
+              height = el.offsetHeight;
+              parent = el.parentElement.parentElement;
+            if (lineIds.length > 1) {
+              const lastEl = window.document.getElementById(lineIds[lineIds.length - 1]);
+              const bottom = lastEl.offsetTop + lastEl.offsetHeight;
+              height = bottom - top;
+            }
+            if (top !== null && height !== null && parent !== null) {
+              // cook up a div (if necessary) and position it 
+              let div = window.document.getElementById("code-annotation-line-highlight");
+              if (div === null) {
+                div = window.document.createElement("div");
+                div.setAttribute("id", "code-annotation-line-highlight");
+                div.style.position = 'absolute';
+                parent.appendChild(div);
+              }
+              div.style.top = top - 2 + "px";
+              div.style.height = height + 4 + "px";
+              div.style.left = 0;
+              let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
+              if (gutterDiv === null) {
+                gutterDiv = window.document.createElement("div");
+                gutterDiv.setAttribute("id", "code-annotation-line-highlight-gutter");
+                gutterDiv.style.position = 'absolute';
+                const codeCell = window.document.getElementById(targetCell);
+                const gutter = codeCell.querySelector('.code-annotation-gutter');
+                gutter.appendChild(gutterDiv);
+              }
+              gutterDiv.style.top = top - 2 + "px";
+              gutterDiv.style.height = height + 4 + "px";
+            }
+            selectedAnnoteEl = annoteEl;
+          }
+        };
+        const unselectCodeLines = () => {
+          const elementsIds = ["code-annotation-line-highlight", "code-annotation-line-highlight-gutter"];
+          elementsIds.forEach((elId) => {
+            const div = window.document.getElementById(elId);
+            if (div) {
+              div.remove();
+            }
+          });
+          selectedAnnoteEl = undefined;
+        };
+          // Handle positioning of the toggle
+      window.addEventListener(
+        "resize",
+        throttle(() => {
+          elRect = undefined;
+          if (selectedAnnoteEl) {
+            selectCodeLines(selectedAnnoteEl);
+          }
+        }, 10)
+      );
+      function throttle(fn, ms) {
+      let throttle = false;
+      let timer;
+        return (...args) => {
+          if(!throttle) { // first call gets through
+              fn.apply(this, args);
+              throttle = true;
+          } else { // all the others get throttled
+              if(timer) clearTimeout(timer); // cancel #2
+              timer = setTimeout(() => {
+                fn.apply(this, args);
+                timer = throttle = false;
+              }, ms);
+          }
+        };
+      }
+        // Attach click handler to the DT
+        const annoteDls = window.document.querySelectorAll('dt[data-target-cell]');
+        for (const annoteDlNode of annoteDls) {
+          annoteDlNode.addEventListener('click', (event) => {
+            const clickedEl = event.target;
+            if (clickedEl !== selectedAnnoteEl) {
+              unselectCodeLines();
+              const activeEl = window.document.querySelector('dt[data-target-cell].code-annotation-active');
+              if (activeEl) {
+                activeEl.classList.remove('code-annotation-active');
+              }
+              selectCodeLines(clickedEl);
+              clickedEl.classList.add('code-annotation-active');
+            } else {
+              // Unselect the line
+              unselectCodeLines();
+              clickedEl.classList.remove('code-annotation-active');
+            }
+          });
+        }
+    const findCites = (el) => {
+      const parentEl = el.parentElement;
+      if (parentEl) {
+        const cites = parentEl.dataset.cites;
+        if (cites) {
+          return {
+            el,
+            cites: cites.split(' ')
+          };
+        } else {
+          return findCites(el.parentElement)
+        }
+      } else {
+        return undefined;
+      }
+    };
+    var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+    for (var i=0; i<bibliorefs.length; i++) {
+      const ref = bibliorefs[i];
+      const citeInfo = findCites(ref);
+      if (citeInfo) {
+        tippyHover(citeInfo.el, function() {
+          var popup = window.document.createElement('div');
+          citeInfo.cites.forEach(function(cite) {
+            var citeDiv = window.document.createElement('div');
+            citeDiv.classList.add('hanging-indent');
+            citeDiv.classList.add('csl-entry');
+            var biblioDiv = window.document.getElementById('ref-' + cite);
+            if (biblioDiv) {
+              citeDiv.innerHTML = biblioDiv.innerHTML;
+            }
+            popup.appendChild(citeDiv);
+          });
+          return popup.innerHTML;
+        });
+      }
+    }
+  });
+  </script>
+
+
+
+
+</body></html>
