@@ -886,7 +886,7 @@ Figure&nbsp;3.1: Figure 2.6. Signature behaviour of the five system archetypes. 
 <section id="simulating-the-thermostat-delay-and-oscillation" class="level2" data-number="3.7">
 <h2 data-number="3.7" class="anchored" data-anchor-id="simulating-the-thermostat-delay-and-oscillation"><span class="header-section-number">3.7</span> Simulating the thermostat: delay and oscillation</h2>
 <p>Exercise 2.3 asks you to trace the thermostat’s behaviour by hand under different delay assumptions; the code below runs those same assumptions across 240 minutes so the trajectories are visible at once. The three scenarios use identical parameters — same goal, same feedback gain, same starting temperature — and differ only in delay length, which is enough to produce three qualitatively distinct behaviours from the same balancing loop structure.</p>
-<div id="1af9480c" class="cell" data-execution_count="2">
+<div id="fa6e9a59" class="cell" data-execution_count="2">
 <details class="code-fold">
 <summary>Code</summary>
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb2"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="co">"""Delayed thermostat — Chapter 2. Euler method with collections.deque delay buffer."""</span></span>
@@ -962,6 +962,51 @@ Figure&nbsp;3.1: Figure 2.6. Signature behaviour of the five system archetypes. 
 <li><p><strong>Match this to the pipeline system from Chapter 1.</strong> In that system, what plays the role of <code>T_goal</code>, <code>T0</code>, <code>k</code>, and <code>D</code>? Write down the analogy explicitly — identify the stock, the goal, the feedback gain, and the two delays (apportionment cycle and drilling horizon) — before reading on.</p></li>
 </ol>
 </div>
+</div>
+<div class="pyodide-cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb3"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> numpy <span class="im">as</span> np</span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> matplotlib.pyplot <span class="im">as</span> plt</span>
+<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> collections <span class="im">import</span> deque</span>
+<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a><span class="co"># --- Try changing these parameters ---</span></span>
+<span id="cb3-6"><a href="#cb3-6" aria-hidden="true" tabindex="-1"></a>T_goal <span class="op">=</span> <span class="fl">20.0</span>   <span class="co"># Goal temperature (°C)</span></span>
+<span id="cb3-7"><a href="#cb3-7" aria-hidden="true" tabindex="-1"></a>T0     <span class="op">=</span> <span class="fl">15.0</span>   <span class="co"># Starting temperature (°C)</span></span>
+<span id="cb3-8"><a href="#cb3-8" aria-hidden="true" tabindex="-1"></a>k      <span class="op">=</span> <span class="fl">0.5</span>    <span class="co"># Feedback gain (try 0.8 to see stronger correction)</span></span>
+<span id="cb3-9"><a href="#cb3-9" aria-hidden="true" tabindex="-1"></a>loss   <span class="op">=</span> <span class="fl">0.05</span>   <span class="co"># Heat-loss rate (try 0 for a perfectly insulated room)</span></span>
+<span id="cb3-10"><a href="#cb3-10" aria-hidden="true" tabindex="-1"></a>t_end  <span class="op">=</span> <span class="dv">240</span>    <span class="co"># Duration (minutes)</span></span>
+<span id="cb3-11"><a href="#cb3-11" aria-hidden="true" tabindex="-1"></a>dt     <span class="op">=</span> <span class="fl">1.0</span>    <span class="co"># Time step</span></span>
+<span id="cb3-12"><a href="#cb3-12" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-13"><a href="#cb3-13" aria-hidden="true" tabindex="-1"></a>scenarios <span class="op">=</span> [</span>
+<span id="cb3-14"><a href="#cb3-14" aria-hidden="true" tabindex="-1"></a>    ( <span class="dv">5</span>, <span class="st">"#888888"</span>, <span class="st">"5-min delay"</span>),</span>
+<span id="cb3-15"><a href="#cb3-15" aria-hidden="true" tabindex="-1"></a>    (<span class="dv">15</span>, <span class="st">"#d52a2a"</span>, <span class="st">"15-min delay"</span>),</span>
+<span id="cb3-16"><a href="#cb3-16" aria-hidden="true" tabindex="-1"></a>    (<span class="dv">45</span>, <span class="st">"#111111"</span>, <span class="st">"45-min delay"</span>),</span>
+<span id="cb3-17"><a href="#cb3-17" aria-hidden="true" tabindex="-1"></a>]</span>
+<span id="cb3-18"><a href="#cb3-18" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-19"><a href="#cb3-19" aria-hidden="true" tabindex="-1"></a>steps <span class="op">=</span> <span class="bu">int</span>(t_end <span class="op">/</span> dt) <span class="op">+</span> <span class="dv">1</span></span>
+<span id="cb3-20"><a href="#cb3-20" aria-hidden="true" tabindex="-1"></a>time  <span class="op">=</span> np.arange(steps) <span class="op">*</span> dt</span>
+<span id="cb3-21"><a href="#cb3-21" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-22"><a href="#cb3-22" aria-hidden="true" tabindex="-1"></a>fig, ax <span class="op">=</span> plt.subplots(figsize<span class="op">=</span>(<span class="dv">8</span>, <span class="dv">4</span>))</span>
+<span id="cb3-23"><a href="#cb3-23" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> delay_min, color, label <span class="kw">in</span> scenarios:</span>
+<span id="cb3-24"><a href="#cb3-24" aria-hidden="true" tabindex="-1"></a>    D_steps <span class="op">=</span> <span class="bu">int</span>(delay_min <span class="op">/</span> dt)</span>
+<span id="cb3-25"><a href="#cb3-25" aria-hidden="true" tabindex="-1"></a>    buf <span class="op">=</span> deque([<span class="fl">0.0</span>] <span class="op">*</span> D_steps, maxlen<span class="op">=</span>D_steps)</span>
+<span id="cb3-26"><a href="#cb3-26" aria-hidden="true" tabindex="-1"></a>    T <span class="op">=</span> np.empty(steps)<span class="op">;</span> T[<span class="dv">0</span>] <span class="op">=</span> T0</span>
+<span id="cb3-27"><a href="#cb3-27" aria-hidden="true" tabindex="-1"></a>    <span class="cf">for</span> i <span class="kw">in</span> <span class="bu">range</span>(steps <span class="op">-</span> <span class="dv">1</span>):</span>
+<span id="cb3-28"><a href="#cb3-28" aria-hidden="true" tabindex="-1"></a>        gap <span class="op">=</span> T_goal <span class="op">-</span> T[i]</span>
+<span id="cb3-29"><a href="#cb3-29" aria-hidden="true" tabindex="-1"></a>        buf.append(k <span class="op">*</span> gap)</span>
+<span id="cb3-30"><a href="#cb3-30" aria-hidden="true" tabindex="-1"></a>        heating <span class="op">=</span> buf[<span class="dv">0</span>]</span>
+<span id="cb3-31"><a href="#cb3-31" aria-hidden="true" tabindex="-1"></a>        T[i <span class="op">+</span> <span class="dv">1</span>] <span class="op">=</span> T[i] <span class="op">+</span> (heating <span class="op">-</span> loss <span class="op">*</span> T[i]) <span class="op">*</span> dt</span>
+<span id="cb3-32"><a href="#cb3-32" aria-hidden="true" tabindex="-1"></a>    ax.plot(time, T, color<span class="op">=</span>color, linewidth<span class="op">=</span><span class="fl">1.5</span>, label<span class="op">=</span>label)</span>
+<span id="cb3-33"><a href="#cb3-33" aria-hidden="true" tabindex="-1"></a>    ax.annotate(label, xy<span class="op">=</span>(<span class="dv">240</span>, T[<span class="op">-</span><span class="dv">1</span>]), fontsize<span class="op">=</span><span class="dv">9</span>, color<span class="op">=</span>color, ha<span class="op">=</span><span class="st">"right"</span>, va<span class="op">=</span><span class="st">"center"</span>)</span>
+<span id="cb3-34"><a href="#cb3-34" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-35"><a href="#cb3-35" aria-hidden="true" tabindex="-1"></a>ax.axhline(y<span class="op">=</span>T_goal, color<span class="op">=</span><span class="st">"#aaa"</span>, linestyle<span class="op">=</span><span class="st">"--"</span>, linewidth<span class="op">=</span><span class="fl">0.8</span>)</span>
+<span id="cb3-36"><a href="#cb3-36" aria-hidden="true" tabindex="-1"></a>ax.set_xlim(<span class="dv">0</span>, <span class="dv">240</span>)</span>
+<span id="cb3-37"><a href="#cb3-37" aria-hidden="true" tabindex="-1"></a>ax.set_xlabel(<span class="st">"Time (minutes)"</span>)</span>
+<span id="cb3-38"><a href="#cb3-38" aria-hidden="true" tabindex="-1"></a>ax.set_ylabel(<span class="st">"Room temperature (°C)"</span>)</span>
+<span id="cb3-39"><a href="#cb3-39" aria-hidden="true" tabindex="-1"></a>ax.set_title(<span class="ss">f"Thermostat with delay  (k=</span><span class="sc">{</span>k<span class="sc">}</span><span class="ss">, loss=</span><span class="sc">{</span>loss<span class="sc">}</span><span class="ss">)"</span>)</span>
+<span id="cb3-40"><a href="#cb3-40" aria-hidden="true" tabindex="-1"></a>ax.spines[<span class="st">"top"</span>].set_visible(<span class="va">False</span>)</span>
+<span id="cb3-41"><a href="#cb3-41" aria-hidden="true" tabindex="-1"></a>ax.spines[<span class="st">"right"</span>].set_visible(<span class="va">False</span>)</span>
+<span id="cb3-42"><a href="#cb3-42" aria-hidden="true" tabindex="-1"></a>plt.tight_layout()</span>
+<span id="cb3-43"><a href="#cb3-43" aria-hidden="true" tabindex="-1"></a>plt.show()</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 <blockquote class="blockquote">
 <p>Figure 2.7. Room temperature over 240 minutes under three delay scenarios. With a short delay the balancing loop corrects smoothly. As delay increases, the loop overshoots its goal, generating oscillation. The 45-minute delay produces sustained cycling — the correction that was appropriate when initiated arrives after the system has already reversed direction.</p>

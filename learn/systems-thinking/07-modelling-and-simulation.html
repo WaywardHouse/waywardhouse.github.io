@@ -812,6 +812,64 @@ Figure&nbsp;8.1: Figure 7.3. Glacier mass balance under three parameter regimes.
 </ol>
 </div>
 </div>
+<div class="pyodide-cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb2"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> numpy <span class="im">as</span> np</span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> matplotlib.pyplot <span class="im">as</span> plt</span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a><span class="co"># --- Try changing these parameters ---</span></span>
+<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a><span class="co"># Scenario parameters: (A, L0, alpha)</span></span>
+<span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a><span class="co"># Increase alpha toward 0.10 to find the tipping point (What to try #1)</span></span>
+<span id="cb2-7"><a href="#cb2-7" aria-hidden="true" tabindex="-1"></a><span class="co"># Add temperature forcing by setting gamma &gt; 0 (What to try #2)</span></span>
+<span id="cb2-8"><a href="#cb2-8" aria-hidden="true" tabindex="-1"></a><span class="co"># Change DT to test numerical sensitivity (What to try #3)</span></span>
+<span id="cb2-9"><a href="#cb2-9" aria-hidden="true" tabindex="-1"></a>DT    <span class="op">=</span> <span class="fl">0.1</span>      <span class="co"># Euler time step (years); try 1.0 or 0.01</span></span>
+<span id="cb2-10"><a href="#cb2-10" aria-hidden="true" tabindex="-1"></a>T_END <span class="op">=</span> <span class="fl">200.0</span></span>
+<span id="cb2-11"><a href="#cb2-11" aria-hidden="true" tabindex="-1"></a>gamma <span class="op">=</span> <span class="fl">0.0</span>      <span class="co"># temperature forcing coefficient (try 2.0 for What to try #2)</span></span>
+<span id="cb2-12"><a href="#cb2-12" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-13"><a href="#cb2-13" aria-hidden="true" tabindex="-1"></a>M_0, M_INIT <span class="op">=</span> <span class="fl">1000.0</span>, <span class="fl">1000.0</span></span>
+<span id="cb2-14"><a href="#cb2-14" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-15"><a href="#cb2-15" aria-hidden="true" tabindex="-1"></a>SCENARIOS <span class="op">=</span> [</span>
+<span id="cb2-16"><a href="#cb2-16" aria-hidden="true" tabindex="-1"></a>    (<span class="fl">52.0</span>, <span class="fl">45.0</span>, <span class="fl">0.05</span>, <span class="st">"Accumulation-dominant"</span>, <span class="st">"#111111"</span>, <span class="st">"-"</span>),</span>
+<span id="cb2-17"><a href="#cb2-17" aria-hidden="true" tabindex="-1"></a>    (<span class="fl">45.0</span>, <span class="fl">50.0</span>, <span class="fl">0.03</span>, <span class="st">"Slow retreat (weak α)"</span>, <span class="st">"#888888"</span>, <span class="st">"--"</span>),</span>
+<span id="cb2-18"><a href="#cb2-18" aria-hidden="true" tabindex="-1"></a>    (<span class="fl">45.0</span>, <span class="fl">50.0</span>, <span class="fl">0.10</span>, <span class="st">"Runaway (strong α)"</span>,    <span class="st">"#d52a2a"</span>, <span class="st">"-"</span>),</span>
+<span id="cb2-19"><a href="#cb2-19" aria-hidden="true" tabindex="-1"></a>]</span>
+<span id="cb2-20"><a href="#cb2-20" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-21"><a href="#cb2-21" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> run(A, L0, alpha):</span>
+<span id="cb2-22"><a href="#cb2-22" aria-hidden="true" tabindex="-1"></a>    steps <span class="op">=</span> <span class="bu">int</span>(T_END <span class="op">/</span> DT) <span class="op">+</span> <span class="dv">1</span></span>
+<span id="cb2-23"><a href="#cb2-23" aria-hidden="true" tabindex="-1"></a>    t <span class="op">=</span> np.linspace(<span class="dv">0</span>, T_END, steps)</span>
+<span id="cb2-24"><a href="#cb2-24" aria-hidden="true" tabindex="-1"></a>    M <span class="op">=</span> np.empty(steps)<span class="op">;</span> M[<span class="dv">0</span>] <span class="op">=</span> M_INIT</span>
+<span id="cb2-25"><a href="#cb2-25" aria-hidden="true" tabindex="-1"></a>    <span class="cf">for</span> i <span class="kw">in</span> <span class="bu">range</span>(<span class="dv">1</span>, steps):</span>
+<span id="cb2-26"><a href="#cb2-26" aria-hidden="true" tabindex="-1"></a>        T_anomaly <span class="op">=</span> <span class="fl">0.025</span> <span class="op">*</span> t[i] <span class="cf">if</span> gamma <span class="op">&gt;</span> <span class="dv">0</span> <span class="cf">else</span> <span class="fl">0.0</span></span>
+<span id="cb2-27"><a href="#cb2-27" aria-hidden="true" tabindex="-1"></a>        ablation <span class="op">=</span> L0 <span class="op">+</span> alpha <span class="op">*</span> (M_0 <span class="op">-</span> M[i<span class="op">-</span><span class="dv">1</span>]) <span class="op">+</span> gamma <span class="op">*</span> T_anomaly</span>
+<span id="cb2-28"><a href="#cb2-28" aria-hidden="true" tabindex="-1"></a>        M[i] <span class="op">=</span> <span class="bu">max</span>(<span class="fl">0.0</span>, M[i<span class="op">-</span><span class="dv">1</span>] <span class="op">+</span> (A <span class="op">-</span> ablation) <span class="op">*</span> DT)</span>
+<span id="cb2-29"><a href="#cb2-29" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> t, M</span>
+<span id="cb2-30"><a href="#cb2-30" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-31"><a href="#cb2-31" aria-hidden="true" tabindex="-1"></a>fig, (ax_t, ax_p) <span class="op">=</span> plt.subplots(<span class="dv">1</span>, <span class="dv">2</span>, figsize<span class="op">=</span>(<span class="dv">11</span>, <span class="dv">5</span>))</span>
+<span id="cb2-32"><a href="#cb2-32" aria-hidden="true" tabindex="-1"></a>M_phase <span class="op">=</span> np.linspace(<span class="dv">0</span>, <span class="dv">1400</span>, <span class="dv">600</span>)</span>
+<span id="cb2-33"><a href="#cb2-33" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> A, L0, alpha, label, color, ls <span class="kw">in</span> SCENARIOS:</span>
+<span id="cb2-34"><a href="#cb2-34" aria-hidden="true" tabindex="-1"></a>    t_arr, M <span class="op">=</span> run(A, L0, alpha)</span>
+<span id="cb2-35"><a href="#cb2-35" aria-hidden="true" tabindex="-1"></a>    ax_t.plot(t_arr, M, color<span class="op">=</span>color, linestyle<span class="op">=</span>ls, linewidth<span class="op">=</span><span class="fl">1.8</span>, label<span class="op">=</span>label)</span>
+<span id="cb2-36"><a href="#cb2-36" aria-hidden="true" tabindex="-1"></a>    rates <span class="op">=</span> A <span class="op">-</span> (L0 <span class="op">+</span> alpha <span class="op">*</span> (M_0 <span class="op">-</span> M_phase))</span>
+<span id="cb2-37"><a href="#cb2-37" aria-hidden="true" tabindex="-1"></a>    ax_p.plot(M_phase, rates, color<span class="op">=</span>color, linestyle<span class="op">=</span>ls, linewidth<span class="op">=</span><span class="fl">1.8</span>, label<span class="op">=</span>label)</span>
+<span id="cb2-38"><a href="#cb2-38" aria-hidden="true" tabindex="-1"></a>    <span class="cf">if</span> alpha <span class="op">&gt;</span> <span class="dv">0</span>:</span>
+<span id="cb2-39"><a href="#cb2-39" aria-hidden="true" tabindex="-1"></a>        M_star <span class="op">=</span> M_0 <span class="op">-</span> (A <span class="op">-</span> L0) <span class="op">/</span> alpha</span>
+<span id="cb2-40"><a href="#cb2-40" aria-hidden="true" tabindex="-1"></a>        <span class="cf">if</span> <span class="dv">0</span> <span class="op">&lt;</span> M_star <span class="op">&lt;</span> <span class="dv">1400</span>:</span>
+<span id="cb2-41"><a href="#cb2-41" aria-hidden="true" tabindex="-1"></a>            ax_p.plot(M_star, <span class="dv">0</span>, <span class="st">"o"</span>, color<span class="op">=</span>color, markersize<span class="op">=</span><span class="dv">6</span>,</span>
+<span id="cb2-42"><a href="#cb2-42" aria-hidden="true" tabindex="-1"></a>                      markerfacecolor<span class="op">=</span><span class="st">"white"</span>, markeredgewidth<span class="op">=</span><span class="fl">1.8</span>)</span>
+<span id="cb2-43"><a href="#cb2-43" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-44"><a href="#cb2-44" aria-hidden="true" tabindex="-1"></a>ax_t.axhline(M_0, color<span class="op">=</span><span class="st">"#ccc"</span>, linewidth<span class="op">=</span><span class="fl">0.8</span>, linestyle<span class="op">=</span><span class="st">":"</span>)</span>
+<span id="cb2-45"><a href="#cb2-45" aria-hidden="true" tabindex="-1"></a>ax_t.set_xlabel(<span class="st">"Year"</span>)<span class="op">;</span> ax_t.set_ylabel(<span class="st">"Ice mass M (Gt)"</span>)</span>
+<span id="cb2-46"><a href="#cb2-46" aria-hidden="true" tabindex="-1"></a>ax_t.set_title(<span class="ss">f"Glacier mass balance  (DT=</span><span class="sc">{</span>DT<span class="sc">}</span><span class="ss">, γ=</span><span class="sc">{</span>gamma<span class="sc">}</span><span class="ss">)"</span>)</span>
+<span id="cb2-47"><a href="#cb2-47" aria-hidden="true" tabindex="-1"></a>ax_t.legend(frameon<span class="op">=</span><span class="va">False</span>, fontsize<span class="op">=</span><span class="fl">8.5</span>)</span>
+<span id="cb2-48"><a href="#cb2-48" aria-hidden="true" tabindex="-1"></a>ax_t.spines[<span class="st">"top"</span>].set_visible(<span class="va">False</span>)<span class="op">;</span> ax_t.spines[<span class="st">"right"</span>].set_visible(<span class="va">False</span>)</span>
+<span id="cb2-49"><a href="#cb2-49" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-50"><a href="#cb2-50" aria-hidden="true" tabindex="-1"></a>ax_p.axhline(<span class="dv">0</span>, color<span class="op">=</span><span class="st">"#ccc"</span>, linewidth<span class="op">=</span><span class="fl">0.8</span>)</span>
+<span id="cb2-51"><a href="#cb2-51" aria-hidden="true" tabindex="-1"></a>ax_p.set_xlabel(<span class="st">"Ice mass M (Gt)"</span>)<span class="op">;</span> ax_p.set_ylabel(<span class="st">"dM/dt (Gt/yr)"</span>)</span>
+<span id="cb2-52"><a href="#cb2-52" aria-hidden="true" tabindex="-1"></a>ax_p.legend(frameon<span class="op">=</span><span class="va">False</span>, fontsize<span class="op">=</span><span class="fl">8.5</span>)</span>
+<span id="cb2-53"><a href="#cb2-53" aria-hidden="true" tabindex="-1"></a>ax_p.spines[<span class="st">"top"</span>].set_visible(<span class="va">False</span>)<span class="op">;</span> ax_p.spines[<span class="st">"right"</span>].set_visible(<span class="va">False</span>)</span>
+<span id="cb2-54"><a href="#cb2-54" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-55"><a href="#cb2-55" aria-hidden="true" tabindex="-1"></a>plt.tight_layout()</span>
+<span id="cb2-56"><a href="#cb2-56" aria-hidden="true" tabindex="-1"></a>plt.show()</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
 <div class="callout callout-style-simple callout-note callout-titled">
 <div class="callout-header d-flex align-content-center">
 <div class="callout-icon-container">
@@ -915,148 +973,148 @@ Figure&nbsp;8.1: Figure 7.3. Glacier mass balance under three parameter regimes.
 <div id="cell-fig-supply-chain" class="cell" data-fig-height="5" data-fig-width="12" data-execution_count="2">
 <details class="code-fold">
 <summary>Code</summary>
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb2"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="co">"""Supply chain dynamics — Chapter 7.</span></span>
-<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a><span class="co">Three inventory stocks plus two pipeline (in-transit) stocks.</span></span>
-<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a><span class="co">Euler simulation with first-order material delays.</span></span>
-<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a><span class="co">Three scenarios: minimal delay, standard delay (main result), panic ordering."""</span></span>
-<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> numpy <span class="im">as</span> np</span>
-<span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> matplotlib.pyplot <span class="im">as</span> plt</span>
-<span id="cb2-7"><a href="#cb2-7" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb2-8"><a href="#cb2-8" aria-hidden="true" tabindex="-1"></a><span class="co"># -- Named constants -----------------------------------------------------------</span></span>
-<span id="cb2-9"><a href="#cb2-9" aria-hidden="true" tabindex="-1"></a>T_END    <span class="op">=</span> <span class="fl">60.0</span>    <span class="co"># simulation length (weeks)</span></span>
-<span id="cb2-10"><a href="#cb2-10" aria-hidden="true" tabindex="-1"></a>DT       <span class="op">=</span> <span class="fl">0.05</span>    <span class="co"># Euler time step (weeks)</span></span>
-<span id="cb2-11"><a href="#cb2-11" aria-hidden="true" tabindex="-1"></a>T_STEP   <span class="op">=</span> <span class="fl">8.0</span>     <span class="co"># week of demand step</span></span>
-<span id="cb2-12"><a href="#cb2-12" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb2-13"><a href="#cb2-13" aria-hidden="true" tabindex="-1"></a>D_BASE   <span class="op">=</span> <span class="fl">10.0</span>    <span class="co"># baseline consumer demand (units/week)</span></span>
-<span id="cb2-14"><a href="#cb2-14" aria-hidden="true" tabindex="-1"></a>D_STEP   <span class="op">=</span> <span class="fl">12.0</span>    <span class="co"># elevated demand (units/week)</span></span>
-<span id="cb2-15"><a href="#cb2-15" aria-hidden="true" tabindex="-1"></a>I_TARGET <span class="op">=</span> <span class="fl">20.0</span>    <span class="co"># target inventory at each node (units)</span></span>
-<span id="cb2-16"><a href="#cb2-16" aria-hidden="true" tabindex="-1"></a>I_INIT   <span class="op">=</span> <span class="fl">20.0</span>    <span class="co"># initial inventory — equilibrium</span></span>
-<span id="cb2-17"><a href="#cb2-17" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb2-18"><a href="#cb2-18" aria-hidden="true" tabindex="-1"></a>COL_RETAILER    <span class="op">=</span> <span class="st">"#111111"</span></span>
-<span id="cb2-19"><a href="#cb2-19" aria-hidden="true" tabindex="-1"></a>COL_DISTRIBUTOR <span class="op">=</span> <span class="st">"#888888"</span></span>
-<span id="cb2-20"><a href="#cb2-20" aria-hidden="true" tabindex="-1"></a>COL_PRODUCER    <span class="op">=</span> <span class="st">"#d52a2a"</span></span>
-<span id="cb2-21"><a href="#cb2-21" aria-hidden="true" tabindex="-1"></a>COL_PANIC       <span class="op">=</span> <span class="st">"#d52a2a"</span></span>
-<span id="cb2-22"><a href="#cb2-22" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb2-23"><a href="#cb2-23" aria-hidden="true" tabindex="-1"></a>STEPS <span class="op">=</span> <span class="bu">int</span>(T_END <span class="op">/</span> DT)</span>
-<span id="cb2-24"><a href="#cb2-24" aria-hidden="true" tabindex="-1"></a>T     <span class="op">=</span> np.arange(STEPS) <span class="op">*</span> DT</span>
-<span id="cb2-25"><a href="#cb2-25" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb2-26"><a href="#cb2-26" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb2-27"><a href="#cb2-27" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> run_supply_chain(tau, amplify<span class="op">=</span><span class="fl">1.0</span>):</span>
-<span id="cb2-28"><a href="#cb2-28" aria-hidden="true" tabindex="-1"></a>    <span class="co">"""</span></span>
-<span id="cb2-29"><a href="#cb2-29" aria-hidden="true" tabindex="-1"></a><span class="co">    Simulate a three-node supply chain.</span></span>
-<span id="cb2-30"><a href="#cb2-30" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb2-31"><a href="#cb2-31" aria-hidden="true" tabindex="-1"></a><span class="co">    tau     : fulfillment delay at each link (weeks)</span></span>
-<span id="cb2-32"><a href="#cb2-32" aria-hidden="true" tabindex="-1"></a><span class="co">    amplify : aggressiveness of inventory correction (1.0 = rational, &gt;1 = panic)</span></span>
-<span id="cb2-33"><a href="#cb2-33" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb2-34"><a href="#cb2-34" aria-hidden="true" tabindex="-1"></a><span class="co">    Returns six arrays of length STEPS: I_r, I_d, I_p, OR_r, OR_d, OR_p</span></span>
-<span id="cb2-35"><a href="#cb2-35" aria-hidden="true" tabindex="-1"></a><span class="co">    """</span></span>
-<span id="cb2-36"><a href="#cb2-36" aria-hidden="true" tabindex="-1"></a>    <span class="co"># Inventory stocks</span></span>
-<span id="cb2-37"><a href="#cb2-37" aria-hidden="true" tabindex="-1"></a>    I_r, I_d, I_p <span class="op">=</span> I_INIT, I_INIT, I_INIT</span>
-<span id="cb2-38"><a href="#cb2-38" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb2-39"><a href="#cb2-39" aria-hidden="true" tabindex="-1"></a>    <span class="co"># Pipeline stocks: goods in transit (initial equilibrium: flow * delay)</span></span>
-<span id="cb2-40"><a href="#cb2-40" aria-hidden="true" tabindex="-1"></a>    P_r <span class="op">=</span> D_BASE <span class="op">*</span> tau</span>
-<span id="cb2-41"><a href="#cb2-41" aria-hidden="true" tabindex="-1"></a>    P_d <span class="op">=</span> D_BASE <span class="op">*</span> tau</span>
-<span id="cb2-42"><a href="#cb2-42" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb2-43"><a href="#cb2-43" aria-hidden="true" tabindex="-1"></a>    <span class="co"># Order rates (units/week) — start at equilibrium</span></span>
-<span id="cb2-44"><a href="#cb2-44" aria-hidden="true" tabindex="-1"></a>    OR_r <span class="op">=</span> OR_d <span class="op">=</span> OR_p <span class="op">=</span> D_BASE</span>
-<span id="cb2-45"><a href="#cb2-45" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb2-46"><a href="#cb2-46" aria-hidden="true" tabindex="-1"></a>    rec_I_r  <span class="op">=</span> np.empty(STEPS)<span class="op">;</span>  rec_I_r[<span class="dv">0</span>]  <span class="op">=</span> I_r</span>
-<span id="cb2-47"><a href="#cb2-47" aria-hidden="true" tabindex="-1"></a>    rec_I_d  <span class="op">=</span> np.empty(STEPS)<span class="op">;</span>  rec_I_d[<span class="dv">0</span>]  <span class="op">=</span> I_d</span>
-<span id="cb2-48"><a href="#cb2-48" aria-hidden="true" tabindex="-1"></a>    rec_I_p  <span class="op">=</span> np.empty(STEPS)<span class="op">;</span>  rec_I_p[<span class="dv">0</span>]  <span class="op">=</span> I_p</span>
-<span id="cb2-49"><a href="#cb2-49" aria-hidden="true" tabindex="-1"></a>    rec_OR_r <span class="op">=</span> np.empty(STEPS)<span class="op">;</span>  rec_OR_r[<span class="dv">0</span>] <span class="op">=</span> OR_r</span>
-<span id="cb2-50"><a href="#cb2-50" aria-hidden="true" tabindex="-1"></a>    rec_OR_d <span class="op">=</span> np.empty(STEPS)<span class="op">;</span>  rec_OR_d[<span class="dv">0</span>] <span class="op">=</span> OR_d</span>
-<span id="cb2-51"><a href="#cb2-51" aria-hidden="true" tabindex="-1"></a>    rec_OR_p <span class="op">=</span> np.empty(STEPS)<span class="op">;</span>  rec_OR_p[<span class="dv">0</span>] <span class="op">=</span> OR_p</span>
-<span id="cb2-52"><a href="#cb2-52" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb2-53"><a href="#cb2-53" aria-hidden="true" tabindex="-1"></a>    adj <span class="op">=</span> <span class="bu">max</span>(tau, <span class="fl">1.0</span>)   <span class="co"># correction horizon: at least one delay period</span></span>
-<span id="cb2-54"><a href="#cb2-54" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb2-55"><a href="#cb2-55" aria-hidden="true" tabindex="-1"></a>    <span class="cf">for</span> i <span class="kw">in</span> <span class="bu">range</span>(<span class="dv">1</span>, STEPS):</span>
-<span id="cb2-56"><a href="#cb2-56" aria-hidden="true" tabindex="-1"></a>        d <span class="op">=</span> D_STEP <span class="cf">if</span> T[i] <span class="op">&gt;=</span> T_STEP <span class="cf">else</span> D_BASE</span>
-<span id="cb2-57"><a href="#cb2-57" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb2-58"><a href="#cb2-58" aria-hidden="true" tabindex="-1"></a>        <span class="co"># Arrival rates: pipeline stocks drain at rate 1/tau</span></span>
-<span id="cb2-59"><a href="#cb2-59" aria-hidden="true" tabindex="-1"></a>        arrive_r <span class="op">=</span> P_r <span class="op">/</span> tau</span>
-<span id="cb2-60"><a href="#cb2-60" aria-hidden="true" tabindex="-1"></a>        arrive_d <span class="op">=</span> P_d <span class="op">/</span> tau</span>
-<span id="cb2-61"><a href="#cb2-61" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb2-62"><a href="#cb2-62" aria-hidden="true" tabindex="-1"></a>        <span class="co"># Shipment rates: each node ships as much as its inventory allows</span></span>
-<span id="cb2-63"><a href="#cb2-63" aria-hidden="true" tabindex="-1"></a>        ship_r <span class="op">=</span> <span class="bu">min</span>(I_r, d)       <span class="co"># retailer → consumer</span></span>
-<span id="cb2-64"><a href="#cb2-64" aria-hidden="true" tabindex="-1"></a>        ship_d <span class="op">=</span> <span class="bu">min</span>(I_d, OR_r)    <span class="co"># distributor → retailer</span></span>
-<span id="cb2-65"><a href="#cb2-65" aria-hidden="true" tabindex="-1"></a>        ship_p <span class="op">=</span> <span class="bu">min</span>(I_p, OR_d)    <span class="co"># producer → distributor</span></span>
-<span id="cb2-66"><a href="#cb2-66" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb2-67"><a href="#cb2-67" aria-hidden="true" tabindex="-1"></a>        <span class="co"># Euler: inventory stocks</span></span>
-<span id="cb2-68"><a href="#cb2-68" aria-hidden="true" tabindex="-1"></a>        I_r <span class="op">=</span> <span class="bu">max</span>(<span class="fl">0.0</span>, I_r <span class="op">+</span> (arrive_r <span class="op">-</span> ship_r) <span class="op">*</span> DT)</span>
-<span id="cb2-69"><a href="#cb2-69" aria-hidden="true" tabindex="-1"></a>        I_d <span class="op">=</span> <span class="bu">max</span>(<span class="fl">0.0</span>, I_d <span class="op">+</span> (arrive_d <span class="op">-</span> ship_d) <span class="op">*</span> DT)</span>
-<span id="cb2-70"><a href="#cb2-70" aria-hidden="true" tabindex="-1"></a>        I_p <span class="op">=</span> <span class="bu">max</span>(<span class="fl">0.0</span>, I_p <span class="op">+</span> (OR_p    <span class="op">-</span> ship_p)  <span class="op">*</span> DT)</span>
-<span id="cb2-71"><a href="#cb2-71" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb2-72"><a href="#cb2-72" aria-hidden="true" tabindex="-1"></a>        <span class="co"># Euler: pipeline stocks (accumulate orders, drain as goods arrive)</span></span>
-<span id="cb2-73"><a href="#cb2-73" aria-hidden="true" tabindex="-1"></a>        P_r <span class="op">=</span> <span class="bu">max</span>(<span class="fl">0.0</span>, P_r <span class="op">+</span> (OR_r <span class="op">-</span> arrive_r) <span class="op">*</span> DT)</span>
-<span id="cb2-74"><a href="#cb2-74" aria-hidden="true" tabindex="-1"></a>        P_d <span class="op">=</span> <span class="bu">max</span>(<span class="fl">0.0</span>, P_d <span class="op">+</span> (OR_d <span class="op">-</span> arrive_d) <span class="op">*</span> DT)</span>
-<span id="cb2-75"><a href="#cb2-75" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb2-76"><a href="#cb2-76" aria-hidden="true" tabindex="-1"></a>        <span class="co"># Order-up-to policy: expected demand + correction for inventory gap</span></span>
-<span id="cb2-77"><a href="#cb2-77" aria-hidden="true" tabindex="-1"></a>        OR_r <span class="op">=</span> <span class="bu">max</span>(<span class="fl">0.0</span>, d    <span class="op">+</span> amplify <span class="op">*</span> (I_TARGET <span class="op">-</span> I_r) <span class="op">/</span> adj)</span>
-<span id="cb2-78"><a href="#cb2-78" aria-hidden="true" tabindex="-1"></a>        OR_d <span class="op">=</span> <span class="bu">max</span>(<span class="fl">0.0</span>, OR_r <span class="op">+</span> amplify <span class="op">*</span> (I_TARGET <span class="op">-</span> I_d) <span class="op">/</span> adj)</span>
-<span id="cb2-79"><a href="#cb2-79" aria-hidden="true" tabindex="-1"></a>        OR_p <span class="op">=</span> <span class="bu">max</span>(<span class="fl">0.0</span>, OR_d <span class="op">+</span> amplify <span class="op">*</span> (I_TARGET <span class="op">-</span> I_p) <span class="op">/</span> adj)</span>
-<span id="cb2-80"><a href="#cb2-80" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb2-81"><a href="#cb2-81" aria-hidden="true" tabindex="-1"></a>        rec_I_r[i]  <span class="op">=</span> I_r<span class="op">;</span>  rec_I_d[i]  <span class="op">=</span> I_d<span class="op">;</span>  rec_I_p[i]  <span class="op">=</span> I_p</span>
-<span id="cb2-82"><a href="#cb2-82" aria-hidden="true" tabindex="-1"></a>        rec_OR_r[i] <span class="op">=</span> OR_r<span class="op">;</span> rec_OR_d[i] <span class="op">=</span> OR_d<span class="op">;</span> rec_OR_p[i] <span class="op">=</span> OR_p</span>
-<span id="cb2-83"><a href="#cb2-83" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb2-84"><a href="#cb2-84" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> rec_I_r, rec_I_d, rec_I_p, rec_OR_r, rec_OR_d, rec_OR_p</span>
-<span id="cb2-85"><a href="#cb2-85" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb2-86"><a href="#cb2-86" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb2-87"><a href="#cb2-87" aria-hidden="true" tabindex="-1"></a><span class="co"># -- Run scenarios -------------------------------------------------------------</span></span>
-<span id="cb2-88"><a href="#cb2-88" aria-hidden="true" tabindex="-1"></a>I_r2, I_d2, I_p2, OR_r2, OR_d2, OR_p2 <span class="op">=</span> run_supply_chain(tau<span class="op">=</span><span class="fl">3.0</span>, amplify<span class="op">=</span><span class="fl">1.0</span>)</span>
-<span id="cb2-89"><a href="#cb2-89" aria-hidden="true" tabindex="-1"></a>I_r3, I_d3, I_p3, OR_r3, OR_d3, OR_p3 <span class="op">=</span> run_supply_chain(tau<span class="op">=</span><span class="fl">3.0</span>, amplify<span class="op">=</span><span class="fl">2.0</span>)</span>
-<span id="cb2-90"><a href="#cb2-90" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb2-91"><a href="#cb2-91" aria-hidden="true" tabindex="-1"></a><span class="co"># -- Figure --------------------------------------------------------------------</span></span>
-<span id="cb2-92"><a href="#cb2-92" aria-hidden="true" tabindex="-1"></a>fig, (ax_inv, ax_ord) <span class="op">=</span> plt.subplots(<span class="dv">1</span>, <span class="dv">2</span>, figsize<span class="op">=</span>(<span class="dv">12</span>, <span class="dv">5</span>), dpi<span class="op">=</span><span class="dv">150</span>)</span>
-<span id="cb2-93"><a href="#cb2-93" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb2-94"><a href="#cb2-94" aria-hidden="true" tabindex="-1"></a><span class="co"># Left: inventory levels (standard delay)</span></span>
-<span id="cb2-95"><a href="#cb2-95" aria-hidden="true" tabindex="-1"></a>ax_inv.axvline(T_STEP, color<span class="op">=</span><span class="st">"#cccccc"</span>, linewidth<span class="op">=</span><span class="fl">0.8</span>, zorder<span class="op">=</span><span class="dv">0</span>)</span>
-<span id="cb2-96"><a href="#cb2-96" aria-hidden="true" tabindex="-1"></a>ax_inv.axhline(I_TARGET, color<span class="op">=</span><span class="st">"#cccccc"</span>, linewidth<span class="op">=</span><span class="fl">0.8</span>, linestyle<span class="op">=</span><span class="st">":"</span>, zorder<span class="op">=</span><span class="dv">0</span>)</span>
-<span id="cb2-97"><a href="#cb2-97" aria-hidden="true" tabindex="-1"></a>ax_inv.annotate(<span class="st">"Target 20 units"</span>, xy<span class="op">=</span>(<span class="dv">1</span>, I_TARGET), xytext<span class="op">=</span>(<span class="dv">1</span>, I_TARGET <span class="op">+</span> <span class="fl">1.5</span>),</span>
-<span id="cb2-98"><a href="#cb2-98" aria-hidden="true" tabindex="-1"></a>                fontsize<span class="op">=</span><span class="dv">8</span>, color<span class="op">=</span><span class="st">"#aaaaaa"</span>, va<span class="op">=</span><span class="st">"bottom"</span>)</span>
-<span id="cb2-99"><a href="#cb2-99" aria-hidden="true" tabindex="-1"></a>ax_inv.annotate(<span class="st">"demand</span><span class="ch">\n</span><span class="st">step wk 8"</span>, xy<span class="op">=</span>(T_STEP, <span class="dv">3</span>), xytext<span class="op">=</span>(T_STEP <span class="op">+</span> <span class="fl">1.2</span>, <span class="dv">3</span>),</span>
-<span id="cb2-100"><a href="#cb2-100" aria-hidden="true" tabindex="-1"></a>                fontsize<span class="op">=</span><span class="dv">8</span>, color<span class="op">=</span><span class="st">"#aaaaaa"</span>, va<span class="op">=</span><span class="st">"center"</span>)</span>
-<span id="cb2-101"><a href="#cb2-101" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb2-102"><a href="#cb2-102" aria-hidden="true" tabindex="-1"></a>ax_inv.plot(T, I_r2, color<span class="op">=</span>COL_RETAILER,    linewidth<span class="op">=</span><span class="fl">1.4</span>, label<span class="op">=</span><span class="st">"Retailer"</span>)</span>
-<span id="cb2-103"><a href="#cb2-103" aria-hidden="true" tabindex="-1"></a>ax_inv.plot(T, I_d2, color<span class="op">=</span>COL_DISTRIBUTOR, linewidth<span class="op">=</span><span class="fl">1.4</span>, linestyle<span class="op">=</span><span class="st">"--"</span>,</span>
-<span id="cb2-104"><a href="#cb2-104" aria-hidden="true" tabindex="-1"></a>            label<span class="op">=</span><span class="st">"Distributor"</span>)</span>
-<span id="cb2-105"><a href="#cb2-105" aria-hidden="true" tabindex="-1"></a>ax_inv.plot(T, I_p2, color<span class="op">=</span>COL_PRODUCER,    linewidth<span class="op">=</span><span class="fl">1.8</span>, label<span class="op">=</span><span class="st">"Producer"</span>)</span>
-<span id="cb2-106"><a href="#cb2-106" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb2-107"><a href="#cb2-107" aria-hidden="true" tabindex="-1"></a>ax_inv.set_xlabel(<span class="st">"Week"</span>)</span>
-<span id="cb2-108"><a href="#cb2-108" aria-hidden="true" tabindex="-1"></a>ax_inv.set_ylabel(<span class="st">"Inventory (units)"</span>)</span>
-<span id="cb2-109"><a href="#cb2-109" aria-hidden="true" tabindex="-1"></a>ax_inv.set_xlim(<span class="dv">0</span>, T_END)</span>
-<span id="cb2-110"><a href="#cb2-110" aria-hidden="true" tabindex="-1"></a>ax_inv.set_ylim(<span class="op">-</span><span class="dv">2</span>, <span class="dv">58</span>)</span>
-<span id="cb2-111"><a href="#cb2-111" aria-hidden="true" tabindex="-1"></a>ax_inv.set_title(<span class="st">"Inventory levels  ·  τ = 3 weeks"</span>, fontsize<span class="op">=</span><span class="dv">9</span>, pad<span class="op">=</span><span class="dv">8</span>)</span>
-<span id="cb2-112"><a href="#cb2-112" aria-hidden="true" tabindex="-1"></a>ax_inv.legend(fontsize<span class="op">=</span><span class="fl">8.5</span>, frameon<span class="op">=</span><span class="va">False</span>)</span>
-<span id="cb2-113"><a href="#cb2-113" aria-hidden="true" tabindex="-1"></a>ax_inv.spines[<span class="st">"top"</span>].set_visible(<span class="va">False</span>)</span>
-<span id="cb2-114"><a href="#cb2-114" aria-hidden="true" tabindex="-1"></a>ax_inv.spines[<span class="st">"right"</span>].set_visible(<span class="va">False</span>)</span>
-<span id="cb2-115"><a href="#cb2-115" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb2-116"><a href="#cb2-116" aria-hidden="true" tabindex="-1"></a><span class="co"># Right: order rates — standard vs panic</span></span>
-<span id="cb2-117"><a href="#cb2-117" aria-hidden="true" tabindex="-1"></a>ax_ord.axvline(T_STEP, color<span class="op">=</span><span class="st">"#cccccc"</span>, linewidth<span class="op">=</span><span class="fl">0.8</span>, zorder<span class="op">=</span><span class="dv">0</span>)</span>
-<span id="cb2-118"><a href="#cb2-118" aria-hidden="true" tabindex="-1"></a>ax_ord.axhline(D_STEP, color<span class="op">=</span><span class="st">"#cccccc"</span>, linewidth<span class="op">=</span><span class="fl">0.8</span>, linestyle<span class="op">=</span><span class="st">":"</span>, zorder<span class="op">=</span><span class="dv">0</span>)</span>
-<span id="cb2-119"><a href="#cb2-119" aria-hidden="true" tabindex="-1"></a>ax_ord.annotate(<span class="st">"Actual demand 12 u/wk"</span>, xy<span class="op">=</span>(<span class="dv">1</span>, D_STEP),</span>
-<span id="cb2-120"><a href="#cb2-120" aria-hidden="true" tabindex="-1"></a>                xytext<span class="op">=</span>(<span class="dv">1</span>, D_STEP <span class="op">+</span> <span class="fl">1.0</span>), fontsize<span class="op">=</span><span class="dv">8</span>, color<span class="op">=</span><span class="st">"#aaaaaa"</span>, va<span class="op">=</span><span class="st">"bottom"</span>)</span>
-<span id="cb2-121"><a href="#cb2-121" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb2-122"><a href="#cb2-122" aria-hidden="true" tabindex="-1"></a>ax_ord.plot(T, OR_r2, color<span class="op">=</span>COL_RETAILER,    linewidth<span class="op">=</span><span class="fl">1.2</span>, linestyle<span class="op">=</span><span class="st">"-"</span>,</span>
-<span id="cb2-123"><a href="#cb2-123" aria-hidden="true" tabindex="-1"></a>            label<span class="op">=</span><span class="st">"Retailer (rational)"</span>)</span>
-<span id="cb2-124"><a href="#cb2-124" aria-hidden="true" tabindex="-1"></a>ax_ord.plot(T, OR_d2, color<span class="op">=</span>COL_DISTRIBUTOR, linewidth<span class="op">=</span><span class="fl">1.2</span>, linestyle<span class="op">=</span><span class="st">"--"</span>,</span>
-<span id="cb2-125"><a href="#cb2-125" aria-hidden="true" tabindex="-1"></a>            label<span class="op">=</span><span class="st">"Distributor (rational)"</span>)</span>
-<span id="cb2-126"><a href="#cb2-126" aria-hidden="true" tabindex="-1"></a>ax_ord.plot(T, OR_p2, color<span class="op">=</span>COL_PRODUCER,    linewidth<span class="op">=</span><span class="fl">1.8</span>, linestyle<span class="op">=</span><span class="st">"-"</span>,</span>
-<span id="cb2-127"><a href="#cb2-127" aria-hidden="true" tabindex="-1"></a>            label<span class="op">=</span><span class="st">"Producer (rational)"</span>)</span>
-<span id="cb2-128"><a href="#cb2-128" aria-hidden="true" tabindex="-1"></a>ax_ord.plot(T, OR_p3, color<span class="op">=</span>COL_PANIC,       linewidth<span class="op">=</span><span class="fl">1.8</span>, linestyle<span class="op">=</span><span class="st">":"</span>,</span>
-<span id="cb2-129"><a href="#cb2-129" aria-hidden="true" tabindex="-1"></a>            label<span class="op">=</span><span class="st">"Producer (panic, amplify = 2)"</span>)</span>
-<span id="cb2-130"><a href="#cb2-130" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb2-131"><a href="#cb2-131" aria-hidden="true" tabindex="-1"></a>ax_ord.set_xlabel(<span class="st">"Week"</span>)</span>
-<span id="cb2-132"><a href="#cb2-132" aria-hidden="true" tabindex="-1"></a>ax_ord.set_ylabel(<span class="st">"Order rate (units/week)"</span>)</span>
-<span id="cb2-133"><a href="#cb2-133" aria-hidden="true" tabindex="-1"></a>ax_ord.set_xlim(<span class="dv">0</span>, T_END)</span>
-<span id="cb2-134"><a href="#cb2-134" aria-hidden="true" tabindex="-1"></a>ax_ord.set_ylim(<span class="op">-</span><span class="dv">1</span>, <span class="dv">72</span>)</span>
-<span id="cb2-135"><a href="#cb2-135" aria-hidden="true" tabindex="-1"></a>ax_ord.set_title(<span class="st">"Order rates  ·  rational vs panic ordering"</span>, fontsize<span class="op">=</span><span class="dv">9</span>, pad<span class="op">=</span><span class="dv">8</span>)</span>
-<span id="cb2-136"><a href="#cb2-136" aria-hidden="true" tabindex="-1"></a>ax_ord.legend(fontsize<span class="op">=</span><span class="fl">8.0</span>, frameon<span class="op">=</span><span class="va">False</span>, loc<span class="op">=</span><span class="st">"upper right"</span>)</span>
-<span id="cb2-137"><a href="#cb2-137" aria-hidden="true" tabindex="-1"></a>ax_ord.spines[<span class="st">"top"</span>].set_visible(<span class="va">False</span>)</span>
-<span id="cb2-138"><a href="#cb2-138" aria-hidden="true" tabindex="-1"></a>ax_ord.spines[<span class="st">"right"</span>].set_visible(<span class="va">False</span>)</span>
-<span id="cb2-139"><a href="#cb2-139" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb2-140"><a href="#cb2-140" aria-hidden="true" tabindex="-1"></a>plt.tight_layout(pad<span class="op">=</span><span class="fl">1.8</span>)</span>
-<span id="cb2-141"><a href="#cb2-141" aria-hidden="true" tabindex="-1"></a>plt.savefig(<span class="st">"_assets/ch07-supply-chain.png"</span>, dpi<span class="op">=</span><span class="dv">150</span>, bbox_inches<span class="op">=</span><span class="st">"tight"</span>)</span>
-<span id="cb2-142"><a href="#cb2-142" aria-hidden="true" tabindex="-1"></a>plt.show()</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb3"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="co">"""Supply chain dynamics — Chapter 7.</span></span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a><span class="co">Three inventory stocks plus two pipeline (in-transit) stocks.</span></span>
+<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a><span class="co">Euler simulation with first-order material delays.</span></span>
+<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a><span class="co">Three scenarios: minimal delay, standard delay (main result), panic ordering."""</span></span>
+<span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> numpy <span class="im">as</span> np</span>
+<span id="cb3-6"><a href="#cb3-6" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> matplotlib.pyplot <span class="im">as</span> plt</span>
+<span id="cb3-7"><a href="#cb3-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-8"><a href="#cb3-8" aria-hidden="true" tabindex="-1"></a><span class="co"># -- Named constants -----------------------------------------------------------</span></span>
+<span id="cb3-9"><a href="#cb3-9" aria-hidden="true" tabindex="-1"></a>T_END    <span class="op">=</span> <span class="fl">60.0</span>    <span class="co"># simulation length (weeks)</span></span>
+<span id="cb3-10"><a href="#cb3-10" aria-hidden="true" tabindex="-1"></a>DT       <span class="op">=</span> <span class="fl">0.05</span>    <span class="co"># Euler time step (weeks)</span></span>
+<span id="cb3-11"><a href="#cb3-11" aria-hidden="true" tabindex="-1"></a>T_STEP   <span class="op">=</span> <span class="fl">8.0</span>     <span class="co"># week of demand step</span></span>
+<span id="cb3-12"><a href="#cb3-12" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-13"><a href="#cb3-13" aria-hidden="true" tabindex="-1"></a>D_BASE   <span class="op">=</span> <span class="fl">10.0</span>    <span class="co"># baseline consumer demand (units/week)</span></span>
+<span id="cb3-14"><a href="#cb3-14" aria-hidden="true" tabindex="-1"></a>D_STEP   <span class="op">=</span> <span class="fl">12.0</span>    <span class="co"># elevated demand (units/week)</span></span>
+<span id="cb3-15"><a href="#cb3-15" aria-hidden="true" tabindex="-1"></a>I_TARGET <span class="op">=</span> <span class="fl">20.0</span>    <span class="co"># target inventory at each node (units)</span></span>
+<span id="cb3-16"><a href="#cb3-16" aria-hidden="true" tabindex="-1"></a>I_INIT   <span class="op">=</span> <span class="fl">20.0</span>    <span class="co"># initial inventory — equilibrium</span></span>
+<span id="cb3-17"><a href="#cb3-17" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-18"><a href="#cb3-18" aria-hidden="true" tabindex="-1"></a>COL_RETAILER    <span class="op">=</span> <span class="st">"#111111"</span></span>
+<span id="cb3-19"><a href="#cb3-19" aria-hidden="true" tabindex="-1"></a>COL_DISTRIBUTOR <span class="op">=</span> <span class="st">"#888888"</span></span>
+<span id="cb3-20"><a href="#cb3-20" aria-hidden="true" tabindex="-1"></a>COL_PRODUCER    <span class="op">=</span> <span class="st">"#d52a2a"</span></span>
+<span id="cb3-21"><a href="#cb3-21" aria-hidden="true" tabindex="-1"></a>COL_PANIC       <span class="op">=</span> <span class="st">"#d52a2a"</span></span>
+<span id="cb3-22"><a href="#cb3-22" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-23"><a href="#cb3-23" aria-hidden="true" tabindex="-1"></a>STEPS <span class="op">=</span> <span class="bu">int</span>(T_END <span class="op">/</span> DT)</span>
+<span id="cb3-24"><a href="#cb3-24" aria-hidden="true" tabindex="-1"></a>T     <span class="op">=</span> np.arange(STEPS) <span class="op">*</span> DT</span>
+<span id="cb3-25"><a href="#cb3-25" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-26"><a href="#cb3-26" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-27"><a href="#cb3-27" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> run_supply_chain(tau, amplify<span class="op">=</span><span class="fl">1.0</span>):</span>
+<span id="cb3-28"><a href="#cb3-28" aria-hidden="true" tabindex="-1"></a>    <span class="co">"""</span></span>
+<span id="cb3-29"><a href="#cb3-29" aria-hidden="true" tabindex="-1"></a><span class="co">    Simulate a three-node supply chain.</span></span>
+<span id="cb3-30"><a href="#cb3-30" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-31"><a href="#cb3-31" aria-hidden="true" tabindex="-1"></a><span class="co">    tau     : fulfillment delay at each link (weeks)</span></span>
+<span id="cb3-32"><a href="#cb3-32" aria-hidden="true" tabindex="-1"></a><span class="co">    amplify : aggressiveness of inventory correction (1.0 = rational, &gt;1 = panic)</span></span>
+<span id="cb3-33"><a href="#cb3-33" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-34"><a href="#cb3-34" aria-hidden="true" tabindex="-1"></a><span class="co">    Returns six arrays of length STEPS: I_r, I_d, I_p, OR_r, OR_d, OR_p</span></span>
+<span id="cb3-35"><a href="#cb3-35" aria-hidden="true" tabindex="-1"></a><span class="co">    """</span></span>
+<span id="cb3-36"><a href="#cb3-36" aria-hidden="true" tabindex="-1"></a>    <span class="co"># Inventory stocks</span></span>
+<span id="cb3-37"><a href="#cb3-37" aria-hidden="true" tabindex="-1"></a>    I_r, I_d, I_p <span class="op">=</span> I_INIT, I_INIT, I_INIT</span>
+<span id="cb3-38"><a href="#cb3-38" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-39"><a href="#cb3-39" aria-hidden="true" tabindex="-1"></a>    <span class="co"># Pipeline stocks: goods in transit (initial equilibrium: flow * delay)</span></span>
+<span id="cb3-40"><a href="#cb3-40" aria-hidden="true" tabindex="-1"></a>    P_r <span class="op">=</span> D_BASE <span class="op">*</span> tau</span>
+<span id="cb3-41"><a href="#cb3-41" aria-hidden="true" tabindex="-1"></a>    P_d <span class="op">=</span> D_BASE <span class="op">*</span> tau</span>
+<span id="cb3-42"><a href="#cb3-42" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-43"><a href="#cb3-43" aria-hidden="true" tabindex="-1"></a>    <span class="co"># Order rates (units/week) — start at equilibrium</span></span>
+<span id="cb3-44"><a href="#cb3-44" aria-hidden="true" tabindex="-1"></a>    OR_r <span class="op">=</span> OR_d <span class="op">=</span> OR_p <span class="op">=</span> D_BASE</span>
+<span id="cb3-45"><a href="#cb3-45" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-46"><a href="#cb3-46" aria-hidden="true" tabindex="-1"></a>    rec_I_r  <span class="op">=</span> np.empty(STEPS)<span class="op">;</span>  rec_I_r[<span class="dv">0</span>]  <span class="op">=</span> I_r</span>
+<span id="cb3-47"><a href="#cb3-47" aria-hidden="true" tabindex="-1"></a>    rec_I_d  <span class="op">=</span> np.empty(STEPS)<span class="op">;</span>  rec_I_d[<span class="dv">0</span>]  <span class="op">=</span> I_d</span>
+<span id="cb3-48"><a href="#cb3-48" aria-hidden="true" tabindex="-1"></a>    rec_I_p  <span class="op">=</span> np.empty(STEPS)<span class="op">;</span>  rec_I_p[<span class="dv">0</span>]  <span class="op">=</span> I_p</span>
+<span id="cb3-49"><a href="#cb3-49" aria-hidden="true" tabindex="-1"></a>    rec_OR_r <span class="op">=</span> np.empty(STEPS)<span class="op">;</span>  rec_OR_r[<span class="dv">0</span>] <span class="op">=</span> OR_r</span>
+<span id="cb3-50"><a href="#cb3-50" aria-hidden="true" tabindex="-1"></a>    rec_OR_d <span class="op">=</span> np.empty(STEPS)<span class="op">;</span>  rec_OR_d[<span class="dv">0</span>] <span class="op">=</span> OR_d</span>
+<span id="cb3-51"><a href="#cb3-51" aria-hidden="true" tabindex="-1"></a>    rec_OR_p <span class="op">=</span> np.empty(STEPS)<span class="op">;</span>  rec_OR_p[<span class="dv">0</span>] <span class="op">=</span> OR_p</span>
+<span id="cb3-52"><a href="#cb3-52" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-53"><a href="#cb3-53" aria-hidden="true" tabindex="-1"></a>    adj <span class="op">=</span> <span class="bu">max</span>(tau, <span class="fl">1.0</span>)   <span class="co"># correction horizon: at least one delay period</span></span>
+<span id="cb3-54"><a href="#cb3-54" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-55"><a href="#cb3-55" aria-hidden="true" tabindex="-1"></a>    <span class="cf">for</span> i <span class="kw">in</span> <span class="bu">range</span>(<span class="dv">1</span>, STEPS):</span>
+<span id="cb3-56"><a href="#cb3-56" aria-hidden="true" tabindex="-1"></a>        d <span class="op">=</span> D_STEP <span class="cf">if</span> T[i] <span class="op">&gt;=</span> T_STEP <span class="cf">else</span> D_BASE</span>
+<span id="cb3-57"><a href="#cb3-57" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-58"><a href="#cb3-58" aria-hidden="true" tabindex="-1"></a>        <span class="co"># Arrival rates: pipeline stocks drain at rate 1/tau</span></span>
+<span id="cb3-59"><a href="#cb3-59" aria-hidden="true" tabindex="-1"></a>        arrive_r <span class="op">=</span> P_r <span class="op">/</span> tau</span>
+<span id="cb3-60"><a href="#cb3-60" aria-hidden="true" tabindex="-1"></a>        arrive_d <span class="op">=</span> P_d <span class="op">/</span> tau</span>
+<span id="cb3-61"><a href="#cb3-61" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-62"><a href="#cb3-62" aria-hidden="true" tabindex="-1"></a>        <span class="co"># Shipment rates: each node ships as much as its inventory allows</span></span>
+<span id="cb3-63"><a href="#cb3-63" aria-hidden="true" tabindex="-1"></a>        ship_r <span class="op">=</span> <span class="bu">min</span>(I_r, d)       <span class="co"># retailer → consumer</span></span>
+<span id="cb3-64"><a href="#cb3-64" aria-hidden="true" tabindex="-1"></a>        ship_d <span class="op">=</span> <span class="bu">min</span>(I_d, OR_r)    <span class="co"># distributor → retailer</span></span>
+<span id="cb3-65"><a href="#cb3-65" aria-hidden="true" tabindex="-1"></a>        ship_p <span class="op">=</span> <span class="bu">min</span>(I_p, OR_d)    <span class="co"># producer → distributor</span></span>
+<span id="cb3-66"><a href="#cb3-66" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-67"><a href="#cb3-67" aria-hidden="true" tabindex="-1"></a>        <span class="co"># Euler: inventory stocks</span></span>
+<span id="cb3-68"><a href="#cb3-68" aria-hidden="true" tabindex="-1"></a>        I_r <span class="op">=</span> <span class="bu">max</span>(<span class="fl">0.0</span>, I_r <span class="op">+</span> (arrive_r <span class="op">-</span> ship_r) <span class="op">*</span> DT)</span>
+<span id="cb3-69"><a href="#cb3-69" aria-hidden="true" tabindex="-1"></a>        I_d <span class="op">=</span> <span class="bu">max</span>(<span class="fl">0.0</span>, I_d <span class="op">+</span> (arrive_d <span class="op">-</span> ship_d) <span class="op">*</span> DT)</span>
+<span id="cb3-70"><a href="#cb3-70" aria-hidden="true" tabindex="-1"></a>        I_p <span class="op">=</span> <span class="bu">max</span>(<span class="fl">0.0</span>, I_p <span class="op">+</span> (OR_p    <span class="op">-</span> ship_p)  <span class="op">*</span> DT)</span>
+<span id="cb3-71"><a href="#cb3-71" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-72"><a href="#cb3-72" aria-hidden="true" tabindex="-1"></a>        <span class="co"># Euler: pipeline stocks (accumulate orders, drain as goods arrive)</span></span>
+<span id="cb3-73"><a href="#cb3-73" aria-hidden="true" tabindex="-1"></a>        P_r <span class="op">=</span> <span class="bu">max</span>(<span class="fl">0.0</span>, P_r <span class="op">+</span> (OR_r <span class="op">-</span> arrive_r) <span class="op">*</span> DT)</span>
+<span id="cb3-74"><a href="#cb3-74" aria-hidden="true" tabindex="-1"></a>        P_d <span class="op">=</span> <span class="bu">max</span>(<span class="fl">0.0</span>, P_d <span class="op">+</span> (OR_d <span class="op">-</span> arrive_d) <span class="op">*</span> DT)</span>
+<span id="cb3-75"><a href="#cb3-75" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-76"><a href="#cb3-76" aria-hidden="true" tabindex="-1"></a>        <span class="co"># Order-up-to policy: expected demand + correction for inventory gap</span></span>
+<span id="cb3-77"><a href="#cb3-77" aria-hidden="true" tabindex="-1"></a>        OR_r <span class="op">=</span> <span class="bu">max</span>(<span class="fl">0.0</span>, d    <span class="op">+</span> amplify <span class="op">*</span> (I_TARGET <span class="op">-</span> I_r) <span class="op">/</span> adj)</span>
+<span id="cb3-78"><a href="#cb3-78" aria-hidden="true" tabindex="-1"></a>        OR_d <span class="op">=</span> <span class="bu">max</span>(<span class="fl">0.0</span>, OR_r <span class="op">+</span> amplify <span class="op">*</span> (I_TARGET <span class="op">-</span> I_d) <span class="op">/</span> adj)</span>
+<span id="cb3-79"><a href="#cb3-79" aria-hidden="true" tabindex="-1"></a>        OR_p <span class="op">=</span> <span class="bu">max</span>(<span class="fl">0.0</span>, OR_d <span class="op">+</span> amplify <span class="op">*</span> (I_TARGET <span class="op">-</span> I_p) <span class="op">/</span> adj)</span>
+<span id="cb3-80"><a href="#cb3-80" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-81"><a href="#cb3-81" aria-hidden="true" tabindex="-1"></a>        rec_I_r[i]  <span class="op">=</span> I_r<span class="op">;</span>  rec_I_d[i]  <span class="op">=</span> I_d<span class="op">;</span>  rec_I_p[i]  <span class="op">=</span> I_p</span>
+<span id="cb3-82"><a href="#cb3-82" aria-hidden="true" tabindex="-1"></a>        rec_OR_r[i] <span class="op">=</span> OR_r<span class="op">;</span> rec_OR_d[i] <span class="op">=</span> OR_d<span class="op">;</span> rec_OR_p[i] <span class="op">=</span> OR_p</span>
+<span id="cb3-83"><a href="#cb3-83" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-84"><a href="#cb3-84" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> rec_I_r, rec_I_d, rec_I_p, rec_OR_r, rec_OR_d, rec_OR_p</span>
+<span id="cb3-85"><a href="#cb3-85" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-86"><a href="#cb3-86" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-87"><a href="#cb3-87" aria-hidden="true" tabindex="-1"></a><span class="co"># -- Run scenarios -------------------------------------------------------------</span></span>
+<span id="cb3-88"><a href="#cb3-88" aria-hidden="true" tabindex="-1"></a>I_r2, I_d2, I_p2, OR_r2, OR_d2, OR_p2 <span class="op">=</span> run_supply_chain(tau<span class="op">=</span><span class="fl">3.0</span>, amplify<span class="op">=</span><span class="fl">1.0</span>)</span>
+<span id="cb3-89"><a href="#cb3-89" aria-hidden="true" tabindex="-1"></a>I_r3, I_d3, I_p3, OR_r3, OR_d3, OR_p3 <span class="op">=</span> run_supply_chain(tau<span class="op">=</span><span class="fl">3.0</span>, amplify<span class="op">=</span><span class="fl">2.0</span>)</span>
+<span id="cb3-90"><a href="#cb3-90" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-91"><a href="#cb3-91" aria-hidden="true" tabindex="-1"></a><span class="co"># -- Figure --------------------------------------------------------------------</span></span>
+<span id="cb3-92"><a href="#cb3-92" aria-hidden="true" tabindex="-1"></a>fig, (ax_inv, ax_ord) <span class="op">=</span> plt.subplots(<span class="dv">1</span>, <span class="dv">2</span>, figsize<span class="op">=</span>(<span class="dv">12</span>, <span class="dv">5</span>), dpi<span class="op">=</span><span class="dv">150</span>)</span>
+<span id="cb3-93"><a href="#cb3-93" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-94"><a href="#cb3-94" aria-hidden="true" tabindex="-1"></a><span class="co"># Left: inventory levels (standard delay)</span></span>
+<span id="cb3-95"><a href="#cb3-95" aria-hidden="true" tabindex="-1"></a>ax_inv.axvline(T_STEP, color<span class="op">=</span><span class="st">"#cccccc"</span>, linewidth<span class="op">=</span><span class="fl">0.8</span>, zorder<span class="op">=</span><span class="dv">0</span>)</span>
+<span id="cb3-96"><a href="#cb3-96" aria-hidden="true" tabindex="-1"></a>ax_inv.axhline(I_TARGET, color<span class="op">=</span><span class="st">"#cccccc"</span>, linewidth<span class="op">=</span><span class="fl">0.8</span>, linestyle<span class="op">=</span><span class="st">":"</span>, zorder<span class="op">=</span><span class="dv">0</span>)</span>
+<span id="cb3-97"><a href="#cb3-97" aria-hidden="true" tabindex="-1"></a>ax_inv.annotate(<span class="st">"Target 20 units"</span>, xy<span class="op">=</span>(<span class="dv">1</span>, I_TARGET), xytext<span class="op">=</span>(<span class="dv">1</span>, I_TARGET <span class="op">+</span> <span class="fl">1.5</span>),</span>
+<span id="cb3-98"><a href="#cb3-98" aria-hidden="true" tabindex="-1"></a>                fontsize<span class="op">=</span><span class="dv">8</span>, color<span class="op">=</span><span class="st">"#aaaaaa"</span>, va<span class="op">=</span><span class="st">"bottom"</span>)</span>
+<span id="cb3-99"><a href="#cb3-99" aria-hidden="true" tabindex="-1"></a>ax_inv.annotate(<span class="st">"demand</span><span class="ch">\n</span><span class="st">step wk 8"</span>, xy<span class="op">=</span>(T_STEP, <span class="dv">3</span>), xytext<span class="op">=</span>(T_STEP <span class="op">+</span> <span class="fl">1.2</span>, <span class="dv">3</span>),</span>
+<span id="cb3-100"><a href="#cb3-100" aria-hidden="true" tabindex="-1"></a>                fontsize<span class="op">=</span><span class="dv">8</span>, color<span class="op">=</span><span class="st">"#aaaaaa"</span>, va<span class="op">=</span><span class="st">"center"</span>)</span>
+<span id="cb3-101"><a href="#cb3-101" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-102"><a href="#cb3-102" aria-hidden="true" tabindex="-1"></a>ax_inv.plot(T, I_r2, color<span class="op">=</span>COL_RETAILER,    linewidth<span class="op">=</span><span class="fl">1.4</span>, label<span class="op">=</span><span class="st">"Retailer"</span>)</span>
+<span id="cb3-103"><a href="#cb3-103" aria-hidden="true" tabindex="-1"></a>ax_inv.plot(T, I_d2, color<span class="op">=</span>COL_DISTRIBUTOR, linewidth<span class="op">=</span><span class="fl">1.4</span>, linestyle<span class="op">=</span><span class="st">"--"</span>,</span>
+<span id="cb3-104"><a href="#cb3-104" aria-hidden="true" tabindex="-1"></a>            label<span class="op">=</span><span class="st">"Distributor"</span>)</span>
+<span id="cb3-105"><a href="#cb3-105" aria-hidden="true" tabindex="-1"></a>ax_inv.plot(T, I_p2, color<span class="op">=</span>COL_PRODUCER,    linewidth<span class="op">=</span><span class="fl">1.8</span>, label<span class="op">=</span><span class="st">"Producer"</span>)</span>
+<span id="cb3-106"><a href="#cb3-106" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-107"><a href="#cb3-107" aria-hidden="true" tabindex="-1"></a>ax_inv.set_xlabel(<span class="st">"Week"</span>)</span>
+<span id="cb3-108"><a href="#cb3-108" aria-hidden="true" tabindex="-1"></a>ax_inv.set_ylabel(<span class="st">"Inventory (units)"</span>)</span>
+<span id="cb3-109"><a href="#cb3-109" aria-hidden="true" tabindex="-1"></a>ax_inv.set_xlim(<span class="dv">0</span>, T_END)</span>
+<span id="cb3-110"><a href="#cb3-110" aria-hidden="true" tabindex="-1"></a>ax_inv.set_ylim(<span class="op">-</span><span class="dv">2</span>, <span class="dv">58</span>)</span>
+<span id="cb3-111"><a href="#cb3-111" aria-hidden="true" tabindex="-1"></a>ax_inv.set_title(<span class="st">"Inventory levels  ·  τ = 3 weeks"</span>, fontsize<span class="op">=</span><span class="dv">9</span>, pad<span class="op">=</span><span class="dv">8</span>)</span>
+<span id="cb3-112"><a href="#cb3-112" aria-hidden="true" tabindex="-1"></a>ax_inv.legend(fontsize<span class="op">=</span><span class="fl">8.5</span>, frameon<span class="op">=</span><span class="va">False</span>)</span>
+<span id="cb3-113"><a href="#cb3-113" aria-hidden="true" tabindex="-1"></a>ax_inv.spines[<span class="st">"top"</span>].set_visible(<span class="va">False</span>)</span>
+<span id="cb3-114"><a href="#cb3-114" aria-hidden="true" tabindex="-1"></a>ax_inv.spines[<span class="st">"right"</span>].set_visible(<span class="va">False</span>)</span>
+<span id="cb3-115"><a href="#cb3-115" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-116"><a href="#cb3-116" aria-hidden="true" tabindex="-1"></a><span class="co"># Right: order rates — standard vs panic</span></span>
+<span id="cb3-117"><a href="#cb3-117" aria-hidden="true" tabindex="-1"></a>ax_ord.axvline(T_STEP, color<span class="op">=</span><span class="st">"#cccccc"</span>, linewidth<span class="op">=</span><span class="fl">0.8</span>, zorder<span class="op">=</span><span class="dv">0</span>)</span>
+<span id="cb3-118"><a href="#cb3-118" aria-hidden="true" tabindex="-1"></a>ax_ord.axhline(D_STEP, color<span class="op">=</span><span class="st">"#cccccc"</span>, linewidth<span class="op">=</span><span class="fl">0.8</span>, linestyle<span class="op">=</span><span class="st">":"</span>, zorder<span class="op">=</span><span class="dv">0</span>)</span>
+<span id="cb3-119"><a href="#cb3-119" aria-hidden="true" tabindex="-1"></a>ax_ord.annotate(<span class="st">"Actual demand 12 u/wk"</span>, xy<span class="op">=</span>(<span class="dv">1</span>, D_STEP),</span>
+<span id="cb3-120"><a href="#cb3-120" aria-hidden="true" tabindex="-1"></a>                xytext<span class="op">=</span>(<span class="dv">1</span>, D_STEP <span class="op">+</span> <span class="fl">1.0</span>), fontsize<span class="op">=</span><span class="dv">8</span>, color<span class="op">=</span><span class="st">"#aaaaaa"</span>, va<span class="op">=</span><span class="st">"bottom"</span>)</span>
+<span id="cb3-121"><a href="#cb3-121" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-122"><a href="#cb3-122" aria-hidden="true" tabindex="-1"></a>ax_ord.plot(T, OR_r2, color<span class="op">=</span>COL_RETAILER,    linewidth<span class="op">=</span><span class="fl">1.2</span>, linestyle<span class="op">=</span><span class="st">"-"</span>,</span>
+<span id="cb3-123"><a href="#cb3-123" aria-hidden="true" tabindex="-1"></a>            label<span class="op">=</span><span class="st">"Retailer (rational)"</span>)</span>
+<span id="cb3-124"><a href="#cb3-124" aria-hidden="true" tabindex="-1"></a>ax_ord.plot(T, OR_d2, color<span class="op">=</span>COL_DISTRIBUTOR, linewidth<span class="op">=</span><span class="fl">1.2</span>, linestyle<span class="op">=</span><span class="st">"--"</span>,</span>
+<span id="cb3-125"><a href="#cb3-125" aria-hidden="true" tabindex="-1"></a>            label<span class="op">=</span><span class="st">"Distributor (rational)"</span>)</span>
+<span id="cb3-126"><a href="#cb3-126" aria-hidden="true" tabindex="-1"></a>ax_ord.plot(T, OR_p2, color<span class="op">=</span>COL_PRODUCER,    linewidth<span class="op">=</span><span class="fl">1.8</span>, linestyle<span class="op">=</span><span class="st">"-"</span>,</span>
+<span id="cb3-127"><a href="#cb3-127" aria-hidden="true" tabindex="-1"></a>            label<span class="op">=</span><span class="st">"Producer (rational)"</span>)</span>
+<span id="cb3-128"><a href="#cb3-128" aria-hidden="true" tabindex="-1"></a>ax_ord.plot(T, OR_p3, color<span class="op">=</span>COL_PANIC,       linewidth<span class="op">=</span><span class="fl">1.8</span>, linestyle<span class="op">=</span><span class="st">":"</span>,</span>
+<span id="cb3-129"><a href="#cb3-129" aria-hidden="true" tabindex="-1"></a>            label<span class="op">=</span><span class="st">"Producer (panic, amplify = 2)"</span>)</span>
+<span id="cb3-130"><a href="#cb3-130" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-131"><a href="#cb3-131" aria-hidden="true" tabindex="-1"></a>ax_ord.set_xlabel(<span class="st">"Week"</span>)</span>
+<span id="cb3-132"><a href="#cb3-132" aria-hidden="true" tabindex="-1"></a>ax_ord.set_ylabel(<span class="st">"Order rate (units/week)"</span>)</span>
+<span id="cb3-133"><a href="#cb3-133" aria-hidden="true" tabindex="-1"></a>ax_ord.set_xlim(<span class="dv">0</span>, T_END)</span>
+<span id="cb3-134"><a href="#cb3-134" aria-hidden="true" tabindex="-1"></a>ax_ord.set_ylim(<span class="op">-</span><span class="dv">1</span>, <span class="dv">72</span>)</span>
+<span id="cb3-135"><a href="#cb3-135" aria-hidden="true" tabindex="-1"></a>ax_ord.set_title(<span class="st">"Order rates  ·  rational vs panic ordering"</span>, fontsize<span class="op">=</span><span class="dv">9</span>, pad<span class="op">=</span><span class="dv">8</span>)</span>
+<span id="cb3-136"><a href="#cb3-136" aria-hidden="true" tabindex="-1"></a>ax_ord.legend(fontsize<span class="op">=</span><span class="fl">8.0</span>, frameon<span class="op">=</span><span class="va">False</span>, loc<span class="op">=</span><span class="st">"upper right"</span>)</span>
+<span id="cb3-137"><a href="#cb3-137" aria-hidden="true" tabindex="-1"></a>ax_ord.spines[<span class="st">"top"</span>].set_visible(<span class="va">False</span>)</span>
+<span id="cb3-138"><a href="#cb3-138" aria-hidden="true" tabindex="-1"></a>ax_ord.spines[<span class="st">"right"</span>].set_visible(<span class="va">False</span>)</span>
+<span id="cb3-139"><a href="#cb3-139" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-140"><a href="#cb3-140" aria-hidden="true" tabindex="-1"></a>plt.tight_layout(pad<span class="op">=</span><span class="fl">1.8</span>)</span>
+<span id="cb3-141"><a href="#cb3-141" aria-hidden="true" tabindex="-1"></a>plt.savefig(<span class="st">"_assets/ch07-supply-chain.png"</span>, dpi<span class="op">=</span><span class="dv">150</span>, bbox_inches<span class="op">=</span><span class="st">"tight"</span>)</span>
+<span id="cb3-142"><a href="#cb3-142" aria-hidden="true" tabindex="-1"></a>plt.show()</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </details>
 <div class="cell-output cell-output-display">
 <div id="fig-supply-chain" class="quarto-float quarto-figure quarto-figure-center anchored">
@@ -1087,6 +1145,72 @@ Figure&nbsp;8.2: Figure 7.5. Bullwhip effect in a three-node supply chain. Left:
 <li><p><strong>Reduce the demand step.</strong> Change <code>D_STEP</code> from 12 to 11 (a 10% demand increase). Is the bullwhip amplitude at the producer roughly half of the 20% case, or more or less than half? If the response is superlinear — larger relative to the perturbation at small step sizes — what does that imply about the risk of apparently minor demand fluctuations propagating through long supply chains?</p></li>
 </ol>
 </div>
+</div>
+<div class="pyodide-cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb4"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> numpy <span class="im">as</span> np</span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> matplotlib.pyplot <span class="im">as</span> plt</span>
+<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a><span class="co"># --- Try changing these parameters ---</span></span>
+<span id="cb4-5"><a href="#cb4-5" aria-hidden="true" tabindex="-1"></a>tau    <span class="op">=</span> <span class="fl">3.0</span>    <span class="co"># fulfillment delay at each node (weeks); try 1.0 for minimal delay</span></span>
+<span id="cb4-6"><a href="#cb4-6" aria-hidden="true" tabindex="-1"></a>D_STEP <span class="op">=</span> <span class="fl">12.0</span>   <span class="co"># elevated demand after step (try 11.0 for 10% increase, 14 for 40%)</span></span>
+<span id="cb4-7"><a href="#cb4-7" aria-hidden="true" tabindex="-1"></a>amplify <span class="op">=</span> <span class="fl">1.0</span>   <span class="co"># ordering aggressiveness (try 2.0 for panic ordering)</span></span>
+<span id="cb4-8"><a href="#cb4-8" aria-hidden="true" tabindex="-1"></a><span class="co"># Spread inventory correction over longer horizon:</span></span>
+<span id="cb4-9"><a href="#cb4-9" aria-hidden="true" tabindex="-1"></a><span class="co"># replace 1.0 with 3.0 in adj = N * max(tau, 1.0) below (What to try #2)</span></span>
+<span id="cb4-10"><a href="#cb4-10" aria-hidden="true" tabindex="-1"></a>adj_multiplier <span class="op">=</span> <span class="fl">1.0</span></span>
+<span id="cb4-11"><a href="#cb4-11" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-12"><a href="#cb4-12" aria-hidden="true" tabindex="-1"></a>D_BASE <span class="op">=</span> <span class="fl">10.0</span><span class="op">;</span> I_TARGET <span class="op">=</span> <span class="fl">20.0</span><span class="op">;</span> I_INIT <span class="op">=</span> <span class="fl">20.0</span><span class="op">;</span> T_STEP <span class="op">=</span> <span class="fl">8.0</span></span>
+<span id="cb4-13"><a href="#cb4-13" aria-hidden="true" tabindex="-1"></a>T_END <span class="op">=</span> <span class="fl">60.0</span><span class="op">;</span> DT <span class="op">=</span> <span class="fl">0.05</span></span>
+<span id="cb4-14"><a href="#cb4-14" aria-hidden="true" tabindex="-1"></a>STEPS <span class="op">=</span> <span class="bu">int</span>(T_END <span class="op">/</span> DT)</span>
+<span id="cb4-15"><a href="#cb4-15" aria-hidden="true" tabindex="-1"></a>T <span class="op">=</span> np.arange(STEPS) <span class="op">*</span> DT</span>
+<span id="cb4-16"><a href="#cb4-16" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-17"><a href="#cb4-17" aria-hidden="true" tabindex="-1"></a>I_r <span class="op">=</span> I_d <span class="op">=</span> I_p <span class="op">=</span> I_INIT</span>
+<span id="cb4-18"><a href="#cb4-18" aria-hidden="true" tabindex="-1"></a>P_r <span class="op">=</span> D_BASE <span class="op">*</span> tau<span class="op">;</span> P_d <span class="op">=</span> D_BASE <span class="op">*</span> tau</span>
+<span id="cb4-19"><a href="#cb4-19" aria-hidden="true" tabindex="-1"></a>OR_r <span class="op">=</span> OR_d <span class="op">=</span> OR_p <span class="op">=</span> D_BASE</span>
+<span id="cb4-20"><a href="#cb4-20" aria-hidden="true" tabindex="-1"></a>rec_I_r  <span class="op">=</span> np.empty(STEPS)<span class="op">;</span> rec_I_r[<span class="dv">0</span>]  <span class="op">=</span> I_r</span>
+<span id="cb4-21"><a href="#cb4-21" aria-hidden="true" tabindex="-1"></a>rec_I_d  <span class="op">=</span> np.empty(STEPS)<span class="op">;</span> rec_I_d[<span class="dv">0</span>]  <span class="op">=</span> I_d</span>
+<span id="cb4-22"><a href="#cb4-22" aria-hidden="true" tabindex="-1"></a>rec_I_p  <span class="op">=</span> np.empty(STEPS)<span class="op">;</span> rec_I_p[<span class="dv">0</span>]  <span class="op">=</span> I_p</span>
+<span id="cb4-23"><a href="#cb4-23" aria-hidden="true" tabindex="-1"></a>rec_OR_r <span class="op">=</span> np.empty(STEPS)<span class="op">;</span> rec_OR_r[<span class="dv">0</span>] <span class="op">=</span> OR_r</span>
+<span id="cb4-24"><a href="#cb4-24" aria-hidden="true" tabindex="-1"></a>rec_OR_p <span class="op">=</span> np.empty(STEPS)<span class="op">;</span> rec_OR_p[<span class="dv">0</span>] <span class="op">=</span> OR_p</span>
+<span id="cb4-25"><a href="#cb4-25" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-26"><a href="#cb4-26" aria-hidden="true" tabindex="-1"></a>adj <span class="op">=</span> adj_multiplier <span class="op">*</span> <span class="bu">max</span>(tau, <span class="fl">1.0</span>)</span>
+<span id="cb4-27"><a href="#cb4-27" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> i <span class="kw">in</span> <span class="bu">range</span>(<span class="dv">1</span>, STEPS):</span>
+<span id="cb4-28"><a href="#cb4-28" aria-hidden="true" tabindex="-1"></a>    d <span class="op">=</span> D_STEP <span class="cf">if</span> T[i] <span class="op">&gt;=</span> T_STEP <span class="cf">else</span> D_BASE</span>
+<span id="cb4-29"><a href="#cb4-29" aria-hidden="true" tabindex="-1"></a>    arrive_r <span class="op">=</span> P_r <span class="op">/</span> tau<span class="op">;</span> arrive_d <span class="op">=</span> P_d <span class="op">/</span> tau</span>
+<span id="cb4-30"><a href="#cb4-30" aria-hidden="true" tabindex="-1"></a>    ship_r <span class="op">=</span> <span class="bu">min</span>(I_r, d)<span class="op">;</span> ship_d <span class="op">=</span> <span class="bu">min</span>(I_d, OR_r)<span class="op">;</span> ship_p <span class="op">=</span> <span class="bu">min</span>(I_p, OR_d)</span>
+<span id="cb4-31"><a href="#cb4-31" aria-hidden="true" tabindex="-1"></a>    I_r <span class="op">=</span> <span class="bu">max</span>(<span class="fl">0.0</span>, I_r <span class="op">+</span> (arrive_r <span class="op">-</span> ship_r) <span class="op">*</span> DT)</span>
+<span id="cb4-32"><a href="#cb4-32" aria-hidden="true" tabindex="-1"></a>    I_d <span class="op">=</span> <span class="bu">max</span>(<span class="fl">0.0</span>, I_d <span class="op">+</span> (arrive_d <span class="op">-</span> ship_d) <span class="op">*</span> DT)</span>
+<span id="cb4-33"><a href="#cb4-33" aria-hidden="true" tabindex="-1"></a>    I_p <span class="op">=</span> <span class="bu">max</span>(<span class="fl">0.0</span>, I_p <span class="op">+</span> (OR_p <span class="op">-</span> ship_p) <span class="op">*</span> DT)</span>
+<span id="cb4-34"><a href="#cb4-34" aria-hidden="true" tabindex="-1"></a>    P_r <span class="op">=</span> <span class="bu">max</span>(<span class="fl">0.0</span>, P_r <span class="op">+</span> (OR_r <span class="op">-</span> arrive_r) <span class="op">*</span> DT)</span>
+<span id="cb4-35"><a href="#cb4-35" aria-hidden="true" tabindex="-1"></a>    P_d <span class="op">=</span> <span class="bu">max</span>(<span class="fl">0.0</span>, P_d <span class="op">+</span> (OR_d <span class="op">-</span> arrive_d) <span class="op">*</span> DT)</span>
+<span id="cb4-36"><a href="#cb4-36" aria-hidden="true" tabindex="-1"></a>    OR_r <span class="op">=</span> <span class="bu">max</span>(<span class="fl">0.0</span>, d    <span class="op">+</span> amplify <span class="op">*</span> (I_TARGET <span class="op">-</span> I_r) <span class="op">/</span> adj)</span>
+<span id="cb4-37"><a href="#cb4-37" aria-hidden="true" tabindex="-1"></a>    OR_d <span class="op">=</span> <span class="bu">max</span>(<span class="fl">0.0</span>, OR_r <span class="op">+</span> amplify <span class="op">*</span> (I_TARGET <span class="op">-</span> I_d) <span class="op">/</span> adj)</span>
+<span id="cb4-38"><a href="#cb4-38" aria-hidden="true" tabindex="-1"></a>    OR_p <span class="op">=</span> <span class="bu">max</span>(<span class="fl">0.0</span>, OR_d <span class="op">+</span> amplify <span class="op">*</span> (I_TARGET <span class="op">-</span> I_p) <span class="op">/</span> adj)</span>
+<span id="cb4-39"><a href="#cb4-39" aria-hidden="true" tabindex="-1"></a>    rec_I_r[i] <span class="op">=</span> I_r<span class="op">;</span> rec_I_d[i] <span class="op">=</span> I_d<span class="op">;</span> rec_I_p[i] <span class="op">=</span> I_p</span>
+<span id="cb4-40"><a href="#cb4-40" aria-hidden="true" tabindex="-1"></a>    rec_OR_r[i] <span class="op">=</span> OR_r<span class="op">;</span> rec_OR_p[i] <span class="op">=</span> OR_p</span>
+<span id="cb4-41"><a href="#cb4-41" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-42"><a href="#cb4-42" aria-hidden="true" tabindex="-1"></a>fig, (ax1, ax2) <span class="op">=</span> plt.subplots(<span class="dv">1</span>, <span class="dv">2</span>, figsize<span class="op">=</span>(<span class="dv">11</span>, <span class="dv">4</span>))</span>
+<span id="cb4-43"><a href="#cb4-43" aria-hidden="true" tabindex="-1"></a>ax1.axvline(T_STEP, color<span class="op">=</span><span class="st">"#ccc"</span>, linewidth<span class="op">=</span><span class="fl">0.8</span>)</span>
+<span id="cb4-44"><a href="#cb4-44" aria-hidden="true" tabindex="-1"></a>ax1.axhline(I_TARGET, color<span class="op">=</span><span class="st">"#ccc"</span>, linestyle<span class="op">=</span><span class="st">":"</span>, linewidth<span class="op">=</span><span class="fl">0.8</span>)</span>
+<span id="cb4-45"><a href="#cb4-45" aria-hidden="true" tabindex="-1"></a>ax1.plot(T, rec_I_r, color<span class="op">=</span><span class="st">"#111"</span>, linewidth<span class="op">=</span><span class="fl">1.4</span>, label<span class="op">=</span><span class="st">"Retailer"</span>)</span>
+<span id="cb4-46"><a href="#cb4-46" aria-hidden="true" tabindex="-1"></a>ax1.plot(T, rec_I_d, color<span class="op">=</span><span class="st">"#888"</span>, linewidth<span class="op">=</span><span class="fl">1.4</span>, linestyle<span class="op">=</span><span class="st">"--"</span>, label<span class="op">=</span><span class="st">"Distributor"</span>)</span>
+<span id="cb4-47"><a href="#cb4-47" aria-hidden="true" tabindex="-1"></a>ax1.plot(T, rec_I_p, color<span class="op">=</span><span class="st">"#d52a2a"</span>, linewidth<span class="op">=</span><span class="fl">1.8</span>, label<span class="op">=</span><span class="st">"Producer"</span>)</span>
+<span id="cb4-48"><a href="#cb4-48" aria-hidden="true" tabindex="-1"></a>ax1.set_xlabel(<span class="st">"Week"</span>)<span class="op">;</span> ax1.set_ylabel(<span class="st">"Inventory (units)"</span>)</span>
+<span id="cb4-49"><a href="#cb4-49" aria-hidden="true" tabindex="-1"></a>ax1.set_title(<span class="ss">f"Inventory  τ=</span><span class="sc">{</span>tau<span class="sc">}</span><span class="ss">, D_STEP=</span><span class="sc">{</span>D_STEP<span class="sc">}</span><span class="ss">"</span>)</span>
+<span id="cb4-50"><a href="#cb4-50" aria-hidden="true" tabindex="-1"></a>ax1.legend(frameon<span class="op">=</span><span class="va">False</span>, fontsize<span class="op">=</span><span class="fl">8.5</span>)</span>
+<span id="cb4-51"><a href="#cb4-51" aria-hidden="true" tabindex="-1"></a>ax1.spines[<span class="st">"top"</span>].set_visible(<span class="va">False</span>)<span class="op">;</span> ax1.spines[<span class="st">"right"</span>].set_visible(<span class="va">False</span>)</span>
+<span id="cb4-52"><a href="#cb4-52" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-53"><a href="#cb4-53" aria-hidden="true" tabindex="-1"></a>ax2.axvline(T_STEP, color<span class="op">=</span><span class="st">"#ccc"</span>, linewidth<span class="op">=</span><span class="fl">0.8</span>)</span>
+<span id="cb4-54"><a href="#cb4-54" aria-hidden="true" tabindex="-1"></a>ax2.axhline(D_STEP, color<span class="op">=</span><span class="st">"#ccc"</span>, linestyle<span class="op">=</span><span class="st">":"</span>, linewidth<span class="op">=</span><span class="fl">0.8</span>)</span>
+<span id="cb4-55"><a href="#cb4-55" aria-hidden="true" tabindex="-1"></a>ax2.plot(T, rec_OR_r, color<span class="op">=</span><span class="st">"#111"</span>, linewidth<span class="op">=</span><span class="fl">1.4</span>, label<span class="op">=</span><span class="st">"Retailer orders"</span>)</span>
+<span id="cb4-56"><a href="#cb4-56" aria-hidden="true" tabindex="-1"></a>ax2.plot(T, rec_OR_p, color<span class="op">=</span><span class="st">"#d52a2a"</span>, linewidth<span class="op">=</span><span class="fl">1.8</span>, label<span class="op">=</span><span class="st">"Producer orders"</span>)</span>
+<span id="cb4-57"><a href="#cb4-57" aria-hidden="true" tabindex="-1"></a>ax2.set_xlabel(<span class="st">"Week"</span>)<span class="op">;</span> ax2.set_ylabel(<span class="st">"Order rate (units/week)"</span>)</span>
+<span id="cb4-58"><a href="#cb4-58" aria-hidden="true" tabindex="-1"></a>ax2.set_title(<span class="ss">f"Order rates  amplify=</span><span class="sc">{</span>amplify<span class="sc">}</span><span class="ss">, adj×</span><span class="sc">{</span>adj_multiplier<span class="sc">}</span><span class="ss">"</span>)</span>
+<span id="cb4-59"><a href="#cb4-59" aria-hidden="true" tabindex="-1"></a>ax2.legend(frameon<span class="op">=</span><span class="va">False</span>, fontsize<span class="op">=</span><span class="fl">8.5</span>)</span>
+<span id="cb4-60"><a href="#cb4-60" aria-hidden="true" tabindex="-1"></a>ax2.spines[<span class="st">"top"</span>].set_visible(<span class="va">False</span>)<span class="op">;</span> ax2.spines[<span class="st">"right"</span>].set_visible(<span class="va">False</span>)</span>
+<span id="cb4-61"><a href="#cb4-61" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-62"><a href="#cb4-62" aria-hidden="true" tabindex="-1"></a>plt.tight_layout()</span>
+<span id="cb4-63"><a href="#cb4-63" aria-hidden="true" tabindex="-1"></a>plt.show()</span>
+<span id="cb4-64"><a href="#cb4-64" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f"Producer inventory range: </span><span class="sc">{</span>rec_I_p<span class="sc">.</span><span class="bu">min</span>()<span class="sc">:.1f}</span><span class="ss"> – </span><span class="sc">{</span>rec_I_p<span class="sc">.</span><span class="bu">max</span>()<span class="sc">:.1f}</span><span class="ss"> (target </span><span class="sc">{</span>I_TARGET<span class="sc">}</span><span class="ss">)"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 <p>The bullwhip is not primarily a demand-forecasting problem. Giving each node perfect information about consumer demand — the common prescription — reduces but does not eliminate the oscillation, because the oscillation is driven by the combination of delay and inventory correction, not by forecasting error. The structural interventions are to reduce the delay (faster logistics, smaller order batches, more frequent replenishment cycles) or to change the ordering policy (smooth the correction term over a longer adjustment horizon). Both reduce the feedback gain that amplifies the upstream signal. The model makes this diagnostic precise: it identifies which structural parameter is the dominant driver of amplitude, and which interventions would have the largest effect per unit of cost.</p>
 <div class="callout callout-style-simple callout-note callout-titled">

@@ -862,6 +862,86 @@ Figure&nbsp;4.1: Figure 3.4. Schelling segregation model. Left: initial random p
 </ol>
 </div>
 </div>
+<div class="pyodide-cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb2"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> numpy <span class="im">as</span> np</span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> matplotlib.pyplot <span class="im">as</span> plt</span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> matplotlib.colors <span class="im">import</span> ListedColormap</span>
+<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a><span class="co"># --- Try changing these parameters ---</span></span>
+<span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a>GRID_SIZE  <span class="op">=</span> <span class="dv">30</span>     <span class="co"># grid dimension (try 60 for a larger city)</span></span>
+<span id="cb2-7"><a href="#cb2-7" aria-hidden="true" tabindex="-1"></a>DENSITY_A  <span class="op">=</span> <span class="fl">0.35</span>   <span class="co"># fraction of cells occupied by type A (try 0.30)</span></span>
+<span id="cb2-8"><a href="#cb2-8" aria-hidden="true" tabindex="-1"></a>DENSITY_B  <span class="op">=</span> <span class="fl">0.35</span>   <span class="co"># fraction of cells occupied by type B (try 0.60)</span></span>
+<span id="cb2-9"><a href="#cb2-9" aria-hidden="true" tabindex="-1"></a>THRESHOLD  <span class="op">=</span> <span class="fl">0.33</span>   <span class="co"># satisfaction threshold: fraction of same-type neighbours required</span></span>
+<span id="cb2-10"><a href="#cb2-10" aria-hidden="true" tabindex="-1"></a>N_STEPS    <span class="op">=</span> <span class="dv">50</span>     <span class="co"># number of simulation steps</span></span>
+<span id="cb2-11"><a href="#cb2-11" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-12"><a href="#cb2-12" aria-hidden="true" tabindex="-1"></a>np.random.seed(<span class="dv">42</span>)</span>
+<span id="cb2-13"><a href="#cb2-13" aria-hidden="true" tabindex="-1"></a>n_cells <span class="op">=</span> GRID_SIZE <span class="op">*</span> GRID_SIZE</span>
+<span id="cb2-14"><a href="#cb2-14" aria-hidden="true" tabindex="-1"></a>n_a <span class="op">=</span> <span class="bu">int</span>(n_cells <span class="op">*</span> DENSITY_A)</span>
+<span id="cb2-15"><a href="#cb2-15" aria-hidden="true" tabindex="-1"></a>n_b <span class="op">=</span> <span class="bu">int</span>(n_cells <span class="op">*</span> DENSITY_B)</span>
+<span id="cb2-16"><a href="#cb2-16" aria-hidden="true" tabindex="-1"></a>flat <span class="op">=</span> np.zeros(n_cells, dtype<span class="op">=</span>np.int8)</span>
+<span id="cb2-17"><a href="#cb2-17" aria-hidden="true" tabindex="-1"></a>flat[:n_a] <span class="op">=</span> <span class="dv">1</span></span>
+<span id="cb2-18"><a href="#cb2-18" aria-hidden="true" tabindex="-1"></a>flat[n_a:n_a <span class="op">+</span> n_b] <span class="op">=</span> <span class="dv">2</span></span>
+<span id="cb2-19"><a href="#cb2-19" aria-hidden="true" tabindex="-1"></a>np.random.shuffle(flat)</span>
+<span id="cb2-20"><a href="#cb2-20" aria-hidden="true" tabindex="-1"></a>grid <span class="op">=</span> flat.reshape(GRID_SIZE, GRID_SIZE)</span>
+<span id="cb2-21"><a href="#cb2-21" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-22"><a href="#cb2-22" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> neighbour_counts(g):</span>
+<span id="cb2-23"><a href="#cb2-23" aria-hidden="true" tabindex="-1"></a>    <span class="im">from</span> numpy.lib.stride_tricks <span class="im">import</span> sliding_window_view</span>
+<span id="cb2-24"><a href="#cb2-24" aria-hidden="true" tabindex="-1"></a>    padded <span class="op">=</span> np.pad(g, <span class="dv">1</span>, mode<span class="op">=</span><span class="st">"wrap"</span>)</span>
+<span id="cb2-25"><a href="#cb2-25" aria-hidden="true" tabindex="-1"></a>    windows <span class="op">=</span> sliding_window_view(padded, (<span class="dv">3</span>, <span class="dv">3</span>))</span>
+<span id="cb2-26"><a href="#cb2-26" aria-hidden="true" tabindex="-1"></a>    same <span class="op">=</span> np.zeros_like(g, dtype<span class="op">=</span>np.int8)</span>
+<span id="cb2-27"><a href="#cb2-27" aria-hidden="true" tabindex="-1"></a>    occ  <span class="op">=</span> np.zeros_like(g, dtype<span class="op">=</span>np.int8)</span>
+<span id="cb2-28"><a href="#cb2-28" aria-hidden="true" tabindex="-1"></a>    <span class="cf">for</span> dr <span class="kw">in</span> <span class="bu">range</span>(<span class="dv">3</span>):</span>
+<span id="cb2-29"><a href="#cb2-29" aria-hidden="true" tabindex="-1"></a>        <span class="cf">for</span> dc <span class="kw">in</span> <span class="bu">range</span>(<span class="dv">3</span>):</span>
+<span id="cb2-30"><a href="#cb2-30" aria-hidden="true" tabindex="-1"></a>            <span class="cf">if</span> dr <span class="op">==</span> <span class="dv">1</span> <span class="kw">and</span> dc <span class="op">==</span> <span class="dv">1</span>: <span class="cf">continue</span></span>
+<span id="cb2-31"><a href="#cb2-31" aria-hidden="true" tabindex="-1"></a>            nb <span class="op">=</span> windows[:, :, dr, dc]</span>
+<span id="cb2-32"><a href="#cb2-32" aria-hidden="true" tabindex="-1"></a>            occ  <span class="op">+=</span> (nb <span class="op">&gt;</span> <span class="dv">0</span>).astype(np.int8)</span>
+<span id="cb2-33"><a href="#cb2-33" aria-hidden="true" tabindex="-1"></a>            same <span class="op">+=</span> (nb <span class="op">==</span> g).astype(np.int8) <span class="op">*</span> (g <span class="op">&gt;</span> <span class="dv">0</span>).astype(np.int8)</span>
+<span id="cb2-34"><a href="#cb2-34" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> same, occ</span>
+<span id="cb2-35"><a href="#cb2-35" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-36"><a href="#cb2-36" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> segregation_index(g):</span>
+<span id="cb2-37"><a href="#cb2-37" aria-hidden="true" tabindex="-1"></a>    same, occ <span class="op">=</span> neighbour_counts(g)</span>
+<span id="cb2-38"><a href="#cb2-38" aria-hidden="true" tabindex="-1"></a>    occupied <span class="op">=</span> g <span class="op">&gt;</span> <span class="dv">0</span></span>
+<span id="cb2-39"><a href="#cb2-39" aria-hidden="true" tabindex="-1"></a>    fracs <span class="op">=</span> np.where((occupied) <span class="op">&amp;</span> (occ <span class="op">&gt;</span> <span class="dv">0</span>), same <span class="op">/</span> occ, np.nan)</span>
+<span id="cb2-40"><a href="#cb2-40" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> <span class="bu">float</span>(np.nanmean(fracs))</span>
+<span id="cb2-41"><a href="#cb2-41" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-42"><a href="#cb2-42" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> step(g, threshold):</span>
+<span id="cb2-43"><a href="#cb2-43" aria-hidden="true" tabindex="-1"></a>    same, occ <span class="op">=</span> neighbour_counts(g)</span>
+<span id="cb2-44"><a href="#cb2-44" aria-hidden="true" tabindex="-1"></a>    occupied  <span class="op">=</span> g <span class="op">&gt;</span> <span class="dv">0</span></span>
+<span id="cb2-45"><a href="#cb2-45" aria-hidden="true" tabindex="-1"></a>    satisfied <span class="op">=</span> np.where(occupied <span class="op">&amp;</span> (occ <span class="op">&gt;</span> <span class="dv">0</span>), same <span class="op">/</span> occ <span class="op">&gt;=</span> threshold, <span class="va">True</span>)</span>
+<span id="cb2-46"><a href="#cb2-46" aria-hidden="true" tabindex="-1"></a>    unsatisfied <span class="op">=</span> <span class="bu">list</span>(<span class="bu">zip</span>(<span class="op">*</span>np.where(<span class="op">~</span>satisfied <span class="op">&amp;</span> occupied)))</span>
+<span id="cb2-47"><a href="#cb2-47" aria-hidden="true" tabindex="-1"></a>    empty       <span class="op">=</span> <span class="bu">list</span>(<span class="bu">zip</span>(<span class="op">*</span>np.where(g <span class="op">==</span> <span class="dv">0</span>)))</span>
+<span id="cb2-48"><a href="#cb2-48" aria-hidden="true" tabindex="-1"></a>    np.random.shuffle(unsatisfied)</span>
+<span id="cb2-49"><a href="#cb2-49" aria-hidden="true" tabindex="-1"></a>    <span class="cf">for</span> pos <span class="kw">in</span> unsatisfied:</span>
+<span id="cb2-50"><a href="#cb2-50" aria-hidden="true" tabindex="-1"></a>        <span class="cf">if</span> <span class="kw">not</span> empty: <span class="cf">break</span></span>
+<span id="cb2-51"><a href="#cb2-51" aria-hidden="true" tabindex="-1"></a>        dest <span class="op">=</span> empty.pop(np.random.randint(<span class="bu">len</span>(empty)))</span>
+<span id="cb2-52"><a href="#cb2-52" aria-hidden="true" tabindex="-1"></a>        g[dest], g[pos] <span class="op">=</span> g[pos], <span class="dv">0</span></span>
+<span id="cb2-53"><a href="#cb2-53" aria-hidden="true" tabindex="-1"></a>        empty.append(pos)</span>
+<span id="cb2-54"><a href="#cb2-54" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> g</span>
+<span id="cb2-55"><a href="#cb2-55" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-56"><a href="#cb2-56" aria-hidden="true" tabindex="-1"></a>grid_init <span class="op">=</span> grid.copy()</span>
+<span id="cb2-57"><a href="#cb2-57" aria-hidden="true" tabindex="-1"></a>seg_series <span class="op">=</span> [segregation_index(grid)]</span>
+<span id="cb2-58"><a href="#cb2-58" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> _ <span class="kw">in</span> <span class="bu">range</span>(N_STEPS):</span>
+<span id="cb2-59"><a href="#cb2-59" aria-hidden="true" tabindex="-1"></a>    grid <span class="op">=</span> step(grid, THRESHOLD)</span>
+<span id="cb2-60"><a href="#cb2-60" aria-hidden="true" tabindex="-1"></a>    seg_series.append(segregation_index(grid))</span>
+<span id="cb2-61"><a href="#cb2-61" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-62"><a href="#cb2-62" aria-hidden="true" tabindex="-1"></a>cmap <span class="op">=</span> ListedColormap([<span class="st">"#f5f5f5"</span>, <span class="st">"#d52a2a"</span>, <span class="st">"#111111"</span>])</span>
+<span id="cb2-63"><a href="#cb2-63" aria-hidden="true" tabindex="-1"></a>fig, axes <span class="op">=</span> plt.subplots(<span class="dv">1</span>, <span class="dv">3</span>, figsize<span class="op">=</span>(<span class="dv">11</span>, <span class="dv">4</span>))</span>
+<span id="cb2-64"><a href="#cb2-64" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-65"><a href="#cb2-65" aria-hidden="true" tabindex="-1"></a>axes[<span class="dv">0</span>].imshow(grid_init, cmap<span class="op">=</span>cmap, vmin<span class="op">=</span><span class="dv">0</span>, vmax<span class="op">=</span><span class="dv">2</span>, interpolation<span class="op">=</span><span class="st">"nearest"</span>)</span>
+<span id="cb2-66"><a href="#cb2-66" aria-hidden="true" tabindex="-1"></a>axes[<span class="dv">0</span>].set_title(<span class="st">"Initial state"</span>)<span class="op">;</span> axes[<span class="dv">0</span>].axis(<span class="st">"off"</span>)</span>
+<span id="cb2-67"><a href="#cb2-67" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-68"><a href="#cb2-68" aria-hidden="true" tabindex="-1"></a>axes[<span class="dv">1</span>].imshow(grid, cmap<span class="op">=</span>cmap, vmin<span class="op">=</span><span class="dv">0</span>, vmax<span class="op">=</span><span class="dv">2</span>, interpolation<span class="op">=</span><span class="st">"nearest"</span>)</span>
+<span id="cb2-69"><a href="#cb2-69" aria-hidden="true" tabindex="-1"></a>axes[<span class="dv">1</span>].set_title(<span class="ss">f"After </span><span class="sc">{</span>N_STEPS<span class="sc">}</span><span class="ss"> steps  (T=</span><span class="sc">{</span>THRESHOLD<span class="sc">}</span><span class="ss">)"</span>)<span class="op">;</span> axes[<span class="dv">1</span>].axis(<span class="st">"off"</span>)</span>
+<span id="cb2-70"><a href="#cb2-70" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-71"><a href="#cb2-71" aria-hidden="true" tabindex="-1"></a>axes[<span class="dv">2</span>].plot(seg_series, color<span class="op">=</span><span class="st">"#d52a2a"</span>, linewidth<span class="op">=</span><span class="fl">1.5</span>)</span>
+<span id="cb2-72"><a href="#cb2-72" aria-hidden="true" tabindex="-1"></a>axes[<span class="dv">2</span>].set_xlabel(<span class="st">"Step"</span>)<span class="op">;</span> axes[<span class="dv">2</span>].set_ylabel(<span class="st">"Segregation index"</span>)</span>
+<span id="cb2-73"><a href="#cb2-73" aria-hidden="true" tabindex="-1"></a>axes[<span class="dv">2</span>].set_ylim(<span class="fl">0.4</span>, <span class="fl">1.0</span>)</span>
+<span id="cb2-74"><a href="#cb2-74" aria-hidden="true" tabindex="-1"></a>axes[<span class="dv">2</span>].spines[<span class="st">"top"</span>].set_visible(<span class="va">False</span>)<span class="op">;</span> axes[<span class="dv">2</span>].spines[<span class="st">"right"</span>].set_visible(<span class="va">False</span>)</span>
+<span id="cb2-75"><a href="#cb2-75" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-76"><a href="#cb2-76" aria-hidden="true" tabindex="-1"></a>plt.tight_layout()</span>
+<span id="cb2-77"><a href="#cb2-77" aria-hidden="true" tabindex="-1"></a>plt.show()</span>
+<span id="cb2-78"><a href="#cb2-78" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f"Initial segregation: </span><span class="sc">{</span>seg_series[<span class="dv">0</span>]<span class="sc">:.3f}</span><span class="ss">  →  Final: </span><span class="sc">{</span>seg_series[<span class="op">-</span><span class="dv">1</span>]<span class="sc">:.3f}</span><span class="ss">"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
 <hr>
 </section>
 <section id="exercises" class="level2" data-number="4.7">

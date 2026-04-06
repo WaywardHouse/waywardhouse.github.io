@@ -120,21 +120,45 @@ if _mpl_available:
 
         runBtn.textContent = '⏳ Running…';
 
-        const lines = [];
-        py.setStdout({ batched: (line) => lines.push(line) });
-        py.setStderr({ batched: (line) => lines.push('Error: ' + line) });
-
-        await py.runPythonAsync(editor.value);
+        // Use Python-side StringIO for reliable stdout/stderr capture
+        py.globals.set('_user_code', editor.value);
+        const result = await py.runPythonAsync(`
+import io as _io, sys as _sys, traceback as _tb
+_stdout_buf = _io.StringIO()
+_stderr_buf = _io.StringIO()
+_old_stdout = _sys.stdout
+_old_stderr = _sys.stderr
+_sys.stdout = _stdout_buf
+_sys.stderr = _stderr_buf
+_run_error = None
+try:
+    exec(_user_code, {})
+except Exception as _e:
+    _run_error = _tb.format_exc()
+finally:
+    _sys.stdout = _old_stdout
+    _sys.stderr = _old_stderr
+(_stdout_buf.getvalue(), _stderr_buf.getvalue(), _run_error)
+`);
+        const stdout = result.get(0) || '';
+        const stderr = result.get(1) || '';
+        const runError = result.get(2);
+        result.destroy();
 
         // Capture matplotlib figure if any axes were drawn
         const imgB64 = await py.runPythonAsync('_capture_show()');
 
         let html = '';
-        const text = lines.join('\n');
-        if (text.trim()) {
-          // Escape HTML entities in text output
-          const safe = text.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
-          html += `<pre class="pyodide-cell__text">${safe}</pre>`;
+        const escape = s => s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+        if (stdout.trim()) {
+          html += `<pre class="pyodide-cell__text">${escape(stdout)}</pre>`;
+        }
+        if (stderr.trim()) {
+          html += `<pre class="pyodide-cell__text pyodide-cell__text--stderr">${escape(stderr)}</pre>`;
+        }
+        if (runError) {
+          output.classList.add('pyodide-cell__output--error');
+          html += `<pre class="pyodide-cell__text">${escape(runError)}</pre>`;
         }
         if (imgB64 && imgB64 !== 'None') {
           html += `<img src="data:image/png;base64,${imgB64}" style="max-width:100%;display:block;margin-top:.5rem">`;
