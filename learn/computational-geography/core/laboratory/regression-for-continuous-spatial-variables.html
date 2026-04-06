@@ -1,0 +1,893 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
+
+<meta charset="utf-8">
+<meta name="generator" content="quarto-1.9.36">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+
+<meta name="dcterms.date" content="2026-03-05">
+<meta name="description" content="Predicting continuous spatial variables — soil organic carbon, land surface temperature, species richness — from raster covariates is one of the most common tasks in computational geography. This essay reviews ordinary least squares, derives the ridge and lasso regularisation penalties, explains the bias-variance tradeoff that motivates them, shows why standard k-fold cross- validation fails for spatial data and how spatial cross-validation corrects it, introduces random forest regression for nonlinear relationships, and distinguishes prediction intervals from confidence intervals.">
+
+<title>Regression for Continuous Spatial Variables – Computational Geography</title>
+<style>
+/* Default styles provided by pandoc.
+** See https://pandoc.org/MANUAL.html#variables-for-html for config info.
+*/
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: min(4vw, 1.5em);}
+div.column{flex: auto; overflow-x: auto;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+  width: 0.8em;
+  margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
+  vertical-align: middle;
+}
+</style>
+
+
+<script src="../site_libs/clipboard/clipboard.min.js"></script>
+<script src="../site_libs/quarto-html/tabby.min.js"></script>
+<script src="../site_libs/quarto-html/popper.min.js"></script>
+<script src="../site_libs/quarto-html/tippy.umd.min.js"></script>
+<script src="../site_libs/quarto-html/anchor.min.js"></script>
+<link href="../site_libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="../site_libs/quarto-html/light-border.css" rel="stylesheet">
+<link href="../site_libs/quarto-html/quarto-html-640605f58ae58ee79329c070719e555b.min.css" rel="stylesheet" append-hash="true" data-mode="light">
+<link href="../site_libs/quarto-html/quarto-syntax-highlighting-845c23b38eaddc0f92fda52bfe77a8c8.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<script>
+  (function () {
+    document.documentElement.dataset.theme = 'light';
+    document.documentElement.dataset.brand = 'wayward';
+    try {
+      localStorage.removeItem('theme');
+    } catch (err) {
+      void err;
+    }
+  })();
+</script>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:ital,wght@0,300;0,400;0,600;0,700;0,800;0,900;1,700;1,800&amp;family=Barlow:wght@300;400;500;600&amp;family=IBM+Plex+Mono:ital,wght@0,300;0,400;0,500;1,300&amp;family=Literata:ital,opsz,wght@0,7..72,300;0,7..72,400;0,7..72,500;1,7..72,300;1,7..72,400&amp;display=swap" rel="stylesheet">
+
+  <script>window.backupDefine = window.define; window.define = undefined;</script><script src="https://cdn.jsdelivr.net/npm/katex@latest/dist/katex.min.js"></script>
+  <script>document.addEventListener("DOMContentLoaded", function () {
+ var mathElements = document.getElementsByClassName("math");
+ var macros = [];
+ for (var i = 0; i < mathElements.length; i++) {
+  var texText = mathElements[i].firstChild;
+  if (mathElements[i].tagName == "SPAN") {
+   katex.render(texText.data, mathElements[i], {
+    displayMode: mathElements[i].classList.contains('display'),
+    throwOnError: false,
+    macros: macros,
+    fleqn: false
+   });
+}}});
+  </script>
+  <script>window.define = window.backupDefine; window.backupDefine = undefined;</script><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@latest/dist/katex.min.css">
+
+<script type="text/javascript">
+const typesetMath = (el) => {
+  if (window.MathJax) {
+    // MathJax Typeset
+    window.MathJax.typeset([el]);
+  } else if (window.katex) {
+    // KaTeX Render
+    var mathElements = el.getElementsByClassName("math");
+    var macros = [];
+    for (var i = 0; i < mathElements.length; i++) {
+      var texText = mathElements[i].firstChild;
+      if (mathElements[i].tagName == "SPAN" && texText && texText.data) {
+        window.katex.render(texText.data, mathElements[i], {
+          displayMode: mathElements[i].classList.contains('display'),
+          throwOnError: false,
+          macros: macros,
+          fleqn: false
+        });
+      }
+    }
+  }
+}
+window.Quarto = {
+  typesetMath
+};
+</script>
+
+<link rel="stylesheet" href="../assets/css/quarto-wayward.css">
+</head>
+
+<body class="reading-body tag-hash-math tag-hash-viz">
+
+
+<header id="title-block-header">
+<h1 class="title"><span class="chapter-title">Regression for Continuous Spatial Variables</span></h1>
+<p class="subtitle">Regularisation, bias-variance tradeoff, spatial cross-validation, and random forest regression</p>
+
+<p class="date">2026-03-05</p>
+</header>
+
+<nav id="TOC" role="doc-toc">
+    <h2 id="toc-title">Table of contents</h2>
+   
+  <ul>
+  <li><a href="#before-you-start" id="toc-before-you-start">Before You Start</a></li>
+  <li><a href="#the-question" id="toc-the-question">1. The Question</a></li>
+  <li><a href="#the-conceptual-model" id="toc-the-conceptual-model">2. The Conceptual Model</a></li>
+  <li><a href="#building-the-mathematical-model" id="toc-building-the-mathematical-model">3. Building the Mathematical Model</a>
+  <ul>
+  <li><a href="#ordinary-least-squares" id="toc-ordinary-least-squares">3.1 Ordinary Least Squares</a></li>
+  <li><a href="#ridge-regression-l2-regularisation" id="toc-ridge-regression-l2-regularisation">3.2 Ridge Regression (L2 Regularisation)</a></li>
+  <li><a href="#lasso-regression-l1-regularisation" id="toc-lasso-regression-l1-regularisation">3.3 Lasso Regression (L1 Regularisation)</a></li>
+  <li><a href="#bias-variance-tradeoff" id="toc-bias-variance-tradeoff">3.4 Bias-Variance Tradeoff</a></li>
+  <li><a href="#spatial-cross-validation" id="toc-spatial-cross-validation">3.5 Spatial Cross-Validation</a></li>
+  <li><a href="#feature-engineering-from-raster-datasets" id="toc-feature-engineering-from-raster-datasets">3.6 Feature Engineering from Raster Datasets</a></li>
+  <li><a href="#random-forest-regression" id="toc-random-forest-regression">3.7 Random Forest Regression</a></li>
+  <li><a href="#prediction-intervals-vs.-confidence-intervals" id="toc-prediction-intervals-vs.-confidence-intervals">3.8 Prediction Intervals vs.&nbsp;Confidence Intervals</a></li>
+  </ul></li>
+  <li><a href="#worked-example-by-hand" id="toc-worked-example-by-hand">4. Worked Example by Hand</a></li>
+  <li><a href="#computational-implementation" id="toc-computational-implementation">5. Computational Implementation</a></li>
+  <li><a href="#visualization" id="toc-visualization">6. Visualization</a></li>
+  <li><a href="#interpretation" id="toc-interpretation">7. Interpretation</a></li>
+  <li><a href="#what-could-go-wrong" id="toc-what-could-go-wrong">8. What Could Go Wrong?</a></li>
+  <li><a href="#summary" id="toc-summary">9. Summary</a></li>
+  <li><a href="#math-refresher" id="toc-math-refresher">Math Refresher</a></li>
+  </ul>
+</nav>
+<h2 id="before-you-start" class="anchored">Before You Start</h2>
+<p><strong>You should know</strong><br>
+That regression predicts a continuous outcome from measured predictors, and that spatial data can make ordinary validation look better than it really is.</p>
+<p><strong>You will learn</strong><br>
+How linear and regularized regression compare, why spatial cross-validation matters, and where random forests improve prediction.</p>
+<p><strong>Why this matters</strong><br>
+A map prediction is only useful if it generalizes to places you did not sample.</p>
+<p><strong>If this gets hard, focus on…</strong><br>
+The tradeoff between fit and generalization.</p>
+<p>In 2019, the International Soil Reference and Information Centre completed a global mapping exercise that assigned a soil organic carbon (SOC) value to every 250 m grid cell on Earth’s land surface. They did not measure SOC at every cell — there are approximately 800 million such cells on the global land surface. They measured it at 150,000 sites and used regression models, trained on those measurements, to predict SOC everywhere else from covariate rasters: climate variables, vegetation indices, terrain attributes, and soil parent material classes.</p>
+<p>This process — spatially exhaustive prediction from point observations using covariates — is the central task of environmental machine learning. Its success depends on understanding which regression method is appropriate, how to validate that it generalises correctly to new locations, and how to honestly communicate prediction uncertainty.</p>
+<hr>
+<h2 id="the-question" class="anchored">1. The Question</h2>
+<p>How do we build a model that predicts a continuous spatial variable from raster covariates? How do we prevent overfitting when covariates are many and correlated? Why does standard cross-validation overestimate predictive skill for spatial data, and what should we do instead? What does a random forest add beyond linear regression?</p>
+<hr>
+<h2 id="the-conceptual-model" class="anchored">2. The Conceptual Model</h2>
+<p>Regression models a response variable <span class="math inline">y</span> (observed at <span class="math inline">n</span> locations) as a function of <span class="math inline">p</span> predictor variables (covariates) <span class="math inline">\mathbf{x} = (x_1, \ldots, x_p)</span>. The goal is a function <span class="math inline">\hat{f}(\mathbf{x})</span> that predicts <span class="math inline">y</span> at unsampled locations with minimum expected error. The challenge: with many covariates (a raster stack of 20 bands means 20 predictors), the model may fit the training data well but generalise poorly to new locations — <strong>overfitting</strong>.</p>
+<hr>
+<h2 id="building-the-mathematical-model" class="anchored">3. Building the Mathematical Model</h2>
+<h3 id="ordinary-least-squares" class="anchored">3.1 Ordinary Least Squares</h3>
+<p>For <span class="math inline">n</span> observations, <span class="math inline">p</span> predictors, response vector <span class="math inline">\mathbf{y} \in \mathbb{R}^n</span>, design matrix <span class="math inline">\mathbf{X} \in \mathbb{R}^{n \times p}</span>:</p>
+<p><span class="math display">\hat{\boldsymbol{\beta}}_{\text{OLS}} = \arg\min_{\boldsymbol{\beta}} \|\mathbf{y} - \mathbf{X}\boldsymbol{\beta}\|_2^2 = \arg\min_{\boldsymbol{\beta}} \sum_{i=1}^n (y_i - \mathbf{x}_i^\top\boldsymbol{\beta})^2</span></p>
+<p>Setting the gradient to zero (normal equations):</p>
+<p><span class="math display">\mathbf{X}^\top\mathbf{X}\hat{\boldsymbol{\beta}} = \mathbf{X}^\top\mathbf{y} \quad\Rightarrow\quad \hat{\boldsymbol{\beta}}_{\text{OLS}} = (\mathbf{X}^\top\mathbf{X})^{-1}\mathbf{X}^\top\mathbf{y}</span></p>
+<p>OLS is the <strong>Best Linear Unbiased Estimator (BLUE)</strong> under the Gauss-Markov assumptions: errors are zero-mean, homoscedastic (<span class="math inline">\text{Var}(\varepsilon_i) = \sigma^2</span>), and uncorrelated. <strong>Spatial data frequently violates the uncorrelated errors assumption</strong> — nearby observations share similar unmeasured environmental conditions, creating <strong>spatial autocorrelation</strong> in residuals. This does not bias <span class="math inline">\hat{\boldsymbol{\beta}}</span>, but it inflates apparent precision (standard errors are too small, t-tests are anti-conservative).</p>
+<h3 id="ridge-regression-l2-regularisation" class="anchored">3.2 Ridge Regression (L2 Regularisation)</h3>
+<p>Ridge regression adds a penalty on the sum of squared coefficients:</p>
+<p><span class="math display">\hat{\boldsymbol{\beta}}_{\text{ridge}} = \arg\min_{\boldsymbol{\beta}} \left[\|\mathbf{y} - \mathbf{X}\boldsymbol{\beta}\|_2^2 + \lambda\|\boldsymbol{\beta}\|_2^2\right]</span></p>
+<p>where <span class="math inline">\lambda \geq 0</span> is the <strong>regularisation parameter</strong>. Closed-form solution:</p>
+<p><span class="math display">\hat{\boldsymbol{\beta}}_{\text{ridge}} = (\mathbf{X}^\top\mathbf{X} + \lambda\mathbf{I})^{-1}\mathbf{X}^\top\mathbf{y}</span></p>
+<p>Adding <span class="math inline">\lambda\mathbf{I}</span> to <span class="math inline">\mathbf{X}^\top\mathbf{X}</span> makes the matrix invertible even when <span class="math inline">\mathbf{X}</span> is rank-deficient (more predictors than observations, or highly collinear predictors). Ridge shrinks all coefficients toward zero proportionally — large <span class="math inline">\lambda</span> produces strong shrinkage. It never sets coefficients exactly to zero.</p>
+<p><strong>Bayesian interpretation:</strong> Ridge is equivalent to OLS with a Normal prior on coefficients: <span class="math inline">\beta_j \sim \mathcal{N}(0, \sigma^2/\lambda)</span>. The posterior mode under this prior is <span class="math inline">\hat{\boldsymbol{\beta}}_{\text{ridge}}</span>.</p>
+<h3 id="lasso-regression-l1-regularisation" class="anchored">3.3 Lasso Regression (L1 Regularisation)</h3>
+<p>Lasso replaces the L2 penalty with an L1 penalty:</p>
+<p><span class="math display">\hat{\boldsymbol{\beta}}_{\text{lasso}} = \arg\min_{\boldsymbol{\beta}} \left[\|\mathbf{y} - \mathbf{X}\boldsymbol{\beta}\|_2^2 + \lambda\|\boldsymbol{\beta}\|_1\right]</span></p>
+<p>where <span class="math inline">\|\boldsymbol{\beta}\|_1 = \sum_j |\beta_j|</span>. No closed-form solution (the L1 norm is not differentiable at zero), but efficient coordinate descent algorithms exist. The geometry of the L1 penalty — a diamond-shaped constraint region — causes solutions to lie at corners where some coefficients are exactly zero. Lasso performs <strong>automatic variable selection</strong>: with sufficient regularisation, only the most important predictors have nonzero coefficients.</p>
+<p><strong>Bayesian interpretation:</strong> Lasso is equivalent to a Laplace (double-exponential) prior on coefficients.</p>
+<p>Comparison at <span class="math inline">p = 2</span> predictors (geometric intuition):</p>
+<table class="caption-top">
+<thead>
+<tr class="header">
+<th>Property</th>
+<th>Ridge</th>
+<th>Lasso</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>Constraint region</td>
+<td>Circle</td>
+<td>Diamond</td>
+</tr>
+<tr class="even">
+<td>Exactly zero coefficients</td>
+<td>No</td>
+<td>Yes</td>
+</tr>
+<tr class="odd">
+<td>Solution form</td>
+<td>Closed-form</td>
+<td>Iterative</td>
+</tr>
+<tr class="even">
+<td>Handles multicollinearity</td>
+<td>Yes (shares loading)</td>
+<td>Yes (picks one)</td>
+</tr>
+<tr class="odd">
+<td>When to use</td>
+<td>All predictors relevant</td>
+<td>Sparse signal expected</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Elastic net</strong> combines both penalties: <span class="math inline">\lambda_1\|\boldsymbol{\beta}\|_1 + \lambda_2\|\boldsymbol{\beta}\|_2^2</span> — providing variable selection (L1) and grouping of correlated variables (L2).</p>
+<h3 id="bias-variance-tradeoff" class="anchored">3.4 Bias-Variance Tradeoff</h3>
+<p>The expected prediction error at a new location decomposes as:</p>
+<p><span class="math display">\text{EPE}(\mathbf{x}_0) = \underbrace{\sigma^2}_{\text{irreducible}} + \underbrace{[\text{Bias}(\hat{f}(\mathbf{x}_0))]^2}_{\text{model error}} + \underbrace{\text{Var}(\hat{f}(\mathbf{x}_0))}_{\text{estimation error}}</span></p>
+<ul>
+<li><strong>Irreducible noise</strong> <span class="math inline">\sigma^2</span>: variance of <span class="math inline">\varepsilon</span> — cannot be reduced by any model</li>
+<li><strong>Bias²</strong>: error from wrong model structure — a linear model for a nonlinear relationship always has bias regardless of sample size</li>
+<li><strong>Variance</strong>: error from fitting random fluctuations in training data — decreases with more data, increases with model complexity</li>
+</ul>
+<p>The tradeoff: increasing model complexity (more parameters, lower <span class="math inline">\lambda</span>) reduces bias but increases variance. Regularisation increases bias slightly but reduces variance substantially, typically lowering total error.</p>
+<p><strong>Mathematical illustration:</strong> For ridge with regularisation <span class="math inline">\lambda</span>:</p>
+<p><span class="math display">\text{Bias}(\hat{\beta}_{\text{ridge}}) = -\lambda(\mathbf{X}^\top\mathbf{X}+\lambda\mathbf{I})^{-1}\boldsymbol{\beta}_{\text{true}}</span></p>
+<p>As <span class="math inline">\lambda \to 0</span>: bias → 0 (OLS is unbiased). As <span class="math inline">\lambda \to \infty</span>: bias → <span class="math inline">-\boldsymbol{\beta}_{\text{true}}</span> (all coefficients forced to zero — pure bias). But variance of ridge estimates is always lower than OLS. For small <span class="math inline">\lambda</span>, the variance reduction dominates: total error is lower.</p>
+<p><strong>Optimal <span class="math inline">\lambda</span></strong> minimises cross-validated prediction error. A grid search over <span class="math inline">\lambda \in [10^{-4}, 10^2]</span> on log scale, evaluating by cross-validated RMSE, finds the optimal regularisation. The “1-se rule” selects the most regularised model within one standard error of the minimum RMSE — favouring parsimony.</p>
+<h3 id="spatial-cross-validation" class="anchored">3.5 Spatial Cross-Validation</h3>
+<p>Standard <span class="math inline">k</span>-fold cross-validation randomly partitions observations into <span class="math inline">k</span> folds, trains on <span class="math inline">k-1</span>, and tests on the held-out fold. For spatial data with positive autocorrelation, <strong>nearby observations share information</strong> — a training observation 100 m from a test observation provides essentially the same information as the test observation itself. The model’s apparent predictive skill is inflated by spatial proximity, not genuine generalisation.</p>
+<p><strong>Spatial cross-validation</strong> (Brenning 2012; Meyer et al.&nbsp;2019) partitions observations into geographically contiguous blocks:</p>
+<ol type="1">
+<li><p><strong>Block cross-validation:</strong> Create <span class="math inline">k</span> spatial blocks (rectangles or geographic clusters); hold out entire blocks, not random points. Separation distance between training and test blocks should exceed the spatial autocorrelation range of the response variable.</p></li>
+<li><p><strong>Buffered LOO-CV:</strong> Leave-one-out with a spatial exclusion buffer — all training observations within radius <span class="math inline">d_{\text{buffer}}</span> of the test point are also excluded. The buffer radius equals the autocorrelation range.</p></li>
+</ol>
+<p>The difference in RMSE between standard and spatial CV measures how much of the apparent skill was due to spatial autocorrelation rather than genuine predictive information in the covariates.</p>
+<p><strong>Autocorrelation range</strong> estimated from the variogram of regression residuals: the lag distance at which semivariance plateaus (the sill). See Essay C7 for variogram methods.</p>
+<h3 id="feature-engineering-from-raster-datasets" class="anchored">3.6 Feature Engineering from Raster Datasets</h3>
+<p>Raw raster pixels are rarely optimal predictors. Feature engineering extracts meaningful quantities:</p>
+<p><strong>Terrain features from DEM</strong> (Essay C8): slope, aspect, curvature, topographic wetness index <span class="math inline">\text{TWI} = \ln(A_s/\tan\beta)</span> where <span class="math inline">A_s</span> = upslope contributing area and <span class="math inline">\beta</span> = slope angle.</p>
+<p><strong>Spectral indices from multispectral imagery:</strong></p>
+<ul>
+<li><span class="math inline">\text{NDVI} = (\rho_{\text{NIR}} - \rho_{\text{Red}})/(\rho_{\text{NIR}} + \rho_{\text{Red}})</span></li>
+<li><span class="math inline">\text{NDWI} = (\rho_{\text{Green}} - \rho_{\text{NIR}})/(\rho_{\text{Green}} + \rho_{\text{NIR}})</span></li>
+<li><span class="math inline">\text{EVI} = 2.5(\rho_{\text{NIR}} - \rho_{\text{Red}})/(\rho_{\text{NIR}} + 6\rho_{\text{Red}} - 7.5\rho_{\text{Blue}} + 1)</span></li>
+</ul>
+<p><strong>Climate aggregates:</strong> Mean, minimum, maximum, and coefficient of variation across months or seasons. Growing degree days. Precipitation seasonality.</p>
+<p><strong>Spatial lag features:</strong> Mean value of the response variable (or covariate) within a radius <span class="math inline">r</span> of each prediction location — captures neighbourhood effects and residual spatial structure not explained by the covariates.</p>
+<h3 id="random-forest-regression" class="anchored">3.7 Random Forest Regression</h3>
+<p>Random forest (Breiman 2001) is an ensemble of <span class="math inline">B</span> regression trees, each trained on a bootstrap sample of the data and using a random subset of <span class="math inline">m_{\text{try}}</span> predictors at each split.</p>
+<p><strong>Single regression tree:</strong> Recursively partitions the feature space by choosing the split (predictor <span class="math inline">j</span>, threshold <span class="math inline">t</span>) that minimises the residual sum of squares:</p>
+<p><span class="math display">\text{RSS}(j, t) = \sum_{i:x_{ij}\leq t}(y_i - \bar{y}_L)^2 + \sum_{i:x_{ij}&gt;t}(y_i - \bar{y}_R)^2</span></p>
+<p>Each leaf node <span class="math inline">R_m</span> predicts the mean response of training observations in that region: <span class="math inline">\hat{f}(\mathbf{x}) = \bar{y}_m</span> for <span class="math inline">\mathbf{x} \in R_m</span>.</p>
+<p><strong>Ensemble aggregation:</strong> Random forest prediction is the average over <span class="math inline">B</span> trees:</p>
+<p><span class="math display">\hat{f}_{\text{RF}}(\mathbf{x}) = \frac{1}{B}\sum_{b=1}^B T_b(\mathbf{x})</span></p>
+<p>Two sources of randomness reduce correlation between trees (key to variance reduction): bootstrap sampling (each tree uses ~63% of observations) and feature subsampling (<span class="math inline">m_{\text{try}} \approx p/3</span> for regression). Uncorrelated trees average to give lower variance than any individual tree.</p>
+<p><strong>Variable importance:</strong> For predictor <span class="math inline">j</span>, permutation importance measures the increase in out-of-bag error when <span class="math inline">x_j</span> is randomly shuffled (destroying its relationship with <span class="math inline">y</span>). Higher increase = more important predictor.</p>
+<p><strong>Out-of-bag (OOB) error:</strong> Each observation is withheld from approximately 37% of trees (not in their bootstrap sample). Predicting each observation from only the trees that did not use it in training gives a cross-validation-equivalent error estimate at no additional computational cost.</p>
+<h3 id="prediction-intervals-vs.-confidence-intervals" class="anchored">3.8 Prediction Intervals vs.&nbsp;Confidence Intervals</h3>
+<p>A <strong>confidence interval</strong> on <span class="math inline">\hat{f}(\mathbf{x}_0)</span> captures uncertainty in the <strong>mean response</strong> at <span class="math inline">\mathbf{x}_0</span>:</p>
+<p><span class="math display">\hat{y}_0 \pm t_{\alpha/2,\,n-p}\,\hat{\sigma}\sqrt{\mathbf{x}_0^\top(\mathbf{X}^\top\mathbf{X})^{-1}\mathbf{x}_0}</span></p>
+<p>A <strong>prediction interval</strong> captures uncertainty in a <strong>new individual observation</strong> at <span class="math inline">\mathbf{x}_0</span> — wider by the observation noise <span class="math inline">\sigma^2</span>:</p>
+<p><span class="math display">\hat{y}_0 \pm t_{\alpha/2,\,n-p}\,\hat{\sigma}\sqrt{1 + \mathbf{x}_0^\top(\mathbf{X}^\top\mathbf{X})^{-1}\mathbf{x}_0}</span></p>
+<p>For environmental mapping, prediction intervals are appropriate — we predict actual soil carbon at a specific location, not the mean of all locations with those covariates.</p>
+<p>For random forests: <strong>quantile regression forests</strong> (Meinshausen 2006) estimate any quantile of the conditional distribution <span class="math inline">F(y|\mathbf{x})</span> by tracking the full distribution of training observations in each leaf. The 5th and 95th quantile predictions form a 90% prediction interval.</p>
+<hr>
+<h2 id="worked-example-by-hand" class="anchored">4. Worked Example by Hand</h2>
+<p><strong>Setting:</strong> Predicting mean annual precipitation (mm yr⁻¹) at 5 Alberta weather stations from two covariates: elevation <span class="math inline">x_1</span> (m) and latitude <span class="math inline">x_2</span> (°N). Data:</p>
+<table class="caption-top">
+<thead>
+<tr class="header">
+<th>Station</th>
+<th><span class="math inline">x_1</span> (elev)</th>
+<th><span class="math inline">x_2</span> (lat)</th>
+<th><span class="math inline">y</span> (precip)</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>Calgary</td>
+<td>1048</td>
+<td>51.1</td>
+<td>412</td>
+</tr>
+<tr class="even">
+<td>Edmonton</td>
+<td>671</td>
+<td>53.5</td>
+<td>461</td>
+</tr>
+<tr class="odd">
+<td>Lethbridge</td>
+<td>929</td>
+<td>49.7</td>
+<td>386</td>
+</tr>
+<tr class="even">
+<td>Jasper</td>
+<td>1062</td>
+<td>52.9</td>
+<td>500</td>
+</tr>
+<tr class="odd">
+<td>Medicine Hat</td>
+<td>717</td>
+<td>50.0</td>
+<td>320</td>
+</tr>
+</tbody>
+</table>
+<p><strong>OLS solution (simplified, ignoring intercept for illustration):</strong></p>
+<p>Centre variables: <span class="math inline">\tilde{x}_1 = x_1 - 885</span>, <span class="math inline">\tilde{x}_2 = x_2 - 51.4</span>, <span class="math inline">\tilde{y} = y - 415.8</span>.</p>
+<p>After centering and computing <span class="math inline">\hat{\beta}_1</span> and <span class="math inline">\hat{\beta}_2</span> via the normal equations (numerical steps omitted), OLS gives approximately:</p>
+<p><span class="math display">\hat{y} = 416 + 0.08(x_1 - 885) + 10.5(x_2 - 51.4)</span></p>
+<p>Interpretation: each 100 m of elevation adds ~8 mm yr⁻¹ of precipitation (orographic effect); each degree north adds ~10.5 mm yr⁻¹ (shifting from semi-arid southern Alberta toward boreal precipitation).</p>
+<p><strong>Ridge with <span class="math inline">\lambda = 5</span>:</strong> Shrinks coefficients toward zero. With only 5 observations and 2 predictors, ridge provides modest benefit; the real advantage appears with 20+ correlated predictors.</p>
+<p><strong>Prediction interval at a new site (Banff, <span class="math inline">x_1 = 1383</span> m, <span class="math inline">x_2 = 51.2°</span>N):</strong> <span class="math inline">\hat{y} = 416 + 0.08(498) + 10.5(-0.2) = 416 + 39.8 - 2.1 = 453.7</span> mm</p>
+<p>Given <span class="math inline">\hat{\sigma} = 22</span> mm from training residuals and the leverage factor for Banff ≈ 1.6: 95% prediction interval: <span class="math inline">453.7 \pm 2.78 \times 22 \times \sqrt{1 + 1.6/5} = 453.7 \pm 68 = [386, 521]</span> mm.</p>
+<hr>
+<h2 id="computational-implementation" class="anchored">5. Computational Implementation</h2>
+<pre><code>function ols(X, y):
+    return solve(X.T @ X, X.T @ y)
+
+function ridge(X, y, lambda):
+    n, p = shape(X)
+    return solve(X.T @ X + lambda * identity(p), X.T @ y)
+
+function lasso(X, y, lambda, max_iter=1000):
+    # Coordinate descent
+    beta = zeros(p)
+    for iteration in range(max_iter):
+        for j in range(p):
+            r_j = y - X @ beta + X[:, j] * beta[j]   # partial residual
+            beta[j] = soft_threshold(dot(X[:, j], r_j)/n, lambda/2) / dot(X[:, j], X[:, j])/n
+    return beta
+
+function soft_threshold(z, gamma):
+    return sign(z) * max(0, abs(z) - gamma)
+
+function spatial_cv_blocks(X, y, coords, n_blocks=5):
+    # Cluster coordinates into n_blocks spatial blocks
+    block_labels = kmeans(coords, n_blocks)
+    scores = []
+    for block_id in unique(block_labels):
+        train_mask = block_labels != block_id
+        test_mask  = block_labels == block_id
+        model = fit(X[train_mask], y[train_mask])
+        scores.append(rmse(y[test_mask], predict(model, X[test_mask])))
+    return mean(scores), std(scores)</code></pre>
+<pre class="{pyodide}"><code>import numpy as np
+from sklearn.linear_model import Ridge, Lasso
+from sklearn.model_selection import KFold
+
+rng = np.random.default_rng(42)
+
+# Synthetic spatial dataset: 100 locations, 5 covariates
+n, p = 100, 5
+coords = rng.uniform(0, 100, (n, 2))   # lon, lat (arbitrary units)
+X = rng.standard_normal((n, p))
+# True model: y = 2x1 - 1.5x2 + 0.5x3 + noise (x4, x5 irrelevant)
+beta_true = np.array([2.0, -1.5, 0.5, 0.0, 0.0])
+y = X @ beta_true + rng.standard_normal(n) * 1.5
+
+# Add spatial autocorrelation to y
+dist = np.sqrt(((coords[:, None] - coords[None, :])**2).sum(-1))
+for i in range(n):
+    neighbours = dist[i] &lt; 15
+    y[i] = 0.6 * y[i] + 0.4 * y[neighbours].mean()
+
+# OLS vs Ridge vs Lasso
+from sklearn.linear_model import LinearRegression
+from sklearn.metrics import mean_squared_error
+
+ols  = LinearRegression().fit(X, y)
+ridge = Ridge(alpha=1.0).fit(X, y)
+lasso = Lasso(alpha=0.2).fit(X, y)
+
+print("Coefficients (true: [2, -1.5, 0.5, 0, 0]):")
+print(f"  OLS:   {ols.coef_.round(3)}")
+print(f"  Ridge: {ridge.coef_.round(3)}")
+print(f"  Lasso: {lasso.coef_.round(3)}")
+
+# Standard k-fold CV
+kf = KFold(n_splits=5, shuffle=True, random_state=42)
+rmse_std = []
+for tr, te in kf.split(X):
+    r = Ridge(alpha=1.0).fit(X[tr], y[tr])
+    rmse_std.append(np.sqrt(mean_squared_error(y[te], r.predict(X[te]))))
+
+# Spatial block CV (cluster by coordinates)
+from sklearn.cluster import KMeans
+blocks = KMeans(n_clusters=5, random_state=42).fit_predict(coords)
+rmse_spatial = []
+for b in range(5):
+    tr = blocks != b; te = blocks == b
+    if te.sum() == 0: continue
+    r = Ridge(alpha=1.0).fit(X[tr], y[tr])
+    rmse_spatial.append(np.sqrt(mean_squared_error(y[te], r.predict(X[te]))))
+
+print(f"\nStandard k-fold CV RMSE:  {np.mean(rmse_std):.3f} ± {np.std(rmse_std):.3f}")
+print(f"Spatial block CV RMSE:   {np.mean(rmse_spatial):.3f} ± {np.std(rmse_spatial):.3f}")
+print(f"Optimism bias (spatial autocorr.): {np.mean(rmse_spatial)-np.mean(rmse_std):.3f}")</code></pre>
+<hr>
+<h2 id="visualization" class="anchored">6. Visualization</h2>
+<div data-viz="echarts" style="height:420px" data-options="{
+&quot;title&quot;: {&quot;text&quot;: &quot;Bias-Variance Tradeoff — Ridge Regression as λ Varies&quot;, &quot;textStyle&quot;: {&quot;fontSize&quot;: 14}},
+&quot;tooltip&quot;: {&quot;trigger&quot;: &quot;axis&quot;},
+&quot;legend&quot;: {&quot;data&quot;: [&quot;Bias²&quot;, &quot;Variance&quot;, &quot;Total error (Bias² + Var + σ²)&quot;], &quot;bottom&quot;: 0},
+&quot;xAxis&quot;: {&quot;name&quot;: &quot;log₁₀(λ) — regularisation strength&quot;, &quot;nameLocation&quot;: &quot;middle&quot;, &quot;nameGap&quot;: 30,
+&quot;data&quot;: [&quot;-3&quot;,&quot;-2.5&quot;,&quot;-2&quot;,&quot;-1.5&quot;,&quot;-1&quot;,&quot;-0.5&quot;,&quot;0&quot;,&quot;0.5&quot;,&quot;1&quot;,&quot;1.5&quot;,&quot;2&quot;]},
+&quot;yAxis&quot;: {&quot;name&quot;: &quot;Expected prediction error&quot;, &quot;nameLocation&quot;: &quot;middle&quot;, &quot;nameGap&quot;: 50},
+&quot;series&quot;: [
+{&quot;name&quot;: &quot;Bias²&quot;, &quot;type&quot;: &quot;line&quot;, &quot;smooth&quot;: true,
+&quot;itemStyle&quot;: {&quot;color&quot;: &quot;#C62828&quot;},
+&quot;data&quot;: [0.01, 0.02, 0.04, 0.08, 0.15, 0.28, 0.50, 0.75, 1.10, 1.50, 2.00]},
+{&quot;name&quot;: &quot;Variance&quot;, &quot;type&quot;: &quot;line&quot;, &quot;smooth&quot;: true,
+&quot;itemStyle&quot;: {&quot;color&quot;: &quot;#1565C0&quot;},
+&quot;data&quot;: [2.20, 1.80, 1.40, 1.05, 0.75, 0.52, 0.35, 0.25, 0.18, 0.14, 0.12]},
+{&quot;name&quot;: &quot;Total error (Bias² + Var + σ²)&quot;, &quot;type&quot;: &quot;line&quot;, &quot;smooth&quot;: true,
+&quot;lineStyle&quot;: {&quot;width&quot;: 3},
+&quot;itemStyle&quot;: {&quot;color&quot;: &quot;#2E7D32&quot;},
+&quot;data&quot;: [4.46, 4.07, 3.69, 3.38, 3.15, 3.05, 3.10, 3.25, 3.53, 3.89, 4.37]}
+]
+}"></div>
+<p>Total error has a minimum at intermediate regularisation (λ ≈ 0.3 in this example). Left of the minimum: variance dominates, the model overfits training data. Right of the minimum: bias dominates, the model is too constrained. Standard cross-validation finds this minimum empirically without needing to know the true signal or noise level.</p>
+<hr>
+<h2 id="interpretation" class="anchored">7. Interpretation</h2>
+<p>The spatial cross-validation result carries a direct implication for environmental mapping: reported model accuracy metrics (R², RMSE) from standard cross-validation are optimistic for spatially autocorrelated data. A model that achieves RMSE = 1.2 in standard CV and RMSE = 1.8 in spatial block CV has 50% of its apparent skill from spatial proximity of training and test points, not from genuine feature-response relationships. Publishing standard CV metrics for spatial prediction models is a systematic bias in the environmental literature.</p>
+<p>The lasso’s variable selection property is particularly useful when the covariate stack is large and many variables are irrelevant or redundant. In a typical soil mapping workflow with 20–40 environmental covariates, lasso reliably identifies the 5–10 most important predictors while shrinking the rest to zero — producing a more interpretable and more robust model than OLS on all covariates.</p>
+<p>Random forest does not require feature selection because its tree structure naturally handles irrelevant predictors (splits on irrelevant variables produce near-zero importance and are quickly superseded). Its main advantages over regularised linear regression are: capturing nonlinear relationships, handling interactions without explicit specification, and providing OOB error estimates at no additional computational cost.</p>
+<hr>
+<h2 id="what-could-go-wrong" class="anchored">8. What Could Go Wrong?</h2>
+<p><strong>Spatial leakage invalidates standard cross-validation.</strong> The single most common error in published spatial prediction studies. Always check whether training and test points in your CV folds are spatially separated by more than the autocorrelation range.</p>
+<p><strong>Extrapolation beyond the training feature space is unreliable.</strong> A regression model trained on observations with NDVI ∈ [0.2, 0.8] will extrapolate to NDVI = 0.05 (bare soil) by extending its fitted curve, which may be completely wrong. Random forests in particular <strong>cannot extrapolate</strong> — they predict the mean of the nearest training observations in feature space. Detecting extrapolation requires measuring the distance of each prediction point from the training data convex hull in feature space (e.g., the CAST package’s Area of Applicability metric).</p>
+<p><strong>Variable importance from random forests is biased when predictors have different cardinalities.</strong> If some predictors are continuous and others are binary, the continuous predictors are artificially favoured in split-finding because they have more possible threshold values. Conditional permutation importance and Shapley values (SHAP) provide more reliable importance estimates.</p>
+<p><strong>Prediction intervals from quantile regression forests require large samples.</strong> QRF estimates quantiles by accumulating the leaf node training distributions. With small samples, the tail quantiles (5th, 95th percentile) are poorly estimated. A minimum of 500–1000 training observations is advisable for reliable 90% prediction intervals; below this, Bayesian regression with informative priors (Essay Z1) provides better-calibrated uncertainty.</p>
+<hr>
+<h2 id="summary" class="anchored">9. Summary</h2>
+<p>OLS regression minimises residual sum of squares: <span class="math inline">\hat{\boldsymbol{\beta}} = (\mathbf{X}^\top\mathbf{X})^{-1}\mathbf{X}^\top\mathbf{y}</span>. Ridge adds an L2 penalty <span class="math inline">\lambda\|\boldsymbol{\beta}\|_2^2</span>, shrinking all coefficients and solving multicollinearity; lasso adds an L1 penalty, producing sparse solutions with exact zeros. The bias-variance tradeoff means that optimal regularisation — found by cross-validation — minimises total prediction error.</p>
+<p>For spatial data, standard k-fold CV is anti-conservative due to spatial autocorrelation. Block spatial CV or buffered LOO-CV, with separation exceeding the autocorrelation range, gives honest estimates of generalisation error. Random forest regression handles nonlinearity and interactions through ensemble averaging of deep trees, with OOB error as a built-in CV estimate.</p>
+<p>Prediction intervals quantify uncertainty for individual new observations; confidence intervals quantify uncertainty about the mean. For environmental mapping, prediction intervals are appropriate and should be reported alongside point predictions.</p>
+<p><strong>Key equations:</strong></p>
+<p><span class="math display">\hat{\boldsymbol{\beta}}_{\text{OLS}} = (\mathbf{X}^\top\mathbf{X})^{-1}\mathbf{X}^\top\mathbf{y}</span></p>
+<p><span class="math display">\hat{\boldsymbol{\beta}}_{\text{ridge}} = (\mathbf{X}^\top\mathbf{X} + \lambda\mathbf{I})^{-1}\mathbf{X}^\top\mathbf{y}</span></p>
+<p><span class="math display">\text{EPE} = \sigma^2 + \text{Bias}^2[\hat{f}] + \text{Var}[\hat{f}]</span></p>
+<p><span class="math display">\hat{f}_{\text{RF}} = \frac{1}{B}\sum_{b=1}^B T_b(\mathbf{x})</span></p>
+<hr>
+<h2 id="math-refresher" class="anchored">Math Refresher</h2>
+<p><strong>The normal equations and matrix inversion.</strong> Minimising <span class="math inline">\|\mathbf{y}-\mathbf{X}\boldsymbol{\beta}\|^2</span> is equivalent to finding <span class="math inline">\boldsymbol{\beta}</span> such that the gradient vector is zero: <span class="math inline">\nabla_{\boldsymbol{\beta}} = -2\mathbf{X}^\top(\mathbf{y}-\mathbf{X}\boldsymbol{\beta}) = 0</span>. Expanding: <span class="math inline">\mathbf{X}^\top\mathbf{X}\boldsymbol{\beta} = \mathbf{X}^\top\mathbf{y}</span>. Solving this linear system gives <span class="math inline">\hat{\boldsymbol{\beta}} = (\mathbf{X}^\top\mathbf{X})^{-1}\mathbf{X}^\top\mathbf{y}</span> — but only if <span class="math inline">\mathbf{X}^\top\mathbf{X}</span> is invertible (which requires more observations than predictors and no perfect multicollinearity). Ridge adds <span class="math inline">\lambda\mathbf{I}</span> to guarantee invertibility regardless.</p>
+<p><strong>Soft thresholding in lasso.</strong> The lasso coordinate update is <span class="math inline">\hat{\beta}_j = \text{sign}(z_j)\max(0, |z_j| - \lambda)</span> where <span class="math inline">z_j</span> is the OLS solution for <span class="math inline">\beta_j</span> holding all others fixed. This “soft threshold” function maps values in <span class="math inline">(-\lambda, \lambda)</span> to exactly zero — the mathematical mechanism of variable selection. The L1 penalty’s non-differentiability at zero is precisely what makes this zeroing possible; the smooth L2 penalty of ridge can only shrink toward zero, never reach it.</p>
+
+
+<footer class="wayward-footer">
+  <div class="wayward-footer__inner">
+    <div class="wayward-footer__brand">
+      <div class="wayward-footer__logo">WaywardHouse<span>.</span></div>
+      <p>Understanding how place, economy, and environment interact through analysis, modelling, and open tools.</p>
+    </div>
+
+    <nav class="wayward-footer__group" aria-labelledby="footer-reading">
+      <h2 id="footer-reading" class="anchored">Reading</h2>
+      <a href="https://wayward.house/articles/">Articles</a>
+      <a href="https://wayward.house/learn/">Library</a>
+      <a href="https://wayward.house/archive.html">Archive</a>
+      <a href="https://wayward.house/start-here.html">Choose Your Path</a>
+    </nav>
+
+    <nav class="wayward-footer__group" aria-labelledby="footer-site">
+      <h2 id="footer-site" class="anchored">Site</h2>
+      <a href="https://wayward.house/start-here.html">Choose Your Path</a>
+      <a href="https://wayward.house/about.html">About</a>
+      <a href="https://wayward.house/contact.html">Contact</a>
+    </nav>
+
+    <nav class="wayward-footer__group" aria-labelledby="footer-resources">
+      <h2 id="footer-resources" class="anchored">Resources</h2>
+      <a href="https://wayward.house/topics/">All Topics</a>
+      <a href="https://wayward.house/privacy.html">Privacy Policy</a>
+      <a href="https://wayward.house/terms.html">Terms of Use</a>
+    </nav>
+  </div>
+</footer>
+
+<script type="module" src="../assets/dist/main.js"></script>
+<script type="module" src="../assets/js/core.js"></script>
+<script id="quarto-html-after-body" type="application/javascript">
+  window.document.addEventListener("DOMContentLoaded", function (event) {
+    const tabsets =  window.document.querySelectorAll(".panel-tabset-tabby")
+    tabsets.forEach(function(tabset) {
+      const tabby = new Tabby('#' + tabset.id);
+    });
+    const icon = "";
+    const anchorJS = new window.AnchorJS();
+    anchorJS.options = {
+      placement: 'right',
+      icon: icon
+    };
+    anchorJS.add('.anchored');
+    const isCodeAnnotation = (el) => {
+      for (const clz of el.classList) {
+        if (clz.startsWith('code-annotation-')) {                     
+          return true;
+        }
+      }
+      return false;
+    }
+    const onCopySuccess = function(e) {
+      // button target
+      const button = e.trigger;
+      // don't keep focus
+      button.blur();
+      // flash "checked"
+      button.classList.add('code-copy-button-checked');
+      var currentTitle = button.getAttribute("title");
+      button.setAttribute("title", "Copied!");
+      let tooltip;
+      if (window.bootstrap) {
+        button.setAttribute("data-bs-toggle", "tooltip");
+        button.setAttribute("data-bs-placement", "left");
+        button.setAttribute("data-bs-title", "Copied!");
+        tooltip = new bootstrap.Tooltip(button, 
+          { trigger: "manual", 
+            customClass: "code-copy-button-tooltip",
+            offset: [0, -8]});
+        tooltip.show();    
+      }
+      setTimeout(function() {
+        if (tooltip) {
+          tooltip.hide();
+          button.removeAttribute("data-bs-title");
+          button.removeAttribute("data-bs-toggle");
+          button.removeAttribute("data-bs-placement");
+        }
+        button.setAttribute("title", currentTitle);
+        button.classList.remove('code-copy-button-checked');
+      }, 1000);
+      // clear code selection
+      e.clearSelection();
+    }
+    const getTextToCopy = function(trigger) {
+      const outerScaffold = trigger.parentElement.cloneNode(true);
+      const codeEl = outerScaffold.querySelector('code');
+      for (const childEl of codeEl.children) {
+        if (isCodeAnnotation(childEl)) {
+          childEl.remove();
+        }
+      }
+      return codeEl.innerText;
+    }
+    const clipboard = new window.ClipboardJS('.code-copy-button:not([data-in-quarto-modal])', {
+      text: getTextToCopy
+    });
+    clipboard.on('success', onCopySuccess);
+    if (window.document.getElementById('quarto-embedded-source-code-modal')) {
+      const clipboardModal = new window.ClipboardJS('.code-copy-button[data-in-quarto-modal]', {
+        text: getTextToCopy,
+        container: window.document.getElementById('quarto-embedded-source-code-modal')
+      });
+      clipboardModal.on('success', onCopySuccess);
+    }
+      var localhostRegex = new RegExp(/^(?:http|https):\/\/localhost\:?[0-9]*\//);
+      var mailtoRegex = new RegExp(/^mailto:/);
+        var filterRegex = new RegExp('/' + window.location.host + '/');
+      var isInternal = (href) => {
+          return filterRegex.test(href) || localhostRegex.test(href) || mailtoRegex.test(href);
+      }
+      // Inspect non-navigation links and adorn them if external
+     var links = window.document.querySelectorAll('a[href]:not(.nav-link):not(.navbar-brand):not(.toc-action):not(.sidebar-link):not(.sidebar-item-toggle):not(.pagination-link):not(.no-external):not([aria-hidden]):not(.dropdown-item):not(.quarto-navigation-tool):not(.about-link)');
+      for (var i=0; i<links.length; i++) {
+        const link = links[i];
+        if (!isInternal(link.href)) {
+          // undo the damage that might have been done by quarto-nav.js in the case of
+          // links that we want to consider external
+          if (link.dataset.originalHref !== undefined) {
+            link.href = link.dataset.originalHref;
+          }
+        }
+      }
+    function tippyHover(el, contentFn, onTriggerFn, onUntriggerFn) {
+      const config = {
+        allowHTML: true,
+        maxWidth: 500,
+        delay: 100,
+        arrow: false,
+        appendTo: function(el) {
+            return el.parentElement;
+        },
+        interactive: true,
+        interactiveBorder: 10,
+        theme: 'light-border',
+        placement: 'bottom-start',
+      };
+      if (contentFn) {
+        config.content = contentFn;
+      }
+      if (onTriggerFn) {
+        config.onTrigger = onTriggerFn;
+      }
+      if (onUntriggerFn) {
+        config.onUntrigger = onUntriggerFn;
+      }
+      window.tippy(el, config); 
+    }
+    const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+    for (var i=0; i<noterefs.length; i++) {
+      const ref = noterefs[i];
+      tippyHover(ref, function() {
+        // use id or data attribute instead here
+        let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+        try { href = new URL(href).hash; } catch {}
+        const id = href.replace(/^#\/?/, "");
+        const note = window.document.getElementById(id);
+        if (note) {
+          return note.innerHTML;
+        } else {
+          return "";
+        }
+      });
+    }
+    const xrefs = window.document.querySelectorAll('a.quarto-xref');
+    const processXRef = (id, note) => {
+      // Strip column container classes
+      const stripColumnClz = (el) => {
+        el.classList.remove("page-full", "page-columns");
+        if (el.children) {
+          for (const child of el.children) {
+            stripColumnClz(child);
+          }
+        }
+      }
+      stripColumnClz(note)
+      if (id === null || id.startsWith('sec-')) {
+        // Special case sections, only their first couple elements
+        const container = document.createElement("div");
+        if (note.children && note.children.length > 2) {
+          container.appendChild(note.children[0].cloneNode(true));
+          for (let i = 1; i < note.children.length; i++) {
+            const child = note.children[i];
+            if (child.tagName === "P" && child.innerText === "") {
+              continue;
+            } else {
+              container.appendChild(child.cloneNode(true));
+              break;
+            }
+          }
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(container);
+          }
+          return container.innerHTML
+        } else {
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(note);
+          }
+          return note.innerHTML;
+        }
+      } else {
+        // Remove any anchor links if they are present
+        const anchorLink = note.querySelector('a.anchorjs-link');
+        if (anchorLink) {
+          anchorLink.remove();
+        }
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(note);
+        }
+        if (note.classList.contains("callout")) {
+          return note.outerHTML;
+        } else {
+          return note.innerHTML;
+        }
+      }
+    }
+    for (var i=0; i<xrefs.length; i++) {
+      const xref = xrefs[i];
+      tippyHover(xref, undefined, function(instance) {
+        instance.disable();
+        let url = xref.getAttribute('href');
+        let hash = undefined; 
+        if (url.startsWith('#')) {
+          hash = url;
+        } else {
+          try { hash = new URL(url).hash; } catch {}
+        }
+        if (hash) {
+          const id = hash.replace(/^#\/?/, "");
+          const note = window.document.getElementById(id);
+          if (note !== null) {
+            try {
+              const html = processXRef(id, note.cloneNode(true));
+              instance.setContent(html);
+            } finally {
+              instance.enable();
+              instance.show();
+            }
+          } else {
+            // See if we can fetch this
+            fetch(url.split('#')[0])
+            .then(res => res.text())
+            .then(html => {
+              const parser = new DOMParser();
+              const htmlDoc = parser.parseFromString(html, "text/html");
+              const note = htmlDoc.getElementById(id);
+              if (note !== null) {
+                const html = processXRef(id, note);
+                instance.setContent(html);
+              } 
+            }).finally(() => {
+              instance.enable();
+              instance.show();
+            });
+          }
+        } else {
+          // See if we can fetch a full url (with no hash to target)
+          // This is a special case and we should probably do some content thinning / targeting
+          fetch(url)
+          .then(res => res.text())
+          .then(html => {
+            const parser = new DOMParser();
+            const htmlDoc = parser.parseFromString(html, "text/html");
+            const note = htmlDoc.querySelector('main.content');
+            if (note !== null) {
+              // This should only happen for chapter cross references
+              // (since there is no id in the URL)
+              // remove the first header
+              if (note.children.length > 0 && note.children[0].tagName === "HEADER") {
+                note.children[0].remove();
+              }
+              const html = processXRef(null, note);
+              instance.setContent(html);
+            } 
+          }).finally(() => {
+            instance.enable();
+            instance.show();
+          });
+        }
+      }, function(instance) {
+      });
+    }
+        let selectedAnnoteEl;
+        const selectorForAnnotation = ( cell, annotation) => {
+          let cellAttr = 'data-code-cell="' + cell + '"';
+          let lineAttr = 'data-code-annotation="' +  annotation + '"';
+          const selector = 'span[' + cellAttr + '][' + lineAttr + ']';
+          return selector;
+        }
+        const selectCodeLines = (annoteEl) => {
+          const doc = window.document;
+          const targetCell = annoteEl.getAttribute("data-target-cell");
+          const targetAnnotation = annoteEl.getAttribute("data-target-annotation");
+          const annoteSpan = window.document.querySelector(selectorForAnnotation(targetCell, targetAnnotation));
+          const lines = annoteSpan.getAttribute("data-code-lines").split(",");
+          const lineIds = lines.map((line) => {
+            return targetCell + "-" + line;
+          })
+          let top = null;
+          let height = null;
+          let parent = null;
+          if (lineIds.length > 0) {
+              //compute the position of the single el (top and bottom and make a div)
+              const el = window.document.getElementById(lineIds[0]);
+              top = el.offsetTop;
+              height = el.offsetHeight;
+              parent = el.parentElement.parentElement;
+            if (lineIds.length > 1) {
+              const lastEl = window.document.getElementById(lineIds[lineIds.length - 1]);
+              const bottom = lastEl.offsetTop + lastEl.offsetHeight;
+              height = bottom - top;
+            }
+            if (top !== null && height !== null && parent !== null) {
+              // cook up a div (if necessary) and position it 
+              let div = window.document.getElementById("code-annotation-line-highlight");
+              if (div === null) {
+                div = window.document.createElement("div");
+                div.setAttribute("id", "code-annotation-line-highlight");
+                div.style.position = 'absolute';
+                parent.appendChild(div);
+              }
+              div.style.top = top - 2 + "px";
+              div.style.height = height + 4 + "px";
+              div.style.left = 0;
+              let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
+              if (gutterDiv === null) {
+                gutterDiv = window.document.createElement("div");
+                gutterDiv.setAttribute("id", "code-annotation-line-highlight-gutter");
+                gutterDiv.style.position = 'absolute';
+                const codeCell = window.document.getElementById(targetCell);
+                const gutter = codeCell.querySelector('.code-annotation-gutter');
+                gutter.appendChild(gutterDiv);
+              }
+              gutterDiv.style.top = top - 2 + "px";
+              gutterDiv.style.height = height + 4 + "px";
+            }
+            selectedAnnoteEl = annoteEl;
+          }
+        };
+        const unselectCodeLines = () => {
+          const elementsIds = ["code-annotation-line-highlight", "code-annotation-line-highlight-gutter"];
+          elementsIds.forEach((elId) => {
+            const div = window.document.getElementById(elId);
+            if (div) {
+              div.remove();
+            }
+          });
+          selectedAnnoteEl = undefined;
+        };
+          // Handle positioning of the toggle
+      window.addEventListener(
+        "resize",
+        throttle(() => {
+          elRect = undefined;
+          if (selectedAnnoteEl) {
+            selectCodeLines(selectedAnnoteEl);
+          }
+        }, 10)
+      );
+      function throttle(fn, ms) {
+      let throttle = false;
+      let timer;
+        return (...args) => {
+          if(!throttle) { // first call gets through
+              fn.apply(this, args);
+              throttle = true;
+          } else { // all the others get throttled
+              if(timer) clearTimeout(timer); // cancel #2
+              timer = setTimeout(() => {
+                fn.apply(this, args);
+                timer = throttle = false;
+              }, ms);
+          }
+        };
+      }
+        // Attach click handler to the DT
+        const annoteDls = window.document.querySelectorAll('dt[data-target-cell]');
+        for (const annoteDlNode of annoteDls) {
+          annoteDlNode.addEventListener('click', (event) => {
+            const clickedEl = event.target;
+            if (clickedEl !== selectedAnnoteEl) {
+              unselectCodeLines();
+              const activeEl = window.document.querySelector('dt[data-target-cell].code-annotation-active');
+              if (activeEl) {
+                activeEl.classList.remove('code-annotation-active');
+              }
+              selectCodeLines(clickedEl);
+              clickedEl.classList.add('code-annotation-active');
+            } else {
+              // Unselect the line
+              unselectCodeLines();
+              clickedEl.classList.remove('code-annotation-active');
+            }
+          });
+        }
+    const findCites = (el) => {
+      const parentEl = el.parentElement;
+      if (parentEl) {
+        const cites = parentEl.dataset.cites;
+        if (cites) {
+          return {
+            el,
+            cites: cites.split(' ')
+          };
+        } else {
+          return findCites(el.parentElement)
+        }
+      } else {
+        return undefined;
+      }
+    };
+    var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+    for (var i=0; i<bibliorefs.length; i++) {
+      const ref = bibliorefs[i];
+      const citeInfo = findCites(ref);
+      if (citeInfo) {
+        tippyHover(citeInfo.el, function() {
+          var popup = window.document.createElement('div');
+          citeInfo.cites.forEach(function(cite) {
+            var citeDiv = window.document.createElement('div');
+            citeDiv.classList.add('hanging-indent');
+            citeDiv.classList.add('csl-entry');
+            var biblioDiv = window.document.getElementById('ref-' + cite);
+            if (biblioDiv) {
+              citeDiv.innerHTML = biblioDiv.innerHTML;
+            }
+            popup.appendChild(citeDiv);
+          });
+          return popup.innerHTML;
+        });
+      }
+    }
+  });
+  </script>
+
+
+
+
+</body></html>

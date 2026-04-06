@@ -1,0 +1,1208 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
+
+<meta charset="utf-8">
+<meta name="generator" content="quarto-1.9.36">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+
+<meta name="dcterms.date" content="2026-02-26">
+<meta name="description" content="Dead plant material doesn’t disappear instantly—it decomposes over months to millennia, releasing CO₂ back to the atmosphere. This model models decomposition as a multi-pool system with different decay rates, introduces temperature and moisture controls, and calculates soil carbon storage at steady state.">
+
+<title>Decomposition and Soil Carbon Turnover – Computational Geography</title>
+<style>
+/* Default styles provided by pandoc.
+** See https://pandoc.org/MANUAL.html#variables-for-html for config info.
+*/
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: min(4vw, 1.5em);}
+div.column{flex: auto; overflow-x: auto;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+  width: 0.8em;
+  margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
+  vertical-align: middle;
+}
+</style>
+
+
+<script src="../site_libs/clipboard/clipboard.min.js"></script>
+<script src="../site_libs/quarto-html/tabby.min.js"></script>
+<script src="../site_libs/quarto-html/popper.min.js"></script>
+<script src="../site_libs/quarto-html/tippy.umd.min.js"></script>
+<script src="../site_libs/quarto-html/anchor.min.js"></script>
+<link href="../site_libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="../site_libs/quarto-html/light-border.css" rel="stylesheet">
+<link href="../site_libs/quarto-html/quarto-html-640605f58ae58ee79329c070719e555b.min.css" rel="stylesheet" append-hash="true" data-mode="light">
+<link href="../site_libs/quarto-html/quarto-syntax-highlighting-845c23b38eaddc0f92fda52bfe77a8c8.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<script>
+  (function () {
+    document.documentElement.dataset.theme = 'light';
+    document.documentElement.dataset.brand = 'wayward';
+    try {
+      localStorage.removeItem('theme');
+    } catch (err) {
+      void err;
+    }
+  })();
+</script>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:ital,wght@0,300;0,400;0,600;0,700;0,800;0,900;1,700;1,800&amp;family=Barlow:wght@300;400;500;600&amp;family=IBM+Plex+Mono:ital,wght@0,300;0,400;0,500;1,300&amp;family=Literata:ital,opsz,wght@0,7..72,300;0,7..72,400;0,7..72,500;1,7..72,300;1,7..72,400&amp;display=swap" rel="stylesheet">
+
+  <script>window.backupDefine = window.define; window.define = undefined;</script><script src="https://cdn.jsdelivr.net/npm/katex@latest/dist/katex.min.js"></script>
+  <script>document.addEventListener("DOMContentLoaded", function () {
+ var mathElements = document.getElementsByClassName("math");
+ var macros = [];
+ for (var i = 0; i < mathElements.length; i++) {
+  var texText = mathElements[i].firstChild;
+  if (mathElements[i].tagName == "SPAN") {
+   katex.render(texText.data, mathElements[i], {
+    displayMode: mathElements[i].classList.contains('display'),
+    throwOnError: false,
+    macros: macros,
+    fleqn: false
+   });
+}}});
+  </script>
+  <script>window.define = window.backupDefine; window.backupDefine = undefined;</script><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@latest/dist/katex.min.css">
+
+<script type="text/javascript">
+const typesetMath = (el) => {
+  if (window.MathJax) {
+    // MathJax Typeset
+    window.MathJax.typeset([el]);
+  } else if (window.katex) {
+    // KaTeX Render
+    var mathElements = el.getElementsByClassName("math");
+    var macros = [];
+    for (var i = 0; i < mathElements.length; i++) {
+      var texText = mathElements[i].firstChild;
+      if (mathElements[i].tagName == "SPAN" && texText && texText.data) {
+        window.katex.render(texText.data, mathElements[i], {
+          displayMode: mathElements[i].classList.contains('display'),
+          throwOnError: false,
+          macros: macros,
+          fleqn: false
+        });
+      }
+    }
+  }
+}
+window.Quarto = {
+  typesetMath
+};
+</script>
+
+<link rel="stylesheet" href="../assets/css/quarto-wayward.css">
+</head>
+
+<body class="reading-body tag-hash-math tag-hash-viz">
+
+
+<header id="title-block-header">
+<h1 class="title"><span class="chapter-title">Decomposition and Soil Carbon Turnover</span></h1>
+<p class="subtitle">From litterfall to soil organic matter — the slow carbon cycle</p>
+
+<p class="date">2026-02-26</p>
+</header>
+
+<nav id="TOC" role="doc-toc">
+    <h2 id="toc-title">Table of contents</h2>
+   
+  <ul>
+  <li><a href="#before-you-start" id="toc-before-you-start">Before You Start</a></li>
+  <li><a href="#the-question" id="toc-the-question">1. The Question</a></li>
+  <li><a href="#the-conceptual-model" id="toc-the-conceptual-model">2. The Conceptual Model</a>
+  <ul>
+  <li><a href="#litter-and-soil-carbon-pools" id="toc-litter-and-soil-carbon-pools">Litter and Soil Carbon Pools</a></li>
+  <li><a href="#decomposition-as-exponential-decay" id="toc-decomposition-as-exponential-decay">Decomposition as Exponential Decay</a></li>
+  <li><a href="#environmental-controls" id="toc-environmental-controls">Environmental Controls</a></li>
+  <li><a href="#heterotrophic-respiration" id="toc-heterotrophic-respiration">Heterotrophic Respiration</a></li>
+  </ul></li>
+  <li><a href="#building-the-mathematical-model" id="toc-building-the-mathematical-model">3. Building the Mathematical Model</a>
+  <ul>
+  <li><a href="#three-pool-decomposition-model" id="toc-three-pool-decomposition-model">Three-Pool Decomposition Model</a></li>
+  <li><a href="#decay-constants" id="toc-decay-constants">Decay Constants</a></li>
+  <li><a href="#steady-state" id="toc-steady-state">Steady State</a></li>
+  <li><a href="#heterotrophic-respiration-at-steady-state" id="toc-heterotrophic-respiration-at-steady-state">Heterotrophic Respiration at Steady State</a></li>
+  </ul></li>
+  <li><a href="#worked-example-by-hand" id="toc-worked-example-by-hand">4. Worked Example by Hand</a>
+  <ul>
+  <li><a href="#solution" id="toc-solution">Solution</a></li>
+  </ul></li>
+  <li><a href="#computational-implementation" id="toc-computational-implementation">5. Computational Implementation</a></li>
+  <li><a href="#interpretation" id="toc-interpretation">6. Interpretation</a>
+  <ul>
+  <li><a href="#global-soil-carbon-distribution" id="toc-global-soil-carbon-distribution">Global Soil Carbon Distribution</a></li>
+  <li><a href="#climate-change-feedbacks" id="toc-climate-change-feedbacks">Climate Change Feedbacks</a></li>
+  <li><a href="#soil-carbon-sequestration" id="toc-soil-carbon-sequestration">Soil Carbon Sequestration</a></li>
+  </ul></li>
+  <li><a href="#what-could-go-wrong" id="toc-what-could-go-wrong">7. What Could Go Wrong?</a>
+  <ul>
+  <li><a href="#assuming-single-decay-rate" id="toc-assuming-single-decay-rate">Assuming Single Decay Rate</a></li>
+  <li><a href="#ignoring-priming-effects" id="toc-ignoring-priming-effects">Ignoring Priming Effects</a></li>
+  <li><a href="#constant-transfer-fractions" id="toc-constant-transfer-fractions">Constant Transfer Fractions</a></li>
+  <li><a href="#neglecting-nutrient-limitation" id="toc-neglecting-nutrient-limitation">Neglecting Nutrient Limitation</a></li>
+  </ul></li>
+  <li><a href="#extension-century-model" id="toc-extension-century-model">8. Extension: Century Model</a></li>
+  <li><a href="#math-refresher-first-order-decay" id="toc-math-refresher-first-order-decay">9. Math Refresher: First-Order Decay</a>
+  <ul>
+  <li><a href="#general-solution" id="toc-general-solution">General Solution</a></li>
+  </ul></li>
+  <li><a href="#summary" id="toc-summary">Summary</a></li>
+  </ul>
+</nav>
+<h2 id="before-you-start" class="anchored">Before You Start</h2>
+<p><strong>You should know</strong><br>
+That dead plant material enters soils gradually and that decomposition is not equally fast in all environments.</p>
+<p><strong>You will learn</strong><br>
+How litter, active soil organic matter, and slow soil carbon pools exchange material, and how temperature and moisture alter the pace of decomposition.</p>
+<p><strong>Why this matters</strong><br>
+Soil carbon storage is one of the largest moving pieces in the climate system, and it depends on rates rather than on inputs alone.</p>
+<p><strong>If this gets hard, focus on…</strong><br>
+The simple idea that inputs build pools up while first-order decay drains them down.</p>
+<p>The peat bogs of the Hudson Bay Lowlands have been accumulating organic carbon for roughly 8,000 years since the last glaciation. The reason is simple and astonishing: decomposition in waterlogged, cold, anaerobic conditions is so slow that plant material accumulates faster than it decays. In some bogs, a buried leaf 1,000 years old is still recognisable. The same organic matter in a warm, well-drained agricultural soil in southern Ontario would decompose completely within a few decades. The carbon content of a soil is not determined by how much plant material falls into it; it is determined by the balance between inputs and the rate of decomposition — and that rate varies by four orders of magnitude across Earth’s environments.</p>
+<p>Soils hold roughly 1,500 billion tonnes of organic carbon — more than twice the amount in the atmosphere and three times the amount in all living vegetation. Small changes in decomposition rates, driven by warming temperatures or altered moisture, can therefore have large consequences for atmospheric CO₂. Modelling decomposition requires tracking carbon through multiple pools with different turnover times: fresh litter that breaks down in months, slower humus that persists for decades, and a passive fraction that can persist for centuries under the right conditions. This model builds that multi-pool structure, derives the temperature and moisture dependencies of decay rates, and calculates steady-state soil carbon storage for different climate regimes.</p>
+<h2 id="the-question" class="anchored">1. The Question</h2>
+<p>Where does the carbon go after plants die?</p>
+<p>Leaves fall, roots die, wood decays. This dead organic matter (litter) accumulates on and in the soil, where microbes and fungi break it down, releasing CO₂ through <strong>heterotrophic respiration</strong>.</p>
+<p>The balance between litter inputs and decomposition outputs determines: - <strong>Soil carbon storage</strong> — soils hold 2–3× more carbon than atmosphere - <strong>Net Ecosystem Productivity</strong> (NEP = NPP - <span class="math inline">R_h</span>) - <strong>Carbon sequestration potential</strong> — can soils store more carbon? - <strong>Soil fertility</strong> — decomposition releases nutrients</p>
+<p>The mathematical question: How do we model the flow of carbon from litter to soil organic matter to CO₂, accounting for different decay rates and environmental controls?</p>
+<hr>
+<h2 id="the-conceptual-model" class="anchored">2. The Conceptual Model</h2>
+<h3 id="litter-and-soil-carbon-pools" class="anchored">Litter and Soil Carbon Pools</h3>
+<p><strong>Three pools</strong> with different turnover times:</p>
+<ol type="1">
+<li><strong>Litter</strong> (fast pool):
+<ul>
+<li>Fresh leaves, fine roots, woody debris</li>
+<li>Turnover time: 1–5 years</li>
+<li>Rapidly decomposed</li>
+</ul></li>
+<li><strong>Soil Organic Matter - Active</strong> (medium pool):
+<ul>
+<li>Partially decomposed material</li>
+<li>Microbial biomass</li>
+<li>Turnover time: 10–50 years</li>
+</ul></li>
+<li><strong>Soil Organic Matter - Slow/Passive</strong> (slow pool):
+<ul>
+<li>Humus, recalcitrant compounds</li>
+<li>Stabilized on clay minerals</li>
+<li>Turnover time: 100–1000+ years</li>
+</ul></li>
+</ol>
+<h3 id="decomposition-as-exponential-decay" class="anchored">Decomposition as Exponential Decay</h3>
+<p>Each pool loses carbon through <strong>first-order decay</strong>:</p>
+<p><span class="math display">\frac{dC}{dt} = I - k C</span></p>
+<p>Where: - <span class="math inline">C</span> = carbon in pool (kg C/m²) - <span class="math inline">I</span> = input rate (kg C/m²/year) - <span class="math inline">k</span> = decay constant (year⁻¹)</p>
+<p><strong>Turnover time</strong> (<span class="math inline">\tau</span>):</p>
+<p><span class="math display">\tau = \frac{1}{k}</span></p>
+<p><strong>Example:</strong> Litter with <span class="math inline">k = 0.5</span> year⁻¹ has <span class="math inline">\tau = 2</span> years (half decomposes each 2 years).</p>
+<h3 id="environmental-controls" class="anchored">Environmental Controls</h3>
+<p><strong>Temperature:</strong> Decomposition rate increases exponentially with temperature.</p>
+<p><strong>Q₁₀ rule:</strong> Decomposition rate doubles per 10°C warming.</p>
+<p><span class="math display">k(T) = k_{20} \times Q_{10}^{(T-20)/10}</span></p>
+<p>Where: - <span class="math inline">k_{20}</span> = decay rate at 20°C - <span class="math inline">Q_{10} \approx 2</span> (typically 1.5–3) - <span class="math inline">T</span> = soil temperature (°C)</p>
+<p><strong>Moisture:</strong> Decomposition maximized at moderate moisture.</p>
+<p><span class="math display">f(W) = \begin{cases}
+W/W_{\text{opt}} &amp; \text{if } W &lt; W_{\text{opt}} \\
+1 &amp; \text{if } W = W_{\text{opt}} \\
+(1-W)/(1-W_{\text{opt}}) &amp; \text{if } W &gt; W_{\text{opt}}
+\end{cases}</span></p>
+<p>Where <span class="math inline">W</span> is relative soil moisture (0–1) and <span class="math inline">W_{\text{opt}} \approx 0.6</span>.</p>
+<h3 id="heterotrophic-respiration" class="anchored">Heterotrophic Respiration</h3>
+<p><strong>Total heterotrophic respiration:</strong></p>
+<p><span class="math display">R_h = k_L C_L + k_A C_A + k_S C_S</span></p>
+<p>Where subscripts L, A, S denote litter, active SOM, slow SOM.</p>
+<p><strong>Net Ecosystem Productivity:</strong></p>
+<p><span class="math display">\text{NEP} = \text{NPP} - R_h</span></p>
+<p><strong>Positive NEP:</strong> Ecosystem is a carbon sink<br>
+<strong>Negative NEP:</strong> Ecosystem is a carbon source</p>
+<figure class="cg-ill">
+<div class="cg-ill__frame" data-markdown="1">
+<div class="cg-ill__eyebrow">
+Soil Carbon Turnover
+</div>
+<h3 class="cg-ill__title anchored">
+Dead Carbon Moves Through Pools With Very Different Speeds
+</h3>
+<p class="cg-ill__lede">
+The critical idea is not just that litter decays. It is that some carbon is respired quickly, some moves into medium-lived soil organic matter, and a small fraction reaches very slow pools that dominate long-term storage.
+</p>
+<div class="cg-ill__grid cg-ill__grid--2">
+<div class="cg-ill__card">
+<svg viewbox="0 0 560 320" role="img" aria-label="Diagram showing soil carbon moving from litter to active soil organic matter to slow soil carbon, with respiration losses from each pool.">
+  <rect x="0" y="0" width="560" height="320" rx="22" fill="#f3f7ef"></rect>
+  <rect x="38" y="124" width="128" height="64" rx="16" fill="#bbf7d0" stroke="#16a34a" stroke-width="3"></rect>
+  <text x="77" y="152" font-size="18" fill="#166534" font-weight="700">litter</text>
+  <text x="61" y="172" font-size="14" fill="#166534">fast pool</text>
+
+  <rect x="214" y="112" width="138" height="76" rx="16" fill="#fde68a" stroke="#d97706" stroke-width="3"></rect>
+  <text x="234" y="144" font-size="18" fill="#92400e" font-weight="700">active SOM</text>
+  <text x="234" y="166" font-size="14" fill="#92400e">medium turnover</text>
+
+  <rect x="398" y="100" width="126" height="88" rx="16" fill="#ddd6fe" stroke="#8b5cf6" stroke-width="3"></rect>
+  <text x="422" y="136" font-size="18" fill="#6d28d9" font-weight="700">slow SOM</text>
+  <text x="422" y="158" font-size="14" fill="#6d28d9">century-scale storage</text>
+
+  <line x1="166" y1="156" x2="214" y2="150" stroke="#64748b" stroke-width="4" marker-end="url(#soilc-arrow)"></line>
+  <line x1="352" y1="146" x2="398" y2="144" stroke="#64748b" stroke-width="4" marker-end="url(#soilc-arrow)"></line>
+  <text x="172" y="140" font-size="14" fill="#475569">fraction transferred</text>
+  <text x="344" y="130" font-size="14" fill="#475569">smaller fraction transferred</text>
+
+  <line x1="102" y1="124" x2="102" y2="70" stroke="#ef4444" stroke-width="5" marker-end="url(#soilc-red)"></line>
+  <line x1="284" y1="112" x2="284" y2="58" stroke="#ef4444" stroke-width="5" marker-end="url(#soilc-red)"></line>
+  <line x1="460" y1="100" x2="460" y2="46" stroke="#ef4444" stroke-width="5" marker-end="url(#soilc-red)"></line>
+  <text x="70" y="52" font-size="14" fill="#991b1b">CO₂</text>
+  <text x="252" y="40" font-size="14" fill="#991b1b">CO₂</text>
+  <text x="428" y="28" font-size="14" fill="#991b1b">CO₂</text>
+
+  <line x1="38" y1="156" x2="14" y2="156" stroke="#16a34a" stroke-width="4" marker-end="url(#soilc-green)"></line>
+  <text x="10" y="142" font-size="14" fill="#166534">litter input</text>
+
+  <rect x="88" y="232" width="380" height="50" rx="14" fill="#eef2ff" stroke="#c7d2fe"></rect>
+  <text x="114" y="260" font-size="16" fill="#334155">temperature and moisture speed up or slow down every decay pathway</text>
+
+  <defs>
+    <marker id="soilc-arrow" markerwidth="8" markerheight="8" refx="6" refy="4" orient="auto">
+      <path d="M0,0 L8,4 L0,8 z" fill="#64748b"></path>
+    </marker>
+    <marker id="soilc-red" markerwidth="8" markerheight="8" refx="6" refy="4" orient="auto">
+      <path d="M0,0 L8,4 L0,8 z" fill="#ef4444"></path>
+    </marker>
+    <marker id="soilc-green" markerwidth="8" markerheight="8" refx="6" refy="4" orient="auto">
+      <path d="M0,0 L8,4 L0,8 z" fill="#16a34a"></path>
+    </marker>
+  </defs>
+</svg>
+</div>
+<div class="cg-ill__card">
+<h4 class="anchored">
+Why old soil can hold so much carbon
+</h4>
+<p>
+<strong>Fast pools cycle quickly.</strong> Litter can be large seasonally, but it does not stay around for long in warm, active soils.
+</p>
+<p>
+<strong>Slow pools dominate storage.</strong> Even a small transfer into a very low-decay pool can accumulate into a large long-term stock.
+</p>
+<p>
+<strong>Climate shifts the rates.</strong> Warming or drying can change the balance between transfer and respiration enough to turn soils into stronger sources or sinks.
+</p>
+</div>
+</div>
+</div>
+<figcaption>
+Decomposition is a cascade through pools. What matters for long-term storage is not only how much carbon enters soil, but how much reaches slowly turning pools before being respired back to the atmosphere.
+</figcaption>
+</figure>
+<hr>
+<h2 id="building-the-mathematical-model" class="anchored">3. Building the Mathematical Model</h2>
+<h3 id="three-pool-decomposition-model" class="anchored">Three-Pool Decomposition Model</h3>
+<p><strong>State variables:</strong></p>
+<ul>
+<li><span class="math inline">C_L</span> = litter carbon (kg C/m²)</li>
+<li><span class="math inline">C_A</span> = active SOM carbon (kg C/m²)</li>
+<li><span class="math inline">C_S</span> = slow SOM carbon (kg C/m²)</li>
+</ul>
+<p><strong>Litter dynamics:</strong></p>
+<p><span class="math display">\frac{dC_L}{dt} = I_L - k_L C_L</span></p>
+<p>Where <span class="math inline">I_L</span> is litterfall from vegetation (from Model 22: turnover of leaves/roots).</p>
+<p><strong>Active SOM dynamics:</strong></p>
+<p><span class="math display">\frac{dC_A}{dt} = f_{LA} k_L C_L - k_A C_A</span></p>
+<p>Where <span class="math inline">f_{LA}</span> is fraction of decomposed litter entering active SOM (typically 0.3–0.5, rest respired).</p>
+<p><strong>Slow SOM dynamics:</strong></p>
+<p><span class="math display">\frac{dC_S}{dt} = f_{AS} k_A C_A - k_S C_S</span></p>
+<p>Where <span class="math inline">f_{AS}</span> is fraction of decomposed active SOM entering slow SOM (typically 0.2–0.3).</p>
+<h3 id="decay-constants" class="anchored">Decay Constants</h3>
+<p><strong>Typical values at 20°C, optimal moisture:</strong></p>
+<table class="caption-top">
+<thead>
+<tr class="header">
+<th>Pool</th>
+<th>Decay rate (<span class="math inline">k</span>, year⁻¹)</th>
+<th>Turnover time (<span class="math inline">\tau</span>, years)</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>Litter</td>
+<td>0.5–2.0</td>
+<td>0.5–2</td>
+</tr>
+<tr class="even">
+<td>Active SOM</td>
+<td>0.05–0.20</td>
+<td>5–20</td>
+</tr>
+<tr class="odd">
+<td>Slow SOM</td>
+<td>0.001–0.01</td>
+<td>100–1000</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Variation by climate:</strong></p>
+<ul>
+<li>Tropical: High <span class="math inline">k</span> (warm, wet)</li>
+<li>Temperate: Moderate <span class="math inline">k</span></li>
+<li>Boreal: Low <span class="math inline">k</span> (cold)</li>
+<li>Arid: Very low <span class="math inline">k</span> (dry, limited decomposers)</li>
+</ul>
+<h3 id="steady-state" class="anchored">Steady State</h3>
+<p>At equilibrium:</p>
+<p><span class="math display">C_L^* = \frac{I_L}{k_L}</span></p>
+<p><span class="math display">C_A^* = \frac{f_{LA} k_L C_L^*}{k_A} = \frac{f_{LA} I_L}{k_A}</span></p>
+<p><span class="math display">C_S^* = \frac{f_{AS} k_A C_A^*}{k_S} = \frac{f_{AS} f_{LA} I_L}{k_S}</span></p>
+<p><strong>Total soil carbon:</strong></p>
+<p><span class="math display">C_{\text{soil}}^* = C_L^* + C_A^* + C_S^*</span></p>
+<p><strong>Key insight:</strong> Slow pool dominates total carbon despite small input fraction, because <span class="math inline">k_S \ll k_L</span>.</p>
+<h3 id="heterotrophic-respiration-at-steady-state" class="anchored">Heterotrophic Respiration at Steady State</h3>
+<p><span class="math display">R_h^* = k_L C_L^* + k_A C_A^* + k_S C_S^*</span></p>
+<p>Substituting steady-state values:</p>
+<p><span class="math display">R_h^* = I_L + f_{LA} I_L + f_{AS} f_{LA} I_L</span></p>
+<p>Wait, this doesn’t equal <span class="math inline">I_L</span>. Let me recalculate correctly.</p>
+<p>Actually, at steady state, total inputs = total outputs:</p>
+<p><span class="math display">R_h^* = (1 - f_{LA}) k_L C_L^* + (1 - f_{AS}) k_A C_A^* + k_S C_S^*</span></p>
+<p>After all transfers, this sums to <span class="math inline">I_L</span> (conservation of carbon).</p>
+<hr>
+<h2 id="worked-example-by-hand" class="anchored">4. Worked Example by Hand</h2>
+<p><strong>Problem:</strong> A temperate forest has: - Litterfall: <span class="math inline">I_L = 0.4</span> kg C/m²/year (from leaf/root turnover) - Litter decay rate: <span class="math inline">k_L = 1.0</span> year⁻¹ - Active SOM decay rate: <span class="math inline">k_A = 0.1</span> year⁻¹ - Slow SOM decay rate: <span class="math inline">k_S = 0.005</span> year⁻¹ - Transfer fractions: <span class="math inline">f_{LA} = 0.4</span>, <span class="math inline">f_{AS} = 0.3</span></p>
+<p>Calculate steady-state carbon in each pool.</p>
+<h3 id="solution" class="anchored">Solution</h3>
+<p><strong>Litter pool:</strong></p>
+<p><span class="math display">C_L^* = \frac{I_L}{k_L} = \frac{0.4}{1.0} = 0.4 \text{ kg C/m}^2</span></p>
+<p><strong>Active SOM:</strong></p>
+<p><span class="math display">C_A^* = \frac{f_{LA} I_L}{k_A} = \frac{0.4 \times 0.4}{0.1} = \frac{0.16}{0.1} = 1.6 \text{ kg C/m}^2</span></p>
+<p><strong>Slow SOM:</strong></p>
+<p><span class="math display">C_S^* = \frac{f_{AS} f_{LA} I_L}{k_S} = \frac{0.3 \times 0.4 \times 0.4}{0.005}</span></p>
+<p><span class="math display">= \frac{0.048}{0.005} = 9.6 \text{ kg C/m}^2</span></p>
+<p><strong>Total soil carbon:</strong></p>
+<p><span class="math display">C_{\text{soil}}^* = 0.4 + 1.6 + 9.6 = 11.6 \text{ kg C/m}^2</span></p>
+<p><strong>Interpretation:</strong></p>
+<ul>
+<li>Slow SOM holds <strong>83%</strong> of total soil carbon (9.6 / 11.6)</li>
+<li>This matches observations: most soil carbon is old, stable material</li>
+<li>Total = 11.6 kg C/m² = 116 tonnes C/ha (typical for temperate forest soil)</li>
+</ul>
+<p><strong>Heterotrophic respiration:</strong></p>
+<p>At steady state, <span class="math inline">R_h = I_L = 0.4</span> kg C/m²/year (all inputs eventually respired).</p>
+<hr>
+<h2 id="computational-implementation" class="anchored">5. Computational Implementation</h2>
+<p>Below is an interactive decomposition simulator.</p>
+<div class="viz-container" id="decomp-viz">
+<div class="controls">
+<label>
+Ecosystem type:
+<select id="ecosystem-decomp">
+<option value="tropical">Tropical Forest</option>
+<option value="temperate" selected="">Temperate Forest</option>
+<option value="boreal">Boreal Forest</option>
+<option value="grassland">Grassland</option>
+<option value="desert">Desert</option>
+</select>
+</label>
+<label>
+Litterfall rate (kg C/m²/year):
+<input type="range" id="litterfall-slider" min="0.1" max="1.0" step="0.05" value="0.4">
+<span id="litterfall-value">0.4</span>
+</label>
+<label>
+Temperature (°C):
+<input type="range" id="temp-decomp-slider" min="0" max="30" step="1" value="15">
+<span id="temp-decomp-value">15</span> °C
+</label>
+<label>
+Soil moisture (0-1):
+<input type="range" id="moisture-slider" min="0" max="1" step="0.05" value="0.6">
+<span id="moisture-value">0.6</span>
+</label>
+<label>
+Simulation years:
+<input type="range" id="years-decomp-slider" min="50" max="500" step="50" value="200">
+<span id="years-decomp-value">200</span> years
+</label>
+<div class="button-group">
+<button id="run-decomp-sim">Run Simulation</button>
+</div>
+</div>
+<div class="decomp-results">
+<p><strong>Total soil C:</strong> <span id="total-soil-c"></span> kg C/m²</p>
+<p><strong>Slow SOM fraction:</strong> <span id="slow-fraction"></span>%</p>
+<p><strong>R<sub>h</sub>:</strong> <span id="rh-result"></span> kg C/m²/year</p>
+<p><strong>Mean residence time:</strong> <span id="mrt-result"></span> years</p>
+</div>
+<div id="decomp-chart" style="width: 100%; height: 500px;"></div>
+</div>
+
+<script type="module">
+await new Promise(resolve => {
+const checkECharts = () => {
+if (typeof echarts !== 'undefined') resolve();
+else setTimeout(checkECharts, 50);
+};
+checkECharts();
+});
+
+(function() {
+const chart = echarts.init(document.getElementById('decomp-chart'));
+  
+const ecosystems = {
+tropical: { kL: 2.0, kA: 0.20, kS: 0.01, fLA: 0.3, fAS: 0.2, temp: 25 },
+temperate: { kL: 1.0, kA: 0.10, kS: 0.005, fLA: 0.4, fAS: 0.3, temp: 15 },
+boreal: { kL: 0.3, kA: 0.05, kS: 0.002, fLA: 0.5, fAS: 0.4, temp: 5 },
+grassland: { kL: 1.5, kA: 0.15, kS: 0.008, fLA: 0.35, fAS: 0.25, temp: 18 },
+desert: { kL: 0.1, kA: 0.02, kS: 0.001, fLA: 0.3, fAS: 0.2, temp: 22 }
+};
+  
+let ecoType = 'temperate';
+let litterfall = 0.4;
+let temperature = 15;
+let moisture = 0.6;
+let years = 200;
+  
+const Q10 = 2.0;
+const Wopt = 0.6;
+  
+function temperatureFactor(T) {
+return Math.pow(Q10, (T - 20) / 10);
+}
+  
+function moistureFactor(W) {
+if (W < Wopt) {
+return W / Wopt;
+} else if (W <= 1.0) {
+return (1 - W) / (1 - Wopt);
+}
+return 0;
+}
+  
+function runDecompSim() {
+const eco = ecosystems[ecoType];
+    
+// Adjust decay rates for temperature and moisture
+const Tfactor = temperatureFactor(temperature);
+const Wfactor = moistureFactor(moisture);
+const envFactor = Tfactor * Wfactor;
+    
+const kL = eco.kL * envFactor;
+const kA = eco.kA * envFactor;
+const kS = eco.kS * envFactor;
+    
+// Initialize pools
+let CL = 0.1;
+let CA = 0.1;
+let CS = 0.1;
+    
+const timeData = [];
+const litterData = [];
+const activeData = [];
+const slowData = [];
+const totalData = [];
+    
+const dt = 0.5;
+    
+for (let t = 0; t <= years; t += dt) {
+if (t % 5 < dt) {
+timeData.push(t);
+litterData.push(CL);
+activeData.push(CA);
+slowData.push(CS);
+totalData.push(CL + CA + CS);
+}
+      
+// Update pools
+const dCL = litterfall - kL * CL;
+const dCA = eco.fLA * kL * CL - kA * CA;
+const dCS = eco.fAS * kA * CA - kS * CS;
+      
+CL += dCL * dt;
+CA += dCA * dt;
+CS += dCS * dt;
+      
+CL = Math.max(0, CL);
+CA = Math.max(0, CA);
+CS = Math.max(0, CS);
+}
+    
+const totalC = CL + CA + CS;
+const slowFrac = (CS / totalC) * 100;
+const Rh = kL * CL + kA * CA + kS * CS;
+const MRT = totalC / litterfall; // Mean residence time
+    
+document.getElementById('total-soil-c').textContent = totalC.toFixed(1);
+document.getElementById('slow-fraction').textContent = slowFrac.toFixed(0);
+document.getElementById('rh-result').textContent = Rh.toFixed(2);
+document.getElementById('mrt-result').textContent = MRT.toFixed(0);
+    
+updateChart(timeData, litterData, activeData, slowData, totalData);
+}
+  
+function updateChart(time, litter, active, slow, total) {
+const option = {
+title: {
+text: 'Soil Carbon Pool Dynamics',
+left: 'center'
+},
+tooltip: {
+trigger: 'axis',
+axisPointer: { type: 'cross' }
+},
+legend: {
+data: ['Litter', 'Active SOM', 'Slow SOM', 'Total'],
+top: 30
+},
+grid: {
+left: 80,
+right: 40,
+top: 80,
+bottom: 60
+},
+xAxis: {
+type: 'value',
+name: 'Time (years)',
+nameLocation: 'middle',
+nameGap: 30
+},
+yAxis: {
+type: 'value',
+name: 'Carbon (kg C/m²)',
+nameLocation: 'middle',
+nameGap: 50
+},
+series: [
+{
+name: 'Litter',
+type: 'line',
+data: time.map((t, i) => [t, litter[i]]),
+lineStyle: { color: '#F39C12', width: 2 },
+showSymbol: false
+},
+{
+name: 'Active SOM',
+type: 'line',
+data: time.map((t, i) => [t, active[i]]),
+lineStyle: { color: '#E67E22', width: 2 },
+showSymbol: false
+},
+{
+name: 'Slow SOM',
+type: 'line',
+data: time.map((t, i) => [t, slow[i]]),
+lineStyle: { color: '#8B4513', width: 2 },
+showSymbol: false
+},
+{
+name: 'Total',
+type: 'line',
+data: time.map((t, i) => [t, total[i]]),
+lineStyle: { color: '#2C3E50', width: 3, type: 'dashed' },
+showSymbol: false
+}
+]
+};
+    
+chart.setOption(option);
+}
+  
+document.getElementById('ecosystem-decomp').addEventListener('change', (e) => {
+ecoType = e.target.value;
+temperature = ecosystems[ecoType].temp;
+document.getElementById('temp-decomp-slider').value = temperature;
+document.getElementById('temp-decomp-value').textContent = temperature;
+});
+  
+document.getElementById('litterfall-slider').addEventListener('input', (e) => {
+litterfall = parseFloat(e.target.value);
+document.getElementById('litterfall-value').textContent = litterfall.toFixed(2);
+});
+  
+document.getElementById('temp-decomp-slider').addEventListener('input', (e) => {
+temperature = parseFloat(e.target.value);
+document.getElementById('temp-decomp-value').textContent = temperature;
+});
+  
+document.getElementById('moisture-slider').addEventListener('input', (e) => {
+moisture = parseFloat(e.target.value);
+document.getElementById('moisture-value').textContent = moisture.toFixed(2);
+});
+  
+document.getElementById('years-decomp-slider').addEventListener('input', (e) => {
+years = parseInt(e.target.value);
+document.getElementById('years-decomp-value').textContent = years;
+});
+  
+document.getElementById('run-decomp-sim').addEventListener('click', () => {
+runDecompSim();
+});
+  
+runDecompSim();
+  
+window.addEventListener('resize', () => chart.resize());
+})();
+</script>
+<p><strong>Try this:</strong></p>
+<ul>
+<li><strong>Tropical forest:</strong> High temperature → fast decomposition → low soil carbon accumulation</li>
+<li><strong>Boreal forest:</strong> Low temperature → slow decomposition → huge soil carbon stores (peat)</li>
+<li><strong>Desert:</strong> Dry conditions (low moisture) → very slow decomposition</li>
+<li><strong>Increase temperature:</strong> Speeds all decay rates → reduces equilibrium carbon</li>
+<li><strong>Increase litterfall:</strong> More inputs → higher steady-state carbon</li>
+<li>Notice: Slow SOM takes centuries to equilibrate, dominates total carbon</li>
+</ul>
+<p><strong>Key insight:</strong> Cold/wet environments accumulate soil carbon because decomposition is slower than production. This is why peatlands and permafrost soils are massive carbon stores.</p>
+<hr>
+<h2 id="interpretation" class="anchored">6. Interpretation</h2>
+<h3 id="global-soil-carbon-distribution" class="anchored">Global Soil Carbon Distribution</h3>
+<p><strong>Largest soil carbon stores:</strong></p>
+<ol type="1">
+<li><strong>Boreal forests &amp; tundra:</strong> Cold → slow decomposition</li>
+<li><strong>Peatlands:</strong> Waterlogged → anaerobic, very slow decay</li>
+<li><strong>Grasslands:</strong> Deep roots, moderate climate</li>
+</ol>
+<p><strong>Smallest stores:</strong></p>
+<ol type="1">
+<li><strong>Tropical forests:</strong> Fast turnover (hot, wet)</li>
+<li><strong>Deserts:</strong> Low productivity + dry conditions</li>
+</ol>
+<p><strong>Paradox:</strong> Tropical forests have low soil C despite high productivity (fast decomposition balances high input).</p>
+<h3 id="climate-change-feedbacks" class="anchored">Climate Change Feedbacks</h3>
+<p><strong>Warming accelerates decomposition:</strong></p>
+<p>If temperature increases 5°C and Q₁₀ = 2:</p>
+<p><span class="math display">k_{\text{new}} = k_{\text{old}} \times 2^{5/10} = k_{\text{old}} \times 1.41</span></p>
+<p><strong>41% faster decomposition</strong> → releases soil carbon → positive feedback.</p>
+<p><strong>Permafrost thaw:</strong></p>
+<ul>
+<li>Frozen organic matter begins decomposing</li>
+<li>Releases CO₂ and CH₄</li>
+<li>Major climate concern (~1000 Pg C in permafrost)</li>
+</ul>
+<h3 id="soil-carbon-sequestration" class="anchored">Soil Carbon Sequestration</h3>
+<p><strong>Practices to increase soil C:</strong></p>
+<ol type="1">
+<li><strong>No-till agriculture:</strong> Reduces disturbance → less decomposition</li>
+<li><strong>Cover crops:</strong> More inputs to soil</li>
+<li><strong>Biochar:</strong> Very slow decay (<span class="math inline">k \approx 0.0001</span> year⁻¹)</li>
+<li><strong>Organic amendments:</strong> Compost, manure</li>
+</ol>
+<p><strong>Saturation:</strong> Soil can only hold so much carbon (determined by clay content, climate).</p>
+<hr>
+<h2 id="what-could-go-wrong" class="anchored">7. What Could Go Wrong?</h2>
+<h3 id="assuming-single-decay-rate" class="anchored">Assuming Single Decay Rate</h3>
+<p>Real litter has <strong>multiple components:</strong> - Soluble sugars: <span class="math inline">k \approx 10</span> year⁻¹ (days to decompose) - Cellulose: <span class="math inline">k \approx 1</span> year⁻¹ (months) - Lignin: <span class="math inline">k \approx 0.1</span> year⁻¹ (years)</p>
+<p><strong>Better model:</strong> Multiple litter pools with different decay rates.</p>
+<h3 id="ignoring-priming-effects" class="anchored">Ignoring Priming Effects</h3>
+<p><strong>Priming:</strong> Fresh litter addition stimulates decomposition of old SOM.</p>
+<p><strong>Mechanism:</strong> New carbon provides energy for microbes → they also decompose stable SOM.</p>
+<p><strong>Effect:</strong> Non-linear interactions between pools.</p>
+<h3 id="constant-transfer-fractions" class="anchored">Constant Transfer Fractions</h3>
+<p>Real <span class="math inline">f_{LA}</span>, <span class="math inline">f_{AS}</span> vary with: - <strong>Litter quality:</strong> High lignin → less transfer to SOM - <strong>Soil clay content:</strong> More clay → more stabilization - <strong>Oxygen availability:</strong> Anaerobic → more SOM formation</p>
+<h3 id="neglecting-nutrient-limitation" class="anchored">Neglecting Nutrient Limitation</h3>
+<p>Decomposition requires <strong>nitrogen</strong> (microbes need C:N ~10:1).</p>
+<p><strong>Low N litter</strong> (wood, C:N &gt; 100): - Slow decomposition - Microbes immobilize N from soil - Net N immobilization</p>
+<p><strong>High N litter</strong> (legumes, C:N &lt; 20): - Fast decomposition - Net N mineralization</p>
+<p><strong>Our model is carbon-only.</strong> Full model couples C and N cycles.</p>
+<hr>
+<h2 id="extension-century-model" class="anchored">8. Extension: Century Model</h2>
+<p>The <strong>Century model</strong> (Parton et al., 1987) is the classic soil C model:</p>
+<p><strong>Five pools:</strong></p>
+<ol type="1">
+<li>Structural litter (slow decay)</li>
+<li>Metabolic litter (fast decay)</li>
+<li>Active SOM (fast)</li>
+<li>Slow SOM (medium)</li>
+<li>Passive SOM (very slow)</li>
+</ol>
+<p><strong>Climate modifiers:</strong></p>
+<ul>
+<li>Temperature (Q₁₀)</li>
+<li>Moisture (optimal curve)</li>
+<li>Soil texture (clay slows decay)</li>
+</ul>
+<p><strong>Lignin effects:</strong></p>
+<ul>
+<li>High lignin → more to structural litter</li>
+<li>Affects decay rates</li>
+</ul>
+<p><strong>Widely used</strong> in ecosystem models (CASA, TEM, BIOME-BGC).</p>
+<hr>
+<h2 id="math-refresher-first-order-decay" class="anchored">9. Math Refresher: First-Order Decay</h2>
+<h3 id="general-solution" class="anchored">General Solution</h3>
+<p>For <span class="math inline">\frac{dC}{dt} = I - kC</span> with constant input <span class="math inline">I</span>:</p>
+<p><strong>Steady state:</strong></p>
+<p><span class="math display">C^* = \frac{I}{k}</span></p>
+<p><strong>Approach to steady state:</strong></p>
+<p><span class="math display">C(t) = C^* + (C_0 - C^*) e^{-kt}</span></p>
+<p>Where <span class="math inline">C_0</span> is initial value.</p>
+<p><strong>Time to 95% of equilibrium:</strong></p>
+<p><span class="math display">t_{95} = \frac{-\ln(0.05)}{k} = \frac{3}{k}</span></p>
+<p><strong>Example:</strong> If <span class="math inline">k = 0.1</span> year⁻¹:</p>
+<p><span class="math display">t_{95} = \frac{3}{0.1} = 30 \text{ years}</span></p>
+<p>Takes <strong>30 years</strong> to reach 95% of equilibrium.</p>
+<p><strong>For slow pool</strong> (<span class="math inline">k = 0.005</span> year⁻¹):</p>
+<p><span class="math display">t_{95} = \frac{3}{0.005} = 600 \text{ years}</span></p>
+<p>This is why soil carbon responds slowly to land use change.</p>
+<hr>
+<h2 id="summary" class="anchored">Summary</h2>
+<ul>
+<li><strong>Decomposition</strong> converts dead organic matter to CO₂ via heterotrophic respiration</li>
+<li><strong>Three pools:</strong> Litter (fast, τ ~ 1 year), Active SOM (medium, τ ~ 10 years), Slow SOM (slow, τ ~ 100+ years)</li>
+<li><strong>First-order decay:</strong> <span class="math inline">dC/dt = I - kC</span>, steady state <span class="math inline">C^* = I/k</span></li>
+<li><strong>Temperature control:</strong> Q₁₀ rule, decomposition doubles per 10°C</li>
+<li><strong>Moisture optimum:</strong> Too dry or too wet slows decomposition</li>
+<li>Slow pool dominates total soil carbon (long turnover time)</li>
+<li><strong>Mean residence time:</strong> Total C / Input rate</li>
+<li><strong>NEP = NPP - R_h</strong> determines if ecosystem is carbon sink or source</li>
+<li>Cold/wet environments accumulate large soil carbon stores</li>
+<li>Climate warming accelerates decomposition → carbon release</li>
+</ul>
+<hr>
+
+
+<footer class="wayward-footer">
+  <div class="wayward-footer__inner">
+    <div class="wayward-footer__brand">
+      <div class="wayward-footer__logo">WaywardHouse<span>.</span></div>
+      <p>Understanding how place, economy, and environment interact through analysis, modelling, and open tools.</p>
+    </div>
+
+    <nav class="wayward-footer__group" aria-labelledby="footer-reading">
+      <h2 id="footer-reading" class="anchored">Reading</h2>
+      <a href="https://wayward.house/articles/">Articles</a>
+      <a href="https://wayward.house/learn/">Library</a>
+      <a href="https://wayward.house/archive.html">Archive</a>
+      <a href="https://wayward.house/start-here.html">Choose Your Path</a>
+    </nav>
+
+    <nav class="wayward-footer__group" aria-labelledby="footer-site">
+      <h2 id="footer-site" class="anchored">Site</h2>
+      <a href="https://wayward.house/start-here.html">Choose Your Path</a>
+      <a href="https://wayward.house/about.html">About</a>
+      <a href="https://wayward.house/contact.html">Contact</a>
+    </nav>
+
+    <nav class="wayward-footer__group" aria-labelledby="footer-resources">
+      <h2 id="footer-resources" class="anchored">Resources</h2>
+      <a href="https://wayward.house/topics/">All Topics</a>
+      <a href="https://wayward.house/privacy.html">Privacy Policy</a>
+      <a href="https://wayward.house/terms.html">Terms of Use</a>
+    </nav>
+  </div>
+</footer>
+
+<script type="module" src="../assets/dist/main.js"></script>
+<script type="module" src="../assets/js/core.js"></script>
+<script id="quarto-html-after-body" type="application/javascript">
+  window.document.addEventListener("DOMContentLoaded", function (event) {
+    const tabsets =  window.document.querySelectorAll(".panel-tabset-tabby")
+    tabsets.forEach(function(tabset) {
+      const tabby = new Tabby('#' + tabset.id);
+    });
+    const icon = "";
+    const anchorJS = new window.AnchorJS();
+    anchorJS.options = {
+      placement: 'right',
+      icon: icon
+    };
+    anchorJS.add('.anchored');
+    const isCodeAnnotation = (el) => {
+      for (const clz of el.classList) {
+        if (clz.startsWith('code-annotation-')) {                     
+          return true;
+        }
+      }
+      return false;
+    }
+    const onCopySuccess = function(e) {
+      // button target
+      const button = e.trigger;
+      // don't keep focus
+      button.blur();
+      // flash "checked"
+      button.classList.add('code-copy-button-checked');
+      var currentTitle = button.getAttribute("title");
+      button.setAttribute("title", "Copied!");
+      let tooltip;
+      if (window.bootstrap) {
+        button.setAttribute("data-bs-toggle", "tooltip");
+        button.setAttribute("data-bs-placement", "left");
+        button.setAttribute("data-bs-title", "Copied!");
+        tooltip = new bootstrap.Tooltip(button, 
+          { trigger: "manual", 
+            customClass: "code-copy-button-tooltip",
+            offset: [0, -8]});
+        tooltip.show();    
+      }
+      setTimeout(function() {
+        if (tooltip) {
+          tooltip.hide();
+          button.removeAttribute("data-bs-title");
+          button.removeAttribute("data-bs-toggle");
+          button.removeAttribute("data-bs-placement");
+        }
+        button.setAttribute("title", currentTitle);
+        button.classList.remove('code-copy-button-checked');
+      }, 1000);
+      // clear code selection
+      e.clearSelection();
+    }
+    const getTextToCopy = function(trigger) {
+      const outerScaffold = trigger.parentElement.cloneNode(true);
+      const codeEl = outerScaffold.querySelector('code');
+      for (const childEl of codeEl.children) {
+        if (isCodeAnnotation(childEl)) {
+          childEl.remove();
+        }
+      }
+      return codeEl.innerText;
+    }
+    const clipboard = new window.ClipboardJS('.code-copy-button:not([data-in-quarto-modal])', {
+      text: getTextToCopy
+    });
+    clipboard.on('success', onCopySuccess);
+    if (window.document.getElementById('quarto-embedded-source-code-modal')) {
+      const clipboardModal = new window.ClipboardJS('.code-copy-button[data-in-quarto-modal]', {
+        text: getTextToCopy,
+        container: window.document.getElementById('quarto-embedded-source-code-modal')
+      });
+      clipboardModal.on('success', onCopySuccess);
+    }
+      var localhostRegex = new RegExp(/^(?:http|https):\/\/localhost\:?[0-9]*\//);
+      var mailtoRegex = new RegExp(/^mailto:/);
+        var filterRegex = new RegExp('/' + window.location.host + '/');
+      var isInternal = (href) => {
+          return filterRegex.test(href) || localhostRegex.test(href) || mailtoRegex.test(href);
+      }
+      // Inspect non-navigation links and adorn them if external
+     var links = window.document.querySelectorAll('a[href]:not(.nav-link):not(.navbar-brand):not(.toc-action):not(.sidebar-link):not(.sidebar-item-toggle):not(.pagination-link):not(.no-external):not([aria-hidden]):not(.dropdown-item):not(.quarto-navigation-tool):not(.about-link)');
+      for (var i=0; i<links.length; i++) {
+        const link = links[i];
+        if (!isInternal(link.href)) {
+          // undo the damage that might have been done by quarto-nav.js in the case of
+          // links that we want to consider external
+          if (link.dataset.originalHref !== undefined) {
+            link.href = link.dataset.originalHref;
+          }
+        }
+      }
+    function tippyHover(el, contentFn, onTriggerFn, onUntriggerFn) {
+      const config = {
+        allowHTML: true,
+        maxWidth: 500,
+        delay: 100,
+        arrow: false,
+        appendTo: function(el) {
+            return el.parentElement;
+        },
+        interactive: true,
+        interactiveBorder: 10,
+        theme: 'light-border',
+        placement: 'bottom-start',
+      };
+      if (contentFn) {
+        config.content = contentFn;
+      }
+      if (onTriggerFn) {
+        config.onTrigger = onTriggerFn;
+      }
+      if (onUntriggerFn) {
+        config.onUntrigger = onUntriggerFn;
+      }
+      window.tippy(el, config); 
+    }
+    const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+    for (var i=0; i<noterefs.length; i++) {
+      const ref = noterefs[i];
+      tippyHover(ref, function() {
+        // use id or data attribute instead here
+        let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+        try { href = new URL(href).hash; } catch {}
+        const id = href.replace(/^#\/?/, "");
+        const note = window.document.getElementById(id);
+        if (note) {
+          return note.innerHTML;
+        } else {
+          return "";
+        }
+      });
+    }
+    const xrefs = window.document.querySelectorAll('a.quarto-xref');
+    const processXRef = (id, note) => {
+      // Strip column container classes
+      const stripColumnClz = (el) => {
+        el.classList.remove("page-full", "page-columns");
+        if (el.children) {
+          for (const child of el.children) {
+            stripColumnClz(child);
+          }
+        }
+      }
+      stripColumnClz(note)
+      if (id === null || id.startsWith('sec-')) {
+        // Special case sections, only their first couple elements
+        const container = document.createElement("div");
+        if (note.children && note.children.length > 2) {
+          container.appendChild(note.children[0].cloneNode(true));
+          for (let i = 1; i < note.children.length; i++) {
+            const child = note.children[i];
+            if (child.tagName === "P" && child.innerText === "") {
+              continue;
+            } else {
+              container.appendChild(child.cloneNode(true));
+              break;
+            }
+          }
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(container);
+          }
+          return container.innerHTML
+        } else {
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(note);
+          }
+          return note.innerHTML;
+        }
+      } else {
+        // Remove any anchor links if they are present
+        const anchorLink = note.querySelector('a.anchorjs-link');
+        if (anchorLink) {
+          anchorLink.remove();
+        }
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(note);
+        }
+        if (note.classList.contains("callout")) {
+          return note.outerHTML;
+        } else {
+          return note.innerHTML;
+        }
+      }
+    }
+    for (var i=0; i<xrefs.length; i++) {
+      const xref = xrefs[i];
+      tippyHover(xref, undefined, function(instance) {
+        instance.disable();
+        let url = xref.getAttribute('href');
+        let hash = undefined; 
+        if (url.startsWith('#')) {
+          hash = url;
+        } else {
+          try { hash = new URL(url).hash; } catch {}
+        }
+        if (hash) {
+          const id = hash.replace(/^#\/?/, "");
+          const note = window.document.getElementById(id);
+          if (note !== null) {
+            try {
+              const html = processXRef(id, note.cloneNode(true));
+              instance.setContent(html);
+            } finally {
+              instance.enable();
+              instance.show();
+            }
+          } else {
+            // See if we can fetch this
+            fetch(url.split('#')[0])
+            .then(res => res.text())
+            .then(html => {
+              const parser = new DOMParser();
+              const htmlDoc = parser.parseFromString(html, "text/html");
+              const note = htmlDoc.getElementById(id);
+              if (note !== null) {
+                const html = processXRef(id, note);
+                instance.setContent(html);
+              } 
+            }).finally(() => {
+              instance.enable();
+              instance.show();
+            });
+          }
+        } else {
+          // See if we can fetch a full url (with no hash to target)
+          // This is a special case and we should probably do some content thinning / targeting
+          fetch(url)
+          .then(res => res.text())
+          .then(html => {
+            const parser = new DOMParser();
+            const htmlDoc = parser.parseFromString(html, "text/html");
+            const note = htmlDoc.querySelector('main.content');
+            if (note !== null) {
+              // This should only happen for chapter cross references
+              // (since there is no id in the URL)
+              // remove the first header
+              if (note.children.length > 0 && note.children[0].tagName === "HEADER") {
+                note.children[0].remove();
+              }
+              const html = processXRef(null, note);
+              instance.setContent(html);
+            } 
+          }).finally(() => {
+            instance.enable();
+            instance.show();
+          });
+        }
+      }, function(instance) {
+      });
+    }
+        let selectedAnnoteEl;
+        const selectorForAnnotation = ( cell, annotation) => {
+          let cellAttr = 'data-code-cell="' + cell + '"';
+          let lineAttr = 'data-code-annotation="' +  annotation + '"';
+          const selector = 'span[' + cellAttr + '][' + lineAttr + ']';
+          return selector;
+        }
+        const selectCodeLines = (annoteEl) => {
+          const doc = window.document;
+          const targetCell = annoteEl.getAttribute("data-target-cell");
+          const targetAnnotation = annoteEl.getAttribute("data-target-annotation");
+          const annoteSpan = window.document.querySelector(selectorForAnnotation(targetCell, targetAnnotation));
+          const lines = annoteSpan.getAttribute("data-code-lines").split(",");
+          const lineIds = lines.map((line) => {
+            return targetCell + "-" + line;
+          })
+          let top = null;
+          let height = null;
+          let parent = null;
+          if (lineIds.length > 0) {
+              //compute the position of the single el (top and bottom and make a div)
+              const el = window.document.getElementById(lineIds[0]);
+              top = el.offsetTop;
+              height = el.offsetHeight;
+              parent = el.parentElement.parentElement;
+            if (lineIds.length > 1) {
+              const lastEl = window.document.getElementById(lineIds[lineIds.length - 1]);
+              const bottom = lastEl.offsetTop + lastEl.offsetHeight;
+              height = bottom - top;
+            }
+            if (top !== null && height !== null && parent !== null) {
+              // cook up a div (if necessary) and position it 
+              let div = window.document.getElementById("code-annotation-line-highlight");
+              if (div === null) {
+                div = window.document.createElement("div");
+                div.setAttribute("id", "code-annotation-line-highlight");
+                div.style.position = 'absolute';
+                parent.appendChild(div);
+              }
+              div.style.top = top - 2 + "px";
+              div.style.height = height + 4 + "px";
+              div.style.left = 0;
+              let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
+              if (gutterDiv === null) {
+                gutterDiv = window.document.createElement("div");
+                gutterDiv.setAttribute("id", "code-annotation-line-highlight-gutter");
+                gutterDiv.style.position = 'absolute';
+                const codeCell = window.document.getElementById(targetCell);
+                const gutter = codeCell.querySelector('.code-annotation-gutter');
+                gutter.appendChild(gutterDiv);
+              }
+              gutterDiv.style.top = top - 2 + "px";
+              gutterDiv.style.height = height + 4 + "px";
+            }
+            selectedAnnoteEl = annoteEl;
+          }
+        };
+        const unselectCodeLines = () => {
+          const elementsIds = ["code-annotation-line-highlight", "code-annotation-line-highlight-gutter"];
+          elementsIds.forEach((elId) => {
+            const div = window.document.getElementById(elId);
+            if (div) {
+              div.remove();
+            }
+          });
+          selectedAnnoteEl = undefined;
+        };
+          // Handle positioning of the toggle
+      window.addEventListener(
+        "resize",
+        throttle(() => {
+          elRect = undefined;
+          if (selectedAnnoteEl) {
+            selectCodeLines(selectedAnnoteEl);
+          }
+        }, 10)
+      );
+      function throttle(fn, ms) {
+      let throttle = false;
+      let timer;
+        return (...args) => {
+          if(!throttle) { // first call gets through
+              fn.apply(this, args);
+              throttle = true;
+          } else { // all the others get throttled
+              if(timer) clearTimeout(timer); // cancel #2
+              timer = setTimeout(() => {
+                fn.apply(this, args);
+                timer = throttle = false;
+              }, ms);
+          }
+        };
+      }
+        // Attach click handler to the DT
+        const annoteDls = window.document.querySelectorAll('dt[data-target-cell]');
+        for (const annoteDlNode of annoteDls) {
+          annoteDlNode.addEventListener('click', (event) => {
+            const clickedEl = event.target;
+            if (clickedEl !== selectedAnnoteEl) {
+              unselectCodeLines();
+              const activeEl = window.document.querySelector('dt[data-target-cell].code-annotation-active');
+              if (activeEl) {
+                activeEl.classList.remove('code-annotation-active');
+              }
+              selectCodeLines(clickedEl);
+              clickedEl.classList.add('code-annotation-active');
+            } else {
+              // Unselect the line
+              unselectCodeLines();
+              clickedEl.classList.remove('code-annotation-active');
+            }
+          });
+        }
+    const findCites = (el) => {
+      const parentEl = el.parentElement;
+      if (parentEl) {
+        const cites = parentEl.dataset.cites;
+        if (cites) {
+          return {
+            el,
+            cites: cites.split(' ')
+          };
+        } else {
+          return findCites(el.parentElement)
+        }
+      } else {
+        return undefined;
+      }
+    };
+    var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+    for (var i=0; i<bibliorefs.length; i++) {
+      const ref = bibliorefs[i];
+      const citeInfo = findCites(ref);
+      if (citeInfo) {
+        tippyHover(citeInfo.el, function() {
+          var popup = window.document.createElement('div');
+          citeInfo.cites.forEach(function(cite) {
+            var citeDiv = window.document.createElement('div');
+            citeDiv.classList.add('hanging-indent');
+            citeDiv.classList.add('csl-entry');
+            var biblioDiv = window.document.getElementById('ref-' + cite);
+            if (biblioDiv) {
+              citeDiv.innerHTML = biblioDiv.innerHTML;
+            }
+            popup.appendChild(citeDiv);
+          });
+          return popup.innerHTML;
+        });
+      }
+    }
+  });
+  </script>
+
+
+
+
+</body></html>
