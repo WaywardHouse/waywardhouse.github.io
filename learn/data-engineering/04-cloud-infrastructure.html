@@ -1,0 +1,1628 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
+
+<meta charset="utf-8">
+<meta name="generator" content="quarto-1.9.36">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+
+
+<title>5&nbsp; Cloud Infrastructure – Data Engineering for Spatial Systems</title>
+<style>
+/* Default styles provided by pandoc.
+** See https://pandoc.org/MANUAL.html#variables-for-html for config info.
+*/
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: min(4vw, 1.5em);}
+div.column{flex: auto; overflow-x: auto;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+  width: 0.8em;
+  margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
+  vertical-align: middle;
+}
+/* CSS for syntax highlighting */
+html { -webkit-text-size-adjust: 100%; }
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+  { counter-reset: source-line 0; }
+pre.numberSource code > span
+  { position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+  { content: counter(source-line);
+    position: relative; left: -1em; text-align: right; vertical-align: baseline;
+    border: none; display: inline-block;
+    -webkit-touch-callout: none; -webkit-user-select: none;
+    -khtml-user-select: none; -moz-user-select: none;
+    -ms-user-select: none; user-select: none;
+    padding: 0 4px; width: 4em;
+  }
+pre.numberSource { margin-left: 3em;  padding-left: 4px; }
+div.sourceCode
+  {   }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
+</style>
+
+
+<script src="site_libs/quarto-nav/quarto-nav.js"></script>
+<script src="site_libs/quarto-nav/headroom.min.js"></script>
+<script src="site_libs/clipboard/clipboard.min.js"></script>
+<script src="site_libs/quarto-search/autocomplete.umd.js"></script>
+<script src="site_libs/quarto-search/fuse.min.js"></script>
+<script src="site_libs/quarto-search/quarto-search.js"></script>
+<meta name="quarto:offset" content="./">
+<link href="./05-streaming-and-realtime.html" rel="next">
+<link href="./03-pipelines-and-etl.html" rel="prev">
+<script src="site_libs/quarto-html/quarto.js" type="module"></script>
+<script src="site_libs/quarto-html/tabsets/tabsets.js" type="module"></script>
+<script src="site_libs/quarto-html/popper.min.js"></script>
+<script src="site_libs/quarto-html/tippy.umd.min.js"></script>
+<script src="site_libs/quarto-html/anchor.min.js"></script>
+<link href="site_libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="site_libs/quarto-html/quarto-syntax-highlighting-845c23b38eaddc0f92fda52bfe77a8c8.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<script src="site_libs/bootstrap/bootstrap.min.js"></script>
+<link href="site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="site_libs/bootstrap/bootstrap-56762b18f51ba8401515c38252781a5a.min.css" rel="stylesheet" append-hash="true" id="quarto-bootstrap" data-mode="light">
+<script id="quarto-search-options" type="application/json">{
+  "location": "sidebar",
+  "copy-button": false,
+  "collapse-after": 3,
+  "panel-placement": "start",
+  "type": "textbox",
+  "limit": 50,
+  "keyboard-shortcut": [
+    "f",
+    "/",
+    "s"
+  ],
+  "show-item-context": false,
+  "language": {
+    "search-no-results-text": "No results",
+    "search-matching-documents-text": "matching documents",
+    "search-copy-link-title": "Copy link to search",
+    "search-hide-matches-text": "Hide additional matches",
+    "search-more-match-text": "more match in this document",
+    "search-more-matches-text": "more matches in this document",
+    "search-clear-button-title": "Clear",
+    "search-text-placeholder": "",
+    "search-detached-cancel-button-title": "Cancel",
+    "search-submit-button-title": "Submit",
+    "search-label": "Search"
+  }
+}</script>
+<style>html{ scroll-behavior: smooth; }</style>
+<script>
+  (function () {
+    document.documentElement.dataset.theme = 'light';
+    document.documentElement.dataset.brand = 'wayward-book';
+    try {
+      localStorage.removeItem('theme');
+    } catch (err) {
+      void err;
+    }
+  })();
+</script>
+
+<script>
+  document.addEventListener('DOMContentLoaded', function () {
+    var body = document.body;
+    var sidebar = document.getElementById('quarto-sidebar');
+    if (!sidebar) return;
+
+    body.classList.add('wayward-book-shell');
+
+    if (!document.querySelector('.wayward-book-header')) {
+      var header = document.createElement('header');
+      header.className = 'wayward-book-header';
+      header.innerHTML = [
+        '<div class="wayward-book-header__inner">',
+        '  <a class="wayward-book-brand" href="/" aria-label="Wayward House home">',
+        '    <span class="wayward-book-brand__mark">WaywardHouse</span>',
+        '    <span class="wayward-book-brand__dot" aria-hidden="true">.</span>',
+        '  </a>',
+        '  <nav class="wayward-book-nav" aria-label="Primary">',
+        '    <a href="/articles/" data-nav="/articles/">Articles</a>',
+        '    <a href="/learn/" data-nav="/learn/">Learn</a>',
+        '    <a href="/about.html" data-nav="/about/">About</a>',
+        '  </nav>',
+        '  <button class="wayward-book-menu-toggle" type="button" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle chapter navigation">',
+        '    <span aria-hidden="true">Menu</span>',
+        '  </button>',
+        '</div>'
+      ].join('');
+      body.prepend(header);
+    }
+
+    var pathname = window.location.pathname || '/';
+    if (pathname === '/' || pathname === '/learn/' || pathname.endsWith('/index.html')) {
+      body.classList.add('page-home');
+    }
+    if (pathname.indexOf('/learn/') === 0) {
+      body.classList.add('page-learn');
+    }
+
+    var storageKey = 'wayward-data-engineering-sidebar';
+    var media = window.matchMedia('(min-width: 1200px)');
+    var glass = document.getElementById('quarto-sidebar-glass');
+    var toggles = Array.from(document.querySelectorAll('[data-bs-target=".quarto-sidebar-collapse-item"]'));
+
+    function setDesktopState(open) {
+      body.classList.toggle('book-sidebar-collapsed', !open);
+      body.classList.toggle('book-sidebar-open', open);
+      try {
+        localStorage.setItem(storageKey, open ? 'open' : 'collapsed');
+      } catch (err) {
+        void err;
+      }
+    }
+
+    function applyDesktopDefault() {
+      if (!media.matches) {
+        body.classList.remove('book-sidebar-collapsed', 'book-sidebar-open');
+        return;
+      }
+
+      var stored = null;
+      try {
+        stored = localStorage.getItem(storageKey);
+      } catch (err) {
+        void err;
+      }
+
+      setDesktopState(stored === 'collapsed' ? false : true);
+    }
+
+    toggles.forEach(function (toggle) {
+      toggle.addEventListener('click', function (event) {
+        if (!media.matches) return;
+        event.preventDefault();
+        event.stopPropagation();
+        setDesktopState(body.classList.contains('book-sidebar-collapsed'));
+      });
+    });
+
+    if (glass) {
+      glass.addEventListener('click', function (event) {
+        if (!media.matches) return;
+        event.preventDefault();
+        setDesktopState(false);
+      });
+    }
+
+    if (media.addEventListener) {
+      media.addEventListener('change', applyDesktopDefault);
+    } else if (media.addListener) {
+      media.addListener(applyDesktopDefault);
+    }
+
+    applyDesktopDefault();
+
+    var siteHomeHref = '/';
+    var learnHref = '/learn/';
+    var titleLink = sidebar.querySelector('.sidebar-title a');
+    if (titleLink) titleLink.setAttribute('href', siteHomeHref);
+
+    var toolLinks = Array.from(sidebar.querySelectorAll('.quarto-navigation-tool'));
+    if (toolLinks[0]) toolLinks[0].setAttribute('href', siteHomeHref);
+    if (toolLinks[1]) toolLinks[1].setAttribute('href', learnHref);
+
+    var firstSidebarLink = sidebar.querySelector('.sidebar-item a.sidebar-link');
+    if (firstSidebarLink) firstSidebarLink.setAttribute('href', siteHomeHref);
+
+    var themeToggle = document.querySelector('.wayward-book-theme-toggle');
+    if (themeToggle) themeToggle.remove();
+
+    document.querySelectorAll('.wayward-book-nav a[data-nav]').forEach(function (link) {
+      var target = link.getAttribute('data-nav');
+      if (!target) return;
+      link.classList.remove('is-active');
+      if (pathname === target || pathname.indexOf(target) === 0) {
+        link.classList.add('is-active');
+      }
+    });
+
+    var footer = document.querySelector('footer.footer');
+    if (footer && !footer.classList.contains('wayward-book-footer')) {
+      footer.className = 'wayward-book-footer';
+      footer.innerHTML = [
+        '<div class="wayward-book-footer__inner">',
+        '  <div class="wayward-book-footer__brand">',
+        '    <div class="wayward-book-footer__logo">WaywardHouse<span>.</span></div>',
+        '    <p>Understanding how place, economy, and environment interact through analysis, modelling, and open tools.</p>',
+        '  </div>',
+        '  <nav class="wayward-book-footer__group" aria-labelledby="book-footer-reading">',
+        '    <h2 id="book-footer-reading">Reading</h2>',
+        '    <a href="https://wayward.house/articles/">Articles</a>',
+        '    <a href="https://wayward.house/learn/">Library</a>',
+        '    <a href="https://wayward.house/archive.html">Archive</a>',
+        '  </nav>',
+        '  <nav class="wayward-book-footer__group" aria-labelledby="book-footer-site">',
+        '    <h2 id="book-footer-site">Site</h2>',
+        '    <a href="https://wayward.house/start-here.html">Choose Your Path</a>',
+        '    <a href="https://wayward.house/about.html">About</a>',
+        '    <a href="https://wayward.house/contact.html">Contact</a>',
+        '  </nav>',
+        '  <nav class="wayward-book-footer__group" aria-labelledby="book-footer-resources">',
+        '    <h2 id="book-footer-resources">Resources</h2>',
+        '    <a href="https://wayward.house/topics/">All Topics</a>',
+        '    <a href="https://wayward.house/privacy.html">Privacy Policy</a>',
+        '    <a href="https://wayward.house/terms.html">Terms of Use</a>',
+        '  </nav>',
+        '</div>'
+      ].join('');
+    }
+
+    if (!document.querySelector('.back-to-top')) {
+      var button = document.createElement('button');
+      button.type = 'button';
+      button.className = 'back-to-top';
+      button.setAttribute('aria-label', 'Back to top');
+      button.innerHTML = '<span aria-hidden="true">↑</span><span>Top</span>';
+
+      var prefersReduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+      var ticking = false;
+
+      function updateBackToTop() {
+        var scrolled = window.scrollY || document.documentElement.scrollTop || 0;
+        var longPage = document.documentElement.scrollHeight > window.innerHeight * 1.5;
+        button.classList.toggle('is-visible', longPage && scrolled > Math.max(420, window.innerHeight * 0.7));
+        ticking = false;
+      }
+
+      button.addEventListener('click', function () {
+        window.scrollTo({
+          top: 0,
+          behavior: prefersReduced ? 'auto' : 'smooth'
+        });
+      });
+
+      window.addEventListener('scroll', function () {
+        if (!ticking) {
+          window.requestAnimationFrame(updateBackToTop);
+          ticking = true;
+        }
+      }, { passive: true });
+
+      window.addEventListener('resize', updateBackToTop, { passive: true });
+      body.appendChild(button);
+      updateBackToTop();
+    }
+
+  });
+</script>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:ital,wght@0,300;0,400;0,600;0,700;0,800;0,900;1,700;1,800&amp;family=Barlow:wght@300;400;500;600&amp;family=IBM+Plex+Mono:ital,wght@0,300;0,400;0,500;1,300&amp;family=Literata:ital,opsz,wght@0,7..72,300;0,7..72,400;0,7..72,500;1,7..72,300;1,7..72,400&amp;display=swap" rel="stylesheet">
+
+
+<link rel="stylesheet" href="site_libs/quarto-contrib/quarto-project/wayward-book/wayward-book.css">
+<link rel="stylesheet" href="lightbox.css">
+</head>
+
+<body class="nav-sidebar docked quarto-light">
+
+<div id="quarto-search-results"></div>
+  <header id="quarto-header" class="headroom fixed-top">
+  <nav class="quarto-secondary-nav">
+    <div class="container-fluid d-flex">
+      <button type="button" class="quarto-btn-toggle btn" data-bs-toggle="collapse" role="button" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
+        <i class="bi bi-layout-text-sidebar-reverse"></i>
+      </button>
+        <nav class="quarto-page-breadcrumbs" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="./04-cloud-infrastructure.html"><span class="chapter-number">5</span>&nbsp; <span class="chapter-title">Cloud Infrastructure</span></a></li></ol></nav>
+        <a class="flex-grow-1" role="navigation" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">      
+        </a>
+      <button type="button" class="btn quarto-search-button" aria-label="Search" onclick="window.quartoOpenSearch();">
+        <i class="bi bi-search"></i>
+      </button>
+    </div>
+  </nav>
+</header>
+<!-- content -->
+<div id="quarto-content" class="quarto-container page-columns page-rows-contents page-layout-article">
+<!-- sidebar -->
+  <nav id="quarto-sidebar" class="sidebar collapse collapse-horizontal quarto-sidebar-collapse-item sidebar-navigation docked overflow-auto">
+    <div class="pt-lg-2 mt-2 text-left sidebar-header">
+    <div class="sidebar-title mb-0 py-0">
+      <a href="./">Data Engineering for Spatial Systems</a> 
+        <div class="sidebar-tools-main tools-wide">
+    <a href="./" title="" class="quarto-navigation-tool px-1" aria-label="Wayward House"><i class="bi bi-house"></i></a>
+    <a href="./learn/" title="" class="quarto-navigation-tool px-1" aria-label="Learn"><i class="bi bi-grid"></i></a>
+    <a href="https://github.com/WaywardHouse/waywardhouse-data-engineering" title="" class="quarto-navigation-tool px-1" aria-label="Repository"><i class="bi bi-github"></i></a>
+    <a href="https://github.com/WaywardHouse/waywardhouse-data-engineering" title="Source Code" class="quarto-navigation-tool px-1" aria-label="Source Code"><i class="bi bi-github"></i></a>
+    <div class="dropdown">
+      <a href="" title="Share" id="quarto-navigation-tool-dropdown-0" class="quarto-navigation-tool dropdown-toggle px-1" data-bs-toggle="dropdown" aria-expanded="false" role="link" aria-label="Share"><i class="bi bi-share"></i></a>
+      <ul class="dropdown-menu" aria-labelledby="quarto-navigation-tool-dropdown-0">
+          <li>
+            <a class="dropdown-item sidebar-tools-main-item" href="https://twitter.com/intent/tweet?url=|url|">
+              <i class="bi bi-twitter pe-1"></i>
+            Twitter
+            </a>
+          </li>
+          <li>
+            <a class="dropdown-item sidebar-tools-main-item" href="https://www.linkedin.com/sharing/share-offsite/?url=|url|">
+              <i class="bi bi-linkedin pe-1"></i>
+            LinkedIn
+            </a>
+          </li>
+      </ul>
+    </div>
+</div>
+    </div>
+      </div>
+        <div class="mt-2 flex-shrink-0 align-items-center">
+        <div class="sidebar-search">
+        <div id="quarto-search" class="" title="Search"></div>
+        </div>
+        </div>
+    <div class="sidebar-menu-container"> 
+    <ul class="list-unstyled mt-1">
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./index.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">1</span>&nbsp; <span class="chapter-title">Data Engineering for Spatial Systems</span></span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./01-data-architecture.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">2</span>&nbsp; <span class="chapter-title">Data Architecture</span></span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./02-spatial-databases.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">3</span>&nbsp; <span class="chapter-title">Spatial Databases</span></span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./03-pipelines-and-etl.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">4</span>&nbsp; <span class="chapter-title">Pipelines and ETL</span></span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./04-cloud-infrastructure.html" class="sidebar-item-text sidebar-link active">
+ <span class="menu-text"><span class="chapter-number">5</span>&nbsp; <span class="chapter-title">Cloud Infrastructure</span></span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./05-streaming-and-realtime.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">6</span>&nbsp; <span class="chapter-title">Streaming and Realtime</span></span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./06-apis-and-access-patterns.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">7</span>&nbsp; <span class="chapter-title">APIs and Access Patterns</span></span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./07-data-quality-and-governance.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">8</span>&nbsp; <span class="chapter-title">Data Quality and Governance</span></span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./08-platform-architecture-for-ml.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">9</span>&nbsp; <span class="chapter-title">Platform Architecture for ML</span></span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./09-exercise-answers.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">10</span>&nbsp; <span class="chapter-title">Exercise Answers</span></span></a>
+  </div>
+</li>
+    </ul>
+    </div>
+</nav>
+<div id="quarto-sidebar-glass" class="quarto-sidebar-collapse-item" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item"></div>
+<!-- margin-sidebar -->
+    <div id="quarto-margin-sidebar" class="sidebar margin-sidebar">
+        <nav id="TOC" role="doc-toc" class="toc-active">
+    <h2 id="toc-title">Table of contents</h2>
+   
+  <ul>
+  <li><a href="#the-puzzle" id="toc-the-puzzle" class="nav-link active" data-scroll-target="#the-puzzle"><span class="header-section-number">5.1</span> The puzzle</a></li>
+  <li><a href="#object-storage-not-a-filesystem" id="toc-object-storage-not-a-filesystem" class="nav-link" data-scroll-target="#object-storage-not-a-filesystem"><span class="header-section-number">5.2</span> Object storage: not a filesystem</a></li>
+  <li><a href="#cloud-optimised-geotiff" id="toc-cloud-optimised-geotiff" class="nav-link" data-scroll-target="#cloud-optimised-geotiff"><span class="header-section-number">5.3</span> Cloud-Optimised GeoTIFF</a>
+  <ul class="collapse">
+  <li><a href="#internal-tiling" id="toc-internal-tiling" class="nav-link" data-scroll-target="#internal-tiling"><span class="header-section-number">5.3.1</span> Internal tiling</a></li>
+  <li><a href="#overviews" id="toc-overviews" class="nav-link" data-scroll-target="#overviews"><span class="header-section-number">5.3.2</span> Overviews</a></li>
+  <li><a href="#header-first-layout" id="toc-header-first-layout" class="nav-link" data-scroll-target="#header-first-layout"><span class="header-section-number">5.3.3</span> Header-first layout</a></li>
+  <li><a href="#gdal-vsicurl-and-vsis3" id="toc-gdal-vsicurl-and-vsis3" class="nav-link" data-scroll-target="#gdal-vsicurl-and-vsis3"><span class="header-section-number">5.3.4</span> GDAL /vsicurl/ and /vsis3/</a></li>
+  </ul></li>
+  <li><a href="#stac-making-data-discoverable" id="toc-stac-making-data-discoverable" class="nav-link" data-scroll-target="#stac-making-data-discoverable"><span class="header-section-number">5.4</span> STAC: making data discoverable</a></li>
+  <li><a href="#partitioning-raster-data" id="toc-partitioning-raster-data" class="nav-link" data-scroll-target="#partitioning-raster-data"><span class="header-section-number">5.5</span> Partitioning raster data</a></li>
+  <li><a href="#cog-range-request-efficiency-a-model" id="toc-cog-range-request-efficiency-a-model" class="nav-link" data-scroll-target="#cog-range-request-efficiency-a-model"><span class="header-section-number">5.6</span> COG range request efficiency: a model</a></li>
+  <li><a href="#exercises" id="toc-exercises" class="nav-link" data-scroll-target="#exercises"><span class="header-section-number">5.7</span> Exercises</a></li>
+  <li><a href="#build-this" id="toc-build-this" class="nav-link" data-scroll-target="#build-this"><span class="header-section-number">5.8</span> Build this</a>
+  <ul class="collapse">
+  <li><a href="#step-1-create-the-cog" id="toc-step-1-create-the-cog" class="nav-link" data-scroll-target="#step-1-create-the-cog"><span class="header-section-number">5.8.1</span> Step 1: Create the COG</a></li>
+  <li><a href="#step-2-upload-to-minio" id="toc-step-2-upload-to-minio" class="nav-link" data-scroll-target="#step-2-upload-to-minio"><span class="header-section-number">5.8.2</span> Step 2: Upload to MinIO</a></li>
+  <li><a href="#step-3-write-the-stac-item" id="toc-step-3-write-the-stac-item" class="nav-link" data-scroll-target="#step-3-write-the-stac-item"><span class="header-section-number">5.8.3</span> Step 3: Write the STAC Item</a></li>
+  </ul></li>
+  </ul>
+<div class="toc-actions"><ul><li><a href="https://github.com/WaywardHouse/waywardhouse-data-engineering/edit/main/04-cloud-infrastructure.qmd" class="toc-action"><i class="bi bi-github"></i>Edit this page</a></li><li><a href="https://github.com/WaywardHouse/waywardhouse-data-engineering/issues/new" class="toc-action"><i class="bi empty"></i>Report an issue</a></li></ul></div></nav>
+    </div>
+<!-- main -->
+<main class="content" id="quarto-document-content">
+
+<header id="title-block-header" class="quarto-title-block default">
+<div class="quarto-title">
+<h1 class="title"><span class="chapter-number">5</span>&nbsp; <span class="chapter-title">Cloud Infrastructure</span></h1>
+<p class="subtitle lead">Object storage, cloud-optimised formats, and serving raster data at scale</p>
+</div>
+
+
+
+<div class="quarto-title-meta">
+
+    
+  
+    
+  </div>
+  
+
+
+</header>
+
+
+<section id="the-puzzle" class="level2" data-number="5.1">
+<h2 data-number="5.1" class="anchored" data-anchor-id="the-puzzle"><span class="header-section-number">5.1</span> The puzzle</h2>
+<p>A team at a research institute had been building a ten-year satellite imagery archive. Landsat 8 scenes, one per cloud-free day per path-row tile, covering a large river basin. About 4,000 scenes. Each scene stored as a full GeoTIFF — one file per band, projected to UTM, no overviews, no compression. Approximately 500 MB per scene.</p>
+<p>A colleague wanted to analyse vegetation index trends over a 1 km² field site in the basin. The field site covers roughly 0.004% of a single Landsat scene footprint (185 km × 185 km ≈ 34,225 km²).</p>
+<p>To get the time series, the pipeline needed to find the relevant pixel for each scene, extract the NIR and red band values, compute the index, and plot it over time. Four thousand scenes, two bands each.</p>
+<p>The pipeline downloaded each full scene, extracted the pixel, and discarded the rest. Total data transferred: 4,000 scenes × 500 MB × 2 bands = 4 TB. Runtime on a fast university network connection: about 11 hours.</p>
+<p>The colleague who rebuilt this pipeline using Cloud-Optimised GeoTIFF downloaded 40 MB to produce the same time series. The runtime dropped to under three minutes.</p>
+<p>The difference is not a better algorithm. It is a different file layout — one that exposes the internal structure of the file to HTTP range requests, so a client can ask for exactly the bytes that cover the area of interest without downloading the rest.</p>
+<hr>
+</section>
+<section id="object-storage-not-a-filesystem" class="level2" data-number="5.2">
+<h2 data-number="5.2" class="anchored" data-anchor-id="object-storage-not-a-filesystem"><span class="header-section-number">5.2</span> Object storage: not a filesystem</h2>
+<p>Before getting to COG, it is worth being precise about what object storage is and is not. Most raster data at scale lives in object storage — S3, Google Cloud Storage, Azure Blob — and most of the assumptions engineers carry from local filesystem experience are wrong.</p>
+<p>Object storage has three primitives: <strong>buckets</strong>, <strong>objects (keys)</strong>, and <strong>byte ranges</strong>.</p>
+<p>A bucket is a flat namespace. There are no directories. A key like <code>imagery/2023/landsat8/LC09_L2SP_185033_20230615_scene.tif</code> is just a string. The slashes are not directory separators — they are characters in the key name. Some object storage UIs render them as directories for convenience, but the underlying storage has no such structure. You cannot <code>cd</code> into a path. You cannot list “all objects in a directory” without a prefix scan, which is a different operation.</p>
+<p>Objects are immutable once written. You cannot update bytes 500–600 of an existing object. You can only overwrite the whole object or create a new one. This eliminates the possibility of random writes — no patching, no appending. Formats that require in-place updates (many database file formats, some legacy GIS formats) are fundamentally incompatible with object storage.</p>
+<p><strong>HTTP range requests</strong> are the mechanism that makes cloud-native raster access possible. An HTTP GET request can include a <code>Range</code> header:</p>
+<pre><code>GET /bucket/scene.tif HTTP/1.1
+Range: bytes=12800-25600</code></pre>
+<p>The server returns only the requested byte range, not the entire object. AWS S3, GCS, and MinIO all support this. GDAL’s <code>/vsicurl/</code> virtual filesystem driver issues range requests transparently — a GDAL-aware client reading <code>/vsicurl/https://mybucket.s3.amazonaws.com/scene.tif</code> never downloads the full file unless it has to.</p>
+<p>The size of the GDAL read depends on the internal layout of the file. For a naive GeoTIFF, the pixels are stored in scanline order from top to bottom. Reading a small spatial window near the bottom of the image requires either downloading the entire file, or issuing many small range requests spanning most of the byte range. Neither is efficient.</p>
+<p><strong>MinIO</strong> is an open-source S3-compatible object server. You run it locally or on your own infrastructure. Its API is identical to AWS S3, so any code that works against MinIO works against S3 without changes. Use it for development and for deployments where you own the infrastructure.</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb2"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Start a MinIO server (development, stores data in ~/minio-data)</span></span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a><span class="ex">docker</span> run <span class="at">-p</span> 9000:9000 <span class="at">-p</span> 9001:9001 <span class="dt">\</span></span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a>    <span class="at">-v</span> ~/minio-data:/data <span class="dt">\</span></span>
+<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a>    <span class="at">-e</span> MINIO_ROOT_USER=minioadmin <span class="dt">\</span></span>
+<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a>    <span class="at">-e</span> MINIO_ROOT_PASSWORD=minioadmin <span class="dt">\</span></span>
+<span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a>    quay.io/minio/minio server /data <span class="at">--console-address</span> <span class="st">":9001"</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>The MinIO console is at http://localhost:9001. The S3 API endpoint is http://localhost:9000. Any tool that accepts an S3 endpoint URL works against it.</p>
+<hr>
+</section>
+<section id="cloud-optimised-geotiff" class="level2" data-number="5.3">
+<h2 data-number="5.3" class="anchored" data-anchor-id="cloud-optimised-geotiff"><span class="header-section-number">5.3</span> Cloud-Optimised GeoTIFF</h2>
+<p>A Cloud-Optimised GeoTIFF (COG) is a regular GeoTIFF with two structural properties added: <strong>internal tiling</strong> and <strong>overviews</strong>, arranged so that the file header contains enough information to locate any tile without reading the body.</p>
+<section id="internal-tiling" class="level3" data-number="5.3.1">
+<h3 data-number="5.3.1" class="anchored" data-anchor-id="internal-tiling"><span class="header-section-number">5.3.1</span> Internal tiling</h3>
+<p>A standard GeoTIFF stores pixels in scanlines — row by row. Reading a spatially compact window that spans many rows requires reading all the bytes between the first row of the window and the last. For a 10,000 × 10,000 pixel image, reading a 100 × 100 pixel window in the centre requires scanning through approximately half the file.</p>
+<p>An internally tiled GeoTIFF divides the image into rectangular tiles — typically 256 × 256 or 512 × 512 pixels. Each tile’s bytes are stored contiguously. The file header contains a tile offset table: for each tile, the byte offset within the file where the tile’s data begins, and the tile’s compressed size.</p>
+<p>Reading a 100 × 100 pixel window from a tiled file requires at most <code>ceil(100/tile_size)²</code> tile fetches. With 512-pixel tiles, that is 1 × 1 = 1 tile fetch — a few hundred kilobytes, not hundreds of megabytes.</p>
+</section>
+<section id="overviews" class="level3" data-number="5.3.2">
+<h3 data-number="5.3.2" class="anchored" data-anchor-id="overviews"><span class="header-section-number">5.3.2</span> Overviews</h3>
+<p>An overview (also called a pyramid level) is a downsampled version of the image stored within the same file. A Landsat scene might have overviews at 1/2, 1/4, 1/8, 1/16 of the native resolution. When a client requests a small area at low zoom, the COG driver reads from the appropriate overview level rather than from the full-resolution data. This avoids reading and downsampling millions of full-resolution pixels just to render a thumbnail.</p>
+</section>
+<section id="header-first-layout" class="level3" data-number="5.3.3">
+<h3 data-number="5.3.3" class="anchored" data-anchor-id="header-first-layout"><span class="header-section-number">5.3.3</span> Header-first layout</h3>
+<p>The critical property of a COG is that its Ghost Metadata and IFD (Image File Directory) structure — including the tile offset table and overview IFDs — is placed at the beginning of the file. A client can issue a single range request for the first few kilobytes of the file, parse the offset table, and then issue targeted range requests for exactly the tiles it needs.</p>
+<p>For a standard GeoTIFF, the IFDs can be scattered throughout the file. The client cannot know where the needed tiles are without reading large portions of the file.</p>
+<p>The GDAL COG creation driver ensures the header-first layout:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb3"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Convert a standard GeoTIFF to COG</span></span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a><span class="co"># -of COG: use the COG output driver</span></span>
+<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a><span class="co"># -co COMPRESS=DEFLATE: compress tiles (LZW and ZSTD also common)</span></span>
+<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a><span class="co"># -co TILING_SCHEME=GoogleMapsCompatible: use 256x256 tiles, EPSG:3857</span></span>
+<span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a><span class="co"># -co OVERVIEW_RESAMPLING=AVERAGE: resampling method for overviews</span></span>
+<span id="cb3-6"><a href="#cb3-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-7"><a href="#cb3-7" aria-hidden="true" tabindex="-1"></a><span class="ex">gdal_translate</span> <span class="dt">\</span></span>
+<span id="cb3-8"><a href="#cb3-8" aria-hidden="true" tabindex="-1"></a>    <span class="at">-of</span> COG <span class="dt">\</span></span>
+<span id="cb3-9"><a href="#cb3-9" aria-hidden="true" tabindex="-1"></a>    <span class="at">-co</span> COMPRESS=DEFLATE <span class="dt">\</span></span>
+<span id="cb3-10"><a href="#cb3-10" aria-hidden="true" tabindex="-1"></a>    <span class="at">-co</span> PREDICTOR=2 <span class="dt">\</span></span>
+<span id="cb3-11"><a href="#cb3-11" aria-hidden="true" tabindex="-1"></a>    <span class="at">-co</span> OVERVIEW_RESAMPLING=AVERAGE <span class="dt">\</span></span>
+<span id="cb3-12"><a href="#cb3-12" aria-hidden="true" tabindex="-1"></a>    <span class="at">-co</span> TILING_SCHEME=GoogleMapsCompatible <span class="dt">\</span></span>
+<span id="cb3-13"><a href="#cb3-13" aria-hidden="true" tabindex="-1"></a>    input_scene.tif <span class="dt">\</span></span>
+<span id="cb3-14"><a href="#cb3-14" aria-hidden="true" tabindex="-1"></a>    output_scene_cog.tif</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>Verify the result is a valid COG:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb4"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="ex">python</span> <span class="at">-c</span> <span class="st">"</span></span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a><span class="st">from osgeo import gdal</span></span>
+<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a><span class="st">ds = gdal.Open('output_scene_cog.tif')</span></span>
+<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a><span class="st">md = ds.GetMetadata('MAIN_FILE')</span></span>
+<span id="cb4-5"><a href="#cb4-5" aria-hidden="true" tabindex="-1"></a><span class="st">print(gdal.Info(ds, format='json')['driverLongName'])</span></span>
+<span id="cb4-6"><a href="#cb4-6" aria-hidden="true" tabindex="-1"></a><span class="st">"</span></span>
+<span id="cb4-7"><a href="#cb4-7" aria-hidden="true" tabindex="-1"></a><span class="co"># Or use the cogeo-mosaic validate tool:</span></span>
+<span id="cb4-8"><a href="#cb4-8" aria-hidden="true" tabindex="-1"></a><span class="ex">rio</span> cogeo validate output_scene_cog.tif</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</section>
+<section id="gdal-vsicurl-and-vsis3" class="level3" data-number="5.3.4">
+<h3 data-number="5.3.4" class="anchored" data-anchor-id="gdal-vsicurl-and-vsis3"><span class="header-section-number">5.3.4</span> GDAL /vsicurl/ and /vsis3/</h3>
+<p>GDAL virtualises remote access through prefix handlers. <code>/vsicurl/</code> issues authenticated HTTP range requests. <code>/vsis3/</code> handles AWS S3 authentication and endpoint resolution. Both are transparent to GDAL-aware tools — you pass a virtual path and GDAL handles the HTTP.</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb5"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Read metadata from a remote COG without downloading it</span></span>
+<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a><span class="ex">gdalinfo</span> /vsicurl/https://mybucket.s3.amazonaws.com/scene_cog.tif</span>
+<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a><span class="co"># Read a window from a remote COG (only tiles that overlap the window</span></span>
+<span id="cb5-5"><a href="#cb5-5" aria-hidden="true" tabindex="-1"></a><span class="co"># are transferred)</span></span>
+<span id="cb5-6"><a href="#cb5-6" aria-hidden="true" tabindex="-1"></a><span class="ex">gdal_translate</span> <span class="dt">\</span></span>
+<span id="cb5-7"><a href="#cb5-7" aria-hidden="true" tabindex="-1"></a>    <span class="at">-projwin</span> 153.0 <span class="at">-27.0</span> 153.1 <span class="at">-27.1</span> <span class="dt">\</span></span>
+<span id="cb5-8"><a href="#cb5-8" aria-hidden="true" tabindex="-1"></a>    /vsicurl/https://mybucket.s3.amazonaws.com/scene_cog.tif <span class="dt">\</span></span>
+<span id="cb5-9"><a href="#cb5-9" aria-hidden="true" tabindex="-1"></a>    local_window.tif</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>The second command reads a 0.1° × 0.1° window. Depending on tile size and scene extent, this might fetch 2–4 tiles rather than the entire scene.</p>
+<hr>
+</section>
+</section>
+<section id="stac-making-data-discoverable" class="level2" data-number="5.4">
+<h2 data-number="5.4" class="anchored" data-anchor-id="stac-making-data-discoverable"><span class="header-section-number">5.4</span> STAC: making data discoverable</h2>
+<p>Storing data as COGs in object storage solves the access problem. It does not solve the discovery problem: how does a client know which files exist, what they contain, and which one covers the area and time period of interest?</p>
+<p>STAC — the SpatioTemporal Asset Catalog specification — is a JSON metadata standard that answers this question without requiring a centralised catalogue server or a spatial database query.</p>
+<p>A STAC <strong>Item</strong> is a GeoJSON Feature with standardised additional fields: a timestamp, a bounding box, links to the actual data files (assets), and a properties dictionary with additional metadata.</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb6"><pre class="sourceCode json code-with-copy"><code class="sourceCode json"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="fu">{</span></span>
+<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a>  <span class="dt">"type"</span><span class="fu">:</span> <span class="st">"Feature"</span><span class="fu">,</span></span>
+<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a>  <span class="dt">"stac_version"</span><span class="fu">:</span> <span class="st">"1.0.0"</span><span class="fu">,</span></span>
+<span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a>  <span class="dt">"id"</span><span class="fu">:</span> <span class="st">"LC09_L2SP_185033_20230615"</span><span class="fu">,</span></span>
+<span id="cb6-5"><a href="#cb6-5" aria-hidden="true" tabindex="-1"></a>  <span class="dt">"geometry"</span><span class="fu">:</span> <span class="fu">{</span></span>
+<span id="cb6-6"><a href="#cb6-6" aria-hidden="true" tabindex="-1"></a>    <span class="dt">"type"</span><span class="fu">:</span> <span class="st">"Polygon"</span><span class="fu">,</span></span>
+<span id="cb6-7"><a href="#cb6-7" aria-hidden="true" tabindex="-1"></a>    <span class="dt">"coordinates"</span><span class="fu">:</span> <span class="ot">[[</span></span>
+<span id="cb6-8"><a href="#cb6-8" aria-hidden="true" tabindex="-1"></a>      <span class="ot">[</span><span class="fl">144.2</span><span class="ot">,</span> <span class="fl">-38.5</span><span class="ot">],</span> <span class="ot">[</span><span class="fl">150.1</span><span class="ot">,</span> <span class="fl">-38.5</span><span class="ot">],</span></span>
+<span id="cb6-9"><a href="#cb6-9" aria-hidden="true" tabindex="-1"></a>      <span class="ot">[</span><span class="fl">150.1</span><span class="ot">,</span> <span class="fl">-34.0</span><span class="ot">],</span> <span class="ot">[</span><span class="fl">144.2</span><span class="ot">,</span> <span class="fl">-34.0</span><span class="ot">],</span></span>
+<span id="cb6-10"><a href="#cb6-10" aria-hidden="true" tabindex="-1"></a>      <span class="ot">[</span><span class="fl">144.2</span><span class="ot">,</span> <span class="fl">-38.5</span><span class="ot">]</span></span>
+<span id="cb6-11"><a href="#cb6-11" aria-hidden="true" tabindex="-1"></a>    <span class="ot">]]</span></span>
+<span id="cb6-12"><a href="#cb6-12" aria-hidden="true" tabindex="-1"></a>  <span class="fu">},</span></span>
+<span id="cb6-13"><a href="#cb6-13" aria-hidden="true" tabindex="-1"></a>  <span class="dt">"bbox"</span><span class="fu">:</span> <span class="ot">[</span><span class="fl">144.2</span><span class="ot">,</span> <span class="fl">-38.5</span><span class="ot">,</span> <span class="fl">150.1</span><span class="ot">,</span> <span class="fl">-34.0</span><span class="ot">]</span><span class="fu">,</span></span>
+<span id="cb6-14"><a href="#cb6-14" aria-hidden="true" tabindex="-1"></a>  <span class="dt">"properties"</span><span class="fu">:</span> <span class="fu">{</span></span>
+<span id="cb6-15"><a href="#cb6-15" aria-hidden="true" tabindex="-1"></a>    <span class="dt">"datetime"</span><span class="fu">:</span> <span class="st">"2023-06-15T01:34:22Z"</span><span class="fu">,</span></span>
+<span id="cb6-16"><a href="#cb6-16" aria-hidden="true" tabindex="-1"></a>    <span class="dt">"platform"</span><span class="fu">:</span> <span class="st">"landsat-9"</span><span class="fu">,</span></span>
+<span id="cb6-17"><a href="#cb6-17" aria-hidden="true" tabindex="-1"></a>    <span class="dt">"instruments"</span><span class="fu">:</span> <span class="ot">[</span><span class="st">"OLI"</span><span class="ot">,</span> <span class="st">"TIRS"</span><span class="ot">]</span><span class="fu">,</span></span>
+<span id="cb6-18"><a href="#cb6-18" aria-hidden="true" tabindex="-1"></a>    <span class="dt">"constellation"</span><span class="fu">:</span> <span class="st">"landsat"</span><span class="fu">,</span></span>
+<span id="cb6-19"><a href="#cb6-19" aria-hidden="true" tabindex="-1"></a>    <span class="dt">"eo:cloud_cover"</span><span class="fu">:</span> <span class="fl">4.2</span><span class="fu">,</span></span>
+<span id="cb6-20"><a href="#cb6-20" aria-hidden="true" tabindex="-1"></a>    <span class="dt">"landsat:wrs_path"</span><span class="fu">:</span> <span class="dv">185</span><span class="fu">,</span></span>
+<span id="cb6-21"><a href="#cb6-21" aria-hidden="true" tabindex="-1"></a>    <span class="dt">"landsat:wrs_row"</span><span class="fu">:</span> <span class="dv">33</span><span class="fu">,</span></span>
+<span id="cb6-22"><a href="#cb6-22" aria-hidden="true" tabindex="-1"></a>    <span class="dt">"proj:epsg"</span><span class="fu">:</span> <span class="dv">32755</span><span class="fu">,</span></span>
+<span id="cb6-23"><a href="#cb6-23" aria-hidden="true" tabindex="-1"></a>    <span class="dt">"proj:shape"</span><span class="fu">:</span> <span class="ot">[</span><span class="dv">7731</span><span class="ot">,</span> <span class="dv">7591</span><span class="ot">]</span></span>
+<span id="cb6-24"><a href="#cb6-24" aria-hidden="true" tabindex="-1"></a>  <span class="fu">},</span></span>
+<span id="cb6-25"><a href="#cb6-25" aria-hidden="true" tabindex="-1"></a>  <span class="dt">"assets"</span><span class="fu">:</span> <span class="fu">{</span></span>
+<span id="cb6-26"><a href="#cb6-26" aria-hidden="true" tabindex="-1"></a>    <span class="dt">"B04"</span><span class="fu">:</span> <span class="fu">{</span></span>
+<span id="cb6-27"><a href="#cb6-27" aria-hidden="true" tabindex="-1"></a>      <span class="dt">"href"</span><span class="fu">:</span> <span class="st">"s3://my-imagery-bucket/landsat9/2023/LC09_185033_20230615_B04_cog.tif"</span><span class="fu">,</span></span>
+<span id="cb6-28"><a href="#cb6-28" aria-hidden="true" tabindex="-1"></a>      <span class="dt">"type"</span><span class="fu">:</span> <span class="st">"image/tiff; application=geotiff; profile=cloud-optimized"</span><span class="fu">,</span></span>
+<span id="cb6-29"><a href="#cb6-29" aria-hidden="true" tabindex="-1"></a>      <span class="dt">"title"</span><span class="fu">:</span> <span class="st">"Red Band (B4)"</span><span class="fu">,</span></span>
+<span id="cb6-30"><a href="#cb6-30" aria-hidden="true" tabindex="-1"></a>      <span class="dt">"roles"</span><span class="fu">:</span> <span class="ot">[</span><span class="st">"data"</span><span class="ot">]</span><span class="fu">,</span></span>
+<span id="cb6-31"><a href="#cb6-31" aria-hidden="true" tabindex="-1"></a>      <span class="dt">"eo:bands"</span><span class="fu">:</span> <span class="ot">[</span><span class="fu">{</span><span class="dt">"name"</span><span class="fu">:</span> <span class="st">"red"</span><span class="fu">,</span> <span class="dt">"common_name"</span><span class="fu">:</span> <span class="st">"red"</span><span class="fu">,</span> <span class="dt">"center_wavelength"</span><span class="fu">:</span> <span class="fl">0.65</span><span class="fu">}</span><span class="ot">]</span></span>
+<span id="cb6-32"><a href="#cb6-32" aria-hidden="true" tabindex="-1"></a>    <span class="fu">},</span></span>
+<span id="cb6-33"><a href="#cb6-33" aria-hidden="true" tabindex="-1"></a>    <span class="dt">"B05"</span><span class="fu">:</span> <span class="fu">{</span></span>
+<span id="cb6-34"><a href="#cb6-34" aria-hidden="true" tabindex="-1"></a>      <span class="dt">"href"</span><span class="fu">:</span> <span class="st">"s3://my-imagery-bucket/landsat9/2023/LC09_185033_20230615_B05_cog.tif"</span><span class="fu">,</span></span>
+<span id="cb6-35"><a href="#cb6-35" aria-hidden="true" tabindex="-1"></a>      <span class="dt">"type"</span><span class="fu">:</span> <span class="st">"image/tiff; application=geotiff; profile=cloud-optimized"</span><span class="fu">,</span></span>
+<span id="cb6-36"><a href="#cb6-36" aria-hidden="true" tabindex="-1"></a>      <span class="dt">"title"</span><span class="fu">:</span> <span class="st">"Near Infrared Band (B5)"</span><span class="fu">,</span></span>
+<span id="cb6-37"><a href="#cb6-37" aria-hidden="true" tabindex="-1"></a>      <span class="dt">"roles"</span><span class="fu">:</span> <span class="ot">[</span><span class="st">"data"</span><span class="ot">]</span><span class="fu">,</span></span>
+<span id="cb6-38"><a href="#cb6-38" aria-hidden="true" tabindex="-1"></a>      <span class="dt">"eo:bands"</span><span class="fu">:</span> <span class="ot">[</span><span class="fu">{</span><span class="dt">"name"</span><span class="fu">:</span> <span class="st">"nir08"</span><span class="fu">,</span> <span class="dt">"common_name"</span><span class="fu">:</span> <span class="st">"nir08"</span><span class="fu">,</span> <span class="dt">"center_wavelength"</span><span class="fu">:</span> <span class="fl">0.865</span><span class="fu">}</span><span class="ot">]</span></span>
+<span id="cb6-39"><a href="#cb6-39" aria-hidden="true" tabindex="-1"></a>    <span class="fu">},</span></span>
+<span id="cb6-40"><a href="#cb6-40" aria-hidden="true" tabindex="-1"></a>    <span class="dt">"thumbnail"</span><span class="fu">:</span> <span class="fu">{</span></span>
+<span id="cb6-41"><a href="#cb6-41" aria-hidden="true" tabindex="-1"></a>      <span class="dt">"href"</span><span class="fu">:</span> <span class="st">"s3://my-imagery-bucket/landsat9/2023/LC09_185033_20230615_thumb.png"</span><span class="fu">,</span></span>
+<span id="cb6-42"><a href="#cb6-42" aria-hidden="true" tabindex="-1"></a>      <span class="dt">"type"</span><span class="fu">:</span> <span class="st">"image/png"</span><span class="fu">,</span></span>
+<span id="cb6-43"><a href="#cb6-43" aria-hidden="true" tabindex="-1"></a>      <span class="dt">"title"</span><span class="fu">:</span> <span class="st">"Thumbnail"</span><span class="fu">,</span></span>
+<span id="cb6-44"><a href="#cb6-44" aria-hidden="true" tabindex="-1"></a>      <span class="dt">"roles"</span><span class="fu">:</span> <span class="ot">[</span><span class="st">"thumbnail"</span><span class="ot">]</span></span>
+<span id="cb6-45"><a href="#cb6-45" aria-hidden="true" tabindex="-1"></a>    <span class="fu">}</span></span>
+<span id="cb6-46"><a href="#cb6-46" aria-hidden="true" tabindex="-1"></a>  <span class="fu">},</span></span>
+<span id="cb6-47"><a href="#cb6-47" aria-hidden="true" tabindex="-1"></a>  <span class="dt">"links"</span><span class="fu">:</span> <span class="ot">[</span></span>
+<span id="cb6-48"><a href="#cb6-48" aria-hidden="true" tabindex="-1"></a>    <span class="fu">{</span></span>
+<span id="cb6-49"><a href="#cb6-49" aria-hidden="true" tabindex="-1"></a>      <span class="dt">"rel"</span><span class="fu">:</span> <span class="st">"self"</span><span class="fu">,</span></span>
+<span id="cb6-50"><a href="#cb6-50" aria-hidden="true" tabindex="-1"></a>      <span class="dt">"href"</span><span class="fu">:</span> <span class="st">"s3://my-imagery-bucket/stac/LC09_185033_20230615.json"</span></span>
+<span id="cb6-51"><a href="#cb6-51" aria-hidden="true" tabindex="-1"></a>    <span class="fu">}</span><span class="ot">,</span></span>
+<span id="cb6-52"><a href="#cb6-52" aria-hidden="true" tabindex="-1"></a>    <span class="fu">{</span></span>
+<span id="cb6-53"><a href="#cb6-53" aria-hidden="true" tabindex="-1"></a>      <span class="dt">"rel"</span><span class="fu">:</span> <span class="st">"collection"</span><span class="fu">,</span></span>
+<span id="cb6-54"><a href="#cb6-54" aria-hidden="true" tabindex="-1"></a>      <span class="dt">"href"</span><span class="fu">:</span> <span class="st">"s3://my-imagery-bucket/stac/collection.json"</span></span>
+<span id="cb6-55"><a href="#cb6-55" aria-hidden="true" tabindex="-1"></a>    <span class="fu">}</span></span>
+<span id="cb6-56"><a href="#cb6-56" aria-hidden="true" tabindex="-1"></a>  <span class="ot">]</span></span>
+<span id="cb6-57"><a href="#cb6-57" aria-hidden="true" tabindex="-1"></a><span class="fu">}</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>A STAC <strong>Collection</strong> groups related Items and provides shared metadata (licence, description, spatial and temporal extent). A STAC <strong>Catalog</strong> is the root of the hierarchy, linking to collections and items.</p>
+<p>The key architectural implication: a STAC catalogue can be a static set of JSON files in object storage, with no server required. A client that knows the root catalogue URL can traverse the link structure, filter by bounding box and datetime against the item <code>bbox</code> and <code>properties.datetime</code> fields, and find the relevant assets — all with plain HTTP GET requests to JSON files. No database. No API. No server to maintain.</p>
+<p>Dynamic STAC APIs (like stac-fastapi) add server-side search over large catalogues. But for archives up to a few hundred thousand items, static STAC is often sufficient and operationally simpler.</p>
+<hr>
+</section>
+<section id="partitioning-raster-data" class="level2" data-number="5.5">
+<h2 data-number="5.5" class="anchored" data-anchor-id="partitioning-raster-data"><span class="header-section-number">5.5</span> Partitioning raster data</h2>
+<p>As an imagery archive grows, the question of how to organise files in object storage becomes significant. Object storage has no directories, but key prefixes function as a rough partitioning mechanism. The right partitioning strategy depends on the dominant access pattern.</p>
+<p><strong>Partition by time</strong> if queries are typically temporal: “all scenes from 2022”, “scenes from Q3 2023”. A prefix structure like <code>imagery/{year}/{month}/{scene_id}.tif</code> makes prefix-listing for temporal ranges efficient.</p>
+<p><strong>Partition by spatial tile</strong> if queries are typically spatial: “all scenes covering tile 55H” (MGRS grid) or “all scenes in path-row 185/033” (Landsat WRS). A prefix structure like <code>imagery/{path}/{row}/{date}_{scene_id}.tif</code> makes spatial prefix-listing efficient.</p>
+<p><strong>Partition by resolution level</strong> if you serve multiple zoom levels: store native resolution and overviews as separate files, organised by resolution tier. This is the approach used by commercial imagery platforms that serve both analysis-ready data and web map tiles from the same archive.</p>
+<p>The tradeoff between file count and file size matters more in object storage than in a filesystem. Object storage is typically billed per request as well as per byte stored. An archive of one million 1 MB tiles is more expensive to list and access than an archive of 10,000 100 MB scenes, even if the total bytes are similar.</p>
+<p>The practical recommendation: use tile sizes that match your access pattern. If analysts typically request full Landsat scenes, store scenes as COGs. If analysts typically request small spatial windows, consider mosaic COGs or GeoParquet that aggregates pixel data from multiple scenes.</p>
+<hr>
+</section>
+<section id="cog-range-request-efficiency-a-model" class="level2" data-number="5.6">
+<h2 data-number="5.6" class="anchored" data-anchor-id="cog-range-request-efficiency-a-model"><span class="header-section-number">5.6</span> COG range request efficiency: a model</h2>
+<p>The efficiency of COG range requests depends on the relationship between the area of interest (AOI) and the tile grid. In the best case, the AOI covers exactly one tile and the client fetches one tile. In the worst case, the AOI spans many tiles, and the client fetches all of them — potentially more data than a full scene download if the tiles include large amounts of data outside the AOI.</p>
+<div id="cell-fig-cog-efficiency" class="cell" data-fig-height="4" data-fig-width="12" data-execution_count="1">
+<details class="code-fold">
+<summary>Code</summary>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb7"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> numpy <span class="im">as</span> np</span>
+<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> matplotlib.pyplot <span class="im">as</span> plt</span>
+<span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-4"><a href="#cb7-4" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> cog_bytes_fraction(aoi_fraction: np.ndarray, tile_px: <span class="bu">int</span>,</span>
+<span id="cb7-5"><a href="#cb7-5" aria-hidden="true" tabindex="-1"></a>                       scene_px: <span class="bu">int</span>) <span class="op">-&gt;</span> np.ndarray:</span>
+<span id="cb7-6"><a href="#cb7-6" aria-hidden="true" tabindex="-1"></a>    <span class="co">"""Estimate fraction of scene bytes fetched by a COG range request.</span></span>
+<span id="cb7-7"><a href="#cb7-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-8"><a href="#cb7-8" aria-hidden="true" tabindex="-1"></a><span class="co">    Model assumptions:</span></span>
+<span id="cb7-9"><a href="#cb7-9" aria-hidden="true" tabindex="-1"></a><span class="co">    - Scene is scene_px × scene_px pixels, stored as tiled COG.</span></span>
+<span id="cb7-10"><a href="#cb7-10" aria-hidden="true" tabindex="-1"></a><span class="co">    - AOI is a square region, axis-aligned with the scene.</span></span>
+<span id="cb7-11"><a href="#cb7-11" aria-hidden="true" tabindex="-1"></a><span class="co">    - Each tile is tile_px × tile_px pixels.</span></span>
+<span id="cb7-12"><a href="#cb7-12" aria-hidden="true" tabindex="-1"></a><span class="co">    - Tiles that overlap the AOI boundary are fully fetched.</span></span>
+<span id="cb7-13"><a href="#cb7-13" aria-hidden="true" tabindex="-1"></a><span class="co">    - Header overhead is assumed negligible (single range request, ~32 KB).</span></span>
+<span id="cb7-14"><a href="#cb7-14" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-15"><a href="#cb7-15" aria-hidden="true" tabindex="-1"></a><span class="co">    The number of tiles fetched is ceil(aoi_side / tile_px)^2.</span></span>
+<span id="cb7-16"><a href="#cb7-16" aria-hidden="true" tabindex="-1"></a><span class="co">    The fraction of the scene covered by these tiles is</span></span>
+<span id="cb7-17"><a href="#cb7-17" aria-hidden="true" tabindex="-1"></a><span class="co">    (n_tiles * tile_px^2) / scene_px^2.</span></span>
+<span id="cb7-18"><a href="#cb7-18" aria-hidden="true" tabindex="-1"></a><span class="co">    """</span></span>
+<span id="cb7-19"><a href="#cb7-19" aria-hidden="true" tabindex="-1"></a>    aoi_side_px <span class="op">=</span> np.sqrt(aoi_fraction) <span class="op">*</span> scene_px</span>
+<span id="cb7-20"><a href="#cb7-20" aria-hidden="true" tabindex="-1"></a>    n_tiles_per_side <span class="op">=</span> np.ceil(aoi_side_px <span class="op">/</span> tile_px)</span>
+<span id="cb7-21"><a href="#cb7-21" aria-hidden="true" tabindex="-1"></a>    tiles_fetched <span class="op">=</span> n_tiles_per_side <span class="op">**</span> <span class="dv">2</span></span>
+<span id="cb7-22"><a href="#cb7-22" aria-hidden="true" tabindex="-1"></a>    total_tiles <span class="op">=</span> (scene_px <span class="op">/</span> tile_px) <span class="op">**</span> <span class="dv">2</span></span>
+<span id="cb7-23"><a href="#cb7-23" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> tiles_fetched <span class="op">/</span> total_tiles</span>
+<span id="cb7-24"><a href="#cb7-24" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-25"><a href="#cb7-25" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-26"><a href="#cb7-26" aria-hidden="true" tabindex="-1"></a>scene_px <span class="op">=</span> <span class="dv">7600</span>      <span class="co"># approximate Landsat scene in pixels (30m res, ~228km)</span></span>
+<span id="cb7-27"><a href="#cb7-27" aria-hidden="true" tabindex="-1"></a>aoi_fractions <span class="op">=</span> np.logspace(<span class="op">-</span><span class="dv">4</span>, np.log10(<span class="fl">0.5</span>), <span class="dv">200</span>)  <span class="co"># 0.01% to 50%</span></span>
+<span id="cb7-28"><a href="#cb7-28" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-29"><a href="#cb7-29" aria-hidden="true" tabindex="-1"></a>fig, axes <span class="op">=</span> plt.subplots(<span class="dv">1</span>, <span class="dv">2</span>, figsize<span class="op">=</span>(<span class="dv">12</span>, <span class="dv">4</span>), dpi<span class="op">=</span><span class="dv">150</span>)</span>
+<span id="cb7-30"><a href="#cb7-30" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-31"><a href="#cb7-31" aria-hidden="true" tabindex="-1"></a><span class="co"># Left panel: COG vs full download</span></span>
+<span id="cb7-32"><a href="#cb7-32" aria-hidden="true" tabindex="-1"></a>ax <span class="op">=</span> axes[<span class="dv">0</span>]</span>
+<span id="cb7-33"><a href="#cb7-33" aria-hidden="true" tabindex="-1"></a>tile_sizes <span class="op">=</span> [<span class="dv">256</span>, <span class="dv">512</span>]</span>
+<span id="cb7-34"><a href="#cb7-34" aria-hidden="true" tabindex="-1"></a>colours <span class="op">=</span> [<span class="st">"#111111"</span>, <span class="st">"#d52a2a"</span>]</span>
+<span id="cb7-35"><a href="#cb7-35" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> tile_px, colour <span class="kw">in</span> <span class="bu">zip</span>(tile_sizes, colours):</span>
+<span id="cb7-36"><a href="#cb7-36" aria-hidden="true" tabindex="-1"></a>    frac <span class="op">=</span> cog_bytes_fraction(aoi_fractions, tile_px, scene_px)</span>
+<span id="cb7-37"><a href="#cb7-37" aria-hidden="true" tabindex="-1"></a>    ax.plot(aoi_fractions <span class="op">*</span> <span class="dv">100</span>, frac <span class="op">*</span> <span class="dv">100</span>,</span>
+<span id="cb7-38"><a href="#cb7-38" aria-hidden="true" tabindex="-1"></a>            color<span class="op">=</span>colour, linewidth<span class="op">=</span><span class="fl">1.8</span>,</span>
+<span id="cb7-39"><a href="#cb7-39" aria-hidden="true" tabindex="-1"></a>            label<span class="op">=</span><span class="ss">f"COG </span><span class="sc">{</span>tile_px<span class="sc">}</span><span class="ss">×</span><span class="sc">{</span>tile_px<span class="sc">}</span><span class="ss"> px tiles"</span>)</span>
+<span id="cb7-40"><a href="#cb7-40" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-41"><a href="#cb7-41" aria-hidden="true" tabindex="-1"></a><span class="co"># Full download: always 100%</span></span>
+<span id="cb7-42"><a href="#cb7-42" aria-hidden="true" tabindex="-1"></a>ax.axhline(<span class="dv">100</span>, color<span class="op">=</span><span class="st">"#888888"</span>, linestyle<span class="op">=</span><span class="st">"--"</span>, linewidth<span class="op">=</span><span class="fl">1.2</span>,</span>
+<span id="cb7-43"><a href="#cb7-43" aria-hidden="true" tabindex="-1"></a>           label<span class="op">=</span><span class="st">"Full download"</span>)</span>
+<span id="cb7-44"><a href="#cb7-44" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-45"><a href="#cb7-45" aria-hidden="true" tabindex="-1"></a><span class="co"># Mark the field-site example (~0.004% of scene)</span></span>
+<span id="cb7-46"><a href="#cb7-46" aria-hidden="true" tabindex="-1"></a>ax.axvline(<span class="fl">0.004</span>, color<span class="op">=</span><span class="st">"#888888"</span>, linewidth<span class="op">=</span><span class="fl">0.7</span>, linestyle<span class="op">=</span><span class="st">":"</span>)</span>
+<span id="cb7-47"><a href="#cb7-47" aria-hidden="true" tabindex="-1"></a>ax.annotate(<span class="st">"1 km² field site</span><span class="ch">\n</span><span class="st">(~0.004</span><span class="sc">% o</span><span class="st">f scene)"</span>,</span>
+<span id="cb7-48"><a href="#cb7-48" aria-hidden="true" tabindex="-1"></a>            xy<span class="op">=</span>(<span class="fl">0.004</span>, <span class="dv">50</span>), xytext<span class="op">=</span>(<span class="fl">0.02</span>, <span class="dv">55</span>),</span>
+<span id="cb7-49"><a href="#cb7-49" aria-hidden="true" tabindex="-1"></a>            fontsize<span class="op">=</span><span class="fl">7.5</span>, color<span class="op">=</span><span class="st">"#555555"</span>,</span>
+<span id="cb7-50"><a href="#cb7-50" aria-hidden="true" tabindex="-1"></a>            arrowprops<span class="op">=</span><span class="bu">dict</span>(arrowstyle<span class="op">=</span><span class="st">"-&gt;"</span>, color<span class="op">=</span><span class="st">"#555555"</span>, lw<span class="op">=</span><span class="fl">0.7</span>))</span>
+<span id="cb7-51"><a href="#cb7-51" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-52"><a href="#cb7-52" aria-hidden="true" tabindex="-1"></a>ax.set_xscale(<span class="st">"log"</span>)</span>
+<span id="cb7-53"><a href="#cb7-53" aria-hidden="true" tabindex="-1"></a>ax.set_xlabel(<span class="st">"AOI as </span><span class="sc">% o</span><span class="st">f scene area (log scale)"</span>)</span>
+<span id="cb7-54"><a href="#cb7-54" aria-hidden="true" tabindex="-1"></a>ax.set_ylabel(<span class="st">"Bytes transferred as </span><span class="sc">% o</span><span class="st">f scene"</span>)</span>
+<span id="cb7-55"><a href="#cb7-55" aria-hidden="true" tabindex="-1"></a>ax.set_title(<span class="st">"COG vs full download"</span>)</span>
+<span id="cb7-56"><a href="#cb7-56" aria-hidden="true" tabindex="-1"></a>ax.legend(fontsize<span class="op">=</span><span class="dv">8</span>, frameon<span class="op">=</span><span class="va">False</span>)</span>
+<span id="cb7-57"><a href="#cb7-57" aria-hidden="true" tabindex="-1"></a>ax.spines[<span class="st">"top"</span>].set_visible(<span class="va">False</span>)</span>
+<span id="cb7-58"><a href="#cb7-58" aria-hidden="true" tabindex="-1"></a>ax.spines[<span class="st">"right"</span>].set_visible(<span class="va">False</span>)</span>
+<span id="cb7-59"><a href="#cb7-59" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-60"><a href="#cb7-60" aria-hidden="true" tabindex="-1"></a><span class="co"># Right panel: tile size effect at small AOIs</span></span>
+<span id="cb7-61"><a href="#cb7-61" aria-hidden="true" tabindex="-1"></a>ax2 <span class="op">=</span> axes[<span class="dv">1</span>]</span>
+<span id="cb7-62"><a href="#cb7-62" aria-hidden="true" tabindex="-1"></a>small_aoi <span class="op">=</span> np.logspace(<span class="op">-</span><span class="dv">4</span>, np.log10(<span class="fl">0.01</span>), <span class="dv">200</span>)  <span class="co"># 0.01% to 1%</span></span>
+<span id="cb7-63"><a href="#cb7-63" aria-hidden="true" tabindex="-1"></a>tile_sizes_all <span class="op">=</span> [<span class="dv">128</span>, <span class="dv">256</span>, <span class="dv">512</span>, <span class="dv">1024</span>]</span>
+<span id="cb7-64"><a href="#cb7-64" aria-hidden="true" tabindex="-1"></a>palette <span class="op">=</span> [<span class="st">"#888888"</span>, <span class="st">"#111111"</span>, <span class="st">"#d52a2a"</span>, <span class="st">"#b07d2e"</span>]</span>
+<span id="cb7-65"><a href="#cb7-65" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> tile_px, colour <span class="kw">in</span> <span class="bu">zip</span>(tile_sizes_all, palette):</span>
+<span id="cb7-66"><a href="#cb7-66" aria-hidden="true" tabindex="-1"></a>    frac <span class="op">=</span> cog_bytes_fraction(small_aoi, tile_px, scene_px)</span>
+<span id="cb7-67"><a href="#cb7-67" aria-hidden="true" tabindex="-1"></a>    ax2.plot(small_aoi <span class="op">*</span> <span class="dv">100</span>, frac <span class="op">*</span> <span class="dv">100</span>,</span>
+<span id="cb7-68"><a href="#cb7-68" aria-hidden="true" tabindex="-1"></a>             color<span class="op">=</span>colour, linewidth<span class="op">=</span><span class="fl">1.5</span>,</span>
+<span id="cb7-69"><a href="#cb7-69" aria-hidden="true" tabindex="-1"></a>             label<span class="op">=</span><span class="ss">f"</span><span class="sc">{</span>tile_px<span class="sc">}</span><span class="ss">×</span><span class="sc">{</span>tile_px<span class="sc">}</span><span class="ss"> px"</span>)</span>
+<span id="cb7-70"><a href="#cb7-70" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-71"><a href="#cb7-71" aria-hidden="true" tabindex="-1"></a>ax2.set_xscale(<span class="st">"log"</span>)</span>
+<span id="cb7-72"><a href="#cb7-72" aria-hidden="true" tabindex="-1"></a>ax2.set_xlabel(<span class="st">"AOI as </span><span class="sc">% o</span><span class="st">f scene area (log scale)"</span>)</span>
+<span id="cb7-73"><a href="#cb7-73" aria-hidden="true" tabindex="-1"></a>ax2.set_ylabel(<span class="st">"Bytes transferred as </span><span class="sc">% o</span><span class="st">f scene"</span>)</span>
+<span id="cb7-74"><a href="#cb7-74" aria-hidden="true" tabindex="-1"></a>ax2.set_title(<span class="st">"Tile size effect (small AOIs)"</span>)</span>
+<span id="cb7-75"><a href="#cb7-75" aria-hidden="true" tabindex="-1"></a>ax2.legend(title<span class="op">=</span><span class="st">"Tile size"</span>, fontsize<span class="op">=</span><span class="dv">8</span>, frameon<span class="op">=</span><span class="va">False</span>)</span>
+<span id="cb7-76"><a href="#cb7-76" aria-hidden="true" tabindex="-1"></a>ax2.spines[<span class="st">"top"</span>].set_visible(<span class="va">False</span>)</span>
+<span id="cb7-77"><a href="#cb7-77" aria-hidden="true" tabindex="-1"></a>ax2.spines[<span class="st">"right"</span>].set_visible(<span class="va">False</span>)</span>
+<span id="cb7-78"><a href="#cb7-78" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-79"><a href="#cb7-79" aria-hidden="true" tabindex="-1"></a>fig.tight_layout(pad<span class="op">=</span><span class="fl">1.5</span>)</span>
+<span id="cb7-80"><a href="#cb7-80" aria-hidden="true" tabindex="-1"></a>plt.savefig(<span class="st">"_assets/ch04-cog-efficiency.png"</span>, dpi<span class="op">=</span><span class="dv">150</span>, bbox_inches<span class="op">=</span><span class="st">"tight"</span>)</span>
+<span id="cb7-81"><a href="#cb7-81" aria-hidden="true" tabindex="-1"></a>plt.show()</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</details>
+<div class="cell-output cell-output-display">
+<div id="fig-cog-efficiency" class="quarto-float quarto-figure quarto-figure-center anchored">
+<figure class="quarto-float quarto-float-fig figure">
+<div aria-describedby="fig-cog-efficiency-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<img src="04-cloud-infrastructure_files/figure-html/fig-cog-efficiency-output-1.png" width="1768" height="564" class="figure-img">
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-cog-efficiency-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Figure&nbsp;5.1: Figure 4.1. COG range request efficiency as a function of AOI size. Left: fraction of scene bytes transferred for a COG (tiled) versus a full-file download, across AOI fractions from 0.001% to 50% of the scene. The COG efficiency degrades as AOI size increases because more tiles must be fetched, including tile edges that extend beyond the AOI boundary. At very small AOI fractions, COG overhead is dominated by the header read and a small number of tiles. Right: effect of tile size on efficiency for small AOIs. Larger tiles are less efficient for small AOIs because each tile read includes more outside-AOI data.
+</figcaption>
+</figure>
+</div>
+</div>
+</div>
+<p>Two things to read from this figure.</p>
+<p>First, the efficiency gain from COG is enormous at small AOI fractions. For the 1 km² field site example (≈ 0.004% of a Landsat scene), a COG with 512-pixel tiles transfers roughly 0.03% of the scene — compared to 100% for a full download. This is where the 4 TB → 40 MB saving comes from in the opening puzzle.</p>
+<p>Second, tile size is a genuine tradeoff. Smaller tiles (128 or 256 pixels) are more efficient for very small AOIs because the alignment overhead is smaller. Larger tiles (512 or 1024 pixels) are more efficient for large AOIs because there are fewer tile boundary crossings — but they are expensive for tiny AOIs because each tile contains a large fraction of outside-AOI data. The standard recommendation of 512 × 512 pixels is a reasonable default for mixed workloads.</p>
+<hr>
+<div class="callout callout-style-simple callout-tip callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+<span class="screen-reader-only">Tip</span>What to try
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<ol type="1">
+<li><p><strong>Increase <code>scene_px</code> to 15,000</strong> (representative of a Sentinel-2 scene at 10 m resolution). How does the efficiency curve change relative to the Landsat scene? Does the absolute number of bytes transferred for the 1 km² field site increase or decrease?</p></li>
+<li><p><strong>Try <code>tile_size_px = 128</code></strong> in the pyodide cell. For a very small AOI (0.001%), does the smaller tile size improve or worsen efficiency compared to 512? Why does the result depend on how many tile boundaries the AOI crosses?</p></li>
+<li><p><strong>Add an overview level to the model</strong>: assume the client reads the thumbnail overview (1/16 resolution) before deciding whether to fetch the full-resolution tiles. How many bytes does the overview read add? Is this overhead significant for AOIs smaller than 1% of the scene?</p></li>
+</ol>
+</div>
+</div>
+<div class="pyodide-cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb8"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> numpy <span class="im">as</span> np</span>
+<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> matplotlib.pyplot <span class="im">as</span> plt</span>
+<span id="cb8-3"><a href="#cb8-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-4"><a href="#cb8-4" aria-hidden="true" tabindex="-1"></a><span class="co"># --- Try changing these parameters ---</span></span>
+<span id="cb8-5"><a href="#cb8-5" aria-hidden="true" tabindex="-1"></a>tile_size_px     <span class="op">=</span> <span class="dv">512</span>     <span class="co"># Tile size in pixels (try 128, 256, 1024)</span></span>
+<span id="cb8-6"><a href="#cb8-6" aria-hidden="true" tabindex="-1"></a>n_overview_levels <span class="op">=</span> <span class="dv">4</span>      <span class="co"># Number of overview levels stored in the COG</span></span>
+<span id="cb8-7"><a href="#cb8-7" aria-hidden="true" tabindex="-1"></a>aoi_fraction     <span class="op">=</span> <span class="fl">0.001</span>   <span class="co"># AOI as a fraction of total scene area (try 0.0001 to 0.5)</span></span>
+<span id="cb8-8"><a href="#cb8-8" aria-hidden="true" tabindex="-1"></a>scene_px         <span class="op">=</span> <span class="dv">7600</span>    <span class="co"># Scene size in pixels</span></span>
+<span id="cb8-9"><a href="#cb8-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-10"><a href="#cb8-10" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> cog_bytes_fraction(aoi_frac, tile_px, s_px):</span>
+<span id="cb8-11"><a href="#cb8-11" aria-hidden="true" tabindex="-1"></a>    aoi_side_px <span class="op">=</span> np.sqrt(aoi_frac) <span class="op">*</span> s_px</span>
+<span id="cb8-12"><a href="#cb8-12" aria-hidden="true" tabindex="-1"></a>    n_tiles <span class="op">=</span> np.ceil(aoi_side_px <span class="op">/</span> tile_px) <span class="op">**</span> <span class="dv">2</span></span>
+<span id="cb8-13"><a href="#cb8-13" aria-hidden="true" tabindex="-1"></a>    total_tiles <span class="op">=</span> (s_px <span class="op">/</span> tile_px) <span class="op">**</span> <span class="dv">2</span></span>
+<span id="cb8-14"><a href="#cb8-14" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> n_tiles <span class="op">/</span> total_tiles</span>
+<span id="cb8-15"><a href="#cb8-15" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-16"><a href="#cb8-16" aria-hidden="true" tabindex="-1"></a><span class="co"># Overview footprint: each level is 1/4 the pixels of the previous</span></span>
+<span id="cb8-17"><a href="#cb8-17" aria-hidden="true" tabindex="-1"></a>overview_fraction <span class="op">=</span> <span class="bu">sum</span>(</span>
+<span id="cb8-18"><a href="#cb8-18" aria-hidden="true" tabindex="-1"></a>    (<span class="dv">1</span> <span class="op">/</span> <span class="dv">4</span><span class="op">**</span>i) <span class="cf">for</span> i <span class="kw">in</span> <span class="bu">range</span>(<span class="dv">1</span>, n_overview_levels <span class="op">+</span> <span class="dv">1</span>)</span>
+<span id="cb8-19"><a href="#cb8-19" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb8-20"><a href="#cb8-20" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-21"><a href="#cb8-21" aria-hidden="true" tabindex="-1"></a>aoi_fracs <span class="op">=</span> np.logspace(<span class="op">-</span><span class="dv">4</span>, np.log10(<span class="fl">0.5</span>), <span class="dv">300</span>)</span>
+<span id="cb8-22"><a href="#cb8-22" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-23"><a href="#cb8-23" aria-hidden="true" tabindex="-1"></a>fig, axes <span class="op">=</span> plt.subplots(<span class="dv">1</span>, <span class="dv">2</span>, figsize<span class="op">=</span>(<span class="dv">12</span>, <span class="dv">4</span>))</span>
+<span id="cb8-24"><a href="#cb8-24" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-25"><a href="#cb8-25" aria-hidden="true" tabindex="-1"></a><span class="co"># Left: efficiency curve for chosen tile size + full download</span></span>
+<span id="cb8-26"><a href="#cb8-26" aria-hidden="true" tabindex="-1"></a>ax <span class="op">=</span> axes[<span class="dv">0</span>]</span>
+<span id="cb8-27"><a href="#cb8-27" aria-hidden="true" tabindex="-1"></a>cog_frac <span class="op">=</span> cog_bytes_fraction(aoi_fracs, tile_size_px, scene_px)</span>
+<span id="cb8-28"><a href="#cb8-28" aria-hidden="true" tabindex="-1"></a>ax.plot(aoi_fracs <span class="op">*</span> <span class="dv">100</span>, cog_frac <span class="op">*</span> <span class="dv">100</span>,</span>
+<span id="cb8-29"><a href="#cb8-29" aria-hidden="true" tabindex="-1"></a>        color<span class="op">=</span><span class="st">"#d52a2a"</span>, linewidth<span class="op">=</span><span class="dv">2</span>,</span>
+<span id="cb8-30"><a href="#cb8-30" aria-hidden="true" tabindex="-1"></a>        label<span class="op">=</span><span class="ss">f"COG </span><span class="sc">{</span>tile_size_px<span class="sc">}</span><span class="ss">×</span><span class="sc">{</span>tile_size_px<span class="sc">}</span><span class="ss"> px tiles"</span>)</span>
+<span id="cb8-31"><a href="#cb8-31" aria-hidden="true" tabindex="-1"></a>ax.axhline(<span class="dv">100</span>, color<span class="op">=</span><span class="st">"#888888"</span>, linestyle<span class="op">=</span><span class="st">"--"</span>, linewidth<span class="op">=</span><span class="fl">1.2</span>,</span>
+<span id="cb8-32"><a href="#cb8-32" aria-hidden="true" tabindex="-1"></a>           label<span class="op">=</span><span class="st">"Full download (100%)"</span>)</span>
+<span id="cb8-33"><a href="#cb8-33" aria-hidden="true" tabindex="-1"></a>ax.axvline(aoi_fraction <span class="op">*</span> <span class="dv">100</span>, color<span class="op">=</span><span class="st">"#111111"</span>, linewidth<span class="op">=</span><span class="fl">0.8</span>, linestyle<span class="op">=</span><span class="st">":"</span>)</span>
+<span id="cb8-34"><a href="#cb8-34" aria-hidden="true" tabindex="-1"></a>chosen_cog <span class="op">=</span> cog_bytes_fraction(aoi_fraction, tile_size_px, scene_px) <span class="op">*</span> <span class="dv">100</span></span>
+<span id="cb8-35"><a href="#cb8-35" aria-hidden="true" tabindex="-1"></a>ax.annotate(<span class="ss">f"Your AOI: </span><span class="sc">{</span>chosen_cog<span class="sc">:.2f}</span><span class="ss">% of scene"</span>,</span>
+<span id="cb8-36"><a href="#cb8-36" aria-hidden="true" tabindex="-1"></a>            xy<span class="op">=</span>(aoi_fraction <span class="op">*</span> <span class="dv">100</span>, chosen_cog),</span>
+<span id="cb8-37"><a href="#cb8-37" aria-hidden="true" tabindex="-1"></a>            xytext<span class="op">=</span>(aoi_fraction <span class="op">*</span> <span class="dv">100</span> <span class="op">*</span> <span class="dv">4</span>, chosen_cog <span class="op">+</span> <span class="dv">15</span>),</span>
+<span id="cb8-38"><a href="#cb8-38" aria-hidden="true" tabindex="-1"></a>            fontsize<span class="op">=</span><span class="dv">8</span>, arrowprops<span class="op">=</span><span class="bu">dict</span>(arrowstyle<span class="op">=</span><span class="st">"-&gt;"</span>, lw<span class="op">=</span><span class="fl">0.8</span>))</span>
+<span id="cb8-39"><a href="#cb8-39" aria-hidden="true" tabindex="-1"></a>ax.set_xscale(<span class="st">"log"</span>)</span>
+<span id="cb8-40"><a href="#cb8-40" aria-hidden="true" tabindex="-1"></a>ax.set_xlabel(<span class="st">"AOI as </span><span class="sc">% o</span><span class="st">f scene (log)"</span>)</span>
+<span id="cb8-41"><a href="#cb8-41" aria-hidden="true" tabindex="-1"></a>ax.set_ylabel(<span class="st">"Bytes transferred (%)"</span>)</span>
+<span id="cb8-42"><a href="#cb8-42" aria-hidden="true" tabindex="-1"></a>ax.set_title(<span class="st">"COG efficiency curve"</span>)</span>
+<span id="cb8-43"><a href="#cb8-43" aria-hidden="true" tabindex="-1"></a>ax.legend(fontsize<span class="op">=</span><span class="dv">8</span>, frameon<span class="op">=</span><span class="va">False</span>)</span>
+<span id="cb8-44"><a href="#cb8-44" aria-hidden="true" tabindex="-1"></a>ax.spines[<span class="st">"top"</span>].set_visible(<span class="va">False</span>)</span>
+<span id="cb8-45"><a href="#cb8-45" aria-hidden="true" tabindex="-1"></a>ax.spines[<span class="st">"right"</span>].set_visible(<span class="va">False</span>)</span>
+<span id="cb8-46"><a href="#cb8-46" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-47"><a href="#cb8-47" aria-hidden="true" tabindex="-1"></a><span class="co"># Right: bar chart for chosen parameters</span></span>
+<span id="cb8-48"><a href="#cb8-48" aria-hidden="true" tabindex="-1"></a>ax2 <span class="op">=</span> axes[<span class="dv">1</span>]</span>
+<span id="cb8-49"><a href="#cb8-49" aria-hidden="true" tabindex="-1"></a>full_bytes <span class="op">=</span> <span class="fl">100.0</span></span>
+<span id="cb8-50"><a href="#cb8-50" aria-hidden="true" tabindex="-1"></a>cog_data_bytes <span class="op">=</span> chosen_cog</span>
+<span id="cb8-51"><a href="#cb8-51" aria-hidden="true" tabindex="-1"></a>overview_bytes <span class="op">=</span> overview_fraction <span class="op">*</span> <span class="dv">100</span></span>
+<span id="cb8-52"><a href="#cb8-52" aria-hidden="true" tabindex="-1"></a>labels <span class="op">=</span> [<span class="st">"Full download"</span>, <span class="st">"COG (data tiles)"</span>, <span class="st">"COG overviews"</span>]</span>
+<span id="cb8-53"><a href="#cb8-53" aria-hidden="true" tabindex="-1"></a>values <span class="op">=</span> [full_bytes, cog_data_bytes, overview_bytes]</span>
+<span id="cb8-54"><a href="#cb8-54" aria-hidden="true" tabindex="-1"></a>colours <span class="op">=</span> [<span class="st">"#888888"</span>, <span class="st">"#d52a2a"</span>, <span class="st">"#b07d2e"</span>]</span>
+<span id="cb8-55"><a href="#cb8-55" aria-hidden="true" tabindex="-1"></a>bars <span class="op">=</span> ax2.bar(labels, values, color<span class="op">=</span>colours, width<span class="op">=</span><span class="fl">0.5</span>)</span>
+<span id="cb8-56"><a href="#cb8-56" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> bar, val <span class="kw">in</span> <span class="bu">zip</span>(bars, values):</span>
+<span id="cb8-57"><a href="#cb8-57" aria-hidden="true" tabindex="-1"></a>    ax2.text(bar.get_x() <span class="op">+</span> bar.get_width() <span class="op">/</span> <span class="dv">2</span>, bar.get_height() <span class="op">+</span> <span class="fl">0.5</span>,</span>
+<span id="cb8-58"><a href="#cb8-58" aria-hidden="true" tabindex="-1"></a>             <span class="ss">f"</span><span class="sc">{</span>val<span class="sc">:.2f}</span><span class="ss">%"</span>, ha<span class="op">=</span><span class="st">"center"</span>, va<span class="op">=</span><span class="st">"bottom"</span>, fontsize<span class="op">=</span><span class="dv">8</span>)</span>
+<span id="cb8-59"><a href="#cb8-59" aria-hidden="true" tabindex="-1"></a>ax2.set_ylabel(<span class="st">"Bytes as </span><span class="sc">% o</span><span class="st">f scene"</span>)</span>
+<span id="cb8-60"><a href="#cb8-60" aria-hidden="true" tabindex="-1"></a>ax2.set_title(<span class="ss">f"Bytes fetched for AOI = </span><span class="sc">{</span>aoi_fraction<span class="op">*</span><span class="dv">100</span><span class="sc">:.3f}</span><span class="ss">%"</span>)</span>
+<span id="cb8-61"><a href="#cb8-61" aria-hidden="true" tabindex="-1"></a>ax2.spines[<span class="st">"top"</span>].set_visible(<span class="va">False</span>)</span>
+<span id="cb8-62"><a href="#cb8-62" aria-hidden="true" tabindex="-1"></a>ax2.spines[<span class="st">"right"</span>].set_visible(<span class="va">False</span>)</span>
+<span id="cb8-63"><a href="#cb8-63" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-64"><a href="#cb8-64" aria-hidden="true" tabindex="-1"></a>fig.tight_layout(pad<span class="op">=</span><span class="fl">2.0</span>)</span>
+<span id="cb8-65"><a href="#cb8-65" aria-hidden="true" tabindex="-1"></a>plt.show()</span>
+<span id="cb8-66"><a href="#cb8-66" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-67"><a href="#cb8-67" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f"Tile size:         </span><span class="sc">{</span>tile_size_px<span class="sc">}</span><span class="ss"> × </span><span class="sc">{</span>tile_size_px<span class="sc">}</span><span class="ss"> px"</span>)</span>
+<span id="cb8-68"><a href="#cb8-68" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f"Scene size:        </span><span class="sc">{</span>scene_px<span class="sc">}</span><span class="ss"> × </span><span class="sc">{</span>scene_px<span class="sc">}</span><span class="ss"> px"</span>)</span>
+<span id="cb8-69"><a href="#cb8-69" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f"AOI fraction:      </span><span class="sc">{</span>aoi_fraction<span class="op">*</span><span class="dv">100</span><span class="sc">:.4f}</span><span class="ss">% of scene"</span>)</span>
+<span id="cb8-70"><a href="#cb8-70" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f"COG data bytes:    </span><span class="sc">{</span>cog_data_bytes<span class="sc">:.3f}</span><span class="ss">% of full scene"</span>)</span>
+<span id="cb8-71"><a href="#cb8-71" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f"Overview bytes:    </span><span class="sc">{</span>overview_bytes<span class="sc">:.3f}</span><span class="ss">% of full scene"</span>)</span>
+<span id="cb8-72"><a href="#cb8-72" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f"Total COG bytes:   </span><span class="sc">{</span>cog_data_bytes <span class="op">+</span> overview_bytes<span class="sc">:.3f}</span><span class="ss">% of full scene"</span>)</span>
+<span id="cb8-73"><a href="#cb8-73" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f"Speedup vs full:   </span><span class="sc">{</span><span class="dv">100</span> <span class="op">/</span> (cog_data_bytes <span class="op">+</span> overview_bytes)<span class="sc">:.0f}</span><span class="ss">×"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<hr>
+</section>
+<section id="exercises" class="level2" data-number="5.7">
+<h2 data-number="5.7" class="anchored" data-anchor-id="exercises"><span class="header-section-number">5.7</span> Exercises</h2>
+<p><strong>4.1 — Object storage semantics</strong></p>
+<p>For each of the following operations, state whether it is possible in S3-compatible object storage, and if not, what the equivalent operation is:</p>
+<ol type="a">
+<li>Rename a file from <code>imagery/old_name.tif</code> to <code>imagery/new_name.tif</code>.</li>
+<li>Append 100 bytes to the end of an existing object.</li>
+<li>List all objects whose keys begin with <code>imagery/2023/06/</code>.</li>
+<li>Read bytes 10,000–20,000 of an object without downloading the rest.</li>
+<li>Create a directory called <code>imagery/2023/</code>.</li>
+</ol>
+<p><strong>4.2 — COG tile calculations</strong></p>
+<p>A Sentinel-2 band 4 (red) image at 10 m resolution covers a 100 km × 100 km tile. It is stored as a COG with 512 × 512 pixel tiles and DEFLATE compression.</p>
+<ol type="a">
+<li>How many pixels are in the full image?</li>
+<li>How many tiles are in the full image?</li>
+<li>A client requests a 500 m × 500 m AOI. How many tiles does the COG driver fetch, at minimum and at maximum (depending on alignment)?</li>
+<li>If the native-resolution data is 200 MB uncompressed, and overviews add approximately 33% overhead (sum of a geometric series), what is the approximate total file size with overviews?</li>
+</ol>
+<p><strong>4.3 — STAC item design</strong></p>
+<p>A team is building a STAC catalogue for a drone survey archive. Each survey produces: - One RGB orthomosaic (GeoTIFF, COG) - One digital surface model (GeoTIFF, COG) - One ground control point file (CSV) - One flight log (JSON) - A JPEG thumbnail</p>
+<p>Design a STAC Item for one survey. Specify: a. The <code>id</code> field and the naming convention. b. The geometry (what area should it represent?). c.&nbsp;The <code>assets</code> dictionary with appropriate <code>type</code>, <code>roles</code>, and <code>title</code> for each file. d.&nbsp;At least four properties in the <code>properties</code> dictionary that a search client might filter on.</p>
+<p><strong>4.4 — Partitioning strategy</strong></p>
+<p>A team ingests MODIS Terra daily surface reflectance data globally (about 460 × 10-degree tiles per day, going back to 2000). They have two primary access patterns: (1) researchers requesting all tiles for a specific region over a multi-year period; (2) an operational monitoring system that accesses the previous 30 days’ data for a regional subset.</p>
+<ol type="a">
+<li>Design an object key structure that makes access pattern (1) efficient.</li>
+<li>Design an object key structure that makes access pattern (2) efficient.</li>
+<li>These two structures are different. How would you serve both access patterns from a single archive? (Consider STAC and/or symbolic-link equivalents in object storage.)</li>
+</ol>
+<hr>
+</section>
+<section id="build-this" class="level2" data-number="5.8">
+<h2 data-number="5.8" class="anchored" data-anchor-id="build-this"><span class="header-section-number">5.8</span> Build this</h2>
+<p>The following sequence creates a COG from a raw GeoTIFF, uploads it to a local MinIO instance, and writes a STAC Item JSON for it.</p>
+<section id="step-1-create-the-cog" class="level3" data-number="5.8.1">
+<h3 data-number="5.8.1" class="anchored" data-anchor-id="step-1-create-the-cog"><span class="header-section-number">5.8.1</span> Step 1: Create the COG</h3>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb9"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Assumes input.tif is a raw GeoTIFF, single-band or multi-band,</span></span>
+<span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a><span class="co"># in any coordinate reference system.</span></span>
+<span id="cb9-3"><a href="#cb9-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-4"><a href="#cb9-4" aria-hidden="true" tabindex="-1"></a><span class="co"># Step 1a: Reproject to EPSG:4326 if needed (skip if already in WGS84)</span></span>
+<span id="cb9-5"><a href="#cb9-5" aria-hidden="true" tabindex="-1"></a><span class="ex">gdalwarp</span> <span class="dt">\</span></span>
+<span id="cb9-6"><a href="#cb9-6" aria-hidden="true" tabindex="-1"></a>    <span class="at">-t_srs</span> EPSG:4326 <span class="dt">\</span></span>
+<span id="cb9-7"><a href="#cb9-7" aria-hidden="true" tabindex="-1"></a>    <span class="at">-r</span> bilinear <span class="dt">\</span></span>
+<span id="cb9-8"><a href="#cb9-8" aria-hidden="true" tabindex="-1"></a>    <span class="at">-of</span> GTiff <span class="dt">\</span></span>
+<span id="cb9-9"><a href="#cb9-9" aria-hidden="true" tabindex="-1"></a>    input.tif <span class="dt">\</span></span>
+<span id="cb9-10"><a href="#cb9-10" aria-hidden="true" tabindex="-1"></a>    input_wgs84.tif</span>
+<span id="cb9-11"><a href="#cb9-11" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-12"><a href="#cb9-12" aria-hidden="true" tabindex="-1"></a><span class="co"># Step 1b: Convert to COG with DEFLATE compression, 512x512 tiles,</span></span>
+<span id="cb9-13"><a href="#cb9-13" aria-hidden="true" tabindex="-1"></a><span class="co"># and 4 overview levels (1/2, 1/4, 1/8, 1/16 of native resolution).</span></span>
+<span id="cb9-14"><a href="#cb9-14" aria-hidden="true" tabindex="-1"></a><span class="ex">gdal_translate</span> <span class="dt">\</span></span>
+<span id="cb9-15"><a href="#cb9-15" aria-hidden="true" tabindex="-1"></a>    <span class="at">-of</span> COG <span class="dt">\</span></span>
+<span id="cb9-16"><a href="#cb9-16" aria-hidden="true" tabindex="-1"></a>    <span class="at">-co</span> COMPRESS=DEFLATE <span class="dt">\</span></span>
+<span id="cb9-17"><a href="#cb9-17" aria-hidden="true" tabindex="-1"></a>    <span class="at">-co</span> PREDICTOR=2 <span class="dt">\</span></span>
+<span id="cb9-18"><a href="#cb9-18" aria-hidden="true" tabindex="-1"></a>    <span class="at">-co</span> BLOCKSIZE=512 <span class="dt">\</span></span>
+<span id="cb9-19"><a href="#cb9-19" aria-hidden="true" tabindex="-1"></a>    <span class="at">-co</span> OVERVIEW_RESAMPLING=AVERAGE <span class="dt">\</span></span>
+<span id="cb9-20"><a href="#cb9-20" aria-hidden="true" tabindex="-1"></a>    <span class="at">-co</span> NUM_THREADS=4 <span class="dt">\</span></span>
+<span id="cb9-21"><a href="#cb9-21" aria-hidden="true" tabindex="-1"></a>    input_wgs84.tif <span class="dt">\</span></span>
+<span id="cb9-22"><a href="#cb9-22" aria-hidden="true" tabindex="-1"></a>    scene_cog.tif</span>
+<span id="cb9-23"><a href="#cb9-23" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-24"><a href="#cb9-24" aria-hidden="true" tabindex="-1"></a><span class="co"># Step 1c: Validate the COG structure</span></span>
+<span id="cb9-25"><a href="#cb9-25" aria-hidden="true" tabindex="-1"></a><span class="ex">python</span> <span class="at">-c</span> <span class="st">"</span></span>
+<span id="cb9-26"><a href="#cb9-26" aria-hidden="true" tabindex="-1"></a><span class="st">from osgeo import gdal</span></span>
+<span id="cb9-27"><a href="#cb9-27" aria-hidden="true" tabindex="-1"></a><span class="st">ds = gdal.Open('scene_cog.tif')</span></span>
+<span id="cb9-28"><a href="#cb9-28" aria-hidden="true" tabindex="-1"></a><span class="st">info = gdal.Info(ds, format='json')</span></span>
+<span id="cb9-29"><a href="#cb9-29" aria-hidden="true" tabindex="-1"></a><span class="st">print('Driver:', info['driverLongName'])</span></span>
+<span id="cb9-30"><a href="#cb9-30" aria-hidden="true" tabindex="-1"></a><span class="st">print('Size:', info['size'])</span></span>
+<span id="cb9-31"><a href="#cb9-31" aria-hidden="true" tabindex="-1"></a><span class="st">print('Overview levels:', len(info.get('bands', [{}])[0].get('overviews', [])))</span></span>
+<span id="cb9-32"><a href="#cb9-32" aria-hidden="true" tabindex="-1"></a><span class="st"># Check IFD ordering (COG requirement: IFDs at start of file)</span></span>
+<span id="cb9-33"><a href="#cb9-33" aria-hidden="true" tabindex="-1"></a><span class="st">md = ds.GetMetadataItem('IFD_OFFSETS', 'MAIN_FILE')</span></span>
+<span id="cb9-34"><a href="#cb9-34" aria-hidden="true" tabindex="-1"></a><span class="st">print('IFD offsets (should start near 0):', md)</span></span>
+<span id="cb9-35"><a href="#cb9-35" aria-hidden="true" tabindex="-1"></a><span class="st">"</span></span>
+<span id="cb9-36"><a href="#cb9-36" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-37"><a href="#cb9-37" aria-hidden="true" tabindex="-1"></a><span class="co"># Or use the cogeo-mosaic validator</span></span>
+<span id="cb9-38"><a href="#cb9-38" aria-hidden="true" tabindex="-1"></a><span class="ex">pip</span> install cogeo-mosaic</span>
+<span id="cb9-39"><a href="#cb9-39" aria-hidden="true" tabindex="-1"></a><span class="ex">rio</span> cogeo validate scene_cog.tif</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</section>
+<section id="step-2-upload-to-minio" class="level3" data-number="5.8.2">
+<h3 data-number="5.8.2" class="anchored" data-anchor-id="step-2-upload-to-minio"><span class="header-section-number">5.8.2</span> Step 2: Upload to MinIO</h3>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb10"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Install the AWS CLI (it works with any S3-compatible endpoint)</span></span>
+<span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a><span class="ex">pip</span> install awscli</span>
+<span id="cb10-3"><a href="#cb10-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-4"><a href="#cb10-4" aria-hidden="true" tabindex="-1"></a><span class="co"># Configure for MinIO (development)</span></span>
+<span id="cb10-5"><a href="#cb10-5" aria-hidden="true" tabindex="-1"></a><span class="bu">export</span> <span class="va">AWS_ACCESS_KEY_ID</span><span class="op">=</span>minioadmin</span>
+<span id="cb10-6"><a href="#cb10-6" aria-hidden="true" tabindex="-1"></a><span class="bu">export</span> <span class="va">AWS_SECRET_ACCESS_KEY</span><span class="op">=</span>minioadmin</span>
+<span id="cb10-7"><a href="#cb10-7" aria-hidden="true" tabindex="-1"></a><span class="bu">export</span> <span class="va">AWS_DEFAULT_REGION</span><span class="op">=</span>us-east-1</span>
+<span id="cb10-8"><a href="#cb10-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-9"><a href="#cb10-9" aria-hidden="true" tabindex="-1"></a><span class="co"># Create a bucket</span></span>
+<span id="cb10-10"><a href="#cb10-10" aria-hidden="true" tabindex="-1"></a><span class="ex">aws</span> <span class="at">--endpoint-url</span> http://localhost:9000 s3 mb s3://my-imagery-bucket</span>
+<span id="cb10-11"><a href="#cb10-11" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-12"><a href="#cb10-12" aria-hidden="true" tabindex="-1"></a><span class="co"># Upload the COG</span></span>
+<span id="cb10-13"><a href="#cb10-13" aria-hidden="true" tabindex="-1"></a><span class="ex">aws</span> <span class="at">--endpoint-url</span> http://localhost:9000 s3 cp <span class="dt">\</span></span>
+<span id="cb10-14"><a href="#cb10-14" aria-hidden="true" tabindex="-1"></a>    scene_cog.tif <span class="dt">\</span></span>
+<span id="cb10-15"><a href="#cb10-15" aria-hidden="true" tabindex="-1"></a>    s3://my-imagery-bucket/landsat9/2023/LC09_185033_20230615_B04_cog.tif</span>
+<span id="cb10-16"><a href="#cb10-16" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-17"><a href="#cb10-17" aria-hidden="true" tabindex="-1"></a><span class="co"># Verify it is accessible via HTTP range request</span></span>
+<span id="cb10-18"><a href="#cb10-18" aria-hidden="true" tabindex="-1"></a><span class="ex">curl</span> <span class="at">-H</span> <span class="st">"Range: bytes=0-8191"</span> <span class="dt">\</span></span>
+<span id="cb10-19"><a href="#cb10-19" aria-hidden="true" tabindex="-1"></a>    <span class="st">"http://localhost:9000/my-imagery-bucket/landsat9/2023/LC09_185033_20230615_B04_cog.tif"</span> <span class="dt">\</span></span>
+<span id="cb10-20"><a href="#cb10-20" aria-hidden="true" tabindex="-1"></a>    <span class="kw">|</span> <span class="fu">wc</span> <span class="at">-c</span></span>
+<span id="cb10-21"><a href="#cb10-21" aria-hidden="true" tabindex="-1"></a><span class="co"># Should print 8192 (the first 8 KB, containing the COG header and tile offsets)</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</section>
+<section id="step-3-write-the-stac-item" class="level3" data-number="5.8.3">
+<h3 data-number="5.8.3" class="anchored" data-anchor-id="step-3-write-the-stac-item"><span class="header-section-number">5.8.3</span> Step 3: Write the STAC Item</h3>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb11"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a><span class="co"># stac/write_item.py</span></span>
+<span id="cb11-2"><a href="#cb11-2" aria-hidden="true" tabindex="-1"></a><span class="co">"""</span></span>
+<span id="cb11-3"><a href="#cb11-3" aria-hidden="true" tabindex="-1"></a><span class="co">Construct a STAC Item from a COG file and write it to object storage.</span></span>
+<span id="cb11-4"><a href="#cb11-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-5"><a href="#cb11-5" aria-hidden="true" tabindex="-1"></a><span class="co">Requires: osgeo (GDAL), boto3, json, datetime.</span></span>
+<span id="cb11-6"><a href="#cb11-6" aria-hidden="true" tabindex="-1"></a><span class="co">The item is written as a JSON file alongside the data asset.</span></span>
+<span id="cb11-7"><a href="#cb11-7" aria-hidden="true" tabindex="-1"></a><span class="co">"""</span></span>
+<span id="cb11-8"><a href="#cb11-8" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> __future__ <span class="im">import</span> annotations</span>
+<span id="cb11-9"><a href="#cb11-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-10"><a href="#cb11-10" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> json</span>
+<span id="cb11-11"><a href="#cb11-11" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> datetime <span class="im">import</span> datetime, timezone</span>
+<span id="cb11-12"><a href="#cb11-12" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> pathlib <span class="im">import</span> Path</span>
+<span id="cb11-13"><a href="#cb11-13" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-14"><a href="#cb11-14" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> boto3</span>
+<span id="cb11-15"><a href="#cb11-15" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> osgeo <span class="im">import</span> gdal, osr</span>
+<span id="cb11-16"><a href="#cb11-16" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-17"><a href="#cb11-17" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-18"><a href="#cb11-18" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> get_scene_bbox_and_shape(filepath: <span class="bu">str</span>) <span class="op">-&gt;</span> <span class="bu">tuple</span>[<span class="bu">list</span>[<span class="bu">float</span>], <span class="bu">list</span>[<span class="bu">int</span>]]:</span>
+<span id="cb11-19"><a href="#cb11-19" aria-hidden="true" tabindex="-1"></a>    <span class="co">"""Read geographic bounding box and pixel dimensions from a GeoTIFF."""</span></span>
+<span id="cb11-20"><a href="#cb11-20" aria-hidden="true" tabindex="-1"></a>    ds <span class="op">=</span> gdal.Open(filepath)</span>
+<span id="cb11-21"><a href="#cb11-21" aria-hidden="true" tabindex="-1"></a>    gt <span class="op">=</span> ds.GetGeoTransform()       <span class="co"># (origin_x, pixel_w, 0, origin_y, 0, pixel_h)</span></span>
+<span id="cb11-22"><a href="#cb11-22" aria-hidden="true" tabindex="-1"></a>    width <span class="op">=</span> ds.RasterXSize</span>
+<span id="cb11-23"><a href="#cb11-23" aria-hidden="true" tabindex="-1"></a>    height <span class="op">=</span> ds.RasterYSize</span>
+<span id="cb11-24"><a href="#cb11-24" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-25"><a href="#cb11-25" aria-hidden="true" tabindex="-1"></a>    <span class="co"># Transform corners to WGS84 if not already</span></span>
+<span id="cb11-26"><a href="#cb11-26" aria-hidden="true" tabindex="-1"></a>    src_srs <span class="op">=</span> osr.SpatialReference()</span>
+<span id="cb11-27"><a href="#cb11-27" aria-hidden="true" tabindex="-1"></a>    src_srs.ImportFromWkt(ds.GetProjection())</span>
+<span id="cb11-28"><a href="#cb11-28" aria-hidden="true" tabindex="-1"></a>    wgs84 <span class="op">=</span> osr.SpatialReference()</span>
+<span id="cb11-29"><a href="#cb11-29" aria-hidden="true" tabindex="-1"></a>    wgs84.ImportFromEPSG(<span class="dv">4326</span>)</span>
+<span id="cb11-30"><a href="#cb11-30" aria-hidden="true" tabindex="-1"></a>    wgs84.SetAxisMappingStrategy(osr.OAMS_TRADITIONAL_GIS_ORDER)</span>
+<span id="cb11-31"><a href="#cb11-31" aria-hidden="true" tabindex="-1"></a>    transform <span class="op">=</span> osr.CoordinateTransformation(src_srs, wgs84)</span>
+<span id="cb11-32"><a href="#cb11-32" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-33"><a href="#cb11-33" aria-hidden="true" tabindex="-1"></a>    corners <span class="op">=</span> [</span>
+<span id="cb11-34"><a href="#cb11-34" aria-hidden="true" tabindex="-1"></a>        (gt[<span class="dv">0</span>], gt[<span class="dv">3</span>]),                          <span class="co"># upper-left</span></span>
+<span id="cb11-35"><a href="#cb11-35" aria-hidden="true" tabindex="-1"></a>        (gt[<span class="dv">0</span>] <span class="op">+</span> width <span class="op">*</span> gt[<span class="dv">1</span>], gt[<span class="dv">3</span>]),          <span class="co"># upper-right</span></span>
+<span id="cb11-36"><a href="#cb11-36" aria-hidden="true" tabindex="-1"></a>        (gt[<span class="dv">0</span>] <span class="op">+</span> width <span class="op">*</span> gt[<span class="dv">1</span>], gt[<span class="dv">3</span>] <span class="op">+</span> height <span class="op">*</span> gt[<span class="dv">5</span>]),  <span class="co"># lower-right</span></span>
+<span id="cb11-37"><a href="#cb11-37" aria-hidden="true" tabindex="-1"></a>        (gt[<span class="dv">0</span>], gt[<span class="dv">3</span>] <span class="op">+</span> height <span class="op">*</span> gt[<span class="dv">5</span>]),         <span class="co"># lower-left</span></span>
+<span id="cb11-38"><a href="#cb11-38" aria-hidden="true" tabindex="-1"></a>    ]</span>
+<span id="cb11-39"><a href="#cb11-39" aria-hidden="true" tabindex="-1"></a>    lons_lats <span class="op">=</span> [transform.TransformPoint(x, y)[:<span class="dv">2</span>] <span class="cf">for</span> x, y <span class="kw">in</span> corners]</span>
+<span id="cb11-40"><a href="#cb11-40" aria-hidden="true" tabindex="-1"></a>    lons <span class="op">=</span> [p[<span class="dv">0</span>] <span class="cf">for</span> p <span class="kw">in</span> lons_lats]</span>
+<span id="cb11-41"><a href="#cb11-41" aria-hidden="true" tabindex="-1"></a>    lats <span class="op">=</span> [p[<span class="dv">1</span>] <span class="cf">for</span> p <span class="kw">in</span> lons_lats]</span>
+<span id="cb11-42"><a href="#cb11-42" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-43"><a href="#cb11-43" aria-hidden="true" tabindex="-1"></a>    bbox <span class="op">=</span> [<span class="bu">min</span>(lons), <span class="bu">min</span>(lats), <span class="bu">max</span>(lons), <span class="bu">max</span>(lats)]</span>
+<span id="cb11-44"><a href="#cb11-44" aria-hidden="true" tabindex="-1"></a>    shape <span class="op">=</span> [height, width]</span>
+<span id="cb11-45"><a href="#cb11-45" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> bbox, shape</span>
+<span id="cb11-46"><a href="#cb11-46" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-47"><a href="#cb11-47" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-48"><a href="#cb11-48" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> build_stac_item(</span>
+<span id="cb11-49"><a href="#cb11-49" aria-hidden="true" tabindex="-1"></a>    scene_id: <span class="bu">str</span>,</span>
+<span id="cb11-50"><a href="#cb11-50" aria-hidden="true" tabindex="-1"></a>    cog_s3_key: <span class="bu">str</span>,</span>
+<span id="cb11-51"><a href="#cb11-51" aria-hidden="true" tabindex="-1"></a>    bucket: <span class="bu">str</span>,</span>
+<span id="cb11-52"><a href="#cb11-52" aria-hidden="true" tabindex="-1"></a>    endpoint_url: <span class="bu">str</span>,</span>
+<span id="cb11-53"><a href="#cb11-53" aria-hidden="true" tabindex="-1"></a>    scene_datetime: datetime,</span>
+<span id="cb11-54"><a href="#cb11-54" aria-hidden="true" tabindex="-1"></a>    platform: <span class="bu">str</span> <span class="op">=</span> <span class="st">"landsat-9"</span>,</span>
+<span id="cb11-55"><a href="#cb11-55" aria-hidden="true" tabindex="-1"></a>    cloud_cover: <span class="bu">float</span> <span class="op">=</span> <span class="fl">0.0</span>,</span>
+<span id="cb11-56"><a href="#cb11-56" aria-hidden="true" tabindex="-1"></a>) <span class="op">-&gt;</span> <span class="bu">dict</span>:</span>
+<span id="cb11-57"><a href="#cb11-57" aria-hidden="true" tabindex="-1"></a>    <span class="co">"""Build a STAC 1.0 Item dict for a single-band COG."""</span></span>
+<span id="cb11-58"><a href="#cb11-58" aria-hidden="true" tabindex="-1"></a>    local_path <span class="op">=</span> <span class="ss">f"/tmp/</span><span class="sc">{</span>Path(cog_s3_key)<span class="sc">.</span>name<span class="sc">}</span><span class="ss">"</span></span>
+<span id="cb11-59"><a href="#cb11-59" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-60"><a href="#cb11-60" aria-hidden="true" tabindex="-1"></a>    <span class="co"># Download just enough of the file to read the header</span></span>
+<span id="cb11-61"><a href="#cb11-61" aria-hidden="true" tabindex="-1"></a>    s3 <span class="op">=</span> boto3.client(<span class="st">"s3"</span>, endpoint_url<span class="op">=</span>endpoint_url,</span>
+<span id="cb11-62"><a href="#cb11-62" aria-hidden="true" tabindex="-1"></a>                      aws_access_key_id<span class="op">=</span><span class="st">"minioadmin"</span>,</span>
+<span id="cb11-63"><a href="#cb11-63" aria-hidden="true" tabindex="-1"></a>                      aws_secret_access_key<span class="op">=</span><span class="st">"minioadmin"</span>)</span>
+<span id="cb11-64"><a href="#cb11-64" aria-hidden="true" tabindex="-1"></a>    s3.download_file(bucket, cog_s3_key, local_path)</span>
+<span id="cb11-65"><a href="#cb11-65" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-66"><a href="#cb11-66" aria-hidden="true" tabindex="-1"></a>    bbox, shape <span class="op">=</span> get_scene_bbox_and_shape(local_path)</span>
+<span id="cb11-67"><a href="#cb11-67" aria-hidden="true" tabindex="-1"></a>    min_lon, min_lat, max_lon, max_lat <span class="op">=</span> bbox</span>
+<span id="cb11-68"><a href="#cb11-68" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-69"><a href="#cb11-69" aria-hidden="true" tabindex="-1"></a>    s3_uri <span class="op">=</span> <span class="ss">f"s3://</span><span class="sc">{</span>bucket<span class="sc">}</span><span class="ss">/</span><span class="sc">{</span>cog_s3_key<span class="sc">}</span><span class="ss">"</span></span>
+<span id="cb11-70"><a href="#cb11-70" aria-hidden="true" tabindex="-1"></a>    http_url <span class="op">=</span> <span class="ss">f"</span><span class="sc">{</span>endpoint_url<span class="sc">}</span><span class="ss">/</span><span class="sc">{</span>bucket<span class="sc">}</span><span class="ss">/</span><span class="sc">{</span>cog_s3_key<span class="sc">}</span><span class="ss">"</span></span>
+<span id="cb11-71"><a href="#cb11-71" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-72"><a href="#cb11-72" aria-hidden="true" tabindex="-1"></a>    item <span class="op">=</span> {</span>
+<span id="cb11-73"><a href="#cb11-73" aria-hidden="true" tabindex="-1"></a>        <span class="st">"type"</span>: <span class="st">"Feature"</span>,</span>
+<span id="cb11-74"><a href="#cb11-74" aria-hidden="true" tabindex="-1"></a>        <span class="st">"stac_version"</span>: <span class="st">"1.0.0"</span>,</span>
+<span id="cb11-75"><a href="#cb11-75" aria-hidden="true" tabindex="-1"></a>        <span class="st">"id"</span>: scene_id,</span>
+<span id="cb11-76"><a href="#cb11-76" aria-hidden="true" tabindex="-1"></a>        <span class="st">"geometry"</span>: {</span>
+<span id="cb11-77"><a href="#cb11-77" aria-hidden="true" tabindex="-1"></a>            <span class="st">"type"</span>: <span class="st">"Polygon"</span>,</span>
+<span id="cb11-78"><a href="#cb11-78" aria-hidden="true" tabindex="-1"></a>            <span class="st">"coordinates"</span>: [[</span>
+<span id="cb11-79"><a href="#cb11-79" aria-hidden="true" tabindex="-1"></a>                [min_lon, min_lat],</span>
+<span id="cb11-80"><a href="#cb11-80" aria-hidden="true" tabindex="-1"></a>                [max_lon, min_lat],</span>
+<span id="cb11-81"><a href="#cb11-81" aria-hidden="true" tabindex="-1"></a>                [max_lon, max_lat],</span>
+<span id="cb11-82"><a href="#cb11-82" aria-hidden="true" tabindex="-1"></a>                [min_lon, max_lat],</span>
+<span id="cb11-83"><a href="#cb11-83" aria-hidden="true" tabindex="-1"></a>                [min_lon, min_lat],</span>
+<span id="cb11-84"><a href="#cb11-84" aria-hidden="true" tabindex="-1"></a>            ]],</span>
+<span id="cb11-85"><a href="#cb11-85" aria-hidden="true" tabindex="-1"></a>        },</span>
+<span id="cb11-86"><a href="#cb11-86" aria-hidden="true" tabindex="-1"></a>        <span class="st">"bbox"</span>: bbox,</span>
+<span id="cb11-87"><a href="#cb11-87" aria-hidden="true" tabindex="-1"></a>        <span class="st">"properties"</span>: {</span>
+<span id="cb11-88"><a href="#cb11-88" aria-hidden="true" tabindex="-1"></a>            <span class="st">"datetime"</span>: scene_datetime.isoformat().replace(<span class="st">"+00:00"</span>, <span class="st">"Z"</span>),</span>
+<span id="cb11-89"><a href="#cb11-89" aria-hidden="true" tabindex="-1"></a>            <span class="st">"platform"</span>: platform,</span>
+<span id="cb11-90"><a href="#cb11-90" aria-hidden="true" tabindex="-1"></a>            <span class="st">"instruments"</span>: [<span class="st">"OLI"</span>],</span>
+<span id="cb11-91"><a href="#cb11-91" aria-hidden="true" tabindex="-1"></a>            <span class="st">"constellation"</span>: <span class="st">"landsat"</span>,</span>
+<span id="cb11-92"><a href="#cb11-92" aria-hidden="true" tabindex="-1"></a>            <span class="st">"eo:cloud_cover"</span>: cloud_cover,</span>
+<span id="cb11-93"><a href="#cb11-93" aria-hidden="true" tabindex="-1"></a>            <span class="st">"proj:epsg"</span>: <span class="dv">4326</span>,</span>
+<span id="cb11-94"><a href="#cb11-94" aria-hidden="true" tabindex="-1"></a>            <span class="st">"proj:shape"</span>: shape,</span>
+<span id="cb11-95"><a href="#cb11-95" aria-hidden="true" tabindex="-1"></a>        },</span>
+<span id="cb11-96"><a href="#cb11-96" aria-hidden="true" tabindex="-1"></a>        <span class="st">"assets"</span>: {</span>
+<span id="cb11-97"><a href="#cb11-97" aria-hidden="true" tabindex="-1"></a>            <span class="st">"B04"</span>: {</span>
+<span id="cb11-98"><a href="#cb11-98" aria-hidden="true" tabindex="-1"></a>                <span class="st">"href"</span>: s3_uri,</span>
+<span id="cb11-99"><a href="#cb11-99" aria-hidden="true" tabindex="-1"></a>                <span class="st">"alternate"</span>: {<span class="st">"https"</span>: {<span class="st">"href"</span>: http_url}},</span>
+<span id="cb11-100"><a href="#cb11-100" aria-hidden="true" tabindex="-1"></a>                <span class="st">"type"</span>: <span class="st">"image/tiff; application=geotiff; profile=cloud-optimized"</span>,</span>
+<span id="cb11-101"><a href="#cb11-101" aria-hidden="true" tabindex="-1"></a>                <span class="st">"title"</span>: <span class="st">"Red Band (B4) — COG"</span>,</span>
+<span id="cb11-102"><a href="#cb11-102" aria-hidden="true" tabindex="-1"></a>                <span class="st">"roles"</span>: [<span class="st">"data"</span>],</span>
+<span id="cb11-103"><a href="#cb11-103" aria-hidden="true" tabindex="-1"></a>                <span class="st">"eo:bands"</span>: [{</span>
+<span id="cb11-104"><a href="#cb11-104" aria-hidden="true" tabindex="-1"></a>                    <span class="st">"name"</span>: <span class="st">"red"</span>,</span>
+<span id="cb11-105"><a href="#cb11-105" aria-hidden="true" tabindex="-1"></a>                    <span class="st">"common_name"</span>: <span class="st">"red"</span>,</span>
+<span id="cb11-106"><a href="#cb11-106" aria-hidden="true" tabindex="-1"></a>                    <span class="st">"center_wavelength"</span>: <span class="fl">0.65</span>,</span>
+<span id="cb11-107"><a href="#cb11-107" aria-hidden="true" tabindex="-1"></a>                }],</span>
+<span id="cb11-108"><a href="#cb11-108" aria-hidden="true" tabindex="-1"></a>            },</span>
+<span id="cb11-109"><a href="#cb11-109" aria-hidden="true" tabindex="-1"></a>        },</span>
+<span id="cb11-110"><a href="#cb11-110" aria-hidden="true" tabindex="-1"></a>        <span class="st">"links"</span>: [</span>
+<span id="cb11-111"><a href="#cb11-111" aria-hidden="true" tabindex="-1"></a>            {</span>
+<span id="cb11-112"><a href="#cb11-112" aria-hidden="true" tabindex="-1"></a>                <span class="st">"rel"</span>: <span class="st">"self"</span>,</span>
+<span id="cb11-113"><a href="#cb11-113" aria-hidden="true" tabindex="-1"></a>                <span class="st">"href"</span>: <span class="ss">f"s3://</span><span class="sc">{</span>bucket<span class="sc">}</span><span class="ss">/stac/</span><span class="sc">{</span>scene_id<span class="sc">}</span><span class="ss">.json"</span>,</span>
+<span id="cb11-114"><a href="#cb11-114" aria-hidden="true" tabindex="-1"></a>                <span class="st">"type"</span>: <span class="st">"application/geo+json"</span>,</span>
+<span id="cb11-115"><a href="#cb11-115" aria-hidden="true" tabindex="-1"></a>            },</span>
+<span id="cb11-116"><a href="#cb11-116" aria-hidden="true" tabindex="-1"></a>            {</span>
+<span id="cb11-117"><a href="#cb11-117" aria-hidden="true" tabindex="-1"></a>                <span class="st">"rel"</span>: <span class="st">"collection"</span>,</span>
+<span id="cb11-118"><a href="#cb11-118" aria-hidden="true" tabindex="-1"></a>                <span class="st">"href"</span>: <span class="ss">f"s3://</span><span class="sc">{</span>bucket<span class="sc">}</span><span class="ss">/stac/collection.json"</span>,</span>
+<span id="cb11-119"><a href="#cb11-119" aria-hidden="true" tabindex="-1"></a>                <span class="st">"type"</span>: <span class="st">"application/json"</span>,</span>
+<span id="cb11-120"><a href="#cb11-120" aria-hidden="true" tabindex="-1"></a>            },</span>
+<span id="cb11-121"><a href="#cb11-121" aria-hidden="true" tabindex="-1"></a>        ],</span>
+<span id="cb11-122"><a href="#cb11-122" aria-hidden="true" tabindex="-1"></a>    }</span>
+<span id="cb11-123"><a href="#cb11-123" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> item</span>
+<span id="cb11-124"><a href="#cb11-124" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-125"><a href="#cb11-125" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-126"><a href="#cb11-126" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> write_stac_item(item: <span class="bu">dict</span>, bucket: <span class="bu">str</span>, endpoint_url: <span class="bu">str</span>) <span class="op">-&gt;</span> <span class="va">None</span>:</span>
+<span id="cb11-127"><a href="#cb11-127" aria-hidden="true" tabindex="-1"></a>    <span class="co">"""Write the STAC Item JSON to object storage."""</span></span>
+<span id="cb11-128"><a href="#cb11-128" aria-hidden="true" tabindex="-1"></a>    s3 <span class="op">=</span> boto3.client(<span class="st">"s3"</span>, endpoint_url<span class="op">=</span>endpoint_url,</span>
+<span id="cb11-129"><a href="#cb11-129" aria-hidden="true" tabindex="-1"></a>                      aws_access_key_id<span class="op">=</span><span class="st">"minioadmin"</span>,</span>
+<span id="cb11-130"><a href="#cb11-130" aria-hidden="true" tabindex="-1"></a>                      aws_secret_access_key<span class="op">=</span><span class="st">"minioadmin"</span>)</span>
+<span id="cb11-131"><a href="#cb11-131" aria-hidden="true" tabindex="-1"></a>    key <span class="op">=</span> <span class="ss">f"stac/</span><span class="sc">{</span>item[<span class="st">'id'</span>]<span class="sc">}</span><span class="ss">.json"</span></span>
+<span id="cb11-132"><a href="#cb11-132" aria-hidden="true" tabindex="-1"></a>    body <span class="op">=</span> json.dumps(item, indent<span class="op">=</span><span class="dv">2</span>)</span>
+<span id="cb11-133"><a href="#cb11-133" aria-hidden="true" tabindex="-1"></a>    s3.put_object(</span>
+<span id="cb11-134"><a href="#cb11-134" aria-hidden="true" tabindex="-1"></a>        Bucket<span class="op">=</span>bucket,</span>
+<span id="cb11-135"><a href="#cb11-135" aria-hidden="true" tabindex="-1"></a>        Key<span class="op">=</span>key,</span>
+<span id="cb11-136"><a href="#cb11-136" aria-hidden="true" tabindex="-1"></a>        Body<span class="op">=</span>body.encode(),</span>
+<span id="cb11-137"><a href="#cb11-137" aria-hidden="true" tabindex="-1"></a>        ContentType<span class="op">=</span><span class="st">"application/geo+json"</span>,</span>
+<span id="cb11-138"><a href="#cb11-138" aria-hidden="true" tabindex="-1"></a>    )</span>
+<span id="cb11-139"><a href="#cb11-139" aria-hidden="true" tabindex="-1"></a>    <span class="bu">print</span>(<span class="ss">f"Written: s3://</span><span class="sc">{</span>bucket<span class="sc">}</span><span class="ss">/</span><span class="sc">{</span>key<span class="sc">}</span><span class="ss">"</span>)</span>
+<span id="cb11-140"><a href="#cb11-140" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-141"><a href="#cb11-141" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-142"><a href="#cb11-142" aria-hidden="true" tabindex="-1"></a><span class="cf">if</span> <span class="va">__name__</span> <span class="op">==</span> <span class="st">"__main__"</span>:</span>
+<span id="cb11-143"><a href="#cb11-143" aria-hidden="true" tabindex="-1"></a>    item <span class="op">=</span> build_stac_item(</span>
+<span id="cb11-144"><a href="#cb11-144" aria-hidden="true" tabindex="-1"></a>        scene_id<span class="op">=</span><span class="st">"LC09_185033_20230615_B04"</span>,</span>
+<span id="cb11-145"><a href="#cb11-145" aria-hidden="true" tabindex="-1"></a>        cog_s3_key<span class="op">=</span><span class="st">"landsat9/2023/LC09_185033_20230615_B04_cog.tif"</span>,</span>
+<span id="cb11-146"><a href="#cb11-146" aria-hidden="true" tabindex="-1"></a>        bucket<span class="op">=</span><span class="st">"my-imagery-bucket"</span>,</span>
+<span id="cb11-147"><a href="#cb11-147" aria-hidden="true" tabindex="-1"></a>        endpoint_url<span class="op">=</span><span class="st">"http://localhost:9000"</span>,</span>
+<span id="cb11-148"><a href="#cb11-148" aria-hidden="true" tabindex="-1"></a>        scene_datetime<span class="op">=</span>datetime(<span class="dv">2023</span>, <span class="dv">6</span>, <span class="dv">15</span>, <span class="dv">1</span>, <span class="dv">34</span>, <span class="dv">22</span>, tzinfo<span class="op">=</span>timezone.utc),</span>
+<span id="cb11-149"><a href="#cb11-149" aria-hidden="true" tabindex="-1"></a>        platform<span class="op">=</span><span class="st">"landsat-9"</span>,</span>
+<span id="cb11-150"><a href="#cb11-150" aria-hidden="true" tabindex="-1"></a>        cloud_cover<span class="op">=</span><span class="fl">4.2</span>,</span>
+<span id="cb11-151"><a href="#cb11-151" aria-hidden="true" tabindex="-1"></a>    )</span>
+<span id="cb11-152"><a href="#cb11-152" aria-hidden="true" tabindex="-1"></a>    <span class="bu">print</span>(json.dumps(item, indent<span class="op">=</span><span class="dv">2</span>))</span>
+<span id="cb11-153"><a href="#cb11-153" aria-hidden="true" tabindex="-1"></a>    write_stac_item(item, <span class="st">"my-imagery-bucket"</span>, <span class="st">"http://localhost:9000"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>Run the complete sequence:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb12"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a><span class="co"># 1. Create the COG</span></span>
+<span id="cb12-2"><a href="#cb12-2" aria-hidden="true" tabindex="-1"></a><span class="ex">gdal_translate</span> <span class="at">-of</span> COG <span class="at">-co</span> COMPRESS=DEFLATE <span class="at">-co</span> BLOCKSIZE=512 <span class="dt">\</span></span>
+<span id="cb12-3"><a href="#cb12-3" aria-hidden="true" tabindex="-1"></a>    <span class="at">-co</span> OVERVIEW_RESAMPLING=AVERAGE input.tif scene_cog.tif</span>
+<span id="cb12-4"><a href="#cb12-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-5"><a href="#cb12-5" aria-hidden="true" tabindex="-1"></a><span class="co"># 2. Upload</span></span>
+<span id="cb12-6"><a href="#cb12-6" aria-hidden="true" tabindex="-1"></a><span class="ex">aws</span> <span class="at">--endpoint-url</span> http://localhost:9000 s3 cp <span class="dt">\</span></span>
+<span id="cb12-7"><a href="#cb12-7" aria-hidden="true" tabindex="-1"></a>    scene_cog.tif <span class="dt">\</span></span>
+<span id="cb12-8"><a href="#cb12-8" aria-hidden="true" tabindex="-1"></a>    s3://my-imagery-bucket/landsat9/2023/LC09_185033_20230615_B04_cog.tif</span>
+<span id="cb12-9"><a href="#cb12-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-10"><a href="#cb12-10" aria-hidden="true" tabindex="-1"></a><span class="co"># 3. Write STAC Item</span></span>
+<span id="cb12-11"><a href="#cb12-11" aria-hidden="true" tabindex="-1"></a><span class="ex">python</span> stac/write_item.py</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>The result is a COG file accessible via HTTP range requests from MinIO, with a STAC Item JSON that a client can use to discover it — band metadata, bounding box, datetime, and a direct link to the asset. Add a STAC collection JSON and a root catalogue JSON to complete a static STAC catalogue that can be hosted on any S3-compatible storage with no server required.</p>
+
+
+</section>
+</section>
+
+</main> <!-- /main -->
+<script type="module" src="assets/js/pyodide-cells.js"></script>
+<script>
+(function () {
+  var overlay = document.createElement('div');
+  overlay.id = 'diagram-lightbox';
+
+  var closeBtn = document.createElement('button');
+  closeBtn.id = 'diagram-lightbox-close';
+  closeBtn.innerHTML = '&times;';
+  closeBtn.setAttribute('aria-label', 'Close diagram');
+
+  var content = document.createElement('div');
+  content.id = 'diagram-lightbox-content';
+
+  overlay.appendChild(closeBtn);
+  overlay.appendChild(content);
+  document.body.appendChild(overlay);
+
+  function openLightbox(svgEl) {
+    content.innerHTML = svgEl.outerHTML;
+    var svg = content.querySelector('svg');
+    if (svg) {
+      svg.setAttribute('width', '100%');
+      svg.removeAttribute('height');
+      svg.style.removeProperty('max-width');
+      svg.style.display = 'block';
+    }
+    overlay.classList.add('open');
+    document.body.style.overflow = 'hidden';
+  }
+
+  function closeLightbox() {
+    overlay.classList.remove('open');
+    document.body.style.overflow = '';
+  }
+
+  overlay.addEventListener('click', function (e) {
+    if (e.target === overlay || e.target === closeBtn) closeLightbox();
+  });
+  content.addEventListener('click', function (e) { e.stopPropagation(); });
+  document.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape') closeLightbox();
+  });
+
+  function attachTo(svgEl) {
+    if (svgEl._lbAttached) return;
+    svgEl._lbAttached = true;
+    svgEl.style.cursor = 'zoom-in';
+    svgEl.addEventListener('click', function () { openLightbox(svgEl); });
+  }
+
+  function scanAndAttach() {
+    document.querySelectorAll('svg.mermaid-js').forEach(attachTo);
+  }
+
+  var observer = new MutationObserver(function (mutations) {
+    mutations.forEach(function (m) {
+      m.addedNodes.forEach(function (node) {
+        if (node.nodeType !== 1) return;
+        if (node.tagName.toLowerCase() === 'svg' && node.classList.contains('mermaid-js')) {
+          attachTo(node);
+        } else if (node.querySelectorAll) {
+          node.querySelectorAll('svg.mermaid-js').forEach(attachTo);
+        }
+      });
+    });
+  });
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', function () {
+      observer.observe(document.body, { childList: true, subtree: true });
+      scanAndAttach();
+    });
+  } else {
+    observer.observe(document.body, { childList: true, subtree: true });
+    scanAndAttach();
+  }
+})();
+</script>
+<script id="quarto-html-after-body" type="application/javascript">
+  window.document.addEventListener("DOMContentLoaded", function (event) {
+    const icon = "";
+    const anchorJS = new window.AnchorJS();
+    anchorJS.options = {
+      placement: 'right',
+      icon: icon
+    };
+    anchorJS.add('.anchored');
+    const isCodeAnnotation = (el) => {
+      for (const clz of el.classList) {
+        if (clz.startsWith('code-annotation-')) {                     
+          return true;
+        }
+      }
+      return false;
+    }
+    const onCopySuccess = function(e) {
+      // button target
+      const button = e.trigger;
+      // don't keep focus
+      button.blur();
+      // flash "checked"
+      button.classList.add('code-copy-button-checked');
+      var currentTitle = button.getAttribute("title");
+      button.setAttribute("title", "Copied!");
+      let tooltip;
+      if (window.bootstrap) {
+        button.setAttribute("data-bs-toggle", "tooltip");
+        button.setAttribute("data-bs-placement", "left");
+        button.setAttribute("data-bs-title", "Copied!");
+        tooltip = new bootstrap.Tooltip(button, 
+          { trigger: "manual", 
+            customClass: "code-copy-button-tooltip",
+            offset: [0, -8]});
+        tooltip.show();    
+      }
+      setTimeout(function() {
+        if (tooltip) {
+          tooltip.hide();
+          button.removeAttribute("data-bs-title");
+          button.removeAttribute("data-bs-toggle");
+          button.removeAttribute("data-bs-placement");
+        }
+        button.setAttribute("title", currentTitle);
+        button.classList.remove('code-copy-button-checked');
+      }, 1000);
+      // clear code selection
+      e.clearSelection();
+    }
+    const getTextToCopy = function(trigger) {
+      const outerScaffold = trigger.parentElement.cloneNode(true);
+      const codeEl = outerScaffold.querySelector('code');
+      for (const childEl of codeEl.children) {
+        if (isCodeAnnotation(childEl)) {
+          childEl.remove();
+        }
+      }
+      return codeEl.innerText;
+    }
+    const clipboard = new window.ClipboardJS('.code-copy-button:not([data-in-quarto-modal])', {
+      text: getTextToCopy
+    });
+    clipboard.on('success', onCopySuccess);
+    if (window.document.getElementById('quarto-embedded-source-code-modal')) {
+      const clipboardModal = new window.ClipboardJS('.code-copy-button[data-in-quarto-modal]', {
+        text: getTextToCopy,
+        container: window.document.getElementById('quarto-embedded-source-code-modal')
+      });
+      clipboardModal.on('success', onCopySuccess);
+    }
+      var localhostRegex = new RegExp(/^(?:http|https):\/\/localhost\:?[0-9]*\//);
+      var mailtoRegex = new RegExp(/^mailto:/);
+        var filterRegex = new RegExp('/' + window.location.host + '/');
+      var isInternal = (href) => {
+          return filterRegex.test(href) || localhostRegex.test(href) || mailtoRegex.test(href);
+      }
+      // Inspect non-navigation links and adorn them if external
+     var links = window.document.querySelectorAll('a[href]:not(.nav-link):not(.navbar-brand):not(.toc-action):not(.sidebar-link):not(.sidebar-item-toggle):not(.pagination-link):not(.no-external):not([aria-hidden]):not(.dropdown-item):not(.quarto-navigation-tool):not(.about-link)');
+      for (var i=0; i<links.length; i++) {
+        const link = links[i];
+        if (!isInternal(link.href)) {
+          // undo the damage that might have been done by quarto-nav.js in the case of
+          // links that we want to consider external
+          if (link.dataset.originalHref !== undefined) {
+            link.href = link.dataset.originalHref;
+          }
+        }
+      }
+    function tippyHover(el, contentFn, onTriggerFn, onUntriggerFn) {
+      const config = {
+        allowHTML: true,
+        maxWidth: 500,
+        delay: 100,
+        arrow: false,
+        appendTo: function(el) {
+            return el.parentElement;
+        },
+        interactive: true,
+        interactiveBorder: 10,
+        theme: 'quarto',
+        placement: 'bottom-start',
+      };
+      if (contentFn) {
+        config.content = contentFn;
+      }
+      if (onTriggerFn) {
+        config.onTrigger = onTriggerFn;
+      }
+      if (onUntriggerFn) {
+        config.onUntrigger = onUntriggerFn;
+      }
+      window.tippy(el, config); 
+    }
+    const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+    for (var i=0; i<noterefs.length; i++) {
+      const ref = noterefs[i];
+      tippyHover(ref, function() {
+        // use id or data attribute instead here
+        let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+        try { href = new URL(href).hash; } catch {}
+        const id = href.replace(/^#\/?/, "");
+        const note = window.document.getElementById(id);
+        if (note) {
+          return note.innerHTML;
+        } else {
+          return "";
+        }
+      });
+    }
+    const xrefs = window.document.querySelectorAll('a.quarto-xref');
+    const processXRef = (id, note) => {
+      // Strip column container classes
+      const stripColumnClz = (el) => {
+        el.classList.remove("page-full", "page-columns");
+        if (el.children) {
+          for (const child of el.children) {
+            stripColumnClz(child);
+          }
+        }
+      }
+      stripColumnClz(note)
+      if (id === null || id.startsWith('sec-')) {
+        // Special case sections, only their first couple elements
+        const container = document.createElement("div");
+        if (note.children && note.children.length > 2) {
+          container.appendChild(note.children[0].cloneNode(true));
+          for (let i = 1; i < note.children.length; i++) {
+            const child = note.children[i];
+            if (child.tagName === "P" && child.innerText === "") {
+              continue;
+            } else {
+              container.appendChild(child.cloneNode(true));
+              break;
+            }
+          }
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(container);
+          }
+          return container.innerHTML
+        } else {
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(note);
+          }
+          return note.innerHTML;
+        }
+      } else {
+        // Remove any anchor links if they are present
+        const anchorLink = note.querySelector('a.anchorjs-link');
+        if (anchorLink) {
+          anchorLink.remove();
+        }
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(note);
+        }
+        if (note.classList.contains("callout")) {
+          return note.outerHTML;
+        } else {
+          return note.innerHTML;
+        }
+      }
+    }
+    for (var i=0; i<xrefs.length; i++) {
+      const xref = xrefs[i];
+      tippyHover(xref, undefined, function(instance) {
+        instance.disable();
+        let url = xref.getAttribute('href');
+        let hash = undefined; 
+        if (url.startsWith('#')) {
+          hash = url;
+        } else {
+          try { hash = new URL(url).hash; } catch {}
+        }
+        if (hash) {
+          const id = hash.replace(/^#\/?/, "");
+          const note = window.document.getElementById(id);
+          if (note !== null) {
+            try {
+              const html = processXRef(id, note.cloneNode(true));
+              instance.setContent(html);
+            } finally {
+              instance.enable();
+              instance.show();
+            }
+          } else {
+            // See if we can fetch this
+            fetch(url.split('#')[0])
+            .then(res => res.text())
+            .then(html => {
+              const parser = new DOMParser();
+              const htmlDoc = parser.parseFromString(html, "text/html");
+              const note = htmlDoc.getElementById(id);
+              if (note !== null) {
+                const html = processXRef(id, note);
+                instance.setContent(html);
+              } 
+            }).finally(() => {
+              instance.enable();
+              instance.show();
+            });
+          }
+        } else {
+          // See if we can fetch a full url (with no hash to target)
+          // This is a special case and we should probably do some content thinning / targeting
+          fetch(url)
+          .then(res => res.text())
+          .then(html => {
+            const parser = new DOMParser();
+            const htmlDoc = parser.parseFromString(html, "text/html");
+            const note = htmlDoc.querySelector('main.content');
+            if (note !== null) {
+              // This should only happen for chapter cross references
+              // (since there is no id in the URL)
+              // remove the first header
+              if (note.children.length > 0 && note.children[0].tagName === "HEADER") {
+                note.children[0].remove();
+              }
+              const html = processXRef(null, note);
+              instance.setContent(html);
+            } 
+          }).finally(() => {
+            instance.enable();
+            instance.show();
+          });
+        }
+      }, function(instance) {
+      });
+    }
+        let selectedAnnoteEl;
+        const selectorForAnnotation = ( cell, annotation) => {
+          let cellAttr = 'data-code-cell="' + cell + '"';
+          let lineAttr = 'data-code-annotation="' +  annotation + '"';
+          const selector = 'span[' + cellAttr + '][' + lineAttr + ']';
+          return selector;
+        }
+        const selectCodeLines = (annoteEl) => {
+          const doc = window.document;
+          const targetCell = annoteEl.getAttribute("data-target-cell");
+          const targetAnnotation = annoteEl.getAttribute("data-target-annotation");
+          const annoteSpan = window.document.querySelector(selectorForAnnotation(targetCell, targetAnnotation));
+          const lines = annoteSpan.getAttribute("data-code-lines").split(",");
+          const lineIds = lines.map((line) => {
+            return targetCell + "-" + line;
+          })
+          let top = null;
+          let height = null;
+          let parent = null;
+          if (lineIds.length > 0) {
+              //compute the position of the single el (top and bottom and make a div)
+              const el = window.document.getElementById(lineIds[0]);
+              top = el.offsetTop;
+              height = el.offsetHeight;
+              parent = el.parentElement.parentElement;
+            if (lineIds.length > 1) {
+              const lastEl = window.document.getElementById(lineIds[lineIds.length - 1]);
+              const bottom = lastEl.offsetTop + lastEl.offsetHeight;
+              height = bottom - top;
+            }
+            if (top !== null && height !== null && parent !== null) {
+              // cook up a div (if necessary) and position it 
+              let div = window.document.getElementById("code-annotation-line-highlight");
+              if (div === null) {
+                div = window.document.createElement("div");
+                div.setAttribute("id", "code-annotation-line-highlight");
+                div.style.position = 'absolute';
+                parent.appendChild(div);
+              }
+              div.style.top = top - 2 + "px";
+              div.style.height = height + 4 + "px";
+              div.style.left = 0;
+              let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
+              if (gutterDiv === null) {
+                gutterDiv = window.document.createElement("div");
+                gutterDiv.setAttribute("id", "code-annotation-line-highlight-gutter");
+                gutterDiv.style.position = 'absolute';
+                const codeCell = window.document.getElementById(targetCell);
+                const gutter = codeCell.querySelector('.code-annotation-gutter');
+                gutter.appendChild(gutterDiv);
+              }
+              gutterDiv.style.top = top - 2 + "px";
+              gutterDiv.style.height = height + 4 + "px";
+            }
+            selectedAnnoteEl = annoteEl;
+          }
+        };
+        const unselectCodeLines = () => {
+          const elementsIds = ["code-annotation-line-highlight", "code-annotation-line-highlight-gutter"];
+          elementsIds.forEach((elId) => {
+            const div = window.document.getElementById(elId);
+            if (div) {
+              div.remove();
+            }
+          });
+          selectedAnnoteEl = undefined;
+        };
+          // Handle positioning of the toggle
+      window.addEventListener(
+        "resize",
+        throttle(() => {
+          elRect = undefined;
+          if (selectedAnnoteEl) {
+            selectCodeLines(selectedAnnoteEl);
+          }
+        }, 10)
+      );
+      function throttle(fn, ms) {
+      let throttle = false;
+      let timer;
+        return (...args) => {
+          if(!throttle) { // first call gets through
+              fn.apply(this, args);
+              throttle = true;
+          } else { // all the others get throttled
+              if(timer) clearTimeout(timer); // cancel #2
+              timer = setTimeout(() => {
+                fn.apply(this, args);
+                timer = throttle = false;
+              }, ms);
+          }
+        };
+      }
+        // Attach click handler to the DT
+        const annoteDls = window.document.querySelectorAll('dt[data-target-cell]');
+        for (const annoteDlNode of annoteDls) {
+          annoteDlNode.addEventListener('click', (event) => {
+            const clickedEl = event.target;
+            if (clickedEl !== selectedAnnoteEl) {
+              unselectCodeLines();
+              const activeEl = window.document.querySelector('dt[data-target-cell].code-annotation-active');
+              if (activeEl) {
+                activeEl.classList.remove('code-annotation-active');
+              }
+              selectCodeLines(clickedEl);
+              clickedEl.classList.add('code-annotation-active');
+            } else {
+              // Unselect the line
+              unselectCodeLines();
+              clickedEl.classList.remove('code-annotation-active');
+            }
+          });
+        }
+    const findCites = (el) => {
+      const parentEl = el.parentElement;
+      if (parentEl) {
+        const cites = parentEl.dataset.cites;
+        if (cites) {
+          return {
+            el,
+            cites: cites.split(' ')
+          };
+        } else {
+          return findCites(el.parentElement)
+        }
+      } else {
+        return undefined;
+      }
+    };
+    var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+    for (var i=0; i<bibliorefs.length; i++) {
+      const ref = bibliorefs[i];
+      const citeInfo = findCites(ref);
+      if (citeInfo) {
+        tippyHover(citeInfo.el, function() {
+          var popup = window.document.createElement('div');
+          citeInfo.cites.forEach(function(cite) {
+            var citeDiv = window.document.createElement('div');
+            citeDiv.classList.add('hanging-indent');
+            citeDiv.classList.add('csl-entry');
+            var biblioDiv = window.document.getElementById('ref-' + cite);
+            if (biblioDiv) {
+              citeDiv.innerHTML = biblioDiv.innerHTML;
+            }
+            popup.appendChild(citeDiv);
+          });
+          return popup.innerHTML;
+        });
+      }
+    }
+  });
+  </script>
+<nav class="page-navigation">
+  <div class="nav-page nav-page-previous">
+      <a href="./03-pipelines-and-etl.html" class="pagination-link" aria-label="Pipelines and ETL">
+        <i class="bi bi-arrow-left-short"></i> <span class="nav-page-text"><span class="chapter-number">4</span>&nbsp; <span class="chapter-title">Pipelines and ETL</span></span>
+      </a>          
+  </div>
+  <div class="nav-page nav-page-next">
+      <a href="./05-streaming-and-realtime.html" class="pagination-link" aria-label="Streaming and Realtime">
+        <span class="nav-page-text"><span class="chapter-number">6</span>&nbsp; <span class="chapter-title">Streaming and Realtime</span></span> <i class="bi bi-arrow-right-short"></i>
+      </a>
+  </div>
+</nav>
+</div> <!-- /content -->
+
+
+
+
+<footer class="footer"><div class="nav-footer"><div class="nav-footer-center"><div class="toc-actions d-sm-block d-md-none"><ul><li><a href="https://github.com/WaywardHouse/waywardhouse-data-engineering/edit/main/04-cloud-infrastructure.qmd" class="toc-action"><i class="bi bi-github"></i>Edit this page</a></li><li><a href="https://github.com/WaywardHouse/waywardhouse-data-engineering/issues/new" class="toc-action"><i class="bi empty"></i>Report an issue</a></li></ul></div></div></div></footer><script src="site_libs/quarto-html/zenscroll-min.js"></script>
+</body></html>

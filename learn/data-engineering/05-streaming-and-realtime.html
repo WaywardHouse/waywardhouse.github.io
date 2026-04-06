@@ -1,0 +1,1635 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
+
+<meta charset="utf-8">
+<meta name="generator" content="quarto-1.9.36">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+
+
+<title>6&nbsp; Streaming and Realtime – Data Engineering for Spatial Systems</title>
+<style>
+/* Default styles provided by pandoc.
+** See https://pandoc.org/MANUAL.html#variables-for-html for config info.
+*/
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: min(4vw, 1.5em);}
+div.column{flex: auto; overflow-x: auto;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+  width: 0.8em;
+  margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
+  vertical-align: middle;
+}
+/* CSS for syntax highlighting */
+html { -webkit-text-size-adjust: 100%; }
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+  { counter-reset: source-line 0; }
+pre.numberSource code > span
+  { position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+  { content: counter(source-line);
+    position: relative; left: -1em; text-align: right; vertical-align: baseline;
+    border: none; display: inline-block;
+    -webkit-touch-callout: none; -webkit-user-select: none;
+    -khtml-user-select: none; -moz-user-select: none;
+    -ms-user-select: none; user-select: none;
+    padding: 0 4px; width: 4em;
+  }
+pre.numberSource { margin-left: 3em;  padding-left: 4px; }
+div.sourceCode
+  {   }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
+</style>
+
+
+<script src="site_libs/quarto-nav/quarto-nav.js"></script>
+<script src="site_libs/quarto-nav/headroom.min.js"></script>
+<script src="site_libs/clipboard/clipboard.min.js"></script>
+<script src="site_libs/quarto-search/autocomplete.umd.js"></script>
+<script src="site_libs/quarto-search/fuse.min.js"></script>
+<script src="site_libs/quarto-search/quarto-search.js"></script>
+<meta name="quarto:offset" content="./">
+<link href="./06-apis-and-access-patterns.html" rel="next">
+<link href="./04-cloud-infrastructure.html" rel="prev">
+<script src="site_libs/quarto-html/quarto.js" type="module"></script>
+<script src="site_libs/quarto-html/tabsets/tabsets.js" type="module"></script>
+<script src="site_libs/quarto-html/popper.min.js"></script>
+<script src="site_libs/quarto-html/tippy.umd.min.js"></script>
+<script src="site_libs/quarto-html/anchor.min.js"></script>
+<link href="site_libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="site_libs/quarto-html/quarto-syntax-highlighting-845c23b38eaddc0f92fda52bfe77a8c8.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<script src="site_libs/bootstrap/bootstrap.min.js"></script>
+<link href="site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="site_libs/bootstrap/bootstrap-56762b18f51ba8401515c38252781a5a.min.css" rel="stylesheet" append-hash="true" id="quarto-bootstrap" data-mode="light">
+<script id="quarto-search-options" type="application/json">{
+  "location": "sidebar",
+  "copy-button": false,
+  "collapse-after": 3,
+  "panel-placement": "start",
+  "type": "textbox",
+  "limit": 50,
+  "keyboard-shortcut": [
+    "f",
+    "/",
+    "s"
+  ],
+  "show-item-context": false,
+  "language": {
+    "search-no-results-text": "No results",
+    "search-matching-documents-text": "matching documents",
+    "search-copy-link-title": "Copy link to search",
+    "search-hide-matches-text": "Hide additional matches",
+    "search-more-match-text": "more match in this document",
+    "search-more-matches-text": "more matches in this document",
+    "search-clear-button-title": "Clear",
+    "search-text-placeholder": "",
+    "search-detached-cancel-button-title": "Cancel",
+    "search-submit-button-title": "Submit",
+    "search-label": "Search"
+  }
+}</script>
+<style>html{ scroll-behavior: smooth; }</style>
+<script>
+  (function () {
+    document.documentElement.dataset.theme = 'light';
+    document.documentElement.dataset.brand = 'wayward-book';
+    try {
+      localStorage.removeItem('theme');
+    } catch (err) {
+      void err;
+    }
+  })();
+</script>
+
+<script>
+  document.addEventListener('DOMContentLoaded', function () {
+    var body = document.body;
+    var sidebar = document.getElementById('quarto-sidebar');
+    if (!sidebar) return;
+
+    body.classList.add('wayward-book-shell');
+
+    if (!document.querySelector('.wayward-book-header')) {
+      var header = document.createElement('header');
+      header.className = 'wayward-book-header';
+      header.innerHTML = [
+        '<div class="wayward-book-header__inner">',
+        '  <a class="wayward-book-brand" href="/" aria-label="Wayward House home">',
+        '    <span class="wayward-book-brand__mark">WaywardHouse</span>',
+        '    <span class="wayward-book-brand__dot" aria-hidden="true">.</span>',
+        '  </a>',
+        '  <nav class="wayward-book-nav" aria-label="Primary">',
+        '    <a href="/articles/" data-nav="/articles/">Articles</a>',
+        '    <a href="/learn/" data-nav="/learn/">Learn</a>',
+        '    <a href="/about.html" data-nav="/about/">About</a>',
+        '  </nav>',
+        '  <button class="wayward-book-menu-toggle" type="button" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle chapter navigation">',
+        '    <span aria-hidden="true">Menu</span>',
+        '  </button>',
+        '</div>'
+      ].join('');
+      body.prepend(header);
+    }
+
+    var pathname = window.location.pathname || '/';
+    if (pathname === '/' || pathname === '/learn/' || pathname.endsWith('/index.html')) {
+      body.classList.add('page-home');
+    }
+    if (pathname.indexOf('/learn/') === 0) {
+      body.classList.add('page-learn');
+    }
+
+    var storageKey = 'wayward-data-engineering-sidebar';
+    var media = window.matchMedia('(min-width: 1200px)');
+    var glass = document.getElementById('quarto-sidebar-glass');
+    var toggles = Array.from(document.querySelectorAll('[data-bs-target=".quarto-sidebar-collapse-item"]'));
+
+    function setDesktopState(open) {
+      body.classList.toggle('book-sidebar-collapsed', !open);
+      body.classList.toggle('book-sidebar-open', open);
+      try {
+        localStorage.setItem(storageKey, open ? 'open' : 'collapsed');
+      } catch (err) {
+        void err;
+      }
+    }
+
+    function applyDesktopDefault() {
+      if (!media.matches) {
+        body.classList.remove('book-sidebar-collapsed', 'book-sidebar-open');
+        return;
+      }
+
+      var stored = null;
+      try {
+        stored = localStorage.getItem(storageKey);
+      } catch (err) {
+        void err;
+      }
+
+      setDesktopState(stored === 'collapsed' ? false : true);
+    }
+
+    toggles.forEach(function (toggle) {
+      toggle.addEventListener('click', function (event) {
+        if (!media.matches) return;
+        event.preventDefault();
+        event.stopPropagation();
+        setDesktopState(body.classList.contains('book-sidebar-collapsed'));
+      });
+    });
+
+    if (glass) {
+      glass.addEventListener('click', function (event) {
+        if (!media.matches) return;
+        event.preventDefault();
+        setDesktopState(false);
+      });
+    }
+
+    if (media.addEventListener) {
+      media.addEventListener('change', applyDesktopDefault);
+    } else if (media.addListener) {
+      media.addListener(applyDesktopDefault);
+    }
+
+    applyDesktopDefault();
+
+    var siteHomeHref = '/';
+    var learnHref = '/learn/';
+    var titleLink = sidebar.querySelector('.sidebar-title a');
+    if (titleLink) titleLink.setAttribute('href', siteHomeHref);
+
+    var toolLinks = Array.from(sidebar.querySelectorAll('.quarto-navigation-tool'));
+    if (toolLinks[0]) toolLinks[0].setAttribute('href', siteHomeHref);
+    if (toolLinks[1]) toolLinks[1].setAttribute('href', learnHref);
+
+    var firstSidebarLink = sidebar.querySelector('.sidebar-item a.sidebar-link');
+    if (firstSidebarLink) firstSidebarLink.setAttribute('href', siteHomeHref);
+
+    var themeToggle = document.querySelector('.wayward-book-theme-toggle');
+    if (themeToggle) themeToggle.remove();
+
+    document.querySelectorAll('.wayward-book-nav a[data-nav]').forEach(function (link) {
+      var target = link.getAttribute('data-nav');
+      if (!target) return;
+      link.classList.remove('is-active');
+      if (pathname === target || pathname.indexOf(target) === 0) {
+        link.classList.add('is-active');
+      }
+    });
+
+    var footer = document.querySelector('footer.footer');
+    if (footer && !footer.classList.contains('wayward-book-footer')) {
+      footer.className = 'wayward-book-footer';
+      footer.innerHTML = [
+        '<div class="wayward-book-footer__inner">',
+        '  <div class="wayward-book-footer__brand">',
+        '    <div class="wayward-book-footer__logo">WaywardHouse<span>.</span></div>',
+        '    <p>Understanding how place, economy, and environment interact through analysis, modelling, and open tools.</p>',
+        '  </div>',
+        '  <nav class="wayward-book-footer__group" aria-labelledby="book-footer-reading">',
+        '    <h2 id="book-footer-reading">Reading</h2>',
+        '    <a href="https://wayward.house/articles/">Articles</a>',
+        '    <a href="https://wayward.house/learn/">Library</a>',
+        '    <a href="https://wayward.house/archive.html">Archive</a>',
+        '  </nav>',
+        '  <nav class="wayward-book-footer__group" aria-labelledby="book-footer-site">',
+        '    <h2 id="book-footer-site">Site</h2>',
+        '    <a href="https://wayward.house/start-here.html">Choose Your Path</a>',
+        '    <a href="https://wayward.house/about.html">About</a>',
+        '    <a href="https://wayward.house/contact.html">Contact</a>',
+        '  </nav>',
+        '  <nav class="wayward-book-footer__group" aria-labelledby="book-footer-resources">',
+        '    <h2 id="book-footer-resources">Resources</h2>',
+        '    <a href="https://wayward.house/topics/">All Topics</a>',
+        '    <a href="https://wayward.house/privacy.html">Privacy Policy</a>',
+        '    <a href="https://wayward.house/terms.html">Terms of Use</a>',
+        '  </nav>',
+        '</div>'
+      ].join('');
+    }
+
+    if (!document.querySelector('.back-to-top')) {
+      var button = document.createElement('button');
+      button.type = 'button';
+      button.className = 'back-to-top';
+      button.setAttribute('aria-label', 'Back to top');
+      button.innerHTML = '<span aria-hidden="true">↑</span><span>Top</span>';
+
+      var prefersReduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+      var ticking = false;
+
+      function updateBackToTop() {
+        var scrolled = window.scrollY || document.documentElement.scrollTop || 0;
+        var longPage = document.documentElement.scrollHeight > window.innerHeight * 1.5;
+        button.classList.toggle('is-visible', longPage && scrolled > Math.max(420, window.innerHeight * 0.7));
+        ticking = false;
+      }
+
+      button.addEventListener('click', function () {
+        window.scrollTo({
+          top: 0,
+          behavior: prefersReduced ? 'auto' : 'smooth'
+        });
+      });
+
+      window.addEventListener('scroll', function () {
+        if (!ticking) {
+          window.requestAnimationFrame(updateBackToTop);
+          ticking = true;
+        }
+      }, { passive: true });
+
+      window.addEventListener('resize', updateBackToTop, { passive: true });
+      body.appendChild(button);
+      updateBackToTop();
+    }
+
+  });
+</script>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:ital,wght@0,300;0,400;0,600;0,700;0,800;0,900;1,700;1,800&amp;family=Barlow:wght@300;400;500;600&amp;family=IBM+Plex+Mono:ital,wght@0,300;0,400;0,500;1,300&amp;family=Literata:ital,opsz,wght@0,7..72,300;0,7..72,400;0,7..72,500;1,7..72,300;1,7..72,400&amp;display=swap" rel="stylesheet">
+
+
+<link rel="stylesheet" href="site_libs/quarto-contrib/quarto-project/wayward-book/wayward-book.css">
+<link rel="stylesheet" href="lightbox.css">
+</head>
+
+<body class="nav-sidebar docked quarto-light">
+
+<div id="quarto-search-results"></div>
+  <header id="quarto-header" class="headroom fixed-top">
+  <nav class="quarto-secondary-nav">
+    <div class="container-fluid d-flex">
+      <button type="button" class="quarto-btn-toggle btn" data-bs-toggle="collapse" role="button" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
+        <i class="bi bi-layout-text-sidebar-reverse"></i>
+      </button>
+        <nav class="quarto-page-breadcrumbs" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="./05-streaming-and-realtime.html"><span class="chapter-number">6</span>&nbsp; <span class="chapter-title">Streaming and Realtime</span></a></li></ol></nav>
+        <a class="flex-grow-1" role="navigation" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">      
+        </a>
+      <button type="button" class="btn quarto-search-button" aria-label="Search" onclick="window.quartoOpenSearch();">
+        <i class="bi bi-search"></i>
+      </button>
+    </div>
+  </nav>
+</header>
+<!-- content -->
+<div id="quarto-content" class="quarto-container page-columns page-rows-contents page-layout-article">
+<!-- sidebar -->
+  <nav id="quarto-sidebar" class="sidebar collapse collapse-horizontal quarto-sidebar-collapse-item sidebar-navigation docked overflow-auto">
+    <div class="pt-lg-2 mt-2 text-left sidebar-header">
+    <div class="sidebar-title mb-0 py-0">
+      <a href="./">Data Engineering for Spatial Systems</a> 
+        <div class="sidebar-tools-main tools-wide">
+    <a href="./" title="" class="quarto-navigation-tool px-1" aria-label="Wayward House"><i class="bi bi-house"></i></a>
+    <a href="./learn/" title="" class="quarto-navigation-tool px-1" aria-label="Learn"><i class="bi bi-grid"></i></a>
+    <a href="https://github.com/WaywardHouse/waywardhouse-data-engineering" title="" class="quarto-navigation-tool px-1" aria-label="Repository"><i class="bi bi-github"></i></a>
+    <a href="https://github.com/WaywardHouse/waywardhouse-data-engineering" title="Source Code" class="quarto-navigation-tool px-1" aria-label="Source Code"><i class="bi bi-github"></i></a>
+    <div class="dropdown">
+      <a href="" title="Share" id="quarto-navigation-tool-dropdown-0" class="quarto-navigation-tool dropdown-toggle px-1" data-bs-toggle="dropdown" aria-expanded="false" role="link" aria-label="Share"><i class="bi bi-share"></i></a>
+      <ul class="dropdown-menu" aria-labelledby="quarto-navigation-tool-dropdown-0">
+          <li>
+            <a class="dropdown-item sidebar-tools-main-item" href="https://twitter.com/intent/tweet?url=|url|">
+              <i class="bi bi-twitter pe-1"></i>
+            Twitter
+            </a>
+          </li>
+          <li>
+            <a class="dropdown-item sidebar-tools-main-item" href="https://www.linkedin.com/sharing/share-offsite/?url=|url|">
+              <i class="bi bi-linkedin pe-1"></i>
+            LinkedIn
+            </a>
+          </li>
+      </ul>
+    </div>
+</div>
+    </div>
+      </div>
+        <div class="mt-2 flex-shrink-0 align-items-center">
+        <div class="sidebar-search">
+        <div id="quarto-search" class="" title="Search"></div>
+        </div>
+        </div>
+    <div class="sidebar-menu-container"> 
+    <ul class="list-unstyled mt-1">
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./index.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">1</span>&nbsp; <span class="chapter-title">Data Engineering for Spatial Systems</span></span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./01-data-architecture.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">2</span>&nbsp; <span class="chapter-title">Data Architecture</span></span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./02-spatial-databases.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">3</span>&nbsp; <span class="chapter-title">Spatial Databases</span></span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./03-pipelines-and-etl.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">4</span>&nbsp; <span class="chapter-title">Pipelines and ETL</span></span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./04-cloud-infrastructure.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">5</span>&nbsp; <span class="chapter-title">Cloud Infrastructure</span></span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./05-streaming-and-realtime.html" class="sidebar-item-text sidebar-link active">
+ <span class="menu-text"><span class="chapter-number">6</span>&nbsp; <span class="chapter-title">Streaming and Realtime</span></span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./06-apis-and-access-patterns.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">7</span>&nbsp; <span class="chapter-title">APIs and Access Patterns</span></span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./07-data-quality-and-governance.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">8</span>&nbsp; <span class="chapter-title">Data Quality and Governance</span></span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./08-platform-architecture-for-ml.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">9</span>&nbsp; <span class="chapter-title">Platform Architecture for ML</span></span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./09-exercise-answers.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">10</span>&nbsp; <span class="chapter-title">Exercise Answers</span></span></a>
+  </div>
+</li>
+    </ul>
+    </div>
+</nav>
+<div id="quarto-sidebar-glass" class="quarto-sidebar-collapse-item" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item"></div>
+<!-- margin-sidebar -->
+    <div id="quarto-margin-sidebar" class="sidebar margin-sidebar">
+        <nav id="TOC" role="doc-toc" class="toc-active">
+    <h2 id="toc-title">Table of contents</h2>
+   
+  <ul>
+  <li><a href="#the-puzzle" id="toc-the-puzzle" class="nav-link active" data-scroll-target="#the-puzzle"><span class="header-section-number">6.1</span> The puzzle</a></li>
+  <li><a href="#batch-vs-streaming-a-latency-decision" id="toc-batch-vs-streaming-a-latency-decision" class="nav-link" data-scroll-target="#batch-vs-streaming-a-latency-decision"><span class="header-section-number">6.2</span> Batch vs streaming: a latency decision</a>
+  <ul class="collapse">
+  <li><a href="#event-time-vs-processing-time" id="toc-event-time-vs-processing-time" class="nav-link" data-scroll-target="#event-time-vs-processing-time"><span class="header-section-number">6.2.1</span> Event time vs processing time</a></li>
+  <li><a href="#watermarks" id="toc-watermarks" class="nav-link" data-scroll-target="#watermarks"><span class="header-section-number">6.2.2</span> Watermarks</a></li>
+  </ul></li>
+  <li><a href="#kafka-persistent-logs-for-sensor-streams" id="toc-kafka-persistent-logs-for-sensor-streams" class="nav-link" data-scroll-target="#kafka-persistent-logs-for-sensor-streams"><span class="header-section-number">6.3</span> Kafka: persistent logs for sensor streams</a>
+  <ul class="collapse">
+  <li><a href="#topics-partitions-and-offsets" id="toc-topics-partitions-and-offsets" class="nav-link" data-scroll-target="#topics-partitions-and-offsets"><span class="header-section-number">6.3.1</span> Topics, partitions, and offsets</a></li>
+  <li><a href="#consumer-groups" id="toc-consumer-groups" class="nav-link" data-scroll-target="#consumer-groups"><span class="header-section-number">6.3.2</span> Consumer groups</a></li>
+  <li><a href="#minimal-producer-and-consumer-in-python" id="toc-minimal-producer-and-consumer-in-python" class="nav-link" data-scroll-target="#minimal-producer-and-consumer-in-python"><span class="header-section-number">6.3.3</span> Minimal producer and consumer in Python</a></li>
+  </ul></li>
+  <li><a href="#mqtt-for-sensor-scale-iot" id="toc-mqtt-for-sensor-scale-iot" class="nav-link" data-scroll-target="#mqtt-for-sensor-scale-iot"><span class="header-section-number">6.4</span> MQTT: for sensor-scale IoT</a>
+  <ul class="collapse">
+  <li><a href="#broker-topics-and-qos-levels" id="toc-broker-topics-and-qos-levels" class="nav-link" data-scroll-target="#broker-topics-and-qos-levels"><span class="header-section-number">6.4.1</span> Broker, topics, and QoS levels</a></li>
+  <li><a href="#mqtt-publisher-and-subscriber-in-python" id="toc-mqtt-publisher-and-subscriber-in-python" class="nav-link" data-scroll-target="#mqtt-publisher-and-subscriber-in-python"><span class="header-section-number">6.4.2</span> MQTT publisher and subscriber in Python</a></li>
+  </ul></li>
+  <li><a href="#windowing-time-based-aggregation" id="toc-windowing-time-based-aggregation" class="nav-link" data-scroll-target="#windowing-time-based-aggregation"><span class="header-section-number">6.5</span> Windowing: time-based aggregation</a>
+  <ul class="collapse">
+  <li><a href="#tumbling-windows" id="toc-tumbling-windows" class="nav-link" data-scroll-target="#tumbling-windows"><span class="header-section-number">6.5.1</span> Tumbling windows</a></li>
+  <li><a href="#sliding-windows" id="toc-sliding-windows" class="nav-link" data-scroll-target="#sliding-windows"><span class="header-section-number">6.5.2</span> Sliding windows</a></li>
+  <li><a href="#session-windows" id="toc-session-windows" class="nav-link" data-scroll-target="#session-windows"><span class="header-section-number">6.5.3</span> Session windows</a></li>
+  <li><a href="#the-latency-accuracy-tradeoff" id="toc-the-latency-accuracy-tradeoff" class="nav-link" data-scroll-target="#the-latency-accuracy-tradeoff"><span class="header-section-number">6.5.4</span> The latency-accuracy tradeoff</a></li>
+  <li><a href="#windowed-aggregation-static-code" id="toc-windowed-aggregation-static-code" class="nav-link" data-scroll-target="#windowed-aggregation-static-code"><span class="header-section-number">6.5.5</span> Windowed aggregation: static code</a></li>
+  </ul></li>
+  <li><a href="#backpressure" id="toc-backpressure" class="nav-link" data-scroll-target="#backpressure"><span class="header-section-number">6.6</span> Backpressure</a></li>
+  <li><a href="#what-to-try" id="toc-what-to-try" class="nav-link" data-scroll-target="#what-to-try"><span class="header-section-number">6.7</span> What to try</a></li>
+  <li><a href="#exercises" id="toc-exercises" class="nav-link" data-scroll-target="#exercises"><span class="header-section-number">6.8</span> Exercises</a></li>
+  <li><a href="#build-this" id="toc-build-this" class="nav-link" data-scroll-target="#build-this"><span class="header-section-number">6.9</span> Build this</a></li>
+  </ul>
+<div class="toc-actions"><ul><li><a href="https://github.com/WaywardHouse/waywardhouse-data-engineering/edit/main/05-streaming-and-realtime.qmd" class="toc-action"><i class="bi bi-github"></i>Edit this page</a></li><li><a href="https://github.com/WaywardHouse/waywardhouse-data-engineering/issues/new" class="toc-action"><i class="bi empty"></i>Report an issue</a></li></ul></div></nav>
+    </div>
+<!-- main -->
+<main class="content" id="quarto-document-content">
+
+<header id="title-block-header" class="quarto-title-block default">
+<div class="quarto-title">
+<h1 class="title"><span class="chapter-number">6</span>&nbsp; <span class="chapter-title">Streaming and Realtime</span></h1>
+<p class="subtitle lead">Sensor ingestion, windowing, and the difference between fast and realtime</p>
+</div>
+
+
+
+<div class="quarto-title-meta">
+
+    
+  
+    
+  </div>
+  
+
+
+</header>
+
+
+<section id="the-puzzle" class="level2" data-number="6.1">
+<h2 data-number="6.1" class="anchored" data-anchor-id="the-puzzle"><span class="header-section-number">6.1</span> The puzzle</h2>
+<p>In August 2020, a wildfire ignited in scrub near a network of automated environmental sensors in southern California. The sensor network was working. Thermistors and smoke particulate detectors registered anomalous readings within minutes of ignition. The readings were transmitted successfully to a data collection endpoint.</p>
+<p>The alert arrived forty minutes later.</p>
+<p>Forty minutes was long enough that suppression resources had already been dispatched — not from the sensor network, but from a phone call made by a hiker who saw smoke. By the time the automated alert fired, incident commanders were already staging equipment. The sensor system, which cost considerably more than the phone, contributed nothing to the initial response.</p>
+<p>What went wrong? Not the sensors. Not the transmission. The ingestion pipeline was batch-processing. Every hour, it pulled the previous hour’s readings from the collection endpoint, computed summary statistics, and compared those statistics against thresholds. At 11:00, it processed 10:00–11:00 and found no anomalies. At 12:00, it processed 11:00–12:00 and raised an alert for elevated temperature and particulates beginning at 11:22.</p>
+<p>The fire started at 11:22. The alert arrived at 12:00.</p>
+<p>This is not a story about broken software. The batch pipeline was doing exactly what it was designed to do. The failure was architectural: the latency requirement of the application — detect a fire within minutes — was never translated into a latency constraint on the data pipeline. Batch processing was chosen because it is simpler to operate, and nobody asked whether “simpler” was compatible with the use case.</p>
+<p>The question this chapter addresses is: what would a different data architecture look like, and how do you decide when you need it?</p>
+<hr>
+</section>
+<section id="batch-vs-streaming-a-latency-decision" class="level2" data-number="6.2">
+<h2 data-number="6.2" class="anchored" data-anchor-id="batch-vs-streaming-a-latency-decision"><span class="header-section-number">6.2</span> Batch vs streaming: a latency decision</h2>
+<p>The distinction between batch and streaming is not primarily a technology choice. It is a latency requirement that determines which technology is appropriate.</p>
+<p>Batch processing treats data as a bounded dataset: collect records until some condition is met (time elapsed, record count reached, file received), then process the entire set. Latency is bounded below by the batch interval. A one-hour batch cannot produce an alert in less than one hour from the triggering event, even if processing itself takes one second.</p>
+<p>Stream processing treats data as an unbounded sequence of events arriving over time. Records are processed as they arrive, or within a short configurable window. Latency is bounded by propagation delay, processing time, and window size — potentially seconds or milliseconds.</p>
+<p>The tradeoff is operational complexity. A batch pipeline is a script that runs on a schedule. A stream processing system requires persistent processes, state management, failure recovery, and careful reasoning about what happens when messages arrive late or out of order. You take on that complexity only when the latency requirement demands it.</p>
+<p>Most spatial data applications are not realtime. An overnight batch pipeline that updates a dashboard of aggregated sensor readings is entirely appropriate for planning or reporting use cases. The wildfire scenario is different: response time to an ignition event is measured in minutes, and a forty-minute pipeline latency is a failure mode, not a design choice.</p>
+<section id="event-time-vs-processing-time" class="level3" data-number="6.2.1">
+<h3 data-number="6.2.1" class="anchored" data-anchor-id="event-time-vs-processing-time"><span class="header-section-number">6.2.1</span> Event time vs processing time</h3>
+<p>When a sensor emits a reading, two timestamps are relevant.</p>
+<p><strong>Event time</strong> is when the measurement was taken — the timestamp embedded in the reading by the sensor or the collection system at the moment of capture.</p>
+<p><strong>Processing time</strong> is when the record arrives at the processing system.</p>
+<p>In a well-functioning local network these are nearly identical. In a sensor network with intermittent connectivity — a field device reporting via cellular, a buoy with a satellite uplink, a vehicle that uploads its track when it returns to a docking station — event time and processing time can differ by minutes, hours, or days.</p>
+<p>This matters because you almost always want to aggregate by event time, not processing time. A five-minute window of temperature readings should contain readings from those five minutes, not readings that happened to arrive during those five minutes. If a sensor was offline for an hour and uploaded a backlog when reconnected, those readings should be placed in the correct historical windows, not dumped into the current window because that is when they arrived.</p>
+<p>This is the <strong>late data problem</strong>, and it is endemic to spatial sensor networks. The processing system needs a mechanism for handling records that arrive after the window they belong to has already been computed. That mechanism is the watermark.</p>
+</section>
+<section id="watermarks" class="level3" data-number="6.2.2">
+<h3 data-number="6.2.2" class="anchored" data-anchor-id="watermarks"><span class="header-section-number">6.2.2</span> Watermarks</h3>
+<p>A watermark is the processing system’s estimate of how far behind the leading edge of event time the stream has fallen. If the watermark is at T − 5 minutes, the system is asserting: all events with event time before T − 5 have arrived. Any window ending before T − 5 can be finalised.</p>
+<p>Setting the watermark too aggressively (small lag) causes the system to close windows before all data has arrived, dropping late records. Setting it too conservatively (large lag) delays results, because windows cannot be emitted until the watermark passes their end time.</p>
+<p>For a sensor network with known connectivity patterns, the watermark can be tuned empirically: measure the distribution of (processing time − event time) across your devices, set the watermark lag at the 95th or 99th percentile of that distribution, and accept that a small fraction of records will arrive late and be dropped or redirected to a separate late-data handler.</p>
+<p>For the wildfire network: if sensor readings are transmitted every 30 seconds over a reliable local radio link, a 60-second watermark lag is conservative and allows near-realtime window evaluation. If the same sensors report via cellular with occasional 10-minute gaps, a 15-minute watermark lag is more appropriate — but now the latency guarantee is 15 minutes, which may or may not satisfy the application requirement.</p>
+<p>The architectural decision is: what latency can the use case tolerate, and does the watermark policy deliver that latency given the connectivity characteristics of the sensor network?</p>
+<hr>
+</section>
+</section>
+<section id="kafka-persistent-logs-for-sensor-streams" class="level2" data-number="6.3">
+<h2 data-number="6.3" class="anchored" data-anchor-id="kafka-persistent-logs-for-sensor-streams"><span class="header-section-number">6.3</span> Kafka: persistent logs for sensor streams</h2>
+<p>Apache Kafka is the most widely deployed system for high-throughput event streaming. It is worth understanding how it works before deciding whether you need it — many spatial systems do not need Kafka’s throughput, but the conceptual model it imposes (a persistent, replayable log) is useful regardless of which system you use.</p>
+<section id="topics-partitions-and-offsets" class="level3" data-number="6.3.1">
+<h3 data-number="6.3.1" class="anchored" data-anchor-id="topics-partitions-and-offsets"><span class="header-section-number">6.3.1</span> Topics, partitions, and offsets</h3>
+<p>A Kafka <strong>topic</strong> is a named, ordered sequence of records. Topics are analogous to database tables, but append-only: you can write records and read records, but you cannot update or delete them. Records are retained for a configurable duration (often days or weeks).</p>
+<p>A topic is divided into <strong>partitions</strong>. Each partition is an independent ordered log. Records within a partition are strictly ordered; records across partitions are not. Partitioning is the source of Kafka’s throughput: multiple producers can write to different partitions simultaneously, and multiple consumers can read from different partitions simultaneously, with no coordination overhead between them.</p>
+<p>For a spatial sensor network, a natural partitioning key is sensor ID or geographic region. All readings from sensor 47 go to the same partition in the same order they were produced. A consumer reading that partition sees a strictly ordered sequence of readings from that sensor, which simplifies state management for per-sensor computations.</p>
+<p>Every record in a partition has an <strong>offset</strong> — a monotonically increasing integer assigned by the broker. A consumer tracks the offset of the last record it processed. If the consumer crashes and restarts, it resumes from its last committed offset. This makes Kafka consumers stateless with respect to position: the broker remembers where each consumer group left off.</p>
+<p>The offset mechanism also makes <strong>replay</strong> possible. If a processing bug is discovered, you can reset a consumer group’s offset to an earlier point in the log and reprocess historical records. For a sensor network, this means you can re-derive aggregates, correct for a faulty calibration factor, or backfill a downstream database after a schema change — without re-querying the sensors.</p>
+</section>
+<section id="consumer-groups" class="level3" data-number="6.3.2">
+<h3 data-number="6.3.2" class="anchored" data-anchor-id="consumer-groups"><span class="header-section-number">6.3.2</span> Consumer groups</h3>
+<p>A <strong>consumer group</strong> is a set of consumer processes that collectively read a topic. Kafka assigns each partition to exactly one consumer in the group. If you have 12 partitions and 4 consumers, each consumer reads 3 partitions. If one consumer dies, its partitions are reassigned to the survivors. If you add consumers, partitions are rebalanced.</p>
+<p>The throughput implication: you can scale consumption by adding consumers, up to the number of partitions. A topic with 1 partition cannot benefit from more than 1 consumer in a group. For a sensor network expecting growth, provision more partitions than you currently need.</p>
+</section>
+<section id="minimal-producer-and-consumer-in-python" class="level3" data-number="6.3.3">
+<h3 data-number="6.3.3" class="anchored" data-anchor-id="minimal-producer-and-consumer-in-python"><span class="header-section-number">6.3.3</span> Minimal producer and consumer in Python</h3>
+<p>The following is a static example — it requires a running Kafka broker and is not executable in the browser. It shows the structural pattern, not a production-ready implementation.</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb1"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="co"># requires: pip install kafka-python</span></span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="co"># requires: a running Kafka broker at localhost:9092</span></span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a><span class="co"># topic 'sensor-readings' must exist (or auto-create must be enabled)</span></span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> kafka <span class="im">import</span> KafkaProducer, KafkaConsumer</span>
+<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> json</span>
+<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> time</span>
+<span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> random</span>
+<span id="cb1-9"><a href="#cb1-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-10"><a href="#cb1-10" aria-hidden="true" tabindex="-1"></a><span class="co"># --- Producer: emit synthetic sensor readings ---</span></span>
+<span id="cb1-11"><a href="#cb1-11" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-12"><a href="#cb1-12" aria-hidden="true" tabindex="-1"></a>producer <span class="op">=</span> KafkaProducer(</span>
+<span id="cb1-13"><a href="#cb1-13" aria-hidden="true" tabindex="-1"></a>    bootstrap_servers<span class="op">=</span>[<span class="st">"localhost:9092"</span>],</span>
+<span id="cb1-14"><a href="#cb1-14" aria-hidden="true" tabindex="-1"></a>    value_serializer<span class="op">=</span><span class="kw">lambda</span> v: json.dumps(v).encode(<span class="st">"utf-8"</span>),</span>
+<span id="cb1-15"><a href="#cb1-15" aria-hidden="true" tabindex="-1"></a>    key_serializer<span class="op">=</span><span class="kw">lambda</span> k: k.encode(<span class="st">"utf-8"</span>),</span>
+<span id="cb1-16"><a href="#cb1-16" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb1-17"><a href="#cb1-17" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-18"><a href="#cb1-18" aria-hidden="true" tabindex="-1"></a>SENSOR_IDS <span class="op">=</span> [<span class="ss">f"sensor-</span><span class="sc">{</span>i<span class="sc">:03d}</span><span class="ss">"</span> <span class="cf">for</span> i <span class="kw">in</span> <span class="bu">range</span>(<span class="dv">10</span>)]</span>
+<span id="cb1-19"><a href="#cb1-19" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-20"><a href="#cb1-20" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> emit_reading(sensor_id: <span class="bu">str</span>) <span class="op">-&gt;</span> <span class="va">None</span>:</span>
+<span id="cb1-21"><a href="#cb1-21" aria-hidden="true" tabindex="-1"></a>    reading <span class="op">=</span> {</span>
+<span id="cb1-22"><a href="#cb1-22" aria-hidden="true" tabindex="-1"></a>        <span class="st">"sensor_id"</span>: sensor_id,</span>
+<span id="cb1-23"><a href="#cb1-23" aria-hidden="true" tabindex="-1"></a>        <span class="st">"event_time"</span>: time.time(),</span>
+<span id="cb1-24"><a href="#cb1-24" aria-hidden="true" tabindex="-1"></a>        <span class="st">"temperature_c"</span>: <span class="bu">round</span>(<span class="fl">20.0</span> <span class="op">+</span> random.gauss(<span class="dv">0</span>, <span class="fl">2.0</span>), <span class="dv">2</span>),</span>
+<span id="cb1-25"><a href="#cb1-25" aria-hidden="true" tabindex="-1"></a>        <span class="st">"smoke_ug_m3"</span>:   <span class="bu">round</span>(<span class="bu">max</span>(<span class="dv">0</span>, random.gauss(<span class="dv">5</span>, <span class="fl">1.5</span>)), <span class="dv">2</span>),</span>
+<span id="cb1-26"><a href="#cb1-26" aria-hidden="true" tabindex="-1"></a>    }</span>
+<span id="cb1-27"><a href="#cb1-27" aria-hidden="true" tabindex="-1"></a>    producer.send(</span>
+<span id="cb1-28"><a href="#cb1-28" aria-hidden="true" tabindex="-1"></a>        topic<span class="op">=</span><span class="st">"sensor-readings"</span>,</span>
+<span id="cb1-29"><a href="#cb1-29" aria-hidden="true" tabindex="-1"></a>        key<span class="op">=</span>sensor_id,          <span class="co"># partition key: all readings from one sensor</span></span>
+<span id="cb1-30"><a href="#cb1-30" aria-hidden="true" tabindex="-1"></a>        value<span class="op">=</span>reading,          <span class="co"># serialised to JSON bytes</span></span>
+<span id="cb1-31"><a href="#cb1-31" aria-hidden="true" tabindex="-1"></a>    )</span>
+<span id="cb1-32"><a href="#cb1-32" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-33"><a href="#cb1-33" aria-hidden="true" tabindex="-1"></a><span class="co"># Emit one reading per sensor per second</span></span>
+<span id="cb1-34"><a href="#cb1-34" aria-hidden="true" tabindex="-1"></a><span class="cf">while</span> <span class="va">True</span>:</span>
+<span id="cb1-35"><a href="#cb1-35" aria-hidden="true" tabindex="-1"></a>    <span class="cf">for</span> sid <span class="kw">in</span> SENSOR_IDS:</span>
+<span id="cb1-36"><a href="#cb1-36" aria-hidden="true" tabindex="-1"></a>        emit_reading(sid)</span>
+<span id="cb1-37"><a href="#cb1-37" aria-hidden="true" tabindex="-1"></a>    producer.flush()</span>
+<span id="cb1-38"><a href="#cb1-38" aria-hidden="true" tabindex="-1"></a>    time.sleep(<span class="fl">1.0</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb2"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="co"># --- Consumer: read and print readings from the topic ---</span></span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a>consumer <span class="op">=</span> KafkaConsumer(</span>
+<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a>    <span class="st">"sensor-readings"</span>,</span>
+<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a>    bootstrap_servers<span class="op">=</span>[<span class="st">"localhost:9092"</span>],</span>
+<span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a>    group_id<span class="op">=</span><span class="st">"alert-processor"</span>,          <span class="co"># consumer group</span></span>
+<span id="cb2-7"><a href="#cb2-7" aria-hidden="true" tabindex="-1"></a>    auto_offset_reset<span class="op">=</span><span class="st">"latest"</span>,          <span class="co"># start from newest records</span></span>
+<span id="cb2-8"><a href="#cb2-8" aria-hidden="true" tabindex="-1"></a>    value_deserializer<span class="op">=</span><span class="kw">lambda</span> b: json.loads(b.decode(<span class="st">"utf-8"</span>)),</span>
+<span id="cb2-9"><a href="#cb2-9" aria-hidden="true" tabindex="-1"></a>    key_deserializer<span class="op">=</span><span class="kw">lambda</span> b: b.decode(<span class="st">"utf-8"</span>) <span class="cf">if</span> b <span class="cf">else</span> <span class="va">None</span>,</span>
+<span id="cb2-10"><a href="#cb2-10" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb2-11"><a href="#cb2-11" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-12"><a href="#cb2-12" aria-hidden="true" tabindex="-1"></a>ALERT_THRESHOLD_TEMP_C <span class="op">=</span> <span class="fl">45.0</span></span>
+<span id="cb2-13"><a href="#cb2-13" aria-hidden="true" tabindex="-1"></a>ALERT_THRESHOLD_SMOKE  <span class="op">=</span> <span class="fl">50.0</span></span>
+<span id="cb2-14"><a href="#cb2-14" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-15"><a href="#cb2-15" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> message <span class="kw">in</span> consumer:</span>
+<span id="cb2-16"><a href="#cb2-16" aria-hidden="true" tabindex="-1"></a>    reading <span class="op">=</span> message.value</span>
+<span id="cb2-17"><a href="#cb2-17" aria-hidden="true" tabindex="-1"></a>    partition <span class="op">=</span> message.partition</span>
+<span id="cb2-18"><a href="#cb2-18" aria-hidden="true" tabindex="-1"></a>    offset    <span class="op">=</span> message.offset</span>
+<span id="cb2-19"><a href="#cb2-19" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-20"><a href="#cb2-20" aria-hidden="true" tabindex="-1"></a>    <span class="cf">if</span> (reading[<span class="st">"temperature_c"</span>] <span class="op">&gt;</span> ALERT_THRESHOLD_TEMP_C <span class="kw">or</span></span>
+<span id="cb2-21"><a href="#cb2-21" aria-hidden="true" tabindex="-1"></a>            reading[<span class="st">"smoke_ug_m3"</span>] <span class="op">&gt;</span> ALERT_THRESHOLD_SMOKE):</span>
+<span id="cb2-22"><a href="#cb2-22" aria-hidden="true" tabindex="-1"></a>        <span class="bu">print</span>(</span>
+<span id="cb2-23"><a href="#cb2-23" aria-hidden="true" tabindex="-1"></a>            <span class="ss">f"ALERT  partition=</span><span class="sc">{</span>partition<span class="sc">}</span><span class="ss"> offset=</span><span class="sc">{</span>offset<span class="sc">}</span><span class="ss">"</span></span>
+<span id="cb2-24"><a href="#cb2-24" aria-hidden="true" tabindex="-1"></a>            <span class="ss">f"  sensor=</span><span class="sc">{</span>reading[<span class="st">'sensor_id'</span>]<span class="sc">}</span><span class="ss">"</span></span>
+<span id="cb2-25"><a href="#cb2-25" aria-hidden="true" tabindex="-1"></a>            <span class="ss">f"  temp=</span><span class="sc">{</span>reading[<span class="st">'temperature_c'</span>]<span class="sc">}</span><span class="ss">°C"</span></span>
+<span id="cb2-26"><a href="#cb2-26" aria-hidden="true" tabindex="-1"></a>            <span class="ss">f"  smoke=</span><span class="sc">{</span>reading[<span class="st">'smoke_ug_m3'</span>]<span class="sc">}</span><span class="ss"> µg/m³"</span></span>
+<span id="cb2-27"><a href="#cb2-27" aria-hidden="true" tabindex="-1"></a>        )</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>The key structural points: the producer uses the sensor ID as the partition key, ensuring ordered delivery per sensor. The consumer commits offsets per consumer group, enabling crash recovery. Threshold logic applied to individual records here is the simplest possible alerting pattern — the next section covers window-based aggregation, which is more appropriate for sensor noise.</p>
+<hr>
+</section>
+</section>
+<section id="mqtt-for-sensor-scale-iot" class="level2" data-number="6.4">
+<h2 data-number="6.4" class="anchored" data-anchor-id="mqtt-for-sensor-scale-iot"><span class="header-section-number">6.4</span> MQTT: for sensor-scale IoT</h2>
+<p>Kafka is designed for high-throughput, durable log storage. It runs on a JVM, requires significant memory and disk, and has operational overhead that is not justified for small sensor networks or constrained devices.</p>
+<p><strong>MQTT</strong> (Message Queuing Telemetry Transport) is a publish-subscribe protocol designed for constrained environments. An MQTT broker has a much lighter footprint than a Kafka cluster. MQTT clients run on microcontrollers with kilobytes of RAM. The protocol was originally designed for oil pipeline monitoring over satellite links with high latency and low bandwidth.</p>
+<section id="broker-topics-and-qos-levels" class="level3" data-number="6.4.1">
+<h3 data-number="6.4.1" class="anchored" data-anchor-id="broker-topics-and-qos-levels"><span class="header-section-number">6.4.1</span> Broker, topics, and QoS levels</h3>
+<p>An MQTT <strong>broker</strong> (Mosquitto is the common open-source implementation) mediates all communication. Publishers send messages to topic strings; subscribers receive messages matching their topic subscriptions. MQTT topic strings are hierarchical and support wildcards:</p>
+<ul>
+<li><code>sensors/wildfire/region-north/sensor-047/temperature</code> — a specific reading type from a specific sensor</li>
+<li><code>sensors/wildfire/region-north/+/temperature</code> — temperature from all sensors in region-north (<code>+</code> matches one level)</li>
+<li><code>sensors/wildfire/#</code> — everything under the wildfire prefix (<code>#</code> matches any number of levels)</li>
+</ul>
+<p><strong>Quality of Service (QoS)</strong> levels control delivery semantics:</p>
+<ul>
+<li><strong>QoS 0 (at most once):</strong> fire-and-forget. The broker does not acknowledge receipt. Fastest, but messages may be dropped on unreliable links.</li>
+<li><strong>QoS 1 (at least once):</strong> the broker acknowledges receipt; the publisher retransmits until acknowledged. Messages are delivered but may be duplicated.</li>
+<li><strong>QoS 2 (exactly once):</strong> a four-way handshake ensures exactly one delivery. Slowest, highest overhead. Appropriate only when deduplication at the application layer is impractical.</li>
+</ul>
+<p>For environmental sensors where a dropped reading is acceptable but a duplicate reading would double-count toward an aggregate, QoS 1 with application-layer deduplication is a reasonable choice. For billing or regulatory reporting, QoS 2.</p>
+<p>MQTT does not persist a replayable log in the way Kafka does. Most brokers support <strong>retained messages</strong> (the broker keeps the last message on a topic and delivers it immediately to new subscribers) but not full history. For that reason, MQTT is typically used as the ingestion layer — sensors publish to an MQTT broker, and a bridge process subscribes and writes to a more durable store (Kafka, TimescaleDB, or a flat file archive).</p>
+</section>
+<section id="mqtt-publisher-and-subscriber-in-python" class="level3" data-number="6.4.2">
+<h3 data-number="6.4.2" class="anchored" data-anchor-id="mqtt-publisher-and-subscriber-in-python"><span class="header-section-number">6.4.2</span> MQTT publisher and subscriber in Python</h3>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb3"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="co"># requires: pip install paho-mqtt</span></span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a><span class="co"># requires: a running MQTT broker at localhost:1883</span></span>
+<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> paho.mqtt.client <span class="im">as</span> mqtt</span>
+<span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> json</span>
+<span id="cb3-6"><a href="#cb3-6" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> time</span>
+<span id="cb3-7"><a href="#cb3-7" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> random</span>
+<span id="cb3-8"><a href="#cb3-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-9"><a href="#cb3-9" aria-hidden="true" tabindex="-1"></a>BROKER_HOST <span class="op">=</span> <span class="st">"localhost"</span></span>
+<span id="cb3-10"><a href="#cb3-10" aria-hidden="true" tabindex="-1"></a>BROKER_PORT <span class="op">=</span> <span class="dv">1883</span></span>
+<span id="cb3-11"><a href="#cb3-11" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-12"><a href="#cb3-12" aria-hidden="true" tabindex="-1"></a><span class="co"># --- Publisher: emit sensor readings ---</span></span>
+<span id="cb3-13"><a href="#cb3-13" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-14"><a href="#cb3-14" aria-hidden="true" tabindex="-1"></a>pub_client <span class="op">=</span> mqtt.Client(client_id<span class="op">=</span><span class="st">"sensor-047"</span>)</span>
+<span id="cb3-15"><a href="#cb3-15" aria-hidden="true" tabindex="-1"></a>pub_client.<span class="ex">connect</span>(BROKER_HOST, BROKER_PORT, keepalive<span class="op">=</span><span class="dv">60</span>)</span>
+<span id="cb3-16"><a href="#cb3-16" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-17"><a href="#cb3-17" aria-hidden="true" tabindex="-1"></a>SENSOR_ID <span class="op">=</span> <span class="st">"sensor-047"</span></span>
+<span id="cb3-18"><a href="#cb3-18" aria-hidden="true" tabindex="-1"></a>TOPIC     <span class="op">=</span> <span class="ss">f"sensors/wildfire/region-north/</span><span class="sc">{</span>SENSOR_ID<span class="sc">}</span><span class="ss">/temperature"</span></span>
+<span id="cb3-19"><a href="#cb3-19" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-20"><a href="#cb3-20" aria-hidden="true" tabindex="-1"></a>pub_client.loop_start()</span>
+<span id="cb3-21"><a href="#cb3-21" aria-hidden="true" tabindex="-1"></a><span class="cf">try</span>:</span>
+<span id="cb3-22"><a href="#cb3-22" aria-hidden="true" tabindex="-1"></a>    <span class="cf">while</span> <span class="va">True</span>:</span>
+<span id="cb3-23"><a href="#cb3-23" aria-hidden="true" tabindex="-1"></a>        payload <span class="op">=</span> {</span>
+<span id="cb3-24"><a href="#cb3-24" aria-hidden="true" tabindex="-1"></a>            <span class="st">"sensor_id"</span>:     SENSOR_ID,</span>
+<span id="cb3-25"><a href="#cb3-25" aria-hidden="true" tabindex="-1"></a>            <span class="st">"event_time"</span>:    time.time(),</span>
+<span id="cb3-26"><a href="#cb3-26" aria-hidden="true" tabindex="-1"></a>            <span class="st">"temperature_c"</span>: <span class="bu">round</span>(<span class="fl">20.0</span> <span class="op">+</span> random.gauss(<span class="dv">0</span>, <span class="fl">2.0</span>), <span class="dv">2</span>),</span>
+<span id="cb3-27"><a href="#cb3-27" aria-hidden="true" tabindex="-1"></a>        }</span>
+<span id="cb3-28"><a href="#cb3-28" aria-hidden="true" tabindex="-1"></a>        pub_client.publish(TOPIC, json.dumps(payload), qos<span class="op">=</span><span class="dv">1</span>)</span>
+<span id="cb3-29"><a href="#cb3-29" aria-hidden="true" tabindex="-1"></a>        time.sleep(<span class="dv">30</span>)   <span class="co"># emit every 30 seconds</span></span>
+<span id="cb3-30"><a href="#cb3-30" aria-hidden="true" tabindex="-1"></a><span class="cf">finally</span>:</span>
+<span id="cb3-31"><a href="#cb3-31" aria-hidden="true" tabindex="-1"></a>    pub_client.loop_stop()</span>
+<span id="cb3-32"><a href="#cb3-32" aria-hidden="true" tabindex="-1"></a>    pub_client.disconnect()</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb4"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="co"># --- Subscriber: receive and process readings ---</span></span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> on_connect(client, userdata, flags, rc):</span>
+<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a>    <span class="cf">if</span> rc <span class="op">==</span> <span class="dv">0</span>:</span>
+<span id="cb4-5"><a href="#cb4-5" aria-hidden="true" tabindex="-1"></a>        <span class="co"># subscribe to all temperature readings in region-north</span></span>
+<span id="cb4-6"><a href="#cb4-6" aria-hidden="true" tabindex="-1"></a>        client.subscribe(<span class="st">"sensors/wildfire/region-north/+/temperature"</span>, qos<span class="op">=</span><span class="dv">1</span>)</span>
+<span id="cb4-7"><a href="#cb4-7" aria-hidden="true" tabindex="-1"></a>        <span class="bu">print</span>(<span class="st">"Subscribed"</span>)</span>
+<span id="cb4-8"><a href="#cb4-8" aria-hidden="true" tabindex="-1"></a>    <span class="cf">else</span>:</span>
+<span id="cb4-9"><a href="#cb4-9" aria-hidden="true" tabindex="-1"></a>        <span class="bu">print</span>(<span class="ss">f"Connection failed: rc=</span><span class="sc">{</span>rc<span class="sc">}</span><span class="ss">"</span>)</span>
+<span id="cb4-10"><a href="#cb4-10" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-11"><a href="#cb4-11" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> on_message(client, userdata, msg):</span>
+<span id="cb4-12"><a href="#cb4-12" aria-hidden="true" tabindex="-1"></a>    payload <span class="op">=</span> json.loads(msg.payload.decode(<span class="st">"utf-8"</span>))</span>
+<span id="cb4-13"><a href="#cb4-13" aria-hidden="true" tabindex="-1"></a>    <span class="bu">print</span>(</span>
+<span id="cb4-14"><a href="#cb4-14" aria-hidden="true" tabindex="-1"></a>        <span class="ss">f"topic=</span><span class="sc">{</span>msg<span class="sc">.</span>topic<span class="sc">}</span><span class="ss">"</span></span>
+<span id="cb4-15"><a href="#cb4-15" aria-hidden="true" tabindex="-1"></a>        <span class="ss">f"  sensor=</span><span class="sc">{</span>payload[<span class="st">'sensor_id'</span>]<span class="sc">}</span><span class="ss">"</span></span>
+<span id="cb4-16"><a href="#cb4-16" aria-hidden="true" tabindex="-1"></a>        <span class="ss">f"  temp=</span><span class="sc">{</span>payload[<span class="st">'temperature_c'</span>]<span class="sc">}</span><span class="ss">°C"</span></span>
+<span id="cb4-17"><a href="#cb4-17" aria-hidden="true" tabindex="-1"></a>    )</span>
+<span id="cb4-18"><a href="#cb4-18" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-19"><a href="#cb4-19" aria-hidden="true" tabindex="-1"></a>sub_client <span class="op">=</span> mqtt.Client(client_id<span class="op">=</span><span class="st">"alert-subscriber"</span>)</span>
+<span id="cb4-20"><a href="#cb4-20" aria-hidden="true" tabindex="-1"></a>sub_client.on_connect <span class="op">=</span> on_connect</span>
+<span id="cb4-21"><a href="#cb4-21" aria-hidden="true" tabindex="-1"></a>sub_client.on_message <span class="op">=</span> on_message</span>
+<span id="cb4-22"><a href="#cb4-22" aria-hidden="true" tabindex="-1"></a>sub_client.<span class="ex">connect</span>(BROKER_HOST, BROKER_PORT, keepalive<span class="op">=</span><span class="dv">60</span>)</span>
+<span id="cb4-23"><a href="#cb4-23" aria-hidden="true" tabindex="-1"></a>sub_client.loop_forever()</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>MQTT is appropriate when sensors are numerous and constrained, network links are unreliable or low-bandwidth, and you do not need Kafka’s durable replay capability at the sensor layer. Pair it with a bridge to a durable store if replay or long-term retention matters.</p>
+<hr>
+</section>
+</section>
+<section id="windowing-time-based-aggregation" class="level2" data-number="6.5">
+<h2 data-number="6.5" class="anchored" data-anchor-id="windowing-time-based-aggregation"><span class="header-section-number">6.5</span> Windowing: time-based aggregation</h2>
+<p>Individual sensor readings are noisy. A single temperature spike could be sensor noise, an insect landing on the thermistor, a momentary reflection of sunlight. Acting on individual readings produces false alarms. The wildfire sensor scenario requires detecting a <em>sustained</em> elevation in temperature and smoke — a signal that persists across multiple readings, not a single outlier.</p>
+<p>Windowing is the mechanism. Instead of processing individual records, the stream processor groups records into time-based windows and computes aggregates over each window. The aggregate (mean, max, count above threshold) is more stable than the raw reading and more appropriate for alerting.</p>
+<section id="tumbling-windows" class="level3" data-number="6.5.1">
+<h3 data-number="6.5.1" class="anchored" data-anchor-id="tumbling-windows"><span class="header-section-number">6.5.1</span> Tumbling windows</h3>
+<p>A tumbling window has a fixed size and does not overlap. All windows cover the same duration; each record falls in exactly one window. A 5-minute tumbling window at 10:00 covers 10:00–10:05. The next window covers 10:05–10:10. Records do not appear in both.</p>
+<p>Tumbling windows are appropriate for aggregates you report on a regular schedule: “the mean temperature in each 5-minute interval.” They have a fixed latency: results are available at most one window period after the triggering event.</p>
+</section>
+<section id="sliding-windows" class="level3" data-number="6.5.2">
+<h3 data-number="6.5.2" class="anchored" data-anchor-id="sliding-windows"><span class="header-section-number">6.5.2</span> Sliding windows</h3>
+<p>A sliding window has a fixed size and a step smaller than the window size, so consecutive windows overlap. A 5-minute window with a 1-minute step produces a new result every minute, each covering the previous 5 minutes. Every record appears in multiple windows (up to window_size / step).</p>
+<p>Sliding windows are appropriate for continuous anomaly detection: you want to know the current 5-minute mean at any point in time, not just at 5-minute boundaries. The tradeoff is computational: each record is processed once per window it participates in.</p>
+</section>
+<section id="session-windows" class="level3" data-number="6.5.3">
+<h3 data-number="6.5.3" class="anchored" data-anchor-id="session-windows"><span class="header-section-number">6.5.3</span> Session windows</h3>
+<p>A session window groups records by a gap of inactivity. If records arrive within a threshold gap of each other, they are in the same session. If a gap exceeds the threshold, the window closes and a new one opens.</p>
+<p>Session windows are appropriate for event-driven patterns where activity comes in bursts: a vehicle’s GPS track while it is moving (session) vs stationary (gap), or a sensor that reports only when conditions change rather than on a fixed schedule.</p>
+</section>
+<section id="the-latency-accuracy-tradeoff" class="level3" data-number="6.5.4">
+<h3 data-number="6.5.4" class="anchored" data-anchor-id="the-latency-accuracy-tradeoff"><span class="header-section-number">6.5.4</span> The latency-accuracy tradeoff</h3>
+<p>Shorter windows detect events faster but are noisier. Longer windows are more stable but slower. A 1-minute window detects a fire onset roughly 1 minute after it starts — but is sensitive to individual noisy readings. A 10-minute window is more robust to noise but imposes a 10-minute detection latency.</p>
+<p>For the wildfire scenario: if sensor noise has standard deviation 2°C and fire onset produces a sustained 20°C elevation, a 5-minute tumbling window with a threshold set at 10°C above baseline should detect the fire within one window period (5 minutes) with low false alarm rate. That is a meaningful improvement over a 60-minute batch.</p>
+</section>
+<section id="windowed-aggregation-static-code" class="level3" data-number="6.5.5">
+<h3 data-number="6.5.5" class="anchored" data-anchor-id="windowed-aggregation-static-code"><span class="header-section-number">6.5.5</span> Windowed aggregation: static code</h3>
+<div id="cell-fig-windowed-sensor" class="cell" data-fig-height="6" data-fig-width="10" data-execution_count="1">
+<details class="code-fold">
+<summary>Code</summary>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb5"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="co">"""Chapter 5: windowed sensor aggregation simulation."""</span></span>
+<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> numpy <span class="im">as</span> np</span>
+<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> matplotlib.pyplot <span class="im">as</span> plt</span>
+<span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-5"><a href="#cb5-5" aria-hidden="true" tabindex="-1"></a><span class="co"># Named constants</span></span>
+<span id="cb5-6"><a href="#cb5-6" aria-hidden="true" tabindex="-1"></a>DURATION_MINUTES    <span class="op">=</span> <span class="dv">120</span></span>
+<span id="cb5-7"><a href="#cb5-7" aria-hidden="true" tabindex="-1"></a>SAMPLE_INTERVAL_S   <span class="op">=</span> <span class="dv">30</span></span>
+<span id="cb5-8"><a href="#cb5-8" aria-hidden="true" tabindex="-1"></a>BASELINE_TEMP_C     <span class="op">=</span> <span class="fl">22.0</span></span>
+<span id="cb5-9"><a href="#cb5-9" aria-hidden="true" tabindex="-1"></a>NOISE_STD_C         <span class="op">=</span> <span class="fl">2.0</span></span>
+<span id="cb5-10"><a href="#cb5-10" aria-hidden="true" tabindex="-1"></a>ANOMALY_START_MIN   <span class="op">=</span> <span class="dv">75</span></span>
+<span id="cb5-11"><a href="#cb5-11" aria-hidden="true" tabindex="-1"></a>ANOMALY_DURATION_MIN <span class="op">=</span> <span class="dv">15</span></span>
+<span id="cb5-12"><a href="#cb5-12" aria-hidden="true" tabindex="-1"></a>ANOMALY_MAGNITUDE_C <span class="op">=</span> <span class="fl">25.0</span></span>
+<span id="cb5-13"><a href="#cb5-13" aria-hidden="true" tabindex="-1"></a>WINDOW_MINUTES      <span class="op">=</span> <span class="dv">5</span></span>
+<span id="cb5-14"><a href="#cb5-14" aria-hidden="true" tabindex="-1"></a>ALERT_THRESHOLD_C   <span class="op">=</span> <span class="fl">35.0</span></span>
+<span id="cb5-15"><a href="#cb5-15" aria-hidden="true" tabindex="-1"></a>SEED                <span class="op">=</span> <span class="dv">42</span></span>
+<span id="cb5-16"><a href="#cb5-16" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-17"><a href="#cb5-17" aria-hidden="true" tabindex="-1"></a>np.random.seed(SEED)</span>
+<span id="cb5-18"><a href="#cb5-18" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-19"><a href="#cb5-19" aria-hidden="true" tabindex="-1"></a><span class="co"># Build time axis in minutes</span></span>
+<span id="cb5-20"><a href="#cb5-20" aria-hidden="true" tabindex="-1"></a>samples_total <span class="op">=</span> <span class="bu">int</span>(DURATION_MINUTES <span class="op">*</span> <span class="dv">60</span> <span class="op">/</span> SAMPLE_INTERVAL_S)</span>
+<span id="cb5-21"><a href="#cb5-21" aria-hidden="true" tabindex="-1"></a>t_s <span class="op">=</span> np.arange(samples_total) <span class="op">*</span> SAMPLE_INTERVAL_S   <span class="co"># seconds</span></span>
+<span id="cb5-22"><a href="#cb5-22" aria-hidden="true" tabindex="-1"></a>t_m <span class="op">=</span> t_s <span class="op">/</span> <span class="fl">60.0</span>                                      <span class="co"># minutes</span></span>
+<span id="cb5-23"><a href="#cb5-23" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-24"><a href="#cb5-24" aria-hidden="true" tabindex="-1"></a><span class="co"># Synthetic temperature: baseline + noise + anomaly pulse</span></span>
+<span id="cb5-25"><a href="#cb5-25" aria-hidden="true" tabindex="-1"></a>temperature <span class="op">=</span> BASELINE_TEMP_C <span class="op">+</span> np.random.normal(<span class="dv">0</span>, NOISE_STD_C, samples_total)</span>
+<span id="cb5-26"><a href="#cb5-26" aria-hidden="true" tabindex="-1"></a>anomaly_mask <span class="op">=</span> (t_m <span class="op">&gt;=</span> ANOMALY_START_MIN) <span class="op">&amp;</span> (t_m <span class="op">&lt;</span> ANOMALY_START_MIN <span class="op">+</span> ANOMALY_DURATION_MIN)</span>
+<span id="cb5-27"><a href="#cb5-27" aria-hidden="true" tabindex="-1"></a>temperature[anomaly_mask] <span class="op">+=</span> ANOMALY_MAGNITUDE_C</span>
+<span id="cb5-28"><a href="#cb5-28" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-29"><a href="#cb5-29" aria-hidden="true" tabindex="-1"></a><span class="co"># Tumbling window aggregation</span></span>
+<span id="cb5-30"><a href="#cb5-30" aria-hidden="true" tabindex="-1"></a>samples_per_window <span class="op">=</span> <span class="bu">int</span>(WINDOW_MINUTES <span class="op">*</span> <span class="dv">60</span> <span class="op">/</span> SAMPLE_INTERVAL_S)</span>
+<span id="cb5-31"><a href="#cb5-31" aria-hidden="true" tabindex="-1"></a>n_windows <span class="op">=</span> samples_total <span class="op">//</span> samples_per_window</span>
+<span id="cb5-32"><a href="#cb5-32" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-33"><a href="#cb5-33" aria-hidden="true" tabindex="-1"></a>window_means      <span class="op">=</span> np.zeros(n_windows)</span>
+<span id="cb5-34"><a href="#cb5-34" aria-hidden="true" tabindex="-1"></a>window_time_start <span class="op">=</span> np.zeros(n_windows)</span>
+<span id="cb5-35"><a href="#cb5-35" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-36"><a href="#cb5-36" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> i <span class="kw">in</span> <span class="bu">range</span>(n_windows):</span>
+<span id="cb5-37"><a href="#cb5-37" aria-hidden="true" tabindex="-1"></a>    s <span class="op">=</span> i <span class="op">*</span> samples_per_window</span>
+<span id="cb5-38"><a href="#cb5-38" aria-hidden="true" tabindex="-1"></a>    e <span class="op">=</span> s <span class="op">+</span> samples_per_window</span>
+<span id="cb5-39"><a href="#cb5-39" aria-hidden="true" tabindex="-1"></a>    window_means[i]      <span class="op">=</span> temperature[s:e].mean()</span>
+<span id="cb5-40"><a href="#cb5-40" aria-hidden="true" tabindex="-1"></a>    window_time_start[i] <span class="op">=</span> t_m[s]</span>
+<span id="cb5-41"><a href="#cb5-41" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-42"><a href="#cb5-42" aria-hidden="true" tabindex="-1"></a><span class="co"># Identify which windows exceed alert threshold</span></span>
+<span id="cb5-43"><a href="#cb5-43" aria-hidden="true" tabindex="-1"></a>alert_windows <span class="op">=</span> window_means <span class="op">&gt;</span> ALERT_THRESHOLD_C</span>
+<span id="cb5-44"><a href="#cb5-44" aria-hidden="true" tabindex="-1"></a>first_alert_idx <span class="op">=</span> np.argmax(alert_windows) <span class="cf">if</span> alert_windows.<span class="bu">any</span>() <span class="cf">else</span> <span class="va">None</span></span>
+<span id="cb5-45"><a href="#cb5-45" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-46"><a href="#cb5-46" aria-hidden="true" tabindex="-1"></a><span class="co"># --- Figure ---</span></span>
+<span id="cb5-47"><a href="#cb5-47" aria-hidden="true" tabindex="-1"></a>fig, (ax_raw, ax_win) <span class="op">=</span> plt.subplots(<span class="dv">2</span>, <span class="dv">1</span>, figsize<span class="op">=</span>(<span class="dv">10</span>, <span class="dv">6</span>), dpi<span class="op">=</span><span class="dv">150</span>,</span>
+<span id="cb5-48"><a href="#cb5-48" aria-hidden="true" tabindex="-1"></a>                                      sharex<span class="op">=</span><span class="va">True</span>, gridspec_kw<span class="op">=</span>{<span class="st">"height_ratios"</span>: [<span class="dv">2</span>, <span class="dv">1</span>]})</span>
+<span id="cb5-49"><a href="#cb5-49" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-50"><a href="#cb5-50" aria-hidden="true" tabindex="-1"></a><span class="co"># Panel 1: raw readings</span></span>
+<span id="cb5-51"><a href="#cb5-51" aria-hidden="true" tabindex="-1"></a>ax_raw.plot(t_m, temperature, color<span class="op">=</span><span class="st">"#888888"</span>, linewidth<span class="op">=</span><span class="fl">0.6</span>, label<span class="op">=</span><span class="st">"Raw reading"</span>)</span>
+<span id="cb5-52"><a href="#cb5-52" aria-hidden="true" tabindex="-1"></a>ax_raw.axvspan(ANOMALY_START_MIN, ANOMALY_START_MIN <span class="op">+</span> ANOMALY_DURATION_MIN,</span>
+<span id="cb5-53"><a href="#cb5-53" aria-hidden="true" tabindex="-1"></a>               alpha<span class="op">=</span><span class="fl">0.12</span>, color<span class="op">=</span><span class="st">"#d52a2a"</span>, label<span class="op">=</span><span class="st">"Fire anomaly"</span>)</span>
+<span id="cb5-54"><a href="#cb5-54" aria-hidden="true" tabindex="-1"></a>ax_raw.axhline(ALERT_THRESHOLD_C, color<span class="op">=</span><span class="st">"#d52a2a"</span>, linewidth<span class="op">=</span><span class="fl">1.0</span>,</span>
+<span id="cb5-55"><a href="#cb5-55" aria-hidden="true" tabindex="-1"></a>               linestyle<span class="op">=</span><span class="st">"--"</span>, label<span class="op">=</span><span class="ss">f"Alert threshold (</span><span class="sc">{</span>ALERT_THRESHOLD_C<span class="sc">}</span><span class="ss">°C)"</span>)</span>
+<span id="cb5-56"><a href="#cb5-56" aria-hidden="true" tabindex="-1"></a>ax_raw.set_ylabel(<span class="st">"Temperature (°C)"</span>)</span>
+<span id="cb5-57"><a href="#cb5-57" aria-hidden="true" tabindex="-1"></a>ax_raw.set_title(<span class="st">"Raw 30-second sensor readings"</span>)</span>
+<span id="cb5-58"><a href="#cb5-58" aria-hidden="true" tabindex="-1"></a>ax_raw.legend(fontsize<span class="op">=</span><span class="dv">8</span>, loc<span class="op">=</span><span class="st">"upper left"</span>)</span>
+<span id="cb5-59"><a href="#cb5-59" aria-hidden="true" tabindex="-1"></a>ax_raw.spines[<span class="st">"top"</span>].set_visible(<span class="va">False</span>)</span>
+<span id="cb5-60"><a href="#cb5-60" aria-hidden="true" tabindex="-1"></a>ax_raw.spines[<span class="st">"right"</span>].set_visible(<span class="va">False</span>)</span>
+<span id="cb5-61"><a href="#cb5-61" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-62"><a href="#cb5-62" aria-hidden="true" tabindex="-1"></a><span class="co"># Panel 2: windowed means</span></span>
+<span id="cb5-63"><a href="#cb5-63" aria-hidden="true" tabindex="-1"></a>bar_colors <span class="op">=</span> [<span class="st">"#d52a2a"</span> <span class="cf">if</span> a <span class="cf">else</span> <span class="st">"#111111"</span> <span class="cf">for</span> a <span class="kw">in</span> alert_windows]</span>
+<span id="cb5-64"><a href="#cb5-64" aria-hidden="true" tabindex="-1"></a>ax_win.bar(window_time_start, window_means, width<span class="op">=</span>WINDOW_MINUTES <span class="op">*</span> <span class="fl">0.85</span>,</span>
+<span id="cb5-65"><a href="#cb5-65" aria-hidden="true" tabindex="-1"></a>           align<span class="op">=</span><span class="st">"edge"</span>, color<span class="op">=</span>bar_colors, alpha<span class="op">=</span><span class="fl">0.8</span>)</span>
+<span id="cb5-66"><a href="#cb5-66" aria-hidden="true" tabindex="-1"></a>ax_win.axhline(ALERT_THRESHOLD_C, color<span class="op">=</span><span class="st">"#d52a2a"</span>, linewidth<span class="op">=</span><span class="fl">1.0</span>, linestyle<span class="op">=</span><span class="st">"--"</span>)</span>
+<span id="cb5-67"><a href="#cb5-67" aria-hidden="true" tabindex="-1"></a>ax_win.axvspan(ANOMALY_START_MIN, ANOMALY_START_MIN <span class="op">+</span> ANOMALY_DURATION_MIN,</span>
+<span id="cb5-68"><a href="#cb5-68" aria-hidden="true" tabindex="-1"></a>               alpha<span class="op">=</span><span class="fl">0.08</span>, color<span class="op">=</span><span class="st">"#d52a2a"</span>)</span>
+<span id="cb5-69"><a href="#cb5-69" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-70"><a href="#cb5-70" aria-hidden="true" tabindex="-1"></a><span class="cf">if</span> first_alert_idx <span class="kw">is</span> <span class="kw">not</span> <span class="va">None</span>:</span>
+<span id="cb5-71"><a href="#cb5-71" aria-hidden="true" tabindex="-1"></a>    alert_time <span class="op">=</span> window_time_start[first_alert_idx] <span class="op">+</span> WINDOW_MINUTES</span>
+<span id="cb5-72"><a href="#cb5-72" aria-hidden="true" tabindex="-1"></a>    ax_win.annotate(</span>
+<span id="cb5-73"><a href="#cb5-73" aria-hidden="true" tabindex="-1"></a>        <span class="ss">f"First alert at t=</span><span class="sc">{</span>alert_time<span class="sc">:.0f}</span><span class="ss"> min"</span>,</span>
+<span id="cb5-74"><a href="#cb5-74" aria-hidden="true" tabindex="-1"></a>        xy<span class="op">=</span>(alert_time, window_means[first_alert_idx]),</span>
+<span id="cb5-75"><a href="#cb5-75" aria-hidden="true" tabindex="-1"></a>        xytext<span class="op">=</span>(alert_time <span class="op">+</span> <span class="dv">5</span>, window_means[first_alert_idx] <span class="op">+</span> <span class="dv">3</span>),</span>
+<span id="cb5-76"><a href="#cb5-76" aria-hidden="true" tabindex="-1"></a>        arrowprops<span class="op">=</span><span class="bu">dict</span>(arrowstyle<span class="op">=</span><span class="st">"-&gt;"</span>, color<span class="op">=</span><span class="st">"#d52a2a"</span>),</span>
+<span id="cb5-77"><a href="#cb5-77" aria-hidden="true" tabindex="-1"></a>        color<span class="op">=</span><span class="st">"#d52a2a"</span>, fontsize<span class="op">=</span><span class="dv">8</span>,</span>
+<span id="cb5-78"><a href="#cb5-78" aria-hidden="true" tabindex="-1"></a>    )</span>
+<span id="cb5-79"><a href="#cb5-79" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-80"><a href="#cb5-80" aria-hidden="true" tabindex="-1"></a>ax_win.set_ylabel(<span class="ss">f"</span><span class="sc">{</span>WINDOW_MINUTES<span class="sc">}</span><span class="ss">-min mean (°C)"</span>)</span>
+<span id="cb5-81"><a href="#cb5-81" aria-hidden="true" tabindex="-1"></a>ax_win.set_xlabel(<span class="st">"Time (minutes)"</span>)</span>
+<span id="cb5-82"><a href="#cb5-82" aria-hidden="true" tabindex="-1"></a>ax_win.set_title(<span class="ss">f"</span><span class="sc">{</span>WINDOW_MINUTES<span class="sc">}</span><span class="ss">-minute tumbling window means"</span>)</span>
+<span id="cb5-83"><a href="#cb5-83" aria-hidden="true" tabindex="-1"></a>ax_win.spines[<span class="st">"top"</span>].set_visible(<span class="va">False</span>)</span>
+<span id="cb5-84"><a href="#cb5-84" aria-hidden="true" tabindex="-1"></a>ax_win.spines[<span class="st">"right"</span>].set_visible(<span class="va">False</span>)</span>
+<span id="cb5-85"><a href="#cb5-85" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-86"><a href="#cb5-86" aria-hidden="true" tabindex="-1"></a>plt.tight_layout()</span>
+<span id="cb5-87"><a href="#cb5-87" aria-hidden="true" tabindex="-1"></a>plt.savefig(<span class="st">"_assets/ch05-windowed-sensor.png"</span>, dpi<span class="op">=</span><span class="dv">150</span>, bbox_inches<span class="op">=</span><span class="st">"tight"</span>)</span>
+<span id="cb5-88"><a href="#cb5-88" aria-hidden="true" tabindex="-1"></a>plt.show()</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</details>
+<div class="cell-output cell-output-display">
+<div id="fig-windowed-sensor" class="quarto-float quarto-figure quarto-figure-center anchored">
+<figure class="quarto-float quarto-float-fig figure">
+<div aria-describedby="fig-windowed-sensor-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<img src="05-streaming-and-realtime_files/figure-html/fig-windowed-sensor-output-1.png" width="1486" height="887" class="figure-img">
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-windowed-sensor-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Figure&nbsp;6.1: Figure 5.1. Windowed sensor aggregation. Top panel: raw 30-second temperature readings for a simulated 2-hour period. Gaussian noise (σ = 2°C) overlays a baseline of 22°C. A fire anomaly is injected at t = 75 minutes, raising temperature by 25°C for 15 minutes. Bottom panel: 5-minute tumbling window means. The anomaly window mean exceeds the alert threshold (35°C) within the first full window after ignition, at t = 80 minutes — 5 minutes after onset. Compare this with the 60-minute batch interval that produced the original failure.
+</figcaption>
+</figure>
+</div>
+</div>
+</div>
+<hr>
+</section>
+</section>
+<section id="backpressure" class="level2" data-number="6.6">
+<h2 data-number="6.6" class="anchored" data-anchor-id="backpressure"><span class="header-section-number">6.6</span> Backpressure</h2>
+<p>A stream processing system has two rates: the rate at which the producer emits records, and the rate at which the consumer processes them. When the consumer is slower than the producer, the queue between them grows. If the queue is unbounded and the imbalance persists, the system runs out of memory and crashes. If the queue is bounded, the system must decide what to do when it fills: drop new records, block the producer, or signal the producer to slow down.</p>
+<p>That signal is <strong>backpressure</strong> — the consumer communicating its capacity back to the producer.</p>
+<p>Kafka’s pull model handles this naturally. Consumers request records at their own pace; the broker does not push. If a consumer is slow, it falls behind — its lag (distance between its current offset and the partition’s latest offset) grows. The records are retained on the broker until the consumer catches up or the retention window expires. The producer is never blocked by consumer slowness. The cost is latency: a slow consumer introduces delay between record production and processing, and if it falls far enough behind, records may expire before they are consumed.</p>
+<p>Push models (MQTT with QoS 0, many HTTP webhook systems) have no natural backpressure. The broker sends records as fast as they arrive. A slow consumer either drops records or buffers them in memory until the buffer overflows.</p>
+<p>For spatial sensor networks, the typical failure mode is a sudden burst of readings — a sensor network coming online after a maintenance window, a data backfill after an outage, or a sudden increase in sampling frequency during an event. Kafka’s pull model absorbs these bursts without producer-side impact. The consumer lag increases temporarily; it drains as the consumer processes the backlog. The key operational metric is consumer lag: if lag trends upward continuously, the consumer cannot keep up and you need to either increase consumer parallelism (add consumers up to the partition count) or reduce per-record processing cost.</p>
+<p>The buffer stock analogy is exact: the Kafka partition log is a buffer stock between producer and consumer. Its level (lag) rises when the inflow rate (producer throughput) exceeds the outflow rate (consumer throughput) and falls when the consumer is faster. A well-managed system maintains lag near zero during normal operation and recovers quickly after bursts.</p>
+<hr>
+</section>
+<section id="what-to-try" class="level2" data-number="6.7">
+<h2 data-number="6.7" class="anchored" data-anchor-id="what-to-try"><span class="header-section-number">6.7</span> What to try</h2>
+<div class="callout callout-style-simple callout-tip callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+<span class="screen-reader-only">Tip</span>What to try
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<ol type="1">
+<li><p><strong>Change <code>WINDOW_SIZE</code> from 5 to 1 minute.</strong> Does the alert fire sooner? What happens to the false positive rate during the baseline period before the anomaly? There is a real tradeoff here, not a free lunch.</p></li>
+<li><p><strong>Raise <code>ANOMALY_MAGNITUDE_C</code> to 5 and lower it to 2.</strong> At what magnitude does the windowed mean reliably exceed the threshold? What does this imply about the sensitivity of the alert threshold relative to the noise level?</p></li>
+<li><p><strong>Increase <code>NOISE_STD_C</code> to 8.</strong> What happens to the number of window means that exceed the threshold during the baseline period? How would you adjust the threshold to maintain a low false positive rate?</p></li>
+</ol>
+</div>
+</div>
+<div class="pyodide-cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb6"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="co"># --- Try changing these parameters ---</span></span>
+<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a>DURATION_MINUTES     <span class="op">=</span> <span class="dv">120</span>   <span class="co"># total simulation length (minutes)</span></span>
+<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a>WINDOW_SIZE          <span class="op">=</span> <span class="dv">5</span>     <span class="co"># tumbling window size (minutes, try 1 or 10)</span></span>
+<span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a>NOISE_STD_C          <span class="op">=</span> <span class="fl">2.0</span>   <span class="co"># sensor noise std dev (°C, try 8.0)</span></span>
+<span id="cb6-5"><a href="#cb6-5" aria-hidden="true" tabindex="-1"></a>ANOMALY_MAGNITUDE_C  <span class="op">=</span> <span class="fl">25.0</span>  <span class="co"># fire temperature elevation (°C, try 5.0)</span></span>
+<span id="cb6-6"><a href="#cb6-6" aria-hidden="true" tabindex="-1"></a>ANOMALY_TIME         <span class="op">=</span> <span class="dv">75</span>    <span class="co"># fire start (minutes into simulation)</span></span>
+<span id="cb6-7"><a href="#cb6-7" aria-hidden="true" tabindex="-1"></a>ALERT_THRESHOLD_C    <span class="op">=</span> <span class="fl">35.0</span>  <span class="co"># alert threshold (°C)</span></span>
+<span id="cb6-8"><a href="#cb6-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-9"><a href="#cb6-9" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> numpy <span class="im">as</span> np</span>
+<span id="cb6-10"><a href="#cb6-10" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> matplotlib.pyplot <span class="im">as</span> plt</span>
+<span id="cb6-11"><a href="#cb6-11" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-12"><a href="#cb6-12" aria-hidden="true" tabindex="-1"></a>np.random.seed(<span class="dv">42</span>)</span>
+<span id="cb6-13"><a href="#cb6-13" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-14"><a href="#cb6-14" aria-hidden="true" tabindex="-1"></a>BASELINE_TEMP_C      <span class="op">=</span> <span class="fl">22.0</span></span>
+<span id="cb6-15"><a href="#cb6-15" aria-hidden="true" tabindex="-1"></a>SAMPLE_INTERVAL_S    <span class="op">=</span> <span class="dv">30</span></span>
+<span id="cb6-16"><a href="#cb6-16" aria-hidden="true" tabindex="-1"></a>ANOMALY_DURATION_MIN <span class="op">=</span> <span class="dv">15</span></span>
+<span id="cb6-17"><a href="#cb6-17" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-18"><a href="#cb6-18" aria-hidden="true" tabindex="-1"></a>samples_total <span class="op">=</span> <span class="bu">int</span>(DURATION_MINUTES <span class="op">*</span> <span class="dv">60</span> <span class="op">/</span> SAMPLE_INTERVAL_S)</span>
+<span id="cb6-19"><a href="#cb6-19" aria-hidden="true" tabindex="-1"></a>t_s <span class="op">=</span> np.arange(samples_total) <span class="op">*</span> SAMPLE_INTERVAL_S</span>
+<span id="cb6-20"><a href="#cb6-20" aria-hidden="true" tabindex="-1"></a>t_m <span class="op">=</span> t_s <span class="op">/</span> <span class="fl">60.0</span></span>
+<span id="cb6-21"><a href="#cb6-21" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-22"><a href="#cb6-22" aria-hidden="true" tabindex="-1"></a>temperature <span class="op">=</span> BASELINE_TEMP_C <span class="op">+</span> np.random.normal(<span class="dv">0</span>, NOISE_STD_C, samples_total)</span>
+<span id="cb6-23"><a href="#cb6-23" aria-hidden="true" tabindex="-1"></a>anomaly_mask <span class="op">=</span> (t_m <span class="op">&gt;=</span> ANOMALY_TIME) <span class="op">&amp;</span> (t_m <span class="op">&lt;</span> ANOMALY_TIME <span class="op">+</span> ANOMALY_DURATION_MIN)</span>
+<span id="cb6-24"><a href="#cb6-24" aria-hidden="true" tabindex="-1"></a>temperature[anomaly_mask] <span class="op">+=</span> ANOMALY_MAGNITUDE_C</span>
+<span id="cb6-25"><a href="#cb6-25" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-26"><a href="#cb6-26" aria-hidden="true" tabindex="-1"></a>samples_per_window <span class="op">=</span> <span class="bu">max</span>(<span class="dv">1</span>, <span class="bu">int</span>(WINDOW_SIZE <span class="op">*</span> <span class="dv">60</span> <span class="op">/</span> SAMPLE_INTERVAL_S))</span>
+<span id="cb6-27"><a href="#cb6-27" aria-hidden="true" tabindex="-1"></a>n_windows <span class="op">=</span> samples_total <span class="op">//</span> samples_per_window</span>
+<span id="cb6-28"><a href="#cb6-28" aria-hidden="true" tabindex="-1"></a>window_means <span class="op">=</span> np.array([</span>
+<span id="cb6-29"><a href="#cb6-29" aria-hidden="true" tabindex="-1"></a>    temperature[i <span class="op">*</span> samples_per_window:(i <span class="op">+</span> <span class="dv">1</span>) <span class="op">*</span> samples_per_window].mean()</span>
+<span id="cb6-30"><a href="#cb6-30" aria-hidden="true" tabindex="-1"></a>    <span class="cf">for</span> i <span class="kw">in</span> <span class="bu">range</span>(n_windows)</span>
+<span id="cb6-31"><a href="#cb6-31" aria-hidden="true" tabindex="-1"></a>])</span>
+<span id="cb6-32"><a href="#cb6-32" aria-hidden="true" tabindex="-1"></a>window_starts <span class="op">=</span> np.array([</span>
+<span id="cb6-33"><a href="#cb6-33" aria-hidden="true" tabindex="-1"></a>    t_m[i <span class="op">*</span> samples_per_window] <span class="cf">for</span> i <span class="kw">in</span> <span class="bu">range</span>(n_windows)</span>
+<span id="cb6-34"><a href="#cb6-34" aria-hidden="true" tabindex="-1"></a>])</span>
+<span id="cb6-35"><a href="#cb6-35" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-36"><a href="#cb6-36" aria-hidden="true" tabindex="-1"></a>alert_windows <span class="op">=</span> window_means <span class="op">&gt;</span> ALERT_THRESHOLD_C</span>
+<span id="cb6-37"><a href="#cb6-37" aria-hidden="true" tabindex="-1"></a>first_alert <span class="op">=</span> np.argmax(alert_windows) <span class="cf">if</span> alert_windows.<span class="bu">any</span>() <span class="cf">else</span> <span class="va">None</span></span>
+<span id="cb6-38"><a href="#cb6-38" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-39"><a href="#cb6-39" aria-hidden="true" tabindex="-1"></a>fig, (ax1, ax2) <span class="op">=</span> plt.subplots(<span class="dv">2</span>, <span class="dv">1</span>, figsize<span class="op">=</span>(<span class="dv">10</span>, <span class="dv">5</span>), sharex<span class="op">=</span><span class="va">True</span>,</span>
+<span id="cb6-40"><a href="#cb6-40" aria-hidden="true" tabindex="-1"></a>                                gridspec_kw<span class="op">=</span>{<span class="st">"height_ratios"</span>: [<span class="dv">2</span>, <span class="dv">1</span>]})</span>
+<span id="cb6-41"><a href="#cb6-41" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-42"><a href="#cb6-42" aria-hidden="true" tabindex="-1"></a>ax1.plot(t_m, temperature, color<span class="op">=</span><span class="st">"#888888"</span>, linewidth<span class="op">=</span><span class="fl">0.5</span>, label<span class="op">=</span><span class="st">"Raw"</span>)</span>
+<span id="cb6-43"><a href="#cb6-43" aria-hidden="true" tabindex="-1"></a>ax1.axvspan(ANOMALY_TIME, ANOMALY_TIME <span class="op">+</span> ANOMALY_DURATION_MIN,</span>
+<span id="cb6-44"><a href="#cb6-44" aria-hidden="true" tabindex="-1"></a>            alpha<span class="op">=</span><span class="fl">0.12</span>, color<span class="op">=</span><span class="st">"#d52a2a"</span>, label<span class="op">=</span><span class="st">"Fire"</span>)</span>
+<span id="cb6-45"><a href="#cb6-45" aria-hidden="true" tabindex="-1"></a>ax1.axhline(ALERT_THRESHOLD_C, color<span class="op">=</span><span class="st">"#d52a2a"</span>, linewidth<span class="op">=</span><span class="dv">1</span>, linestyle<span class="op">=</span><span class="st">"--"</span>,</span>
+<span id="cb6-46"><a href="#cb6-46" aria-hidden="true" tabindex="-1"></a>            label<span class="op">=</span><span class="ss">f"Threshold </span><span class="sc">{</span>ALERT_THRESHOLD_C<span class="sc">}</span><span class="ss">°C"</span>)</span>
+<span id="cb6-47"><a href="#cb6-47" aria-hidden="true" tabindex="-1"></a>ax1.set_ylabel(<span class="st">"Temp (°C)"</span>)</span>
+<span id="cb6-48"><a href="#cb6-48" aria-hidden="true" tabindex="-1"></a>ax1.legend(fontsize<span class="op">=</span><span class="dv">7</span>, loc<span class="op">=</span><span class="st">"upper left"</span>)</span>
+<span id="cb6-49"><a href="#cb6-49" aria-hidden="true" tabindex="-1"></a>ax1.spines[<span class="st">"top"</span>].set_visible(<span class="va">False</span>)</span>
+<span id="cb6-50"><a href="#cb6-50" aria-hidden="true" tabindex="-1"></a>ax1.spines[<span class="st">"right"</span>].set_visible(<span class="va">False</span>)</span>
+<span id="cb6-51"><a href="#cb6-51" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-52"><a href="#cb6-52" aria-hidden="true" tabindex="-1"></a>bar_colors <span class="op">=</span> [<span class="st">"#d52a2a"</span> <span class="cf">if</span> a <span class="cf">else</span> <span class="st">"#333333"</span> <span class="cf">for</span> a <span class="kw">in</span> alert_windows]</span>
+<span id="cb6-53"><a href="#cb6-53" aria-hidden="true" tabindex="-1"></a>ax2.bar(window_starts, window_means, width<span class="op">=</span>WINDOW_SIZE <span class="op">*</span> <span class="fl">0.85</span>,</span>
+<span id="cb6-54"><a href="#cb6-54" aria-hidden="true" tabindex="-1"></a>        align<span class="op">=</span><span class="st">"edge"</span>, color<span class="op">=</span>bar_colors, alpha<span class="op">=</span><span class="fl">0.8</span>)</span>
+<span id="cb6-55"><a href="#cb6-55" aria-hidden="true" tabindex="-1"></a>ax2.axhline(ALERT_THRESHOLD_C, color<span class="op">=</span><span class="st">"#d52a2a"</span>, linewidth<span class="op">=</span><span class="dv">1</span>, linestyle<span class="op">=</span><span class="st">"--"</span>)</span>
+<span id="cb6-56"><a href="#cb6-56" aria-hidden="true" tabindex="-1"></a>ax2.axvspan(ANOMALY_TIME, ANOMALY_TIME <span class="op">+</span> ANOMALY_DURATION_MIN,</span>
+<span id="cb6-57"><a href="#cb6-57" aria-hidden="true" tabindex="-1"></a>            alpha<span class="op">=</span><span class="fl">0.08</span>, color<span class="op">=</span><span class="st">"#d52a2a"</span>)</span>
+<span id="cb6-58"><a href="#cb6-58" aria-hidden="true" tabindex="-1"></a>ax2.set_ylabel(<span class="ss">f"</span><span class="sc">{</span>WINDOW_SIZE<span class="sc">}</span><span class="ss">-min mean (°C)"</span>)</span>
+<span id="cb6-59"><a href="#cb6-59" aria-hidden="true" tabindex="-1"></a>ax2.set_xlabel(<span class="st">"Time (minutes)"</span>)</span>
+<span id="cb6-60"><a href="#cb6-60" aria-hidden="true" tabindex="-1"></a>ax2.spines[<span class="st">"top"</span>].set_visible(<span class="va">False</span>)</span>
+<span id="cb6-61"><a href="#cb6-61" aria-hidden="true" tabindex="-1"></a>ax2.spines[<span class="st">"right"</span>].set_visible(<span class="va">False</span>)</span>
+<span id="cb6-62"><a href="#cb6-62" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-63"><a href="#cb6-63" aria-hidden="true" tabindex="-1"></a>plt.tight_layout()</span>
+<span id="cb6-64"><a href="#cb6-64" aria-hidden="true" tabindex="-1"></a>plt.show()</span>
+<span id="cb6-65"><a href="#cb6-65" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-66"><a href="#cb6-66" aria-hidden="true" tabindex="-1"></a>n_false_positives <span class="op">=</span> <span class="bu">int</span>(alert_windows[:<span class="bu">int</span>(ANOMALY_TIME <span class="op">/</span> WINDOW_SIZE)].<span class="bu">sum</span>())</span>
+<span id="cb6-67"><a href="#cb6-67" aria-hidden="true" tabindex="-1"></a><span class="cf">if</span> first_alert <span class="kw">is</span> <span class="kw">not</span> <span class="va">None</span>:</span>
+<span id="cb6-68"><a href="#cb6-68" aria-hidden="true" tabindex="-1"></a>    alert_at <span class="op">=</span> window_starts[first_alert] <span class="op">+</span> WINDOW_SIZE</span>
+<span id="cb6-69"><a href="#cb6-69" aria-hidden="true" tabindex="-1"></a>    <span class="bu">print</span>(<span class="ss">f"First alert at t = </span><span class="sc">{</span>alert_at<span class="sc">:.1f}</span><span class="ss"> min  "</span></span>
+<span id="cb6-70"><a href="#cb6-70" aria-hidden="true" tabindex="-1"></a>          <span class="ss">f"(fire started at t = </span><span class="sc">{</span>ANOMALY_TIME<span class="sc">}</span><span class="ss"> min)"</span>)</span>
+<span id="cb6-71"><a href="#cb6-71" aria-hidden="true" tabindex="-1"></a><span class="cf">else</span>:</span>
+<span id="cb6-72"><a href="#cb6-72" aria-hidden="true" tabindex="-1"></a>    <span class="bu">print</span>(<span class="st">"No alert raised."</span>)</span>
+<span id="cb6-73"><a href="#cb6-73" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f"False positives before anomaly: </span><span class="sc">{</span>n_false_positives<span class="sc">}</span><span class="ss">"</span>)</span>
+<span id="cb6-74"><a href="#cb6-74" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f"Window size: </span><span class="sc">{</span>WINDOW_SIZE<span class="sc">}</span><span class="ss"> min  |  "</span></span>
+<span id="cb6-75"><a href="#cb6-75" aria-hidden="true" tabindex="-1"></a>      <span class="ss">f"Noise std: </span><span class="sc">{</span>NOISE_STD_C<span class="sc">}</span><span class="ss">°C  |  "</span></span>
+<span id="cb6-76"><a href="#cb6-76" aria-hidden="true" tabindex="-1"></a>      <span class="ss">f"Anomaly magnitude: </span><span class="sc">{</span>ANOMALY_MAGNITUDE_C<span class="sc">}</span><span class="ss">°C"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<hr>
+</section>
+<section id="exercises" class="level2" data-number="6.8">
+<h2 data-number="6.8" class="anchored" data-anchor-id="exercises"><span class="header-section-number">6.8</span> Exercises</h2>
+<p><strong>5.1 — Latency budget</strong></p>
+<p>The wildfire sensor network in the opening scenario used a 60-minute batch interval. A wildfire suppression team requires a response time of 8 minutes from ignition to alert dispatch.</p>
+<ol type="a">
+<li>Sketch the complete latency budget from ignition event to alert dispatch, including: sensor sampling interval, transmission lag, ingestion processing, windowing lag, alert evaluation, and notification delivery. Assign realistic values to each component.</li>
+<li>What is the maximum allowable windowing lag if all other components are fixed at your estimated values?</li>
+<li>If the cellular link introduces up to 3 minutes of transmission lag, what watermark policy is appropriate?</li>
+</ol>
+<p><strong>5.2 — Partition key selection</strong></p>
+<p>A sensor network covers 500 sensors across 20 geographic regions. You are designing a Kafka topic with 20 partitions.</p>
+<ol type="a">
+<li>Compare the following partition key strategies: (i) sensor ID, (ii) geographic region, (iii) hash of sensor ID mod 20. What are the ordering guarantees each provides? What are the throughput implications?</li>
+<li>A downstream consumer computes per-region aggregates. Which partition key strategy makes this consumer simplest to implement? Why?</li>
+<li>A new requirement arrives: the consumer must also compute cross-region correlations. Does your answer to (b) change?</li>
+</ol>
+<p><strong>5.3 — Watermark policy</strong></p>
+<p>You have telemetry from 200 field sensors. Connectivity statistics over the past 30 days show: - 80% of readings arrive within 10 seconds of event time - 95% arrive within 2 minutes - 99% arrive within 8 minutes - The remaining 1% can arrive up to 6 hours late (sensors that were offline overnight)</p>
+<ol type="a">
+<li>You are computing 5-minute tumbling windows for a realtime dashboard. What watermark lag do you recommend? What fraction of records will be late-dropped?</li>
+<li>You need a separate daily summary with complete data. How would you handle the 6-hour-late records? Describe an architecture that serves both use cases.</li>
+</ol>
+<p><strong>5.4 — Backpressure under load</strong></p>
+<p>A Kafka consumer group has 4 consumers reading a topic with 12 partitions. Normal consumer lag is under 500 records. During a sensor backfill event, lag spikes to 200,000 records.</p>
+<ol type="a">
+<li>How long will it take to drain the backlog if the consumer processes 1,000 records per second and the producer emits 800 records per second?</li>
+<li>The operations team proposes adding 8 more consumers to drain faster. Will this help? What is the maximum number of consumers that can usefully read from a 12-partition topic?</li>
+<li>An alternative proposal is to increase per-consumer parallelism by using async processing within each consumer. What risk does this introduce, and how would you mitigate it?</li>
+</ol>
+<hr>
+</section>
+<section id="build-this" class="level2" data-number="6.9">
+<h2 data-number="6.9" class="anchored" data-anchor-id="build-this"><span class="header-section-number">6.9</span> Build this</h2>
+<p>Design and implement a Kafka-based sensor ingestion system with stream processing. The system has two components: a producer that emits synthetic sensor readings, and a Faust stream processor that computes 5-minute spatial aggregates.</p>
+<p><strong>Producer</strong> (<code>producer.py</code>): emits synthetic temperature and smoke readings for 50 sensors across 5 geographic regions. Each reading has sensor ID, region, event timestamp, temperature, and smoke concentration. Readings are emitted at configurable intervals with Gaussian noise and an optional injected anomaly.</p>
+<p><strong>Stream processor</strong> (<code>processor.py</code>): uses Faust (a Python stream processing library built on Kafka) to compute 5-minute tumbling window means per region, emit an alert when any window mean exceeds a threshold, and write region-level aggregates to a separate Kafka topic.</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb7"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="co"># producer.py</span></span>
+<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a><span class="co"># requires: pip install kafka-python</span></span>
+<span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a><span class="co"># requires: Kafka broker at localhost:9092</span></span>
+<span id="cb7-4"><a href="#cb7-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-5"><a href="#cb7-5" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> kafka <span class="im">import</span> KafkaProducer</span>
+<span id="cb7-6"><a href="#cb7-6" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> json, time, random, math</span>
+<span id="cb7-7"><a href="#cb7-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-8"><a href="#cb7-8" aria-hidden="true" tabindex="-1"></a>BROKER          <span class="op">=</span> [<span class="st">"localhost:9092"</span>]</span>
+<span id="cb7-9"><a href="#cb7-9" aria-hidden="true" tabindex="-1"></a>TOPIC           <span class="op">=</span> <span class="st">"spatial-sensor-readings"</span></span>
+<span id="cb7-10"><a href="#cb7-10" aria-hidden="true" tabindex="-1"></a>N_SENSORS       <span class="op">=</span> <span class="dv">50</span></span>
+<span id="cb7-11"><a href="#cb7-11" aria-hidden="true" tabindex="-1"></a>REGIONS         <span class="op">=</span> [<span class="st">"north"</span>, <span class="st">"south"</span>, <span class="st">"east"</span>, <span class="st">"west"</span>, <span class="st">"central"</span>]</span>
+<span id="cb7-12"><a href="#cb7-12" aria-hidden="true" tabindex="-1"></a>EMIT_INTERVAL_S <span class="op">=</span> <span class="dv">30</span></span>
+<span id="cb7-13"><a href="#cb7-13" aria-hidden="true" tabindex="-1"></a>NOISE_STD_C     <span class="op">=</span> <span class="fl">2.0</span></span>
+<span id="cb7-14"><a href="#cb7-14" aria-hidden="true" tabindex="-1"></a>SMOKE_NOISE     <span class="op">=</span> <span class="fl">1.5</span></span>
+<span id="cb7-15"><a href="#cb7-15" aria-hidden="true" tabindex="-1"></a>SEED            <span class="op">=</span> <span class="dv">42</span></span>
+<span id="cb7-16"><a href="#cb7-16" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-17"><a href="#cb7-17" aria-hidden="true" tabindex="-1"></a><span class="co"># Each sensor is assigned a region deterministically</span></span>
+<span id="cb7-18"><a href="#cb7-18" aria-hidden="true" tabindex="-1"></a>SENSOR_REGION <span class="op">=</span> {</span>
+<span id="cb7-19"><a href="#cb7-19" aria-hidden="true" tabindex="-1"></a>    <span class="ss">f"sensor-</span><span class="sc">{</span>i<span class="sc">:03d}</span><span class="ss">"</span>: REGIONS[i <span class="op">%</span> <span class="bu">len</span>(REGIONS)]</span>
+<span id="cb7-20"><a href="#cb7-20" aria-hidden="true" tabindex="-1"></a>    <span class="cf">for</span> i <span class="kw">in</span> <span class="bu">range</span>(N_SENSORS)</span>
+<span id="cb7-21"><a href="#cb7-21" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb7-22"><a href="#cb7-22" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-23"><a href="#cb7-23" aria-hidden="true" tabindex="-1"></a>producer <span class="op">=</span> KafkaProducer(</span>
+<span id="cb7-24"><a href="#cb7-24" aria-hidden="true" tabindex="-1"></a>    bootstrap_servers<span class="op">=</span>BROKER,</span>
+<span id="cb7-25"><a href="#cb7-25" aria-hidden="true" tabindex="-1"></a>    value_serializer<span class="op">=</span><span class="kw">lambda</span> v: json.dumps(v).encode(),</span>
+<span id="cb7-26"><a href="#cb7-26" aria-hidden="true" tabindex="-1"></a>    key_serializer<span class="op">=</span><span class="kw">lambda</span> k: k.encode(),</span>
+<span id="cb7-27"><a href="#cb7-27" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb7-28"><a href="#cb7-28" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-29"><a href="#cb7-29" aria-hidden="true" tabindex="-1"></a>random.seed(SEED)</span>
+<span id="cb7-30"><a href="#cb7-30" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-31"><a href="#cb7-31" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> make_reading(sensor_id: <span class="bu">str</span>, t: <span class="bu">float</span>) <span class="op">-&gt;</span> <span class="bu">dict</span>:</span>
+<span id="cb7-32"><a href="#cb7-32" aria-hidden="true" tabindex="-1"></a>    region <span class="op">=</span> SENSOR_REGION[sensor_id]</span>
+<span id="cb7-33"><a href="#cb7-33" aria-hidden="true" tabindex="-1"></a>    <span class="co"># Inject a fire anomaly into the "north" region between t=3600 and t=4500</span></span>
+<span id="cb7-34"><a href="#cb7-34" aria-hidden="true" tabindex="-1"></a>    anomaly <span class="op">=</span> <span class="fl">25.0</span> <span class="cf">if</span> (region <span class="op">==</span> <span class="st">"north"</span> <span class="kw">and</span> <span class="dv">3600</span> <span class="op">&lt;=</span> t <span class="op">%</span> <span class="dv">7200</span> <span class="op">&lt;=</span> <span class="dv">4500</span>) <span class="cf">else</span> <span class="fl">0.0</span></span>
+<span id="cb7-35"><a href="#cb7-35" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> {</span>
+<span id="cb7-36"><a href="#cb7-36" aria-hidden="true" tabindex="-1"></a>        <span class="st">"sensor_id"</span>:     sensor_id,</span>
+<span id="cb7-37"><a href="#cb7-37" aria-hidden="true" tabindex="-1"></a>        <span class="st">"region"</span>:        region,</span>
+<span id="cb7-38"><a href="#cb7-38" aria-hidden="true" tabindex="-1"></a>        <span class="st">"event_time"</span>:    t,</span>
+<span id="cb7-39"><a href="#cb7-39" aria-hidden="true" tabindex="-1"></a>        <span class="st">"temperature_c"</span>: <span class="bu">round</span>(<span class="fl">22.0</span> <span class="op">+</span> random.gauss(<span class="dv">0</span>, NOISE_STD_C) <span class="op">+</span> anomaly, <span class="dv">2</span>),</span>
+<span id="cb7-40"><a href="#cb7-40" aria-hidden="true" tabindex="-1"></a>        <span class="st">"smoke_ug_m3"</span>:   <span class="bu">round</span>(<span class="bu">max</span>(<span class="dv">0</span>, random.gauss(<span class="dv">5</span>, SMOKE_NOISE) <span class="op">+</span> anomaly <span class="op">*</span> <span class="fl">0.8</span>), <span class="dv">2</span>),</span>
+<span id="cb7-41"><a href="#cb7-41" aria-hidden="true" tabindex="-1"></a>    }</span>
+<span id="cb7-42"><a href="#cb7-42" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-43"><a href="#cb7-43" aria-hidden="true" tabindex="-1"></a>start <span class="op">=</span> time.time()</span>
+<span id="cb7-44"><a href="#cb7-44" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f"Producer started. Emitting </span><span class="sc">{</span>N_SENSORS<span class="sc">}</span><span class="ss"> sensors every </span><span class="sc">{</span>EMIT_INTERVAL_S<span class="sc">}</span><span class="ss">s."</span>)</span>
+<span id="cb7-45"><a href="#cb7-45" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-46"><a href="#cb7-46" aria-hidden="true" tabindex="-1"></a><span class="cf">while</span> <span class="va">True</span>:</span>
+<span id="cb7-47"><a href="#cb7-47" aria-hidden="true" tabindex="-1"></a>    t <span class="op">=</span> time.time() <span class="op">-</span> start</span>
+<span id="cb7-48"><a href="#cb7-48" aria-hidden="true" tabindex="-1"></a>    <span class="cf">for</span> sid <span class="kw">in</span> SENSOR_REGION:</span>
+<span id="cb7-49"><a href="#cb7-49" aria-hidden="true" tabindex="-1"></a>        reading <span class="op">=</span> make_reading(sid, t)</span>
+<span id="cb7-50"><a href="#cb7-50" aria-hidden="true" tabindex="-1"></a>        producer.send(TOPIC, key<span class="op">=</span>reading[<span class="st">"region"</span>], value<span class="op">=</span>reading)</span>
+<span id="cb7-51"><a href="#cb7-51" aria-hidden="true" tabindex="-1"></a>    producer.flush()</span>
+<span id="cb7-52"><a href="#cb7-52" aria-hidden="true" tabindex="-1"></a>    time.sleep(EMIT_INTERVAL_S)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb8"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="co"># processor.py</span></span>
+<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a><span class="co"># requires: pip install faust-streaming</span></span>
+<span id="cb8-3"><a href="#cb8-3" aria-hidden="true" tabindex="-1"></a><span class="co"># run with: faust -A processor worker -l info</span></span>
+<span id="cb8-4"><a href="#cb8-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-5"><a href="#cb8-5" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> faust</span>
+<span id="cb8-6"><a href="#cb8-6" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> dataclasses <span class="im">import</span> dataclass</span>
+<span id="cb8-7"><a href="#cb8-7" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> datetime <span class="im">import</span> timedelta</span>
+<span id="cb8-8"><a href="#cb8-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-9"><a href="#cb8-9" aria-hidden="true" tabindex="-1"></a>BROKER                <span class="op">=</span> <span class="st">"kafka://localhost:9092"</span></span>
+<span id="cb8-10"><a href="#cb8-10" aria-hidden="true" tabindex="-1"></a>INPUT_TOPIC_NAME      <span class="op">=</span> <span class="st">"spatial-sensor-readings"</span></span>
+<span id="cb8-11"><a href="#cb8-11" aria-hidden="true" tabindex="-1"></a>AGGREGATE_TOPIC_NAME  <span class="op">=</span> <span class="st">"spatial-aggregates"</span></span>
+<span id="cb8-12"><a href="#cb8-12" aria-hidden="true" tabindex="-1"></a>WINDOW_MINUTES        <span class="op">=</span> <span class="dv">5</span></span>
+<span id="cb8-13"><a href="#cb8-13" aria-hidden="true" tabindex="-1"></a>ALERT_THRESHOLD_TEMP  <span class="op">=</span> <span class="fl">35.0</span></span>
+<span id="cb8-14"><a href="#cb8-14" aria-hidden="true" tabindex="-1"></a>ALERT_THRESHOLD_SMOKE <span class="op">=</span> <span class="fl">30.0</span></span>
+<span id="cb8-15"><a href="#cb8-15" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-16"><a href="#cb8-16" aria-hidden="true" tabindex="-1"></a>app <span class="op">=</span> faust.App(<span class="st">"spatial-aggregator"</span>, broker<span class="op">=</span>BROKER, value_serializer<span class="op">=</span><span class="st">"json"</span>)</span>
+<span id="cb8-17"><a href="#cb8-17" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-18"><a href="#cb8-18" aria-hidden="true" tabindex="-1"></a><span class="co"># --- Message schemas ---</span></span>
+<span id="cb8-19"><a href="#cb8-19" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-20"><a href="#cb8-20" aria-hidden="true" tabindex="-1"></a><span class="at">@dataclass</span></span>
+<span id="cb8-21"><a href="#cb8-21" aria-hidden="true" tabindex="-1"></a><span class="kw">class</span> SensorReading(faust.Record):</span>
+<span id="cb8-22"><a href="#cb8-22" aria-hidden="true" tabindex="-1"></a>    sensor_id:     <span class="bu">str</span></span>
+<span id="cb8-23"><a href="#cb8-23" aria-hidden="true" tabindex="-1"></a>    region:        <span class="bu">str</span></span>
+<span id="cb8-24"><a href="#cb8-24" aria-hidden="true" tabindex="-1"></a>    event_time:    <span class="bu">float</span></span>
+<span id="cb8-25"><a href="#cb8-25" aria-hidden="true" tabindex="-1"></a>    temperature_c: <span class="bu">float</span></span>
+<span id="cb8-26"><a href="#cb8-26" aria-hidden="true" tabindex="-1"></a>    smoke_ug_m3:   <span class="bu">float</span></span>
+<span id="cb8-27"><a href="#cb8-27" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-28"><a href="#cb8-28" aria-hidden="true" tabindex="-1"></a><span class="at">@dataclass</span></span>
+<span id="cb8-29"><a href="#cb8-29" aria-hidden="true" tabindex="-1"></a><span class="kw">class</span> RegionAggregate(faust.Record):</span>
+<span id="cb8-30"><a href="#cb8-30" aria-hidden="true" tabindex="-1"></a>    region:         <span class="bu">str</span></span>
+<span id="cb8-31"><a href="#cb8-31" aria-hidden="true" tabindex="-1"></a>    window_start:   <span class="bu">float</span></span>
+<span id="cb8-32"><a href="#cb8-32" aria-hidden="true" tabindex="-1"></a>    mean_temp_c:    <span class="bu">float</span></span>
+<span id="cb8-33"><a href="#cb8-33" aria-hidden="true" tabindex="-1"></a>    mean_smoke:     <span class="bu">float</span></span>
+<span id="cb8-34"><a href="#cb8-34" aria-hidden="true" tabindex="-1"></a>    sample_count:   <span class="bu">int</span></span>
+<span id="cb8-35"><a href="#cb8-35" aria-hidden="true" tabindex="-1"></a>    alert:          <span class="bu">bool</span></span>
+<span id="cb8-36"><a href="#cb8-36" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-37"><a href="#cb8-37" aria-hidden="true" tabindex="-1"></a><span class="co"># --- Topics ---</span></span>
+<span id="cb8-38"><a href="#cb8-38" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-39"><a href="#cb8-39" aria-hidden="true" tabindex="-1"></a>input_topic     <span class="op">=</span> app.topic(INPUT_TOPIC_NAME,     value_type<span class="op">=</span>SensorReading)</span>
+<span id="cb8-40"><a href="#cb8-40" aria-hidden="true" tabindex="-1"></a>aggregate_topic <span class="op">=</span> app.topic(AGGREGATE_TOPIC_NAME, value_type<span class="op">=</span>RegionAggregate)</span>
+<span id="cb8-41"><a href="#cb8-41" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-42"><a href="#cb8-42" aria-hidden="true" tabindex="-1"></a><span class="co"># --- Tables with tumbling windows ---</span></span>
+<span id="cb8-43"><a href="#cb8-43" aria-hidden="true" tabindex="-1"></a><span class="co"># Faust tables maintain state per key; the windowed table computes per (region, window)</span></span>
+<span id="cb8-44"><a href="#cb8-44" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-45"><a href="#cb8-45" aria-hidden="true" tabindex="-1"></a>temp_sum  <span class="op">=</span> app.Table(<span class="st">"temp_sum"</span>,  default<span class="op">=</span><span class="bu">float</span>).tumbling(</span>
+<span id="cb8-46"><a href="#cb8-46" aria-hidden="true" tabindex="-1"></a>    timedelta(minutes<span class="op">=</span>WINDOW_MINUTES), expires<span class="op">=</span>timedelta(hours<span class="op">=</span><span class="dv">1</span>)</span>
+<span id="cb8-47"><a href="#cb8-47" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb8-48"><a href="#cb8-48" aria-hidden="true" tabindex="-1"></a>temp_cnt  <span class="op">=</span> app.Table(<span class="st">"temp_cnt"</span>,  default<span class="op">=</span><span class="bu">int</span>).tumbling(</span>
+<span id="cb8-49"><a href="#cb8-49" aria-hidden="true" tabindex="-1"></a>    timedelta(minutes<span class="op">=</span>WINDOW_MINUTES), expires<span class="op">=</span>timedelta(hours<span class="op">=</span><span class="dv">1</span>)</span>
+<span id="cb8-50"><a href="#cb8-50" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb8-51"><a href="#cb8-51" aria-hidden="true" tabindex="-1"></a>smoke_sum <span class="op">=</span> app.Table(<span class="st">"smoke_sum"</span>, default<span class="op">=</span><span class="bu">float</span>).tumbling(</span>
+<span id="cb8-52"><a href="#cb8-52" aria-hidden="true" tabindex="-1"></a>    timedelta(minutes<span class="op">=</span>WINDOW_MINUTES), expires<span class="op">=</span>timedelta(hours<span class="op">=</span><span class="dv">1</span>)</span>
+<span id="cb8-53"><a href="#cb8-53" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb8-54"><a href="#cb8-54" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-55"><a href="#cb8-55" aria-hidden="true" tabindex="-1"></a><span class="co"># --- Stream processor ---</span></span>
+<span id="cb8-56"><a href="#cb8-56" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-57"><a href="#cb8-57" aria-hidden="true" tabindex="-1"></a><span class="at">@app.agent</span>(input_topic)</span>
+<span id="cb8-58"><a href="#cb8-58" aria-hidden="true" tabindex="-1"></a><span class="cf">async</span> <span class="kw">def</span> process_readings(readings):</span>
+<span id="cb8-59"><a href="#cb8-59" aria-hidden="true" tabindex="-1"></a>    <span class="cf">async</span> <span class="cf">for</span> reading <span class="kw">in</span> readings.group_by(SensorReading.region):</span>
+<span id="cb8-60"><a href="#cb8-60" aria-hidden="true" tabindex="-1"></a>        region <span class="op">=</span> reading.region</span>
+<span id="cb8-61"><a href="#cb8-61" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-62"><a href="#cb8-62" aria-hidden="true" tabindex="-1"></a>        temp_sum[region]  <span class="op">+=</span> reading.temperature_c</span>
+<span id="cb8-63"><a href="#cb8-63" aria-hidden="true" tabindex="-1"></a>        temp_cnt[region]  <span class="op">+=</span> <span class="dv">1</span></span>
+<span id="cb8-64"><a href="#cb8-64" aria-hidden="true" tabindex="-1"></a>        smoke_sum[region] <span class="op">+=</span> reading.smoke_ug_m3</span>
+<span id="cb8-65"><a href="#cb8-65" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-66"><a href="#cb8-66" aria-hidden="true" tabindex="-1"></a>        count <span class="op">=</span> temp_cnt[region].current()</span>
+<span id="cb8-67"><a href="#cb8-67" aria-hidden="true" tabindex="-1"></a>        <span class="cf">if</span> count <span class="op">==</span> <span class="dv">0</span>:</span>
+<span id="cb8-68"><a href="#cb8-68" aria-hidden="true" tabindex="-1"></a>            <span class="cf">continue</span></span>
+<span id="cb8-69"><a href="#cb8-69" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-70"><a href="#cb8-70" aria-hidden="true" tabindex="-1"></a>        mean_temp  <span class="op">=</span> temp_sum[region].current()  <span class="op">/</span> count</span>
+<span id="cb8-71"><a href="#cb8-71" aria-hidden="true" tabindex="-1"></a>        mean_smoke <span class="op">=</span> smoke_sum[region].current() <span class="op">/</span> count</span>
+<span id="cb8-72"><a href="#cb8-72" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-73"><a href="#cb8-73" aria-hidden="true" tabindex="-1"></a>        alert <span class="op">=</span> (mean_temp <span class="op">&gt;</span> ALERT_THRESHOLD_TEMP <span class="kw">or</span></span>
+<span id="cb8-74"><a href="#cb8-74" aria-hidden="true" tabindex="-1"></a>                 mean_smoke <span class="op">&gt;</span> ALERT_THRESHOLD_SMOKE)</span>
+<span id="cb8-75"><a href="#cb8-75" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-76"><a href="#cb8-76" aria-hidden="true" tabindex="-1"></a>        <span class="cf">if</span> alert:</span>
+<span id="cb8-77"><a href="#cb8-77" aria-hidden="true" tabindex="-1"></a>            <span class="bu">print</span>(</span>
+<span id="cb8-78"><a href="#cb8-78" aria-hidden="true" tabindex="-1"></a>                <span class="ss">f"ALERT region=</span><span class="sc">{</span>region<span class="sc">}</span><span class="ss">"</span></span>
+<span id="cb8-79"><a href="#cb8-79" aria-hidden="true" tabindex="-1"></a>                <span class="ss">f"  mean_temp=</span><span class="sc">{</span>mean_temp<span class="sc">:.1f}</span><span class="ss">°C"</span></span>
+<span id="cb8-80"><a href="#cb8-80" aria-hidden="true" tabindex="-1"></a>                <span class="ss">f"  mean_smoke=</span><span class="sc">{</span>mean_smoke<span class="sc">:.1f}</span><span class="ss"> µg/m³"</span></span>
+<span id="cb8-81"><a href="#cb8-81" aria-hidden="true" tabindex="-1"></a>                <span class="ss">f"  n=</span><span class="sc">{</span>count<span class="sc">}</span><span class="ss">"</span></span>
+<span id="cb8-82"><a href="#cb8-82" aria-hidden="true" tabindex="-1"></a>            )</span>
+<span id="cb8-83"><a href="#cb8-83" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-84"><a href="#cb8-84" aria-hidden="true" tabindex="-1"></a>        agg <span class="op">=</span> RegionAggregate(</span>
+<span id="cb8-85"><a href="#cb8-85" aria-hidden="true" tabindex="-1"></a>            region<span class="op">=</span>region,</span>
+<span id="cb8-86"><a href="#cb8-86" aria-hidden="true" tabindex="-1"></a>            window_start<span class="op">=</span>reading.event_time,</span>
+<span id="cb8-87"><a href="#cb8-87" aria-hidden="true" tabindex="-1"></a>            mean_temp_c<span class="op">=</span><span class="bu">round</span>(mean_temp, <span class="dv">2</span>),</span>
+<span id="cb8-88"><a href="#cb8-88" aria-hidden="true" tabindex="-1"></a>            mean_smoke<span class="op">=</span><span class="bu">round</span>(mean_smoke, <span class="dv">2</span>),</span>
+<span id="cb8-89"><a href="#cb8-89" aria-hidden="true" tabindex="-1"></a>            sample_count<span class="op">=</span>count,</span>
+<span id="cb8-90"><a href="#cb8-90" aria-hidden="true" tabindex="-1"></a>            alert<span class="op">=</span>alert,</span>
+<span id="cb8-91"><a href="#cb8-91" aria-hidden="true" tabindex="-1"></a>        )</span>
+<span id="cb8-92"><a href="#cb8-92" aria-hidden="true" tabindex="-1"></a>        <span class="cf">await</span> aggregate_topic.send(key<span class="op">=</span>region, value<span class="op">=</span>agg)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>To run: start a Kafka broker, then in two terminals: <code>python producer.py</code> and <code>faust -A processor worker -l info</code>. The aggregate topic receives one message per region per window period. Monitor consumer lag with <code>kafka-consumer-groups.sh --bootstrap-server localhost:9092 --describe --group spatial-aggregator</code>.</p>
+
+
+</section>
+
+</main> <!-- /main -->
+<script type="module" src="assets/js/pyodide-cells.js"></script>
+<script>
+(function () {
+  var overlay = document.createElement('div');
+  overlay.id = 'diagram-lightbox';
+
+  var closeBtn = document.createElement('button');
+  closeBtn.id = 'diagram-lightbox-close';
+  closeBtn.innerHTML = '&times;';
+  closeBtn.setAttribute('aria-label', 'Close diagram');
+
+  var content = document.createElement('div');
+  content.id = 'diagram-lightbox-content';
+
+  overlay.appendChild(closeBtn);
+  overlay.appendChild(content);
+  document.body.appendChild(overlay);
+
+  function openLightbox(svgEl) {
+    content.innerHTML = svgEl.outerHTML;
+    var svg = content.querySelector('svg');
+    if (svg) {
+      svg.setAttribute('width', '100%');
+      svg.removeAttribute('height');
+      svg.style.removeProperty('max-width');
+      svg.style.display = 'block';
+    }
+    overlay.classList.add('open');
+    document.body.style.overflow = 'hidden';
+  }
+
+  function closeLightbox() {
+    overlay.classList.remove('open');
+    document.body.style.overflow = '';
+  }
+
+  overlay.addEventListener('click', function (e) {
+    if (e.target === overlay || e.target === closeBtn) closeLightbox();
+  });
+  content.addEventListener('click', function (e) { e.stopPropagation(); });
+  document.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape') closeLightbox();
+  });
+
+  function attachTo(svgEl) {
+    if (svgEl._lbAttached) return;
+    svgEl._lbAttached = true;
+    svgEl.style.cursor = 'zoom-in';
+    svgEl.addEventListener('click', function () { openLightbox(svgEl); });
+  }
+
+  function scanAndAttach() {
+    document.querySelectorAll('svg.mermaid-js').forEach(attachTo);
+  }
+
+  var observer = new MutationObserver(function (mutations) {
+    mutations.forEach(function (m) {
+      m.addedNodes.forEach(function (node) {
+        if (node.nodeType !== 1) return;
+        if (node.tagName.toLowerCase() === 'svg' && node.classList.contains('mermaid-js')) {
+          attachTo(node);
+        } else if (node.querySelectorAll) {
+          node.querySelectorAll('svg.mermaid-js').forEach(attachTo);
+        }
+      });
+    });
+  });
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', function () {
+      observer.observe(document.body, { childList: true, subtree: true });
+      scanAndAttach();
+    });
+  } else {
+    observer.observe(document.body, { childList: true, subtree: true });
+    scanAndAttach();
+  }
+})();
+</script>
+<script id="quarto-html-after-body" type="application/javascript">
+  window.document.addEventListener("DOMContentLoaded", function (event) {
+    const icon = "";
+    const anchorJS = new window.AnchorJS();
+    anchorJS.options = {
+      placement: 'right',
+      icon: icon
+    };
+    anchorJS.add('.anchored');
+    const isCodeAnnotation = (el) => {
+      for (const clz of el.classList) {
+        if (clz.startsWith('code-annotation-')) {                     
+          return true;
+        }
+      }
+      return false;
+    }
+    const onCopySuccess = function(e) {
+      // button target
+      const button = e.trigger;
+      // don't keep focus
+      button.blur();
+      // flash "checked"
+      button.classList.add('code-copy-button-checked');
+      var currentTitle = button.getAttribute("title");
+      button.setAttribute("title", "Copied!");
+      let tooltip;
+      if (window.bootstrap) {
+        button.setAttribute("data-bs-toggle", "tooltip");
+        button.setAttribute("data-bs-placement", "left");
+        button.setAttribute("data-bs-title", "Copied!");
+        tooltip = new bootstrap.Tooltip(button, 
+          { trigger: "manual", 
+            customClass: "code-copy-button-tooltip",
+            offset: [0, -8]});
+        tooltip.show();    
+      }
+      setTimeout(function() {
+        if (tooltip) {
+          tooltip.hide();
+          button.removeAttribute("data-bs-title");
+          button.removeAttribute("data-bs-toggle");
+          button.removeAttribute("data-bs-placement");
+        }
+        button.setAttribute("title", currentTitle);
+        button.classList.remove('code-copy-button-checked');
+      }, 1000);
+      // clear code selection
+      e.clearSelection();
+    }
+    const getTextToCopy = function(trigger) {
+      const outerScaffold = trigger.parentElement.cloneNode(true);
+      const codeEl = outerScaffold.querySelector('code');
+      for (const childEl of codeEl.children) {
+        if (isCodeAnnotation(childEl)) {
+          childEl.remove();
+        }
+      }
+      return codeEl.innerText;
+    }
+    const clipboard = new window.ClipboardJS('.code-copy-button:not([data-in-quarto-modal])', {
+      text: getTextToCopy
+    });
+    clipboard.on('success', onCopySuccess);
+    if (window.document.getElementById('quarto-embedded-source-code-modal')) {
+      const clipboardModal = new window.ClipboardJS('.code-copy-button[data-in-quarto-modal]', {
+        text: getTextToCopy,
+        container: window.document.getElementById('quarto-embedded-source-code-modal')
+      });
+      clipboardModal.on('success', onCopySuccess);
+    }
+      var localhostRegex = new RegExp(/^(?:http|https):\/\/localhost\:?[0-9]*\//);
+      var mailtoRegex = new RegExp(/^mailto:/);
+        var filterRegex = new RegExp('/' + window.location.host + '/');
+      var isInternal = (href) => {
+          return filterRegex.test(href) || localhostRegex.test(href) || mailtoRegex.test(href);
+      }
+      // Inspect non-navigation links and adorn them if external
+     var links = window.document.querySelectorAll('a[href]:not(.nav-link):not(.navbar-brand):not(.toc-action):not(.sidebar-link):not(.sidebar-item-toggle):not(.pagination-link):not(.no-external):not([aria-hidden]):not(.dropdown-item):not(.quarto-navigation-tool):not(.about-link)');
+      for (var i=0; i<links.length; i++) {
+        const link = links[i];
+        if (!isInternal(link.href)) {
+          // undo the damage that might have been done by quarto-nav.js in the case of
+          // links that we want to consider external
+          if (link.dataset.originalHref !== undefined) {
+            link.href = link.dataset.originalHref;
+          }
+        }
+      }
+    function tippyHover(el, contentFn, onTriggerFn, onUntriggerFn) {
+      const config = {
+        allowHTML: true,
+        maxWidth: 500,
+        delay: 100,
+        arrow: false,
+        appendTo: function(el) {
+            return el.parentElement;
+        },
+        interactive: true,
+        interactiveBorder: 10,
+        theme: 'quarto',
+        placement: 'bottom-start',
+      };
+      if (contentFn) {
+        config.content = contentFn;
+      }
+      if (onTriggerFn) {
+        config.onTrigger = onTriggerFn;
+      }
+      if (onUntriggerFn) {
+        config.onUntrigger = onUntriggerFn;
+      }
+      window.tippy(el, config); 
+    }
+    const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+    for (var i=0; i<noterefs.length; i++) {
+      const ref = noterefs[i];
+      tippyHover(ref, function() {
+        // use id or data attribute instead here
+        let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+        try { href = new URL(href).hash; } catch {}
+        const id = href.replace(/^#\/?/, "");
+        const note = window.document.getElementById(id);
+        if (note) {
+          return note.innerHTML;
+        } else {
+          return "";
+        }
+      });
+    }
+    const xrefs = window.document.querySelectorAll('a.quarto-xref');
+    const processXRef = (id, note) => {
+      // Strip column container classes
+      const stripColumnClz = (el) => {
+        el.classList.remove("page-full", "page-columns");
+        if (el.children) {
+          for (const child of el.children) {
+            stripColumnClz(child);
+          }
+        }
+      }
+      stripColumnClz(note)
+      if (id === null || id.startsWith('sec-')) {
+        // Special case sections, only their first couple elements
+        const container = document.createElement("div");
+        if (note.children && note.children.length > 2) {
+          container.appendChild(note.children[0].cloneNode(true));
+          for (let i = 1; i < note.children.length; i++) {
+            const child = note.children[i];
+            if (child.tagName === "P" && child.innerText === "") {
+              continue;
+            } else {
+              container.appendChild(child.cloneNode(true));
+              break;
+            }
+          }
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(container);
+          }
+          return container.innerHTML
+        } else {
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(note);
+          }
+          return note.innerHTML;
+        }
+      } else {
+        // Remove any anchor links if they are present
+        const anchorLink = note.querySelector('a.anchorjs-link');
+        if (anchorLink) {
+          anchorLink.remove();
+        }
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(note);
+        }
+        if (note.classList.contains("callout")) {
+          return note.outerHTML;
+        } else {
+          return note.innerHTML;
+        }
+      }
+    }
+    for (var i=0; i<xrefs.length; i++) {
+      const xref = xrefs[i];
+      tippyHover(xref, undefined, function(instance) {
+        instance.disable();
+        let url = xref.getAttribute('href');
+        let hash = undefined; 
+        if (url.startsWith('#')) {
+          hash = url;
+        } else {
+          try { hash = new URL(url).hash; } catch {}
+        }
+        if (hash) {
+          const id = hash.replace(/^#\/?/, "");
+          const note = window.document.getElementById(id);
+          if (note !== null) {
+            try {
+              const html = processXRef(id, note.cloneNode(true));
+              instance.setContent(html);
+            } finally {
+              instance.enable();
+              instance.show();
+            }
+          } else {
+            // See if we can fetch this
+            fetch(url.split('#')[0])
+            .then(res => res.text())
+            .then(html => {
+              const parser = new DOMParser();
+              const htmlDoc = parser.parseFromString(html, "text/html");
+              const note = htmlDoc.getElementById(id);
+              if (note !== null) {
+                const html = processXRef(id, note);
+                instance.setContent(html);
+              } 
+            }).finally(() => {
+              instance.enable();
+              instance.show();
+            });
+          }
+        } else {
+          // See if we can fetch a full url (with no hash to target)
+          // This is a special case and we should probably do some content thinning / targeting
+          fetch(url)
+          .then(res => res.text())
+          .then(html => {
+            const parser = new DOMParser();
+            const htmlDoc = parser.parseFromString(html, "text/html");
+            const note = htmlDoc.querySelector('main.content');
+            if (note !== null) {
+              // This should only happen for chapter cross references
+              // (since there is no id in the URL)
+              // remove the first header
+              if (note.children.length > 0 && note.children[0].tagName === "HEADER") {
+                note.children[0].remove();
+              }
+              const html = processXRef(null, note);
+              instance.setContent(html);
+            } 
+          }).finally(() => {
+            instance.enable();
+            instance.show();
+          });
+        }
+      }, function(instance) {
+      });
+    }
+        let selectedAnnoteEl;
+        const selectorForAnnotation = ( cell, annotation) => {
+          let cellAttr = 'data-code-cell="' + cell + '"';
+          let lineAttr = 'data-code-annotation="' +  annotation + '"';
+          const selector = 'span[' + cellAttr + '][' + lineAttr + ']';
+          return selector;
+        }
+        const selectCodeLines = (annoteEl) => {
+          const doc = window.document;
+          const targetCell = annoteEl.getAttribute("data-target-cell");
+          const targetAnnotation = annoteEl.getAttribute("data-target-annotation");
+          const annoteSpan = window.document.querySelector(selectorForAnnotation(targetCell, targetAnnotation));
+          const lines = annoteSpan.getAttribute("data-code-lines").split(",");
+          const lineIds = lines.map((line) => {
+            return targetCell + "-" + line;
+          })
+          let top = null;
+          let height = null;
+          let parent = null;
+          if (lineIds.length > 0) {
+              //compute the position of the single el (top and bottom and make a div)
+              const el = window.document.getElementById(lineIds[0]);
+              top = el.offsetTop;
+              height = el.offsetHeight;
+              parent = el.parentElement.parentElement;
+            if (lineIds.length > 1) {
+              const lastEl = window.document.getElementById(lineIds[lineIds.length - 1]);
+              const bottom = lastEl.offsetTop + lastEl.offsetHeight;
+              height = bottom - top;
+            }
+            if (top !== null && height !== null && parent !== null) {
+              // cook up a div (if necessary) and position it 
+              let div = window.document.getElementById("code-annotation-line-highlight");
+              if (div === null) {
+                div = window.document.createElement("div");
+                div.setAttribute("id", "code-annotation-line-highlight");
+                div.style.position = 'absolute';
+                parent.appendChild(div);
+              }
+              div.style.top = top - 2 + "px";
+              div.style.height = height + 4 + "px";
+              div.style.left = 0;
+              let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
+              if (gutterDiv === null) {
+                gutterDiv = window.document.createElement("div");
+                gutterDiv.setAttribute("id", "code-annotation-line-highlight-gutter");
+                gutterDiv.style.position = 'absolute';
+                const codeCell = window.document.getElementById(targetCell);
+                const gutter = codeCell.querySelector('.code-annotation-gutter');
+                gutter.appendChild(gutterDiv);
+              }
+              gutterDiv.style.top = top - 2 + "px";
+              gutterDiv.style.height = height + 4 + "px";
+            }
+            selectedAnnoteEl = annoteEl;
+          }
+        };
+        const unselectCodeLines = () => {
+          const elementsIds = ["code-annotation-line-highlight", "code-annotation-line-highlight-gutter"];
+          elementsIds.forEach((elId) => {
+            const div = window.document.getElementById(elId);
+            if (div) {
+              div.remove();
+            }
+          });
+          selectedAnnoteEl = undefined;
+        };
+          // Handle positioning of the toggle
+      window.addEventListener(
+        "resize",
+        throttle(() => {
+          elRect = undefined;
+          if (selectedAnnoteEl) {
+            selectCodeLines(selectedAnnoteEl);
+          }
+        }, 10)
+      );
+      function throttle(fn, ms) {
+      let throttle = false;
+      let timer;
+        return (...args) => {
+          if(!throttle) { // first call gets through
+              fn.apply(this, args);
+              throttle = true;
+          } else { // all the others get throttled
+              if(timer) clearTimeout(timer); // cancel #2
+              timer = setTimeout(() => {
+                fn.apply(this, args);
+                timer = throttle = false;
+              }, ms);
+          }
+        };
+      }
+        // Attach click handler to the DT
+        const annoteDls = window.document.querySelectorAll('dt[data-target-cell]');
+        for (const annoteDlNode of annoteDls) {
+          annoteDlNode.addEventListener('click', (event) => {
+            const clickedEl = event.target;
+            if (clickedEl !== selectedAnnoteEl) {
+              unselectCodeLines();
+              const activeEl = window.document.querySelector('dt[data-target-cell].code-annotation-active');
+              if (activeEl) {
+                activeEl.classList.remove('code-annotation-active');
+              }
+              selectCodeLines(clickedEl);
+              clickedEl.classList.add('code-annotation-active');
+            } else {
+              // Unselect the line
+              unselectCodeLines();
+              clickedEl.classList.remove('code-annotation-active');
+            }
+          });
+        }
+    const findCites = (el) => {
+      const parentEl = el.parentElement;
+      if (parentEl) {
+        const cites = parentEl.dataset.cites;
+        if (cites) {
+          return {
+            el,
+            cites: cites.split(' ')
+          };
+        } else {
+          return findCites(el.parentElement)
+        }
+      } else {
+        return undefined;
+      }
+    };
+    var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+    for (var i=0; i<bibliorefs.length; i++) {
+      const ref = bibliorefs[i];
+      const citeInfo = findCites(ref);
+      if (citeInfo) {
+        tippyHover(citeInfo.el, function() {
+          var popup = window.document.createElement('div');
+          citeInfo.cites.forEach(function(cite) {
+            var citeDiv = window.document.createElement('div');
+            citeDiv.classList.add('hanging-indent');
+            citeDiv.classList.add('csl-entry');
+            var biblioDiv = window.document.getElementById('ref-' + cite);
+            if (biblioDiv) {
+              citeDiv.innerHTML = biblioDiv.innerHTML;
+            }
+            popup.appendChild(citeDiv);
+          });
+          return popup.innerHTML;
+        });
+      }
+    }
+  });
+  </script>
+<nav class="page-navigation">
+  <div class="nav-page nav-page-previous">
+      <a href="./04-cloud-infrastructure.html" class="pagination-link" aria-label="Cloud Infrastructure">
+        <i class="bi bi-arrow-left-short"></i> <span class="nav-page-text"><span class="chapter-number">5</span>&nbsp; <span class="chapter-title">Cloud Infrastructure</span></span>
+      </a>          
+  </div>
+  <div class="nav-page nav-page-next">
+      <a href="./06-apis-and-access-patterns.html" class="pagination-link" aria-label="APIs and Access Patterns">
+        <span class="nav-page-text"><span class="chapter-number">7</span>&nbsp; <span class="chapter-title">APIs and Access Patterns</span></span> <i class="bi bi-arrow-right-short"></i>
+      </a>
+  </div>
+</nav>
+</div> <!-- /content -->
+
+
+
+
+<footer class="footer"><div class="nav-footer"><div class="nav-footer-center"><div class="toc-actions d-sm-block d-md-none"><ul><li><a href="https://github.com/WaywardHouse/waywardhouse-data-engineering/edit/main/05-streaming-and-realtime.qmd" class="toc-action"><i class="bi bi-github"></i>Edit this page</a></li><li><a href="https://github.com/WaywardHouse/waywardhouse-data-engineering/issues/new" class="toc-action"><i class="bi empty"></i>Report an issue</a></li></ul></div></div></div></footer><script src="site_libs/quarto-html/zenscroll-min.js"></script>
+</body></html>

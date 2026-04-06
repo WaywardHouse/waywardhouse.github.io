@@ -1,0 +1,1659 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
+
+<meta charset="utf-8">
+<meta name="generator" content="quarto-1.9.36">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+
+
+<title>4&nbsp; Pipelines and ETL – Data Engineering for Spatial Systems</title>
+<style>
+/* Default styles provided by pandoc.
+** See https://pandoc.org/MANUAL.html#variables-for-html for config info.
+*/
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: min(4vw, 1.5em);}
+div.column{flex: auto; overflow-x: auto;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+  width: 0.8em;
+  margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
+  vertical-align: middle;
+}
+/* CSS for syntax highlighting */
+html { -webkit-text-size-adjust: 100%; }
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+  { counter-reset: source-line 0; }
+pre.numberSource code > span
+  { position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+  { content: counter(source-line);
+    position: relative; left: -1em; text-align: right; vertical-align: baseline;
+    border: none; display: inline-block;
+    -webkit-touch-callout: none; -webkit-user-select: none;
+    -khtml-user-select: none; -moz-user-select: none;
+    -ms-user-select: none; user-select: none;
+    padding: 0 4px; width: 4em;
+  }
+pre.numberSource { margin-left: 3em;  padding-left: 4px; }
+div.sourceCode
+  {   }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
+</style>
+
+
+<script src="site_libs/quarto-nav/quarto-nav.js"></script>
+<script src="site_libs/quarto-nav/headroom.min.js"></script>
+<script src="site_libs/clipboard/clipboard.min.js"></script>
+<script src="site_libs/quarto-search/autocomplete.umd.js"></script>
+<script src="site_libs/quarto-search/fuse.min.js"></script>
+<script src="site_libs/quarto-search/quarto-search.js"></script>
+<meta name="quarto:offset" content="./">
+<link href="./04-cloud-infrastructure.html" rel="next">
+<link href="./02-spatial-databases.html" rel="prev">
+<script src="site_libs/quarto-html/quarto.js" type="module"></script>
+<script src="site_libs/quarto-html/tabsets/tabsets.js" type="module"></script>
+<script src="site_libs/quarto-html/popper.min.js"></script>
+<script src="site_libs/quarto-html/tippy.umd.min.js"></script>
+<script src="site_libs/quarto-html/anchor.min.js"></script>
+<link href="site_libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="site_libs/quarto-html/quarto-syntax-highlighting-845c23b38eaddc0f92fda52bfe77a8c8.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<script src="site_libs/bootstrap/bootstrap.min.js"></script>
+<link href="site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="site_libs/bootstrap/bootstrap-56762b18f51ba8401515c38252781a5a.min.css" rel="stylesheet" append-hash="true" id="quarto-bootstrap" data-mode="light">
+<script id="quarto-search-options" type="application/json">{
+  "location": "sidebar",
+  "copy-button": false,
+  "collapse-after": 3,
+  "panel-placement": "start",
+  "type": "textbox",
+  "limit": 50,
+  "keyboard-shortcut": [
+    "f",
+    "/",
+    "s"
+  ],
+  "show-item-context": false,
+  "language": {
+    "search-no-results-text": "No results",
+    "search-matching-documents-text": "matching documents",
+    "search-copy-link-title": "Copy link to search",
+    "search-hide-matches-text": "Hide additional matches",
+    "search-more-match-text": "more match in this document",
+    "search-more-matches-text": "more matches in this document",
+    "search-clear-button-title": "Clear",
+    "search-text-placeholder": "",
+    "search-detached-cancel-button-title": "Cancel",
+    "search-submit-button-title": "Submit",
+    "search-label": "Search"
+  }
+}</script>
+<style>html{ scroll-behavior: smooth; }</style>
+<script>
+  (function () {
+    document.documentElement.dataset.theme = 'light';
+    document.documentElement.dataset.brand = 'wayward-book';
+    try {
+      localStorage.removeItem('theme');
+    } catch (err) {
+      void err;
+    }
+  })();
+</script>
+
+<script>
+  document.addEventListener('DOMContentLoaded', function () {
+    var body = document.body;
+    var sidebar = document.getElementById('quarto-sidebar');
+    if (!sidebar) return;
+
+    body.classList.add('wayward-book-shell');
+
+    if (!document.querySelector('.wayward-book-header')) {
+      var header = document.createElement('header');
+      header.className = 'wayward-book-header';
+      header.innerHTML = [
+        '<div class="wayward-book-header__inner">',
+        '  <a class="wayward-book-brand" href="/" aria-label="Wayward House home">',
+        '    <span class="wayward-book-brand__mark">WaywardHouse</span>',
+        '    <span class="wayward-book-brand__dot" aria-hidden="true">.</span>',
+        '  </a>',
+        '  <nav class="wayward-book-nav" aria-label="Primary">',
+        '    <a href="/articles/" data-nav="/articles/">Articles</a>',
+        '    <a href="/learn/" data-nav="/learn/">Learn</a>',
+        '    <a href="/about.html" data-nav="/about/">About</a>',
+        '  </nav>',
+        '  <button class="wayward-book-menu-toggle" type="button" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle chapter navigation">',
+        '    <span aria-hidden="true">Menu</span>',
+        '  </button>',
+        '</div>'
+      ].join('');
+      body.prepend(header);
+    }
+
+    var pathname = window.location.pathname || '/';
+    if (pathname === '/' || pathname === '/learn/' || pathname.endsWith('/index.html')) {
+      body.classList.add('page-home');
+    }
+    if (pathname.indexOf('/learn/') === 0) {
+      body.classList.add('page-learn');
+    }
+
+    var storageKey = 'wayward-data-engineering-sidebar';
+    var media = window.matchMedia('(min-width: 1200px)');
+    var glass = document.getElementById('quarto-sidebar-glass');
+    var toggles = Array.from(document.querySelectorAll('[data-bs-target=".quarto-sidebar-collapse-item"]'));
+
+    function setDesktopState(open) {
+      body.classList.toggle('book-sidebar-collapsed', !open);
+      body.classList.toggle('book-sidebar-open', open);
+      try {
+        localStorage.setItem(storageKey, open ? 'open' : 'collapsed');
+      } catch (err) {
+        void err;
+      }
+    }
+
+    function applyDesktopDefault() {
+      if (!media.matches) {
+        body.classList.remove('book-sidebar-collapsed', 'book-sidebar-open');
+        return;
+      }
+
+      var stored = null;
+      try {
+        stored = localStorage.getItem(storageKey);
+      } catch (err) {
+        void err;
+      }
+
+      setDesktopState(stored === 'collapsed' ? false : true);
+    }
+
+    toggles.forEach(function (toggle) {
+      toggle.addEventListener('click', function (event) {
+        if (!media.matches) return;
+        event.preventDefault();
+        event.stopPropagation();
+        setDesktopState(body.classList.contains('book-sidebar-collapsed'));
+      });
+    });
+
+    if (glass) {
+      glass.addEventListener('click', function (event) {
+        if (!media.matches) return;
+        event.preventDefault();
+        setDesktopState(false);
+      });
+    }
+
+    if (media.addEventListener) {
+      media.addEventListener('change', applyDesktopDefault);
+    } else if (media.addListener) {
+      media.addListener(applyDesktopDefault);
+    }
+
+    applyDesktopDefault();
+
+    var siteHomeHref = '/';
+    var learnHref = '/learn/';
+    var titleLink = sidebar.querySelector('.sidebar-title a');
+    if (titleLink) titleLink.setAttribute('href', siteHomeHref);
+
+    var toolLinks = Array.from(sidebar.querySelectorAll('.quarto-navigation-tool'));
+    if (toolLinks[0]) toolLinks[0].setAttribute('href', siteHomeHref);
+    if (toolLinks[1]) toolLinks[1].setAttribute('href', learnHref);
+
+    var firstSidebarLink = sidebar.querySelector('.sidebar-item a.sidebar-link');
+    if (firstSidebarLink) firstSidebarLink.setAttribute('href', siteHomeHref);
+
+    var themeToggle = document.querySelector('.wayward-book-theme-toggle');
+    if (themeToggle) themeToggle.remove();
+
+    document.querySelectorAll('.wayward-book-nav a[data-nav]').forEach(function (link) {
+      var target = link.getAttribute('data-nav');
+      if (!target) return;
+      link.classList.remove('is-active');
+      if (pathname === target || pathname.indexOf(target) === 0) {
+        link.classList.add('is-active');
+      }
+    });
+
+    var footer = document.querySelector('footer.footer');
+    if (footer && !footer.classList.contains('wayward-book-footer')) {
+      footer.className = 'wayward-book-footer';
+      footer.innerHTML = [
+        '<div class="wayward-book-footer__inner">',
+        '  <div class="wayward-book-footer__brand">',
+        '    <div class="wayward-book-footer__logo">WaywardHouse<span>.</span></div>',
+        '    <p>Understanding how place, economy, and environment interact through analysis, modelling, and open tools.</p>',
+        '  </div>',
+        '  <nav class="wayward-book-footer__group" aria-labelledby="book-footer-reading">',
+        '    <h2 id="book-footer-reading">Reading</h2>',
+        '    <a href="https://wayward.house/articles/">Articles</a>',
+        '    <a href="https://wayward.house/learn/">Library</a>',
+        '    <a href="https://wayward.house/archive.html">Archive</a>',
+        '  </nav>',
+        '  <nav class="wayward-book-footer__group" aria-labelledby="book-footer-site">',
+        '    <h2 id="book-footer-site">Site</h2>',
+        '    <a href="https://wayward.house/start-here.html">Choose Your Path</a>',
+        '    <a href="https://wayward.house/about.html">About</a>',
+        '    <a href="https://wayward.house/contact.html">Contact</a>',
+        '  </nav>',
+        '  <nav class="wayward-book-footer__group" aria-labelledby="book-footer-resources">',
+        '    <h2 id="book-footer-resources">Resources</h2>',
+        '    <a href="https://wayward.house/topics/">All Topics</a>',
+        '    <a href="https://wayward.house/privacy.html">Privacy Policy</a>',
+        '    <a href="https://wayward.house/terms.html">Terms of Use</a>',
+        '  </nav>',
+        '</div>'
+      ].join('');
+    }
+
+    if (!document.querySelector('.back-to-top')) {
+      var button = document.createElement('button');
+      button.type = 'button';
+      button.className = 'back-to-top';
+      button.setAttribute('aria-label', 'Back to top');
+      button.innerHTML = '<span aria-hidden="true">↑</span><span>Top</span>';
+
+      var prefersReduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+      var ticking = false;
+
+      function updateBackToTop() {
+        var scrolled = window.scrollY || document.documentElement.scrollTop || 0;
+        var longPage = document.documentElement.scrollHeight > window.innerHeight * 1.5;
+        button.classList.toggle('is-visible', longPage && scrolled > Math.max(420, window.innerHeight * 0.7));
+        ticking = false;
+      }
+
+      button.addEventListener('click', function () {
+        window.scrollTo({
+          top: 0,
+          behavior: prefersReduced ? 'auto' : 'smooth'
+        });
+      });
+
+      window.addEventListener('scroll', function () {
+        if (!ticking) {
+          window.requestAnimationFrame(updateBackToTop);
+          ticking = true;
+        }
+      }, { passive: true });
+
+      window.addEventListener('resize', updateBackToTop, { passive: true });
+      body.appendChild(button);
+      updateBackToTop();
+    }
+
+  });
+</script>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:ital,wght@0,300;0,400;0,600;0,700;0,800;0,900;1,700;1,800&amp;family=Barlow:wght@300;400;500;600&amp;family=IBM+Plex+Mono:ital,wght@0,300;0,400;0,500;1,300&amp;family=Literata:ital,opsz,wght@0,7..72,300;0,7..72,400;0,7..72,500;1,7..72,300;1,7..72,400&amp;display=swap" rel="stylesheet">
+
+
+<link rel="stylesheet" href="site_libs/quarto-contrib/quarto-project/wayward-book/wayward-book.css">
+<link rel="stylesheet" href="lightbox.css">
+</head>
+
+<body class="nav-sidebar docked quarto-light">
+
+<div id="quarto-search-results"></div>
+  <header id="quarto-header" class="headroom fixed-top">
+  <nav class="quarto-secondary-nav">
+    <div class="container-fluid d-flex">
+      <button type="button" class="quarto-btn-toggle btn" data-bs-toggle="collapse" role="button" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
+        <i class="bi bi-layout-text-sidebar-reverse"></i>
+      </button>
+        <nav class="quarto-page-breadcrumbs" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="./03-pipelines-and-etl.html"><span class="chapter-number">4</span>&nbsp; <span class="chapter-title">Pipelines and ETL</span></a></li></ol></nav>
+        <a class="flex-grow-1" role="navigation" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">      
+        </a>
+      <button type="button" class="btn quarto-search-button" aria-label="Search" onclick="window.quartoOpenSearch();">
+        <i class="bi bi-search"></i>
+      </button>
+    </div>
+  </nav>
+</header>
+<!-- content -->
+<div id="quarto-content" class="quarto-container page-columns page-rows-contents page-layout-article">
+<!-- sidebar -->
+  <nav id="quarto-sidebar" class="sidebar collapse collapse-horizontal quarto-sidebar-collapse-item sidebar-navigation docked overflow-auto">
+    <div class="pt-lg-2 mt-2 text-left sidebar-header">
+    <div class="sidebar-title mb-0 py-0">
+      <a href="./">Data Engineering for Spatial Systems</a> 
+        <div class="sidebar-tools-main tools-wide">
+    <a href="./" title="" class="quarto-navigation-tool px-1" aria-label="Wayward House"><i class="bi bi-house"></i></a>
+    <a href="./learn/" title="" class="quarto-navigation-tool px-1" aria-label="Learn"><i class="bi bi-grid"></i></a>
+    <a href="https://github.com/WaywardHouse/waywardhouse-data-engineering" title="" class="quarto-navigation-tool px-1" aria-label="Repository"><i class="bi bi-github"></i></a>
+    <a href="https://github.com/WaywardHouse/waywardhouse-data-engineering" title="Source Code" class="quarto-navigation-tool px-1" aria-label="Source Code"><i class="bi bi-github"></i></a>
+    <div class="dropdown">
+      <a href="" title="Share" id="quarto-navigation-tool-dropdown-0" class="quarto-navigation-tool dropdown-toggle px-1" data-bs-toggle="dropdown" aria-expanded="false" role="link" aria-label="Share"><i class="bi bi-share"></i></a>
+      <ul class="dropdown-menu" aria-labelledby="quarto-navigation-tool-dropdown-0">
+          <li>
+            <a class="dropdown-item sidebar-tools-main-item" href="https://twitter.com/intent/tweet?url=|url|">
+              <i class="bi bi-twitter pe-1"></i>
+            Twitter
+            </a>
+          </li>
+          <li>
+            <a class="dropdown-item sidebar-tools-main-item" href="https://www.linkedin.com/sharing/share-offsite/?url=|url|">
+              <i class="bi bi-linkedin pe-1"></i>
+            LinkedIn
+            </a>
+          </li>
+      </ul>
+    </div>
+</div>
+    </div>
+      </div>
+        <div class="mt-2 flex-shrink-0 align-items-center">
+        <div class="sidebar-search">
+        <div id="quarto-search" class="" title="Search"></div>
+        </div>
+        </div>
+    <div class="sidebar-menu-container"> 
+    <ul class="list-unstyled mt-1">
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./index.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">1</span>&nbsp; <span class="chapter-title">Data Engineering for Spatial Systems</span></span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./01-data-architecture.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">2</span>&nbsp; <span class="chapter-title">Data Architecture</span></span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./02-spatial-databases.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">3</span>&nbsp; <span class="chapter-title">Spatial Databases</span></span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./03-pipelines-and-etl.html" class="sidebar-item-text sidebar-link active">
+ <span class="menu-text"><span class="chapter-number">4</span>&nbsp; <span class="chapter-title">Pipelines and ETL</span></span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./04-cloud-infrastructure.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">5</span>&nbsp; <span class="chapter-title">Cloud Infrastructure</span></span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./05-streaming-and-realtime.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">6</span>&nbsp; <span class="chapter-title">Streaming and Realtime</span></span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./06-apis-and-access-patterns.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">7</span>&nbsp; <span class="chapter-title">APIs and Access Patterns</span></span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./07-data-quality-and-governance.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">8</span>&nbsp; <span class="chapter-title">Data Quality and Governance</span></span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./08-platform-architecture-for-ml.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">9</span>&nbsp; <span class="chapter-title">Platform Architecture for ML</span></span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./09-exercise-answers.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">10</span>&nbsp; <span class="chapter-title">Exercise Answers</span></span></a>
+  </div>
+</li>
+    </ul>
+    </div>
+</nav>
+<div id="quarto-sidebar-glass" class="quarto-sidebar-collapse-item" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item"></div>
+<!-- margin-sidebar -->
+    <div id="quarto-margin-sidebar" class="sidebar margin-sidebar">
+        <nav id="TOC" role="doc-toc" class="toc-active">
+    <h2 id="toc-title">Table of contents</h2>
+   
+  <ul>
+  <li><a href="#the-puzzle" id="toc-the-puzzle" class="nav-link active" data-scroll-target="#the-puzzle"><span class="header-section-number">4.1</span> The puzzle</a></li>
+  <li><a href="#three-failure-modes-of-etl" id="toc-three-failure-modes-of-etl" class="nav-link" data-scroll-target="#three-failure-modes-of-etl"><span class="header-section-number">4.2</span> Three failure modes of ETL</a>
+  <ul class="collapse">
+  <li><a href="#silent-data-corruption" id="toc-silent-data-corruption" class="nav-link" data-scroll-target="#silent-data-corruption"><span class="header-section-number">4.2.1</span> Silent data corruption</a></li>
+  <li><a href="#backlog-growth" id="toc-backlog-growth" class="nav-link" data-scroll-target="#backlog-growth"><span class="header-section-number">4.2.2</span> Backlog growth</a></li>
+  <li><a href="#brittle-dependencies" id="toc-brittle-dependencies" class="nav-link" data-scroll-target="#brittle-dependencies"><span class="header-section-number">4.2.3</span> Brittle dependencies</a></li>
+  </ul></li>
+  <li><a href="#dbt-the-transformation-layer" id="toc-dbt-the-transformation-layer" class="nav-link" data-scroll-target="#dbt-the-transformation-layer"><span class="header-section-number">4.3</span> dbt: the transformation layer</a></li>
+  <li><a href="#prefect-orchestration" id="toc-prefect-orchestration" class="nav-link" data-scroll-target="#prefect-orchestration"><span class="header-section-number">4.4</span> Prefect: orchestration</a></li>
+  <li><a href="#the-backlog-stock" id="toc-the-backlog-stock" class="nav-link" data-scroll-target="#the-backlog-stock"><span class="header-section-number">4.5</span> The backlog stock</a></li>
+  <li><a href="#idempotency" id="toc-idempotency" class="nav-link" data-scroll-target="#idempotency"><span class="header-section-number">4.6</span> Idempotency</a></li>
+  <li><a href="#exercises" id="toc-exercises" class="nav-link" data-scroll-target="#exercises"><span class="header-section-number">4.7</span> Exercises</a></li>
+  <li><a href="#build-this" id="toc-build-this" class="nav-link" data-scroll-target="#build-this"><span class="header-section-number">4.8</span> Build this</a>
+  <ul class="collapse">
+  <li><a href="#postgis-schema" id="toc-postgis-schema" class="nav-link" data-scroll-target="#postgis-schema"><span class="header-section-number">4.8.1</span> PostGIS schema</a></li>
+  <li><a href="#dbt-project-structure" id="toc-dbt-project-structure" class="nav-link" data-scroll-target="#dbt-project-structure"><span class="header-section-number">4.8.2</span> dbt project structure</a></li>
+  <li><a href="#prefect-deployment" id="toc-prefect-deployment" class="nav-link" data-scroll-target="#prefect-deployment"><span class="header-section-number">4.8.3</span> Prefect deployment</a></li>
+  </ul></li>
+  </ul>
+<div class="toc-actions"><ul><li><a href="https://github.com/WaywardHouse/waywardhouse-data-engineering/edit/main/03-pipelines-and-etl.qmd" class="toc-action"><i class="bi bi-github"></i>Edit this page</a></li><li><a href="https://github.com/WaywardHouse/waywardhouse-data-engineering/issues/new" class="toc-action"><i class="bi empty"></i>Report an issue</a></li></ul></div></nav>
+    </div>
+<!-- main -->
+<main class="content" id="quarto-document-content">
+
+<header id="title-block-header" class="quarto-title-block default">
+<div class="quarto-title">
+<h1 class="title"><span class="chapter-number">4</span>&nbsp; <span class="chapter-title">Pipelines and ETL</span></h1>
+<p class="subtitle lead">Extract, transform, load — and the many ways it goes wrong</p>
+</div>
+
+
+
+<div class="quarto-title-meta">
+
+    
+  
+    
+  </div>
+  
+
+
+</header>
+
+
+<section id="the-puzzle" class="level2" data-number="4.1">
+<h2 data-number="4.1" class="anchored" data-anchor-id="the-puzzle"><span class="header-section-number">4.1</span> The puzzle</h2>
+<p>A pipeline ran for eighteen months without complaint. It ingested GeoJSON feature collections from a municipal permits API every night, ran a handful of spatial joins against a PostGIS database, and wrote summary rows into a reporting table. Nothing exotic. Monitoring showed green. The pipeline completed in under four minutes each run.</p>
+<p>Then someone noticed the permit count by district had been wrong for about six weeks. Not dramatically wrong — close enough that no alert fired. Wrong by around four percent, consistently biased toward under-reporting in three specific districts.</p>
+<p>The cause, traced back: the upstream API had added a new field called <code>district_code</code> and quietly changed the type of the old field <code>district_id</code> from integer to string. The pipeline’s extraction step used <code>district_id</code> as a join key against a PostGIS dimension table that expected an integer. PostgreSQL cast the string silently in some cases, failed silently in others (NULLed the join), and the aggregation downstream summed fewer records without raising an error. The pipeline had been reporting counts as if the data were complete.</p>
+<p>This is the canonical silent corruption failure. The system ran. It produced output. The output was wrong. No exception was raised anywhere in the execution graph.</p>
+<p>The interesting thing is that this failure is entirely predictable from the pipeline’s structure, not from the specific nature of the bug. The same structure — extract, cast implicitly, join on assumed type, aggregate without null checking — will produce silent corruption whenever assumptions about the source data change. The specific type mismatch was an accident. The absence of validation that would have caught it was a design decision.</p>
+<hr>
+</section>
+<section id="three-failure-modes-of-etl" class="level2" data-number="4.2">
+<h2 data-number="4.2" class="anchored" data-anchor-id="three-failure-modes-of-etl"><span class="header-section-number">4.2</span> Three failure modes of ETL</h2>
+<p>Every ETL pipeline that runs in production long enough will encounter one of three failure modes. They are worth naming precisely because they have different causes, different signatures, and different fixes.</p>
+<section id="silent-data-corruption" class="level3" data-number="4.2.1">
+<h3 data-number="4.2.1" class="anchored" data-anchor-id="silent-data-corruption"><span class="header-section-number">4.2.1</span> Silent data corruption</h3>
+<p>Schema drift: the upstream data source changes its structure without notice. Field names, data types, enumeration values, null handling, encoding — any of these can change. Your pipeline was written for the old structure. If your code is defensive, it raises an exception and you get paged. If it is not, it produces wrong output quietly.</p>
+<p>The feedback structure here is what Systems Thinking Ch 6 calls <strong>feedback starvation</strong>. A balancing loop exists in principle — the loop from data quality degradation, to detection, to pipeline correction — but the loop is severed at the detection point. Monitoring checks pipeline completion, not output correctness. The corrective signal never reaches the engineer. The stock of data errors accumulates.</p>
+<p>This failure mode is not prevented by better code. It is prevented by <strong>schema validation at the extraction boundary</strong>: assert what you expect to be true about the source data before any transformation runs.</p>
+</section>
+<section id="backlog-growth" class="level3" data-number="4.2.2">
+<h3 data-number="4.2.2" class="anchored" data-anchor-id="backlog-growth"><span class="header-section-number">4.2.2</span> Backlog growth</h3>
+<p>The second failure mode is structural, not logical. Your pipeline is designed to process N records per run. Your upstream source begins generating N+k records per run. The pipeline completes successfully every time. But each run leaves k records unprocessed, or processes them but delays their appearance by one cycle.</p>
+<p>This is a stock accumulation problem. The backlog is a stock. The inflow is the arrival rate. The outflow is the processing rate. When inflow exceeds outflow, the stock grows. Continuously.</p>
+<p>The signature of backlog growth is subtle: pipeline latency increases gradually. Reports lag by one day, then two. Downstream consumers start seeing “stale” data but cannot point to a failure. Eventually something downstream depends on a record that was supposed to arrive three days ago.</p>
+<p>The fix is not to speed up the pipeline. The fix is to measure the backlog and set an alert before it reaches a problematic level — and then understand whether the design needs to change throughput, sharding, or scheduling.</p>
+</section>
+<section id="brittle-dependencies" class="level3" data-number="4.2.3">
+<h3 data-number="4.2.3" class="anchored" data-anchor-id="brittle-dependencies"><span class="header-section-number">4.2.3</span> Brittle dependencies</h3>
+<p>The third failure mode: an upstream API or data source changes its interface. Authentication scheme, endpoint URL, response format, rate limiting behaviour. Your pipeline breaks, sometimes hard (exceptions, immediate failure) and sometimes soft (wrong data, see failure mode one).</p>
+<p>The feedback structure is a <strong>reinforcing fragility loop</strong>: the more your pipeline is tuned to the exact current behaviour of the upstream source, the larger the surface area for breakage, and the more effort any change requires. Teams that solve this by hardcoding API behaviour accumulate technical debt that grows with every upstream change.</p>
+<p>The fix is <strong>interface abstraction</strong>: write a thin extraction layer whose job is to normalise the upstream source into a stable internal schema. All downstream transformation code works against the internal schema, not the upstream API. When the upstream changes, you update the extraction layer, not the transformation layer.</p>
+<hr>
+</section>
+</section>
+<section id="dbt-the-transformation-layer" class="level2" data-number="4.3">
+<h2 data-number="4.3" class="anchored" data-anchor-id="dbt-the-transformation-layer"><span class="header-section-number">4.3</span> dbt: the transformation layer</h2>
+<p>dbt (data build tool) is not an ingestion tool. It does not move data from sources into your warehouse. It transforms data that is already in your warehouse. This distinction matters because dbt is the tool you use to make transformation auditable, testable, and reproducible — and you can only do that on data you already have.</p>
+<p>A dbt <strong>model</strong> is a SQL SELECT statement in a <code>.sql</code> file. dbt compiles it into a <code>CREATE TABLE AS</code> or <code>CREATE VIEW AS</code> statement and runs it. The model’s name becomes the table name. If you reference another model with <code>{ ref('other_model') }</code>, dbt builds the dependency graph and runs models in the right order.</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb1"><pre class="sourceCode sql code-with-copy"><code class="sourceCode sql"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="co">-- models/permits/permits_by_district.sql</span></span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="co">-- Aggregates validated permit records to district level.</span></span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a><span class="co">-- Depends on: stg_permits (staging), dim_districts (dimension)</span></span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a><span class="kw">with</span> validated_permits <span class="kw">as</span> (</span>
+<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a>    <span class="kw">select</span></span>
+<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a>        permit_id,</span>
+<span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a>        <span class="fu">cast</span>(district_id <span class="kw">as</span> <span class="dt">integer</span>)            <span class="kw">as</span> district_id,</span>
+<span id="cb1-9"><a href="#cb1-9" aria-hidden="true" tabindex="-1"></a>        issued_date:<span class="ch">:date</span>                       <span class="kw">as</span> issued_date,</span>
+<span id="cb1-10"><a href="#cb1-10" aria-hidden="true" tabindex="-1"></a>        permit_type,</span>
+<span id="cb1-11"><a href="#cb1-11" aria-hidden="true" tabindex="-1"></a>        geometry</span>
+<span id="cb1-12"><a href="#cb1-12" aria-hidden="true" tabindex="-1"></a>    <span class="kw">from</span> {{ <span class="fu">ref</span>(<span class="st">'stg_permits'</span>) }}</span>
+<span id="cb1-13"><a href="#cb1-13" aria-hidden="true" tabindex="-1"></a>    <span class="kw">where</span> district_id <span class="kw">is</span> <span class="kw">not</span> <span class="kw">null</span></span>
+<span id="cb1-14"><a href="#cb1-14" aria-hidden="true" tabindex="-1"></a>      <span class="kw">and</span> district_id ~ <span class="st">'^\d+$'</span>   <span class="co">-- only cast rows that are numeric strings</span></span>
+<span id="cb1-15"><a href="#cb1-15" aria-hidden="true" tabindex="-1"></a>),</span>
+<span id="cb1-16"><a href="#cb1-16" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-17"><a href="#cb1-17" aria-hidden="true" tabindex="-1"></a>joined <span class="kw">as</span> (</span>
+<span id="cb1-18"><a href="#cb1-18" aria-hidden="true" tabindex="-1"></a>    <span class="kw">select</span></span>
+<span id="cb1-19"><a href="#cb1-19" aria-hidden="true" tabindex="-1"></a>        p.permit_id,</span>
+<span id="cb1-20"><a href="#cb1-20" aria-hidden="true" tabindex="-1"></a>        p.permit_type,</span>
+<span id="cb1-21"><a href="#cb1-21" aria-hidden="true" tabindex="-1"></a>        p.issued_date,</span>
+<span id="cb1-22"><a href="#cb1-22" aria-hidden="true" tabindex="-1"></a>        d.district_name,</span>
+<span id="cb1-23"><a href="#cb1-23" aria-hidden="true" tabindex="-1"></a>        d.district_code,</span>
+<span id="cb1-24"><a href="#cb1-24" aria-hidden="true" tabindex="-1"></a>        ST_Within(p.geometry, d.boundary)       <span class="kw">as</span> within_boundary</span>
+<span id="cb1-25"><a href="#cb1-25" aria-hidden="true" tabindex="-1"></a>    <span class="kw">from</span> validated_permits p</span>
+<span id="cb1-26"><a href="#cb1-26" aria-hidden="true" tabindex="-1"></a>    <span class="kw">inner</span> <span class="kw">join</span> {{ <span class="fu">ref</span>(<span class="st">'dim_districts'</span>) }} d</span>
+<span id="cb1-27"><a href="#cb1-27" aria-hidden="true" tabindex="-1"></a>        <span class="kw">on</span> <span class="fu">cast</span>(p.district_id <span class="kw">as</span> <span class="dt">integer</span>) <span class="op">=</span> d.district_id</span>
+<span id="cb1-28"><a href="#cb1-28" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb1-29"><a href="#cb1-29" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-30"><a href="#cb1-30" aria-hidden="true" tabindex="-1"></a><span class="kw">select</span></span>
+<span id="cb1-31"><a href="#cb1-31" aria-hidden="true" tabindex="-1"></a>    district_code,</span>
+<span id="cb1-32"><a href="#cb1-32" aria-hidden="true" tabindex="-1"></a>    district_name,</span>
+<span id="cb1-33"><a href="#cb1-33" aria-hidden="true" tabindex="-1"></a>    permit_type,</span>
+<span id="cb1-34"><a href="#cb1-34" aria-hidden="true" tabindex="-1"></a>    date_trunc(<span class="st">'month'</span>, issued_date)            <span class="kw">as</span> <span class="dt">month</span>,</span>
+<span id="cb1-35"><a href="#cb1-35" aria-hidden="true" tabindex="-1"></a>    <span class="fu">count</span>(<span class="op">*</span>)                                    <span class="kw">as</span> permit_count,</span>
+<span id="cb1-36"><a href="#cb1-36" aria-hidden="true" tabindex="-1"></a>    <span class="fu">count</span>(<span class="op">*</span>) <span class="kw">filter</span> (<span class="kw">where</span> within_boundary)     <span class="kw">as</span> within_boundary_count</span>
+<span id="cb1-37"><a href="#cb1-37" aria-hidden="true" tabindex="-1"></a><span class="kw">from</span> joined</span>
+<span id="cb1-38"><a href="#cb1-38" aria-hidden="true" tabindex="-1"></a><span class="kw">group</span> <span class="kw">by</span> <span class="dv">1</span>, <span class="dv">2</span>, <span class="dv">3</span>, <span class="dv">4</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>The companion schema file declares tests. These run every time the model runs.</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb2"><pre class="sourceCode yaml code-with-copy"><code class="sourceCode yaml"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="co"># models/permits/schema.yml</span></span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a><span class="fu">version</span><span class="kw">:</span><span class="at"> </span><span class="dv">2</span></span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a><span class="fu">models</span><span class="kw">:</span></span>
+<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="kw">-</span><span class="at"> </span><span class="fu">name</span><span class="kw">:</span><span class="at"> permits_by_district</span></span>
+<span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a><span class="fu">    description</span><span class="kw">: </span><span class="ch">&gt;</span></span>
+<span id="cb2-7"><a href="#cb2-7" aria-hidden="true" tabindex="-1"></a>      Monthly permit counts by district. One row per district × permit_type × month.</span>
+<span id="cb2-8"><a href="#cb2-8" aria-hidden="true" tabindex="-1"></a>      Null district_ids are excluded at the staging layer.</span>
+<span id="cb2-9"><a href="#cb2-9" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">columns</span><span class="kw">:</span></span>
+<span id="cb2-10"><a href="#cb2-10" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="kw">-</span><span class="at"> </span><span class="fu">name</span><span class="kw">:</span><span class="at"> district_code</span></span>
+<span id="cb2-11"><a href="#cb2-11" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">description</span><span class="kw">:</span><span class="at"> Canonical district identifier from dim_districts.</span></span>
+<span id="cb2-12"><a href="#cb2-12" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">tests</span><span class="kw">:</span></span>
+<span id="cb2-13"><a href="#cb2-13" aria-hidden="true" tabindex="-1"></a><span class="at">          </span><span class="kw">-</span><span class="at"> not_null</span></span>
+<span id="cb2-14"><a href="#cb2-14" aria-hidden="true" tabindex="-1"></a><span class="at">          </span><span class="kw">-</span><span class="at"> </span><span class="fu">relationships</span><span class="kw">:</span></span>
+<span id="cb2-15"><a href="#cb2-15" aria-hidden="true" tabindex="-1"></a><span class="at">              </span><span class="fu">to</span><span class="kw">:</span><span class="at"> ref('dim_districts')</span></span>
+<span id="cb2-16"><a href="#cb2-16" aria-hidden="true" tabindex="-1"></a><span class="at">              </span><span class="fu">field</span><span class="kw">:</span><span class="at"> district_code</span></span>
+<span id="cb2-17"><a href="#cb2-17" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-18"><a href="#cb2-18" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="kw">-</span><span class="at"> </span><span class="fu">name</span><span class="kw">:</span><span class="at"> permit_count</span></span>
+<span id="cb2-19"><a href="#cb2-19" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">description</span><span class="kw">:</span><span class="at"> Total permits issued in this district, type, and month.</span></span>
+<span id="cb2-20"><a href="#cb2-20" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">tests</span><span class="kw">:</span></span>
+<span id="cb2-21"><a href="#cb2-21" aria-hidden="true" tabindex="-1"></a><span class="at">          </span><span class="kw">-</span><span class="at"> not_null</span></span>
+<span id="cb2-22"><a href="#cb2-22" aria-hidden="true" tabindex="-1"></a><span class="at">          </span><span class="kw">-</span><span class="at"> </span><span class="fu">dbt_utils.accepted_range</span><span class="kw">:</span></span>
+<span id="cb2-23"><a href="#cb2-23" aria-hidden="true" tabindex="-1"></a><span class="at">              </span><span class="fu">min_value</span><span class="kw">:</span><span class="at"> </span><span class="dv">0</span></span>
+<span id="cb2-24"><a href="#cb2-24" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-25"><a href="#cb2-25" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="kw">-</span><span class="at"> </span><span class="fu">name</span><span class="kw">:</span><span class="at"> month</span></span>
+<span id="cb2-26"><a href="#cb2-26" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">tests</span><span class="kw">:</span></span>
+<span id="cb2-27"><a href="#cb2-27" aria-hidden="true" tabindex="-1"></a><span class="at">          </span><span class="kw">-</span><span class="at"> not_null</span></span>
+<span id="cb2-28"><a href="#cb2-28" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-29"><a href="#cb2-29" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">tests</span><span class="kw">:</span></span>
+<span id="cb2-30"><a href="#cb2-30" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="kw">-</span><span class="at"> </span><span class="fu">dbt_utils.unique_combination_of_columns</span><span class="kw">:</span></span>
+<span id="cb2-31"><a href="#cb2-31" aria-hidden="true" tabindex="-1"></a><span class="at">          </span><span class="fu">combination_of_columns</span><span class="kw">:</span></span>
+<span id="cb2-32"><a href="#cb2-32" aria-hidden="true" tabindex="-1"></a><span class="at">            </span><span class="kw">-</span><span class="at"> district_code</span></span>
+<span id="cb2-33"><a href="#cb2-33" aria-hidden="true" tabindex="-1"></a><span class="at">            </span><span class="kw">-</span><span class="at"> permit_type</span></span>
+<span id="cb2-34"><a href="#cb2-34" aria-hidden="true" tabindex="-1"></a><span class="at">            </span><span class="kw">-</span><span class="at"> month</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>The <code>relationships</code> test is the fix to the silent corruption failure described above. If <code>district_code</code> in <code>permits_by_district</code> references a value not present in <code>dim_districts</code>, the test fails loudly. The pipeline stops. You get paged. The wrong data never reaches the reporting table.</p>
+<p>dbt tests are not nice-to-have. They are the only mechanism that detects silent schema drift before it propagates downstream. A dbt model without tests is a transformation that can silently corrupt its output when upstream data changes.</p>
+<p>The <strong>lineage graph</strong> is a side effect of how dbt resolves <code>{ ref() }</code> calls. Every model’s dependencies are known before the pipeline runs. You can trace the path from any column in any output table back to its source. When a bug is found in a downstream table, the lineage graph tells you exactly which models to inspect. This is not documentation you have to write — it is a structural property of the code.</p>
+<hr>
+</section>
+<section id="prefect-orchestration" class="level2" data-number="4.4">
+<h2 data-number="4.4" class="anchored" data-anchor-id="prefect-orchestration"><span class="header-section-number">4.4</span> Prefect: orchestration</h2>
+<p>dbt handles transformation. Prefect handles the surrounding machinery: scheduling, dependency ordering, retries, parameterisation, and observability.</p>
+<p>A Prefect <strong>flow</strong> is a Python function decorated with <code>@flow</code>. A <strong>task</strong> is a Python function decorated with <code>@task</code>. Tasks can be retried on failure, cached on their inputs, and run concurrently where there are no dependencies between them. The Prefect server tracks every run, its state, and its logs.</p>
+<p>The following flow ingests a GeoJSON file, validates that every feature has a non-null geometry and a required <code>district_id</code> property, and writes the valid records to PostGIS. Invalid records are written to a rejection table with an error reason, rather than being silently dropped.</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb3"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="co"># flows/ingest_permits.py</span></span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a><span class="co">"""</span></span>
+<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a><span class="co">Nightly permit ingestion: GeoJSON → PostGIS.</span></span>
+<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a><span class="co">Requires: PREFECT_API_URL, DATABASE_URL environment variables.</span></span>
+<span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a><span class="co">"""</span></span>
+<span id="cb3-6"><a href="#cb3-6" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> __future__ <span class="im">import</span> annotations</span>
+<span id="cb3-7"><a href="#cb3-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-8"><a href="#cb3-8" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> json</span>
+<span id="cb3-9"><a href="#cb3-9" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> logging</span>
+<span id="cb3-10"><a href="#cb3-10" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> pathlib <span class="im">import</span> Path</span>
+<span id="cb3-11"><a href="#cb3-11" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> typing <span class="im">import</span> Any</span>
+<span id="cb3-12"><a href="#cb3-12" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-13"><a href="#cb3-13" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> httpx</span>
+<span id="cb3-14"><a href="#cb3-14" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> psycopg2</span>
+<span id="cb3-15"><a href="#cb3-15" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> psycopg2.extras <span class="im">import</span> execute_values</span>
+<span id="cb3-16"><a href="#cb3-16" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> prefect <span class="im">import</span> flow, task, get_run_logger</span>
+<span id="cb3-17"><a href="#cb3-17" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> prefect.tasks <span class="im">import</span> task_input_hash</span>
+<span id="cb3-18"><a href="#cb3-18" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> datetime <span class="im">import</span> timedelta</span>
+<span id="cb3-19"><a href="#cb3-19" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-20"><a href="#cb3-20" aria-hidden="true" tabindex="-1"></a>PERMITS_API <span class="op">=</span> <span class="st">"https://data.example-city.gov/api/permits/v2/geojson"</span></span>
+<span id="cb3-21"><a href="#cb3-21" aria-hidden="true" tabindex="-1"></a>REQUIRED_PROPERTIES <span class="op">=</span> {<span class="st">"district_id"</span>, <span class="st">"permit_type"</span>, <span class="st">"issued_date"</span>}</span>
+<span id="cb3-22"><a href="#cb3-22" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-23"><a href="#cb3-23" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-24"><a href="#cb3-24" aria-hidden="true" tabindex="-1"></a><span class="at">@task</span>(</span>
+<span id="cb3-25"><a href="#cb3-25" aria-hidden="true" tabindex="-1"></a>    retries<span class="op">=</span><span class="dv">3</span>,</span>
+<span id="cb3-26"><a href="#cb3-26" aria-hidden="true" tabindex="-1"></a>    retry_delay_seconds<span class="op">=</span><span class="dv">60</span>,</span>
+<span id="cb3-27"><a href="#cb3-27" aria-hidden="true" tabindex="-1"></a>    cache_key_fn<span class="op">=</span>task_input_hash,</span>
+<span id="cb3-28"><a href="#cb3-28" aria-hidden="true" tabindex="-1"></a>    cache_expiration<span class="op">=</span>timedelta(hours<span class="op">=</span><span class="dv">1</span>),</span>
+<span id="cb3-29"><a href="#cb3-29" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb3-30"><a href="#cb3-30" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> extract_geojson(url: <span class="bu">str</span>) <span class="op">-&gt;</span> <span class="bu">dict</span>:</span>
+<span id="cb3-31"><a href="#cb3-31" aria-hidden="true" tabindex="-1"></a>    <span class="co">"""Fetch a GeoJSON FeatureCollection from a URL.</span></span>
+<span id="cb3-32"><a href="#cb3-32" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-33"><a href="#cb3-33" aria-hidden="true" tabindex="-1"></a><span class="co">    Retries three times on network failure. The cache key is the URL,</span></span>
+<span id="cb3-34"><a href="#cb3-34" aria-hidden="true" tabindex="-1"></a><span class="co">    so a re-run within the cache window does not re-fetch the source.</span></span>
+<span id="cb3-35"><a href="#cb3-35" aria-hidden="true" tabindex="-1"></a><span class="co">    This is the idempotency boundary for the extraction step.</span></span>
+<span id="cb3-36"><a href="#cb3-36" aria-hidden="true" tabindex="-1"></a><span class="co">    """</span></span>
+<span id="cb3-37"><a href="#cb3-37" aria-hidden="true" tabindex="-1"></a>    logger <span class="op">=</span> get_run_logger()</span>
+<span id="cb3-38"><a href="#cb3-38" aria-hidden="true" tabindex="-1"></a>    logger.info(<span class="st">"Fetching </span><span class="sc">%s</span><span class="st">"</span>, url)</span>
+<span id="cb3-39"><a href="#cb3-39" aria-hidden="true" tabindex="-1"></a>    response <span class="op">=</span> httpx.get(url, timeout<span class="op">=</span><span class="dv">30</span>)</span>
+<span id="cb3-40"><a href="#cb3-40" aria-hidden="true" tabindex="-1"></a>    response.raise_for_status()</span>
+<span id="cb3-41"><a href="#cb3-41" aria-hidden="true" tabindex="-1"></a>    data <span class="op">=</span> response.json()</span>
+<span id="cb3-42"><a href="#cb3-42" aria-hidden="true" tabindex="-1"></a>    <span class="cf">if</span> data.get(<span class="st">"type"</span>) <span class="op">!=</span> <span class="st">"FeatureCollection"</span>:</span>
+<span id="cb3-43"><a href="#cb3-43" aria-hidden="true" tabindex="-1"></a>        <span class="cf">raise</span> <span class="pp">ValueError</span>(<span class="ss">f"Expected FeatureCollection, got </span><span class="sc">{</span>data<span class="sc">.</span>get(<span class="st">'type'</span>)<span class="sc">!r}</span><span class="ss">"</span>)</span>
+<span id="cb3-44"><a href="#cb3-44" aria-hidden="true" tabindex="-1"></a>    logger.info(<span class="st">"Fetched </span><span class="sc">%d</span><span class="st"> features"</span>, <span class="bu">len</span>(data.get(<span class="st">"features"</span>, [])))</span>
+<span id="cb3-45"><a href="#cb3-45" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> data</span>
+<span id="cb3-46"><a href="#cb3-46" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-47"><a href="#cb3-47" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-48"><a href="#cb3-48" aria-hidden="true" tabindex="-1"></a><span class="at">@task</span></span>
+<span id="cb3-49"><a href="#cb3-49" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> validate_features(</span>
+<span id="cb3-50"><a href="#cb3-50" aria-hidden="true" tabindex="-1"></a>    geojson: <span class="bu">dict</span>,</span>
+<span id="cb3-51"><a href="#cb3-51" aria-hidden="true" tabindex="-1"></a>) <span class="op">-&gt;</span> <span class="bu">tuple</span>[<span class="bu">list</span>[<span class="bu">dict</span>], <span class="bu">list</span>[<span class="bu">dict</span>]]:</span>
+<span id="cb3-52"><a href="#cb3-52" aria-hidden="true" tabindex="-1"></a>    <span class="co">"""Validate geometry presence and required properties.</span></span>
+<span id="cb3-53"><a href="#cb3-53" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-54"><a href="#cb3-54" aria-hidden="true" tabindex="-1"></a><span class="co">    Returns (valid_features, rejected_features).</span></span>
+<span id="cb3-55"><a href="#cb3-55" aria-hidden="true" tabindex="-1"></a><span class="co">    Rejected features include an 'rejection_reason' key — they are</span></span>
+<span id="cb3-56"><a href="#cb3-56" aria-hidden="true" tabindex="-1"></a><span class="co">    written to a separate table, not silently dropped.</span></span>
+<span id="cb3-57"><a href="#cb3-57" aria-hidden="true" tabindex="-1"></a><span class="co">    """</span></span>
+<span id="cb3-58"><a href="#cb3-58" aria-hidden="true" tabindex="-1"></a>    valid, rejected <span class="op">=</span> [], []</span>
+<span id="cb3-59"><a href="#cb3-59" aria-hidden="true" tabindex="-1"></a>    <span class="cf">for</span> i, feature <span class="kw">in</span> <span class="bu">enumerate</span>(geojson.get(<span class="st">"features"</span>, [])):</span>
+<span id="cb3-60"><a href="#cb3-60" aria-hidden="true" tabindex="-1"></a>        reasons <span class="op">=</span> []</span>
+<span id="cb3-61"><a href="#cb3-61" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-62"><a href="#cb3-62" aria-hidden="true" tabindex="-1"></a>        <span class="co"># Geometry check</span></span>
+<span id="cb3-63"><a href="#cb3-63" aria-hidden="true" tabindex="-1"></a>        geom <span class="op">=</span> feature.get(<span class="st">"geometry"</span>)</span>
+<span id="cb3-64"><a href="#cb3-64" aria-hidden="true" tabindex="-1"></a>        <span class="cf">if</span> geom <span class="kw">is</span> <span class="va">None</span>:</span>
+<span id="cb3-65"><a href="#cb3-65" aria-hidden="true" tabindex="-1"></a>            reasons.append(<span class="st">"null_geometry"</span>)</span>
+<span id="cb3-66"><a href="#cb3-66" aria-hidden="true" tabindex="-1"></a>        <span class="cf">elif</span> geom.get(<span class="st">"type"</span>) <span class="kw">not</span> <span class="kw">in</span> {</span>
+<span id="cb3-67"><a href="#cb3-67" aria-hidden="true" tabindex="-1"></a>            <span class="st">"Point"</span>, <span class="st">"LineString"</span>, <span class="st">"Polygon"</span>,</span>
+<span id="cb3-68"><a href="#cb3-68" aria-hidden="true" tabindex="-1"></a>            <span class="st">"MultiPoint"</span>, <span class="st">"MultiLineString"</span>, <span class="st">"MultiPolygon"</span>,</span>
+<span id="cb3-69"><a href="#cb3-69" aria-hidden="true" tabindex="-1"></a>        }:</span>
+<span id="cb3-70"><a href="#cb3-70" aria-hidden="true" tabindex="-1"></a>            reasons.append(<span class="ss">f"unsupported_geometry_type:</span><span class="sc">{</span>geom<span class="sc">.</span>get(<span class="st">'type'</span>)<span class="sc">}</span><span class="ss">"</span>)</span>
+<span id="cb3-71"><a href="#cb3-71" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-72"><a href="#cb3-72" aria-hidden="true" tabindex="-1"></a>        <span class="co"># Required properties</span></span>
+<span id="cb3-73"><a href="#cb3-73" aria-hidden="true" tabindex="-1"></a>        props <span class="op">=</span> feature.get(<span class="st">"properties"</span>) <span class="kw">or</span> {}</span>
+<span id="cb3-74"><a href="#cb3-74" aria-hidden="true" tabindex="-1"></a>        missing <span class="op">=</span> REQUIRED_PROPERTIES <span class="op">-</span> props.keys()</span>
+<span id="cb3-75"><a href="#cb3-75" aria-hidden="true" tabindex="-1"></a>        <span class="cf">if</span> missing:</span>
+<span id="cb3-76"><a href="#cb3-76" aria-hidden="true" tabindex="-1"></a>            reasons.append(<span class="ss">f"missing_properties:</span><span class="sc">{</span><span class="st">','</span><span class="sc">.</span>join(<span class="bu">sorted</span>(missing))<span class="sc">}</span><span class="ss">"</span>)</span>
+<span id="cb3-77"><a href="#cb3-77" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-78"><a href="#cb3-78" aria-hidden="true" tabindex="-1"></a>        <span class="co"># district_id must be castable to integer</span></span>
+<span id="cb3-79"><a href="#cb3-79" aria-hidden="true" tabindex="-1"></a>        district_id <span class="op">=</span> props.get(<span class="st">"district_id"</span>)</span>
+<span id="cb3-80"><a href="#cb3-80" aria-hidden="true" tabindex="-1"></a>        <span class="cf">if</span> district_id <span class="kw">is</span> <span class="kw">not</span> <span class="va">None</span>:</span>
+<span id="cb3-81"><a href="#cb3-81" aria-hidden="true" tabindex="-1"></a>            <span class="cf">try</span>:</span>
+<span id="cb3-82"><a href="#cb3-82" aria-hidden="true" tabindex="-1"></a>                <span class="bu">int</span>(district_id)</span>
+<span id="cb3-83"><a href="#cb3-83" aria-hidden="true" tabindex="-1"></a>            <span class="cf">except</span> (<span class="pp">ValueError</span>, <span class="pp">TypeError</span>):</span>
+<span id="cb3-84"><a href="#cb3-84" aria-hidden="true" tabindex="-1"></a>                reasons.append(<span class="ss">f"non_integer_district_id:</span><span class="sc">{</span>district_id<span class="sc">!r}</span><span class="ss">"</span>)</span>
+<span id="cb3-85"><a href="#cb3-85" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-86"><a href="#cb3-86" aria-hidden="true" tabindex="-1"></a>        <span class="cf">if</span> reasons:</span>
+<span id="cb3-87"><a href="#cb3-87" aria-hidden="true" tabindex="-1"></a>            feature <span class="op">=</span> <span class="bu">dict</span>(feature)</span>
+<span id="cb3-88"><a href="#cb3-88" aria-hidden="true" tabindex="-1"></a>            feature[<span class="st">"rejection_reason"</span>] <span class="op">=</span> <span class="st">"; "</span>.join(reasons)</span>
+<span id="cb3-89"><a href="#cb3-89" aria-hidden="true" tabindex="-1"></a>            rejected.append(feature)</span>
+<span id="cb3-90"><a href="#cb3-90" aria-hidden="true" tabindex="-1"></a>        <span class="cf">else</span>:</span>
+<span id="cb3-91"><a href="#cb3-91" aria-hidden="true" tabindex="-1"></a>            valid.append(feature)</span>
+<span id="cb3-92"><a href="#cb3-92" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-93"><a href="#cb3-93" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> valid, rejected</span>
+<span id="cb3-94"><a href="#cb3-94" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-95"><a href="#cb3-95" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-96"><a href="#cb3-96" aria-hidden="true" tabindex="-1"></a><span class="at">@task</span></span>
+<span id="cb3-97"><a href="#cb3-97" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> load_to_postgis(</span>
+<span id="cb3-98"><a href="#cb3-98" aria-hidden="true" tabindex="-1"></a>    valid_features: <span class="bu">list</span>[<span class="bu">dict</span>],</span>
+<span id="cb3-99"><a href="#cb3-99" aria-hidden="true" tabindex="-1"></a>    rejected_features: <span class="bu">list</span>[<span class="bu">dict</span>],</span>
+<span id="cb3-100"><a href="#cb3-100" aria-hidden="true" tabindex="-1"></a>    conn_string: <span class="bu">str</span>,</span>
+<span id="cb3-101"><a href="#cb3-101" aria-hidden="true" tabindex="-1"></a>) <span class="op">-&gt;</span> <span class="bu">dict</span>[<span class="bu">str</span>, <span class="bu">int</span>]:</span>
+<span id="cb3-102"><a href="#cb3-102" aria-hidden="true" tabindex="-1"></a>    <span class="co">"""Write valid features to permits_staging, rejects to permits_rejected.</span></span>
+<span id="cb3-103"><a href="#cb3-103" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-104"><a href="#cb3-104" aria-hidden="true" tabindex="-1"></a><span class="co">    Uses INSERT ... ON CONFLICT DO UPDATE (upsert) on permit_id so the</span></span>
+<span id="cb3-105"><a href="#cb3-105" aria-hidden="true" tabindex="-1"></a><span class="co">    task is idempotent — re-running it for the same dataset does not</span></span>
+<span id="cb3-106"><a href="#cb3-106" aria-hidden="true" tabindex="-1"></a><span class="co">    produce duplicate rows.</span></span>
+<span id="cb3-107"><a href="#cb3-107" aria-hidden="true" tabindex="-1"></a><span class="co">    """</span></span>
+<span id="cb3-108"><a href="#cb3-108" aria-hidden="true" tabindex="-1"></a>    <span class="cf">if</span> <span class="kw">not</span> valid_features <span class="kw">and</span> <span class="kw">not</span> rejected_features:</span>
+<span id="cb3-109"><a href="#cb3-109" aria-hidden="true" tabindex="-1"></a>        <span class="cf">return</span> {<span class="st">"inserted"</span>: <span class="dv">0</span>, <span class="st">"rejected"</span>: <span class="dv">0</span>}</span>
+<span id="cb3-110"><a href="#cb3-110" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-111"><a href="#cb3-111" aria-hidden="true" tabindex="-1"></a>    conn <span class="op">=</span> psycopg2.<span class="ex">connect</span>(conn_string)</span>
+<span id="cb3-112"><a href="#cb3-112" aria-hidden="true" tabindex="-1"></a>    <span class="cf">try</span>:</span>
+<span id="cb3-113"><a href="#cb3-113" aria-hidden="true" tabindex="-1"></a>        <span class="cf">with</span> conn.cursor() <span class="im">as</span> cur:</span>
+<span id="cb3-114"><a href="#cb3-114" aria-hidden="true" tabindex="-1"></a>            <span class="cf">if</span> valid_features:</span>
+<span id="cb3-115"><a href="#cb3-115" aria-hidden="true" tabindex="-1"></a>                rows <span class="op">=</span> [</span>
+<span id="cb3-116"><a href="#cb3-116" aria-hidden="true" tabindex="-1"></a>                    (</span>
+<span id="cb3-117"><a href="#cb3-117" aria-hidden="true" tabindex="-1"></a>                        f[<span class="st">"properties"</span>][<span class="st">"permit_id"</span>],</span>
+<span id="cb3-118"><a href="#cb3-118" aria-hidden="true" tabindex="-1"></a>                        <span class="bu">str</span>(f[<span class="st">"properties"</span>][<span class="st">"district_id"</span>]),</span>
+<span id="cb3-119"><a href="#cb3-119" aria-hidden="true" tabindex="-1"></a>                        f[<span class="st">"properties"</span>][<span class="st">"permit_type"</span>],</span>
+<span id="cb3-120"><a href="#cb3-120" aria-hidden="true" tabindex="-1"></a>                        f[<span class="st">"properties"</span>][<span class="st">"issued_date"</span>],</span>
+<span id="cb3-121"><a href="#cb3-121" aria-hidden="true" tabindex="-1"></a>                        json.dumps(f[<span class="st">"geometry"</span>]),</span>
+<span id="cb3-122"><a href="#cb3-122" aria-hidden="true" tabindex="-1"></a>                    )</span>
+<span id="cb3-123"><a href="#cb3-123" aria-hidden="true" tabindex="-1"></a>                    <span class="cf">for</span> f <span class="kw">in</span> valid_features</span>
+<span id="cb3-124"><a href="#cb3-124" aria-hidden="true" tabindex="-1"></a>                ]</span>
+<span id="cb3-125"><a href="#cb3-125" aria-hidden="true" tabindex="-1"></a>                execute_values(</span>
+<span id="cb3-126"><a href="#cb3-126" aria-hidden="true" tabindex="-1"></a>                    cur,</span>
+<span id="cb3-127"><a href="#cb3-127" aria-hidden="true" tabindex="-1"></a>                    <span class="st">"""</span></span>
+<span id="cb3-128"><a href="#cb3-128" aria-hidden="true" tabindex="-1"></a><span class="st">                    INSERT INTO permits_staging</span></span>
+<span id="cb3-129"><a href="#cb3-129" aria-hidden="true" tabindex="-1"></a><span class="st">                        (permit_id, district_id, permit_type, issued_date, geom_json)</span></span>
+<span id="cb3-130"><a href="#cb3-130" aria-hidden="true" tabindex="-1"></a><span class="st">                    VALUES </span><span class="sc">%s</span></span>
+<span id="cb3-131"><a href="#cb3-131" aria-hidden="true" tabindex="-1"></a><span class="st">                    ON CONFLICT (permit_id) DO UPDATE</span></span>
+<span id="cb3-132"><a href="#cb3-132" aria-hidden="true" tabindex="-1"></a><span class="st">                        SET district_id  = EXCLUDED.district_id,</span></span>
+<span id="cb3-133"><a href="#cb3-133" aria-hidden="true" tabindex="-1"></a><span class="st">                            permit_type  = EXCLUDED.permit_type,</span></span>
+<span id="cb3-134"><a href="#cb3-134" aria-hidden="true" tabindex="-1"></a><span class="st">                            issued_date  = EXCLUDED.issued_date,</span></span>
+<span id="cb3-135"><a href="#cb3-135" aria-hidden="true" tabindex="-1"></a><span class="st">                            geom_json    = EXCLUDED.geom_json,</span></span>
+<span id="cb3-136"><a href="#cb3-136" aria-hidden="true" tabindex="-1"></a><span class="st">                            updated_at   = now()</span></span>
+<span id="cb3-137"><a href="#cb3-137" aria-hidden="true" tabindex="-1"></a><span class="st">                    """</span>,</span>
+<span id="cb3-138"><a href="#cb3-138" aria-hidden="true" tabindex="-1"></a>                    rows,</span>
+<span id="cb3-139"><a href="#cb3-139" aria-hidden="true" tabindex="-1"></a>                )</span>
+<span id="cb3-140"><a href="#cb3-140" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-141"><a href="#cb3-141" aria-hidden="true" tabindex="-1"></a>            <span class="cf">if</span> rejected_features:</span>
+<span id="cb3-142"><a href="#cb3-142" aria-hidden="true" tabindex="-1"></a>                reject_rows <span class="op">=</span> [</span>
+<span id="cb3-143"><a href="#cb3-143" aria-hidden="true" tabindex="-1"></a>                    (</span>
+<span id="cb3-144"><a href="#cb3-144" aria-hidden="true" tabindex="-1"></a>                        json.dumps(f),</span>
+<span id="cb3-145"><a href="#cb3-145" aria-hidden="true" tabindex="-1"></a>                        f.get(<span class="st">"rejection_reason"</span>, <span class="st">"unknown"</span>),</span>
+<span id="cb3-146"><a href="#cb3-146" aria-hidden="true" tabindex="-1"></a>                    )</span>
+<span id="cb3-147"><a href="#cb3-147" aria-hidden="true" tabindex="-1"></a>                    <span class="cf">for</span> f <span class="kw">in</span> rejected_features</span>
+<span id="cb3-148"><a href="#cb3-148" aria-hidden="true" tabindex="-1"></a>                ]</span>
+<span id="cb3-149"><a href="#cb3-149" aria-hidden="true" tabindex="-1"></a>                execute_values(</span>
+<span id="cb3-150"><a href="#cb3-150" aria-hidden="true" tabindex="-1"></a>                    cur,</span>
+<span id="cb3-151"><a href="#cb3-151" aria-hidden="true" tabindex="-1"></a>                    <span class="st">"""</span></span>
+<span id="cb3-152"><a href="#cb3-152" aria-hidden="true" tabindex="-1"></a><span class="st">                    INSERT INTO permits_rejected (raw_feature, rejection_reason)</span></span>
+<span id="cb3-153"><a href="#cb3-153" aria-hidden="true" tabindex="-1"></a><span class="st">                    VALUES </span><span class="sc">%s</span></span>
+<span id="cb3-154"><a href="#cb3-154" aria-hidden="true" tabindex="-1"></a><span class="st">                    """</span>,</span>
+<span id="cb3-155"><a href="#cb3-155" aria-hidden="true" tabindex="-1"></a>                    reject_rows,</span>
+<span id="cb3-156"><a href="#cb3-156" aria-hidden="true" tabindex="-1"></a>                )</span>
+<span id="cb3-157"><a href="#cb3-157" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-158"><a href="#cb3-158" aria-hidden="true" tabindex="-1"></a>        conn.commit()</span>
+<span id="cb3-159"><a href="#cb3-159" aria-hidden="true" tabindex="-1"></a>    <span class="cf">finally</span>:</span>
+<span id="cb3-160"><a href="#cb3-160" aria-hidden="true" tabindex="-1"></a>        conn.close()</span>
+<span id="cb3-161"><a href="#cb3-161" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-162"><a href="#cb3-162" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> {<span class="st">"inserted"</span>: <span class="bu">len</span>(valid_features), <span class="st">"rejected"</span>: <span class="bu">len</span>(rejected_features)}</span>
+<span id="cb3-163"><a href="#cb3-163" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-164"><a href="#cb3-164" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-165"><a href="#cb3-165" aria-hidden="true" tabindex="-1"></a><span class="at">@flow</span>(name<span class="op">=</span><span class="st">"ingest-permits-nightly"</span>)</span>
+<span id="cb3-166"><a href="#cb3-166" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> ingest_permits(</span>
+<span id="cb3-167"><a href="#cb3-167" aria-hidden="true" tabindex="-1"></a>    url: <span class="bu">str</span> <span class="op">=</span> PERMITS_API,</span>
+<span id="cb3-168"><a href="#cb3-168" aria-hidden="true" tabindex="-1"></a>    conn_string: <span class="bu">str</span> <span class="op">=</span> <span class="st">""</span>,</span>
+<span id="cb3-169"><a href="#cb3-169" aria-hidden="true" tabindex="-1"></a>) <span class="op">-&gt;</span> <span class="va">None</span>:</span>
+<span id="cb3-170"><a href="#cb3-170" aria-hidden="true" tabindex="-1"></a>    <span class="co">"""Nightly permit ingestion flow.</span></span>
+<span id="cb3-171"><a href="#cb3-171" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-172"><a href="#cb3-172" aria-hidden="true" tabindex="-1"></a><span class="co">    The flow is designed to be re-runnable: extraction is cached for one</span></span>
+<span id="cb3-173"><a href="#cb3-173" aria-hidden="true" tabindex="-1"></a><span class="co">    hour (re-runs within the window skip the API call), and the load step</span></span>
+<span id="cb3-174"><a href="#cb3-174" aria-hidden="true" tabindex="-1"></a><span class="co">    upserts on permit_id (re-runs do not create duplicates).</span></span>
+<span id="cb3-175"><a href="#cb3-175" aria-hidden="true" tabindex="-1"></a><span class="co">    """</span></span>
+<span id="cb3-176"><a href="#cb3-176" aria-hidden="true" tabindex="-1"></a>    logger <span class="op">=</span> get_run_logger()</span>
+<span id="cb3-177"><a href="#cb3-177" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-178"><a href="#cb3-178" aria-hidden="true" tabindex="-1"></a>    geojson <span class="op">=</span> extract_geojson(url)</span>
+<span id="cb3-179"><a href="#cb3-179" aria-hidden="true" tabindex="-1"></a>    valid, rejected <span class="op">=</span> validate_features(geojson)</span>
+<span id="cb3-180"><a href="#cb3-180" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-181"><a href="#cb3-181" aria-hidden="true" tabindex="-1"></a>    logger.info(</span>
+<span id="cb3-182"><a href="#cb3-182" aria-hidden="true" tabindex="-1"></a>        <span class="st">"Validation complete: </span><span class="sc">%d</span><span class="st"> valid, </span><span class="sc">%d</span><span class="st"> rejected"</span>,</span>
+<span id="cb3-183"><a href="#cb3-183" aria-hidden="true" tabindex="-1"></a>        <span class="bu">len</span>(valid), <span class="bu">len</span>(rejected),</span>
+<span id="cb3-184"><a href="#cb3-184" aria-hidden="true" tabindex="-1"></a>    )</span>
+<span id="cb3-185"><a href="#cb3-185" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-186"><a href="#cb3-186" aria-hidden="true" tabindex="-1"></a>    <span class="cf">if</span> rejected:</span>
+<span id="cb3-187"><a href="#cb3-187" aria-hidden="true" tabindex="-1"></a>        logger.warning(</span>
+<span id="cb3-188"><a href="#cb3-188" aria-hidden="true" tabindex="-1"></a>            <span class="st">"</span><span class="sc">%d</span><span class="st"> features rejected. Inspect permits_rejected table."</span>,</span>
+<span id="cb3-189"><a href="#cb3-189" aria-hidden="true" tabindex="-1"></a>            <span class="bu">len</span>(rejected),</span>
+<span id="cb3-190"><a href="#cb3-190" aria-hidden="true" tabindex="-1"></a>        )</span>
+<span id="cb3-191"><a href="#cb3-191" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-192"><a href="#cb3-192" aria-hidden="true" tabindex="-1"></a>    result <span class="op">=</span> load_to_postgis(valid, rejected, conn_string)</span>
+<span id="cb3-193"><a href="#cb3-193" aria-hidden="true" tabindex="-1"></a>    logger.info(<span class="st">"Load complete: </span><span class="sc">%s</span><span class="st">"</span>, result)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>Several design decisions in this code are worth making explicit.</p>
+<p>The extraction task is cached on its input URL for one hour. If the flow is re-run within that window — because of a downstream failure, a manual retry, or a deployment event — the extraction step does not re-hit the API. This matters because many municipal data APIs have rate limits, and because idempotent re-runs should not cause N calls to the upstream for one logical ingest.</p>
+<p>The validation task does not raise an exception on bad records. It returns two lists. The loading task writes bad records to a rejection table with a reason. This is the correct behaviour: a validation failure on 2% of records should not abort the ingest of the other 98%, but the 2% should not disappear either. They should be visible, auditable, and recoverable.</p>
+<p>The load task uses upsert on <code>permit_id</code>. This is the key idempotency mechanism for the load step, discussed in detail below.</p>
+<hr>
+</section>
+<section id="the-backlog-stock" class="level2" data-number="4.5">
+<h2 data-number="4.5" class="anchored" data-anchor-id="the-backlog-stock"><span class="header-section-number">4.5</span> The backlog stock</h2>
+<p>Consider the following system. Your pipeline has a fixed processing capacity: it can process C records per run. Your upstream source arrives at rate R records per run. When R ≤ C, the pipeline processes all incoming data each run. When R &gt; C, there is a surplus each run.</p>
+<p>That surplus is a stock. It accumulates. Each run adds R records and removes C records. The net change per run is R − C. After n runs, the backlog is n(R − C).</p>
+<p>This is not a degenerate edge case. Traffic data sources frequently have variable arrival rates that spike during incidents. Satellite imagery ingest from an active acquisition campaign can temporarily exceed a pipeline’s tiling capacity. Municipal permit data can surge after a planning deadline.</p>
+<p>The following simulation shows three throughput scenarios — R &lt; C (comfortable headroom), R = C (exactly matched), and R &gt; C (accumulating backlog) — and shows the backlog stock over time under each.</p>
+<div id="cell-fig-pipeline-backlog" class="cell" data-fig-height="4" data-fig-width="12" data-execution_count="1">
+<details class="code-fold">
+<summary>Code</summary>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb4"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> numpy <span class="im">as</span> np</span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> matplotlib.pyplot <span class="im">as</span> plt</span>
+<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a>rng <span class="op">=</span> np.random.default_rng(<span class="dv">42</span>)</span>
+<span id="cb4-5"><a href="#cb4-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-6"><a href="#cb4-6" aria-hidden="true" tabindex="-1"></a>n_runs <span class="op">=</span> <span class="dv">120</span></span>
+<span id="cb4-7"><a href="#cb4-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-8"><a href="#cb4-8" aria-hidden="true" tabindex="-1"></a>scenarios <span class="op">=</span> [</span>
+<span id="cb4-9"><a href="#cb4-9" aria-hidden="true" tabindex="-1"></a>    <span class="co"># (label, base_ingest_rate, capacity, colour)</span></span>
+<span id="cb4-10"><a href="#cb4-10" aria-hidden="true" tabindex="-1"></a>    (<span class="st">"R &lt; C  (comfortable)"</span>,  <span class="dv">90</span>,  <span class="dv">100</span>, <span class="st">"#888888"</span>),</span>
+<span id="cb4-11"><a href="#cb4-11" aria-hidden="true" tabindex="-1"></a>    (<span class="st">"R = C  (exactly matched)"</span>, <span class="dv">100</span>, <span class="dv">100</span>, <span class="st">"#111111"</span>),</span>
+<span id="cb4-12"><a href="#cb4-12" aria-hidden="true" tabindex="-1"></a>    (<span class="st">"R &gt; C  (accumulating)"</span>, <span class="dv">110</span>, <span class="dv">100</span>, <span class="st">"#d52a2a"</span>),</span>
+<span id="cb4-13"><a href="#cb4-13" aria-hidden="true" tabindex="-1"></a>]</span>
+<span id="cb4-14"><a href="#cb4-14" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-15"><a href="#cb4-15" aria-hidden="true" tabindex="-1"></a>fig, axes <span class="op">=</span> plt.subplots(<span class="dv">1</span>, <span class="dv">2</span>, figsize<span class="op">=</span>(<span class="dv">12</span>, <span class="dv">4</span>), dpi<span class="op">=</span><span class="dv">150</span>)</span>
+<span id="cb4-16"><a href="#cb4-16" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-17"><a href="#cb4-17" aria-hidden="true" tabindex="-1"></a>ax_left, ax_right <span class="op">=</span> axes</span>
+<span id="cb4-18"><a href="#cb4-18" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-19"><a href="#cb4-19" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> label, R_base, C, colour <span class="kw">in</span> scenarios:</span>
+<span id="cb4-20"><a href="#cb4-20" aria-hidden="true" tabindex="-1"></a>    backlog <span class="op">=</span> np.zeros(n_runs <span class="op">+</span> <span class="dv">1</span>)</span>
+<span id="cb4-21"><a href="#cb4-21" aria-hidden="true" tabindex="-1"></a>    arrivals <span class="op">=</span> np.zeros(n_runs)</span>
+<span id="cb4-22"><a href="#cb4-22" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-23"><a href="#cb4-23" aria-hidden="true" tabindex="-1"></a>    <span class="cf">for</span> t <span class="kw">in</span> <span class="bu">range</span>(n_runs):</span>
+<span id="cb4-24"><a href="#cb4-24" aria-hidden="true" tabindex="-1"></a>        <span class="co"># Add a small amount of Poisson noise to arrival rate</span></span>
+<span id="cb4-25"><a href="#cb4-25" aria-hidden="true" tabindex="-1"></a>        R_t <span class="op">=</span> rng.poisson(R_base)</span>
+<span id="cb4-26"><a href="#cb4-26" aria-hidden="true" tabindex="-1"></a>        arrivals[t] <span class="op">=</span> R_t</span>
+<span id="cb4-27"><a href="#cb4-27" aria-hidden="true" tabindex="-1"></a>        processed <span class="op">=</span> <span class="bu">min</span>(backlog[t] <span class="op">+</span> R_t, C)</span>
+<span id="cb4-28"><a href="#cb4-28" aria-hidden="true" tabindex="-1"></a>        backlog[t <span class="op">+</span> <span class="dv">1</span>] <span class="op">=</span> <span class="bu">max</span>(<span class="dv">0</span>, backlog[t] <span class="op">+</span> R_t <span class="op">-</span> C)</span>
+<span id="cb4-29"><a href="#cb4-29" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-30"><a href="#cb4-30" aria-hidden="true" tabindex="-1"></a>    ax_left.plot(np.arange(n_runs <span class="op">+</span> <span class="dv">1</span>), backlog,</span>
+<span id="cb4-31"><a href="#cb4-31" aria-hidden="true" tabindex="-1"></a>                 color<span class="op">=</span>colour, linewidth<span class="op">=</span><span class="fl">1.8</span>, label<span class="op">=</span>label)</span>
+<span id="cb4-32"><a href="#cb4-32" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-33"><a href="#cb4-33" aria-hidden="true" tabindex="-1"></a><span class="co"># Inset: show a transient spike and its drainage time</span></span>
+<span id="cb4-34"><a href="#cb4-34" aria-hidden="true" tabindex="-1"></a>spike_C <span class="op">=</span> <span class="dv">100</span></span>
+<span id="cb4-35"><a href="#cb4-35" aria-hidden="true" tabindex="-1"></a>spike_backlog <span class="op">=</span> np.zeros(n_runs <span class="op">+</span> <span class="dv">1</span>)</span>
+<span id="cb4-36"><a href="#cb4-36" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> t <span class="kw">in</span> <span class="bu">range</span>(n_runs):</span>
+<span id="cb4-37"><a href="#cb4-37" aria-hidden="true" tabindex="-1"></a>    R_t <span class="op">=</span> <span class="dv">95</span> <span class="cf">if</span> t <span class="op">!=</span> <span class="dv">20</span> <span class="cf">else</span> <span class="dv">180</span>   <span class="co"># one spike at run 20</span></span>
+<span id="cb4-38"><a href="#cb4-38" aria-hidden="true" tabindex="-1"></a>    spike_backlog[t <span class="op">+</span> <span class="dv">1</span>] <span class="op">=</span> <span class="bu">max</span>(<span class="dv">0</span>, spike_backlog[t] <span class="op">+</span> R_t <span class="op">-</span> spike_C)</span>
+<span id="cb4-39"><a href="#cb4-39" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-40"><a href="#cb4-40" aria-hidden="true" tabindex="-1"></a>ax_right.plot(np.arange(n_runs <span class="op">+</span> <span class="dv">1</span>), spike_backlog,</span>
+<span id="cb4-41"><a href="#cb4-41" aria-hidden="true" tabindex="-1"></a>              color<span class="op">=</span><span class="st">"#d52a2a"</span>, linewidth<span class="op">=</span><span class="fl">1.8</span>)</span>
+<span id="cb4-42"><a href="#cb4-42" aria-hidden="true" tabindex="-1"></a>ax_right.axvline(<span class="dv">20</span>, color<span class="op">=</span><span class="st">"#888888"</span>, linewidth<span class="op">=</span><span class="fl">0.8</span>, linestyle<span class="op">=</span><span class="st">"--"</span>)</span>
+<span id="cb4-43"><a href="#cb4-43" aria-hidden="true" tabindex="-1"></a>ax_right.annotate(<span class="st">"Spike</span><span class="ch">\n</span><span class="st">(R=180, single run)"</span>,</span>
+<span id="cb4-44"><a href="#cb4-44" aria-hidden="true" tabindex="-1"></a>                  xy<span class="op">=</span>(<span class="dv">20</span>, spike_backlog[<span class="dv">21</span>]),</span>
+<span id="cb4-45"><a href="#cb4-45" aria-hidden="true" tabindex="-1"></a>                  xytext<span class="op">=</span>(<span class="dv">30</span>, spike_backlog[<span class="dv">21</span>] <span class="op">+</span> <span class="dv">20</span>),</span>
+<span id="cb4-46"><a href="#cb4-46" aria-hidden="true" tabindex="-1"></a>                  fontsize<span class="op">=</span><span class="dv">8</span>, color<span class="op">=</span><span class="st">"#555555"</span>,</span>
+<span id="cb4-47"><a href="#cb4-47" aria-hidden="true" tabindex="-1"></a>                  arrowprops<span class="op">=</span><span class="bu">dict</span>(arrowstyle<span class="op">=</span><span class="st">"-&gt;"</span>, color<span class="op">=</span><span class="st">"#555555"</span>, lw<span class="op">=</span><span class="fl">0.8</span>))</span>
+<span id="cb4-48"><a href="#cb4-48" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-49"><a href="#cb4-49" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> ax <span class="kw">in</span> (ax_left, ax_right):</span>
+<span id="cb4-50"><a href="#cb4-50" aria-hidden="true" tabindex="-1"></a>    ax.set_xlabel(<span class="st">"Pipeline run number"</span>)</span>
+<span id="cb4-51"><a href="#cb4-51" aria-hidden="true" tabindex="-1"></a>    ax.set_ylabel(<span class="st">"Backlog (records)"</span>)</span>
+<span id="cb4-52"><a href="#cb4-52" aria-hidden="true" tabindex="-1"></a>    ax.spines[<span class="st">"top"</span>].set_visible(<span class="va">False</span>)</span>
+<span id="cb4-53"><a href="#cb4-53" aria-hidden="true" tabindex="-1"></a>    ax.spines[<span class="st">"right"</span>].set_visible(<span class="va">False</span>)</span>
+<span id="cb4-54"><a href="#cb4-54" aria-hidden="true" tabindex="-1"></a>    ax.grid(<span class="va">False</span>)</span>
+<span id="cb4-55"><a href="#cb4-55" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-56"><a href="#cb4-56" aria-hidden="true" tabindex="-1"></a>ax_left.set_title(<span class="st">"Continuous throughput scenarios"</span>)</span>
+<span id="cb4-57"><a href="#cb4-57" aria-hidden="true" tabindex="-1"></a>ax_left.legend(fontsize<span class="op">=</span><span class="dv">8</span>, frameon<span class="op">=</span><span class="va">False</span>)</span>
+<span id="cb4-58"><a href="#cb4-58" aria-hidden="true" tabindex="-1"></a>ax_right.set_title(<span class="st">"Single spike (R=95 normally, R=180 at run 20)"</span>)</span>
+<span id="cb4-59"><a href="#cb4-59" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-60"><a href="#cb4-60" aria-hidden="true" tabindex="-1"></a>fig.tight_layout(pad<span class="op">=</span><span class="fl">1.5</span>)</span>
+<span id="cb4-61"><a href="#cb4-61" aria-hidden="true" tabindex="-1"></a>plt.savefig(<span class="st">"_assets/ch03-pipeline-backlog.png"</span>, dpi<span class="op">=</span><span class="dv">150</span>, bbox_inches<span class="op">=</span><span class="st">"tight"</span>)</span>
+<span id="cb4-62"><a href="#cb4-62" aria-hidden="true" tabindex="-1"></a>plt.show()</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</details>
+<div class="cell-output cell-output-display">
+<div id="fig-pipeline-backlog" class="quarto-float quarto-figure quarto-figure-center anchored">
+<figure class="quarto-float quarto-float-fig figure">
+<div aria-describedby="fig-pipeline-backlog-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<img src="03-pipelines-and-etl_files/figure-html/fig-pipeline-backlog-output-1.png" width="1768" height="547" class="figure-img">
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-pipeline-backlog-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Figure&nbsp;4.1: Figure 3.1. Pipeline backlog under three throughput scenarios. When ingest rate exceeds processing capacity (R &gt; C), the backlog grows without bound. When R = C, the backlog is stable — but any transient spike in arrival rate will start an accumulation that the pipeline cannot clear. The comfortable scenario (R &lt; C) maintains a buffer that absorbs short-term spikes. Note that the matched-rate scenario, which looks safe, is the most operationally fragile: a single run at 1.1× arrival rate starts an accumulation that takes many runs to drain.
+</figcaption>
+</figure>
+</div>
+</div>
+</div>
+<p>The right panel is the operationally important one. Even a pipeline running comfortably at R &lt; C will accumulate a backlog after a single large spike if the spike is big enough. How long does the pipeline take to drain that backlog? If C = 100 and R_normal = 95, the pipeline gains five slots of capacity each run. A spike that added 80 records to the backlog will take 16 runs — 16 nightly cycles, 16 days — to drain. Downstream consumers experience 16 days of latency growth. The pipeline reported green the entire time.</p>
+<p>The practical implication: track backlog as a metric, not just pipeline completion. Set an alert when backlog exceeds a threshold that represents acceptable latency.</p>
+<hr>
+</section>
+<section id="idempotency" class="level2" data-number="4.6">
+<h2 data-number="4.6" class="anchored" data-anchor-id="idempotency"><span class="header-section-number">4.6</span> Idempotency</h2>
+<p>The most important property an ETL pipeline can have is idempotency: running the same pipeline twice with the same input produces the same output, with no duplicates and no side effects.</p>
+<p>This sounds obvious. In practice, pipelines are rarely designed this way from the start.</p>
+<p>A pipeline that appends records on each run will, if re-run, create duplicates. A pipeline that issues <code>DELETE</code> followed by <code>INSERT</code> is not idempotent if the delete and insert are not wrapped in a transaction — a failure between the two leaves the table empty. A pipeline that sends an email notification on success will send two emails if re-run.</p>
+<p>The canonical implementation of idempotent loading is <strong>upsert on a natural key</strong>.</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb5"><pre class="sourceCode sql code-with-copy"><code class="sourceCode sql"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="co">-- Upsert: insert if permit_id doesn't exist, update if it does.</span></span>
+<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a><span class="co">-- Running this statement twice with the same rows produces the same</span></span>
+<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a><span class="co">-- table state as running it once.</span></span>
+<span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a><span class="kw">INSERT</span> <span class="kw">INTO</span> permits_staging (permit_id, district_id, permit_type, issued_date, geom)</span>
+<span id="cb5-5"><a href="#cb5-5" aria-hidden="true" tabindex="-1"></a><span class="kw">VALUES</span> (%(permit_id)s, %(district_id)s, %(permit_type)s, %(issued_date)s,</span>
+<span id="cb5-6"><a href="#cb5-6" aria-hidden="true" tabindex="-1"></a>        ST_GeomFromGeoJSON(%(geom_json)s))</span>
+<span id="cb5-7"><a href="#cb5-7" aria-hidden="true" tabindex="-1"></a><span class="kw">ON</span> CONFLICT (permit_id) DO <span class="kw">UPDATE</span></span>
+<span id="cb5-8"><a href="#cb5-8" aria-hidden="true" tabindex="-1"></a>    <span class="kw">SET</span> district_id  <span class="op">=</span> EXCLUDED.district_id,</span>
+<span id="cb5-9"><a href="#cb5-9" aria-hidden="true" tabindex="-1"></a>        permit_type  <span class="op">=</span> EXCLUDED.permit_type,</span>
+<span id="cb5-10"><a href="#cb5-10" aria-hidden="true" tabindex="-1"></a>        issued_date  <span class="op">=</span> EXCLUDED.issued_date,</span>
+<span id="cb5-11"><a href="#cb5-11" aria-hidden="true" tabindex="-1"></a>        geom         <span class="op">=</span> EXCLUDED.geom,</span>
+<span id="cb5-12"><a href="#cb5-12" aria-hidden="true" tabindex="-1"></a>        updated_at   <span class="op">=</span> now();</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>The <code>ON CONFLICT DO UPDATE</code> clause is the key. PostgreSQL checks whether a row with the given <code>permit_id</code> already exists. If it does, it updates it to match the incoming row. If the pipeline is re-run with the same data, the result is identical to the first run. No duplicates.</p>
+<p>This requires a natural key — a field or combination of fields that uniquely identifies a logical record in the source data. <code>permit_id</code> is a good natural key if the source system assigns stable identifiers to permits. If the source has no stable identifier, you need to construct one: a hash of the fields that define uniqueness.</p>
+<p>What idempotency buys you operationally: when a pipeline fails partway through, you can re-run it from the beginning without cleaning up partial state. This makes recovery from failure trivial. Without idempotency, partial failure requires manual intervention to determine what was and was not loaded, and to delete the partial load before re-running.</p>
+<p>Prefect’s task caching (shown in the extraction task above) provides idempotency at the extraction boundary: re-running the flow within the cache window does not re-call the API. The upsert provides idempotency at the load boundary. Together they ensure that re-running the entire flow is always safe.</p>
+<hr>
+<div class="callout callout-style-simple callout-tip callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+<span class="screen-reader-only">Tip</span>What to try
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<ol type="1">
+<li><p><strong>Set <code>ingest_rate = 105</code> and <code>capacity = 100</code></strong>. How many runs does it take for the backlog to reach 1,000 records? What does this tell you about the importance of even small throughput deficits?</p></li>
+<li><p><strong>Add a “burst clearing” mechanism</strong>: after every 10 runs, double the processing capacity for one run (simulating a catch-up batch). How much does this change the long-run backlog accumulation at <code>ingest_rate = 105</code>?</p></li>
+<li><p><strong>Try <code>ingest_rate = 100</code> (matched capacity) with Poisson noise</strong> (the cell uses <code>np.random.poisson</code>). Run it several times. Does a matched-rate pipeline stay stable, or does it drift into backlog? What does this tell you about designing capacity at exactly the expected load?</p></li>
+</ol>
+</div>
+</div>
+<div class="pyodide-cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb6"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> numpy <span class="im">as</span> np</span>
+<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> matplotlib.pyplot <span class="im">as</span> plt</span>
+<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a><span class="co"># --- Try changing these parameters ---</span></span>
+<span id="cb6-5"><a href="#cb6-5" aria-hidden="true" tabindex="-1"></a>ingest_rate   <span class="op">=</span> <span class="dv">110</span>   <span class="co"># Records arriving per run (average)</span></span>
+<span id="cb6-6"><a href="#cb6-6" aria-hidden="true" tabindex="-1"></a>capacity      <span class="op">=</span> <span class="dv">100</span>   <span class="co"># Records the pipeline can process per run</span></span>
+<span id="cb6-7"><a href="#cb6-7" aria-hidden="true" tabindex="-1"></a>t_end         <span class="op">=</span> <span class="dv">120</span>   <span class="co"># Number of pipeline runs to simulate</span></span>
+<span id="cb6-8"><a href="#cb6-8" aria-hidden="true" tabindex="-1"></a>noise         <span class="op">=</span> <span class="va">True</span>  <span class="co"># Add Poisson noise to arrival rate?</span></span>
+<span id="cb6-9"><a href="#cb6-9" aria-hidden="true" tabindex="-1"></a>seed          <span class="op">=</span> <span class="dv">42</span></span>
+<span id="cb6-10"><a href="#cb6-10" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-11"><a href="#cb6-11" aria-hidden="true" tabindex="-1"></a>rng <span class="op">=</span> np.random.default_rng(seed)</span>
+<span id="cb6-12"><a href="#cb6-12" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-13"><a href="#cb6-13" aria-hidden="true" tabindex="-1"></a>scenarios <span class="op">=</span> [</span>
+<span id="cb6-14"><a href="#cb6-14" aria-hidden="true" tabindex="-1"></a>    (<span class="st">"Low load  (R=85)"</span>,  <span class="dv">85</span>,  capacity, <span class="st">"#888888"</span>),</span>
+<span id="cb6-15"><a href="#cb6-15" aria-hidden="true" tabindex="-1"></a>    (<span class="st">"Matched   (R=C)"</span>,  capacity, capacity, <span class="st">"#111111"</span>),</span>
+<span id="cb6-16"><a href="#cb6-16" aria-hidden="true" tabindex="-1"></a>    (<span class="st">"Overloaded (R=</span><span class="sc">{}</span><span class="st">)"</span>.<span class="bu">format</span>(ingest_rate), ingest_rate, capacity, <span class="st">"#d52a2a"</span>),</span>
+<span id="cb6-17"><a href="#cb6-17" aria-hidden="true" tabindex="-1"></a>]</span>
+<span id="cb6-18"><a href="#cb6-18" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-19"><a href="#cb6-19" aria-hidden="true" tabindex="-1"></a>fig, ax <span class="op">=</span> plt.subplots(figsize<span class="op">=</span>(<span class="dv">8</span>, <span class="dv">4</span>))</span>
+<span id="cb6-20"><a href="#cb6-20" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-21"><a href="#cb6-21" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> label, R, C, colour <span class="kw">in</span> scenarios:</span>
+<span id="cb6-22"><a href="#cb6-22" aria-hidden="true" tabindex="-1"></a>    backlog <span class="op">=</span> np.zeros(t_end <span class="op">+</span> <span class="dv">1</span>)</span>
+<span id="cb6-23"><a href="#cb6-23" aria-hidden="true" tabindex="-1"></a>    <span class="cf">for</span> t <span class="kw">in</span> <span class="bu">range</span>(t_end):</span>
+<span id="cb6-24"><a href="#cb6-24" aria-hidden="true" tabindex="-1"></a>        R_t <span class="op">=</span> rng.poisson(R) <span class="cf">if</span> noise <span class="cf">else</span> R</span>
+<span id="cb6-25"><a href="#cb6-25" aria-hidden="true" tabindex="-1"></a>        backlog[t <span class="op">+</span> <span class="dv">1</span>] <span class="op">=</span> <span class="bu">max</span>(<span class="fl">0.0</span>, backlog[t] <span class="op">+</span> R_t <span class="op">-</span> C)</span>
+<span id="cb6-26"><a href="#cb6-26" aria-hidden="true" tabindex="-1"></a>    ax.plot(np.arange(t_end <span class="op">+</span> <span class="dv">1</span>), backlog, color<span class="op">=</span>colour, linewidth<span class="op">=</span><span class="fl">1.8</span>, label<span class="op">=</span>label)</span>
+<span id="cb6-27"><a href="#cb6-27" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-28"><a href="#cb6-28" aria-hidden="true" tabindex="-1"></a>ax.set_xlabel(<span class="st">"Pipeline run number"</span>)</span>
+<span id="cb6-29"><a href="#cb6-29" aria-hidden="true" tabindex="-1"></a>ax.set_ylabel(<span class="st">"Backlog (records)"</span>)</span>
+<span id="cb6-30"><a href="#cb6-30" aria-hidden="true" tabindex="-1"></a>ax.set_title(<span class="ss">f"Pipeline backlog simulation (capacity=</span><span class="sc">{</span>capacity<span class="sc">}</span><span class="ss">, noise=</span><span class="sc">{</span>noise<span class="sc">}</span><span class="ss">)"</span>)</span>
+<span id="cb6-31"><a href="#cb6-31" aria-hidden="true" tabindex="-1"></a>ax.legend(fontsize<span class="op">=</span><span class="dv">9</span>, frameon<span class="op">=</span><span class="va">False</span>)</span>
+<span id="cb6-32"><a href="#cb6-32" aria-hidden="true" tabindex="-1"></a>ax.spines[<span class="st">"top"</span>].set_visible(<span class="va">False</span>)</span>
+<span id="cb6-33"><a href="#cb6-33" aria-hidden="true" tabindex="-1"></a>ax.spines[<span class="st">"right"</span>].set_visible(<span class="va">False</span>)</span>
+<span id="cb6-34"><a href="#cb6-34" aria-hidden="true" tabindex="-1"></a>plt.tight_layout(pad<span class="op">=</span><span class="fl">2.0</span>)</span>
+<span id="cb6-35"><a href="#cb6-35" aria-hidden="true" tabindex="-1"></a>plt.show()</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<hr>
+</section>
+<section id="exercises" class="level2" data-number="4.7">
+<h2 data-number="4.7" class="anchored" data-anchor-id="exercises"><span class="header-section-number">4.7</span> Exercises</h2>
+<p><strong>3.1 — Schema validation</strong></p>
+<p>The pipeline described in the opening puzzle failed because <code>district_id</code> changed from integer to string without notice. Write a Python function <code>validate_feature(feature: dict) -&gt; list[str]</code> that accepts a GeoJSON Feature and returns a list of validation errors (empty list = valid). The function should check:</p>
+<ol type="a">
+<li>Geometry is not null and is a recognised type.</li>
+<li><code>district_id</code> is present, non-null, and castable to integer.</li>
+<li><code>issued_date</code> is present and parseable as a date (ISO 8601).</li>
+<li><code>permit_type</code> is present and is one of a known set of values.</li>
+</ol>
+<p>Write one test case for each check.</p>
+<p><strong>3.2 — Backlog arithmetic</strong></p>
+<p>A satellite image processing pipeline processes 50 tiles per hour. During an acquisition campaign, tiles arrive at 65 per hour for 8 hours, then return to 40 per hour.</p>
+<ol type="a">
+<li>How large is the backlog at the end of the 8-hour campaign period?</li>
+<li>At 50 tiles/hour processing (which continues after the campaign), how long does it take to drain the backlog?</li>
+<li>If the backlog threshold for alerting is 200 tiles (representing 4 hours of processing time), at what point during the campaign does the alert fire?</li>
+</ol>
+<p><strong>3.3 — dbt model design</strong></p>
+<p>You have two tables in PostGIS: <code>raw_permits</code> (one row per permit, schema as described in the chapter) and <code>dim_districts</code> (district boundaries as PostGIS geometries). Write a dbt model <code>permits_validated</code> that:</p>
+<ol type="a">
+<li>Casts <code>district_id</code> to integer, filtering out non-castable values.</li>
+<li>Joins to <code>dim_districts</code> on <code>district_id</code>.</li>
+<li>Adds a boolean column <code>within_boundary</code> using <code>ST_Within</code>.</li>
+<li>Include at least three dbt schema tests in the companion <code>schema.yml</code>.</li>
+</ol>
+<p><strong>3.4 — Idempotency analysis</strong></p>
+<p>For each of the following pipeline designs, state whether it is idempotent and explain why. If it is not idempotent, describe the minimal change that would make it so:</p>
+<ol type="a">
+<li>A pipeline that runs <code>DELETE FROM table WHERE run_date = today</code> before inserting today’s records.</li>
+<li>A pipeline that inserts records with <code>INSERT INTO ... SELECT ... WHERE id NOT IN (SELECT id FROM table)</code>.</li>
+<li>A pipeline that appends to a Parquet file by reading the existing file, concatenating new records, and writing the result back.</li>
+<li>A Prefect flow that sends an email after every successful load.</li>
+</ol>
+<hr>
+</section>
+<section id="build-this" class="level2" data-number="4.8">
+<h2 data-number="4.8" class="anchored" data-anchor-id="build-this"><span class="header-section-number">4.8</span> Build this</h2>
+<p>The following is a complete, runnable implementation of the dbt + Prefect pipeline described in this chapter. It ingests a GeoJSON permit file, validates it with Prefect, loads it to PostGIS, then runs the dbt transformation model.</p>
+<p><strong>Prerequisites:</strong> PostgreSQL with PostGIS extension, Python 3.11+, dbt-postgres, prefect.</p>
+<section id="postgis-schema" class="level3" data-number="4.8.1">
+<h3 data-number="4.8.1" class="anchored" data-anchor-id="postgis-schema"><span class="header-section-number">4.8.1</span> PostGIS schema</h3>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb7"><pre class="sourceCode sql code-with-copy"><code class="sourceCode sql"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="co">-- migrations/001_create_permits_tables.sql</span></span>
+<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a><span class="kw">CREATE</span> EXTENSION <span class="cf">IF</span> <span class="kw">NOT</span> <span class="kw">EXISTS</span> postgis;</span>
+<span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-4"><a href="#cb7-4" aria-hidden="true" tabindex="-1"></a><span class="kw">CREATE</span> <span class="kw">TABLE</span> <span class="cf">IF</span> <span class="kw">NOT</span> <span class="kw">EXISTS</span> permits_staging (</span>
+<span id="cb7-5"><a href="#cb7-5" aria-hidden="true" tabindex="-1"></a>    permit_id       text        <span class="kw">PRIMARY</span> <span class="kw">KEY</span>,</span>
+<span id="cb7-6"><a href="#cb7-6" aria-hidden="true" tabindex="-1"></a>    district_id     <span class="dt">integer</span>     <span class="kw">NOT</span> <span class="kw">NULL</span>,</span>
+<span id="cb7-7"><a href="#cb7-7" aria-hidden="true" tabindex="-1"></a>    permit_type     text        <span class="kw">NOT</span> <span class="kw">NULL</span>,</span>
+<span id="cb7-8"><a href="#cb7-8" aria-hidden="true" tabindex="-1"></a>    issued_date     <span class="dt">date</span>        <span class="kw">NOT</span> <span class="kw">NULL</span>,</span>
+<span id="cb7-9"><a href="#cb7-9" aria-hidden="true" tabindex="-1"></a>    geom            geometry(Geometry, <span class="dv">4326</span>),</span>
+<span id="cb7-10"><a href="#cb7-10" aria-hidden="true" tabindex="-1"></a>    loaded_at       timestamptz <span class="kw">NOT</span> <span class="kw">NULL</span> <span class="kw">DEFAULT</span> now(),</span>
+<span id="cb7-11"><a href="#cb7-11" aria-hidden="true" tabindex="-1"></a>    updated_at      timestamptz <span class="kw">NOT</span> <span class="kw">NULL</span> <span class="kw">DEFAULT</span> now()</span>
+<span id="cb7-12"><a href="#cb7-12" aria-hidden="true" tabindex="-1"></a>);</span>
+<span id="cb7-13"><a href="#cb7-13" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-14"><a href="#cb7-14" aria-hidden="true" tabindex="-1"></a><span class="kw">CREATE</span> <span class="kw">INDEX</span> <span class="cf">IF</span> <span class="kw">NOT</span> <span class="kw">EXISTS</span> permits_staging_geom_idx</span>
+<span id="cb7-15"><a href="#cb7-15" aria-hidden="true" tabindex="-1"></a>    <span class="kw">ON</span> permits_staging <span class="kw">USING</span> GIST (geom);</span>
+<span id="cb7-16"><a href="#cb7-16" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-17"><a href="#cb7-17" aria-hidden="true" tabindex="-1"></a><span class="kw">CREATE</span> <span class="kw">TABLE</span> <span class="cf">IF</span> <span class="kw">NOT</span> <span class="kw">EXISTS</span> permits_rejected (</span>
+<span id="cb7-18"><a href="#cb7-18" aria-hidden="true" tabindex="-1"></a>    <span class="kw">id</span>              bigserial   <span class="kw">PRIMARY</span> <span class="kw">KEY</span>,</span>
+<span id="cb7-19"><a href="#cb7-19" aria-hidden="true" tabindex="-1"></a>    raw_feature     jsonb       <span class="kw">NOT</span> <span class="kw">NULL</span>,</span>
+<span id="cb7-20"><a href="#cb7-20" aria-hidden="true" tabindex="-1"></a>    rejection_reason text       <span class="kw">NOT</span> <span class="kw">NULL</span>,</span>
+<span id="cb7-21"><a href="#cb7-21" aria-hidden="true" tabindex="-1"></a>    rejected_at     timestamptz <span class="kw">NOT</span> <span class="kw">NULL</span> <span class="kw">DEFAULT</span> now()</span>
+<span id="cb7-22"><a href="#cb7-22" aria-hidden="true" tabindex="-1"></a>);</span>
+<span id="cb7-23"><a href="#cb7-23" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-24"><a href="#cb7-24" aria-hidden="true" tabindex="-1"></a><span class="kw">CREATE</span> <span class="kw">TABLE</span> <span class="cf">IF</span> <span class="kw">NOT</span> <span class="kw">EXISTS</span> dim_districts (</span>
+<span id="cb7-25"><a href="#cb7-25" aria-hidden="true" tabindex="-1"></a>    district_id     <span class="dt">integer</span>     <span class="kw">PRIMARY</span> <span class="kw">KEY</span>,</span>
+<span id="cb7-26"><a href="#cb7-26" aria-hidden="true" tabindex="-1"></a>    district_code   text        <span class="kw">NOT</span> <span class="kw">NULL</span> <span class="kw">UNIQUE</span>,</span>
+<span id="cb7-27"><a href="#cb7-27" aria-hidden="true" tabindex="-1"></a>    district_name   text        <span class="kw">NOT</span> <span class="kw">NULL</span>,</span>
+<span id="cb7-28"><a href="#cb7-28" aria-hidden="true" tabindex="-1"></a>    boundary        geometry(MultiPolygon, <span class="dv">4326</span>) <span class="kw">NOT</span> <span class="kw">NULL</span></span>
+<span id="cb7-29"><a href="#cb7-29" aria-hidden="true" tabindex="-1"></a>);</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</section>
+<section id="dbt-project-structure" class="level3" data-number="4.8.2">
+<h3 data-number="4.8.2" class="anchored" data-anchor-id="dbt-project-structure"><span class="header-section-number">4.8.2</span> dbt project structure</h3>
+<pre><code>permits_dbt/
+├── dbt_project.yml
+├── models/
+│   ├── staging/
+│   │   ├── stg_permits.sql
+│   │   └── schema.yml
+│   └── marts/
+│       ├── permits_by_district.sql
+│       └── schema.yml</code></pre>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb9"><pre class="sourceCode yaml code-with-copy"><code class="sourceCode yaml"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a><span class="co"># permits_dbt/dbt_project.yml</span></span>
+<span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a><span class="fu">name</span><span class="kw">:</span><span class="at"> </span><span class="st">'permits_dbt'</span></span>
+<span id="cb9-3"><a href="#cb9-3" aria-hidden="true" tabindex="-1"></a><span class="fu">version</span><span class="kw">:</span><span class="at"> </span><span class="st">'1.0.0'</span></span>
+<span id="cb9-4"><a href="#cb9-4" aria-hidden="true" tabindex="-1"></a><span class="fu">config-version</span><span class="kw">:</span><span class="at"> </span><span class="dv">2</span></span>
+<span id="cb9-5"><a href="#cb9-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-6"><a href="#cb9-6" aria-hidden="true" tabindex="-1"></a><span class="fu">profile</span><span class="kw">:</span><span class="at"> </span><span class="st">'permits'</span></span>
+<span id="cb9-7"><a href="#cb9-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-8"><a href="#cb9-8" aria-hidden="true" tabindex="-1"></a><span class="fu">model-paths</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="st">"models"</span><span class="kw">]</span></span>
+<span id="cb9-9"><a href="#cb9-9" aria-hidden="true" tabindex="-1"></a><span class="fu">test-paths</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="st">"tests"</span><span class="kw">]</span></span>
+<span id="cb9-10"><a href="#cb9-10" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-11"><a href="#cb9-11" aria-hidden="true" tabindex="-1"></a><span class="fu">models</span><span class="kw">:</span></span>
+<span id="cb9-12"><a href="#cb9-12" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">permits_dbt</span><span class="kw">:</span></span>
+<span id="cb9-13"><a href="#cb9-13" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">staging</span><span class="kw">:</span></span>
+<span id="cb9-14"><a href="#cb9-14" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">+materialized</span><span class="kw">:</span><span class="at"> view</span></span>
+<span id="cb9-15"><a href="#cb9-15" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">marts</span><span class="kw">:</span></span>
+<span id="cb9-16"><a href="#cb9-16" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">+materialized</span><span class="kw">:</span><span class="at"> table</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb10"><pre class="sourceCode sql code-with-copy"><code class="sourceCode sql"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a><span class="co">-- models/staging/stg_permits.sql</span></span>
+<span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a><span class="co">-- Normalise raw permits_staging into a clean staging view.</span></span>
+<span id="cb10-3"><a href="#cb10-3" aria-hidden="true" tabindex="-1"></a><span class="co">-- Type coercion and null checks happen here; downstream models</span></span>
+<span id="cb10-4"><a href="#cb10-4" aria-hidden="true" tabindex="-1"></a><span class="co">-- assume this contract is met.</span></span>
+<span id="cb10-5"><a href="#cb10-5" aria-hidden="true" tabindex="-1"></a><span class="kw">select</span></span>
+<span id="cb10-6"><a href="#cb10-6" aria-hidden="true" tabindex="-1"></a>    permit_id,</span>
+<span id="cb10-7"><a href="#cb10-7" aria-hidden="true" tabindex="-1"></a>    district_id,</span>
+<span id="cb10-8"><a href="#cb10-8" aria-hidden="true" tabindex="-1"></a>    permit_type,</span>
+<span id="cb10-9"><a href="#cb10-9" aria-hidden="true" tabindex="-1"></a>    issued_date,</span>
+<span id="cb10-10"><a href="#cb10-10" aria-hidden="true" tabindex="-1"></a>    geom,</span>
+<span id="cb10-11"><a href="#cb10-11" aria-hidden="true" tabindex="-1"></a>    loaded_at</span>
+<span id="cb10-12"><a href="#cb10-12" aria-hidden="true" tabindex="-1"></a><span class="kw">from</span> {{ <span class="kw">source</span>(<span class="st">'permits'</span>, <span class="st">'permits_staging'</span>) }}</span>
+<span id="cb10-13"><a href="#cb10-13" aria-hidden="true" tabindex="-1"></a><span class="kw">where</span> district_id <span class="kw">is</span> <span class="kw">not</span> <span class="kw">null</span></span>
+<span id="cb10-14"><a href="#cb10-14" aria-hidden="true" tabindex="-1"></a>  <span class="kw">and</span> issued_date <span class="kw">is</span> <span class="kw">not</span> <span class="kw">null</span></span>
+<span id="cb10-15"><a href="#cb10-15" aria-hidden="true" tabindex="-1"></a>  <span class="kw">and</span> geom <span class="kw">is</span> <span class="kw">not</span> <span class="kw">null</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb11"><pre class="sourceCode yaml code-with-copy"><code class="sourceCode yaml"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a><span class="co"># models/staging/schema.yml</span></span>
+<span id="cb11-2"><a href="#cb11-2" aria-hidden="true" tabindex="-1"></a><span class="fu">version</span><span class="kw">:</span><span class="at"> </span><span class="dv">2</span></span>
+<span id="cb11-3"><a href="#cb11-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-4"><a href="#cb11-4" aria-hidden="true" tabindex="-1"></a><span class="fu">sources</span><span class="kw">:</span></span>
+<span id="cb11-5"><a href="#cb11-5" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="kw">-</span><span class="at"> </span><span class="fu">name</span><span class="kw">:</span><span class="at"> permits</span></span>
+<span id="cb11-6"><a href="#cb11-6" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">database</span><span class="kw">:</span><span class="at"> permits_db</span></span>
+<span id="cb11-7"><a href="#cb11-7" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">schema</span><span class="kw">:</span><span class="at"> public</span></span>
+<span id="cb11-8"><a href="#cb11-8" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">tables</span><span class="kw">:</span></span>
+<span id="cb11-9"><a href="#cb11-9" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="kw">-</span><span class="at"> </span><span class="fu">name</span><span class="kw">:</span><span class="at"> permits_staging</span></span>
+<span id="cb11-10"><a href="#cb11-10" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">columns</span><span class="kw">:</span></span>
+<span id="cb11-11"><a href="#cb11-11" aria-hidden="true" tabindex="-1"></a><span class="at">          </span><span class="kw">-</span><span class="at"> </span><span class="fu">name</span><span class="kw">:</span><span class="at"> permit_id</span></span>
+<span id="cb11-12"><a href="#cb11-12" aria-hidden="true" tabindex="-1"></a><span class="at">            </span><span class="fu">tests</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="at">not_</span><span class="ch">null</span><span class="kw">,</span><span class="at"> unique</span><span class="kw">]</span></span>
+<span id="cb11-13"><a href="#cb11-13" aria-hidden="true" tabindex="-1"></a><span class="at">          </span><span class="kw">-</span><span class="at"> </span><span class="fu">name</span><span class="kw">:</span><span class="at"> district_id</span></span>
+<span id="cb11-14"><a href="#cb11-14" aria-hidden="true" tabindex="-1"></a><span class="at">            </span><span class="fu">tests</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="at">not_</span><span class="ch">null</span><span class="kw">]</span></span>
+<span id="cb11-15"><a href="#cb11-15" aria-hidden="true" tabindex="-1"></a><span class="at">          </span><span class="kw">-</span><span class="at"> </span><span class="fu">name</span><span class="kw">:</span><span class="at"> issued_date</span></span>
+<span id="cb11-16"><a href="#cb11-16" aria-hidden="true" tabindex="-1"></a><span class="at">            </span><span class="fu">tests</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="at">not_</span><span class="ch">null</span><span class="kw">]</span></span>
+<span id="cb11-17"><a href="#cb11-17" aria-hidden="true" tabindex="-1"></a><span class="at">          </span><span class="kw">-</span><span class="at"> </span><span class="fu">name</span><span class="kw">:</span><span class="at"> geom</span></span>
+<span id="cb11-18"><a href="#cb11-18" aria-hidden="true" tabindex="-1"></a><span class="at">            </span><span class="fu">tests</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="at">not_</span><span class="ch">null</span><span class="kw">]</span></span>
+<span id="cb11-19"><a href="#cb11-19" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-20"><a href="#cb11-20" aria-hidden="true" tabindex="-1"></a><span class="fu">models</span><span class="kw">:</span></span>
+<span id="cb11-21"><a href="#cb11-21" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="kw">-</span><span class="at"> </span><span class="fu">name</span><span class="kw">:</span><span class="at"> stg_permits</span></span>
+<span id="cb11-22"><a href="#cb11-22" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">columns</span><span class="kw">:</span></span>
+<span id="cb11-23"><a href="#cb11-23" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="kw">-</span><span class="at"> </span><span class="fu">name</span><span class="kw">:</span><span class="at"> permit_id</span></span>
+<span id="cb11-24"><a href="#cb11-24" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">tests</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="at">not_</span><span class="ch">null</span><span class="kw">,</span><span class="at"> unique</span><span class="kw">]</span></span>
+<span id="cb11-25"><a href="#cb11-25" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="kw">-</span><span class="at"> </span><span class="fu">name</span><span class="kw">:</span><span class="at"> district_id</span></span>
+<span id="cb11-26"><a href="#cb11-26" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">tests</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="at">not_</span><span class="ch">null</span><span class="kw">]</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>The full <code>permits_by_district</code> model and its schema file are shown in the dbt section above. To run the full transformation after a load:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb12"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a><span class="bu">cd</span> permits_dbt</span>
+<span id="cb12-2"><a href="#cb12-2" aria-hidden="true" tabindex="-1"></a><span class="ex">dbt</span> run <span class="at">--select</span> permits_by_district</span>
+<span id="cb12-3"><a href="#cb12-3" aria-hidden="true" tabindex="-1"></a><span class="ex">dbt</span> test <span class="at">--select</span> permits_by_district</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</section>
+<section id="prefect-deployment" class="level3" data-number="4.8.3">
+<h3 data-number="4.8.3" class="anchored" data-anchor-id="prefect-deployment"><span class="header-section-number">4.8.3</span> Prefect deployment</h3>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb13"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true" tabindex="-1"></a><span class="co"># flows/deploy_permits.py</span></span>
+<span id="cb13-2"><a href="#cb13-2" aria-hidden="true" tabindex="-1"></a><span class="co">"""Deploy the ingest-permits flow to run nightly at 02:00 UTC."""</span></span>
+<span id="cb13-3"><a href="#cb13-3" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> prefect <span class="im">import</span> flow</span>
+<span id="cb13-4"><a href="#cb13-4" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> prefect.deployments <span class="im">import</span> Deployment</span>
+<span id="cb13-5"><a href="#cb13-5" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> prefect.server.schemas.schedules <span class="im">import</span> CronSchedule</span>
+<span id="cb13-6"><a href="#cb13-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb13-7"><a href="#cb13-7" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> ingest_permits <span class="im">import</span> ingest_permits</span>
+<span id="cb13-8"><a href="#cb13-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb13-9"><a href="#cb13-9" aria-hidden="true" tabindex="-1"></a>deployment <span class="op">=</span> Deployment.build_from_flow(</span>
+<span id="cb13-10"><a href="#cb13-10" aria-hidden="true" tabindex="-1"></a>    flow<span class="op">=</span>ingest_permits,</span>
+<span id="cb13-11"><a href="#cb13-11" aria-hidden="true" tabindex="-1"></a>    name<span class="op">=</span><span class="st">"permits-nightly"</span>,</span>
+<span id="cb13-12"><a href="#cb13-12" aria-hidden="true" tabindex="-1"></a>    schedule<span class="op">=</span>CronSchedule(cron<span class="op">=</span><span class="st">"0 2 * * *"</span>, timezone<span class="op">=</span><span class="st">"UTC"</span>),</span>
+<span id="cb13-13"><a href="#cb13-13" aria-hidden="true" tabindex="-1"></a>    parameters<span class="op">=</span>{</span>
+<span id="cb13-14"><a href="#cb13-14" aria-hidden="true" tabindex="-1"></a>        <span class="st">"url"</span>: <span class="st">"https://data.example-city.gov/api/permits/v2/geojson"</span>,</span>
+<span id="cb13-15"><a href="#cb13-15" aria-hidden="true" tabindex="-1"></a>        <span class="st">"conn_string"</span>: <span class="st">"postgresql://permits_user:password@localhost/permits_db"</span>,</span>
+<span id="cb13-16"><a href="#cb13-16" aria-hidden="true" tabindex="-1"></a>    },</span>
+<span id="cb13-17"><a href="#cb13-17" aria-hidden="true" tabindex="-1"></a>    tags<span class="op">=</span>[<span class="st">"permits"</span>, <span class="st">"nightly"</span>],</span>
+<span id="cb13-18"><a href="#cb13-18" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb13-19"><a href="#cb13-19" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb13-20"><a href="#cb13-20" aria-hidden="true" tabindex="-1"></a><span class="cf">if</span> <span class="va">__name__</span> <span class="op">==</span> <span class="st">"__main__"</span>:</span>
+<span id="cb13-21"><a href="#cb13-21" aria-hidden="true" tabindex="-1"></a>    deployment.<span class="bu">apply</span>()</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb14"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Start the Prefect server (development)</span></span>
+<span id="cb14-2"><a href="#cb14-2" aria-hidden="true" tabindex="-1"></a><span class="ex">prefect</span> server start</span>
+<span id="cb14-3"><a href="#cb14-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb14-4"><a href="#cb14-4" aria-hidden="true" tabindex="-1"></a><span class="co"># In another terminal: deploy and start a worker</span></span>
+<span id="cb14-5"><a href="#cb14-5" aria-hidden="true" tabindex="-1"></a><span class="ex">python</span> flows/deploy_permits.py</span>
+<span id="cb14-6"><a href="#cb14-6" aria-hidden="true" tabindex="-1"></a><span class="ex">prefect</span> worker start <span class="at">--pool</span> default-agent-pool</span>
+<span id="cb14-7"><a href="#cb14-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb14-8"><a href="#cb14-8" aria-hidden="true" tabindex="-1"></a><span class="co"># Trigger a manual run to test</span></span>
+<span id="cb14-9"><a href="#cb14-9" aria-hidden="true" tabindex="-1"></a><span class="ex">prefect</span> deployment run <span class="st">'ingest-permits-nightly/permits-nightly'</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>After the Prefect flow completes, the dbt run can be triggered as a final step in the flow by adding a task that calls <code>subprocess.run(["dbt", "run", "--select", "permits_by_district"], cwd="permits_dbt")</code>. The complete pipeline — extract, validate, load, transform, test — runs end to end with retry logic, observable state, and idempotent load behaviour.</p>
+
+
+</section>
+</section>
+
+</main> <!-- /main -->
+<script type="module" src="assets/js/pyodide-cells.js"></script>
+<script>
+(function () {
+  var overlay = document.createElement('div');
+  overlay.id = 'diagram-lightbox';
+
+  var closeBtn = document.createElement('button');
+  closeBtn.id = 'diagram-lightbox-close';
+  closeBtn.innerHTML = '&times;';
+  closeBtn.setAttribute('aria-label', 'Close diagram');
+
+  var content = document.createElement('div');
+  content.id = 'diagram-lightbox-content';
+
+  overlay.appendChild(closeBtn);
+  overlay.appendChild(content);
+  document.body.appendChild(overlay);
+
+  function openLightbox(svgEl) {
+    content.innerHTML = svgEl.outerHTML;
+    var svg = content.querySelector('svg');
+    if (svg) {
+      svg.setAttribute('width', '100%');
+      svg.removeAttribute('height');
+      svg.style.removeProperty('max-width');
+      svg.style.display = 'block';
+    }
+    overlay.classList.add('open');
+    document.body.style.overflow = 'hidden';
+  }
+
+  function closeLightbox() {
+    overlay.classList.remove('open');
+    document.body.style.overflow = '';
+  }
+
+  overlay.addEventListener('click', function (e) {
+    if (e.target === overlay || e.target === closeBtn) closeLightbox();
+  });
+  content.addEventListener('click', function (e) { e.stopPropagation(); });
+  document.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape') closeLightbox();
+  });
+
+  function attachTo(svgEl) {
+    if (svgEl._lbAttached) return;
+    svgEl._lbAttached = true;
+    svgEl.style.cursor = 'zoom-in';
+    svgEl.addEventListener('click', function () { openLightbox(svgEl); });
+  }
+
+  function scanAndAttach() {
+    document.querySelectorAll('svg.mermaid-js').forEach(attachTo);
+  }
+
+  var observer = new MutationObserver(function (mutations) {
+    mutations.forEach(function (m) {
+      m.addedNodes.forEach(function (node) {
+        if (node.nodeType !== 1) return;
+        if (node.tagName.toLowerCase() === 'svg' && node.classList.contains('mermaid-js')) {
+          attachTo(node);
+        } else if (node.querySelectorAll) {
+          node.querySelectorAll('svg.mermaid-js').forEach(attachTo);
+        }
+      });
+    });
+  });
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', function () {
+      observer.observe(document.body, { childList: true, subtree: true });
+      scanAndAttach();
+    });
+  } else {
+    observer.observe(document.body, { childList: true, subtree: true });
+    scanAndAttach();
+  }
+})();
+</script>
+<script id="quarto-html-after-body" type="application/javascript">
+  window.document.addEventListener("DOMContentLoaded", function (event) {
+    const icon = "";
+    const anchorJS = new window.AnchorJS();
+    anchorJS.options = {
+      placement: 'right',
+      icon: icon
+    };
+    anchorJS.add('.anchored');
+    const isCodeAnnotation = (el) => {
+      for (const clz of el.classList) {
+        if (clz.startsWith('code-annotation-')) {                     
+          return true;
+        }
+      }
+      return false;
+    }
+    const onCopySuccess = function(e) {
+      // button target
+      const button = e.trigger;
+      // don't keep focus
+      button.blur();
+      // flash "checked"
+      button.classList.add('code-copy-button-checked');
+      var currentTitle = button.getAttribute("title");
+      button.setAttribute("title", "Copied!");
+      let tooltip;
+      if (window.bootstrap) {
+        button.setAttribute("data-bs-toggle", "tooltip");
+        button.setAttribute("data-bs-placement", "left");
+        button.setAttribute("data-bs-title", "Copied!");
+        tooltip = new bootstrap.Tooltip(button, 
+          { trigger: "manual", 
+            customClass: "code-copy-button-tooltip",
+            offset: [0, -8]});
+        tooltip.show();    
+      }
+      setTimeout(function() {
+        if (tooltip) {
+          tooltip.hide();
+          button.removeAttribute("data-bs-title");
+          button.removeAttribute("data-bs-toggle");
+          button.removeAttribute("data-bs-placement");
+        }
+        button.setAttribute("title", currentTitle);
+        button.classList.remove('code-copy-button-checked');
+      }, 1000);
+      // clear code selection
+      e.clearSelection();
+    }
+    const getTextToCopy = function(trigger) {
+      const outerScaffold = trigger.parentElement.cloneNode(true);
+      const codeEl = outerScaffold.querySelector('code');
+      for (const childEl of codeEl.children) {
+        if (isCodeAnnotation(childEl)) {
+          childEl.remove();
+        }
+      }
+      return codeEl.innerText;
+    }
+    const clipboard = new window.ClipboardJS('.code-copy-button:not([data-in-quarto-modal])', {
+      text: getTextToCopy
+    });
+    clipboard.on('success', onCopySuccess);
+    if (window.document.getElementById('quarto-embedded-source-code-modal')) {
+      const clipboardModal = new window.ClipboardJS('.code-copy-button[data-in-quarto-modal]', {
+        text: getTextToCopy,
+        container: window.document.getElementById('quarto-embedded-source-code-modal')
+      });
+      clipboardModal.on('success', onCopySuccess);
+    }
+      var localhostRegex = new RegExp(/^(?:http|https):\/\/localhost\:?[0-9]*\//);
+      var mailtoRegex = new RegExp(/^mailto:/);
+        var filterRegex = new RegExp('/' + window.location.host + '/');
+      var isInternal = (href) => {
+          return filterRegex.test(href) || localhostRegex.test(href) || mailtoRegex.test(href);
+      }
+      // Inspect non-navigation links and adorn them if external
+     var links = window.document.querySelectorAll('a[href]:not(.nav-link):not(.navbar-brand):not(.toc-action):not(.sidebar-link):not(.sidebar-item-toggle):not(.pagination-link):not(.no-external):not([aria-hidden]):not(.dropdown-item):not(.quarto-navigation-tool):not(.about-link)');
+      for (var i=0; i<links.length; i++) {
+        const link = links[i];
+        if (!isInternal(link.href)) {
+          // undo the damage that might have been done by quarto-nav.js in the case of
+          // links that we want to consider external
+          if (link.dataset.originalHref !== undefined) {
+            link.href = link.dataset.originalHref;
+          }
+        }
+      }
+    function tippyHover(el, contentFn, onTriggerFn, onUntriggerFn) {
+      const config = {
+        allowHTML: true,
+        maxWidth: 500,
+        delay: 100,
+        arrow: false,
+        appendTo: function(el) {
+            return el.parentElement;
+        },
+        interactive: true,
+        interactiveBorder: 10,
+        theme: 'quarto',
+        placement: 'bottom-start',
+      };
+      if (contentFn) {
+        config.content = contentFn;
+      }
+      if (onTriggerFn) {
+        config.onTrigger = onTriggerFn;
+      }
+      if (onUntriggerFn) {
+        config.onUntrigger = onUntriggerFn;
+      }
+      window.tippy(el, config); 
+    }
+    const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+    for (var i=0; i<noterefs.length; i++) {
+      const ref = noterefs[i];
+      tippyHover(ref, function() {
+        // use id or data attribute instead here
+        let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+        try { href = new URL(href).hash; } catch {}
+        const id = href.replace(/^#\/?/, "");
+        const note = window.document.getElementById(id);
+        if (note) {
+          return note.innerHTML;
+        } else {
+          return "";
+        }
+      });
+    }
+    const xrefs = window.document.querySelectorAll('a.quarto-xref');
+    const processXRef = (id, note) => {
+      // Strip column container classes
+      const stripColumnClz = (el) => {
+        el.classList.remove("page-full", "page-columns");
+        if (el.children) {
+          for (const child of el.children) {
+            stripColumnClz(child);
+          }
+        }
+      }
+      stripColumnClz(note)
+      if (id === null || id.startsWith('sec-')) {
+        // Special case sections, only their first couple elements
+        const container = document.createElement("div");
+        if (note.children && note.children.length > 2) {
+          container.appendChild(note.children[0].cloneNode(true));
+          for (let i = 1; i < note.children.length; i++) {
+            const child = note.children[i];
+            if (child.tagName === "P" && child.innerText === "") {
+              continue;
+            } else {
+              container.appendChild(child.cloneNode(true));
+              break;
+            }
+          }
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(container);
+          }
+          return container.innerHTML
+        } else {
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(note);
+          }
+          return note.innerHTML;
+        }
+      } else {
+        // Remove any anchor links if they are present
+        const anchorLink = note.querySelector('a.anchorjs-link');
+        if (anchorLink) {
+          anchorLink.remove();
+        }
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(note);
+        }
+        if (note.classList.contains("callout")) {
+          return note.outerHTML;
+        } else {
+          return note.innerHTML;
+        }
+      }
+    }
+    for (var i=0; i<xrefs.length; i++) {
+      const xref = xrefs[i];
+      tippyHover(xref, undefined, function(instance) {
+        instance.disable();
+        let url = xref.getAttribute('href');
+        let hash = undefined; 
+        if (url.startsWith('#')) {
+          hash = url;
+        } else {
+          try { hash = new URL(url).hash; } catch {}
+        }
+        if (hash) {
+          const id = hash.replace(/^#\/?/, "");
+          const note = window.document.getElementById(id);
+          if (note !== null) {
+            try {
+              const html = processXRef(id, note.cloneNode(true));
+              instance.setContent(html);
+            } finally {
+              instance.enable();
+              instance.show();
+            }
+          } else {
+            // See if we can fetch this
+            fetch(url.split('#')[0])
+            .then(res => res.text())
+            .then(html => {
+              const parser = new DOMParser();
+              const htmlDoc = parser.parseFromString(html, "text/html");
+              const note = htmlDoc.getElementById(id);
+              if (note !== null) {
+                const html = processXRef(id, note);
+                instance.setContent(html);
+              } 
+            }).finally(() => {
+              instance.enable();
+              instance.show();
+            });
+          }
+        } else {
+          // See if we can fetch a full url (with no hash to target)
+          // This is a special case and we should probably do some content thinning / targeting
+          fetch(url)
+          .then(res => res.text())
+          .then(html => {
+            const parser = new DOMParser();
+            const htmlDoc = parser.parseFromString(html, "text/html");
+            const note = htmlDoc.querySelector('main.content');
+            if (note !== null) {
+              // This should only happen for chapter cross references
+              // (since there is no id in the URL)
+              // remove the first header
+              if (note.children.length > 0 && note.children[0].tagName === "HEADER") {
+                note.children[0].remove();
+              }
+              const html = processXRef(null, note);
+              instance.setContent(html);
+            } 
+          }).finally(() => {
+            instance.enable();
+            instance.show();
+          });
+        }
+      }, function(instance) {
+      });
+    }
+        let selectedAnnoteEl;
+        const selectorForAnnotation = ( cell, annotation) => {
+          let cellAttr = 'data-code-cell="' + cell + '"';
+          let lineAttr = 'data-code-annotation="' +  annotation + '"';
+          const selector = 'span[' + cellAttr + '][' + lineAttr + ']';
+          return selector;
+        }
+        const selectCodeLines = (annoteEl) => {
+          const doc = window.document;
+          const targetCell = annoteEl.getAttribute("data-target-cell");
+          const targetAnnotation = annoteEl.getAttribute("data-target-annotation");
+          const annoteSpan = window.document.querySelector(selectorForAnnotation(targetCell, targetAnnotation));
+          const lines = annoteSpan.getAttribute("data-code-lines").split(",");
+          const lineIds = lines.map((line) => {
+            return targetCell + "-" + line;
+          })
+          let top = null;
+          let height = null;
+          let parent = null;
+          if (lineIds.length > 0) {
+              //compute the position of the single el (top and bottom and make a div)
+              const el = window.document.getElementById(lineIds[0]);
+              top = el.offsetTop;
+              height = el.offsetHeight;
+              parent = el.parentElement.parentElement;
+            if (lineIds.length > 1) {
+              const lastEl = window.document.getElementById(lineIds[lineIds.length - 1]);
+              const bottom = lastEl.offsetTop + lastEl.offsetHeight;
+              height = bottom - top;
+            }
+            if (top !== null && height !== null && parent !== null) {
+              // cook up a div (if necessary) and position it 
+              let div = window.document.getElementById("code-annotation-line-highlight");
+              if (div === null) {
+                div = window.document.createElement("div");
+                div.setAttribute("id", "code-annotation-line-highlight");
+                div.style.position = 'absolute';
+                parent.appendChild(div);
+              }
+              div.style.top = top - 2 + "px";
+              div.style.height = height + 4 + "px";
+              div.style.left = 0;
+              let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
+              if (gutterDiv === null) {
+                gutterDiv = window.document.createElement("div");
+                gutterDiv.setAttribute("id", "code-annotation-line-highlight-gutter");
+                gutterDiv.style.position = 'absolute';
+                const codeCell = window.document.getElementById(targetCell);
+                const gutter = codeCell.querySelector('.code-annotation-gutter');
+                gutter.appendChild(gutterDiv);
+              }
+              gutterDiv.style.top = top - 2 + "px";
+              gutterDiv.style.height = height + 4 + "px";
+            }
+            selectedAnnoteEl = annoteEl;
+          }
+        };
+        const unselectCodeLines = () => {
+          const elementsIds = ["code-annotation-line-highlight", "code-annotation-line-highlight-gutter"];
+          elementsIds.forEach((elId) => {
+            const div = window.document.getElementById(elId);
+            if (div) {
+              div.remove();
+            }
+          });
+          selectedAnnoteEl = undefined;
+        };
+          // Handle positioning of the toggle
+      window.addEventListener(
+        "resize",
+        throttle(() => {
+          elRect = undefined;
+          if (selectedAnnoteEl) {
+            selectCodeLines(selectedAnnoteEl);
+          }
+        }, 10)
+      );
+      function throttle(fn, ms) {
+      let throttle = false;
+      let timer;
+        return (...args) => {
+          if(!throttle) { // first call gets through
+              fn.apply(this, args);
+              throttle = true;
+          } else { // all the others get throttled
+              if(timer) clearTimeout(timer); // cancel #2
+              timer = setTimeout(() => {
+                fn.apply(this, args);
+                timer = throttle = false;
+              }, ms);
+          }
+        };
+      }
+        // Attach click handler to the DT
+        const annoteDls = window.document.querySelectorAll('dt[data-target-cell]');
+        for (const annoteDlNode of annoteDls) {
+          annoteDlNode.addEventListener('click', (event) => {
+            const clickedEl = event.target;
+            if (clickedEl !== selectedAnnoteEl) {
+              unselectCodeLines();
+              const activeEl = window.document.querySelector('dt[data-target-cell].code-annotation-active');
+              if (activeEl) {
+                activeEl.classList.remove('code-annotation-active');
+              }
+              selectCodeLines(clickedEl);
+              clickedEl.classList.add('code-annotation-active');
+            } else {
+              // Unselect the line
+              unselectCodeLines();
+              clickedEl.classList.remove('code-annotation-active');
+            }
+          });
+        }
+    const findCites = (el) => {
+      const parentEl = el.parentElement;
+      if (parentEl) {
+        const cites = parentEl.dataset.cites;
+        if (cites) {
+          return {
+            el,
+            cites: cites.split(' ')
+          };
+        } else {
+          return findCites(el.parentElement)
+        }
+      } else {
+        return undefined;
+      }
+    };
+    var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+    for (var i=0; i<bibliorefs.length; i++) {
+      const ref = bibliorefs[i];
+      const citeInfo = findCites(ref);
+      if (citeInfo) {
+        tippyHover(citeInfo.el, function() {
+          var popup = window.document.createElement('div');
+          citeInfo.cites.forEach(function(cite) {
+            var citeDiv = window.document.createElement('div');
+            citeDiv.classList.add('hanging-indent');
+            citeDiv.classList.add('csl-entry');
+            var biblioDiv = window.document.getElementById('ref-' + cite);
+            if (biblioDiv) {
+              citeDiv.innerHTML = biblioDiv.innerHTML;
+            }
+            popup.appendChild(citeDiv);
+          });
+          return popup.innerHTML;
+        });
+      }
+    }
+  });
+  </script>
+<nav class="page-navigation">
+  <div class="nav-page nav-page-previous">
+      <a href="./02-spatial-databases.html" class="pagination-link" aria-label="Spatial Databases">
+        <i class="bi bi-arrow-left-short"></i> <span class="nav-page-text"><span class="chapter-number">3</span>&nbsp; <span class="chapter-title">Spatial Databases</span></span>
+      </a>          
+  </div>
+  <div class="nav-page nav-page-next">
+      <a href="./04-cloud-infrastructure.html" class="pagination-link" aria-label="Cloud Infrastructure">
+        <span class="nav-page-text"><span class="chapter-number">5</span>&nbsp; <span class="chapter-title">Cloud Infrastructure</span></span> <i class="bi bi-arrow-right-short"></i>
+      </a>
+  </div>
+</nav>
+</div> <!-- /content -->
+
+
+
+
+<footer class="footer"><div class="nav-footer"><div class="nav-footer-center"><div class="toc-actions d-sm-block d-md-none"><ul><li><a href="https://github.com/WaywardHouse/waywardhouse-data-engineering/edit/main/03-pipelines-and-etl.qmd" class="toc-action"><i class="bi bi-github"></i>Edit this page</a></li><li><a href="https://github.com/WaywardHouse/waywardhouse-data-engineering/issues/new" class="toc-action"><i class="bi empty"></i>Report an issue</a></li></ul></div></div></div></footer><script src="site_libs/quarto-html/zenscroll-min.js"></script>
+</body></html>

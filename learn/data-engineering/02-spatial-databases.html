@@ -1,0 +1,1707 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
+
+<meta charset="utf-8">
+<meta name="generator" content="quarto-1.9.36">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+
+
+<title>3&nbsp; Spatial Databases – Data Engineering for Spatial Systems</title>
+<style>
+/* Default styles provided by pandoc.
+** See https://pandoc.org/MANUAL.html#variables-for-html for config info.
+*/
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: min(4vw, 1.5em);}
+div.column{flex: auto; overflow-x: auto;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+  width: 0.8em;
+  margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
+  vertical-align: middle;
+}
+/* CSS for syntax highlighting */
+html { -webkit-text-size-adjust: 100%; }
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+  { counter-reset: source-line 0; }
+pre.numberSource code > span
+  { position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+  { content: counter(source-line);
+    position: relative; left: -1em; text-align: right; vertical-align: baseline;
+    border: none; display: inline-block;
+    -webkit-touch-callout: none; -webkit-user-select: none;
+    -khtml-user-select: none; -moz-user-select: none;
+    -ms-user-select: none; user-select: none;
+    padding: 0 4px; width: 4em;
+  }
+pre.numberSource { margin-left: 3em;  padding-left: 4px; }
+div.sourceCode
+  {   }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
+</style>
+
+
+<script src="site_libs/quarto-nav/quarto-nav.js"></script>
+<script src="site_libs/quarto-nav/headroom.min.js"></script>
+<script src="site_libs/clipboard/clipboard.min.js"></script>
+<script src="site_libs/quarto-search/autocomplete.umd.js"></script>
+<script src="site_libs/quarto-search/fuse.min.js"></script>
+<script src="site_libs/quarto-search/quarto-search.js"></script>
+<meta name="quarto:offset" content="./">
+<link href="./03-pipelines-and-etl.html" rel="next">
+<link href="./01-data-architecture.html" rel="prev">
+<script src="site_libs/quarto-html/quarto.js" type="module"></script>
+<script src="site_libs/quarto-html/tabsets/tabsets.js" type="module"></script>
+<script src="site_libs/quarto-html/popper.min.js"></script>
+<script src="site_libs/quarto-html/tippy.umd.min.js"></script>
+<script src="site_libs/quarto-html/anchor.min.js"></script>
+<link href="site_libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="site_libs/quarto-html/quarto-syntax-highlighting-845c23b38eaddc0f92fda52bfe77a8c8.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<script src="site_libs/bootstrap/bootstrap.min.js"></script>
+<link href="site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="site_libs/bootstrap/bootstrap-56762b18f51ba8401515c38252781a5a.min.css" rel="stylesheet" append-hash="true" id="quarto-bootstrap" data-mode="light">
+<script id="quarto-search-options" type="application/json">{
+  "location": "sidebar",
+  "copy-button": false,
+  "collapse-after": 3,
+  "panel-placement": "start",
+  "type": "textbox",
+  "limit": 50,
+  "keyboard-shortcut": [
+    "f",
+    "/",
+    "s"
+  ],
+  "show-item-context": false,
+  "language": {
+    "search-no-results-text": "No results",
+    "search-matching-documents-text": "matching documents",
+    "search-copy-link-title": "Copy link to search",
+    "search-hide-matches-text": "Hide additional matches",
+    "search-more-match-text": "more match in this document",
+    "search-more-matches-text": "more matches in this document",
+    "search-clear-button-title": "Clear",
+    "search-text-placeholder": "",
+    "search-detached-cancel-button-title": "Cancel",
+    "search-submit-button-title": "Submit",
+    "search-label": "Search"
+  }
+}</script>
+<style>html{ scroll-behavior: smooth; }</style>
+<script>
+  (function () {
+    document.documentElement.dataset.theme = 'light';
+    document.documentElement.dataset.brand = 'wayward-book';
+    try {
+      localStorage.removeItem('theme');
+    } catch (err) {
+      void err;
+    }
+  })();
+</script>
+
+<script>
+  document.addEventListener('DOMContentLoaded', function () {
+    var body = document.body;
+    var sidebar = document.getElementById('quarto-sidebar');
+    if (!sidebar) return;
+
+    body.classList.add('wayward-book-shell');
+
+    if (!document.querySelector('.wayward-book-header')) {
+      var header = document.createElement('header');
+      header.className = 'wayward-book-header';
+      header.innerHTML = [
+        '<div class="wayward-book-header__inner">',
+        '  <a class="wayward-book-brand" href="/" aria-label="Wayward House home">',
+        '    <span class="wayward-book-brand__mark">WaywardHouse</span>',
+        '    <span class="wayward-book-brand__dot" aria-hidden="true">.</span>',
+        '  </a>',
+        '  <nav class="wayward-book-nav" aria-label="Primary">',
+        '    <a href="/articles/" data-nav="/articles/">Articles</a>',
+        '    <a href="/learn/" data-nav="/learn/">Learn</a>',
+        '    <a href="/about.html" data-nav="/about/">About</a>',
+        '  </nav>',
+        '  <button class="wayward-book-menu-toggle" type="button" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle chapter navigation">',
+        '    <span aria-hidden="true">Menu</span>',
+        '  </button>',
+        '</div>'
+      ].join('');
+      body.prepend(header);
+    }
+
+    var pathname = window.location.pathname || '/';
+    if (pathname === '/' || pathname === '/learn/' || pathname.endsWith('/index.html')) {
+      body.classList.add('page-home');
+    }
+    if (pathname.indexOf('/learn/') === 0) {
+      body.classList.add('page-learn');
+    }
+
+    var storageKey = 'wayward-data-engineering-sidebar';
+    var media = window.matchMedia('(min-width: 1200px)');
+    var glass = document.getElementById('quarto-sidebar-glass');
+    var toggles = Array.from(document.querySelectorAll('[data-bs-target=".quarto-sidebar-collapse-item"]'));
+
+    function setDesktopState(open) {
+      body.classList.toggle('book-sidebar-collapsed', !open);
+      body.classList.toggle('book-sidebar-open', open);
+      try {
+        localStorage.setItem(storageKey, open ? 'open' : 'collapsed');
+      } catch (err) {
+        void err;
+      }
+    }
+
+    function applyDesktopDefault() {
+      if (!media.matches) {
+        body.classList.remove('book-sidebar-collapsed', 'book-sidebar-open');
+        return;
+      }
+
+      var stored = null;
+      try {
+        stored = localStorage.getItem(storageKey);
+      } catch (err) {
+        void err;
+      }
+
+      setDesktopState(stored === 'collapsed' ? false : true);
+    }
+
+    toggles.forEach(function (toggle) {
+      toggle.addEventListener('click', function (event) {
+        if (!media.matches) return;
+        event.preventDefault();
+        event.stopPropagation();
+        setDesktopState(body.classList.contains('book-sidebar-collapsed'));
+      });
+    });
+
+    if (glass) {
+      glass.addEventListener('click', function (event) {
+        if (!media.matches) return;
+        event.preventDefault();
+        setDesktopState(false);
+      });
+    }
+
+    if (media.addEventListener) {
+      media.addEventListener('change', applyDesktopDefault);
+    } else if (media.addListener) {
+      media.addListener(applyDesktopDefault);
+    }
+
+    applyDesktopDefault();
+
+    var siteHomeHref = '/';
+    var learnHref = '/learn/';
+    var titleLink = sidebar.querySelector('.sidebar-title a');
+    if (titleLink) titleLink.setAttribute('href', siteHomeHref);
+
+    var toolLinks = Array.from(sidebar.querySelectorAll('.quarto-navigation-tool'));
+    if (toolLinks[0]) toolLinks[0].setAttribute('href', siteHomeHref);
+    if (toolLinks[1]) toolLinks[1].setAttribute('href', learnHref);
+
+    var firstSidebarLink = sidebar.querySelector('.sidebar-item a.sidebar-link');
+    if (firstSidebarLink) firstSidebarLink.setAttribute('href', siteHomeHref);
+
+    var themeToggle = document.querySelector('.wayward-book-theme-toggle');
+    if (themeToggle) themeToggle.remove();
+
+    document.querySelectorAll('.wayward-book-nav a[data-nav]').forEach(function (link) {
+      var target = link.getAttribute('data-nav');
+      if (!target) return;
+      link.classList.remove('is-active');
+      if (pathname === target || pathname.indexOf(target) === 0) {
+        link.classList.add('is-active');
+      }
+    });
+
+    var footer = document.querySelector('footer.footer');
+    if (footer && !footer.classList.contains('wayward-book-footer')) {
+      footer.className = 'wayward-book-footer';
+      footer.innerHTML = [
+        '<div class="wayward-book-footer__inner">',
+        '  <div class="wayward-book-footer__brand">',
+        '    <div class="wayward-book-footer__logo">WaywardHouse<span>.</span></div>',
+        '    <p>Understanding how place, economy, and environment interact through analysis, modelling, and open tools.</p>',
+        '  </div>',
+        '  <nav class="wayward-book-footer__group" aria-labelledby="book-footer-reading">',
+        '    <h2 id="book-footer-reading">Reading</h2>',
+        '    <a href="https://wayward.house/articles/">Articles</a>',
+        '    <a href="https://wayward.house/learn/">Library</a>',
+        '    <a href="https://wayward.house/archive.html">Archive</a>',
+        '  </nav>',
+        '  <nav class="wayward-book-footer__group" aria-labelledby="book-footer-site">',
+        '    <h2 id="book-footer-site">Site</h2>',
+        '    <a href="https://wayward.house/start-here.html">Choose Your Path</a>',
+        '    <a href="https://wayward.house/about.html">About</a>',
+        '    <a href="https://wayward.house/contact.html">Contact</a>',
+        '  </nav>',
+        '  <nav class="wayward-book-footer__group" aria-labelledby="book-footer-resources">',
+        '    <h2 id="book-footer-resources">Resources</h2>',
+        '    <a href="https://wayward.house/topics/">All Topics</a>',
+        '    <a href="https://wayward.house/privacy.html">Privacy Policy</a>',
+        '    <a href="https://wayward.house/terms.html">Terms of Use</a>',
+        '  </nav>',
+        '</div>'
+      ].join('');
+    }
+
+    if (!document.querySelector('.back-to-top')) {
+      var button = document.createElement('button');
+      button.type = 'button';
+      button.className = 'back-to-top';
+      button.setAttribute('aria-label', 'Back to top');
+      button.innerHTML = '<span aria-hidden="true">↑</span><span>Top</span>';
+
+      var prefersReduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+      var ticking = false;
+
+      function updateBackToTop() {
+        var scrolled = window.scrollY || document.documentElement.scrollTop || 0;
+        var longPage = document.documentElement.scrollHeight > window.innerHeight * 1.5;
+        button.classList.toggle('is-visible', longPage && scrolled > Math.max(420, window.innerHeight * 0.7));
+        ticking = false;
+      }
+
+      button.addEventListener('click', function () {
+        window.scrollTo({
+          top: 0,
+          behavior: prefersReduced ? 'auto' : 'smooth'
+        });
+      });
+
+      window.addEventListener('scroll', function () {
+        if (!ticking) {
+          window.requestAnimationFrame(updateBackToTop);
+          ticking = true;
+        }
+      }, { passive: true });
+
+      window.addEventListener('resize', updateBackToTop, { passive: true });
+      body.appendChild(button);
+      updateBackToTop();
+    }
+
+  });
+</script>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:ital,wght@0,300;0,400;0,600;0,700;0,800;0,900;1,700;1,800&amp;family=Barlow:wght@300;400;500;600&amp;family=IBM+Plex+Mono:ital,wght@0,300;0,400;0,500;1,300&amp;family=Literata:ital,opsz,wght@0,7..72,300;0,7..72,400;0,7..72,500;1,7..72,300;1,7..72,400&amp;display=swap" rel="stylesheet">
+
+  <script>window.backupDefine = window.define; window.define = undefined;</script><script src="https://cdn.jsdelivr.net/npm/katex@latest/dist/katex.min.js"></script>
+  <script>document.addEventListener("DOMContentLoaded", function () {
+ var mathElements = document.getElementsByClassName("math");
+ var macros = [];
+ for (var i = 0; i < mathElements.length; i++) {
+  var texText = mathElements[i].firstChild;
+  if (mathElements[i].tagName == "SPAN") {
+   katex.render(texText.data, mathElements[i], {
+    displayMode: mathElements[i].classList.contains('display'),
+    throwOnError: false,
+    macros: macros,
+    fleqn: false
+   });
+}}});
+  </script>
+  <script>window.define = window.backupDefine; window.backupDefine = undefined;</script><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@latest/dist/katex.min.css">
+
+<script type="text/javascript">
+const typesetMath = (el) => {
+  if (window.MathJax) {
+    // MathJax Typeset
+    window.MathJax.typeset([el]);
+  } else if (window.katex) {
+    // KaTeX Render
+    var mathElements = el.getElementsByClassName("math");
+    var macros = [];
+    for (var i = 0; i < mathElements.length; i++) {
+      var texText = mathElements[i].firstChild;
+      if (mathElements[i].tagName == "SPAN" && texText && texText.data) {
+        window.katex.render(texText.data, mathElements[i], {
+          displayMode: mathElements[i].classList.contains('display'),
+          throwOnError: false,
+          macros: macros,
+          fleqn: false
+        });
+      }
+    }
+  }
+}
+window.Quarto = {
+  typesetMath
+};
+</script>
+
+<link rel="stylesheet" href="site_libs/quarto-contrib/quarto-project/wayward-book/wayward-book.css">
+<link rel="stylesheet" href="lightbox.css">
+</head>
+
+<body class="nav-sidebar docked quarto-light">
+
+<div id="quarto-search-results"></div>
+  <header id="quarto-header" class="headroom fixed-top">
+  <nav class="quarto-secondary-nav">
+    <div class="container-fluid d-flex">
+      <button type="button" class="quarto-btn-toggle btn" data-bs-toggle="collapse" role="button" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
+        <i class="bi bi-layout-text-sidebar-reverse"></i>
+      </button>
+        <nav class="quarto-page-breadcrumbs" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="./02-spatial-databases.html"><span class="chapter-number">3</span>&nbsp; <span class="chapter-title">Spatial Databases</span></a></li></ol></nav>
+        <a class="flex-grow-1" role="navigation" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">      
+        </a>
+      <button type="button" class="btn quarto-search-button" aria-label="Search" onclick="window.quartoOpenSearch();">
+        <i class="bi bi-search"></i>
+      </button>
+    </div>
+  </nav>
+</header>
+<!-- content -->
+<div id="quarto-content" class="quarto-container page-columns page-rows-contents page-layout-article">
+<!-- sidebar -->
+  <nav id="quarto-sidebar" class="sidebar collapse collapse-horizontal quarto-sidebar-collapse-item sidebar-navigation docked overflow-auto">
+    <div class="pt-lg-2 mt-2 text-left sidebar-header">
+    <div class="sidebar-title mb-0 py-0">
+      <a href="./">Data Engineering for Spatial Systems</a> 
+        <div class="sidebar-tools-main tools-wide">
+    <a href="./" title="" class="quarto-navigation-tool px-1" aria-label="Wayward House"><i class="bi bi-house"></i></a>
+    <a href="./learn/" title="" class="quarto-navigation-tool px-1" aria-label="Learn"><i class="bi bi-grid"></i></a>
+    <a href="https://github.com/WaywardHouse/waywardhouse-data-engineering" title="" class="quarto-navigation-tool px-1" aria-label="Repository"><i class="bi bi-github"></i></a>
+    <a href="https://github.com/WaywardHouse/waywardhouse-data-engineering" title="Source Code" class="quarto-navigation-tool px-1" aria-label="Source Code"><i class="bi bi-github"></i></a>
+    <div class="dropdown">
+      <a href="" title="Share" id="quarto-navigation-tool-dropdown-0" class="quarto-navigation-tool dropdown-toggle px-1" data-bs-toggle="dropdown" aria-expanded="false" role="link" aria-label="Share"><i class="bi bi-share"></i></a>
+      <ul class="dropdown-menu" aria-labelledby="quarto-navigation-tool-dropdown-0">
+          <li>
+            <a class="dropdown-item sidebar-tools-main-item" href="https://twitter.com/intent/tweet?url=|url|">
+              <i class="bi bi-twitter pe-1"></i>
+            Twitter
+            </a>
+          </li>
+          <li>
+            <a class="dropdown-item sidebar-tools-main-item" href="https://www.linkedin.com/sharing/share-offsite/?url=|url|">
+              <i class="bi bi-linkedin pe-1"></i>
+            LinkedIn
+            </a>
+          </li>
+      </ul>
+    </div>
+</div>
+    </div>
+      </div>
+        <div class="mt-2 flex-shrink-0 align-items-center">
+        <div class="sidebar-search">
+        <div id="quarto-search" class="" title="Search"></div>
+        </div>
+        </div>
+    <div class="sidebar-menu-container"> 
+    <ul class="list-unstyled mt-1">
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./index.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">1</span>&nbsp; <span class="chapter-title">Data Engineering for Spatial Systems</span></span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./01-data-architecture.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">2</span>&nbsp; <span class="chapter-title">Data Architecture</span></span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./02-spatial-databases.html" class="sidebar-item-text sidebar-link active">
+ <span class="menu-text"><span class="chapter-number">3</span>&nbsp; <span class="chapter-title">Spatial Databases</span></span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./03-pipelines-and-etl.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">4</span>&nbsp; <span class="chapter-title">Pipelines and ETL</span></span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./04-cloud-infrastructure.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">5</span>&nbsp; <span class="chapter-title">Cloud Infrastructure</span></span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./05-streaming-and-realtime.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">6</span>&nbsp; <span class="chapter-title">Streaming and Realtime</span></span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./06-apis-and-access-patterns.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">7</span>&nbsp; <span class="chapter-title">APIs and Access Patterns</span></span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./07-data-quality-and-governance.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">8</span>&nbsp; <span class="chapter-title">Data Quality and Governance</span></span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./08-platform-architecture-for-ml.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">9</span>&nbsp; <span class="chapter-title">Platform Architecture for ML</span></span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./09-exercise-answers.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">10</span>&nbsp; <span class="chapter-title">Exercise Answers</span></span></a>
+  </div>
+</li>
+    </ul>
+    </div>
+</nav>
+<div id="quarto-sidebar-glass" class="quarto-sidebar-collapse-item" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item"></div>
+<!-- margin-sidebar -->
+    <div id="quarto-margin-sidebar" class="sidebar margin-sidebar">
+        <nav id="TOC" role="doc-toc" class="toc-active">
+    <h2 id="toc-title">Table of contents</h2>
+   
+  <ul>
+  <li><a href="#the-puzzle" id="toc-the-puzzle" class="nav-link active" data-scroll-target="#the-puzzle"><span class="header-section-number">3.1</span> The puzzle</a></li>
+  <li><a href="#what-happens-without-a-spatial-index" id="toc-what-happens-without-a-spatial-index" class="nav-link" data-scroll-target="#what-happens-without-a-spatial-index"><span class="header-section-number">3.2</span> What happens without a spatial index</a></li>
+  <li><a href="#spatial-indexing-the-r-tree-and-gist" id="toc-spatial-indexing-the-r-tree-and-gist" class="nav-link" data-scroll-target="#spatial-indexing-the-r-tree-and-gist"><span class="header-section-number">3.3</span> Spatial indexing: the R-tree and GIST</a>
+  <ul class="collapse">
+  <li><a href="#what-an-r-tree-stores" id="toc-what-an-r-tree-stores" class="nav-link" data-scroll-target="#what-an-r-tree-stores"><span class="header-section-number">3.3.1</span> What an R-tree stores</a></li>
+  <li><a href="#the-two-pass-filter" id="toc-the-two-pass-filter" class="nav-link" data-scroll-target="#the-two-pass-filter"><span class="header-section-number">3.3.2</span> The two-pass filter</a></li>
+  <li><a href="#when-the-index-does-not-help" id="toc-when-the-index-does-not-help" class="nav-link" data-scroll-target="#when-the-index-does-not-help"><span class="header-section-number">3.3.3</span> When the index does not help</a></li>
+  </ul></li>
+  <li><a href="#key-postgis-functions" id="toc-key-postgis-functions" class="nav-link" data-scroll-target="#key-postgis-functions"><span class="header-section-number">3.4</span> Key PostGIS functions</a>
+  <ul class="collapse">
+  <li><a href="#st_contains-and-st_within" id="toc-st_contains-and-st_within" class="nav-link" data-scroll-target="#st_contains-and-st_within"><span class="header-section-number">3.4.1</span> ST_Contains and ST_Within</a></li>
+  <li><a href="#st_intersects" id="toc-st_intersects" class="nav-link" data-scroll-target="#st_intersects"><span class="header-section-number">3.4.2</span> ST_Intersects</a></li>
+  <li><a href="#st_dwithin" id="toc-st_dwithin" class="nav-link" data-scroll-target="#st_dwithin"><span class="header-section-number">3.4.3</span> ST_DWithin</a></li>
+  <li><a href="#st_area-and-st_length" id="toc-st_area-and-st_length" class="nav-link" data-scroll-target="#st_area-and-st_length"><span class="header-section-number">3.4.4</span> ST_Area and ST_Length</a></li>
+  <li><a href="#st_transform" id="toc-st_transform" class="nav-link" data-scroll-target="#st_transform"><span class="header-section-number">3.4.5</span> ST_Transform</a></li>
+  <li><a href="#st_asgeojson" id="toc-st_asgeojson" class="nav-link" data-scroll-target="#st_asgeojson"><span class="header-section-number">3.4.6</span> ST_AsGeoJSON</a></li>
+  </ul></li>
+  <li><a href="#simulating-query-performance" id="toc-simulating-query-performance" class="nav-link" data-scroll-target="#simulating-query-performance"><span class="header-section-number">3.5</span> Simulating query performance</a></li>
+  <li><a href="#duckdb-spatial-extension" id="toc-duckdb-spatial-extension" class="nav-link" data-scroll-target="#duckdb-spatial-extension"><span class="header-section-number">3.6</span> DuckDB spatial extension</a></li>
+  <li><a href="#query-planning-reading-explain-analyze" id="toc-query-planning-reading-explain-analyze" class="nav-link" data-scroll-target="#query-planning-reading-explain-analyze"><span class="header-section-number">3.7</span> Query planning: reading EXPLAIN ANALYZE</a></li>
+  <li><a href="#spatial-joins-at-scale" id="toc-spatial-joins-at-scale" class="nav-link" data-scroll-target="#spatial-joins-at-scale"><span class="header-section-number">3.8</span> Spatial joins at scale</a>
+  <ul class="collapse">
+  <li><a href="#the-antimeridian-problem" id="toc-the-antimeridian-problem" class="nav-link" data-scroll-target="#the-antimeridian-problem"><span class="header-section-number">3.8.1</span> The antimeridian problem</a></li>
+  <li><a href="#always-transform-before-comparing" id="toc-always-transform-before-comparing" class="nav-link" data-scroll-target="#always-transform-before-comparing"><span class="header-section-number">3.8.2</span> Always transform before comparing</a></li>
+  </ul></li>
+  <li><a href="#what-to-try" id="toc-what-to-try" class="nav-link" data-scroll-target="#what-to-try"><span class="header-section-number">3.9</span> What to try</a></li>
+  <li><a href="#exercises" id="toc-exercises" class="nav-link" data-scroll-target="#exercises"><span class="header-section-number">3.10</span> Exercises</a></li>
+  <li><a href="#build-this" id="toc-build-this" class="nav-link" data-scroll-target="#build-this"><span class="header-section-number">3.11</span> Build this</a></li>
+  </ul>
+<div class="toc-actions"><ul><li><a href="https://github.com/WaywardHouse/waywardhouse-data-engineering/edit/main/02-spatial-databases.qmd" class="toc-action"><i class="bi bi-github"></i>Edit this page</a></li><li><a href="https://github.com/WaywardHouse/waywardhouse-data-engineering/issues/new" class="toc-action"><i class="bi empty"></i>Report an issue</a></li></ul></div></nav>
+    </div>
+<!-- main -->
+<main class="content" id="quarto-document-content">
+
+<header id="title-block-header" class="quarto-title-block default">
+<div class="quarto-title">
+<h1 class="title"><span class="chapter-number">3</span>&nbsp; <span class="chapter-title">Spatial Databases</span></h1>
+<p class="subtitle lead">PostGIS, spatial indexing, and what the query planner actually does</p>
+</div>
+
+
+
+<div class="quarto-title-meta">
+
+    
+  
+    
+  </div>
+  
+
+
+</header>
+
+
+<section id="the-puzzle" class="level2" data-number="3.1">
+<h2 data-number="3.1" class="anchored" data-anchor-id="the-puzzle"><span class="header-section-number">3.1</span> The puzzle</h2>
+<p>In 2019 an infrastructure planning team ran a query: find all building footprints within 200 metres of a proposed flood zone boundary. The dataset had 2.1 million polygons covering a state-level jurisdiction. The query ran for 45 seconds, returned 18,000 results, and crashed the map interface that was waiting for it.</p>
+<p>A colleague added a GIST index to the geometry column. The same query ran in 0.08 seconds.</p>
+<p>The data did not change. The machine did not change. The query did not change. Only the index changed. And the index made the query 562 times faster.</p>
+<p>This is not a performance tuning story. It is a story about what databases do in the absence of an index — and why the absence is not an oversight but a design decision that you need to make consciously, not by accident.</p>
+<hr>
+</section>
+<section id="what-happens-without-a-spatial-index" class="level2" data-number="3.2">
+<h2 data-number="3.2" class="anchored" data-anchor-id="what-happens-without-a-spatial-index"><span class="header-section-number">3.2</span> What happens without a spatial index</h2>
+<p>When PostgreSQL receives a query with a spatial predicate — <code>WHERE ST_DWithin(geom, $1, 200)</code> — and there is no spatial index, it does exactly what you would do if you had 2.1 million polygons printed on cards and no catalogue: it picks up every card and checks it.</p>
+<p>This is called a <strong>sequential scan</strong> (Seq Scan in EXPLAIN output). Every row in the table is read from disk, the geometry is deserialised from WKB storage, and the spatial predicate is evaluated. For 2.1 million polygons, each averaging perhaps 800 bytes of WKB geometry, that is roughly 1.7 GB of data read and 2.1 million geometry operations performed, to return 18,000 results. The ratio of work done to useful output is 117:1.</p>
+<p>The GIST index changes this ratio dramatically. But it does not do it by being “faster at geometry.” It does it by changing the question the database has to answer.</p>
+<hr>
+</section>
+<section id="spatial-indexing-the-r-tree-and-gist" class="level2" data-number="3.3">
+<h2 data-number="3.3" class="anchored" data-anchor-id="spatial-indexing-the-r-tree-and-gist"><span class="header-section-number">3.3</span> Spatial indexing: the R-tree and GIST</h2>
+<p>The spatial index in PostGIS is a GIST index (Generalised Search Tree) built over an R-tree structure. Understanding what it contains is necessary for understanding when it helps and when it does not.</p>
+<section id="what-an-r-tree-stores" class="level3" data-number="3.3.1">
+<h3 data-number="3.3.1" class="anchored" data-anchor-id="what-an-r-tree-stores"><span class="header-section-number">3.3.1</span> What an R-tree stores</h3>
+<p>An R-tree stores <strong>bounding boxes</strong>, not geometries. Each entry in the index is the minimum bounding rectangle (MBR) of a geometry — the smallest axis-aligned rectangle that fully encloses the geometry. The index organises these bounding boxes into a hierarchy: leaf nodes contain the MBRs of individual geometries, and each internal node contains the MBR of all leaf nodes beneath it.</p>
+<p>The hierarchy has a key property: if a query bounding box does not intersect an internal node’s MBR, then no geometry in that subtree can intersect the query. The whole subtree is pruned without examining any of its contents.</p>
+<p>For a balanced R-tree with branching factor <span class="math inline">k</span> and <span class="math inline">N</span> leaves, the number of nodes examined for a small-area query scales as approximately <span class="math inline">O(\log_k N)</span> rather than <span class="math inline">O(N)</span>. With <span class="math inline">N = 2{,}100{,}000</span> polygons and <span class="math inline">k = 100</span>, a query might examine a few hundred index nodes and identify a few thousand MBR candidates, instead of examining all 2.1 million rows.</p>
+</section>
+<section id="the-two-pass-filter" class="level3" data-number="3.3.2">
+<h3 data-number="3.3.2" class="anchored" data-anchor-id="the-two-pass-filter"><span class="header-section-number">3.3.2</span> The two-pass filter</h3>
+<p>Spatial index queries in PostGIS use a <strong>two-pass filter</strong>:</p>
+<p><strong>Pass 1 — Index filter (fast).</strong> The GIST index is used to find all rows whose bounding box intersects the query extent. This is a pure bounding-box comparison: cheap, vectorisable, done entirely in the index without touching the heap. For the 200m flood zone query, this might return 31,000 candidate rows — geometries whose bounding boxes intersect the query zone.</p>
+<p><strong>Pass 2 — Geometry refinement (slower, but on far fewer rows).</strong> The actual geometry predicate (<code>ST_DWithin</code>, <code>ST_Intersects</code>, etc.) is evaluated only on the candidate rows from pass 1. This deserialises the WKB geometry and runs the exact spatial computation. For the flood zone query, the 31,000 candidates are reduced to 18,000 exact results.</p>
+<p>The two-pass architecture means the expensive exact geometry computation runs on perhaps 1.5% of the table instead of 100% of it. That is where the 562× speedup comes from — not from a faster algorithm for geometry comparison, but from doing far less geometry comparison.</p>
+</section>
+<section id="when-the-index-does-not-help" class="level3" data-number="3.3.3">
+<h3 data-number="3.3.3" class="anchored" data-anchor-id="when-the-index-does-not-help"><span class="header-section-number">3.3.3</span> When the index does not help</h3>
+<p>The R-tree index is effective when the query is spatially selective — when the query extent covers a small fraction of the dataset’s total extent. A query asking “return all geometries in Australia” on a global dataset provides almost no spatial selectivity: almost every bounding box intersects Australia. The index pass will return most of the table, and the geometry refinement will still run on most of the table. The overhead of the index traversal adds cost without reducing work.</p>
+<p>This is not a flaw. It is a consequence of what an index is: a structure that helps you skip data you do not need. If you need most of the data, there is nothing to skip.</p>
+<p>PostGIS’s query planner estimates selectivity before deciding whether to use the index. When it estimates that more than a certain fraction of rows will be returned (the exact threshold is configurable via <code>enable_indexscan</code>), it may choose a Seq Scan deliberately. Reading the EXPLAIN output — not just running the query and checking the time — tells you which path was taken.</p>
+<hr>
+</section>
+</section>
+<section id="key-postgis-functions" class="level2" data-number="3.4">
+<h2 data-number="3.4" class="anchored" data-anchor-id="key-postgis-functions"><span class="header-section-number">3.4</span> Key PostGIS functions</h2>
+<p>PostGIS implements the OGC Simple Features specification. The functions below are the ones you will use for 90% of spatial analytics work. Each example assumes a <code>spatial_observations</code> table with a <code>geom</code> column (GEOMETRY, EPSG:4326) and a <code>sensor_stations</code> table with a <code>location</code> column (GEOMETRY(POINT, 4326)).</p>
+<section id="st_contains-and-st_within" class="level3" data-number="3.4.1">
+<h3 data-number="3.4.1" class="anchored" data-anchor-id="st_contains-and-st_within"><span class="header-section-number">3.4.1</span> ST_Contains and ST_Within</h3>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb1"><pre class="sourceCode sql code-with-copy"><code class="sourceCode sql"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="co">-- Which observations fall entirely within the Canterbury region?</span></span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="kw">SELECT</span> o.observation_id, o.acquired_at, o.land_cover_code</span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a><span class="kw">FROM</span>   spatial_observations o</span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a><span class="kw">JOIN</span>   admin_regions r <span class="kw">ON</span> r.region_name <span class="op">=</span> <span class="st">'Canterbury'</span></span>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a><span class="kw">WHERE</span>  ST_Contains(r.geom, o.geom);</span>
+<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a><span class="co">-- Equivalent: ST_Within reverses the argument order</span></span>
+<span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a><span class="co">-- ST_Within(o.geom, r.geom) is the same as ST_Contains(r.geom, o.geom)</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p><code>ST_Contains(A, B)</code> returns true if B is entirely inside A and no point of B is on the boundary of A. Use <code>ST_Within</code> for the inverted argument form. Both use the GIST index on the inner geometry.</p>
+</section>
+<section id="st_intersects" class="level3" data-number="3.4.2">
+<h3 data-number="3.4.2" class="anchored" data-anchor-id="st_intersects"><span class="header-section-number">3.4.2</span> ST_Intersects</h3>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb2"><pre class="sourceCode sql code-with-copy"><code class="sourceCode sql"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="co">-- All observations that touch or overlap a given catchment boundary</span></span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a><span class="kw">SELECT</span> o.observation_id</span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a><span class="kw">FROM</span>   spatial_observations o,</span>
+<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a>       catchments c</span>
+<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a><span class="kw">WHERE</span>  c.catchment_id <span class="op">=</span> <span class="dv">42</span></span>
+<span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a>  <span class="kw">AND</span>  ST_Intersects(o.geom, c.geom);</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p><code>ST_Intersects</code> is the complement of <code>ST_Disjoint</code>: it returns true if the geometries share any point. This is usually what you want for “does this observation touch this region” — it includes boundary-touching cases that <code>ST_Contains</code> excludes.</p>
+</section>
+<section id="st_dwithin" class="level3" data-number="3.4.3">
+<h3 data-number="3.4.3" class="anchored" data-anchor-id="st_dwithin"><span class="header-section-number">3.4.3</span> ST_DWithin</h3>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb3"><pre class="sourceCode sql code-with-copy"><code class="sourceCode sql"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="co">-- All sensor stations within 5 km of a proposed facility location</span></span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a><span class="co">-- Note: use geography type or project to a metric CRS before calling ST_DWithin</span></span>
+<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a><span class="co">-- with a distance in metres</span></span>
+<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a><span class="kw">SELECT</span> s.station_id, s.station_name,</span>
+<span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a>       ST_Distance(s.location:<span class="ch">:geography</span>,</span>
+<span id="cb3-6"><a href="#cb3-6" aria-hidden="true" tabindex="-1"></a>                   ST_GeogFromText(<span class="st">'POINT(172.6 -43.5)'</span>)) <span class="kw">AS</span> distance_m</span>
+<span id="cb3-7"><a href="#cb3-7" aria-hidden="true" tabindex="-1"></a><span class="kw">FROM</span>   sensor_stations s</span>
+<span id="cb3-8"><a href="#cb3-8" aria-hidden="true" tabindex="-1"></a><span class="kw">WHERE</span>  ST_DWithin(</span>
+<span id="cb3-9"><a href="#cb3-9" aria-hidden="true" tabindex="-1"></a>           s.location:<span class="ch">:geography</span>,</span>
+<span id="cb3-10"><a href="#cb3-10" aria-hidden="true" tabindex="-1"></a>           ST_GeogFromText(<span class="st">'POINT(172.6 -43.5)'</span>),</span>
+<span id="cb3-11"><a href="#cb3-11" aria-hidden="true" tabindex="-1"></a>           <span class="dv">5000</span>   <span class="co">-- metres (geography cast makes this work correctly)</span></span>
+<span id="cb3-12"><a href="#cb3-12" aria-hidden="true" tabindex="-1"></a>       )</span>
+<span id="cb3-13"><a href="#cb3-13" aria-hidden="true" tabindex="-1"></a><span class="kw">ORDER</span>  <span class="kw">BY</span> distance_m;</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p><code>ST_DWithin</code> is the spatial index-friendly form of a distance query. It is implemented to use the GIST index; a naive <code>ST_Distance(a, b) &lt; threshold</code> will often not use the index because the planner cannot push the threshold into the index condition. Always prefer <code>ST_DWithin</code> for “within distance” queries.</p>
+</section>
+<section id="st_area-and-st_length" class="level3" data-number="3.4.4">
+<h3 data-number="3.4.4" class="anchored" data-anchor-id="st_area-and-st_length"><span class="header-section-number">3.4.4</span> ST_Area and ST_Length</h3>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb4"><pre class="sourceCode sql code-with-copy"><code class="sourceCode sql"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="co">-- Total grassland area per administrative region, in km²</span></span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a><span class="kw">SELECT</span> r.region_name,</span>
+<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a>       <span class="fu">SUM</span>(ST_Area(o.geom:<span class="ch">:geography</span>) <span class="op">/</span> <span class="fl">1e6</span>) <span class="kw">AS</span> grassland_km2</span>
+<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a><span class="kw">FROM</span>   spatial_observations o</span>
+<span id="cb4-5"><a href="#cb4-5" aria-hidden="true" tabindex="-1"></a><span class="kw">JOIN</span>   admin_regions r <span class="kw">ON</span> ST_Contains(r.geom, o.geom)</span>
+<span id="cb4-6"><a href="#cb4-6" aria-hidden="true" tabindex="-1"></a><span class="kw">WHERE</span>  o.land_cover_code <span class="op">=</span> <span class="st">'GRS'</span></span>
+<span id="cb4-7"><a href="#cb4-7" aria-hidden="true" tabindex="-1"></a><span class="kw">GROUP</span>  <span class="kw">BY</span> r.region_name</span>
+<span id="cb4-8"><a href="#cb4-8" aria-hidden="true" tabindex="-1"></a><span class="kw">ORDER</span>  <span class="kw">BY</span> grassland_km2 <span class="kw">DESC</span>;</span>
+<span id="cb4-9"><a href="#cb4-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-10"><a href="#cb4-10" aria-hidden="true" tabindex="-1"></a><span class="co">-- Road network total length in metres for a given tile</span></span>
+<span id="cb4-11"><a href="#cb4-11" aria-hidden="true" tabindex="-1"></a><span class="kw">SELECT</span> tile_id,</span>
+<span id="cb4-12"><a href="#cb4-12" aria-hidden="true" tabindex="-1"></a>       <span class="fu">SUM</span>(ST_Length(road_geom:<span class="ch">:geography</span>)) <span class="kw">AS</span> total_length_m</span>
+<span id="cb4-13"><a href="#cb4-13" aria-hidden="true" tabindex="-1"></a><span class="kw">FROM</span>   road_network</span>
+<span id="cb4-14"><a href="#cb4-14" aria-hidden="true" tabindex="-1"></a><span class="kw">WHERE</span>  tile_id <span class="op">=</span> <span class="st">'AU-NZ-0042'</span></span>
+<span id="cb4-15"><a href="#cb4-15" aria-hidden="true" tabindex="-1"></a><span class="kw">GROUP</span>  <span class="kw">BY</span> tile_id;</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>Note the <code>::geography</code> cast. Without it, <code>ST_Area</code> and <code>ST_Length</code> operate in the units of the CRS — degrees for EPSG:4326, which produces meaningless results for area and length. Casting to <code>geography</code> forces geodetic computation in metres. The performance cost is real: geography operations are slower than planar geometry. For large datasets, project to an appropriate equal-area or equal-length CRS and use <code>geometry</code> instead.</p>
+</section>
+<section id="st_transform" class="level3" data-number="3.4.5">
+<h3 data-number="3.4.5" class="anchored" data-anchor-id="st_transform"><span class="header-section-number">3.4.5</span> ST_Transform</h3>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb5"><pre class="sourceCode sql code-with-copy"><code class="sourceCode sql"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="co">-- Project observations from WGS84 (4326) to New Zealand Transverse Mercator (2193)</span></span>
+<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a><span class="co">-- before computing areas — avoids the geography cast overhead for large aggregations</span></span>
+<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a><span class="kw">SELECT</span> observation_id,</span>
+<span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a>       ST_Area(ST_Transform(geom, <span class="dv">2193</span>)) <span class="kw">AS</span> area_m2</span>
+<span id="cb5-5"><a href="#cb5-5" aria-hidden="true" tabindex="-1"></a><span class="kw">FROM</span>   spatial_observations</span>
+<span id="cb5-6"><a href="#cb5-6" aria-hidden="true" tabindex="-1"></a><span class="kw">WHERE</span>  tile_id <span class="op">=</span> <span class="st">'NZ-South-001'</span>;</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p><code>ST_Transform</code> reprojects geometry from one CRS to another. The EPSG code is the argument. Always verify that the target CRS is appropriate for the computation: NZTM2000 (EPSG:2193) is an equal-area projection for New Zealand; it is wrong for Australia. A query that transforms New Zealand data to NZTM and Australian data to NZTM and then compares areas is not computing comparable values.</p>
+<p>The rule: know what CRS your data is in, know what CRS your computation needs, and call <code>ST_Transform</code> explicitly. Never assume data is in the CRS you want.</p>
+</section>
+<section id="st_asgeojson" class="level3" data-number="3.4.6">
+<h3 data-number="3.4.6" class="anchored" data-anchor-id="st_asgeojson"><span class="header-section-number">3.4.6</span> ST_AsGeoJSON</h3>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb6"><pre class="sourceCode sql code-with-copy"><code class="sourceCode sql"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="co">-- Serialise results to GeoJSON for API response</span></span>
+<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a><span class="kw">SELECT</span> json_build_object(</span>
+<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a>    <span class="st">'type'</span>,     <span class="st">'FeatureCollection'</span>,</span>
+<span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a>    <span class="st">'features'</span>, json_agg(</span>
+<span id="cb6-5"><a href="#cb6-5" aria-hidden="true" tabindex="-1"></a>        json_build_object(</span>
+<span id="cb6-6"><a href="#cb6-6" aria-hidden="true" tabindex="-1"></a>            <span class="st">'type'</span>,       <span class="st">'Feature'</span>,</span>
+<span id="cb6-7"><a href="#cb6-7" aria-hidden="true" tabindex="-1"></a>            <span class="st">'geometry'</span>,   ST_AsGeoJSON(o.geom):<span class="ch">:json</span>,</span>
+<span id="cb6-8"><a href="#cb6-8" aria-hidden="true" tabindex="-1"></a>            <span class="st">'properties'</span>, json_build_object(</span>
+<span id="cb6-9"><a href="#cb6-9" aria-hidden="true" tabindex="-1"></a>                <span class="st">'observation_id'</span>, o.observation_id,</span>
+<span id="cb6-10"><a href="#cb6-10" aria-hidden="true" tabindex="-1"></a>                <span class="st">'acquired_at'</span>,    o.acquired_at,</span>
+<span id="cb6-11"><a href="#cb6-11" aria-hidden="true" tabindex="-1"></a>                <span class="st">'land_cover'</span>,     o.land_cover_code,</span>
+<span id="cb6-12"><a href="#cb6-12" aria-hidden="true" tabindex="-1"></a>                <span class="st">'confidence'</span>,     o.confidence</span>
+<span id="cb6-13"><a href="#cb6-13" aria-hidden="true" tabindex="-1"></a>            )</span>
+<span id="cb6-14"><a href="#cb6-14" aria-hidden="true" tabindex="-1"></a>        )</span>
+<span id="cb6-15"><a href="#cb6-15" aria-hidden="true" tabindex="-1"></a>    )</span>
+<span id="cb6-16"><a href="#cb6-16" aria-hidden="true" tabindex="-1"></a>) <span class="kw">AS</span> geojson</span>
+<span id="cb6-17"><a href="#cb6-17" aria-hidden="true" tabindex="-1"></a><span class="kw">FROM</span> spatial_observations o</span>
+<span id="cb6-18"><a href="#cb6-18" aria-hidden="true" tabindex="-1"></a><span class="kw">WHERE</span> o.tile_id <span class="op">=</span> <span class="st">'AU-QLD-007'</span></span>
+<span id="cb6-19"><a href="#cb6-19" aria-hidden="true" tabindex="-1"></a>  <span class="kw">AND</span> o.acquired_at <span class="op">&gt;=</span> <span class="st">'2024-01-01'</span>;</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p><code>ST_AsGeoJSON</code> is the standard serialisation path for spatial query results in API contexts. It outputs a JSON string representing the geometry in GeoJSON format. The <code>::json</code> cast turns the string into a JSON object that can be composed with <code>json_build_object</code> without double-encoding.</p>
+<hr>
+</section>
+</section>
+<section id="simulating-query-performance" class="level2" data-number="3.5">
+<h2 data-number="3.5" class="anchored" data-anchor-id="simulating-query-performance"><span class="header-section-number">3.5</span> Simulating query performance</h2>
+<p>The chart below simulates query time as a function of dataset size for indexed versus non-indexed spatial queries. The model is simple but reflects the real scaling difference.</p>
+<div id="cell-fig-spatial-index-performance" class="cell" data-fig-height="4.5" data-fig-width="12" data-execution_count="1">
+<details class="code-fold">
+<summary>Code</summary>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb7"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> numpy <span class="im">as</span> np</span>
+<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> matplotlib.pyplot <span class="im">as</span> plt</span>
+<span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-4"><a href="#cb7-4" aria-hidden="true" tabindex="-1"></a>rng <span class="op">=</span> np.random.default_rng(<span class="dv">7</span>)</span>
+<span id="cb7-5"><a href="#cb7-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-6"><a href="#cb7-6" aria-hidden="true" tabindex="-1"></a>dataset_sizes <span class="op">=</span> np.logspace(<span class="dv">3</span>, <span class="fl">7.5</span>, <span class="dv">30</span>)   <span class="co"># 1K to ~30M rows</span></span>
+<span id="cb7-7"><a href="#cb7-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-8"><a href="#cb7-8" aria-hidden="true" tabindex="-1"></a><span class="co"># Without index: sequential scan</span></span>
+<span id="cb7-9"><a href="#cb7-9" aria-hidden="true" tabindex="-1"></a><span class="co"># Each row costs ~0.5 microseconds (disk read + WKB deserialisation + geometry check)</span></span>
+<span id="cb7-10"><a href="#cb7-10" aria-hidden="true" tabindex="-1"></a>row_cost_us <span class="op">=</span> <span class="fl">0.5</span></span>
+<span id="cb7-11"><a href="#cb7-11" aria-hidden="true" tabindex="-1"></a>no_index_time <span class="op">=</span> dataset_sizes <span class="op">*</span> row_cost_us <span class="op">/</span> <span class="fl">1e6</span>  <span class="co"># seconds</span></span>
+<span id="cb7-12"><a href="#cb7-12" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-13"><a href="#cb7-13" aria-hidden="true" tabindex="-1"></a><span class="co"># With GIST index:</span></span>
+<span id="cb7-14"><a href="#cb7-14" aria-hidden="true" tabindex="-1"></a><span class="co"># Index traversal: O(log N) with constant ~500µs per level, ~3 levels for 1M rows</span></span>
+<span id="cb7-15"><a href="#cb7-15" aria-hidden="true" tabindex="-1"></a><span class="co"># Candidate retrieval from index: small fraction of N (assume 0.5% selectivity)</span></span>
+<span id="cb7-16"><a href="#cb7-16" aria-hidden="true" tabindex="-1"></a><span class="co"># Geometry refinement on candidates only</span></span>
+<span id="cb7-17"><a href="#cb7-17" aria-hidden="true" tabindex="-1"></a>selectivity    <span class="op">=</span> <span class="fl">0.005</span>          <span class="co"># 0.5% of rows pass the index filter</span></span>
+<span id="cb7-18"><a href="#cb7-18" aria-hidden="true" tabindex="-1"></a>index_overhead <span class="op">=</span> <span class="fl">0.003</span>          <span class="co"># seconds: fixed cost of index traversal</span></span>
+<span id="cb7-19"><a href="#cb7-19" aria-hidden="true" tabindex="-1"></a>candidate_cost_us <span class="op">=</span> <span class="fl">2.0</span>         <span class="co"># geometry refinement is more expensive per row</span></span>
+<span id="cb7-20"><a href="#cb7-20" aria-hidden="true" tabindex="-1"></a>index_time <span class="op">=</span> (</span>
+<span id="cb7-21"><a href="#cb7-21" aria-hidden="true" tabindex="-1"></a>    index_overhead</span>
+<span id="cb7-22"><a href="#cb7-22" aria-hidden="true" tabindex="-1"></a>    <span class="op">+</span> dataset_sizes <span class="op">*</span> selectivity <span class="op">*</span> candidate_cost_us <span class="op">/</span> <span class="fl">1e6</span></span>
+<span id="cb7-23"><a href="#cb7-23" aria-hidden="true" tabindex="-1"></a>    <span class="op">+</span> <span class="fl">0.001</span> <span class="op">*</span> np.log10(np.maximum(dataset_sizes, <span class="dv">1</span>))   <span class="co"># log term for index traversal</span></span>
+<span id="cb7-24"><a href="#cb7-24" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb7-25"><a href="#cb7-25" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-26"><a href="#cb7-26" aria-hidden="true" tabindex="-1"></a><span class="co"># Add noise</span></span>
+<span id="cb7-27"><a href="#cb7-27" aria-hidden="true" tabindex="-1"></a>noise_scale <span class="op">=</span> <span class="fl">0.05</span></span>
+<span id="cb7-28"><a href="#cb7-28" aria-hidden="true" tabindex="-1"></a>no_index_time <span class="op">=</span> no_index_time <span class="op">*</span> (<span class="dv">1</span> <span class="op">+</span> rng.normal(<span class="dv">0</span>, noise_scale, <span class="bu">len</span>(dataset_sizes)))</span>
+<span id="cb7-29"><a href="#cb7-29" aria-hidden="true" tabindex="-1"></a>index_time    <span class="op">=</span> index_time    <span class="op">*</span> (<span class="dv">1</span> <span class="op">+</span> rng.normal(<span class="dv">0</span>, noise_scale, <span class="bu">len</span>(dataset_sizes)))</span>
+<span id="cb7-30"><a href="#cb7-30" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-31"><a href="#cb7-31" aria-hidden="true" tabindex="-1"></a>speedup <span class="op">=</span> no_index_time <span class="op">/</span> np.maximum(index_time, <span class="fl">1e-6</span>)</span>
+<span id="cb7-32"><a href="#cb7-32" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-33"><a href="#cb7-33" aria-hidden="true" tabindex="-1"></a>fig, (ax1, ax2) <span class="op">=</span> plt.subplots(<span class="dv">1</span>, <span class="dv">2</span>, figsize<span class="op">=</span>(<span class="dv">12</span>, <span class="fl">4.5</span>), dpi<span class="op">=</span><span class="dv">150</span>)</span>
+<span id="cb7-34"><a href="#cb7-34" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-35"><a href="#cb7-35" aria-hidden="true" tabindex="-1"></a><span class="co"># Left: absolute times</span></span>
+<span id="cb7-36"><a href="#cb7-36" aria-hidden="true" tabindex="-1"></a>ax1.plot(dataset_sizes, no_index_time, color<span class="op">=</span><span class="st">"#111111"</span>, linewidth<span class="op">=</span><span class="dv">2</span>,</span>
+<span id="cb7-37"><a href="#cb7-37" aria-hidden="true" tabindex="-1"></a>         label<span class="op">=</span><span class="st">"No index (sequential scan)"</span>)</span>
+<span id="cb7-38"><a href="#cb7-38" aria-hidden="true" tabindex="-1"></a>ax1.plot(dataset_sizes, index_time,    color<span class="op">=</span><span class="st">"#d52a2a"</span>, linewidth<span class="op">=</span><span class="dv">2</span>,</span>
+<span id="cb7-39"><a href="#cb7-39" aria-hidden="true" tabindex="-1"></a>         label<span class="op">=</span><span class="st">"GIST index (0.5</span><span class="sc">% s</span><span class="st">electivity)"</span>)</span>
+<span id="cb7-40"><a href="#cb7-40" aria-hidden="true" tabindex="-1"></a>ax1.axvline(x<span class="op">=</span><span class="dv">2_100_000</span>, color<span class="op">=</span><span class="st">"#888888"</span>, linestyle<span class="op">=</span><span class="st">":"</span>, linewidth<span class="op">=</span><span class="fl">1.2</span>)</span>
+<span id="cb7-41"><a href="#cb7-41" aria-hidden="true" tabindex="-1"></a>ax1.text(<span class="dv">2_100_000</span> <span class="op">*</span> <span class="fl">1.15</span>, no_index_time.<span class="bu">max</span>() <span class="op">*</span> <span class="fl">0.6</span>,</span>
+<span id="cb7-42"><a href="#cb7-42" aria-hidden="true" tabindex="-1"></a>         <span class="st">"2.1M rows</span><span class="ch">\n</span><span class="st">(flood example)"</span>, fontsize<span class="op">=</span><span class="dv">8</span>, color<span class="op">=</span><span class="st">"#888888"</span>)</span>
+<span id="cb7-43"><a href="#cb7-43" aria-hidden="true" tabindex="-1"></a>ax1.set_xscale(<span class="st">"log"</span>)</span>
+<span id="cb7-44"><a href="#cb7-44" aria-hidden="true" tabindex="-1"></a>ax1.set_yscale(<span class="st">"log"</span>)</span>
+<span id="cb7-45"><a href="#cb7-45" aria-hidden="true" tabindex="-1"></a>ax1.set_xlabel(<span class="st">"Dataset size (rows, log scale)"</span>)</span>
+<span id="cb7-46"><a href="#cb7-46" aria-hidden="true" tabindex="-1"></a>ax1.set_ylabel(<span class="st">"Query time (seconds, log scale)"</span>)</span>
+<span id="cb7-47"><a href="#cb7-47" aria-hidden="true" tabindex="-1"></a>ax1.set_title(<span class="st">"Spatial query time vs dataset size"</span>)</span>
+<span id="cb7-48"><a href="#cb7-48" aria-hidden="true" tabindex="-1"></a>ax1.legend(fontsize<span class="op">=</span><span class="dv">8</span>)</span>
+<span id="cb7-49"><a href="#cb7-49" aria-hidden="true" tabindex="-1"></a>ax1.spines[<span class="st">"top"</span>].set_visible(<span class="va">False</span>)</span>
+<span id="cb7-50"><a href="#cb7-50" aria-hidden="true" tabindex="-1"></a>ax1.spines[<span class="st">"right"</span>].set_visible(<span class="va">False</span>)</span>
+<span id="cb7-51"><a href="#cb7-51" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-52"><a href="#cb7-52" aria-hidden="true" tabindex="-1"></a><span class="co"># Right: speedup ratio</span></span>
+<span id="cb7-53"><a href="#cb7-53" aria-hidden="true" tabindex="-1"></a>ax2.plot(dataset_sizes, speedup, color<span class="op">=</span><span class="st">"#d52a2a"</span>, linewidth<span class="op">=</span><span class="dv">2</span>)</span>
+<span id="cb7-54"><a href="#cb7-54" aria-hidden="true" tabindex="-1"></a>ax2.axhline(y<span class="op">=</span><span class="dv">1</span>,   color<span class="op">=</span><span class="st">"#888888"</span>, linestyle<span class="op">=</span><span class="st">"--"</span>, linewidth<span class="op">=</span><span class="fl">0.8</span>, label<span class="op">=</span><span class="st">"No speedup"</span>)</span>
+<span id="cb7-55"><a href="#cb7-55" aria-hidden="true" tabindex="-1"></a>ax2.axhline(y<span class="op">=</span><span class="dv">562</span>, color<span class="op">=</span><span class="st">"#111111"</span>, linestyle<span class="op">=</span><span class="st">":"</span>,  linewidth<span class="op">=</span><span class="fl">0.8</span>, label<span class="op">=</span><span class="st">"562× (flood example)"</span>)</span>
+<span id="cb7-56"><a href="#cb7-56" aria-hidden="true" tabindex="-1"></a>ax2.set_xscale(<span class="st">"log"</span>)</span>
+<span id="cb7-57"><a href="#cb7-57" aria-hidden="true" tabindex="-1"></a>ax2.set_xlabel(<span class="st">"Dataset size (rows, log scale)"</span>)</span>
+<span id="cb7-58"><a href="#cb7-58" aria-hidden="true" tabindex="-1"></a>ax2.set_ylabel(<span class="st">"Speedup ratio"</span>)</span>
+<span id="cb7-59"><a href="#cb7-59" aria-hidden="true" tabindex="-1"></a>ax2.set_title(<span class="st">"Index speedup vs dataset size"</span>)</span>
+<span id="cb7-60"><a href="#cb7-60" aria-hidden="true" tabindex="-1"></a>ax2.legend(fontsize<span class="op">=</span><span class="dv">8</span>)</span>
+<span id="cb7-61"><a href="#cb7-61" aria-hidden="true" tabindex="-1"></a>ax2.spines[<span class="st">"top"</span>].set_visible(<span class="va">False</span>)</span>
+<span id="cb7-62"><a href="#cb7-62" aria-hidden="true" tabindex="-1"></a>ax2.spines[<span class="st">"right"</span>].set_visible(<span class="va">False</span>)</span>
+<span id="cb7-63"><a href="#cb7-63" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-64"><a href="#cb7-64" aria-hidden="true" tabindex="-1"></a>plt.tight_layout(pad<span class="op">=</span><span class="fl">2.0</span>)</span>
+<span id="cb7-65"><a href="#cb7-65" aria-hidden="true" tabindex="-1"></a>plt.savefig(<span class="st">"_assets/ch02-spatial-index-performance.png"</span>, dpi<span class="op">=</span><span class="dv">150</span>, bbox_inches<span class="op">=</span><span class="st">"tight"</span>)</span>
+<span id="cb7-66"><a href="#cb7-66" aria-hidden="true" tabindex="-1"></a>plt.show()</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</details>
+<div class="cell-output cell-output-display">
+<div id="fig-spatial-index-performance" class="quarto-float quarto-figure quarto-figure-center anchored">
+<figure class="quarto-float quarto-float-fig figure">
+<div aria-describedby="fig-spatial-index-performance-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<img src="02-spatial-databases_files/figure-html/fig-spatial-index-performance-output-1.png" width="1746" height="618" class="figure-img">
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-spatial-index-performance-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Figure&nbsp;3.1: Simulated query time vs dataset size for spatial queries with and without a GIST index. Without an index, query time scales linearly with dataset size — every row is examined. With an index, query time scales logarithmically — only a small candidate set is examined. The crossover point is around 10,000 rows; below that, the index overhead is not worth it.
+</figcaption>
+</figure>
+</div>
+</div>
+</div>
+<p>The speedup ratio is not constant. At small dataset sizes (below ~10,000 rows), the index adds overhead without much benefit — there is not enough data to skip. At large dataset sizes, the ratio grows as the index allows more and more data to be skipped. At 2.1 million rows and 0.5% selectivity, the model predicts roughly the 500× speedup observed in the flood example.</p>
+<hr>
+</section>
+<section id="duckdb-spatial-extension" class="level2" data-number="3.6">
+<h2 data-number="3.6" class="anchored" data-anchor-id="duckdb-spatial-extension"><span class="header-section-number">3.6</span> DuckDB spatial extension</h2>
+<p>PostGIS requires a running PostgreSQL server. For analytical workloads that do not need transactions, real-time updates, or concurrent writes, DuckDB is a compelling alternative: an in-process analytical database that runs from a Python session, a command line, or a notebook, with no server, no configuration, and native GeoParquet support.</p>
+<p>The spatial extension adds most of the PostGIS function surface for analytical use:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb8"><pre class="sourceCode sql code-with-copy"><code class="sourceCode sql"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="co">-- Load the spatial extension (once per session)</span></span>
+<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a>INSTALL spatial;</span>
+<span id="cb8-3"><a href="#cb8-3" aria-hidden="true" tabindex="-1"></a>LOAD spatial;</span>
+<span id="cb8-4"><a href="#cb8-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-5"><a href="#cb8-5" aria-hidden="true" tabindex="-1"></a><span class="co">-- Read a GeoParquet file directly — no import step</span></span>
+<span id="cb8-6"><a href="#cb8-6" aria-hidden="true" tabindex="-1"></a><span class="co">-- DuckDB reads Parquet natively; the spatial extension handles geometry</span></span>
+<span id="cb8-7"><a href="#cb8-7" aria-hidden="true" tabindex="-1"></a><span class="kw">CREATE</span> <span class="kw">VIEW</span> land_cover <span class="kw">AS</span></span>
+<span id="cb8-8"><a href="#cb8-8" aria-hidden="true" tabindex="-1"></a><span class="kw">SELECT</span> <span class="op">*</span> <span class="kw">FROM</span> read_parquet(<span class="st">'s3://spatial-data/land-cover/aus/2024/*.parquet'</span>);</span>
+<span id="cb8-9"><a href="#cb8-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-10"><a href="#cb8-10" aria-hidden="true" tabindex="-1"></a><span class="co">-- Spatial query: observations within a given polygon</span></span>
+<span id="cb8-11"><a href="#cb8-11" aria-hidden="true" tabindex="-1"></a><span class="co">-- DuckDB spatial uses the same OGC function names as PostGIS</span></span>
+<span id="cb8-12"><a href="#cb8-12" aria-hidden="true" tabindex="-1"></a><span class="kw">SELECT</span></span>
+<span id="cb8-13"><a href="#cb8-13" aria-hidden="true" tabindex="-1"></a>    observation_id,</span>
+<span id="cb8-14"><a href="#cb8-14" aria-hidden="true" tabindex="-1"></a>    acquired_at,</span>
+<span id="cb8-15"><a href="#cb8-15" aria-hidden="true" tabindex="-1"></a>    land_cover_code,</span>
+<span id="cb8-16"><a href="#cb8-16" aria-hidden="true" tabindex="-1"></a>    ST_Area(ST_GeomFromWKB(geometry)) <span class="kw">AS</span> area_m2</span>
+<span id="cb8-17"><a href="#cb8-17" aria-hidden="true" tabindex="-1"></a><span class="kw">FROM</span> land_cover</span>
+<span id="cb8-18"><a href="#cb8-18" aria-hidden="true" tabindex="-1"></a><span class="kw">WHERE</span> ST_Within(</span>
+<span id="cb8-19"><a href="#cb8-19" aria-hidden="true" tabindex="-1"></a>    ST_GeomFromWKB(geometry),</span>
+<span id="cb8-20"><a href="#cb8-20" aria-hidden="true" tabindex="-1"></a>    ST_GeomFromText(<span class="st">'POLYGON((150.9 -33.9, 151.3 -33.9, 151.3 -33.6, 150.9 -33.6, 150.9 -33.9))'</span>)</span>
+<span id="cb8-21"><a href="#cb8-21" aria-hidden="true" tabindex="-1"></a>);</span>
+<span id="cb8-22"><a href="#cb8-22" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-23"><a href="#cb8-23" aria-hidden="true" tabindex="-1"></a><span class="co">-- Spatial join: count observations per administrative region</span></span>
+<span id="cb8-24"><a href="#cb8-24" aria-hidden="true" tabindex="-1"></a><span class="kw">SELECT</span></span>
+<span id="cb8-25"><a href="#cb8-25" aria-hidden="true" tabindex="-1"></a>    r.region_name,</span>
+<span id="cb8-26"><a href="#cb8-26" aria-hidden="true" tabindex="-1"></a>    <span class="fu">COUNT</span>(<span class="op">*</span>) <span class="kw">AS</span> observation_count,</span>
+<span id="cb8-27"><a href="#cb8-27" aria-hidden="true" tabindex="-1"></a>    <span class="fu">SUM</span>(ST_Area(ST_GeomFromWKB(lc.geometry)) <span class="op">/</span> <span class="fl">1e6</span>) <span class="kw">AS</span> total_area_km2</span>
+<span id="cb8-28"><a href="#cb8-28" aria-hidden="true" tabindex="-1"></a><span class="kw">FROM</span> land_cover lc</span>
+<span id="cb8-29"><a href="#cb8-29" aria-hidden="true" tabindex="-1"></a><span class="kw">JOIN</span> read_parquet(<span class="st">'admin_regions.parquet'</span>) r</span>
+<span id="cb8-30"><a href="#cb8-30" aria-hidden="true" tabindex="-1"></a>    <span class="kw">ON</span> ST_Contains(ST_GeomFromWKB(r.geom), ST_GeomFromWKB(lc.geometry))</span>
+<span id="cb8-31"><a href="#cb8-31" aria-hidden="true" tabindex="-1"></a><span class="kw">WHERE</span> lc.land_cover_code <span class="op">=</span> <span class="st">'GRS'</span></span>
+<span id="cb8-32"><a href="#cb8-32" aria-hidden="true" tabindex="-1"></a><span class="kw">GROUP</span> <span class="kw">BY</span> r.region_name</span>
+<span id="cb8-33"><a href="#cb8-33" aria-hidden="true" tabindex="-1"></a><span class="kw">ORDER</span> <span class="kw">BY</span> total_area_km2 <span class="kw">DESC</span>;</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>DuckDB’s spatial extension does not (as of 2025) build an R-tree index in the PostGIS sense. Instead, it relies on Parquet file-level statistics and row group filtering — the predicate pushdown described in Chapter 1 — to reduce I/O before applying geometry predicates. For queries over large Parquet files with good partitioning, this is often sufficient. For repeated queries over the same in-memory dataset, explicit spatial indexes are not available; the geometry check runs on every candidate row after the Parquet filter.</p>
+<p>The practical implication: use DuckDB for one-off analytical queries, pipeline transformations, and prototyping. Use PostGIS when you need persistent indexes, real-time updates, concurrent access, or sub-second response times on repeated queries with complex spatial predicates.</p>
+<hr>
+</section>
+<section id="query-planning-reading-explain-analyze" class="level2" data-number="3.7">
+<h2 data-number="3.7" class="anchored" data-anchor-id="query-planning-reading-explain-analyze"><span class="header-section-number">3.7</span> Query planning: reading EXPLAIN ANALYZE</h2>
+<p><code>EXPLAIN ANALYZE</code> runs the query and annotates the execution plan with actual row counts and timing. Learning to read it is the difference between guessing why a query is slow and knowing.</p>
+<p>A query with a GIST index on the flood zone problem might produce:</p>
+<pre><code>EXPLAIN ANALYZE
+SELECT o.observation_id
+FROM   spatial_observations o,
+       flood_zones fz
+WHERE  fz.zone_id = 14
+  AND  ST_DWithin(o.geom, fz.geom, 200);</code></pre>
+<p>Output (simplified):</p>
+<pre><code>Nested Loop  (cost=0.41..4821.33 rows=18420 width=8)
+             (actual time=0.312..78.432 rows=18003 loops=1)
+  -&gt;  Index Scan using idx_flood_zones_geom on flood_zones fz
+        (cost=0.14..8.16 rows=1 width=32)
+        (actual time=0.051..0.055 rows=1 loops=1)
+        Index Cond: (zone_id = 14)
+  -&gt;  Index Scan using idx_obs_geom on spatial_observations o
+        (cost=0.27..4812.00 rows=18420 width=8)
+        (actual time=0.259..72.341 rows=18003 loops=1)
+        Index Cond: (geom &amp;&amp; ST_Expand($0, '200'::double precision))
+        Filter: ST_DWithin(geom, $0, '200'::double precision)
+        Rows Removed by Filter: 12997
+Total runtime: 78.491 ms</code></pre>
+<p>What to read here:</p>
+<p><strong>“Index Scan using idx_obs_geom”</strong> — the planner chose to use the GIST index. If this said “Seq Scan on spatial_observations”, the index is absent, disabled, or the planner estimated it would return too many rows to be worth it.</p>
+<p><strong>“Index Cond: (geom &amp;&amp; ST_Expand($0, ‘200’::double precision))”</strong> — this is the bounding-box pass 1. The <code>&amp;&amp;</code> operator is the PostGIS bounding-box intersection operator. <code>ST_Expand</code> inflates the query geometry by 200 metres to create the candidate bounding box. The index returns all rows whose bounding box intersects this expanded box.</p>
+<p><strong>“Filter: ST_DWithin(…)” and “Rows Removed by Filter: 12997”</strong> — this is pass 2. Of the 31,000 rows returned by the bounding-box pass, 12,997 were rejected by the exact geometry check. These are the false positives: their bounding boxes intersected the query, but their actual geometry was more than 200 metres away.</p>
+<p><strong>“rows=18420 … actual rows=18003”</strong> — the planner estimated 18,420 result rows; the actual count was 18,003. A 2% error is good. Errors of 10× or more in row count estimates usually indicate stale table statistics — run <code>ANALYZE spatial_observations</code> to refresh them.</p>
+<p><strong>“Total runtime: 78.491 ms”</strong> — 78ms. The same query without the index took 45 seconds. The EXPLAIN output shows exactly why: instead of examining 2.1 million rows sequentially, the planner read 31,000 rows from the index candidates and checked geometry on all 31,000 of them.</p>
+<hr>
+</section>
+<section id="spatial-joins-at-scale" class="level2" data-number="3.8">
+<h2 data-number="3.8" class="anchored" data-anchor-id="spatial-joins-at-scale"><span class="header-section-number">3.8</span> Spatial joins at scale</h2>
+<p>Spatial joins are the most expensive common spatial operation: joining two large tables on a spatial predicate rather than an equality condition. A join between a 2M-polygon dataset and a 500K-polygon dataset with <code>ST_Intersects</code> is not 1 billion geometry checks — a good planner with indexes on both sides turns it into something manageable — but it requires that both geometry columns be indexed and that the CRS is consistent.</p>
+<section id="the-antimeridian-problem" class="level3" data-number="3.8.1">
+<h3 data-number="3.8.1" class="anchored" data-anchor-id="the-antimeridian-problem"><span class="header-section-number">3.8.1</span> The antimeridian problem</h3>
+<p>The antimeridian is the 180° meridian, where -180° and +180° longitude are the same line. Features that cross it — Alaska’s Aleutian islands, Russia’s Chukotka, New Zealand’s Chatham Islands area — have geometry coordinates that wrap: a polygon might have vertices at longitudes 178°E and 178°W, which in a standard WGS84 coordinate system appear to be 356° apart rather than 4° apart.</p>
+<p>A bounding box for such a feature, computed naively, spans almost the entire world. Every spatial query that uses a bounding-box index filter will flag this feature as a candidate — not because it is near the query area, but because its bounding box is 356° wide.</p>
+<p>There is no elegant database-level solution. The practical approaches are:</p>
+<ol type="1">
+<li><strong>Split geometries at the antimeridian</strong> before loading. GDAL’s <code>ogr2ogr</code> with <code>-wrapdateline</code> does this. The polygon becomes two polygons, one in each hemisphere, each with a sensible bounding box.</li>
+<li><strong>Project to a CRS that does not have the antimeridian problem</strong> for the region of interest (e.g., EPSG:3832 for the Pacific).</li>
+<li><strong>Flag the affected rows</strong> and handle them with a separate query path.</li>
+</ol>
+<p>The rule is: never load data that crosses the antimeridian into WGS84 geometry without splitting it first, unless you understand the index and query implications.</p>
+</section>
+<section id="always-transform-before-comparing" class="level3" data-number="3.8.2">
+<h3 data-number="3.8.2" class="anchored" data-anchor-id="always-transform-before-comparing"><span class="header-section-number">3.8.2</span> Always transform before comparing</h3>
+<p>Two geometry columns in different CRSs will silently produce wrong results if compared without transformation. PostGIS does not check CRS compatibility at query time — it compares coordinates as numbers, regardless of what those coordinates represent.</p>
+<p>A query joining New Zealand data in NZTM2000 (EPSG:2193) to global data in WGS84 (EPSG:4326) will produce no matches — the coordinate spaces do not overlap — without raising an error. This is one of the most common sources of silent data corruption in spatial analytics.</p>
+<p>The defense is simple: store all geometry in a consistent CRS (WGS84 EPSG:4326 is the standard for global data), add a constraint to enforce it, and <code>ST_Transform</code> at query time when a local projection is needed for computation.</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb11"><pre class="sourceCode sql code-with-copy"><code class="sourceCode sql"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a><span class="co">-- Enforced CRS constraint (PostGIS)</span></span>
+<span id="cb11-2"><a href="#cb11-2" aria-hidden="true" tabindex="-1"></a><span class="kw">ALTER</span> <span class="kw">TABLE</span> spatial_observations</span>
+<span id="cb11-3"><a href="#cb11-3" aria-hidden="true" tabindex="-1"></a>    <span class="kw">ADD</span> <span class="kw">CONSTRAINT</span> enforce_srid_geom</span>
+<span id="cb11-4"><a href="#cb11-4" aria-hidden="true" tabindex="-1"></a>    <span class="kw">CHECK</span> (ST_SRID(geom) <span class="op">=</span> <span class="dv">4326</span>);</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<hr>
+</section>
+</section>
+<section id="what-to-try" class="level2" data-number="3.9">
+<h2 data-number="3.9" class="anchored" data-anchor-id="what-to-try"><span class="header-section-number">3.9</span> What to try</h2>
+<div class="callout callout-style-simple callout-tip callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+<span class="screen-reader-only">Tip</span>What to try
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<ol type="1">
+<li><p><strong>Change the query radius.</strong> In the interactive cell below, <code>query_radius</code> controls the size of the bounding-box window used to find candidates. A small radius is spatially selective — the index filter returns few candidates, and almost all of them pass the exact geometry check. A large radius is not selective — the index returns many candidates and the false-positive rate rises. Watch how the ratio of candidates to final results changes.</p></li>
+<li><p><strong>Vary point density.</strong> Increase <code>n_points</code> from 50,000 to 500,000. The index becomes more valuable as dataset size grows — the number of candidates remains approximately proportional to the query area, not to the total dataset size. At 500,000 points, the sequential scan cost grows proportionally, but the indexed scan stays roughly constant.</p></li>
+<li><p><strong>Simulate a non-selective query.</strong> Set <code>query_radius</code> to 0.4 (covering about 64% of the bounding box). The index returns nearly all rows as candidates, and the “savings” disappear. This is why the query planner switches to a sequential scan for non-selective queries — the index overhead is not free.</p></li>
+</ol>
+</div>
+</div>
+<div class="pyodide-cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb12"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a><span class="co"># --- Try changing these parameters ---</span></span>
+<span id="cb12-2"><a href="#cb12-2" aria-hidden="true" tabindex="-1"></a>n_points     <span class="op">=</span> <span class="dv">50_000</span>   <span class="co"># number of points in the dataset</span></span>
+<span id="cb12-3"><a href="#cb12-3" aria-hidden="true" tabindex="-1"></a>query_radius <span class="op">=</span> <span class="fl">0.05</span>     <span class="co"># half-width of the query bounding box (in normalised coords, 0–1)</span></span>
+<span id="cb12-4"><a href="#cb12-4" aria-hidden="true" tabindex="-1"></a>point_density_in_query <span class="op">=</span> <span class="va">None</span>  <span class="co"># leave as None to use uniform distribution</span></span>
+<span id="cb12-5"><a href="#cb12-5" aria-hidden="true" tabindex="-1"></a><span class="co"># --- End of parameters ---</span></span>
+<span id="cb12-6"><a href="#cb12-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-7"><a href="#cb12-7" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> numpy <span class="im">as</span> np</span>
+<span id="cb12-8"><a href="#cb12-8" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> matplotlib.pyplot <span class="im">as</span> plt</span>
+<span id="cb12-9"><a href="#cb12-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-10"><a href="#cb12-10" aria-hidden="true" tabindex="-1"></a>rng <span class="op">=</span> np.random.default_rng(<span class="dv">42</span>)</span>
+<span id="cb12-11"><a href="#cb12-11" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-12"><a href="#cb12-12" aria-hidden="true" tabindex="-1"></a><span class="co"># Generate random points in [0, 1] x [0, 1] bounding box</span></span>
+<span id="cb12-13"><a href="#cb12-13" aria-hidden="true" tabindex="-1"></a>points <span class="op">=</span> rng.random((n_points, <span class="dv">2</span>))</span>
+<span id="cb12-14"><a href="#cb12-14" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-15"><a href="#cb12-15" aria-hidden="true" tabindex="-1"></a><span class="co"># Query window: centred at (0.5, 0.5) with half-width = query_radius</span></span>
+<span id="cb12-16"><a href="#cb12-16" aria-hidden="true" tabindex="-1"></a>qx, qy <span class="op">=</span> <span class="fl">0.5</span>, <span class="fl">0.5</span></span>
+<span id="cb12-17"><a href="#cb12-17" aria-hidden="true" tabindex="-1"></a>qminx <span class="op">=</span> qx <span class="op">-</span> query_radius</span>
+<span id="cb12-18"><a href="#cb12-18" aria-hidden="true" tabindex="-1"></a>qmaxx <span class="op">=</span> qx <span class="op">+</span> query_radius</span>
+<span id="cb12-19"><a href="#cb12-19" aria-hidden="true" tabindex="-1"></a>qminy <span class="op">=</span> qy <span class="op">-</span> query_radius</span>
+<span id="cb12-20"><a href="#cb12-20" aria-hidden="true" tabindex="-1"></a>qmaxy <span class="op">=</span> qy <span class="op">+</span> query_radius</span>
+<span id="cb12-21"><a href="#cb12-21" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-22"><a href="#cb12-22" aria-hidden="true" tabindex="-1"></a><span class="co"># Pass 1: bounding-box filter (for points, bounding box IS the point)</span></span>
+<span id="cb12-23"><a href="#cb12-23" aria-hidden="true" tabindex="-1"></a><span class="co"># This simulates the GIST index returning all points whose bounding box</span></span>
+<span id="cb12-24"><a href="#cb12-24" aria-hidden="true" tabindex="-1"></a><span class="co"># intersects the query window</span></span>
+<span id="cb12-25"><a href="#cb12-25" aria-hidden="true" tabindex="-1"></a>bbox_candidates <span class="op">=</span> (</span>
+<span id="cb12-26"><a href="#cb12-26" aria-hidden="true" tabindex="-1"></a>    (points[:, <span class="dv">0</span>] <span class="op">&gt;=</span> qminx) <span class="op">&amp;</span> (points[:, <span class="dv">0</span>] <span class="op">&lt;=</span> qmaxx) <span class="op">&amp;</span></span>
+<span id="cb12-27"><a href="#cb12-27" aria-hidden="true" tabindex="-1"></a>    (points[:, <span class="dv">1</span>] <span class="op">&gt;=</span> qminy) <span class="op">&amp;</span> (points[:, <span class="dv">1</span>] <span class="op">&lt;=</span> qmaxy)</span>
+<span id="cb12-28"><a href="#cb12-28" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb12-29"><a href="#cb12-29" aria-hidden="true" tabindex="-1"></a>candidate_points <span class="op">=</span> points[bbox_candidates]</span>
+<span id="cb12-30"><a href="#cb12-30" aria-hidden="true" tabindex="-1"></a>n_candidates <span class="op">=</span> <span class="bu">len</span>(candidate_points)</span>
+<span id="cb12-31"><a href="#cb12-31" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-32"><a href="#cb12-32" aria-hidden="true" tabindex="-1"></a><span class="co"># Pass 2: exact geometry check</span></span>
+<span id="cb12-33"><a href="#cb12-33" aria-hidden="true" tabindex="-1"></a><span class="co"># For a circular query (distance from centre &lt;= query_radius),</span></span>
+<span id="cb12-34"><a href="#cb12-34" aria-hidden="true" tabindex="-1"></a><span class="co"># some bounding-box candidates fall in the corners and fail the exact check</span></span>
+<span id="cb12-35"><a href="#cb12-35" aria-hidden="true" tabindex="-1"></a>distances <span class="op">=</span> np.sqrt(</span>
+<span id="cb12-36"><a href="#cb12-36" aria-hidden="true" tabindex="-1"></a>    (candidate_points[:, <span class="dv">0</span>] <span class="op">-</span> qx)<span class="op">**</span><span class="dv">2</span> <span class="op">+</span></span>
+<span id="cb12-37"><a href="#cb12-37" aria-hidden="true" tabindex="-1"></a>    (candidate_points[:, <span class="dv">1</span>] <span class="op">-</span> qy)<span class="op">**</span><span class="dv">2</span></span>
+<span id="cb12-38"><a href="#cb12-38" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb12-39"><a href="#cb12-39" aria-hidden="true" tabindex="-1"></a>exact_results <span class="op">=</span> distances <span class="op">&lt;=</span> query_radius</span>
+<span id="cb12-40"><a href="#cb12-40" aria-hidden="true" tabindex="-1"></a>n_results <span class="op">=</span> exact_results.<span class="bu">sum</span>()</span>
+<span id="cb12-41"><a href="#cb12-41" aria-hidden="true" tabindex="-1"></a>n_false_positives <span class="op">=</span> n_candidates <span class="op">-</span> n_results</span>
+<span id="cb12-42"><a href="#cb12-42" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-43"><a href="#cb12-43" aria-hidden="true" tabindex="-1"></a><span class="co"># Metrics</span></span>
+<span id="cb12-44"><a href="#cb12-44" aria-hidden="true" tabindex="-1"></a>bbox_fraction    <span class="op">=</span> n_candidates <span class="op">/</span> n_points</span>
+<span id="cb12-45"><a href="#cb12-45" aria-hidden="true" tabindex="-1"></a>false_pos_rate   <span class="op">=</span> n_false_positives <span class="op">/</span> <span class="bu">max</span>(n_candidates, <span class="dv">1</span>)</span>
+<span id="cb12-46"><a href="#cb12-46" aria-hidden="true" tabindex="-1"></a>selectivity      <span class="op">=</span> n_results <span class="op">/</span> n_points</span>
+<span id="cb12-47"><a href="#cb12-47" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-48"><a href="#cb12-48" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f"Dataset size:          </span><span class="sc">{</span>n_points<span class="sc">:,}</span><span class="ss"> points"</span>)</span>
+<span id="cb12-49"><a href="#cb12-49" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f"Query radius:          </span><span class="sc">{</span>query_radius<span class="sc">:.3f}</span><span class="ss"> (normalised)"</span>)</span>
+<span id="cb12-50"><a href="#cb12-50" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f""</span>)</span>
+<span id="cb12-51"><a href="#cb12-51" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f"Pass 1 (bbox filter):  </span><span class="sc">{</span>n_candidates<span class="sc">:,}</span><span class="ss"> candidates  (</span><span class="sc">{</span>bbox_fraction<span class="op">*</span><span class="dv">100</span><span class="sc">:.1f}</span><span class="ss">% of dataset)"</span>)</span>
+<span id="cb12-52"><a href="#cb12-52" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f"Pass 2 (exact check):  </span><span class="sc">{</span>n_results<span class="sc">:,}</span><span class="ss"> results      (</span><span class="sc">{</span>selectivity<span class="op">*</span><span class="dv">100</span><span class="sc">:.2f}</span><span class="ss">% of dataset)"</span>)</span>
+<span id="cb12-53"><a href="#cb12-53" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f"False positives:       </span><span class="sc">{</span>n_false_positives<span class="sc">:,}</span><span class="ss"> (</span><span class="sc">{</span>false_pos_rate<span class="op">*</span><span class="dv">100</span><span class="sc">:.1f}</span><span class="ss">% of candidates)"</span>)</span>
+<span id="cb12-54"><a href="#cb12-54" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f""</span>)</span>
+<span id="cb12-55"><a href="#cb12-55" aria-hidden="true" tabindex="-1"></a><span class="co"># Simulated timing (relative units)</span></span>
+<span id="cb12-56"><a href="#cb12-56" aria-hidden="true" tabindex="-1"></a>seq_scan_cost    <span class="op">=</span> n_points <span class="op">*</span> <span class="fl">1.0</span>          <span class="co"># full table scan cost</span></span>
+<span id="cb12-57"><a href="#cb12-57" aria-hidden="true" tabindex="-1"></a>indexed_cost     <span class="op">=</span> n_candidates <span class="op">*</span> <span class="fl">2.5</span>      <span class="co"># index candidates × refinement cost</span></span>
+<span id="cb12-58"><a href="#cb12-58" aria-hidden="true" tabindex="-1"></a>                                           <span class="co"># (geometry check is ~2.5× bbox check)</span></span>
+<span id="cb12-59"><a href="#cb12-59" aria-hidden="true" tabindex="-1"></a>speedup <span class="op">=</span> seq_scan_cost <span class="op">/</span> <span class="bu">max</span>(indexed_cost, <span class="dv">1</span>)</span>
+<span id="cb12-60"><a href="#cb12-60" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f"Simulated speedup:     </span><span class="sc">{</span>speedup<span class="sc">:.1f}</span><span class="ss">×"</span>)</span>
+<span id="cb12-61"><a href="#cb12-61" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f"(Index worth using: </span><span class="sc">{</span><span class="st">'Yes'</span> <span class="cf">if</span> speedup <span class="op">&gt;</span> <span class="dv">1</span> <span class="cf">else</span> <span class="st">'No, planner would choose Seq Scan'</span><span class="sc">}</span><span class="ss">)"</span>)</span>
+<span id="cb12-62"><a href="#cb12-62" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-63"><a href="#cb12-63" aria-hidden="true" tabindex="-1"></a><span class="co"># Plot: show points, candidates, and final results</span></span>
+<span id="cb12-64"><a href="#cb12-64" aria-hidden="true" tabindex="-1"></a>fig, (ax1, ax2) <span class="op">=</span> plt.subplots(<span class="dv">1</span>, <span class="dv">2</span>, figsize<span class="op">=</span>(<span class="dv">10</span>, <span class="fl">4.5</span>))</span>
+<span id="cb12-65"><a href="#cb12-65" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-66"><a href="#cb12-66" aria-hidden="true" tabindex="-1"></a><span class="co"># Left: spatial view</span></span>
+<span id="cb12-67"><a href="#cb12-67" aria-hidden="true" tabindex="-1"></a>sample <span class="op">=</span> <span class="bu">min</span>(n_points, <span class="dv">5000</span>)</span>
+<span id="cb12-68"><a href="#cb12-68" aria-hidden="true" tabindex="-1"></a>sample_idx <span class="op">=</span> rng.choice(n_points, sample, replace<span class="op">=</span><span class="va">False</span>)</span>
+<span id="cb12-69"><a href="#cb12-69" aria-hidden="true" tabindex="-1"></a>ax1.scatter(points[sample_idx, <span class="dv">0</span>], points[sample_idx, <span class="dv">1</span>],</span>
+<span id="cb12-70"><a href="#cb12-70" aria-hidden="true" tabindex="-1"></a>            s<span class="op">=</span><span class="fl">0.5</span>, color<span class="op">=</span><span class="st">"#cccccc"</span>, alpha<span class="op">=</span><span class="fl">0.5</span>, label<span class="op">=</span><span class="ss">f"All points (sample </span><span class="sc">{</span>sample<span class="sc">:,}</span><span class="ss">)"</span>)</span>
+<span id="cb12-71"><a href="#cb12-71" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-72"><a href="#cb12-72" aria-hidden="true" tabindex="-1"></a><span class="co"># Bounding box candidates</span></span>
+<span id="cb12-73"><a href="#cb12-73" aria-hidden="true" tabindex="-1"></a>cand_idx <span class="op">=</span> np.where(bbox_candidates)[<span class="dv">0</span>]</span>
+<span id="cb12-74"><a href="#cb12-74" aria-hidden="true" tabindex="-1"></a>cand_sample <span class="op">=</span> cand_idx[:<span class="bu">min</span>(<span class="bu">len</span>(cand_idx), <span class="dv">2000</span>)]</span>
+<span id="cb12-75"><a href="#cb12-75" aria-hidden="true" tabindex="-1"></a>ax1.scatter(points[cand_sample, <span class="dv">0</span>], points[cand_sample, <span class="dv">1</span>],</span>
+<span id="cb12-76"><a href="#cb12-76" aria-hidden="true" tabindex="-1"></a>            s<span class="op">=</span><span class="dv">3</span>, color<span class="op">=</span><span class="st">"#888888"</span>, alpha<span class="op">=</span><span class="fl">0.7</span>, label<span class="op">=</span><span class="ss">f"BBox candidates (</span><span class="sc">{</span>n_candidates<span class="sc">:,}</span><span class="ss">)"</span>)</span>
+<span id="cb12-77"><a href="#cb12-77" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-78"><a href="#cb12-78" aria-hidden="true" tabindex="-1"></a><span class="co"># Exact results</span></span>
+<span id="cb12-79"><a href="#cb12-79" aria-hidden="true" tabindex="-1"></a>result_idx <span class="op">=</span> np.where(bbox_candidates)[<span class="dv">0</span>][exact_results]</span>
+<span id="cb12-80"><a href="#cb12-80" aria-hidden="true" tabindex="-1"></a>ax1.scatter(points[result_idx, <span class="dv">0</span>], points[result_idx, <span class="dv">1</span>],</span>
+<span id="cb12-81"><a href="#cb12-81" aria-hidden="true" tabindex="-1"></a>            s<span class="op">=</span><span class="dv">4</span>, color<span class="op">=</span><span class="st">"#d52a2a"</span>, alpha<span class="op">=</span><span class="fl">0.9</span>, label<span class="op">=</span><span class="ss">f"Exact results (</span><span class="sc">{</span>n_results<span class="sc">:,}</span><span class="ss">)"</span>)</span>
+<span id="cb12-82"><a href="#cb12-82" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-83"><a href="#cb12-83" aria-hidden="true" tabindex="-1"></a><span class="co"># Query shapes</span></span>
+<span id="cb12-84"><a href="#cb12-84" aria-hidden="true" tabindex="-1"></a>rect <span class="op">=</span> plt.Rectangle((qminx, qminy), <span class="dv">2</span><span class="op">*</span>query_radius, <span class="dv">2</span><span class="op">*</span>query_radius,</span>
+<span id="cb12-85"><a href="#cb12-85" aria-hidden="true" tabindex="-1"></a>                       fill<span class="op">=</span><span class="va">False</span>, edgecolor<span class="op">=</span><span class="st">"#888888"</span>, linewidth<span class="op">=</span><span class="dv">1</span>, linestyle<span class="op">=</span><span class="st">"--"</span>)</span>
+<span id="cb12-86"><a href="#cb12-86" aria-hidden="true" tabindex="-1"></a>circle <span class="op">=</span> plt.Circle((qx, qy), query_radius, fill<span class="op">=</span><span class="va">False</span>,</span>
+<span id="cb12-87"><a href="#cb12-87" aria-hidden="true" tabindex="-1"></a>                     edgecolor<span class="op">=</span><span class="st">"#111111"</span>, linewidth<span class="op">=</span><span class="fl">1.5</span>)</span>
+<span id="cb12-88"><a href="#cb12-88" aria-hidden="true" tabindex="-1"></a>ax1.add_patch(rect)</span>
+<span id="cb12-89"><a href="#cb12-89" aria-hidden="true" tabindex="-1"></a>ax1.add_patch(circle)</span>
+<span id="cb12-90"><a href="#cb12-90" aria-hidden="true" tabindex="-1"></a>ax1.set_xlim(<span class="dv">0</span>, <span class="dv">1</span>)</span>
+<span id="cb12-91"><a href="#cb12-91" aria-hidden="true" tabindex="-1"></a>ax1.set_ylim(<span class="dv">0</span>, <span class="dv">1</span>)</span>
+<span id="cb12-92"><a href="#cb12-92" aria-hidden="true" tabindex="-1"></a>ax1.set_aspect(<span class="st">"equal"</span>)</span>
+<span id="cb12-93"><a href="#cb12-93" aria-hidden="true" tabindex="-1"></a>ax1.set_title(<span class="st">"Two-pass spatial filter"</span>)</span>
+<span id="cb12-94"><a href="#cb12-94" aria-hidden="true" tabindex="-1"></a>ax1.legend(fontsize<span class="op">=</span><span class="dv">7</span>, loc<span class="op">=</span><span class="st">"upper left"</span>)</span>
+<span id="cb12-95"><a href="#cb12-95" aria-hidden="true" tabindex="-1"></a>ax1.spines[<span class="st">"top"</span>].set_visible(<span class="va">False</span>)</span>
+<span id="cb12-96"><a href="#cb12-96" aria-hidden="true" tabindex="-1"></a>ax1.spines[<span class="st">"right"</span>].set_visible(<span class="va">False</span>)</span>
+<span id="cb12-97"><a href="#cb12-97" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-98"><a href="#cb12-98" aria-hidden="true" tabindex="-1"></a><span class="co"># Right: bar chart of pass counts</span></span>
+<span id="cb12-99"><a href="#cb12-99" aria-hidden="true" tabindex="-1"></a>labels  <span class="op">=</span> [<span class="st">"Total</span><span class="ch">\n</span><span class="st">dataset"</span>, <span class="st">"BBox</span><span class="ch">\n</span><span class="st">candidates</span><span class="ch">\n</span><span class="st">(pass 1)"</span>, <span class="st">"Exact</span><span class="ch">\n</span><span class="st">results</span><span class="ch">\n</span><span class="st">(pass 2)"</span>]</span>
+<span id="cb12-100"><a href="#cb12-100" aria-hidden="true" tabindex="-1"></a>counts  <span class="op">=</span> [n_points, n_candidates, n_results]</span>
+<span id="cb12-101"><a href="#cb12-101" aria-hidden="true" tabindex="-1"></a>colors  <span class="op">=</span> [<span class="st">"#cccccc"</span>, <span class="st">"#888888"</span>, <span class="st">"#d52a2a"</span>]</span>
+<span id="cb12-102"><a href="#cb12-102" aria-hidden="true" tabindex="-1"></a>bars <span class="op">=</span> ax2.bar(labels, counts, color<span class="op">=</span>colors, width<span class="op">=</span><span class="fl">0.5</span>)</span>
+<span id="cb12-103"><a href="#cb12-103" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> bar, count <span class="kw">in</span> <span class="bu">zip</span>(bars, counts):</span>
+<span id="cb12-104"><a href="#cb12-104" aria-hidden="true" tabindex="-1"></a>    ax2.text(bar.get_x() <span class="op">+</span> bar.get_width()<span class="op">/</span><span class="dv">2</span>, bar.get_height() <span class="op">*</span> <span class="fl">1.02</span>,</span>
+<span id="cb12-105"><a href="#cb12-105" aria-hidden="true" tabindex="-1"></a>             <span class="ss">f"</span><span class="sc">{</span>count<span class="sc">:,}</span><span class="ss">"</span>, ha<span class="op">=</span><span class="st">"center"</span>, va<span class="op">=</span><span class="st">"bottom"</span>, fontsize<span class="op">=</span><span class="dv">8</span>)</span>
+<span id="cb12-106"><a href="#cb12-106" aria-hidden="true" tabindex="-1"></a>ax2.set_ylabel(<span class="st">"Row count"</span>)</span>
+<span id="cb12-107"><a href="#cb12-107" aria-hidden="true" tabindex="-1"></a>ax2.set_title(<span class="st">"Rows examined at each pass"</span>)</span>
+<span id="cb12-108"><a href="#cb12-108" aria-hidden="true" tabindex="-1"></a>ax2.spines[<span class="st">"top"</span>].set_visible(<span class="va">False</span>)</span>
+<span id="cb12-109"><a href="#cb12-109" aria-hidden="true" tabindex="-1"></a>ax2.spines[<span class="st">"right"</span>].set_visible(<span class="va">False</span>)</span>
+<span id="cb12-110"><a href="#cb12-110" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-111"><a href="#cb12-111" aria-hidden="true" tabindex="-1"></a>plt.tight_layout(pad<span class="op">=</span><span class="fl">2.0</span>)</span>
+<span id="cb12-112"><a href="#cb12-112" aria-hidden="true" tabindex="-1"></a>plt.show()</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<hr>
+</section>
+<section id="exercises" class="level2" data-number="3.10">
+<h2 data-number="3.10" class="anchored" data-anchor-id="exercises"><span class="header-section-number">3.10</span> Exercises</h2>
+<p><strong>2.1 — Index mechanics</strong></p>
+<p>A table has 5 million point observations with a GIST index. A query uses <code>ST_DWithin(geom, $1, 1000)</code> where <code>$1</code> is a point in central Sydney. The query’s bounding box covers approximately 0.8% of the total dataset extent.</p>
+<ol type="a">
+<li>Estimate the number of rows returned by the bounding-box pass (pass 1). Show your working.</li>
+<li>Assuming 15% of bounding-box candidates fail the exact <code>ST_DWithin</code> check (false positives), how many rows does the geometry refinement (pass 2) examine?</li>
+<li>EXPLAIN ANALYZE reports “Rows Removed by Filter: 6,200” and “actual rows: 34,100”. What is the false-positive rate? Is this consistent with your estimate in (b)?</li>
+<li>A colleague suggests adding a second query condition <code>WHERE tile_id = 'SYD-042'</code> to reduce the candidate set before the spatial filter. Under what conditions does this help? Under what conditions does it not?</li>
+</ol>
+<p><strong>2.2 — PostGIS query design</strong></p>
+<p>Write PostGIS SQL for each of the following:</p>
+<ol type="a">
+<li>Find all fire stations within 10 km of a specified highway corridor (represented as a LINESTRING geometry). Return station name, distance in metres, and the closest point on the corridor to each station.</li>
+<li>Calculate the total area (in km²) of land parcels classified as “industrial” in each local government area. Assume two tables: <code>land_parcels(parcel_id, classification, geom GEOMETRY(POLYGON, 4326))</code> and <code>lgas(lga_id, lga_name, geom GEOMETRY(MULTIPOLYGON, 4326))</code>.</li>
+<li>Return all sensor readings from the last 24 hours that fall within 500 metres of any observation flagged as “anomalous” in the same period. There is a single <code>sensor_readings(reading_id, recorded_at TIMESTAMPTZ, is_anomalous BOOLEAN, geom GEOMETRY(POINT, 4326))</code> table.</li>
+</ol>
+<p><strong>2.3 — Query plan interpretation</strong></p>
+<p>The following EXPLAIN ANALYZE output is from a slow spatial query:</p>
+<pre><code>Seq Scan on spatial_observations  (cost=0.00..892341.00 rows=2100000 width=180)
+                                   (actual time=0.021..44821.332 rows=18003 loops=1)
+  Filter: ((acquired_at &gt;= '2024-01-01') AND ST_DWithin(geom, $1, 200))
+  Rows Removed by Filter: 2081997
+Total runtime: 44821.4 ms</code></pre>
+<ol type="a">
+<li>What does “Seq Scan” tell you about the index situation?</li>
+<li>“rows=2100000” is the planner’s estimate; “actual rows=18003” is the real count. The filter removed 2,081,997 rows. Express this as a ratio: work done vs useful output.</li>
+<li>Two indexes could speed this query: a GIST index on <code>geom</code> and a B-tree index on <code>acquired_at</code>. Which would provide more benefit for this query, and why? What if the query were for a country-wide extent rather than a 200m radius?</li>
+<li>After adding a GIST index, EXPLAIN ANALYZE still shows a Seq Scan. Name two possible reasons.</li>
+</ol>
+<p><strong>2.4 — CRS and projection</strong></p>
+<p>A spatial join between a New Zealand parcels dataset (EPSG:2193, NZTM2000) and a global administrative boundaries dataset (EPSG:4326, WGS84) returns zero results, though you know there is overlap.</p>
+<ol type="a">
+<li>Explain why the join returns no results without raising an error.</li>
+<li>Write the SQL to fix the join using <code>ST_Transform</code>. Which table should you transform, and why?</li>
+<li>You need to compute area for the joined results in square metres. Should you compute area before or after transforming? Which CRS should you use for the area calculation?</li>
+<li>The global dataset has features that cross the antimeridian. Describe what happens to their bounding boxes in EPSG:4326 and why this affects query performance.</li>
+</ol>
+<hr>
+</section>
+<section id="build-this" class="level2" data-number="3.11">
+<h2 data-number="3.11" class="anchored" data-anchor-id="build-this"><span class="header-section-number">3.11</span> Build this</h2>
+<p>Full PostGIS schema for a spatial observations table, a GIST index, a production <code>ST_DWithin</code> query, and an annotated EXPLAIN ANALYZE interpretation.</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb14"><pre class="sourceCode sql code-with-copy"><code class="sourceCode sql"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true" tabindex="-1"></a><span class="co">-- ── Schema ────────────────────────────────────────────────────────────────────</span></span>
+<span id="cb14-2"><a href="#cb14-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb14-3"><a href="#cb14-3" aria-hidden="true" tabindex="-1"></a><span class="kw">CREATE</span> <span class="kw">TABLE</span> spatial_observations (</span>
+<span id="cb14-4"><a href="#cb14-4" aria-hidden="true" tabindex="-1"></a>    observation_id    BIGINT <span class="kw">GENERATED</span> ALWAYS <span class="kw">AS</span> IDENTITY <span class="kw">PRIMARY</span> <span class="kw">KEY</span>,</span>
+<span id="cb14-5"><a href="#cb14-5" aria-hidden="true" tabindex="-1"></a>    acquired_at       TIMESTAMPTZ                   <span class="kw">NOT</span> <span class="kw">NULL</span>,</span>
+<span id="cb14-6"><a href="#cb14-6" aria-hidden="true" tabindex="-1"></a>    source_id         <span class="dt">VARCHAR</span>(<span class="dv">50</span>)                   <span class="kw">NOT</span> <span class="kw">NULL</span>,</span>
+<span id="cb14-7"><a href="#cb14-7" aria-hidden="true" tabindex="-1"></a>    tile_id           <span class="dt">VARCHAR</span>(<span class="dv">20</span>)                   <span class="kw">NOT</span> <span class="kw">NULL</span>,</span>
+<span id="cb14-8"><a href="#cb14-8" aria-hidden="true" tabindex="-1"></a>    land_cover_code   <span class="dt">CHAR</span>(<span class="dv">4</span>)                       <span class="kw">NOT</span> <span class="kw">NULL</span>,</span>
+<span id="cb14-9"><a href="#cb14-9" aria-hidden="true" tabindex="-1"></a>    confidence        FLOAT4                        <span class="kw">CHECK</span> (confidence <span class="kw">BETWEEN</span> <span class="dv">0</span> <span class="kw">AND</span> <span class="dv">1</span>),</span>
+<span id="cb14-10"><a href="#cb14-10" aria-hidden="true" tabindex="-1"></a>    quality_flag      <span class="dt">SMALLINT</span>                      <span class="kw">NOT</span> <span class="kw">NULL</span> <span class="kw">DEFAULT</span> <span class="dv">0</span>,</span>
+<span id="cb14-11"><a href="#cb14-11" aria-hidden="true" tabindex="-1"></a>    geom              GEOMETRY(POLYGON, <span class="dv">4326</span>)        <span class="kw">NOT</span> <span class="kw">NULL</span>,</span>
+<span id="cb14-12"><a href="#cb14-12" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb14-13"><a href="#cb14-13" aria-hidden="true" tabindex="-1"></a>    <span class="co">-- Enforce CRS so queries across tables are never silently comparing</span></span>
+<span id="cb14-14"><a href="#cb14-14" aria-hidden="true" tabindex="-1"></a>    <span class="co">-- incompatible coordinate spaces</span></span>
+<span id="cb14-15"><a href="#cb14-15" aria-hidden="true" tabindex="-1"></a>    <span class="kw">CONSTRAINT</span> enforce_srid <span class="kw">CHECK</span> (ST_SRID(geom) <span class="op">=</span> <span class="dv">4326</span>)</span>
+<span id="cb14-16"><a href="#cb14-16" aria-hidden="true" tabindex="-1"></a>) <span class="kw">PARTITION</span> <span class="kw">BY</span> <span class="kw">RANGE</span> (acquired_at);</span>
+<span id="cb14-17"><a href="#cb14-17" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb14-18"><a href="#cb14-18" aria-hidden="true" tabindex="-1"></a><span class="co">-- Annual partitions — create ahead of time or via automation</span></span>
+<span id="cb14-19"><a href="#cb14-19" aria-hidden="true" tabindex="-1"></a><span class="kw">CREATE</span> <span class="kw">TABLE</span> spatial_observations_2023</span>
+<span id="cb14-20"><a href="#cb14-20" aria-hidden="true" tabindex="-1"></a>    <span class="kw">PARTITION</span> <span class="kw">OF</span> spatial_observations</span>
+<span id="cb14-21"><a href="#cb14-21" aria-hidden="true" tabindex="-1"></a>    <span class="cf">FOR</span> <span class="kw">VALUES</span> <span class="kw">FROM</span> (<span class="st">'2023-01-01'</span>) <span class="kw">TO</span> (<span class="st">'2024-01-01'</span>);</span>
+<span id="cb14-22"><a href="#cb14-22" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb14-23"><a href="#cb14-23" aria-hidden="true" tabindex="-1"></a><span class="kw">CREATE</span> <span class="kw">TABLE</span> spatial_observations_2024</span>
+<span id="cb14-24"><a href="#cb14-24" aria-hidden="true" tabindex="-1"></a>    <span class="kw">PARTITION</span> <span class="kw">OF</span> spatial_observations</span>
+<span id="cb14-25"><a href="#cb14-25" aria-hidden="true" tabindex="-1"></a>    <span class="cf">FOR</span> <span class="kw">VALUES</span> <span class="kw">FROM</span> (<span class="st">'2024-01-01'</span>) <span class="kw">TO</span> (<span class="st">'2025-01-01'</span>);</span>
+<span id="cb14-26"><a href="#cb14-26" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb14-27"><a href="#cb14-27" aria-hidden="true" tabindex="-1"></a><span class="kw">CREATE</span> <span class="kw">TABLE</span> spatial_observations_2025</span>
+<span id="cb14-28"><a href="#cb14-28" aria-hidden="true" tabindex="-1"></a>    <span class="kw">PARTITION</span> <span class="kw">OF</span> spatial_observations</span>
+<span id="cb14-29"><a href="#cb14-29" aria-hidden="true" tabindex="-1"></a>    <span class="cf">FOR</span> <span class="kw">VALUES</span> <span class="kw">FROM</span> (<span class="st">'2025-01-01'</span>) <span class="kw">TO</span> (<span class="st">'2026-01-01'</span>);</span>
+<span id="cb14-30"><a href="#cb14-30" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb14-31"><a href="#cb14-31" aria-hidden="true" tabindex="-1"></a><span class="co">-- ── Indexes ───────────────────────────────────────────────────────────────────</span></span>
+<span id="cb14-32"><a href="#cb14-32" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb14-33"><a href="#cb14-33" aria-hidden="true" tabindex="-1"></a><span class="co">-- GIST index on geometry: enables spatial queries (ST_DWithin, ST_Intersects, etc.)</span></span>
+<span id="cb14-34"><a href="#cb14-34" aria-hidden="true" tabindex="-1"></a><span class="co">-- Create on each partition, or on the parent (PostgreSQL propagates to partitions)</span></span>
+<span id="cb14-35"><a href="#cb14-35" aria-hidden="true" tabindex="-1"></a><span class="kw">CREATE</span> <span class="kw">INDEX</span> idx_obs_geom <span class="kw">ON</span> spatial_observations <span class="kw">USING</span> GIST (geom);</span>
+<span id="cb14-36"><a href="#cb14-36" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb14-37"><a href="#cb14-37" aria-hidden="true" tabindex="-1"></a><span class="co">-- B-tree index on acquisition time: enables fast time-range filtering</span></span>
+<span id="cb14-38"><a href="#cb14-38" aria-hidden="true" tabindex="-1"></a><span class="co">-- Most analytical queries include a time window; this avoids scanning all partitions</span></span>
+<span id="cb14-39"><a href="#cb14-39" aria-hidden="true" tabindex="-1"></a><span class="kw">CREATE</span> <span class="kw">INDEX</span> idx_obs_acquired_at <span class="kw">ON</span> spatial_observations (acquired_at);</span>
+<span id="cb14-40"><a href="#cb14-40" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb14-41"><a href="#cb14-41" aria-hidden="true" tabindex="-1"></a><span class="co">-- Composite index for queries that filter by source AND time</span></span>
+<span id="cb14-42"><a href="#cb14-42" aria-hidden="true" tabindex="-1"></a><span class="co">-- (only worth adding if this combination is frequent in your workload)</span></span>
+<span id="cb14-43"><a href="#cb14-43" aria-hidden="true" tabindex="-1"></a><span class="kw">CREATE</span> <span class="kw">INDEX</span> idx_obs_source_acquired</span>
+<span id="cb14-44"><a href="#cb14-44" aria-hidden="true" tabindex="-1"></a>    <span class="kw">ON</span> spatial_observations (source_id, acquired_at);</span>
+<span id="cb14-45"><a href="#cb14-45" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb14-46"><a href="#cb14-46" aria-hidden="true" tabindex="-1"></a><span class="co">-- ── ST_DWithin query ──────────────────────────────────────────────────────────</span></span>
+<span id="cb14-47"><a href="#cb14-47" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb14-48"><a href="#cb14-48" aria-hidden="true" tabindex="-1"></a><span class="co">-- Find all observations within 5 km of a monitoring station,</span></span>
+<span id="cb14-49"><a href="#cb14-49" aria-hidden="true" tabindex="-1"></a><span class="co">-- for a specific time window, returning distance in metres.</span></span>
+<span id="cb14-50"><a href="#cb14-50" aria-hidden="true" tabindex="-1"></a><span class="co">--</span></span>
+<span id="cb14-51"><a href="#cb14-51" aria-hidden="true" tabindex="-1"></a><span class="co">-- Notes on design:</span></span>
+<span id="cb14-52"><a href="#cb14-52" aria-hidden="true" tabindex="-1"></a><span class="co">-- 1. ::geography cast makes ST_DWithin use geodetic distance (metres).</span></span>
+<span id="cb14-53"><a href="#cb14-53" aria-hidden="true" tabindex="-1"></a><span class="co">--    Without it, the 5000 argument would be interpreted as degrees.</span></span>
+<span id="cb14-54"><a href="#cb14-54" aria-hidden="true" tabindex="-1"></a><span class="co">-- 2. The time range predicate (acquired_at BETWEEN ...) prunes partitions</span></span>
+<span id="cb14-55"><a href="#cb14-55" aria-hidden="true" tabindex="-1"></a><span class="co">--    before the spatial filter runs — partition pruning is free.</span></span>
+<span id="cb14-56"><a href="#cb14-56" aria-hidden="true" tabindex="-1"></a><span class="co">-- 3. ORDER BY distance ensures closest results first without a full sort</span></span>
+<span id="cb14-57"><a href="#cb14-57" aria-hidden="true" tabindex="-1"></a><span class="co">--    of the result set (the planner can use an index scan for this).</span></span>
+<span id="cb14-58"><a href="#cb14-58" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb14-59"><a href="#cb14-59" aria-hidden="true" tabindex="-1"></a><span class="kw">SELECT</span></span>
+<span id="cb14-60"><a href="#cb14-60" aria-hidden="true" tabindex="-1"></a>    o.observation_id,</span>
+<span id="cb14-61"><a href="#cb14-61" aria-hidden="true" tabindex="-1"></a>    o.acquired_at,</span>
+<span id="cb14-62"><a href="#cb14-62" aria-hidden="true" tabindex="-1"></a>    o.land_cover_code,</span>
+<span id="cb14-63"><a href="#cb14-63" aria-hidden="true" tabindex="-1"></a>    o.confidence,</span>
+<span id="cb14-64"><a href="#cb14-64" aria-hidden="true" tabindex="-1"></a>    ST_Distance(</span>
+<span id="cb14-65"><a href="#cb14-65" aria-hidden="true" tabindex="-1"></a>        o.geom:<span class="ch">:geography</span>,</span>
+<span id="cb14-66"><a href="#cb14-66" aria-hidden="true" tabindex="-1"></a>        ST_GeogFromText(<span class="st">'POINT(172.6368 -43.5320)'</span>)   <span class="co">-- Christchurch, NZ</span></span>
+<span id="cb14-67"><a href="#cb14-67" aria-hidden="true" tabindex="-1"></a>    ) <span class="kw">AS</span> distance_m</span>
+<span id="cb14-68"><a href="#cb14-68" aria-hidden="true" tabindex="-1"></a><span class="kw">FROM</span></span>
+<span id="cb14-69"><a href="#cb14-69" aria-hidden="true" tabindex="-1"></a>    spatial_observations o</span>
+<span id="cb14-70"><a href="#cb14-70" aria-hidden="true" tabindex="-1"></a><span class="kw">WHERE</span></span>
+<span id="cb14-71"><a href="#cb14-71" aria-hidden="true" tabindex="-1"></a>    o.acquired_at <span class="kw">BETWEEN</span> <span class="st">'2024-06-01'</span> <span class="kw">AND</span> <span class="st">'2024-09-01'</span></span>
+<span id="cb14-72"><a href="#cb14-72" aria-hidden="true" tabindex="-1"></a>    <span class="kw">AND</span> ST_DWithin(</span>
+<span id="cb14-73"><a href="#cb14-73" aria-hidden="true" tabindex="-1"></a>        o.geom:<span class="ch">:geography</span>,</span>
+<span id="cb14-74"><a href="#cb14-74" aria-hidden="true" tabindex="-1"></a>        ST_GeogFromText(<span class="st">'POINT(172.6368 -43.5320)'</span>),</span>
+<span id="cb14-75"><a href="#cb14-75" aria-hidden="true" tabindex="-1"></a>        <span class="dv">5000</span>    <span class="co">-- metres</span></span>
+<span id="cb14-76"><a href="#cb14-76" aria-hidden="true" tabindex="-1"></a>    )</span>
+<span id="cb14-77"><a href="#cb14-77" aria-hidden="true" tabindex="-1"></a>    <span class="kw">AND</span> o.quality_flag <span class="op">=</span> <span class="dv">0</span>   <span class="co">-- exclude flagged observations</span></span>
+<span id="cb14-78"><a href="#cb14-78" aria-hidden="true" tabindex="-1"></a><span class="kw">ORDER</span> <span class="kw">BY</span></span>
+<span id="cb14-79"><a href="#cb14-79" aria-hidden="true" tabindex="-1"></a>    distance_m</span>
+<span id="cb14-80"><a href="#cb14-80" aria-hidden="true" tabindex="-1"></a><span class="kw">LIMIT</span> <span class="dv">500</span>;</span>
+<span id="cb14-81"><a href="#cb14-81" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb14-82"><a href="#cb14-82" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb14-83"><a href="#cb14-83" aria-hidden="true" tabindex="-1"></a><span class="co">-- ── EXPLAIN ANALYZE ───────────────────────────────────────────────────────────</span></span>
+<span id="cb14-84"><a href="#cb14-84" aria-hidden="true" tabindex="-1"></a><span class="co">--</span></span>
+<span id="cb14-85"><a href="#cb14-85" aria-hidden="true" tabindex="-1"></a><span class="co">-- Run this to inspect the query plan before running in production.</span></span>
+<span id="cb14-86"><a href="#cb14-86" aria-hidden="true" tabindex="-1"></a><span class="co">-- The output below is representative of a well-indexed table with ~2M rows</span></span>
+<span id="cb14-87"><a href="#cb14-87" aria-hidden="true" tabindex="-1"></a><span class="co">-- in the 2024 partition and a selective spatial query.</span></span>
+<span id="cb14-88"><a href="#cb14-88" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb14-89"><a href="#cb14-89" aria-hidden="true" tabindex="-1"></a><span class="kw">EXPLAIN</span> (<span class="kw">ANALYZE</span>, BUFFERS, FORMAT TEXT)</span>
+<span id="cb14-90"><a href="#cb14-90" aria-hidden="true" tabindex="-1"></a><span class="kw">SELECT</span></span>
+<span id="cb14-91"><a href="#cb14-91" aria-hidden="true" tabindex="-1"></a>    o.observation_id,</span>
+<span id="cb14-92"><a href="#cb14-92" aria-hidden="true" tabindex="-1"></a>    o.acquired_at,</span>
+<span id="cb14-93"><a href="#cb14-93" aria-hidden="true" tabindex="-1"></a>    o.land_cover_code,</span>
+<span id="cb14-94"><a href="#cb14-94" aria-hidden="true" tabindex="-1"></a>    o.confidence,</span>
+<span id="cb14-95"><a href="#cb14-95" aria-hidden="true" tabindex="-1"></a>    ST_Distance(</span>
+<span id="cb14-96"><a href="#cb14-96" aria-hidden="true" tabindex="-1"></a>        o.geom:<span class="ch">:geography</span>,</span>
+<span id="cb14-97"><a href="#cb14-97" aria-hidden="true" tabindex="-1"></a>        ST_GeogFromText(<span class="st">'POINT(172.6368 -43.5320)'</span>)</span>
+<span id="cb14-98"><a href="#cb14-98" aria-hidden="true" tabindex="-1"></a>    ) <span class="kw">AS</span> distance_m</span>
+<span id="cb14-99"><a href="#cb14-99" aria-hidden="true" tabindex="-1"></a><span class="kw">FROM</span></span>
+<span id="cb14-100"><a href="#cb14-100" aria-hidden="true" tabindex="-1"></a>    spatial_observations o</span>
+<span id="cb14-101"><a href="#cb14-101" aria-hidden="true" tabindex="-1"></a><span class="kw">WHERE</span></span>
+<span id="cb14-102"><a href="#cb14-102" aria-hidden="true" tabindex="-1"></a>    o.acquired_at <span class="kw">BETWEEN</span> <span class="st">'2024-06-01'</span> <span class="kw">AND</span> <span class="st">'2024-09-01'</span></span>
+<span id="cb14-103"><a href="#cb14-103" aria-hidden="true" tabindex="-1"></a>    <span class="kw">AND</span> ST_DWithin(</span>
+<span id="cb14-104"><a href="#cb14-104" aria-hidden="true" tabindex="-1"></a>        o.geom:<span class="ch">:geography</span>,</span>
+<span id="cb14-105"><a href="#cb14-105" aria-hidden="true" tabindex="-1"></a>        ST_GeogFromText(<span class="st">'POINT(172.6368 -43.5320)'</span>),</span>
+<span id="cb14-106"><a href="#cb14-106" aria-hidden="true" tabindex="-1"></a>        <span class="dv">5000</span></span>
+<span id="cb14-107"><a href="#cb14-107" aria-hidden="true" tabindex="-1"></a>    )</span>
+<span id="cb14-108"><a href="#cb14-108" aria-hidden="true" tabindex="-1"></a>    <span class="kw">AND</span> o.quality_flag <span class="op">=</span> <span class="dv">0</span></span>
+<span id="cb14-109"><a href="#cb14-109" aria-hidden="true" tabindex="-1"></a><span class="kw">ORDER</span> <span class="kw">BY</span></span>
+<span id="cb14-110"><a href="#cb14-110" aria-hidden="true" tabindex="-1"></a>    distance_m</span>
+<span id="cb14-111"><a href="#cb14-111" aria-hidden="true" tabindex="-1"></a><span class="kw">LIMIT</span> <span class="dv">500</span>;</span>
+<span id="cb14-112"><a href="#cb14-112" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb14-113"><a href="#cb14-113" aria-hidden="true" tabindex="-1"></a><span class="co">/*</span></span>
+<span id="cb14-114"><a href="#cb14-114" aria-hidden="true" tabindex="-1"></a><span class="co">Expected output (annotated):</span></span>
+<span id="cb14-115"><a href="#cb14-115" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb14-116"><a href="#cb14-116" aria-hidden="true" tabindex="-1"></a><span class="co">Limit  (cost=... rows=500 ...)  (actual time=12.3..89.4 rows=500 loops=1)</span></span>
+<span id="cb14-117"><a href="#cb14-117" aria-hidden="true" tabindex="-1"></a><span class="co">  -&gt; Sort  (cost=... rows=2840 ...)  (actual time=12.3..87.2 rows=500 loops=1)</span></span>
+<span id="cb14-118"><a href="#cb14-118" aria-hidden="true" tabindex="-1"></a><span class="co">       Sort Key: (ST_Distance(...)) ASC</span></span>
+<span id="cb14-119"><a href="#cb14-119" aria-hidden="true" tabindex="-1"></a><span class="co">       -&gt;  Index Scan using idx_obs_geom on spatial_observations_2024 o</span></span>
+<span id="cb14-120"><a href="#cb14-120" aria-hidden="true" tabindex="-1"></a><span class="co">             (cost=... rows=2840 ...)  (actual time=0.8..10.1 rows=2840 loops=1)</span></span>
+<span id="cb14-121"><a href="#cb14-121" aria-hidden="true" tabindex="-1"></a><span class="co">             Index Cond: (geom &amp;&amp; _st_expand(...))    ← pass 1: bounding box</span></span>
+<span id="cb14-122"><a href="#cb14-122" aria-hidden="true" tabindex="-1"></a><span class="co">             Filter: (ST_DWithin(...) AND quality_flag = 0)  ← pass 2: exact</span></span>
+<span id="cb14-123"><a href="#cb14-123" aria-hidden="true" tabindex="-1"></a><span class="co">             Rows Removed by Filter: 1210             ← false positives discarded</span></span>
+<span id="cb14-124"><a href="#cb14-124" aria-hidden="true" tabindex="-1"></a><span class="co"> Planning Time: 2.1 ms</span></span>
+<span id="cb14-125"><a href="#cb14-125" aria-hidden="true" tabindex="-1"></a><span class="co"> Execution Time: 89.7 ms</span></span>
+<span id="cb14-126"><a href="#cb14-126" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb14-127"><a href="#cb14-127" aria-hidden="true" tabindex="-1"></a><span class="co">What to read:</span></span>
+<span id="cb14-128"><a href="#cb14-128" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb14-129"><a href="#cb14-129" aria-hidden="true" tabindex="-1"></a><span class="co">"spatial_observations_2024" — partition pruning worked. Only the 2024 partition</span></span>
+<span id="cb14-130"><a href="#cb14-130" aria-hidden="true" tabindex="-1"></a><span class="co">was opened. The 2023 and 2025 partitions were not touched, because the planner</span></span>
+<span id="cb14-131"><a href="#cb14-131" aria-hidden="true" tabindex="-1"></a><span class="co">could see from the acquired_at range that they contain no relevant data.</span></span>
+<span id="cb14-132"><a href="#cb14-132" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb14-133"><a href="#cb14-133" aria-hidden="true" tabindex="-1"></a><span class="co">"Index Scan using idx_obs_geom" — the GIST index was used. If this says</span></span>
+<span id="cb14-134"><a href="#cb14-134" aria-hidden="true" tabindex="-1"></a><span class="co">"Seq Scan", either the index does not exist, or the planner estimated that the</span></span>
+<span id="cb14-135"><a href="#cb14-135" aria-hidden="true" tabindex="-1"></a><span class="co">spatial selectivity was too low to make the index worthwhile.</span></span>
+<span id="cb14-136"><a href="#cb14-136" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb14-137"><a href="#cb14-137" aria-hidden="true" tabindex="-1"></a><span class="co">"Index Cond: (geom &amp;&amp; _st_expand(...))" — this is the bounding-box pass (pass 1).</span></span>
+<span id="cb14-138"><a href="#cb14-138" aria-hidden="true" tabindex="-1"></a><span class="co">The &amp;&amp; operator is bounding-box intersection. _st_expand inflates the query</span></span>
+<span id="cb14-139"><a href="#cb14-139" aria-hidden="true" tabindex="-1"></a><span class="co">point by 5000 metres to create the candidate bounding box. All rows whose</span></span>
+<span id="cb14-140"><a href="#cb14-140" aria-hidden="true" tabindex="-1"></a><span class="co">bounding box intersects this expanded box are returned as candidates.</span></span>
+<span id="cb14-141"><a href="#cb14-141" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb14-142"><a href="#cb14-142" aria-hidden="true" tabindex="-1"></a><span class="co">"Filter: ST_DWithin(...)" — this is the exact geometry pass (pass 2),</span></span>
+<span id="cb14-143"><a href="#cb14-143" aria-hidden="true" tabindex="-1"></a><span class="co">applied only to the candidates from pass 1.</span></span>
+<span id="cb14-144"><a href="#cb14-144" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb14-145"><a href="#cb14-145" aria-hidden="true" tabindex="-1"></a><span class="co">"Rows Removed by Filter: 1210" — 1,210 rows passed the bounding-box filter</span></span>
+<span id="cb14-146"><a href="#cb14-146" aria-hidden="true" tabindex="-1"></a><span class="co">but failed the exact ST_DWithin check (false positives). This is normal.</span></span>
+<span id="cb14-147"><a href="#cb14-147" aria-hidden="true" tabindex="-1"></a><span class="co">A false-positive rate below 50% indicates the index is doing its job.</span></span>
+<span id="cb14-148"><a href="#cb14-148" aria-hidden="true" tabindex="-1"></a><span class="co">Above 80% suggests the query is not very spatially selective and the planner</span></span>
+<span id="cb14-149"><a href="#cb14-149" aria-hidden="true" tabindex="-1"></a><span class="co">may be correct to avoid the index for similar queries.</span></span>
+<span id="cb14-150"><a href="#cb14-150" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb14-151"><a href="#cb14-151" aria-hidden="true" tabindex="-1"></a><span class="co">"Execution Time: 89.7 ms" — acceptable for an interactive response.</span></span>
+<span id="cb14-152"><a href="#cb14-152" aria-hidden="true" tabindex="-1"></a><span class="co">If this were 5–10 seconds, the next investigation would be:</span></span>
+<span id="cb14-153"><a href="#cb14-153" aria-hidden="true" tabindex="-1"></a><span class="co">  (a) Is the index on the partition or only on the parent?</span></span>
+<span id="cb14-154"><a href="#cb14-154" aria-hidden="true" tabindex="-1"></a><span class="co">  (b) Has ANALYZE been run recently? (VACUUM ANALYZE spatial_observations_2024)</span></span>
+<span id="cb14-155"><a href="#cb14-155" aria-hidden="true" tabindex="-1"></a><span class="co">  (c) Is the spatial extent of the query large relative to the dataset extent?</span></span>
+<span id="cb14-156"><a href="#cb14-156" aria-hidden="true" tabindex="-1"></a><span class="co">      If so, the index is not selective and a different approach is needed.</span></span>
+<span id="cb14-157"><a href="#cb14-157" aria-hidden="true" tabindex="-1"></a><span class="co">*/</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>The schema above is not a template to copy without reading. Every <code>CREATE INDEX</code> is a maintenance cost: indexes slow down <code>INSERT</code> and <code>UPDATE</code> because every write must update the index structure. On a table that receives millions of inserts per hour from a streaming pipeline, the GIST index may need to be built after the fact during a maintenance window rather than kept live. Know your write pattern before you add indexes.</p>
+
+
+</section>
+
+</main> <!-- /main -->
+<script type="module" src="assets/js/pyodide-cells.js"></script>
+<script>
+(function () {
+  var overlay = document.createElement('div');
+  overlay.id = 'diagram-lightbox';
+
+  var closeBtn = document.createElement('button');
+  closeBtn.id = 'diagram-lightbox-close';
+  closeBtn.innerHTML = '&times;';
+  closeBtn.setAttribute('aria-label', 'Close diagram');
+
+  var content = document.createElement('div');
+  content.id = 'diagram-lightbox-content';
+
+  overlay.appendChild(closeBtn);
+  overlay.appendChild(content);
+  document.body.appendChild(overlay);
+
+  function openLightbox(svgEl) {
+    content.innerHTML = svgEl.outerHTML;
+    var svg = content.querySelector('svg');
+    if (svg) {
+      svg.setAttribute('width', '100%');
+      svg.removeAttribute('height');
+      svg.style.removeProperty('max-width');
+      svg.style.display = 'block';
+    }
+    overlay.classList.add('open');
+    document.body.style.overflow = 'hidden';
+  }
+
+  function closeLightbox() {
+    overlay.classList.remove('open');
+    document.body.style.overflow = '';
+  }
+
+  overlay.addEventListener('click', function (e) {
+    if (e.target === overlay || e.target === closeBtn) closeLightbox();
+  });
+  content.addEventListener('click', function (e) { e.stopPropagation(); });
+  document.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape') closeLightbox();
+  });
+
+  function attachTo(svgEl) {
+    if (svgEl._lbAttached) return;
+    svgEl._lbAttached = true;
+    svgEl.style.cursor = 'zoom-in';
+    svgEl.addEventListener('click', function () { openLightbox(svgEl); });
+  }
+
+  function scanAndAttach() {
+    document.querySelectorAll('svg.mermaid-js').forEach(attachTo);
+  }
+
+  var observer = new MutationObserver(function (mutations) {
+    mutations.forEach(function (m) {
+      m.addedNodes.forEach(function (node) {
+        if (node.nodeType !== 1) return;
+        if (node.tagName.toLowerCase() === 'svg' && node.classList.contains('mermaid-js')) {
+          attachTo(node);
+        } else if (node.querySelectorAll) {
+          node.querySelectorAll('svg.mermaid-js').forEach(attachTo);
+        }
+      });
+    });
+  });
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', function () {
+      observer.observe(document.body, { childList: true, subtree: true });
+      scanAndAttach();
+    });
+  } else {
+    observer.observe(document.body, { childList: true, subtree: true });
+    scanAndAttach();
+  }
+})();
+</script>
+<script id="quarto-html-after-body" type="application/javascript">
+  window.document.addEventListener("DOMContentLoaded", function (event) {
+    const icon = "";
+    const anchorJS = new window.AnchorJS();
+    anchorJS.options = {
+      placement: 'right',
+      icon: icon
+    };
+    anchorJS.add('.anchored');
+    const isCodeAnnotation = (el) => {
+      for (const clz of el.classList) {
+        if (clz.startsWith('code-annotation-')) {                     
+          return true;
+        }
+      }
+      return false;
+    }
+    const onCopySuccess = function(e) {
+      // button target
+      const button = e.trigger;
+      // don't keep focus
+      button.blur();
+      // flash "checked"
+      button.classList.add('code-copy-button-checked');
+      var currentTitle = button.getAttribute("title");
+      button.setAttribute("title", "Copied!");
+      let tooltip;
+      if (window.bootstrap) {
+        button.setAttribute("data-bs-toggle", "tooltip");
+        button.setAttribute("data-bs-placement", "left");
+        button.setAttribute("data-bs-title", "Copied!");
+        tooltip = new bootstrap.Tooltip(button, 
+          { trigger: "manual", 
+            customClass: "code-copy-button-tooltip",
+            offset: [0, -8]});
+        tooltip.show();    
+      }
+      setTimeout(function() {
+        if (tooltip) {
+          tooltip.hide();
+          button.removeAttribute("data-bs-title");
+          button.removeAttribute("data-bs-toggle");
+          button.removeAttribute("data-bs-placement");
+        }
+        button.setAttribute("title", currentTitle);
+        button.classList.remove('code-copy-button-checked');
+      }, 1000);
+      // clear code selection
+      e.clearSelection();
+    }
+    const getTextToCopy = function(trigger) {
+      const outerScaffold = trigger.parentElement.cloneNode(true);
+      const codeEl = outerScaffold.querySelector('code');
+      for (const childEl of codeEl.children) {
+        if (isCodeAnnotation(childEl)) {
+          childEl.remove();
+        }
+      }
+      return codeEl.innerText;
+    }
+    const clipboard = new window.ClipboardJS('.code-copy-button:not([data-in-quarto-modal])', {
+      text: getTextToCopy
+    });
+    clipboard.on('success', onCopySuccess);
+    if (window.document.getElementById('quarto-embedded-source-code-modal')) {
+      const clipboardModal = new window.ClipboardJS('.code-copy-button[data-in-quarto-modal]', {
+        text: getTextToCopy,
+        container: window.document.getElementById('quarto-embedded-source-code-modal')
+      });
+      clipboardModal.on('success', onCopySuccess);
+    }
+      var localhostRegex = new RegExp(/^(?:http|https):\/\/localhost\:?[0-9]*\//);
+      var mailtoRegex = new RegExp(/^mailto:/);
+        var filterRegex = new RegExp('/' + window.location.host + '/');
+      var isInternal = (href) => {
+          return filterRegex.test(href) || localhostRegex.test(href) || mailtoRegex.test(href);
+      }
+      // Inspect non-navigation links and adorn them if external
+     var links = window.document.querySelectorAll('a[href]:not(.nav-link):not(.navbar-brand):not(.toc-action):not(.sidebar-link):not(.sidebar-item-toggle):not(.pagination-link):not(.no-external):not([aria-hidden]):not(.dropdown-item):not(.quarto-navigation-tool):not(.about-link)');
+      for (var i=0; i<links.length; i++) {
+        const link = links[i];
+        if (!isInternal(link.href)) {
+          // undo the damage that might have been done by quarto-nav.js in the case of
+          // links that we want to consider external
+          if (link.dataset.originalHref !== undefined) {
+            link.href = link.dataset.originalHref;
+          }
+        }
+      }
+    function tippyHover(el, contentFn, onTriggerFn, onUntriggerFn) {
+      const config = {
+        allowHTML: true,
+        maxWidth: 500,
+        delay: 100,
+        arrow: false,
+        appendTo: function(el) {
+            return el.parentElement;
+        },
+        interactive: true,
+        interactiveBorder: 10,
+        theme: 'quarto',
+        placement: 'bottom-start',
+      };
+      if (contentFn) {
+        config.content = contentFn;
+      }
+      if (onTriggerFn) {
+        config.onTrigger = onTriggerFn;
+      }
+      if (onUntriggerFn) {
+        config.onUntrigger = onUntriggerFn;
+      }
+      window.tippy(el, config); 
+    }
+    const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+    for (var i=0; i<noterefs.length; i++) {
+      const ref = noterefs[i];
+      tippyHover(ref, function() {
+        // use id or data attribute instead here
+        let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+        try { href = new URL(href).hash; } catch {}
+        const id = href.replace(/^#\/?/, "");
+        const note = window.document.getElementById(id);
+        if (note) {
+          return note.innerHTML;
+        } else {
+          return "";
+        }
+      });
+    }
+    const xrefs = window.document.querySelectorAll('a.quarto-xref');
+    const processXRef = (id, note) => {
+      // Strip column container classes
+      const stripColumnClz = (el) => {
+        el.classList.remove("page-full", "page-columns");
+        if (el.children) {
+          for (const child of el.children) {
+            stripColumnClz(child);
+          }
+        }
+      }
+      stripColumnClz(note)
+      if (id === null || id.startsWith('sec-')) {
+        // Special case sections, only their first couple elements
+        const container = document.createElement("div");
+        if (note.children && note.children.length > 2) {
+          container.appendChild(note.children[0].cloneNode(true));
+          for (let i = 1; i < note.children.length; i++) {
+            const child = note.children[i];
+            if (child.tagName === "P" && child.innerText === "") {
+              continue;
+            } else {
+              container.appendChild(child.cloneNode(true));
+              break;
+            }
+          }
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(container);
+          }
+          return container.innerHTML
+        } else {
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(note);
+          }
+          return note.innerHTML;
+        }
+      } else {
+        // Remove any anchor links if they are present
+        const anchorLink = note.querySelector('a.anchorjs-link');
+        if (anchorLink) {
+          anchorLink.remove();
+        }
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(note);
+        }
+        if (note.classList.contains("callout")) {
+          return note.outerHTML;
+        } else {
+          return note.innerHTML;
+        }
+      }
+    }
+    for (var i=0; i<xrefs.length; i++) {
+      const xref = xrefs[i];
+      tippyHover(xref, undefined, function(instance) {
+        instance.disable();
+        let url = xref.getAttribute('href');
+        let hash = undefined; 
+        if (url.startsWith('#')) {
+          hash = url;
+        } else {
+          try { hash = new URL(url).hash; } catch {}
+        }
+        if (hash) {
+          const id = hash.replace(/^#\/?/, "");
+          const note = window.document.getElementById(id);
+          if (note !== null) {
+            try {
+              const html = processXRef(id, note.cloneNode(true));
+              instance.setContent(html);
+            } finally {
+              instance.enable();
+              instance.show();
+            }
+          } else {
+            // See if we can fetch this
+            fetch(url.split('#')[0])
+            .then(res => res.text())
+            .then(html => {
+              const parser = new DOMParser();
+              const htmlDoc = parser.parseFromString(html, "text/html");
+              const note = htmlDoc.getElementById(id);
+              if (note !== null) {
+                const html = processXRef(id, note);
+                instance.setContent(html);
+              } 
+            }).finally(() => {
+              instance.enable();
+              instance.show();
+            });
+          }
+        } else {
+          // See if we can fetch a full url (with no hash to target)
+          // This is a special case and we should probably do some content thinning / targeting
+          fetch(url)
+          .then(res => res.text())
+          .then(html => {
+            const parser = new DOMParser();
+            const htmlDoc = parser.parseFromString(html, "text/html");
+            const note = htmlDoc.querySelector('main.content');
+            if (note !== null) {
+              // This should only happen for chapter cross references
+              // (since there is no id in the URL)
+              // remove the first header
+              if (note.children.length > 0 && note.children[0].tagName === "HEADER") {
+                note.children[0].remove();
+              }
+              const html = processXRef(null, note);
+              instance.setContent(html);
+            } 
+          }).finally(() => {
+            instance.enable();
+            instance.show();
+          });
+        }
+      }, function(instance) {
+      });
+    }
+        let selectedAnnoteEl;
+        const selectorForAnnotation = ( cell, annotation) => {
+          let cellAttr = 'data-code-cell="' + cell + '"';
+          let lineAttr = 'data-code-annotation="' +  annotation + '"';
+          const selector = 'span[' + cellAttr + '][' + lineAttr + ']';
+          return selector;
+        }
+        const selectCodeLines = (annoteEl) => {
+          const doc = window.document;
+          const targetCell = annoteEl.getAttribute("data-target-cell");
+          const targetAnnotation = annoteEl.getAttribute("data-target-annotation");
+          const annoteSpan = window.document.querySelector(selectorForAnnotation(targetCell, targetAnnotation));
+          const lines = annoteSpan.getAttribute("data-code-lines").split(",");
+          const lineIds = lines.map((line) => {
+            return targetCell + "-" + line;
+          })
+          let top = null;
+          let height = null;
+          let parent = null;
+          if (lineIds.length > 0) {
+              //compute the position of the single el (top and bottom and make a div)
+              const el = window.document.getElementById(lineIds[0]);
+              top = el.offsetTop;
+              height = el.offsetHeight;
+              parent = el.parentElement.parentElement;
+            if (lineIds.length > 1) {
+              const lastEl = window.document.getElementById(lineIds[lineIds.length - 1]);
+              const bottom = lastEl.offsetTop + lastEl.offsetHeight;
+              height = bottom - top;
+            }
+            if (top !== null && height !== null && parent !== null) {
+              // cook up a div (if necessary) and position it 
+              let div = window.document.getElementById("code-annotation-line-highlight");
+              if (div === null) {
+                div = window.document.createElement("div");
+                div.setAttribute("id", "code-annotation-line-highlight");
+                div.style.position = 'absolute';
+                parent.appendChild(div);
+              }
+              div.style.top = top - 2 + "px";
+              div.style.height = height + 4 + "px";
+              div.style.left = 0;
+              let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
+              if (gutterDiv === null) {
+                gutterDiv = window.document.createElement("div");
+                gutterDiv.setAttribute("id", "code-annotation-line-highlight-gutter");
+                gutterDiv.style.position = 'absolute';
+                const codeCell = window.document.getElementById(targetCell);
+                const gutter = codeCell.querySelector('.code-annotation-gutter');
+                gutter.appendChild(gutterDiv);
+              }
+              gutterDiv.style.top = top - 2 + "px";
+              gutterDiv.style.height = height + 4 + "px";
+            }
+            selectedAnnoteEl = annoteEl;
+          }
+        };
+        const unselectCodeLines = () => {
+          const elementsIds = ["code-annotation-line-highlight", "code-annotation-line-highlight-gutter"];
+          elementsIds.forEach((elId) => {
+            const div = window.document.getElementById(elId);
+            if (div) {
+              div.remove();
+            }
+          });
+          selectedAnnoteEl = undefined;
+        };
+          // Handle positioning of the toggle
+      window.addEventListener(
+        "resize",
+        throttle(() => {
+          elRect = undefined;
+          if (selectedAnnoteEl) {
+            selectCodeLines(selectedAnnoteEl);
+          }
+        }, 10)
+      );
+      function throttle(fn, ms) {
+      let throttle = false;
+      let timer;
+        return (...args) => {
+          if(!throttle) { // first call gets through
+              fn.apply(this, args);
+              throttle = true;
+          } else { // all the others get throttled
+              if(timer) clearTimeout(timer); // cancel #2
+              timer = setTimeout(() => {
+                fn.apply(this, args);
+                timer = throttle = false;
+              }, ms);
+          }
+        };
+      }
+        // Attach click handler to the DT
+        const annoteDls = window.document.querySelectorAll('dt[data-target-cell]');
+        for (const annoteDlNode of annoteDls) {
+          annoteDlNode.addEventListener('click', (event) => {
+            const clickedEl = event.target;
+            if (clickedEl !== selectedAnnoteEl) {
+              unselectCodeLines();
+              const activeEl = window.document.querySelector('dt[data-target-cell].code-annotation-active');
+              if (activeEl) {
+                activeEl.classList.remove('code-annotation-active');
+              }
+              selectCodeLines(clickedEl);
+              clickedEl.classList.add('code-annotation-active');
+            } else {
+              // Unselect the line
+              unselectCodeLines();
+              clickedEl.classList.remove('code-annotation-active');
+            }
+          });
+        }
+    const findCites = (el) => {
+      const parentEl = el.parentElement;
+      if (parentEl) {
+        const cites = parentEl.dataset.cites;
+        if (cites) {
+          return {
+            el,
+            cites: cites.split(' ')
+          };
+        } else {
+          return findCites(el.parentElement)
+        }
+      } else {
+        return undefined;
+      }
+    };
+    var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+    for (var i=0; i<bibliorefs.length; i++) {
+      const ref = bibliorefs[i];
+      const citeInfo = findCites(ref);
+      if (citeInfo) {
+        tippyHover(citeInfo.el, function() {
+          var popup = window.document.createElement('div');
+          citeInfo.cites.forEach(function(cite) {
+            var citeDiv = window.document.createElement('div');
+            citeDiv.classList.add('hanging-indent');
+            citeDiv.classList.add('csl-entry');
+            var biblioDiv = window.document.getElementById('ref-' + cite);
+            if (biblioDiv) {
+              citeDiv.innerHTML = biblioDiv.innerHTML;
+            }
+            popup.appendChild(citeDiv);
+          });
+          return popup.innerHTML;
+        });
+      }
+    }
+  });
+  </script>
+<nav class="page-navigation">
+  <div class="nav-page nav-page-previous">
+      <a href="./01-data-architecture.html" class="pagination-link" aria-label="Data Architecture">
+        <i class="bi bi-arrow-left-short"></i> <span class="nav-page-text"><span class="chapter-number">2</span>&nbsp; <span class="chapter-title">Data Architecture</span></span>
+      </a>          
+  </div>
+  <div class="nav-page nav-page-next">
+      <a href="./03-pipelines-and-etl.html" class="pagination-link" aria-label="Pipelines and ETL">
+        <span class="nav-page-text"><span class="chapter-number">4</span>&nbsp; <span class="chapter-title">Pipelines and ETL</span></span> <i class="bi bi-arrow-right-short"></i>
+      </a>
+  </div>
+</nav>
+</div> <!-- /content -->
+
+
+
+
+<footer class="footer"><div class="nav-footer"><div class="nav-footer-center"><div class="toc-actions d-sm-block d-md-none"><ul><li><a href="https://github.com/WaywardHouse/waywardhouse-data-engineering/edit/main/02-spatial-databases.qmd" class="toc-action"><i class="bi bi-github"></i>Edit this page</a></li><li><a href="https://github.com/WaywardHouse/waywardhouse-data-engineering/issues/new" class="toc-action"><i class="bi empty"></i>Report an issue</a></li></ul></div></div></div></footer><script src="site_libs/quarto-html/zenscroll-min.js"></script>
+</body></html>

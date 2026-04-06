@@ -1,0 +1,1741 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
+
+<meta charset="utf-8">
+<meta name="generator" content="quarto-1.9.36">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+
+
+<title>8&nbsp; Data Quality and Governance – Data Engineering for Spatial Systems</title>
+<style>
+/* Default styles provided by pandoc.
+** See https://pandoc.org/MANUAL.html#variables-for-html for config info.
+*/
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: min(4vw, 1.5em);}
+div.column{flex: auto; overflow-x: auto;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+  width: 0.8em;
+  margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
+  vertical-align: middle;
+}
+/* CSS for syntax highlighting */
+html { -webkit-text-size-adjust: 100%; }
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+  { counter-reset: source-line 0; }
+pre.numberSource code > span
+  { position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+  { content: counter(source-line);
+    position: relative; left: -1em; text-align: right; vertical-align: baseline;
+    border: none; display: inline-block;
+    -webkit-touch-callout: none; -webkit-user-select: none;
+    -khtml-user-select: none; -moz-user-select: none;
+    -ms-user-select: none; user-select: none;
+    padding: 0 4px; width: 4em;
+  }
+pre.numberSource { margin-left: 3em;  padding-left: 4px; }
+div.sourceCode
+  {   }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
+</style>
+
+
+<script src="site_libs/quarto-nav/quarto-nav.js"></script>
+<script src="site_libs/quarto-nav/headroom.min.js"></script>
+<script src="site_libs/clipboard/clipboard.min.js"></script>
+<script src="site_libs/quarto-search/autocomplete.umd.js"></script>
+<script src="site_libs/quarto-search/fuse.min.js"></script>
+<script src="site_libs/quarto-search/quarto-search.js"></script>
+<meta name="quarto:offset" content="./">
+<link href="./08-platform-architecture-for-ml.html" rel="next">
+<link href="./06-apis-and-access-patterns.html" rel="prev">
+<script src="site_libs/quarto-html/quarto.js" type="module"></script>
+<script src="site_libs/quarto-html/tabsets/tabsets.js" type="module"></script>
+<script src="site_libs/quarto-html/popper.min.js"></script>
+<script src="site_libs/quarto-html/tippy.umd.min.js"></script>
+<script src="site_libs/quarto-html/anchor.min.js"></script>
+<link href="site_libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="site_libs/quarto-html/quarto-syntax-highlighting-845c23b38eaddc0f92fda52bfe77a8c8.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<script src="site_libs/bootstrap/bootstrap.min.js"></script>
+<link href="site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="site_libs/bootstrap/bootstrap-56762b18f51ba8401515c38252781a5a.min.css" rel="stylesheet" append-hash="true" id="quarto-bootstrap" data-mode="light">
+<script id="quarto-search-options" type="application/json">{
+  "location": "sidebar",
+  "copy-button": false,
+  "collapse-after": 3,
+  "panel-placement": "start",
+  "type": "textbox",
+  "limit": 50,
+  "keyboard-shortcut": [
+    "f",
+    "/",
+    "s"
+  ],
+  "show-item-context": false,
+  "language": {
+    "search-no-results-text": "No results",
+    "search-matching-documents-text": "matching documents",
+    "search-copy-link-title": "Copy link to search",
+    "search-hide-matches-text": "Hide additional matches",
+    "search-more-match-text": "more match in this document",
+    "search-more-matches-text": "more matches in this document",
+    "search-clear-button-title": "Clear",
+    "search-text-placeholder": "",
+    "search-detached-cancel-button-title": "Cancel",
+    "search-submit-button-title": "Submit",
+    "search-label": "Search"
+  }
+}</script>
+<style>html{ scroll-behavior: smooth; }</style>
+<script>
+  (function () {
+    document.documentElement.dataset.theme = 'light';
+    document.documentElement.dataset.brand = 'wayward-book';
+    try {
+      localStorage.removeItem('theme');
+    } catch (err) {
+      void err;
+    }
+  })();
+</script>
+
+<script>
+  document.addEventListener('DOMContentLoaded', function () {
+    var body = document.body;
+    var sidebar = document.getElementById('quarto-sidebar');
+    if (!sidebar) return;
+
+    body.classList.add('wayward-book-shell');
+
+    if (!document.querySelector('.wayward-book-header')) {
+      var header = document.createElement('header');
+      header.className = 'wayward-book-header';
+      header.innerHTML = [
+        '<div class="wayward-book-header__inner">',
+        '  <a class="wayward-book-brand" href="/" aria-label="Wayward House home">',
+        '    <span class="wayward-book-brand__mark">WaywardHouse</span>',
+        '    <span class="wayward-book-brand__dot" aria-hidden="true">.</span>',
+        '  </a>',
+        '  <nav class="wayward-book-nav" aria-label="Primary">',
+        '    <a href="/articles/" data-nav="/articles/">Articles</a>',
+        '    <a href="/learn/" data-nav="/learn/">Learn</a>',
+        '    <a href="/about.html" data-nav="/about/">About</a>',
+        '  </nav>',
+        '  <button class="wayward-book-menu-toggle" type="button" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle chapter navigation">',
+        '    <span aria-hidden="true">Menu</span>',
+        '  </button>',
+        '</div>'
+      ].join('');
+      body.prepend(header);
+    }
+
+    var pathname = window.location.pathname || '/';
+    if (pathname === '/' || pathname === '/learn/' || pathname.endsWith('/index.html')) {
+      body.classList.add('page-home');
+    }
+    if (pathname.indexOf('/learn/') === 0) {
+      body.classList.add('page-learn');
+    }
+
+    var storageKey = 'wayward-data-engineering-sidebar';
+    var media = window.matchMedia('(min-width: 1200px)');
+    var glass = document.getElementById('quarto-sidebar-glass');
+    var toggles = Array.from(document.querySelectorAll('[data-bs-target=".quarto-sidebar-collapse-item"]'));
+
+    function setDesktopState(open) {
+      body.classList.toggle('book-sidebar-collapsed', !open);
+      body.classList.toggle('book-sidebar-open', open);
+      try {
+        localStorage.setItem(storageKey, open ? 'open' : 'collapsed');
+      } catch (err) {
+        void err;
+      }
+    }
+
+    function applyDesktopDefault() {
+      if (!media.matches) {
+        body.classList.remove('book-sidebar-collapsed', 'book-sidebar-open');
+        return;
+      }
+
+      var stored = null;
+      try {
+        stored = localStorage.getItem(storageKey);
+      } catch (err) {
+        void err;
+      }
+
+      setDesktopState(stored === 'collapsed' ? false : true);
+    }
+
+    toggles.forEach(function (toggle) {
+      toggle.addEventListener('click', function (event) {
+        if (!media.matches) return;
+        event.preventDefault();
+        event.stopPropagation();
+        setDesktopState(body.classList.contains('book-sidebar-collapsed'));
+      });
+    });
+
+    if (glass) {
+      glass.addEventListener('click', function (event) {
+        if (!media.matches) return;
+        event.preventDefault();
+        setDesktopState(false);
+      });
+    }
+
+    if (media.addEventListener) {
+      media.addEventListener('change', applyDesktopDefault);
+    } else if (media.addListener) {
+      media.addListener(applyDesktopDefault);
+    }
+
+    applyDesktopDefault();
+
+    var siteHomeHref = '/';
+    var learnHref = '/learn/';
+    var titleLink = sidebar.querySelector('.sidebar-title a');
+    if (titleLink) titleLink.setAttribute('href', siteHomeHref);
+
+    var toolLinks = Array.from(sidebar.querySelectorAll('.quarto-navigation-tool'));
+    if (toolLinks[0]) toolLinks[0].setAttribute('href', siteHomeHref);
+    if (toolLinks[1]) toolLinks[1].setAttribute('href', learnHref);
+
+    var firstSidebarLink = sidebar.querySelector('.sidebar-item a.sidebar-link');
+    if (firstSidebarLink) firstSidebarLink.setAttribute('href', siteHomeHref);
+
+    var themeToggle = document.querySelector('.wayward-book-theme-toggle');
+    if (themeToggle) themeToggle.remove();
+
+    document.querySelectorAll('.wayward-book-nav a[data-nav]').forEach(function (link) {
+      var target = link.getAttribute('data-nav');
+      if (!target) return;
+      link.classList.remove('is-active');
+      if (pathname === target || pathname.indexOf(target) === 0) {
+        link.classList.add('is-active');
+      }
+    });
+
+    var footer = document.querySelector('footer.footer');
+    if (footer && !footer.classList.contains('wayward-book-footer')) {
+      footer.className = 'wayward-book-footer';
+      footer.innerHTML = [
+        '<div class="wayward-book-footer__inner">',
+        '  <div class="wayward-book-footer__brand">',
+        '    <div class="wayward-book-footer__logo">WaywardHouse<span>.</span></div>',
+        '    <p>Understanding how place, economy, and environment interact through analysis, modelling, and open tools.</p>',
+        '  </div>',
+        '  <nav class="wayward-book-footer__group" aria-labelledby="book-footer-reading">',
+        '    <h2 id="book-footer-reading">Reading</h2>',
+        '    <a href="https://wayward.house/articles/">Articles</a>',
+        '    <a href="https://wayward.house/learn/">Library</a>',
+        '    <a href="https://wayward.house/archive.html">Archive</a>',
+        '  </nav>',
+        '  <nav class="wayward-book-footer__group" aria-labelledby="book-footer-site">',
+        '    <h2 id="book-footer-site">Site</h2>',
+        '    <a href="https://wayward.house/start-here.html">Choose Your Path</a>',
+        '    <a href="https://wayward.house/about.html">About</a>',
+        '    <a href="https://wayward.house/contact.html">Contact</a>',
+        '  </nav>',
+        '  <nav class="wayward-book-footer__group" aria-labelledby="book-footer-resources">',
+        '    <h2 id="book-footer-resources">Resources</h2>',
+        '    <a href="https://wayward.house/topics/">All Topics</a>',
+        '    <a href="https://wayward.house/privacy.html">Privacy Policy</a>',
+        '    <a href="https://wayward.house/terms.html">Terms of Use</a>',
+        '  </nav>',
+        '</div>'
+      ].join('');
+    }
+
+    if (!document.querySelector('.back-to-top')) {
+      var button = document.createElement('button');
+      button.type = 'button';
+      button.className = 'back-to-top';
+      button.setAttribute('aria-label', 'Back to top');
+      button.innerHTML = '<span aria-hidden="true">↑</span><span>Top</span>';
+
+      var prefersReduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+      var ticking = false;
+
+      function updateBackToTop() {
+        var scrolled = window.scrollY || document.documentElement.scrollTop || 0;
+        var longPage = document.documentElement.scrollHeight > window.innerHeight * 1.5;
+        button.classList.toggle('is-visible', longPage && scrolled > Math.max(420, window.innerHeight * 0.7));
+        ticking = false;
+      }
+
+      button.addEventListener('click', function () {
+        window.scrollTo({
+          top: 0,
+          behavior: prefersReduced ? 'auto' : 'smooth'
+        });
+      });
+
+      window.addEventListener('scroll', function () {
+        if (!ticking) {
+          window.requestAnimationFrame(updateBackToTop);
+          ticking = true;
+        }
+      }, { passive: true });
+
+      window.addEventListener('resize', updateBackToTop, { passive: true });
+      body.appendChild(button);
+      updateBackToTop();
+    }
+
+  });
+</script>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:ital,wght@0,300;0,400;0,600;0,700;0,800;0,900;1,700;1,800&amp;family=Barlow:wght@300;400;500;600&amp;family=IBM+Plex+Mono:ital,wght@0,300;0,400;0,500;1,300&amp;family=Literata:ital,opsz,wght@0,7..72,300;0,7..72,400;0,7..72,500;1,7..72,300;1,7..72,400&amp;display=swap" rel="stylesheet">
+
+
+<link rel="stylesheet" href="site_libs/quarto-contrib/quarto-project/wayward-book/wayward-book.css">
+<link rel="stylesheet" href="lightbox.css">
+</head>
+
+<body class="nav-sidebar docked quarto-light">
+
+<div id="quarto-search-results"></div>
+  <header id="quarto-header" class="headroom fixed-top">
+  <nav class="quarto-secondary-nav">
+    <div class="container-fluid d-flex">
+      <button type="button" class="quarto-btn-toggle btn" data-bs-toggle="collapse" role="button" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
+        <i class="bi bi-layout-text-sidebar-reverse"></i>
+      </button>
+        <nav class="quarto-page-breadcrumbs" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="./07-data-quality-and-governance.html"><span class="chapter-number">8</span>&nbsp; <span class="chapter-title">Data Quality and Governance</span></a></li></ol></nav>
+        <a class="flex-grow-1" role="navigation" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">      
+        </a>
+      <button type="button" class="btn quarto-search-button" aria-label="Search" onclick="window.quartoOpenSearch();">
+        <i class="bi bi-search"></i>
+      </button>
+    </div>
+  </nav>
+</header>
+<!-- content -->
+<div id="quarto-content" class="quarto-container page-columns page-rows-contents page-layout-article">
+<!-- sidebar -->
+  <nav id="quarto-sidebar" class="sidebar collapse collapse-horizontal quarto-sidebar-collapse-item sidebar-navigation docked overflow-auto">
+    <div class="pt-lg-2 mt-2 text-left sidebar-header">
+    <div class="sidebar-title mb-0 py-0">
+      <a href="./">Data Engineering for Spatial Systems</a> 
+        <div class="sidebar-tools-main tools-wide">
+    <a href="./" title="" class="quarto-navigation-tool px-1" aria-label="Wayward House"><i class="bi bi-house"></i></a>
+    <a href="./learn/" title="" class="quarto-navigation-tool px-1" aria-label="Learn"><i class="bi bi-grid"></i></a>
+    <a href="https://github.com/WaywardHouse/waywardhouse-data-engineering" title="" class="quarto-navigation-tool px-1" aria-label="Repository"><i class="bi bi-github"></i></a>
+    <a href="https://github.com/WaywardHouse/waywardhouse-data-engineering" title="Source Code" class="quarto-navigation-tool px-1" aria-label="Source Code"><i class="bi bi-github"></i></a>
+    <div class="dropdown">
+      <a href="" title="Share" id="quarto-navigation-tool-dropdown-0" class="quarto-navigation-tool dropdown-toggle px-1" data-bs-toggle="dropdown" aria-expanded="false" role="link" aria-label="Share"><i class="bi bi-share"></i></a>
+      <ul class="dropdown-menu" aria-labelledby="quarto-navigation-tool-dropdown-0">
+          <li>
+            <a class="dropdown-item sidebar-tools-main-item" href="https://twitter.com/intent/tweet?url=|url|">
+              <i class="bi bi-twitter pe-1"></i>
+            Twitter
+            </a>
+          </li>
+          <li>
+            <a class="dropdown-item sidebar-tools-main-item" href="https://www.linkedin.com/sharing/share-offsite/?url=|url|">
+              <i class="bi bi-linkedin pe-1"></i>
+            LinkedIn
+            </a>
+          </li>
+      </ul>
+    </div>
+</div>
+    </div>
+      </div>
+        <div class="mt-2 flex-shrink-0 align-items-center">
+        <div class="sidebar-search">
+        <div id="quarto-search" class="" title="Search"></div>
+        </div>
+        </div>
+    <div class="sidebar-menu-container"> 
+    <ul class="list-unstyled mt-1">
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./index.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">1</span>&nbsp; <span class="chapter-title">Data Engineering for Spatial Systems</span></span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./01-data-architecture.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">2</span>&nbsp; <span class="chapter-title">Data Architecture</span></span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./02-spatial-databases.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">3</span>&nbsp; <span class="chapter-title">Spatial Databases</span></span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./03-pipelines-and-etl.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">4</span>&nbsp; <span class="chapter-title">Pipelines and ETL</span></span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./04-cloud-infrastructure.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">5</span>&nbsp; <span class="chapter-title">Cloud Infrastructure</span></span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./05-streaming-and-realtime.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">6</span>&nbsp; <span class="chapter-title">Streaming and Realtime</span></span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./06-apis-and-access-patterns.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">7</span>&nbsp; <span class="chapter-title">APIs and Access Patterns</span></span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./07-data-quality-and-governance.html" class="sidebar-item-text sidebar-link active">
+ <span class="menu-text"><span class="chapter-number">8</span>&nbsp; <span class="chapter-title">Data Quality and Governance</span></span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./08-platform-architecture-for-ml.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">9</span>&nbsp; <span class="chapter-title">Platform Architecture for ML</span></span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./09-exercise-answers.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">10</span>&nbsp; <span class="chapter-title">Exercise Answers</span></span></a>
+  </div>
+</li>
+    </ul>
+    </div>
+</nav>
+<div id="quarto-sidebar-glass" class="quarto-sidebar-collapse-item" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item"></div>
+<!-- margin-sidebar -->
+    <div id="quarto-margin-sidebar" class="sidebar margin-sidebar">
+        <nav id="TOC" role="doc-toc" class="toc-active">
+    <h2 id="toc-title">Table of contents</h2>
+   
+  <ul>
+  <li><a href="#the-puzzle" id="toc-the-puzzle" class="nav-link active" data-scroll-target="#the-puzzle"><span class="header-section-number">8.1</span> The puzzle</a></li>
+  <li><a href="#the-four-dimensions-of-spatial-data-quality" id="toc-the-four-dimensions-of-spatial-data-quality" class="nav-link" data-scroll-target="#the-four-dimensions-of-spatial-data-quality"><span class="header-section-number">8.2</span> The four dimensions of spatial data quality</a></li>
+  <li><a href="#tests-with-dbt" id="toc-tests-with-dbt" class="nav-link" data-scroll-target="#tests-with-dbt"><span class="header-section-number">8.3</span> Tests with dbt</a></li>
+  <li><a href="#great-expectations-for-non-dbt-pipelines" id="toc-great-expectations-for-non-dbt-pipelines" class="nav-link" data-scroll-target="#great-expectations-for-non-dbt-pipelines"><span class="header-section-number">8.4</span> Great Expectations for non-dbt pipelines</a></li>
+  <li><a href="#data-lineage" id="toc-data-lineage" class="nav-link" data-scroll-target="#data-lineage"><span class="header-section-number">8.5</span> Data lineage</a></li>
+  <li><a href="#simulating-data-quality-drift" id="toc-simulating-data-quality-drift" class="nav-link" data-scroll-target="#simulating-data-quality-drift"><span class="header-section-number">8.6</span> Simulating data quality drift</a></li>
+  <li><a href="#governance-policies" id="toc-governance-policies" class="nav-link" data-scroll-target="#governance-policies"><span class="header-section-number">8.7</span> Governance policies</a></li>
+  <li><a href="#exercises" id="toc-exercises" class="nav-link" data-scroll-target="#exercises"><span class="header-section-number">8.8</span> Exercises</a></li>
+  <li><a href="#build-this" id="toc-build-this" class="nav-link" data-scroll-target="#build-this"><span class="header-section-number">8.9</span> Build this</a></li>
+  </ul>
+<div class="toc-actions"><ul><li><a href="https://github.com/WaywardHouse/waywardhouse-data-engineering/edit/main/07-data-quality-and-governance.qmd" class="toc-action"><i class="bi bi-github"></i>Edit this page</a></li><li><a href="https://github.com/WaywardHouse/waywardhouse-data-engineering/issues/new" class="toc-action"><i class="bi empty"></i>Report an issue</a></li></ul></div></nav>
+    </div>
+<!-- main -->
+<main class="content" id="quarto-document-content">
+
+<header id="title-block-header" class="quarto-title-block default">
+<div class="quarto-title">
+<h1 class="title"><span class="chapter-number">8</span>&nbsp; <span class="chapter-title">Data Quality and Governance</span></h1>
+<p class="subtitle lead">Tests, lineage, and the feedback loops that keep production data clean</p>
+</div>
+
+
+
+<div class="quarto-title-meta">
+
+    
+  
+    
+  </div>
+  
+
+
+</header>
+
+
+<section id="the-puzzle" class="level2" data-number="8.1">
+<h2 data-number="8.1" class="anchored" data-anchor-id="the-puzzle"><span class="header-section-number">8.1</span> The puzzle</h2>
+<p>In 2021, a consultancy delivered a spatial analysis of residential flood exposure for a mid-sized coastal local authority. The analysis estimated the number of properties within each flood risk zone, weighted by vulnerability indicators — building age, ground-floor elevation, proximity to drainage infrastructure. The client used the output to prioritise capital works over a five-year budget cycle. Two flood defence upgrades were deferred based on low calculated exposure in their catchments.</p>
+<p>Six months after delivery, a QA reviewer at the authority was reconciling the flood exposure counts against the most recent census property register. The numbers did not match. The consultant’s analysis counted 47,800 properties in the study area. The census enumerated 54,200. The gap was 6,400 properties — 12% of the total.</p>
+<p>The analysis was not wrong about the properties it had included. The spatial joins were executed correctly, the risk zone polygons were accurate, and the vulnerability scoring was reasonable. What it had done was silently exclude 6,400 properties from consideration entirely, because those properties had been assigned coordinates in EPSG:4326 (WGS84 decimal degrees) while the flood zone polygons were in EPSG:27700 (British National Grid). The spatial join found no intersections for those records because their coordinates were geometrically nonsensical in the projected reference frame — but the join returned empty results rather than an error. No exception was raised. No row count check was performed. The silence was interpreted as correctness.</p>
+<p>The CRS mismatch had not been introduced at the analysis stage. It had been introduced three pipeline stages upstream, when a property attributes table from one source system was joined to centroid coordinates from another. The two tables used different reference systems. The join key was a property identifier string. The join succeeded. The coordinates were silently incorrect from that point forward.</p>
+<p>This is the characteristic failure mode of spatial data quality problems: they do not announce themselves. A type mismatch raises an exception. A CRS mismatch returns quietly wrong answers. The only defence is tests — automated, systematic, upstream of the analysis — that catch the problem before the output is trusted.</p>
+<hr>
+</section>
+<section id="the-four-dimensions-of-spatial-data-quality" class="level2" data-number="8.2">
+<h2 data-number="8.2" class="anchored" data-anchor-id="the-four-dimensions-of-spatial-data-quality"><span class="header-section-number">8.2</span> The four dimensions of spatial data quality</h2>
+<p>Data quality in spatial systems is not a single property. It has at least four distinct dimensions, each of which can fail independently, and each of which requires different kinds of tests to detect.</p>
+<p><strong>Completeness</strong> asks whether all features that should be present are present. The flood exposure analysis above was a completeness failure: 12% of the properties were missing. Completeness failures can arise from dropped rows in a join, from filtering that silently excludes records, or from an upstream source that simply does not have data for certain areas. They are detected by comparing feature counts against an independent reference — a census total, a known building footprint dataset, an expected record count from a prior run. A completeness check is the spatial equivalent of a row count assertion: the expected count and the actual count must agree within a defined tolerance.</p>
+<p><strong>Positional accuracy</strong> asks whether geometries are where they should be. A building centroid that is 200 metres from the building is not technically invalid — it is a coordinate, it parses, it passes a geometry validity check. But it is wrong. Positional accuracy failures arise from GPS noise in field-collected data, from geocoding errors that place records in the correct postcode but the wrong location within it, and from datum shifts when coordinates are copied from one system to another without reprojection. Detecting positional accuracy failures requires a reference dataset: the distance from each point to its expected location must be within some tolerance. For address-level analysis, a tolerance of 50 metres is often appropriate. For infrastructure with sub-metre placement requirements, it might be 0.5 metres.</p>
+<p><strong>Attribute consistency</strong> asks whether the attributes associated with each feature are internally coherent and consistent with domain expectations. A property with a build year of 1742 that also has a recorded energy performance certificate rating is suspicious — EPCs were not issued before 2007. A road segment with a speed limit of 0 km/h is not plausible. A land parcel with a recorded area of −3.4 ha has a sign error somewhere in the processing chain. Attribute consistency tests are range checks, logic checks, and cross-field checks. In dbt terms, they are the <code>accepted_values</code>, <code>not_null</code>, and custom expression tests applied to individual columns and to relationships between columns.</p>
+<p><strong>Topological integrity</strong> asks whether the geometric relationships between features are valid. Polygon datasets used in spatial analysis must satisfy topology constraints that are not automatic properties of valid geometries. A polygon that is geometrically valid — it has a closed ring, no self-intersections — can still overlap with a neighbouring polygon in a way that violates the assumption of exhaustive and non-overlapping coverage. A flood zone dataset where adjacent risk zones overlap will double-count properties in the overlap area. A parcel layer with gaps between adjacent parcels will have areas that belong to no parcel — invisible voids in the coverage. These failures are silent in the same way as the CRS mismatch: the data loads, the joins execute, the analysis produces output. The output is wrong in ways that only appear if you compare the coverage explicitly against what it claims to cover.</p>
+<p>The four dimensions are not independent. A positional accuracy failure can produce a topological integrity failure downstream: if points are shifted, the polygon they were used to construct may develop self-intersections. An attribute consistency failure can produce a completeness failure: if a quality filter is applied downstream and incorrect attribute values cause records to be filtered out, the resulting dataset is incomplete. Understanding which dimension failed, and where in the pipeline, requires lineage — the topic of a later section.</p>
+<hr>
+</section>
+<section id="tests-with-dbt" class="level2" data-number="8.3">
+<h2 data-number="8.3" class="anchored" data-anchor-id="tests-with-dbt"><span class="header-section-number">8.3</span> Tests with dbt</h2>
+<p>dbt is the standard tool for transformation layer testing in modern data pipelines. Its test model is declarative: tests are assertions defined in YAML schema files alongside the model definitions they apply to. The test runner executes each assertion against the materialised model and reports failures. This is the correct architecture for a data quality feedback loop: tests are co-located with the transformations they test, versioned in the same repository, and run automatically on every pipeline execution.</p>
+<p>The built-in tests cover the most common structural assertions.</p>
+<p><code>not_null</code> asserts that a column contains no null values. Applied to geometry columns, it catches records that have been stripped of their geometry through a failed spatial operation — a <code>ST_Intersection</code> that returned null because two features did not actually intersect, or a geocoder that returned null for an address it could not place.</p>
+<p><code>unique</code> asserts that a column contains no duplicate values. Applied to feature identifiers, it catches the case where a join has produced cartesian-product-style duplication — a record appearing multiple times because it matched multiple rows in the join table.</p>
+<p><code>accepted_values</code> asserts that a column contains only values from a specified list. Applied to categorical spatial attributes — land use class, road classification, flood zone designation — it catches upstream encoding changes where a source system introduces a new category that the downstream model has not been updated to handle.</p>
+<p><code>relationships</code> asserts referential integrity between two models — that every value in a foreign key column exists in the referenced primary key column. Applied to the relationship between property records and their spatial units (postcode, census output area, flood zone), it catches cases where properties have been assigned to spatial units that no longer exist in the reference layer.</p>
+<p>These four tests are necessary but not sufficient for spatial data. A property table can pass all four and still have coordinates in the wrong CRS. A polygon layer can pass all four and still have overlapping features. Spatial quality requires additional custom tests.</p>
+<p>The following schema file illustrates dbt tests for a spatial pipeline, including both built-in and custom spatial assertions.</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb1"><pre class="sourceCode yaml code-with-copy"><code class="sourceCode yaml"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="co"># models/staging/schema.yml</span></span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a><span class="fu">version</span><span class="kw">:</span><span class="at"> </span><span class="dv">2</span></span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a><span class="fu">models</span><span class="kw">:</span></span>
+<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="kw">-</span><span class="at"> </span><span class="fu">name</span><span class="kw">:</span><span class="at"> stg_properties</span></span>
+<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a><span class="fu">    description</span><span class="kw">: </span><span class="ch">&gt;</span></span>
+<span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a>      Staged property records with centroids in EPSG:27700 (British National Grid).</span>
+<span id="cb1-9"><a href="#cb1-9" aria-hidden="true" tabindex="-1"></a>      Source: LLPG (Local Land and Property Gazetteer) via daily extract.</span>
+<span id="cb1-10"><a href="#cb1-10" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">columns</span><span class="kw">:</span></span>
+<span id="cb1-11"><a href="#cb1-11" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="kw">-</span><span class="at"> </span><span class="fu">name</span><span class="kw">:</span><span class="at"> uprn</span></span>
+<span id="cb1-12"><a href="#cb1-12" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">description</span><span class="kw">:</span><span class="at"> Unique Property Reference Number</span></span>
+<span id="cb1-13"><a href="#cb1-13" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">tests</span><span class="kw">:</span></span>
+<span id="cb1-14"><a href="#cb1-14" aria-hidden="true" tabindex="-1"></a><span class="at">          </span><span class="kw">-</span><span class="at"> not_null</span></span>
+<span id="cb1-15"><a href="#cb1-15" aria-hidden="true" tabindex="-1"></a><span class="at">          </span><span class="kw">-</span><span class="at"> unique</span></span>
+<span id="cb1-16"><a href="#cb1-16" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="kw">-</span><span class="at"> </span><span class="fu">name</span><span class="kw">:</span><span class="at"> geometry</span></span>
+<span id="cb1-17"><a href="#cb1-17" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">description</span><span class="kw">:</span><span class="at"> Point geometry in EPSG:27700</span></span>
+<span id="cb1-18"><a href="#cb1-18" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">tests</span><span class="kw">:</span></span>
+<span id="cb1-19"><a href="#cb1-19" aria-hidden="true" tabindex="-1"></a><span class="at">          </span><span class="kw">-</span><span class="at"> not_null</span></span>
+<span id="cb1-20"><a href="#cb1-20" aria-hidden="true" tabindex="-1"></a><span class="at">          </span><span class="kw">-</span><span class="at"> valid_geometry</span><span class="co">          # custom macro: ST_IsValid(geometry)</span></span>
+<span id="cb1-21"><a href="#cb1-21" aria-hidden="true" tabindex="-1"></a><span class="at">          </span><span class="kw">-</span><span class="at"> within_national_grid</span><span class="co">    # custom macro: ST_Within(geometry, national_grid_bbox)</span></span>
+<span id="cb1-22"><a href="#cb1-22" aria-hidden="true" tabindex="-1"></a><span class="at">          </span><span class="kw">-</span><span class="at"> </span><span class="fu">geometry_type_is</span><span class="kw">:</span></span>
+<span id="cb1-23"><a href="#cb1-23" aria-hidden="true" tabindex="-1"></a><span class="at">              </span><span class="fu">expected_type</span><span class="kw">:</span><span class="at"> ST_Point</span></span>
+<span id="cb1-24"><a href="#cb1-24" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="kw">-</span><span class="at"> </span><span class="fu">name</span><span class="kw">:</span><span class="at"> property_class</span></span>
+<span id="cb1-25"><a href="#cb1-25" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">tests</span><span class="kw">:</span></span>
+<span id="cb1-26"><a href="#cb1-26" aria-hidden="true" tabindex="-1"></a><span class="at">          </span><span class="kw">-</span><span class="at"> not_null</span></span>
+<span id="cb1-27"><a href="#cb1-27" aria-hidden="true" tabindex="-1"></a><span class="at">          </span><span class="kw">-</span><span class="at"> </span><span class="fu">accepted_values</span><span class="kw">:</span></span>
+<span id="cb1-28"><a href="#cb1-28" aria-hidden="true" tabindex="-1"></a><span class="at">              </span><span class="fu">values</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="st">'R'</span><span class="kw">,</span><span class="at"> </span><span class="st">'C'</span><span class="kw">,</span><span class="at"> </span><span class="st">'I'</span><span class="kw">,</span><span class="at"> </span><span class="st">'L'</span><span class="kw">,</span><span class="at"> </span><span class="st">'P'</span><span class="kw">,</span><span class="at"> </span><span class="st">'U'</span><span class="kw">]</span></span>
+<span id="cb1-29"><a href="#cb1-29" aria-hidden="true" tabindex="-1"></a><span class="co">              # R=Residential, C=Commercial, I=Industrial,</span></span>
+<span id="cb1-30"><a href="#cb1-30" aria-hidden="true" tabindex="-1"></a><span class="co">              # L=Land, P=Parent, U=Unclassified</span></span>
+<span id="cb1-31"><a href="#cb1-31" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="kw">-</span><span class="at"> </span><span class="fu">name</span><span class="kw">:</span><span class="at"> build_year</span></span>
+<span id="cb1-32"><a href="#cb1-32" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">tests</span><span class="kw">:</span></span>
+<span id="cb1-33"><a href="#cb1-33" aria-hidden="true" tabindex="-1"></a><span class="at">          </span><span class="kw">-</span><span class="at"> not_null</span></span>
+<span id="cb1-34"><a href="#cb1-34" aria-hidden="true" tabindex="-1"></a><span class="at">          </span><span class="kw">-</span><span class="at"> </span><span class="fu">dbt_utils.expression_is_true</span><span class="kw">:</span></span>
+<span id="cb1-35"><a href="#cb1-35" aria-hidden="true" tabindex="-1"></a><span class="at">              </span><span class="fu">expression</span><span class="kw">:</span><span class="at"> </span><span class="st">"build_year &gt;= 1600 AND build_year &lt;= extract(year from current_date)"</span></span>
+<span id="cb1-36"><a href="#cb1-36" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-37"><a href="#cb1-37" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="kw">-</span><span class="at"> </span><span class="fu">name</span><span class="kw">:</span><span class="at"> stg_flood_zones</span></span>
+<span id="cb1-38"><a href="#cb1-38" aria-hidden="true" tabindex="-1"></a><span class="fu">    description</span><span class="kw">: </span><span class="ch">&gt;</span></span>
+<span id="cb1-39"><a href="#cb1-39" aria-hidden="true" tabindex="-1"></a>      Environment Agency Flood Map for Planning zones in EPSG:27700.</span>
+<span id="cb1-40"><a href="#cb1-40" aria-hidden="true" tabindex="-1"></a>      Zone 1 = low, Zone 2 = medium, Zone 3a = high, Zone 3b = functional floodplain.</span>
+<span id="cb1-41"><a href="#cb1-41" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">columns</span><span class="kw">:</span></span>
+<span id="cb1-42"><a href="#cb1-42" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="kw">-</span><span class="at"> </span><span class="fu">name</span><span class="kw">:</span><span class="at"> zone_id</span></span>
+<span id="cb1-43"><a href="#cb1-43" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">tests</span><span class="kw">:</span></span>
+<span id="cb1-44"><a href="#cb1-44" aria-hidden="true" tabindex="-1"></a><span class="at">          </span><span class="kw">-</span><span class="at"> not_null</span></span>
+<span id="cb1-45"><a href="#cb1-45" aria-hidden="true" tabindex="-1"></a><span class="at">          </span><span class="kw">-</span><span class="at"> unique</span></span>
+<span id="cb1-46"><a href="#cb1-46" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="kw">-</span><span class="at"> </span><span class="fu">name</span><span class="kw">:</span><span class="at"> geometry</span></span>
+<span id="cb1-47"><a href="#cb1-47" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">tests</span><span class="kw">:</span></span>
+<span id="cb1-48"><a href="#cb1-48" aria-hidden="true" tabindex="-1"></a><span class="at">          </span><span class="kw">-</span><span class="at"> not_null</span></span>
+<span id="cb1-49"><a href="#cb1-49" aria-hidden="true" tabindex="-1"></a><span class="at">          </span><span class="kw">-</span><span class="at"> valid_geometry</span></span>
+<span id="cb1-50"><a href="#cb1-50" aria-hidden="true" tabindex="-1"></a><span class="at">          </span><span class="kw">-</span><span class="at"> within_national_grid</span></span>
+<span id="cb1-51"><a href="#cb1-51" aria-hidden="true" tabindex="-1"></a><span class="at">          </span><span class="kw">-</span><span class="at"> </span><span class="fu">geometry_type_is</span><span class="kw">:</span></span>
+<span id="cb1-52"><a href="#cb1-52" aria-hidden="true" tabindex="-1"></a><span class="at">              </span><span class="fu">expected_type</span><span class="kw">:</span><span class="at"> ST_MultiPolygon</span></span>
+<span id="cb1-53"><a href="#cb1-53" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="kw">-</span><span class="at"> </span><span class="fu">name</span><span class="kw">:</span><span class="at"> flood_zone</span></span>
+<span id="cb1-54"><a href="#cb1-54" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">tests</span><span class="kw">:</span></span>
+<span id="cb1-55"><a href="#cb1-55" aria-hidden="true" tabindex="-1"></a><span class="at">          </span><span class="kw">-</span><span class="at"> not_null</span></span>
+<span id="cb1-56"><a href="#cb1-56" aria-hidden="true" tabindex="-1"></a><span class="at">          </span><span class="kw">-</span><span class="at"> </span><span class="fu">accepted_values</span><span class="kw">:</span></span>
+<span id="cb1-57"><a href="#cb1-57" aria-hidden="true" tabindex="-1"></a><span class="at">              </span><span class="fu">values</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="st">'Zone 1'</span><span class="kw">,</span><span class="at"> </span><span class="st">'Zone 2'</span><span class="kw">,</span><span class="at"> </span><span class="st">'Zone 3a'</span><span class="kw">,</span><span class="at"> </span><span class="st">'Zone 3b'</span><span class="kw">]</span></span>
+<span id="cb1-58"><a href="#cb1-58" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-59"><a href="#cb1-59" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="kw">-</span><span class="at"> </span><span class="fu">name</span><span class="kw">:</span><span class="at"> int_property_flood_exposure</span></span>
+<span id="cb1-60"><a href="#cb1-60" aria-hidden="true" tabindex="-1"></a><span class="fu">    description</span><span class="kw">: </span><span class="ch">&gt;</span></span>
+<span id="cb1-61"><a href="#cb1-61" aria-hidden="true" tabindex="-1"></a>      Properties joined to flood zones. Each property appears at most once,</span>
+<span id="cb1-62"><a href="#cb1-62" aria-hidden="true" tabindex="-1"></a>      assigned to the highest-risk zone it falls within.</span>
+<span id="cb1-63"><a href="#cb1-63" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">tests</span><span class="kw">:</span></span>
+<span id="cb1-64"><a href="#cb1-64" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="kw">-</span><span class="at"> </span><span class="fu">dbt_utils.expression_is_true</span><span class="kw">:</span></span>
+<span id="cb1-65"><a href="#cb1-65" aria-hidden="true" tabindex="-1"></a><span class="at">          </span><span class="fu">expression</span><span class="kw">:</span><span class="at"> </span><span class="st">"count(*) &gt;= 50000"</span></span>
+<span id="cb1-66"><a href="#cb1-66" aria-hidden="true" tabindex="-1"></a><span class="at">          </span><span class="fu">name</span><span class="kw">:</span><span class="at"> minimum_property_count</span></span>
+<span id="cb1-67"><a href="#cb1-67" aria-hidden="true" tabindex="-1"></a><span class="co">          # Catch completeness failures: total count must exceed known minimum</span></span>
+<span id="cb1-68"><a href="#cb1-68" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">columns</span><span class="kw">:</span></span>
+<span id="cb1-69"><a href="#cb1-69" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="kw">-</span><span class="at"> </span><span class="fu">name</span><span class="kw">:</span><span class="at"> uprn</span></span>
+<span id="cb1-70"><a href="#cb1-70" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">tests</span><span class="kw">:</span></span>
+<span id="cb1-71"><a href="#cb1-71" aria-hidden="true" tabindex="-1"></a><span class="at">          </span><span class="kw">-</span><span class="at"> not_null</span></span>
+<span id="cb1-72"><a href="#cb1-72" aria-hidden="true" tabindex="-1"></a><span class="at">          </span><span class="kw">-</span><span class="at"> unique</span><span class="co">   # Each property joins to exactly one flood zone</span></span>
+<span id="cb1-73"><a href="#cb1-73" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="kw">-</span><span class="at"> </span><span class="fu">name</span><span class="kw">:</span><span class="at"> flood_zone</span></span>
+<span id="cb1-74"><a href="#cb1-74" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">tests</span><span class="kw">:</span></span>
+<span id="cb1-75"><a href="#cb1-75" aria-hidden="true" tabindex="-1"></a><span class="at">          </span><span class="kw">-</span><span class="at"> not_null</span></span>
+<span id="cb1-76"><a href="#cb1-76" aria-hidden="true" tabindex="-1"></a><span class="at">          </span><span class="kw">-</span><span class="at"> </span><span class="fu">accepted_values</span><span class="kw">:</span></span>
+<span id="cb1-77"><a href="#cb1-77" aria-hidden="true" tabindex="-1"></a><span class="at">              </span><span class="fu">values</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="st">'Zone 1'</span><span class="kw">,</span><span class="at"> </span><span class="st">'Zone 2'</span><span class="kw">,</span><span class="at"> </span><span class="st">'Zone 3a'</span><span class="kw">,</span><span class="at"> </span><span class="st">'Zone 3b'</span><span class="kw">,</span><span class="at"> </span><span class="st">'No Zone'</span><span class="kw">]</span></span>
+<span id="cb1-78"><a href="#cb1-78" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-79"><a href="#cb1-79" aria-hidden="true" tabindex="-1"></a><span class="fu">sources</span><span class="kw">:</span></span>
+<span id="cb1-80"><a href="#cb1-80" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="kw">-</span><span class="at"> </span><span class="fu">name</span><span class="kw">:</span><span class="at"> llpg</span></span>
+<span id="cb1-81"><a href="#cb1-81" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">description</span><span class="kw">:</span><span class="at"> Local Land and Property Gazetteer — daily extract</span></span>
+<span id="cb1-82"><a href="#cb1-82" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">freshness</span><span class="kw">:</span></span>
+<span id="cb1-83"><a href="#cb1-83" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">warn_after</span><span class="kw">:</span><span class="at"> </span><span class="kw">{</span><span class="fu">count</span><span class="kw">:</span><span class="at"> </span><span class="dv">2</span><span class="kw">,</span><span class="at"> </span><span class="fu">period</span><span class="kw">:</span><span class="at"> day</span><span class="kw">}</span></span>
+<span id="cb1-84"><a href="#cb1-84" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">error_after</span><span class="kw">:</span><span class="at"> </span><span class="kw">{</span><span class="fu">count</span><span class="kw">:</span><span class="at"> </span><span class="dv">5</span><span class="kw">,</span><span class="at"> </span><span class="fu">period</span><span class="kw">:</span><span class="at"> day</span><span class="kw">}</span></span>
+<span id="cb1-85"><a href="#cb1-85" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">loaded_at_field</span><span class="kw">:</span><span class="at"> extract_timestamp</span></span>
+<span id="cb1-86"><a href="#cb1-86" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">tables</span><span class="kw">:</span></span>
+<span id="cb1-87"><a href="#cb1-87" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="kw">-</span><span class="at"> </span><span class="fu">name</span><span class="kw">:</span><span class="at"> properties_raw</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>The custom macros referenced in this file — <code>valid_geometry</code>, <code>within_national_grid</code>, <code>geometry_type_is</code> — are not built into dbt. They are written as test macros in the project’s <code>macros/tests/</code> directory. A custom test macro in dbt is a Jinja-SQL template that returns a query whose result set defines the failing records: if the query returns zero rows, the test passes; if it returns rows, the test fails with those rows as evidence.</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb2"><pre class="sourceCode sql code-with-copy"><code class="sourceCode sql"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="co">-- macros/tests/valid_geometry.sql</span></span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a><span class="co">-- Usage: - valid_geometry   (in a column test block)</span></span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a><span class="co">-- Fails for any row where ST_IsValid(geometry) returns false.</span></span>
+<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a><span class="co">-- PostGIS: invalid geometries include self-intersections, unclosed rings,</span></span>
+<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a><span class="co">-- and repeated points that collapse a polygon to a line.</span></span>
+<span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-7"><a href="#cb2-7" aria-hidden="true" tabindex="-1"></a>{% macro test_valid_geometry(model, column_name) %}</span>
+<span id="cb2-8"><a href="#cb2-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-9"><a href="#cb2-9" aria-hidden="true" tabindex="-1"></a><span class="kw">select</span></span>
+<span id="cb2-10"><a href="#cb2-10" aria-hidden="true" tabindex="-1"></a>    {{ column_name }} <span class="kw">as</span> failing_geometry,</span>
+<span id="cb2-11"><a href="#cb2-11" aria-hidden="true" tabindex="-1"></a>    <span class="fu">count</span>(<span class="op">*</span>) <span class="kw">as</span> failure_count</span>
+<span id="cb2-12"><a href="#cb2-12" aria-hidden="true" tabindex="-1"></a><span class="kw">from</span> {{ model }}</span>
+<span id="cb2-13"><a href="#cb2-13" aria-hidden="true" tabindex="-1"></a><span class="kw">where</span> <span class="kw">not</span> ST_IsValid({{ column_name }})</span>
+<span id="cb2-14"><a href="#cb2-14" aria-hidden="true" tabindex="-1"></a><span class="kw">group</span> <span class="kw">by</span> <span class="dv">1</span></span>
+<span id="cb2-15"><a href="#cb2-15" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-16"><a href="#cb2-16" aria-hidden="true" tabindex="-1"></a>{% endmacro %}</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb3"><pre class="sourceCode sql code-with-copy"><code class="sourceCode sql"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="co">-- macros/tests/within_national_grid.sql</span></span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a><span class="co">-- Fails for any row whose geometry lies outside the approximate bounding box</span></span>
+<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a><span class="co">-- of the British National Grid (EPSG:27700).</span></span>
+<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a><span class="co">-- Catches CRS mismatch: WGS84 coordinates loaded into a BNG column will have</span></span>
+<span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a><span class="co">-- values near (0, 51) — outside the BNG extent of (0, 0) to (700000, 1300000).</span></span>
+<span id="cb3-6"><a href="#cb3-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-7"><a href="#cb3-7" aria-hidden="true" tabindex="-1"></a>{% macro test_within_national_grid(model, column_name) %}</span>
+<span id="cb3-8"><a href="#cb3-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-9"><a href="#cb3-9" aria-hidden="true" tabindex="-1"></a><span class="kw">with</span> bng_bbox <span class="kw">as</span> (</span>
+<span id="cb3-10"><a href="#cb3-10" aria-hidden="true" tabindex="-1"></a>    <span class="kw">select</span> ST_MakeEnvelope(<span class="op">-</span><span class="dv">100000</span>, <span class="op">-</span><span class="dv">100000</span>, <span class="dv">800000</span>, <span class="dv">1400000</span>, <span class="dv">27700</span>) <span class="kw">as</span> bbox</span>
+<span id="cb3-11"><a href="#cb3-11" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb3-12"><a href="#cb3-12" aria-hidden="true" tabindex="-1"></a><span class="kw">select</span></span>
+<span id="cb3-13"><a href="#cb3-13" aria-hidden="true" tabindex="-1"></a>    {{ column_name }} <span class="kw">as</span> failing_geometry,</span>
+<span id="cb3-14"><a href="#cb3-14" aria-hidden="true" tabindex="-1"></a>    <span class="fu">count</span>(<span class="op">*</span>) <span class="kw">as</span> failure_count</span>
+<span id="cb3-15"><a href="#cb3-15" aria-hidden="true" tabindex="-1"></a><span class="kw">from</span> {{ model }}, bng_bbox</span>
+<span id="cb3-16"><a href="#cb3-16" aria-hidden="true" tabindex="-1"></a><span class="kw">where</span> <span class="kw">not</span> ST_Within({{ column_name }}, bng_bbox.bbox)</span>
+<span id="cb3-17"><a href="#cb3-17" aria-hidden="true" tabindex="-1"></a><span class="kw">group</span> <span class="kw">by</span> <span class="dv">1</span></span>
+<span id="cb3-18"><a href="#cb3-18" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-19"><a href="#cb3-19" aria-hidden="true" tabindex="-1"></a>{% endmacro %}</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb4"><pre class="sourceCode sql code-with-copy"><code class="sourceCode sql"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="co">-- macros/tests/geometry_type_is.sql</span></span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a><span class="co">-- Fails for any row where the geometry type does not match the expected type.</span></span>
+<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a><span class="co">-- Catches mixed-type geometry columns produced by incorrect UNION operations</span></span>
+<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a><span class="co">-- or by source systems that return different geometry types for different records.</span></span>
+<span id="cb4-5"><a href="#cb4-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-6"><a href="#cb4-6" aria-hidden="true" tabindex="-1"></a>{% macro test_geometry_type_is(model, column_name, expected_type) %}</span>
+<span id="cb4-7"><a href="#cb4-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-8"><a href="#cb4-8" aria-hidden="true" tabindex="-1"></a><span class="kw">select</span></span>
+<span id="cb4-9"><a href="#cb4-9" aria-hidden="true" tabindex="-1"></a>    ST_GeometryType({{ column_name }}) <span class="kw">as</span> actual_type,</span>
+<span id="cb4-10"><a href="#cb4-10" aria-hidden="true" tabindex="-1"></a>    <span class="fu">count</span>(<span class="op">*</span>) <span class="kw">as</span> failure_count</span>
+<span id="cb4-11"><a href="#cb4-11" aria-hidden="true" tabindex="-1"></a><span class="kw">from</span> {{ model }}</span>
+<span id="cb4-12"><a href="#cb4-12" aria-hidden="true" tabindex="-1"></a><span class="kw">where</span> ST_GeometryType({{ column_name }}) <span class="op">!=</span> <span class="st">'{{ expected_type }}'</span></span>
+<span id="cb4-13"><a href="#cb4-13" aria-hidden="true" tabindex="-1"></a><span class="kw">group</span> <span class="kw">by</span> <span class="dv">1</span></span>
+<span id="cb4-14"><a href="#cb4-14" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-15"><a href="#cb4-15" aria-hidden="true" tabindex="-1"></a>{% endmacro %}</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>The <code>within_national_grid</code> test is the one that would have caught the flood exposure problem. Any record with WGS84 coordinates loaded into a British National Grid column will have x-coordinate values near 0 and y-coordinate values near 51 — completely outside the BNG extent. The test returns those rows. The pipeline fails. The error is surfaced before the analysis runs.</p>
+<hr>
+</section>
+<section id="great-expectations-for-non-dbt-pipelines" class="level2" data-number="8.4">
+<h2 data-number="8.4" class="anchored" data-anchor-id="great-expectations-for-non-dbt-pipelines"><span class="header-section-number">8.4</span> Great Expectations for non-dbt pipelines</h2>
+<p>Not all spatial data pipelines run through dbt. Pipelines that consume data from external APIs, process imagery, or run batch Python jobs often do not have a SQL transformation layer. For these pipelines, Great Expectations provides equivalent functionality as a Python-native expectation framework.</p>
+<p>An expectation in Great Expectations is an assertion about a dataset. Expectations are grouped into suites. A suite is run against a batch of data and produces a validation result: a pass/fail report with row-level detail for failures. Suites are stored as JSON and versioned with the pipeline code.</p>
+<p>The following static code block defines a Great Expectations suite for the property centroid dataset, including custom geometry validity expectations.</p>
+<div id="fig-ge-suite" class="cell quarto-float quarto-figure quarto-figure-center anchored" data-execution_count="1">
+<figure class="quarto-float quarto-float-fig figure">
+<div aria-describedby="fig-ge-suite-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<details class="code-fold">
+<summary>Code</summary>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb5"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="co">"""Great Expectations suite definition for stg_properties.</span></span>
+<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a><span class="co">This block is illustrative — it shows the API and expectation structure.</span></span>
+<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a><span class="co">Run against a pandas DataFrame or a SQL datasource via the GE Python API."""</span></span>
+<span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-5"><a href="#cb5-5" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> great_expectations <span class="im">as</span> ge</span>
+<span id="cb5-6"><a href="#cb5-6" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> geopandas <span class="im">as</span> gpd</span>
+<span id="cb5-7"><a href="#cb5-7" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> shapely.validation <span class="im">import</span> explain_validity</span>
+<span id="cb5-8"><a href="#cb5-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-9"><a href="#cb5-9" aria-hidden="true" tabindex="-1"></a><span class="co"># -- Load a sample batch for suite development ---------------------------------</span></span>
+<span id="cb5-10"><a href="#cb5-10" aria-hidden="true" tabindex="-1"></a><span class="co"># In production, GE connects to a datasource (Postgres, S3, etc.)</span></span>
+<span id="cb5-11"><a href="#cb5-11" aria-hidden="true" tabindex="-1"></a><span class="co"># For illustration, we load a GeoParquet file directly.</span></span>
+<span id="cb5-12"><a href="#cb5-12" aria-hidden="true" tabindex="-1"></a>gdf <span class="op">=</span> gpd.read_parquet(<span class="st">"data/stg_properties.parquet"</span>)</span>
+<span id="cb5-13"><a href="#cb5-13" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-14"><a href="#cb5-14" aria-hidden="true" tabindex="-1"></a><span class="co"># Convert to a GE DataFrame (wraps pandas with expectation methods)</span></span>
+<span id="cb5-15"><a href="#cb5-15" aria-hidden="true" tabindex="-1"></a>df <span class="op">=</span> ge.from_pandas(gdf)</span>
+<span id="cb5-16"><a href="#cb5-16" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-17"><a href="#cb5-17" aria-hidden="true" tabindex="-1"></a><span class="co"># -- Core structural expectations -----------------------------------------------</span></span>
+<span id="cb5-18"><a href="#cb5-18" aria-hidden="true" tabindex="-1"></a>df.expect_column_to_exist(<span class="st">"uprn"</span>)</span>
+<span id="cb5-19"><a href="#cb5-19" aria-hidden="true" tabindex="-1"></a>df.expect_column_to_exist(<span class="st">"geometry"</span>)</span>
+<span id="cb5-20"><a href="#cb5-20" aria-hidden="true" tabindex="-1"></a>df.expect_column_values_to_not_be_null(<span class="st">"uprn"</span>)</span>
+<span id="cb5-21"><a href="#cb5-21" aria-hidden="true" tabindex="-1"></a>df.expect_column_values_to_not_be_null(<span class="st">"geometry"</span>)</span>
+<span id="cb5-22"><a href="#cb5-22" aria-hidden="true" tabindex="-1"></a>df.expect_column_values_to_be_unique(<span class="st">"uprn"</span>)</span>
+<span id="cb5-23"><a href="#cb5-23" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-24"><a href="#cb5-24" aria-hidden="true" tabindex="-1"></a><span class="co"># -- Attribute range expectations -----------------------------------------------</span></span>
+<span id="cb5-25"><a href="#cb5-25" aria-hidden="true" tabindex="-1"></a>df.expect_column_values_to_be_between(</span>
+<span id="cb5-26"><a href="#cb5-26" aria-hidden="true" tabindex="-1"></a>    column<span class="op">=</span><span class="st">"build_year"</span>,</span>
+<span id="cb5-27"><a href="#cb5-27" aria-hidden="true" tabindex="-1"></a>    min_value<span class="op">=</span><span class="dv">1600</span>,</span>
+<span id="cb5-28"><a href="#cb5-28" aria-hidden="true" tabindex="-1"></a>    max_value<span class="op">=</span><span class="dv">2025</span>,</span>
+<span id="cb5-29"><a href="#cb5-29" aria-hidden="true" tabindex="-1"></a>    mostly<span class="op">=</span><span class="fl">0.999</span>,  <span class="co"># allow 0.1% anomalies (data entry errors in source)</span></span>
+<span id="cb5-30"><a href="#cb5-30" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb5-31"><a href="#cb5-31" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-32"><a href="#cb5-32" aria-hidden="true" tabindex="-1"></a>df.expect_column_values_to_be_in_set(</span>
+<span id="cb5-33"><a href="#cb5-33" aria-hidden="true" tabindex="-1"></a>    column<span class="op">=</span><span class="st">"property_class"</span>,</span>
+<span id="cb5-34"><a href="#cb5-34" aria-hidden="true" tabindex="-1"></a>    value_set<span class="op">=</span>[<span class="st">"R"</span>, <span class="st">"C"</span>, <span class="st">"I"</span>, <span class="st">"L"</span>, <span class="st">"P"</span>, <span class="st">"U"</span>],</span>
+<span id="cb5-35"><a href="#cb5-35" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb5-36"><a href="#cb5-36" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-37"><a href="#cb5-37" aria-hidden="true" tabindex="-1"></a><span class="co"># -- Table-level completeness expectation ----------------------------------------</span></span>
+<span id="cb5-38"><a href="#cb5-38" aria-hidden="true" tabindex="-1"></a>df.expect_table_row_count_to_be_between(</span>
+<span id="cb5-39"><a href="#cb5-39" aria-hidden="true" tabindex="-1"></a>    min_value<span class="op">=</span><span class="dv">50_000</span>,</span>
+<span id="cb5-40"><a href="#cb5-40" aria-hidden="true" tabindex="-1"></a>    max_value<span class="op">=</span><span class="dv">70_000</span>,</span>
+<span id="cb5-41"><a href="#cb5-41" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb5-42"><a href="#cb5-42" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-43"><a href="#cb5-43" aria-hidden="true" tabindex="-1"></a><span class="co"># -- Custom spatial expectations (implemented via custom expectation classes) ---</span></span>
+<span id="cb5-44"><a href="#cb5-44" aria-hidden="true" tabindex="-1"></a><span class="co"># Great Expectations supports custom expectations via the Expectation base class.</span></span>
+<span id="cb5-45"><a href="#cb5-45" aria-hidden="true" tabindex="-1"></a><span class="co"># These two are illustrative patterns — the full class definitions follow below.</span></span>
+<span id="cb5-46"><a href="#cb5-46" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-47"><a href="#cb5-47" aria-hidden="true" tabindex="-1"></a><span class="co"># 1. Geometry validity: every geometry must pass ST_IsValid / is_valid</span></span>
+<span id="cb5-48"><a href="#cb5-48" aria-hidden="true" tabindex="-1"></a>df.expect_column_values_to_pass_custom_spatial_check(</span>
+<span id="cb5-49"><a href="#cb5-49" aria-hidden="true" tabindex="-1"></a>    column<span class="op">=</span><span class="st">"geometry"</span>,</span>
+<span id="cb5-50"><a href="#cb5-50" aria-hidden="true" tabindex="-1"></a>    check_name<span class="op">=</span><span class="st">"is_valid"</span>,</span>
+<span id="cb5-51"><a href="#cb5-51" aria-hidden="true" tabindex="-1"></a>    description<span class="op">=</span><span class="st">"All geometries must be topologically valid (no self-intersections, unclosed rings)."</span>,</span>
+<span id="cb5-52"><a href="#cb5-52" aria-hidden="true" tabindex="-1"></a>    mostly<span class="op">=</span><span class="fl">1.0</span>,  <span class="co"># no tolerance: every record must pass</span></span>
+<span id="cb5-53"><a href="#cb5-53" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb5-54"><a href="#cb5-54" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-55"><a href="#cb5-55" aria-hidden="true" tabindex="-1"></a><span class="co"># 2. CRS bounding box: all centroids must lie within BNG extent</span></span>
+<span id="cb5-56"><a href="#cb5-56" aria-hidden="true" tabindex="-1"></a>df.expect_column_values_to_pass_custom_spatial_check(</span>
+<span id="cb5-57"><a href="#cb5-57" aria-hidden="true" tabindex="-1"></a>    column<span class="op">=</span><span class="st">"geometry"</span>,</span>
+<span id="cb5-58"><a href="#cb5-58" aria-hidden="true" tabindex="-1"></a>    check_name<span class="op">=</span><span class="st">"within_bng_extent"</span>,</span>
+<span id="cb5-59"><a href="#cb5-59" aria-hidden="true" tabindex="-1"></a>    description<span class="op">=</span><span class="st">"All centroids must lie within the British National Grid bounding box."</span>,</span>
+<span id="cb5-60"><a href="#cb5-60" aria-hidden="true" tabindex="-1"></a>    mostly<span class="op">=</span><span class="fl">1.0</span>,</span>
+<span id="cb5-61"><a href="#cb5-61" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb5-62"><a href="#cb5-62" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-63"><a href="#cb5-63" aria-hidden="true" tabindex="-1"></a><span class="co"># -- Save the suite to disk -----------------------------------------------------</span></span>
+<span id="cb5-64"><a href="#cb5-64" aria-hidden="true" tabindex="-1"></a>suite <span class="op">=</span> df.get_expectation_suite(discard_failed_expectations<span class="op">=</span><span class="va">False</span>)</span>
+<span id="cb5-65"><a href="#cb5-65" aria-hidden="true" tabindex="-1"></a>suite.expectation_suite_name <span class="op">=</span> <span class="st">"stg_properties.critical"</span></span>
+<span id="cb5-66"><a href="#cb5-66" aria-hidden="true" tabindex="-1"></a><span class="cf">with</span> <span class="bu">open</span>(<span class="st">"expectations/stg_properties.critical.json"</span>, <span class="st">"w"</span>) <span class="im">as</span> f:</span>
+<span id="cb5-67"><a href="#cb5-67" aria-hidden="true" tabindex="-1"></a>    <span class="im">import</span> json</span>
+<span id="cb5-68"><a href="#cb5-68" aria-hidden="true" tabindex="-1"></a>    json.dump(suite.to_json_dict(), f, indent<span class="op">=</span><span class="dv">2</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</details>
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig quarto-uncaptioned" id="fig-ge-suite-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Figure&nbsp;8.1
+</figcaption>
+</figure>
+</div>
+<p>Custom spatial expectations are implemented by subclassing <code>ColumnMapExpectation</code>:</p>
+<div id="ge-custom-expectation" class="cell" data-execution_count="2">
+<details class="code-fold">
+<summary>Code</summary>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb6"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="co">"""Custom Great Expectations spatial expectation for geometry validity.</span></span>
+<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a><span class="co">Implements the ColumnMapExpectation base class.</span></span>
+<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a><span class="co">Returns unexpected_percent: fraction of rows where the geometry is invalid."""</span></span>
+<span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-5"><a href="#cb6-5" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> great_expectations.expectations.expectation <span class="im">import</span> ColumnMapExpectation</span>
+<span id="cb6-6"><a href="#cb6-6" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> great_expectations.execution_engine <span class="im">import</span> (</span>
+<span id="cb6-7"><a href="#cb6-7" aria-hidden="true" tabindex="-1"></a>    PandasExecutionEngine,</span>
+<span id="cb6-8"><a href="#cb6-8" aria-hidden="true" tabindex="-1"></a>    SparkDFExecutionEngine,</span>
+<span id="cb6-9"><a href="#cb6-9" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb6-10"><a href="#cb6-10" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> great_expectations.expectations.metrics <span class="im">import</span> (</span>
+<span id="cb6-11"><a href="#cb6-11" aria-hidden="true" tabindex="-1"></a>    column_condition_partial,</span>
+<span id="cb6-12"><a href="#cb6-12" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb6-13"><a href="#cb6-13" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> shapely.validation <span class="im">import</span> explain_validity</span>
+<span id="cb6-14"><a href="#cb6-14" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-15"><a href="#cb6-15" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-16"><a href="#cb6-16" aria-hidden="true" tabindex="-1"></a><span class="kw">class</span> ExpectColumnValuesToHaveValidGeometry(ColumnMapExpectation):</span>
+<span id="cb6-17"><a href="#cb6-17" aria-hidden="true" tabindex="-1"></a>    <span class="co">"""Expects all geometry values in the column to be topologically valid.</span></span>
+<span id="cb6-18"><a href="#cb6-18" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-19"><a href="#cb6-19" aria-hidden="true" tabindex="-1"></a><span class="co">    A valid geometry has:</span></span>
+<span id="cb6-20"><a href="#cb6-20" aria-hidden="true" tabindex="-1"></a><span class="co">    - No self-intersections</span></span>
+<span id="cb6-21"><a href="#cb6-21" aria-hidden="true" tabindex="-1"></a><span class="co">    - Closed rings (for polygons)</span></span>
+<span id="cb6-22"><a href="#cb6-22" aria-hidden="true" tabindex="-1"></a><span class="co">    - No repeated points that collapse the geometry to a lower dimension</span></span>
+<span id="cb6-23"><a href="#cb6-23" aria-hidden="true" tabindex="-1"></a><span class="co">    - No zero-area polygons</span></span>
+<span id="cb6-24"><a href="#cb6-24" aria-hidden="true" tabindex="-1"></a><span class="co">    """</span></span>
+<span id="cb6-25"><a href="#cb6-25" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-26"><a href="#cb6-26" aria-hidden="true" tabindex="-1"></a>    map_metric <span class="op">=</span> <span class="st">"column_values.geometry_is_valid"</span></span>
+<span id="cb6-27"><a href="#cb6-27" aria-hidden="true" tabindex="-1"></a>    success_keys <span class="op">=</span> (<span class="st">"mostly"</span>,)</span>
+<span id="cb6-28"><a href="#cb6-28" aria-hidden="true" tabindex="-1"></a>    default_kwarg_values <span class="op">=</span> {<span class="st">"mostly"</span>: <span class="fl">1.0</span>}</span>
+<span id="cb6-29"><a href="#cb6-29" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-30"><a href="#cb6-30" aria-hidden="true" tabindex="-1"></a>    <span class="at">@column_condition_partial</span>(engine<span class="op">=</span>PandasExecutionEngine)</span>
+<span id="cb6-31"><a href="#cb6-31" aria-hidden="true" tabindex="-1"></a>    <span class="kw">def</span> _pandas(cls, column, <span class="op">**</span>kwargs):</span>
+<span id="cb6-32"><a href="#cb6-32" aria-hidden="true" tabindex="-1"></a>        <span class="co">"""Returns True for each row where the geometry is valid."""</span></span>
+<span id="cb6-33"><a href="#cb6-33" aria-hidden="true" tabindex="-1"></a>        <span class="cf">return</span> column.<span class="bu">apply</span>(<span class="kw">lambda</span> geom: geom <span class="kw">is</span> <span class="kw">not</span> <span class="va">None</span> <span class="kw">and</span> geom.is_valid)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</details>
+</div>
+<p>The advantage of Great Expectations over dbt tests for Python-native pipelines is that it runs in the same Python process as the transformation code. A GeoDataFrame returned from a custom spatial aggregation can be validated inline, before it is written to storage. In dbt, tests run after materialisation — the model is written to the database, then tested. In Great Expectations, the validation can gate the write: if the expectation suite fails, the code raises an exception and the invalid data is never persisted.</p>
+<hr>
+</section>
+<section id="data-lineage" class="level2" data-number="8.5">
+<h2 data-number="8.5" class="anchored" data-anchor-id="data-lineage"><span class="header-section-number">8.5</span> Data lineage</h2>
+<p>When the QA reviewer found the 6,400 missing properties, the first question was: which table introduced the CRS mismatch? The analysis had five upstream models. The property centroids passed through three of them before reaching the flood exposure join. Without lineage, answering that question required manually tracing the transformation code — reading each model, inspecting each join, checking each column definition. With lineage, the answer is a graph traversal: which model first introduced the geometry column, and what was the CRS of the source?</p>
+<p>Data lineage is the directed acyclic graph (DAG) of transformations that connects source data to output. Each node is a dataset — a table, a file, a model. Each edge is a transformation — a SQL model, a Python script, a dbt model. The DAG encodes which outputs depend on which inputs, and therefore which inputs to look at when an output is wrong.</p>
+<p>dbt builds lineage automatically. Every <code>ref()</code> call in a dbt model creates a node and an edge in the project DAG. <code>dbt docs generate</code> produces a browsable DAG that shows, for any model, all upstream sources and all downstream dependents. When a test fails on a model, the DAG tells you which models upstream could have introduced the problem. When a source data contract changes, the DAG tells you which models downstream are affected.</p>
+<p>For pipelines that run outside dbt — Python jobs, PySpark transforms, imagery processing — lineage must be tracked explicitly. Apache Atlas and OpenLineage are the standard tools. OpenLineage defines a standard event format: when a job reads from a dataset, it emits a <code>START</code> event naming that dataset as an input. When it writes to a dataset, it emits a <code>COMPLETE</code> event naming that dataset as an output. These events are collected by a lineage backend (Marquez is the reference implementation) that assembles the full DAG across all jobs and frameworks.</p>
+<p>The value of lineage is proportional to the value of the data. For a one-off analysis, manual tracing is acceptable. For a production pipeline that runs daily and feeds downstream operational decisions, the cost of a 6-month investigation into a data quality failure is high enough that lineage tooling pays for itself quickly.</p>
+<p>Beyond debugging, lineage enables impact analysis. When the Environment Agency updates its flood zone polygons — a quarterly occurrence — lineage identifies every model that depends on those polygons. Those models can be scheduled for automatic re-materialisation. Without lineage, the dependency is implicit: some engineer has to remember which models use flood zone data and re-run them manually. In practice, they do not all get re-run, and stale outputs accumulate in proportion to the size of the pipeline.</p>
+<hr>
+</section>
+<section id="simulating-data-quality-drift" class="level2" data-number="8.6">
+<h2 data-number="8.6" class="anchored" data-anchor-id="simulating-data-quality-drift"><span class="header-section-number">8.6</span> Simulating data quality drift</h2>
+<p>Data quality is a stock. It starts at some level and degrades over time as the world changes and the pipeline does not. Schema changes, sensor calibration drift, reference dataset updates, and upstream encoding changes are all outflows from the quality stock. Testing is the corrective flow: tests detect quality failures, which trigger remediation, which restores quality.</p>
+<p>The simulation below models this as a stock-flow system under three testing regimes: no tests, periodic batch tests, and continuous testing. The parameters that matter are the drift rate (how fast quality degrades in the absence of testing), the test interval (for periodic testing), and the quality floor (the worst-case quality level the system reaches before the failure becomes visible in downstream outputs).</p>
+<div id="cell-fig-quality-drift" class="cell" data-fig-height="6" data-fig-width="10" data-execution_count="3">
+<details class="code-fold">
+<summary>Code</summary>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb7"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="co">"""Data quality stock simulation — Chapter 7.</span></span>
+<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a><span class="co">Euler integration of quality stock under three testing regimes.</span></span>
+<span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a><span class="co">Analogous to the retraining loop simulation in Ch 6: same stock-flow structure,</span></span>
+<span id="cb7-4"><a href="#cb7-4" aria-hidden="true" tabindex="-1"></a><span class="co">different domain interpretation."""</span></span>
+<span id="cb7-5"><a href="#cb7-5" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> numpy <span class="im">as</span> np</span>
+<span id="cb7-6"><a href="#cb7-6" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> matplotlib.pyplot <span class="im">as</span> plt</span>
+<span id="cb7-7"><a href="#cb7-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-8"><a href="#cb7-8" aria-hidden="true" tabindex="-1"></a><span class="co"># -- Named constants -----------------------------------------------------------</span></span>
+<span id="cb7-9"><a href="#cb7-9" aria-hidden="true" tabindex="-1"></a>QUALITY_CEILING <span class="op">=</span> <span class="fl">1.00</span>   <span class="co"># perfect quality</span></span>
+<span id="cb7-10"><a href="#cb7-10" aria-hidden="true" tabindex="-1"></a>QUALITY_FLOOR   <span class="op">=</span> <span class="fl">0.50</span>   <span class="co"># worst-case quality before downstream failures are noticed</span></span>
+<span id="cb7-11"><a href="#cb7-11" aria-hidden="true" tabindex="-1"></a>DRIFT_RATE      <span class="op">=</span> <span class="fl">0.10</span>   <span class="co"># quality degradation per month (fraction of gap to floor)</span></span>
+<span id="cb7-12"><a href="#cb7-12" aria-hidden="true" tabindex="-1"></a>TEST_INTERVAL   <span class="op">=</span> <span class="fl">2.0</span>    <span class="co"># months between periodic test runs</span></span>
+<span id="cb7-13"><a href="#cb7-13" aria-hidden="true" tabindex="-1"></a>DT              <span class="op">=</span> <span class="fl">0.05</span>   <span class="co"># Euler time step (months)</span></span>
+<span id="cb7-14"><a href="#cb7-14" aria-hidden="true" tabindex="-1"></a>T_START         <span class="op">=</span> <span class="fl">0.0</span></span>
+<span id="cb7-15"><a href="#cb7-15" aria-hidden="true" tabindex="-1"></a>T_END           <span class="op">=</span> <span class="fl">24.0</span>   <span class="co"># 24-month simulation</span></span>
+<span id="cb7-16"><a href="#cb7-16" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-17"><a href="#cb7-17" aria-hidden="true" tabindex="-1"></a><span class="co"># WH palette</span></span>
+<span id="cb7-18"><a href="#cb7-18" aria-hidden="true" tabindex="-1"></a>COL_NONE       <span class="op">=</span> <span class="st">"#888888"</span>   <span class="co"># no tests</span></span>
+<span id="cb7-19"><a href="#cb7-19" aria-hidden="true" tabindex="-1"></a>COL_PERIODIC   <span class="op">=</span> <span class="st">"#111111"</span>   <span class="co"># periodic tests</span></span>
+<span id="cb7-20"><a href="#cb7-20" aria-hidden="true" tabindex="-1"></a>COL_CONTINUOUS <span class="op">=</span> <span class="st">"#d52a2a"</span>   <span class="co"># continuous tests</span></span>
+<span id="cb7-21"><a href="#cb7-21" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-22"><a href="#cb7-22" aria-hidden="true" tabindex="-1"></a>STEPS <span class="op">=</span> <span class="bu">int</span>((T_END <span class="op">-</span> T_START) <span class="op">/</span> DT) <span class="op">+</span> <span class="dv">1</span></span>
+<span id="cb7-23"><a href="#cb7-23" aria-hidden="true" tabindex="-1"></a>t     <span class="op">=</span> np.linspace(T_START, T_END, STEPS)</span>
+<span id="cb7-24"><a href="#cb7-24" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-25"><a href="#cb7-25" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-26"><a href="#cb7-26" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> run_quality_simulation(test_regime):</span>
+<span id="cb7-27"><a href="#cb7-27" aria-hidden="true" tabindex="-1"></a>    <span class="co">"""</span></span>
+<span id="cb7-28"><a href="#cb7-28" aria-hidden="true" tabindex="-1"></a><span class="co">    Simulate quality stock over 24 months under one testing regime.</span></span>
+<span id="cb7-29"><a href="#cb7-29" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-30"><a href="#cb7-30" aria-hidden="true" tabindex="-1"></a><span class="co">    test_regime: 'none', 'periodic', 'continuous'</span></span>
+<span id="cb7-31"><a href="#cb7-31" aria-hidden="true" tabindex="-1"></a><span class="co">    Returns (quality_array, test_times)</span></span>
+<span id="cb7-32"><a href="#cb7-32" aria-hidden="true" tabindex="-1"></a><span class="co">    """</span></span>
+<span id="cb7-33"><a href="#cb7-33" aria-hidden="true" tabindex="-1"></a>    quality    <span class="op">=</span> np.empty(STEPS)</span>
+<span id="cb7-34"><a href="#cb7-34" aria-hidden="true" tabindex="-1"></a>    quality[<span class="dv">0</span>] <span class="op">=</span> QUALITY_CEILING</span>
+<span id="cb7-35"><a href="#cb7-35" aria-hidden="true" tabindex="-1"></a>    test_times <span class="op">=</span> []</span>
+<span id="cb7-36"><a href="#cb7-36" aria-hidden="true" tabindex="-1"></a>    last_test  <span class="op">=</span> <span class="op">-</span><span class="fl">999.0</span></span>
+<span id="cb7-37"><a href="#cb7-37" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-38"><a href="#cb7-38" aria-hidden="true" tabindex="-1"></a>    <span class="cf">for</span> i <span class="kw">in</span> <span class="bu">range</span>(<span class="dv">1</span>, STEPS):</span>
+<span id="cb7-39"><a href="#cb7-39" aria-hidden="true" tabindex="-1"></a>        t_now    <span class="op">=</span> t[i]</span>
+<span id="cb7-40"><a href="#cb7-40" aria-hidden="true" tabindex="-1"></a>        q_prev   <span class="op">=</span> quality[i <span class="op">-</span> <span class="dv">1</span>]</span>
+<span id="cb7-41"><a href="#cb7-41" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-42"><a href="#cb7-42" aria-hidden="true" tabindex="-1"></a>        <span class="co"># Quality drifts toward floor at DRIFT_RATE per month</span></span>
+<span id="cb7-43"><a href="#cb7-43" aria-hidden="true" tabindex="-1"></a>        d_quality <span class="op">=</span> <span class="op">-</span>DRIFT_RATE <span class="op">*</span> (q_prev <span class="op">-</span> QUALITY_FLOOR)</span>
+<span id="cb7-44"><a href="#cb7-44" aria-hidden="true" tabindex="-1"></a>        q_new     <span class="op">=</span> q_prev <span class="op">+</span> d_quality <span class="op">*</span> DT</span>
+<span id="cb7-45"><a href="#cb7-45" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-46"><a href="#cb7-46" aria-hidden="true" tabindex="-1"></a>        test_now <span class="op">=</span> <span class="va">False</span></span>
+<span id="cb7-47"><a href="#cb7-47" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-48"><a href="#cb7-48" aria-hidden="true" tabindex="-1"></a>        <span class="cf">if</span> test_regime <span class="op">==</span> <span class="st">"periodic"</span>:</span>
+<span id="cb7-49"><a href="#cb7-49" aria-hidden="true" tabindex="-1"></a>            <span class="co"># Test fires on a fixed schedule</span></span>
+<span id="cb7-50"><a href="#cb7-50" aria-hidden="true" tabindex="-1"></a>            prev_interval <span class="op">=</span> (t[i <span class="op">-</span> <span class="dv">1</span>] <span class="op">-</span> T_START) <span class="op">/</span> TEST_INTERVAL</span>
+<span id="cb7-51"><a href="#cb7-51" aria-hidden="true" tabindex="-1"></a>            curr_interval <span class="op">=</span> (t_now    <span class="op">-</span> T_START) <span class="op">/</span> TEST_INTERVAL</span>
+<span id="cb7-52"><a href="#cb7-52" aria-hidden="true" tabindex="-1"></a>            <span class="cf">if</span> <span class="bu">int</span>(curr_interval) <span class="op">&gt;</span> <span class="bu">int</span>(prev_interval):</span>
+<span id="cb7-53"><a href="#cb7-53" aria-hidden="true" tabindex="-1"></a>                test_now <span class="op">=</span> <span class="va">True</span></span>
+<span id="cb7-54"><a href="#cb7-54" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-55"><a href="#cb7-55" aria-hidden="true" tabindex="-1"></a>        <span class="cf">elif</span> test_regime <span class="op">==</span> <span class="st">"continuous"</span>:</span>
+<span id="cb7-56"><a href="#cb7-56" aria-hidden="true" tabindex="-1"></a>            <span class="co"># Continuous testing: any quality degradation below 0.95 triggers immediate fix</span></span>
+<span id="cb7-57"><a href="#cb7-57" aria-hidden="true" tabindex="-1"></a>            <span class="cf">if</span> q_new <span class="op">&lt;</span> <span class="fl">0.95</span> <span class="kw">and</span> (t_now <span class="op">-</span> last_test) <span class="op">&gt;=</span> <span class="fl">0.1</span>:</span>
+<span id="cb7-58"><a href="#cb7-58" aria-hidden="true" tabindex="-1"></a>                test_now <span class="op">=</span> <span class="va">True</span></span>
+<span id="cb7-59"><a href="#cb7-59" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-60"><a href="#cb7-60" aria-hidden="true" tabindex="-1"></a>        <span class="cf">if</span> test_now:</span>
+<span id="cb7-61"><a href="#cb7-61" aria-hidden="true" tabindex="-1"></a>            <span class="co"># Testing detects the issue and triggers remediation: quality restored</span></span>
+<span id="cb7-62"><a href="#cb7-62" aria-hidden="true" tabindex="-1"></a>            q_new     <span class="op">=</span> QUALITY_CEILING</span>
+<span id="cb7-63"><a href="#cb7-63" aria-hidden="true" tabindex="-1"></a>            last_test <span class="op">=</span> t_now</span>
+<span id="cb7-64"><a href="#cb7-64" aria-hidden="true" tabindex="-1"></a>            test_times.append(t_now)</span>
+<span id="cb7-65"><a href="#cb7-65" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-66"><a href="#cb7-66" aria-hidden="true" tabindex="-1"></a>        quality[i] <span class="op">=</span> q_new</span>
+<span id="cb7-67"><a href="#cb7-67" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-68"><a href="#cb7-68" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> quality, test_times</span>
+<span id="cb7-69"><a href="#cb7-69" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-70"><a href="#cb7-70" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-71"><a href="#cb7-71" aria-hidden="true" tabindex="-1"></a><span class="co"># -- Run all three scenarios ---------------------------------------------------</span></span>
+<span id="cb7-72"><a href="#cb7-72" aria-hidden="true" tabindex="-1"></a>q_none, rt_none         <span class="op">=</span> run_quality_simulation(<span class="st">"none"</span>)</span>
+<span id="cb7-73"><a href="#cb7-73" aria-hidden="true" tabindex="-1"></a>q_periodic, rt_periodic <span class="op">=</span> run_quality_simulation(<span class="st">"periodic"</span>)</span>
+<span id="cb7-74"><a href="#cb7-74" aria-hidden="true" tabindex="-1"></a>q_cont, rt_cont         <span class="op">=</span> run_quality_simulation(<span class="st">"continuous"</span>)</span>
+<span id="cb7-75"><a href="#cb7-75" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-76"><a href="#cb7-76" aria-hidden="true" tabindex="-1"></a><span class="co"># -- Figure -------------------------------------------------------------------</span></span>
+<span id="cb7-77"><a href="#cb7-77" aria-hidden="true" tabindex="-1"></a>fig, ax <span class="op">=</span> plt.subplots(figsize<span class="op">=</span>(<span class="dv">10</span>, <span class="dv">6</span>), dpi<span class="op">=</span><span class="dv">150</span>)</span>
+<span id="cb7-78"><a href="#cb7-78" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-79"><a href="#cb7-79" aria-hidden="true" tabindex="-1"></a>ax.plot(t, q_none,     color<span class="op">=</span>COL_NONE,       linestyle<span class="op">=</span><span class="st">"--"</span>, linewidth<span class="op">=</span><span class="fl">1.2</span>)</span>
+<span id="cb7-80"><a href="#cb7-80" aria-hidden="true" tabindex="-1"></a>ax.plot(t, q_periodic, color<span class="op">=</span>COL_PERIODIC,   linestyle<span class="op">=</span><span class="st">"-"</span>,  linewidth<span class="op">=</span><span class="fl">1.8</span>)</span>
+<span id="cb7-81"><a href="#cb7-81" aria-hidden="true" tabindex="-1"></a>ax.plot(t, q_cont,     color<span class="op">=</span>COL_CONTINUOUS, linestyle<span class="op">=</span><span class="st">"-"</span>,  linewidth<span class="op">=</span><span class="fl">1.8</span>)</span>
+<span id="cb7-82"><a href="#cb7-82" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-83"><a href="#cb7-83" aria-hidden="true" tabindex="-1"></a><span class="co"># Mark test events</span></span>
+<span id="cb7-84"><a href="#cb7-84" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> rt <span class="kw">in</span> rt_periodic:</span>
+<span id="cb7-85"><a href="#cb7-85" aria-hidden="true" tabindex="-1"></a>    ax.axvline(rt, color<span class="op">=</span>COL_PERIODIC, alpha<span class="op">=</span><span class="fl">0.2</span>, linewidth<span class="op">=</span><span class="fl">0.8</span>)</span>
+<span id="cb7-86"><a href="#cb7-86" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> rt <span class="kw">in</span> rt_cont:</span>
+<span id="cb7-87"><a href="#cb7-87" aria-hidden="true" tabindex="-1"></a>    ax.axvline(rt, color<span class="op">=</span>COL_CONTINUOUS, alpha<span class="op">=</span><span class="fl">0.15</span>, linewidth<span class="op">=</span><span class="fl">0.6</span>)</span>
+<span id="cb7-88"><a href="#cb7-88" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-89"><a href="#cb7-89" aria-hidden="true" tabindex="-1"></a><span class="co"># Quality floor reference line</span></span>
+<span id="cb7-90"><a href="#cb7-90" aria-hidden="true" tabindex="-1"></a>ax.axhline(QUALITY_FLOOR, color<span class="op">=</span><span class="st">"#888888"</span>, linestyle<span class="op">=</span><span class="st">":"</span>, linewidth<span class="op">=</span><span class="fl">0.7</span>, zorder<span class="op">=</span><span class="dv">0</span>)</span>
+<span id="cb7-91"><a href="#cb7-91" aria-hidden="true" tabindex="-1"></a>ax.annotate(<span class="st">"Quality floor (downstream failures visible)"</span>,</span>
+<span id="cb7-92"><a href="#cb7-92" aria-hidden="true" tabindex="-1"></a>            xy<span class="op">=</span>(<span class="fl">1.0</span>, QUALITY_FLOOR), xytext<span class="op">=</span>(<span class="fl">1.0</span>, QUALITY_FLOOR <span class="op">+</span> <span class="fl">0.02</span>),</span>
+<span id="cb7-93"><a href="#cb7-93" aria-hidden="true" tabindex="-1"></a>            fontsize<span class="op">=</span><span class="dv">8</span>, color<span class="op">=</span><span class="st">"#888888"</span>, va<span class="op">=</span><span class="st">"bottom"</span>)</span>
+<span id="cb7-94"><a href="#cb7-94" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-95"><a href="#cb7-95" aria-hidden="true" tabindex="-1"></a><span class="co"># Scenario labels at right edge</span></span>
+<span id="cb7-96"><a href="#cb7-96" aria-hidden="true" tabindex="-1"></a>label_data <span class="op">=</span> [</span>
+<span id="cb7-97"><a href="#cb7-97" aria-hidden="true" tabindex="-1"></a>    (<span class="st">"No tests"</span>,    t, q_none,     COL_NONE,       <span class="op">-</span><span class="fl">0.03</span>),</span>
+<span id="cb7-98"><a href="#cb7-98" aria-hidden="true" tabindex="-1"></a>    (<span class="st">"Periodic"</span>,    t, q_periodic, COL_PERIODIC,    <span class="fl">0.02</span>),</span>
+<span id="cb7-99"><a href="#cb7-99" aria-hidden="true" tabindex="-1"></a>    (<span class="st">"Continuous"</span>,  t, q_cont,     COL_CONTINUOUS,  <span class="fl">0.02</span>),</span>
+<span id="cb7-100"><a href="#cb7-100" aria-hidden="true" tabindex="-1"></a>]</span>
+<span id="cb7-101"><a href="#cb7-101" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> label, t_, q_, col, offset <span class="kw">in</span> label_data:</span>
+<span id="cb7-102"><a href="#cb7-102" aria-hidden="true" tabindex="-1"></a>    ax.annotate(label,</span>
+<span id="cb7-103"><a href="#cb7-103" aria-hidden="true" tabindex="-1"></a>                xy<span class="op">=</span>(t_[<span class="op">-</span><span class="dv">1</span>], q_[<span class="op">-</span><span class="dv">1</span>]),</span>
+<span id="cb7-104"><a href="#cb7-104" aria-hidden="true" tabindex="-1"></a>                xytext<span class="op">=</span>(t_[<span class="op">-</span><span class="dv">1</span>] <span class="op">-</span> <span class="fl">0.3</span>, q_[<span class="op">-</span><span class="dv">1</span>] <span class="op">+</span> offset),</span>
+<span id="cb7-105"><a href="#cb7-105" aria-hidden="true" tabindex="-1"></a>                fontsize<span class="op">=</span><span class="fl">8.5</span>, color<span class="op">=</span>col, ha<span class="op">=</span><span class="st">"right"</span>, va<span class="op">=</span><span class="st">"center"</span>)</span>
+<span id="cb7-106"><a href="#cb7-106" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-107"><a href="#cb7-107" aria-hidden="true" tabindex="-1"></a>ax.set_xlim(T_START, T_END)</span>
+<span id="cb7-108"><a href="#cb7-108" aria-hidden="true" tabindex="-1"></a>ax.set_ylim(<span class="fl">0.40</span>, <span class="fl">1.05</span>)</span>
+<span id="cb7-109"><a href="#cb7-109" aria-hidden="true" tabindex="-1"></a>ax.set_xlabel(<span class="st">"Month"</span>)</span>
+<span id="cb7-110"><a href="#cb7-110" aria-hidden="true" tabindex="-1"></a>ax.set_ylabel(<span class="st">"Data quality score"</span>)</span>
+<span id="cb7-111"><a href="#cb7-111" aria-hidden="true" tabindex="-1"></a>ax.spines[<span class="st">"top"</span>].set_visible(<span class="va">False</span>)</span>
+<span id="cb7-112"><a href="#cb7-112" aria-hidden="true" tabindex="-1"></a>ax.spines[<span class="st">"right"</span>].set_visible(<span class="va">False</span>)</span>
+<span id="cb7-113"><a href="#cb7-113" aria-hidden="true" tabindex="-1"></a>ax.grid(<span class="va">False</span>)</span>
+<span id="cb7-114"><a href="#cb7-114" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-115"><a href="#cb7-115" aria-hidden="true" tabindex="-1"></a>plt.tight_layout(pad<span class="op">=</span><span class="fl">1.5</span>)</span>
+<span id="cb7-116"><a href="#cb7-116" aria-hidden="true" tabindex="-1"></a>plt.savefig(<span class="st">"_assets/ch07-quality-drift.png"</span>, dpi<span class="op">=</span><span class="dv">150</span>, bbox_inches<span class="op">=</span><span class="st">"tight"</span>)</span>
+<span id="cb7-117"><a href="#cb7-117" aria-hidden="true" tabindex="-1"></a>plt.show()</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</details>
+<div class="cell-output cell-output-display">
+<div id="fig-quality-drift" class="quarto-float quarto-figure quarto-figure-center anchored">
+<figure class="quarto-float quarto-float-fig figure">
+<div aria-describedby="fig-quality-drift-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<img src="07-data-quality-and-governance_files/figure-html/fig-quality-drift-output-1.png" width="1468" height="869" class="figure-img">
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-quality-drift-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Figure&nbsp;8.2: Figure 7.1. Data quality score over 24 months under three testing regimes. Without tests, quality degrades monotonically toward the floor. Periodic tests produce a sawtooth: quality recovers after each test cycle but decays between them. Continuous testing maintains quality near its ceiling because failures are detected and corrected before significant degradation accumulates. The gap between periodic and continuous testing is largest when the drift rate is high relative to the test interval.
+</figcaption>
+</figure>
+</div>
+</div>
+</div>
+<p>The simulation makes the structural argument concrete. With no tests, quality drifts monotonically toward the floor. With periodic testing, quality recovers on schedule but decays between test cycles — and the depth of the decay depends on both the drift rate and the test interval. With continuous testing, quality stays near the ceiling because the corrective flow operates faster than the drift flow. The policy implication is the same as for the retraining loop in Chapter 6: the testing regime is the balancing loop, and its frequency relative to the drift rate determines whether the system maintains quality or degrades.</p>
+<hr>
+</section>
+<section id="governance-policies" class="level2" data-number="8.7">
+<h2 data-number="8.7" class="anchored" data-anchor-id="governance-policies"><span class="header-section-number">8.7</span> Governance policies</h2>
+<p>Data quality testing keeps the data clean. Governance policies define who can access it, how long it is kept, and what constraints apply to how it is used. In spatial systems, governance has specific complications that non-spatial data governance does not share.</p>
+<p><strong>Access control.</strong> Not all spatial data should be readable by all pipeline users. A pipeline that processes precise GPS tracks from mobile devices contains location history that is sensitive regardless of whether names are present — a route from home to an addiction treatment clinic three times per week identifies the person’s health status as reliably as a medical record. Role-based access control (RBAC) in the data warehouse must reflect this: raw GPS tracks should be accessible only to the team responsible for privacy-preserving processing, not to every analyst who can query the database. The transformed output — aggregated to 200-metre grid cells, or represented as a set of visited neighbourhoods — can have broader access. The access policy must be defined at the stage where the privacy risk exists, not only at the stage where the data is published.</p>
+<p><strong>Data retention.</strong> Spatial data has temporal depth. A dataset of property locations is not particularly sensitive. A dataset of property locations linked to visit timestamps over 12 months is a location history — it reveals where someone lives, works, and travels. GDPR Article 5(1)(e) requires that personal data be stored no longer than necessary for the specified purpose. For spatial data derived from user devices, “necessary” typically means the duration of the service that generates it, not indefinitely. The pipeline’s data retention policy must delete or aggregate the location history after the processing window closes. A pipeline that accumulates location data indefinitely because no one decided to delete it is a governance failure, not a data quality failure — but its consequences, in the event of a breach, are indistinguishable.</p>
+<p><strong>PII in spatial data.</strong> GPS tracks are PII. Property addresses are PII when linked to a named individual. Land registry records are public. The distinction matters because the pipeline design must reflect it: a table that joins GPS tracks to property addresses to named individuals from a CRM system is now a sensitive data asset at the level of its most sensitive component, regardless of whether the GPS tracks or the property addresses are sensitive in isolation. k-anonymity thresholds applied to spatial data — ensuring that any point falls within a cell that contains at least k individuals — are the standard technique for transforming precise location data into a form that can be used for analysis without revealing individuals. The threshold k must be chosen based on the sensitivity of the location context: visits to a supermarket require a lower k than visits to a healthcare facility.</p>
+<p><strong>GDPR and precise location data.</strong> The GDPR classifies location data as potentially sensitive under Article 9 when it reveals a person’s visits to places that disclose health, religion, political opinion, or trade union membership. This is not a marginal case. A spatial join that links GPS coordinates to a database of locations — GP surgeries, places of worship, political party offices, trade union offices — can retroactively convert a non-sensitive location dataset into a special category dataset, triggering higher processing obligations. The data engineer building that join is responsible for recognising this transformation. The governance framework must include a pre-join review step when the join has this property.</p>
+<hr>
+<div class="callout callout-style-simple callout-tip callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+<span class="screen-reader-only">Tip</span>What to try
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<ol type="1">
+<li><p><strong>Increase the drift rate (<code>DRIFT_RATE = 0.20</code>).</strong> At twice the drift rate, how does the periodic testing regime perform compared to continuous? Is there a test interval that maintains quality above 0.80 under this higher drift rate, and if so, what is it? Compare the total number of tests required by periodic testing at that interval against the number required by continuous testing.</p></li>
+<li><p><strong>Lower the quality floor (<code>QUALITY_FLOOR = 0.35</code>).</strong> The floor represents the point at which quality failures become visible in downstream outputs. A lower floor means failures take longer to become visible — the system tolerates more silent degradation. How does this change the relative performance of the three testing regimes? Which regime is most sensitive to the floor level, and why?</p></li>
+<li><p><strong>Model test coverage as a parameter.</strong> In the current simulation, a test run fully restores quality to the ceiling. In reality, tests only cover the dimensions they were written for. Add a <code>test_coverage</code> parameter (0.0–1.0) that scales the quality restoration: a test run with coverage 0.6 restores quality by 60% of the gap to the ceiling. At what test coverage does periodic testing outperform no testing over the 24-month window? What does this imply about the value of writing more tests vs.&nbsp;running the same tests more frequently?</p></li>
+</ol>
+</div>
+</div>
+<div class="pyodide-cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb8"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> numpy <span class="im">as</span> np</span>
+<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> matplotlib.pyplot <span class="im">as</span> plt</span>
+<span id="cb8-3"><a href="#cb8-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-4"><a href="#cb8-4" aria-hidden="true" tabindex="-1"></a><span class="co"># --- Try changing these parameters ---</span></span>
+<span id="cb8-5"><a href="#cb8-5" aria-hidden="true" tabindex="-1"></a>DRIFT_RATE      <span class="op">=</span> <span class="fl">0.10</span>   <span class="co"># quality degradation per month (try 0.20 for faster drift)</span></span>
+<span id="cb8-6"><a href="#cb8-6" aria-hidden="true" tabindex="-1"></a>TEST_INTERVAL   <span class="op">=</span> <span class="fl">2.0</span>    <span class="co"># months between periodic test runs (try 1.0 or 4.0)</span></span>
+<span id="cb8-7"><a href="#cb8-7" aria-hidden="true" tabindex="-1"></a>QUALITY_FLOOR   <span class="op">=</span> <span class="fl">0.50</span>   <span class="co"># floor quality score (try 0.35)</span></span>
+<span id="cb8-8"><a href="#cb8-8" aria-hidden="true" tabindex="-1"></a>TEST_COVERAGE   <span class="op">=</span> <span class="fl">1.0</span>    <span class="co"># fraction of quality restored by a test run (try 0.7)</span></span>
+<span id="cb8-9"><a href="#cb8-9" aria-hidden="true" tabindex="-1"></a>T_END           <span class="op">=</span> <span class="fl">24.0</span>   <span class="co"># simulation length in months</span></span>
+<span id="cb8-10"><a href="#cb8-10" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-11"><a href="#cb8-11" aria-hidden="true" tabindex="-1"></a>QUALITY_CEILING <span class="op">=</span> <span class="fl">1.00</span></span>
+<span id="cb8-12"><a href="#cb8-12" aria-hidden="true" tabindex="-1"></a>DT <span class="op">=</span> <span class="fl">0.05</span></span>
+<span id="cb8-13"><a href="#cb8-13" aria-hidden="true" tabindex="-1"></a>STEPS <span class="op">=</span> <span class="bu">int</span>(T_END <span class="op">/</span> DT) <span class="op">+</span> <span class="dv">1</span></span>
+<span id="cb8-14"><a href="#cb8-14" aria-hidden="true" tabindex="-1"></a>t <span class="op">=</span> np.linspace(<span class="fl">0.0</span>, T_END, STEPS)</span>
+<span id="cb8-15"><a href="#cb8-15" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-16"><a href="#cb8-16" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> run_sim(regime):</span>
+<span id="cb8-17"><a href="#cb8-17" aria-hidden="true" tabindex="-1"></a>    q <span class="op">=</span> np.empty(STEPS)</span>
+<span id="cb8-18"><a href="#cb8-18" aria-hidden="true" tabindex="-1"></a>    q[<span class="dv">0</span>] <span class="op">=</span> QUALITY_CEILING</span>
+<span id="cb8-19"><a href="#cb8-19" aria-hidden="true" tabindex="-1"></a>    last_test <span class="op">=</span> <span class="op">-</span><span class="fl">999.0</span></span>
+<span id="cb8-20"><a href="#cb8-20" aria-hidden="true" tabindex="-1"></a>    <span class="cf">for</span> i <span class="kw">in</span> <span class="bu">range</span>(<span class="dv">1</span>, STEPS):</span>
+<span id="cb8-21"><a href="#cb8-21" aria-hidden="true" tabindex="-1"></a>        t_now <span class="op">=</span> t[i]</span>
+<span id="cb8-22"><a href="#cb8-22" aria-hidden="true" tabindex="-1"></a>        dq <span class="op">=</span> <span class="op">-</span>DRIFT_RATE <span class="op">*</span> (q[i<span class="op">-</span><span class="dv">1</span>] <span class="op">-</span> QUALITY_FLOOR)</span>
+<span id="cb8-23"><a href="#cb8-23" aria-hidden="true" tabindex="-1"></a>        q[i] <span class="op">=</span> q[i<span class="op">-</span><span class="dv">1</span>] <span class="op">+</span> dq <span class="op">*</span> DT</span>
+<span id="cb8-24"><a href="#cb8-24" aria-hidden="true" tabindex="-1"></a>        test_now <span class="op">=</span> <span class="va">False</span></span>
+<span id="cb8-25"><a href="#cb8-25" aria-hidden="true" tabindex="-1"></a>        <span class="cf">if</span> regime <span class="op">==</span> <span class="st">"periodic"</span>:</span>
+<span id="cb8-26"><a href="#cb8-26" aria-hidden="true" tabindex="-1"></a>            <span class="cf">if</span> <span class="bu">int</span>((t_now) <span class="op">/</span> TEST_INTERVAL) <span class="op">&gt;</span> <span class="bu">int</span>((t[i<span class="op">-</span><span class="dv">1</span>]) <span class="op">/</span> TEST_INTERVAL):</span>
+<span id="cb8-27"><a href="#cb8-27" aria-hidden="true" tabindex="-1"></a>                test_now <span class="op">=</span> <span class="va">True</span></span>
+<span id="cb8-28"><a href="#cb8-28" aria-hidden="true" tabindex="-1"></a>        <span class="cf">elif</span> regime <span class="op">==</span> <span class="st">"continuous"</span>:</span>
+<span id="cb8-29"><a href="#cb8-29" aria-hidden="true" tabindex="-1"></a>            <span class="cf">if</span> q[i] <span class="op">&lt;</span> <span class="fl">0.95</span> <span class="kw">and</span> (t_now <span class="op">-</span> last_test) <span class="op">&gt;=</span> <span class="fl">0.1</span>:</span>
+<span id="cb8-30"><a href="#cb8-30" aria-hidden="true" tabindex="-1"></a>                test_now <span class="op">=</span> <span class="va">True</span></span>
+<span id="cb8-31"><a href="#cb8-31" aria-hidden="true" tabindex="-1"></a>        <span class="cf">if</span> test_now:</span>
+<span id="cb8-32"><a href="#cb8-32" aria-hidden="true" tabindex="-1"></a>            gap <span class="op">=</span> QUALITY_CEILING <span class="op">-</span> q[i]</span>
+<span id="cb8-33"><a href="#cb8-33" aria-hidden="true" tabindex="-1"></a>            q[i] <span class="op">=</span> q[i] <span class="op">+</span> TEST_COVERAGE <span class="op">*</span> gap</span>
+<span id="cb8-34"><a href="#cb8-34" aria-hidden="true" tabindex="-1"></a>            last_test <span class="op">=</span> t_now</span>
+<span id="cb8-35"><a href="#cb8-35" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> q</span>
+<span id="cb8-36"><a href="#cb8-36" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-37"><a href="#cb8-37" aria-hidden="true" tabindex="-1"></a>q_none <span class="op">=</span> run_sim(<span class="st">"none"</span>)</span>
+<span id="cb8-38"><a href="#cb8-38" aria-hidden="true" tabindex="-1"></a>q_per  <span class="op">=</span> run_sim(<span class="st">"periodic"</span>)</span>
+<span id="cb8-39"><a href="#cb8-39" aria-hidden="true" tabindex="-1"></a>q_cont <span class="op">=</span> run_sim(<span class="st">"continuous"</span>)</span>
+<span id="cb8-40"><a href="#cb8-40" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-41"><a href="#cb8-41" aria-hidden="true" tabindex="-1"></a>fig, ax <span class="op">=</span> plt.subplots(figsize<span class="op">=</span>(<span class="dv">9</span>, <span class="dv">5</span>))</span>
+<span id="cb8-42"><a href="#cb8-42" aria-hidden="true" tabindex="-1"></a>ax.plot(t, q_none, color<span class="op">=</span><span class="st">"#888"</span>, linestyle<span class="op">=</span><span class="st">"--"</span>, linewidth<span class="op">=</span><span class="fl">1.2</span>, label<span class="op">=</span><span class="st">"No tests"</span>)</span>
+<span id="cb8-43"><a href="#cb8-43" aria-hidden="true" tabindex="-1"></a>ax.plot(t, q_per,  color<span class="op">=</span><span class="st">"#111"</span>, linewidth<span class="op">=</span><span class="fl">1.6</span>,  label<span class="op">=</span><span class="ss">f"Periodic (</span><span class="sc">{</span>TEST_INTERVAL<span class="sc">}</span><span class="ss"> mo)"</span>)</span>
+<span id="cb8-44"><a href="#cb8-44" aria-hidden="true" tabindex="-1"></a>ax.plot(t, q_cont, color<span class="op">=</span><span class="st">"#d52a2a"</span>, linewidth<span class="op">=</span><span class="fl">1.6</span>, label<span class="op">=</span><span class="st">"Continuous"</span>)</span>
+<span id="cb8-45"><a href="#cb8-45" aria-hidden="true" tabindex="-1"></a>ax.axhline(QUALITY_FLOOR, color<span class="op">=</span><span class="st">"#aaa"</span>, linestyle<span class="op">=</span><span class="st">":"</span>, linewidth<span class="op">=</span><span class="fl">0.7</span>)</span>
+<span id="cb8-46"><a href="#cb8-46" aria-hidden="true" tabindex="-1"></a>ax.annotate(<span class="st">"Quality floor"</span>, xy<span class="op">=</span>(<span class="fl">0.5</span>, QUALITY_FLOOR <span class="op">+</span> <span class="fl">0.01</span>), fontsize<span class="op">=</span><span class="dv">8</span>, color<span class="op">=</span><span class="st">"#888"</span>)</span>
+<span id="cb8-47"><a href="#cb8-47" aria-hidden="true" tabindex="-1"></a>ax.set_xlabel(<span class="st">"Month"</span>)</span>
+<span id="cb8-48"><a href="#cb8-48" aria-hidden="true" tabindex="-1"></a>ax.set_ylabel(<span class="st">"Data quality score"</span>)</span>
+<span id="cb8-49"><a href="#cb8-49" aria-hidden="true" tabindex="-1"></a>ax.set_xlim(<span class="dv">0</span>, T_END)</span>
+<span id="cb8-50"><a href="#cb8-50" aria-hidden="true" tabindex="-1"></a>ax.set_ylim(<span class="fl">0.3</span>, <span class="fl">1.05</span>)</span>
+<span id="cb8-51"><a href="#cb8-51" aria-hidden="true" tabindex="-1"></a>ax.legend(frameon<span class="op">=</span><span class="va">False</span>, fontsize<span class="op">=</span><span class="dv">9</span>)</span>
+<span id="cb8-52"><a href="#cb8-52" aria-hidden="true" tabindex="-1"></a>ax.spines[<span class="st">"top"</span>].set_visible(<span class="va">False</span>)</span>
+<span id="cb8-53"><a href="#cb8-53" aria-hidden="true" tabindex="-1"></a>ax.spines[<span class="st">"right"</span>].set_visible(<span class="va">False</span>)</span>
+<span id="cb8-54"><a href="#cb8-54" aria-hidden="true" tabindex="-1"></a>plt.tight_layout()</span>
+<span id="cb8-55"><a href="#cb8-55" aria-hidden="true" tabindex="-1"></a>plt.show()</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<hr>
+</section>
+<section id="exercises" class="level2" data-number="8.8">
+<h2 data-number="8.8" class="anchored" data-anchor-id="exercises"><span class="header-section-number">8.8</span> Exercises</h2>
+<p><strong>7.1 — CRS mismatch detection</strong></p>
+<p>A property centroid table contains 60,000 records. It is loaded from a source system that delivers coordinates in WGS84 (EPSG:4326). The downstream pipeline expects coordinates in British National Grid (EPSG:27700). A processing error in the ingestion script omits the reprojection step for records from one source system, so 8,000 records arrive with WGS84 coordinates instead of BNG.</p>
+<ol type="a">
+<li>Write a dbt custom test macro <code>test_within_national_grid</code> that identifies all records whose geometry falls outside the BNG bounding box. Specify the SQL logic and the bounding box values you would use. What are the approximate x and y ranges of the BNG extent?</li>
+<li>WGS84 decimal degree coordinates for the UK have approximate ranges of longitude −8 to +2 and latitude 49 to 61. BNG easting/northing coordinates for the UK range from approximately 0 to 700,000 (easting) and 0 to 1,300,000 (northing). Explain why the two coordinate systems’ values do not overlap, and why this makes a bounding box test effective for detecting CRS mismatches in a UK dataset.</li>
+<li>The test identifies the 8,000 misreprojected records. Propose a remediation workflow: which dbt model needs to change, and at which stage in the DAG should the reprojection step be applied? What test would you add to verify that the remediation was successful?</li>
+</ol>
+<p><strong>7.2 — dbt schema test design</strong></p>
+<p>You are building a dbt model <code>int_flood_risk_scores</code> that joins property records to flood zone polygons and computes a composite risk score for each property. The model takes three upstream inputs: <code>stg_properties</code>, <code>stg_flood_zones</code>, and <code>ref_vulnerability_scores</code>.</p>
+<ol type="a">
+<li>Write a <code>schema.yml</code> block for <code>int_flood_risk_scores</code> that includes: (i) a <code>not_null</code> and <code>unique</code> test on the property identifier; (ii) an <code>accepted_values</code> test on <code>flood_zone</code>; (iii) a <code>relationships</code> test linking the property identifier back to <code>stg_properties</code>; and (iv) a table-level row count assertion that the output must contain at least 95% of the input property count.</li>
+<li>Explain what failure mode each of the four tests in (a) is designed to detect. For the row count assertion, describe the pipeline step that could silently drop rows and explain why a percentage threshold is more appropriate than an absolute count.</li>
+<li>The <code>ref_vulnerability_scores</code> table is updated quarterly by an external data provider. Add a dbt source freshness check that warns after 95 days without an update and errors after 110 days. Explain why the thresholds are set at those values rather than exactly 90 days.</li>
+</ol>
+<p><strong>7.3 — Governance and PII</strong></p>
+<p>A smart city mobility project collects GPS tracks from a fleet of 3,000 shared bicycles. Each track contains: timestamp, bike ID, latitude, longitude, and a session identifier that links the track to a registered user account.</p>
+<ol type="a">
+<li>Classify the data assets in this pipeline by sensitivity level: (i) raw GPS tracks with session identifiers, (ii) GPS tracks with session identifiers removed but bike IDs retained, (iii) GPS tracks aggregated to 500-metre grid cells with counts per cell per hour, and (iv) the user account table. Justify each classification with reference to GDPR categories.</li>
+<li>The data engineering team needs to use this data to compute a heatmap of bicycle usage intensity for urban planning purposes. Describe a data transformation pipeline that produces the heatmap without retaining any data that could be used to reconstruct individual journeys. Specify: the spatial aggregation method, the temporal aggregation method, the minimum count threshold below which cells are suppressed, and the retention policy for intermediate data.</li>
+<li>A researcher requests access to the raw GPS tracks with session identifiers for a study of commuting behaviour. Under what conditions, if any, could this access be granted? Identify the GDPR legal basis that would apply and the technical and contractual safeguards that would be required.</li>
+</ol>
+<p><strong>7.4 — Data lineage for impact analysis</strong></p>
+<p>A spatial pipeline has the following DAG structure: <code>raw_os_mastermap → stg_os_mastermap → int_land_parcels → int_flood_risk_scores → fct_flood_exposure_summary</code>. The <code>raw_os_mastermap</code> source is updated by Ordnance Survey on a 6-month release cycle.</p>
+<ol type="a">
+<li>OS Mastermap releases a new version that changes the geometry of 15,000 land parcels in a coastal area due to a beach erosion re-survey. Which models in the DAG need to be re-materialised following this update? In what order must they be re-materialised, and why does the order matter?</li>
+<li>A test on <code>int_flood_risk_scores</code> begins failing after the OS Mastermap update. The test is a row count assertion: the model count has dropped by 3,200 records. Using the lineage DAG, describe the investigation process: which models would you examine in sequence, and what specific check at each model would help you identify where the drop occurred?</li>
+<li>The team adds a new source <code>raw_environment_agency_flood_zones</code>, which also feeds into <code>int_flood_risk_scores</code>. Draw the updated DAG and identify any models that now have multiple upstream dependencies. What additional governance consideration applies when a model has two sources that are updated on different schedules?</li>
+</ol>
+<hr>
+</section>
+<section id="build-this" class="level2" data-number="8.9">
+<h2 data-number="8.9" class="anchored" data-anchor-id="build-this"><span class="header-section-number">8.9</span> Build this</h2>
+<p>A dbt project for a spatial flood risk pipeline, with schema tests, custom spatial test macros, and source freshness checks.</p>
+<p><strong>Project structure:</strong></p>
+<pre><code>dbt_flood_risk/
+├── dbt_project.yml
+├── models/
+│   ├── staging/
+│   │   ├── schema.yml
+│   │   ├── stg_properties.sql
+│   │   └── stg_flood_zones.sql
+│   └── intermediate/
+│       ├── schema.yml
+│       └── int_flood_exposure.sql
+├── macros/
+│   └── tests/
+│       ├── valid_geometry.sql
+│       ├── within_national_grid.sql
+│       └── geometry_type_is.sql
+└── sources/
+    └── sources.yml</code></pre>
+<p><strong><code>dbt_project.yml</code>:</strong></p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb10"><pre class="sourceCode yaml code-with-copy"><code class="sourceCode yaml"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a><span class="fu">name</span><span class="kw">:</span><span class="at"> </span><span class="st">'dbt_flood_risk'</span></span>
+<span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a><span class="fu">version</span><span class="kw">:</span><span class="at"> </span><span class="st">'1.0.0'</span></span>
+<span id="cb10-3"><a href="#cb10-3" aria-hidden="true" tabindex="-1"></a><span class="fu">config-version</span><span class="kw">:</span><span class="at"> </span><span class="dv">2</span></span>
+<span id="cb10-4"><a href="#cb10-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-5"><a href="#cb10-5" aria-hidden="true" tabindex="-1"></a><span class="fu">profile</span><span class="kw">:</span><span class="at"> </span><span class="st">'postgres_spatial'</span></span>
+<span id="cb10-6"><a href="#cb10-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-7"><a href="#cb10-7" aria-hidden="true" tabindex="-1"></a><span class="fu">model-paths</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="st">"models"</span><span class="kw">]</span></span>
+<span id="cb10-8"><a href="#cb10-8" aria-hidden="true" tabindex="-1"></a><span class="fu">macro-paths</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="st">"macros"</span><span class="kw">]</span></span>
+<span id="cb10-9"><a href="#cb10-9" aria-hidden="true" tabindex="-1"></a><span class="fu">test-paths</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="st">"tests"</span><span class="kw">]</span></span>
+<span id="cb10-10"><a href="#cb10-10" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-11"><a href="#cb10-11" aria-hidden="true" tabindex="-1"></a><span class="fu">models</span><span class="kw">:</span></span>
+<span id="cb10-12"><a href="#cb10-12" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">dbt_flood_risk</span><span class="kw">:</span></span>
+<span id="cb10-13"><a href="#cb10-13" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">staging</span><span class="kw">:</span></span>
+<span id="cb10-14"><a href="#cb10-14" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">materialized</span><span class="kw">:</span><span class="at"> view</span></span>
+<span id="cb10-15"><a href="#cb10-15" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">intermediate</span><span class="kw">:</span></span>
+<span id="cb10-16"><a href="#cb10-16" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">materialized</span><span class="kw">:</span><span class="at"> table</span></span>
+<span id="cb10-17"><a href="#cb10-17" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-18"><a href="#cb10-18" aria-hidden="true" tabindex="-1"></a><span class="fu">vars</span><span class="kw">:</span></span>
+<span id="cb10-19"><a href="#cb10-19" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">bng_xmin</span><span class="kw">:</span><span class="at"> </span><span class="dv">-100000</span></span>
+<span id="cb10-20"><a href="#cb10-20" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">bng_ymin</span><span class="kw">:</span><span class="at"> </span><span class="dv">-100000</span></span>
+<span id="cb10-21"><a href="#cb10-21" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">bng_xmax</span><span class="kw">:</span><span class="at">  </span><span class="dv">800000</span></span>
+<span id="cb10-22"><a href="#cb10-22" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">bng_ymax</span><span class="kw">:</span><span class="at"> </span><span class="dv">1400000</span></span>
+<span id="cb10-23"><a href="#cb10-23" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">min_property_count</span><span class="kw">:</span><span class="at"> </span><span class="dv">50000</span></span>
+<span id="cb10-24"><a href="#cb10-24" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">srid</span><span class="kw">:</span><span class="at"> </span><span class="dv">27700</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p><strong><code>sources/sources.yml</code></strong> — with freshness checks:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb11"><pre class="sourceCode yaml code-with-copy"><code class="sourceCode yaml"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a><span class="fu">version</span><span class="kw">:</span><span class="at"> </span><span class="dv">2</span></span>
+<span id="cb11-2"><a href="#cb11-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-3"><a href="#cb11-3" aria-hidden="true" tabindex="-1"></a><span class="fu">sources</span><span class="kw">:</span></span>
+<span id="cb11-4"><a href="#cb11-4" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="kw">-</span><span class="at"> </span><span class="fu">name</span><span class="kw">:</span><span class="at"> llpg</span></span>
+<span id="cb11-5"><a href="#cb11-5" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">schema</span><span class="kw">:</span><span class="at"> raw</span></span>
+<span id="cb11-6"><a href="#cb11-6" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">description</span><span class="kw">:</span><span class="at"> </span><span class="st">"Local Land and Property Gazetteer — daily extract from NLPG"</span></span>
+<span id="cb11-7"><a href="#cb11-7" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">freshness</span><span class="kw">:</span></span>
+<span id="cb11-8"><a href="#cb11-8" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">warn_after</span><span class="kw">:</span><span class="at"> </span><span class="kw">{</span><span class="fu">count</span><span class="kw">:</span><span class="at"> </span><span class="dv">2</span><span class="kw">,</span><span class="at"> </span><span class="fu">period</span><span class="kw">:</span><span class="at"> day</span><span class="kw">}</span></span>
+<span id="cb11-9"><a href="#cb11-9" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">error_after</span><span class="kw">:</span><span class="at"> </span><span class="kw">{</span><span class="fu">count</span><span class="kw">:</span><span class="at"> </span><span class="dv">5</span><span class="kw">,</span><span class="at"> </span><span class="fu">period</span><span class="kw">:</span><span class="at"> day</span><span class="kw">}</span></span>
+<span id="cb11-10"><a href="#cb11-10" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">loaded_at_field</span><span class="kw">:</span><span class="at"> extract_timestamp</span></span>
+<span id="cb11-11"><a href="#cb11-11" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">tables</span><span class="kw">:</span></span>
+<span id="cb11-12"><a href="#cb11-12" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="kw">-</span><span class="at"> </span><span class="fu">name</span><span class="kw">:</span><span class="at"> properties_raw</span></span>
+<span id="cb11-13"><a href="#cb11-13" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">description</span><span class="kw">:</span><span class="at"> </span><span class="st">"Raw property records with UPRN, address, and BNG coordinates"</span></span>
+<span id="cb11-14"><a href="#cb11-14" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-15"><a href="#cb11-15" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="kw">-</span><span class="at"> </span><span class="fu">name</span><span class="kw">:</span><span class="at"> environment_agency</span></span>
+<span id="cb11-16"><a href="#cb11-16" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">schema</span><span class="kw">:</span><span class="at"> raw</span></span>
+<span id="cb11-17"><a href="#cb11-17" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">description</span><span class="kw">:</span><span class="at"> </span><span class="st">"Environment Agency Flood Map for Planning — quarterly release"</span></span>
+<span id="cb11-18"><a href="#cb11-18" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">freshness</span><span class="kw">:</span></span>
+<span id="cb11-19"><a href="#cb11-19" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">warn_after</span><span class="kw">:</span><span class="at"> </span><span class="kw">{</span><span class="fu">count</span><span class="kw">:</span><span class="at"> </span><span class="dv">95</span><span class="kw">,</span><span class="at"> </span><span class="fu">period</span><span class="kw">:</span><span class="at"> day</span><span class="kw">}</span></span>
+<span id="cb11-20"><a href="#cb11-20" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">error_after</span><span class="kw">:</span><span class="at"> </span><span class="kw">{</span><span class="fu">count</span><span class="kw">:</span><span class="at"> </span><span class="dv">110</span><span class="kw">,</span><span class="at"> </span><span class="fu">period</span><span class="kw">:</span><span class="at"> day</span><span class="kw">}</span></span>
+<span id="cb11-21"><a href="#cb11-21" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">loaded_at_field</span><span class="kw">:</span><span class="at"> published_date</span></span>
+<span id="cb11-22"><a href="#cb11-22" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">tables</span><span class="kw">:</span></span>
+<span id="cb11-23"><a href="#cb11-23" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="kw">-</span><span class="at"> </span><span class="fu">name</span><span class="kw">:</span><span class="at"> flood_zones_raw</span></span>
+<span id="cb11-24"><a href="#cb11-24" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">description</span><span class="kw">:</span><span class="at"> </span><span class="st">"Flood risk zone polygons for England in EPSG:27700"</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p><strong><code>models/staging/stg_properties.sql</code>:</strong></p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb12"><pre class="sourceCode sql code-with-copy"><code class="sourceCode sql"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a><span class="co">-- Staged property records.</span></span>
+<span id="cb12-2"><a href="#cb12-2" aria-hidden="true" tabindex="-1"></a><span class="co">-- Reprojects coordinates from source SRID (if not already 27700)</span></span>
+<span id="cb12-3"><a href="#cb12-3" aria-hidden="true" tabindex="-1"></a><span class="co">-- and casts UPRN to text for consistent join keys.</span></span>
+<span id="cb12-4"><a href="#cb12-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-5"><a href="#cb12-5" aria-hidden="true" tabindex="-1"></a><span class="kw">with</span> <span class="kw">source</span> <span class="kw">as</span> (</span>
+<span id="cb12-6"><a href="#cb12-6" aria-hidden="true" tabindex="-1"></a>    <span class="kw">select</span> <span class="op">*</span> <span class="kw">from</span> {{ <span class="kw">source</span>(<span class="st">'llpg'</span>, <span class="st">'properties_raw'</span>) }}</span>
+<span id="cb12-7"><a href="#cb12-7" aria-hidden="true" tabindex="-1"></a>),</span>
+<span id="cb12-8"><a href="#cb12-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-9"><a href="#cb12-9" aria-hidden="true" tabindex="-1"></a>staged <span class="kw">as</span> (</span>
+<span id="cb12-10"><a href="#cb12-10" aria-hidden="true" tabindex="-1"></a>    <span class="kw">select</span></span>
+<span id="cb12-11"><a href="#cb12-11" aria-hidden="true" tabindex="-1"></a>        uprn:<span class="ch">:text</span>                                      <span class="kw">as</span> uprn,</span>
+<span id="cb12-12"><a href="#cb12-12" aria-hidden="true" tabindex="-1"></a>        ST_Transform(</span>
+<span id="cb12-13"><a href="#cb12-13" aria-hidden="true" tabindex="-1"></a>            ST_SetSRID(ST_MakePoint(easting, northing), <span class="dv">27700</span>),</span>
+<span id="cb12-14"><a href="#cb12-14" aria-hidden="true" tabindex="-1"></a>            {{ var(<span class="st">'srid'</span>) }}</span>
+<span id="cb12-15"><a href="#cb12-15" aria-hidden="true" tabindex="-1"></a>        )                                               <span class="kw">as</span> geometry,</span>
+<span id="cb12-16"><a href="#cb12-16" aria-hidden="true" tabindex="-1"></a>        property_class,</span>
+<span id="cb12-17"><a href="#cb12-17" aria-hidden="true" tabindex="-1"></a>        build_year:<span class="ch">:integer</span>                             <span class="kw">as</span> build_year,</span>
+<span id="cb12-18"><a href="#cb12-18" aria-hidden="true" tabindex="-1"></a>        extract_timestamp</span>
+<span id="cb12-19"><a href="#cb12-19" aria-hidden="true" tabindex="-1"></a>    <span class="kw">from</span> <span class="kw">source</span></span>
+<span id="cb12-20"><a href="#cb12-20" aria-hidden="true" tabindex="-1"></a>    <span class="kw">where</span> uprn <span class="kw">is</span> <span class="kw">not</span> <span class="kw">null</span></span>
+<span id="cb12-21"><a href="#cb12-21" aria-hidden="true" tabindex="-1"></a>      <span class="kw">and</span> easting <span class="kw">is</span> <span class="kw">not</span> <span class="kw">null</span></span>
+<span id="cb12-22"><a href="#cb12-22" aria-hidden="true" tabindex="-1"></a>      <span class="kw">and</span> northing <span class="kw">is</span> <span class="kw">not</span> <span class="kw">null</span></span>
+<span id="cb12-23"><a href="#cb12-23" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb12-24"><a href="#cb12-24" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-25"><a href="#cb12-25" aria-hidden="true" tabindex="-1"></a><span class="kw">select</span> <span class="op">*</span> <span class="kw">from</span> staged</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p><strong><code>models/intermediate/int_flood_exposure.sql</code>:</strong></p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb13"><pre class="sourceCode sql code-with-copy"><code class="sourceCode sql"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true" tabindex="-1"></a><span class="co">-- Property flood exposure join.</span></span>
+<span id="cb13-2"><a href="#cb13-2" aria-hidden="true" tabindex="-1"></a><span class="co">-- Assigns each property to its highest-risk flood zone.</span></span>
+<span id="cb13-3"><a href="#cb13-3" aria-hidden="true" tabindex="-1"></a><span class="co">-- Properties outside all flood zones are assigned 'No Zone'.</span></span>
+<span id="cb13-4"><a href="#cb13-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb13-5"><a href="#cb13-5" aria-hidden="true" tabindex="-1"></a><span class="kw">with</span> properties <span class="kw">as</span> (</span>
+<span id="cb13-6"><a href="#cb13-6" aria-hidden="true" tabindex="-1"></a>    <span class="kw">select</span> <span class="op">*</span> <span class="kw">from</span> {{ <span class="fu">ref</span>(<span class="st">'stg_properties'</span>) }}</span>
+<span id="cb13-7"><a href="#cb13-7" aria-hidden="true" tabindex="-1"></a>),</span>
+<span id="cb13-8"><a href="#cb13-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb13-9"><a href="#cb13-9" aria-hidden="true" tabindex="-1"></a>flood_zones <span class="kw">as</span> (</span>
+<span id="cb13-10"><a href="#cb13-10" aria-hidden="true" tabindex="-1"></a>    <span class="kw">select</span> <span class="op">*</span> <span class="kw">from</span> {{ <span class="fu">ref</span>(<span class="st">'stg_flood_zones'</span>) }}</span>
+<span id="cb13-11"><a href="#cb13-11" aria-hidden="true" tabindex="-1"></a>),</span>
+<span id="cb13-12"><a href="#cb13-12" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb13-13"><a href="#cb13-13" aria-hidden="true" tabindex="-1"></a><span class="co">-- Spatial join: find all flood zones that contain each property centroid</span></span>
+<span id="cb13-14"><a href="#cb13-14" aria-hidden="true" tabindex="-1"></a>property_zone_matches <span class="kw">as</span> (</span>
+<span id="cb13-15"><a href="#cb13-15" aria-hidden="true" tabindex="-1"></a>    <span class="kw">select</span></span>
+<span id="cb13-16"><a href="#cb13-16" aria-hidden="true" tabindex="-1"></a>        p.uprn,</span>
+<span id="cb13-17"><a href="#cb13-17" aria-hidden="true" tabindex="-1"></a>        p.geometry,</span>
+<span id="cb13-18"><a href="#cb13-18" aria-hidden="true" tabindex="-1"></a>        fz.flood_zone,</span>
+<span id="cb13-19"><a href="#cb13-19" aria-hidden="true" tabindex="-1"></a>        fz.zone_id,</span>
+<span id="cb13-20"><a href="#cb13-20" aria-hidden="true" tabindex="-1"></a>        <span class="co">-- Risk order: 3b &gt; 3a &gt; 2 &gt; 1 &gt; No Zone</span></span>
+<span id="cb13-21"><a href="#cb13-21" aria-hidden="true" tabindex="-1"></a>        <span class="cf">case</span> fz.flood_zone</span>
+<span id="cb13-22"><a href="#cb13-22" aria-hidden="true" tabindex="-1"></a>            <span class="cf">when</span> <span class="st">'Zone 3b'</span> <span class="cf">then</span> <span class="dv">5</span></span>
+<span id="cb13-23"><a href="#cb13-23" aria-hidden="true" tabindex="-1"></a>            <span class="cf">when</span> <span class="st">'Zone 3a'</span> <span class="cf">then</span> <span class="dv">4</span></span>
+<span id="cb13-24"><a href="#cb13-24" aria-hidden="true" tabindex="-1"></a>            <span class="cf">when</span> <span class="st">'Zone 2'</span>  <span class="cf">then</span> <span class="dv">3</span></span>
+<span id="cb13-25"><a href="#cb13-25" aria-hidden="true" tabindex="-1"></a>            <span class="cf">when</span> <span class="st">'Zone 1'</span>  <span class="cf">then</span> <span class="dv">2</span></span>
+<span id="cb13-26"><a href="#cb13-26" aria-hidden="true" tabindex="-1"></a>            <span class="cf">else</span> <span class="dv">1</span></span>
+<span id="cb13-27"><a href="#cb13-27" aria-hidden="true" tabindex="-1"></a>        <span class="cf">end</span> <span class="kw">as</span> risk_rank</span>
+<span id="cb13-28"><a href="#cb13-28" aria-hidden="true" tabindex="-1"></a>    <span class="kw">from</span> properties p</span>
+<span id="cb13-29"><a href="#cb13-29" aria-hidden="true" tabindex="-1"></a>    <span class="kw">left</span> <span class="kw">join</span> flood_zones fz</span>
+<span id="cb13-30"><a href="#cb13-30" aria-hidden="true" tabindex="-1"></a>        <span class="kw">on</span> ST_Within(p.geometry, fz.geometry)</span>
+<span id="cb13-31"><a href="#cb13-31" aria-hidden="true" tabindex="-1"></a>),</span>
+<span id="cb13-32"><a href="#cb13-32" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb13-33"><a href="#cb13-33" aria-hidden="true" tabindex="-1"></a><span class="co">-- Select the highest-risk zone for each property</span></span>
+<span id="cb13-34"><a href="#cb13-34" aria-hidden="true" tabindex="-1"></a>ranked <span class="kw">as</span> (</span>
+<span id="cb13-35"><a href="#cb13-35" aria-hidden="true" tabindex="-1"></a>    <span class="kw">select</span></span>
+<span id="cb13-36"><a href="#cb13-36" aria-hidden="true" tabindex="-1"></a>        uprn,</span>
+<span id="cb13-37"><a href="#cb13-37" aria-hidden="true" tabindex="-1"></a>        geometry,</span>
+<span id="cb13-38"><a href="#cb13-38" aria-hidden="true" tabindex="-1"></a>        flood_zone,</span>
+<span id="cb13-39"><a href="#cb13-39" aria-hidden="true" tabindex="-1"></a>        zone_id,</span>
+<span id="cb13-40"><a href="#cb13-40" aria-hidden="true" tabindex="-1"></a>        <span class="fu">row_number</span>() <span class="kw">over</span> (</span>
+<span id="cb13-41"><a href="#cb13-41" aria-hidden="true" tabindex="-1"></a>            <span class="kw">partition</span> <span class="kw">by</span> uprn</span>
+<span id="cb13-42"><a href="#cb13-42" aria-hidden="true" tabindex="-1"></a>            <span class="kw">order</span> <span class="kw">by</span> risk_rank <span class="kw">desc</span></span>
+<span id="cb13-43"><a href="#cb13-43" aria-hidden="true" tabindex="-1"></a>        ) <span class="kw">as</span> rn</span>
+<span id="cb13-44"><a href="#cb13-44" aria-hidden="true" tabindex="-1"></a>    <span class="kw">from</span> property_zone_matches</span>
+<span id="cb13-45"><a href="#cb13-45" aria-hidden="true" tabindex="-1"></a>),</span>
+<span id="cb13-46"><a href="#cb13-46" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb13-47"><a href="#cb13-47" aria-hidden="true" tabindex="-1"></a>final <span class="kw">as</span> (</span>
+<span id="cb13-48"><a href="#cb13-48" aria-hidden="true" tabindex="-1"></a>    <span class="kw">select</span></span>
+<span id="cb13-49"><a href="#cb13-49" aria-hidden="true" tabindex="-1"></a>        uprn,</span>
+<span id="cb13-50"><a href="#cb13-50" aria-hidden="true" tabindex="-1"></a>        geometry,</span>
+<span id="cb13-51"><a href="#cb13-51" aria-hidden="true" tabindex="-1"></a>        <span class="fu">coalesce</span>(flood_zone, <span class="st">'No Zone'</span>) <span class="kw">as</span> flood_zone,</span>
+<span id="cb13-52"><a href="#cb13-52" aria-hidden="true" tabindex="-1"></a>        zone_id</span>
+<span id="cb13-53"><a href="#cb13-53" aria-hidden="true" tabindex="-1"></a>    <span class="kw">from</span> ranked</span>
+<span id="cb13-54"><a href="#cb13-54" aria-hidden="true" tabindex="-1"></a>    <span class="kw">where</span> rn <span class="op">=</span> <span class="dv">1</span></span>
+<span id="cb13-55"><a href="#cb13-55" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb13-56"><a href="#cb13-56" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb13-57"><a href="#cb13-57" aria-hidden="true" tabindex="-1"></a><span class="kw">select</span> <span class="op">*</span> <span class="kw">from</span> final</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p><strong><code>models/intermediate/schema.yml</code></strong> — with spatial tests:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb14"><pre class="sourceCode yaml code-with-copy"><code class="sourceCode yaml"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true" tabindex="-1"></a><span class="fu">version</span><span class="kw">:</span><span class="at"> </span><span class="dv">2</span></span>
+<span id="cb14-2"><a href="#cb14-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb14-3"><a href="#cb14-3" aria-hidden="true" tabindex="-1"></a><span class="fu">models</span><span class="kw">:</span></span>
+<span id="cb14-4"><a href="#cb14-4" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="kw">-</span><span class="at"> </span><span class="fu">name</span><span class="kw">:</span><span class="at"> int_flood_exposure</span></span>
+<span id="cb14-5"><a href="#cb14-5" aria-hidden="true" tabindex="-1"></a><span class="fu">    description</span><span class="kw">: </span><span class="ch">&gt;</span></span>
+<span id="cb14-6"><a href="#cb14-6" aria-hidden="true" tabindex="-1"></a>      Property flood exposure: one row per property, assigned to highest-risk flood zone.</span>
+<span id="cb14-7"><a href="#cb14-7" aria-hidden="true" tabindex="-1"></a>      Row count must be within 1% of stg_properties row count (completeness check).</span>
+<span id="cb14-8"><a href="#cb14-8" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">tests</span><span class="kw">:</span></span>
+<span id="cb14-9"><a href="#cb14-9" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="kw">-</span><span class="at"> </span><span class="fu">dbt_utils.expression_is_true</span><span class="kw">:</span></span>
+<span id="cb14-10"><a href="#cb14-10" aria-hidden="true" tabindex="-1"></a><span class="at">          </span><span class="fu">expression</span><span class="kw">:</span><span class="at"> </span><span class="st">"count(*) &gt;= {{ var('min_property_count') }}"</span></span>
+<span id="cb14-11"><a href="#cb14-11" aria-hidden="true" tabindex="-1"></a><span class="at">          </span><span class="fu">name</span><span class="kw">:</span><span class="at"> minimum_property_count</span></span>
+<span id="cb14-12"><a href="#cb14-12" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">columns</span><span class="kw">:</span></span>
+<span id="cb14-13"><a href="#cb14-13" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="kw">-</span><span class="at"> </span><span class="fu">name</span><span class="kw">:</span><span class="at"> uprn</span></span>
+<span id="cb14-14"><a href="#cb14-14" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">tests</span><span class="kw">:</span></span>
+<span id="cb14-15"><a href="#cb14-15" aria-hidden="true" tabindex="-1"></a><span class="at">          </span><span class="kw">-</span><span class="at"> not_null</span></span>
+<span id="cb14-16"><a href="#cb14-16" aria-hidden="true" tabindex="-1"></a><span class="at">          </span><span class="kw">-</span><span class="at"> unique</span></span>
+<span id="cb14-17"><a href="#cb14-17" aria-hidden="true" tabindex="-1"></a><span class="at">          </span><span class="kw">-</span><span class="at"> </span><span class="fu">relationships</span><span class="kw">:</span></span>
+<span id="cb14-18"><a href="#cb14-18" aria-hidden="true" tabindex="-1"></a><span class="at">              </span><span class="fu">to</span><span class="kw">:</span><span class="at"> ref('stg_properties')</span></span>
+<span id="cb14-19"><a href="#cb14-19" aria-hidden="true" tabindex="-1"></a><span class="at">              </span><span class="fu">field</span><span class="kw">:</span><span class="at"> uprn</span></span>
+<span id="cb14-20"><a href="#cb14-20" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="kw">-</span><span class="at"> </span><span class="fu">name</span><span class="kw">:</span><span class="at"> geometry</span></span>
+<span id="cb14-21"><a href="#cb14-21" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">tests</span><span class="kw">:</span></span>
+<span id="cb14-22"><a href="#cb14-22" aria-hidden="true" tabindex="-1"></a><span class="at">          </span><span class="kw">-</span><span class="at"> not_null</span></span>
+<span id="cb14-23"><a href="#cb14-23" aria-hidden="true" tabindex="-1"></a><span class="at">          </span><span class="kw">-</span><span class="at"> valid_geometry</span></span>
+<span id="cb14-24"><a href="#cb14-24" aria-hidden="true" tabindex="-1"></a><span class="at">          </span><span class="kw">-</span><span class="at"> within_national_grid</span></span>
+<span id="cb14-25"><a href="#cb14-25" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="kw">-</span><span class="at"> </span><span class="fu">name</span><span class="kw">:</span><span class="at"> flood_zone</span></span>
+<span id="cb14-26"><a href="#cb14-26" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">tests</span><span class="kw">:</span></span>
+<span id="cb14-27"><a href="#cb14-27" aria-hidden="true" tabindex="-1"></a><span class="at">          </span><span class="kw">-</span><span class="at"> not_null</span></span>
+<span id="cb14-28"><a href="#cb14-28" aria-hidden="true" tabindex="-1"></a><span class="at">          </span><span class="kw">-</span><span class="at"> </span><span class="fu">accepted_values</span><span class="kw">:</span></span>
+<span id="cb14-29"><a href="#cb14-29" aria-hidden="true" tabindex="-1"></a><span class="at">              </span><span class="fu">values</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="st">'Zone 1'</span><span class="kw">,</span><span class="at"> </span><span class="st">'Zone 2'</span><span class="kw">,</span><span class="at"> </span><span class="st">'Zone 3a'</span><span class="kw">,</span><span class="at"> </span><span class="st">'Zone 3b'</span><span class="kw">,</span><span class="at"> </span><span class="st">'No Zone'</span><span class="kw">]</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>Run the full pipeline and tests with:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb15"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb15-1"><a href="#cb15-1" aria-hidden="true" tabindex="-1"></a><span class="ex">dbt</span> deps                  <span class="co"># install dbt packages (dbt-utils)</span></span>
+<span id="cb15-2"><a href="#cb15-2" aria-hidden="true" tabindex="-1"></a><span class="ex">dbt</span> source freshness      <span class="co"># check source data currency</span></span>
+<span id="cb15-3"><a href="#cb15-3" aria-hidden="true" tabindex="-1"></a><span class="ex">dbt</span> run                   <span class="co"># materialise all models</span></span>
+<span id="cb15-4"><a href="#cb15-4" aria-hidden="true" tabindex="-1"></a><span class="ex">dbt</span> test                  <span class="co"># run all schema tests</span></span>
+<span id="cb15-5"><a href="#cb15-5" aria-hidden="true" tabindex="-1"></a><span class="ex">dbt</span> docs generate         <span class="co"># build DAG documentation</span></span>
+<span id="cb15-6"><a href="#cb15-6" aria-hidden="true" tabindex="-1"></a><span class="ex">dbt</span> docs serve            <span class="co"># serve docs at localhost:8080</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>The <code>dbt docs serve</code> command produces an interactive DAG view where each model shows its upstream sources, downstream dependents, and test results. When the <code>within_national_grid</code> test fails, the DAG view shows immediately which model contains the failing rows and which source fed that model — the lineage that would have resolved the six-month investigation in minutes.</p>
+
+
+</section>
+
+</main> <!-- /main -->
+<script type="module" src="assets/js/pyodide-cells.js"></script>
+<script>
+(function () {
+  var overlay = document.createElement('div');
+  overlay.id = 'diagram-lightbox';
+
+  var closeBtn = document.createElement('button');
+  closeBtn.id = 'diagram-lightbox-close';
+  closeBtn.innerHTML = '&times;';
+  closeBtn.setAttribute('aria-label', 'Close diagram');
+
+  var content = document.createElement('div');
+  content.id = 'diagram-lightbox-content';
+
+  overlay.appendChild(closeBtn);
+  overlay.appendChild(content);
+  document.body.appendChild(overlay);
+
+  function openLightbox(svgEl) {
+    content.innerHTML = svgEl.outerHTML;
+    var svg = content.querySelector('svg');
+    if (svg) {
+      svg.setAttribute('width', '100%');
+      svg.removeAttribute('height');
+      svg.style.removeProperty('max-width');
+      svg.style.display = 'block';
+    }
+    overlay.classList.add('open');
+    document.body.style.overflow = 'hidden';
+  }
+
+  function closeLightbox() {
+    overlay.classList.remove('open');
+    document.body.style.overflow = '';
+  }
+
+  overlay.addEventListener('click', function (e) {
+    if (e.target === overlay || e.target === closeBtn) closeLightbox();
+  });
+  content.addEventListener('click', function (e) { e.stopPropagation(); });
+  document.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape') closeLightbox();
+  });
+
+  function attachTo(svgEl) {
+    if (svgEl._lbAttached) return;
+    svgEl._lbAttached = true;
+    svgEl.style.cursor = 'zoom-in';
+    svgEl.addEventListener('click', function () { openLightbox(svgEl); });
+  }
+
+  function scanAndAttach() {
+    document.querySelectorAll('svg.mermaid-js').forEach(attachTo);
+  }
+
+  var observer = new MutationObserver(function (mutations) {
+    mutations.forEach(function (m) {
+      m.addedNodes.forEach(function (node) {
+        if (node.nodeType !== 1) return;
+        if (node.tagName.toLowerCase() === 'svg' && node.classList.contains('mermaid-js')) {
+          attachTo(node);
+        } else if (node.querySelectorAll) {
+          node.querySelectorAll('svg.mermaid-js').forEach(attachTo);
+        }
+      });
+    });
+  });
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', function () {
+      observer.observe(document.body, { childList: true, subtree: true });
+      scanAndAttach();
+    });
+  } else {
+    observer.observe(document.body, { childList: true, subtree: true });
+    scanAndAttach();
+  }
+})();
+</script>
+<script id="quarto-html-after-body" type="application/javascript">
+  window.document.addEventListener("DOMContentLoaded", function (event) {
+    const icon = "";
+    const anchorJS = new window.AnchorJS();
+    anchorJS.options = {
+      placement: 'right',
+      icon: icon
+    };
+    anchorJS.add('.anchored');
+    const isCodeAnnotation = (el) => {
+      for (const clz of el.classList) {
+        if (clz.startsWith('code-annotation-')) {                     
+          return true;
+        }
+      }
+      return false;
+    }
+    const onCopySuccess = function(e) {
+      // button target
+      const button = e.trigger;
+      // don't keep focus
+      button.blur();
+      // flash "checked"
+      button.classList.add('code-copy-button-checked');
+      var currentTitle = button.getAttribute("title");
+      button.setAttribute("title", "Copied!");
+      let tooltip;
+      if (window.bootstrap) {
+        button.setAttribute("data-bs-toggle", "tooltip");
+        button.setAttribute("data-bs-placement", "left");
+        button.setAttribute("data-bs-title", "Copied!");
+        tooltip = new bootstrap.Tooltip(button, 
+          { trigger: "manual", 
+            customClass: "code-copy-button-tooltip",
+            offset: [0, -8]});
+        tooltip.show();    
+      }
+      setTimeout(function() {
+        if (tooltip) {
+          tooltip.hide();
+          button.removeAttribute("data-bs-title");
+          button.removeAttribute("data-bs-toggle");
+          button.removeAttribute("data-bs-placement");
+        }
+        button.setAttribute("title", currentTitle);
+        button.classList.remove('code-copy-button-checked');
+      }, 1000);
+      // clear code selection
+      e.clearSelection();
+    }
+    const getTextToCopy = function(trigger) {
+      const outerScaffold = trigger.parentElement.cloneNode(true);
+      const codeEl = outerScaffold.querySelector('code');
+      for (const childEl of codeEl.children) {
+        if (isCodeAnnotation(childEl)) {
+          childEl.remove();
+        }
+      }
+      return codeEl.innerText;
+    }
+    const clipboard = new window.ClipboardJS('.code-copy-button:not([data-in-quarto-modal])', {
+      text: getTextToCopy
+    });
+    clipboard.on('success', onCopySuccess);
+    if (window.document.getElementById('quarto-embedded-source-code-modal')) {
+      const clipboardModal = new window.ClipboardJS('.code-copy-button[data-in-quarto-modal]', {
+        text: getTextToCopy,
+        container: window.document.getElementById('quarto-embedded-source-code-modal')
+      });
+      clipboardModal.on('success', onCopySuccess);
+    }
+      var localhostRegex = new RegExp(/^(?:http|https):\/\/localhost\:?[0-9]*\//);
+      var mailtoRegex = new RegExp(/^mailto:/);
+        var filterRegex = new RegExp('/' + window.location.host + '/');
+      var isInternal = (href) => {
+          return filterRegex.test(href) || localhostRegex.test(href) || mailtoRegex.test(href);
+      }
+      // Inspect non-navigation links and adorn them if external
+     var links = window.document.querySelectorAll('a[href]:not(.nav-link):not(.navbar-brand):not(.toc-action):not(.sidebar-link):not(.sidebar-item-toggle):not(.pagination-link):not(.no-external):not([aria-hidden]):not(.dropdown-item):not(.quarto-navigation-tool):not(.about-link)');
+      for (var i=0; i<links.length; i++) {
+        const link = links[i];
+        if (!isInternal(link.href)) {
+          // undo the damage that might have been done by quarto-nav.js in the case of
+          // links that we want to consider external
+          if (link.dataset.originalHref !== undefined) {
+            link.href = link.dataset.originalHref;
+          }
+        }
+      }
+    function tippyHover(el, contentFn, onTriggerFn, onUntriggerFn) {
+      const config = {
+        allowHTML: true,
+        maxWidth: 500,
+        delay: 100,
+        arrow: false,
+        appendTo: function(el) {
+            return el.parentElement;
+        },
+        interactive: true,
+        interactiveBorder: 10,
+        theme: 'quarto',
+        placement: 'bottom-start',
+      };
+      if (contentFn) {
+        config.content = contentFn;
+      }
+      if (onTriggerFn) {
+        config.onTrigger = onTriggerFn;
+      }
+      if (onUntriggerFn) {
+        config.onUntrigger = onUntriggerFn;
+      }
+      window.tippy(el, config); 
+    }
+    const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+    for (var i=0; i<noterefs.length; i++) {
+      const ref = noterefs[i];
+      tippyHover(ref, function() {
+        // use id or data attribute instead here
+        let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+        try { href = new URL(href).hash; } catch {}
+        const id = href.replace(/^#\/?/, "");
+        const note = window.document.getElementById(id);
+        if (note) {
+          return note.innerHTML;
+        } else {
+          return "";
+        }
+      });
+    }
+    const xrefs = window.document.querySelectorAll('a.quarto-xref');
+    const processXRef = (id, note) => {
+      // Strip column container classes
+      const stripColumnClz = (el) => {
+        el.classList.remove("page-full", "page-columns");
+        if (el.children) {
+          for (const child of el.children) {
+            stripColumnClz(child);
+          }
+        }
+      }
+      stripColumnClz(note)
+      if (id === null || id.startsWith('sec-')) {
+        // Special case sections, only their first couple elements
+        const container = document.createElement("div");
+        if (note.children && note.children.length > 2) {
+          container.appendChild(note.children[0].cloneNode(true));
+          for (let i = 1; i < note.children.length; i++) {
+            const child = note.children[i];
+            if (child.tagName === "P" && child.innerText === "") {
+              continue;
+            } else {
+              container.appendChild(child.cloneNode(true));
+              break;
+            }
+          }
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(container);
+          }
+          return container.innerHTML
+        } else {
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(note);
+          }
+          return note.innerHTML;
+        }
+      } else {
+        // Remove any anchor links if they are present
+        const anchorLink = note.querySelector('a.anchorjs-link');
+        if (anchorLink) {
+          anchorLink.remove();
+        }
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(note);
+        }
+        if (note.classList.contains("callout")) {
+          return note.outerHTML;
+        } else {
+          return note.innerHTML;
+        }
+      }
+    }
+    for (var i=0; i<xrefs.length; i++) {
+      const xref = xrefs[i];
+      tippyHover(xref, undefined, function(instance) {
+        instance.disable();
+        let url = xref.getAttribute('href');
+        let hash = undefined; 
+        if (url.startsWith('#')) {
+          hash = url;
+        } else {
+          try { hash = new URL(url).hash; } catch {}
+        }
+        if (hash) {
+          const id = hash.replace(/^#\/?/, "");
+          const note = window.document.getElementById(id);
+          if (note !== null) {
+            try {
+              const html = processXRef(id, note.cloneNode(true));
+              instance.setContent(html);
+            } finally {
+              instance.enable();
+              instance.show();
+            }
+          } else {
+            // See if we can fetch this
+            fetch(url.split('#')[0])
+            .then(res => res.text())
+            .then(html => {
+              const parser = new DOMParser();
+              const htmlDoc = parser.parseFromString(html, "text/html");
+              const note = htmlDoc.getElementById(id);
+              if (note !== null) {
+                const html = processXRef(id, note);
+                instance.setContent(html);
+              } 
+            }).finally(() => {
+              instance.enable();
+              instance.show();
+            });
+          }
+        } else {
+          // See if we can fetch a full url (with no hash to target)
+          // This is a special case and we should probably do some content thinning / targeting
+          fetch(url)
+          .then(res => res.text())
+          .then(html => {
+            const parser = new DOMParser();
+            const htmlDoc = parser.parseFromString(html, "text/html");
+            const note = htmlDoc.querySelector('main.content');
+            if (note !== null) {
+              // This should only happen for chapter cross references
+              // (since there is no id in the URL)
+              // remove the first header
+              if (note.children.length > 0 && note.children[0].tagName === "HEADER") {
+                note.children[0].remove();
+              }
+              const html = processXRef(null, note);
+              instance.setContent(html);
+            } 
+          }).finally(() => {
+            instance.enable();
+            instance.show();
+          });
+        }
+      }, function(instance) {
+      });
+    }
+        let selectedAnnoteEl;
+        const selectorForAnnotation = ( cell, annotation) => {
+          let cellAttr = 'data-code-cell="' + cell + '"';
+          let lineAttr = 'data-code-annotation="' +  annotation + '"';
+          const selector = 'span[' + cellAttr + '][' + lineAttr + ']';
+          return selector;
+        }
+        const selectCodeLines = (annoteEl) => {
+          const doc = window.document;
+          const targetCell = annoteEl.getAttribute("data-target-cell");
+          const targetAnnotation = annoteEl.getAttribute("data-target-annotation");
+          const annoteSpan = window.document.querySelector(selectorForAnnotation(targetCell, targetAnnotation));
+          const lines = annoteSpan.getAttribute("data-code-lines").split(",");
+          const lineIds = lines.map((line) => {
+            return targetCell + "-" + line;
+          })
+          let top = null;
+          let height = null;
+          let parent = null;
+          if (lineIds.length > 0) {
+              //compute the position of the single el (top and bottom and make a div)
+              const el = window.document.getElementById(lineIds[0]);
+              top = el.offsetTop;
+              height = el.offsetHeight;
+              parent = el.parentElement.parentElement;
+            if (lineIds.length > 1) {
+              const lastEl = window.document.getElementById(lineIds[lineIds.length - 1]);
+              const bottom = lastEl.offsetTop + lastEl.offsetHeight;
+              height = bottom - top;
+            }
+            if (top !== null && height !== null && parent !== null) {
+              // cook up a div (if necessary) and position it 
+              let div = window.document.getElementById("code-annotation-line-highlight");
+              if (div === null) {
+                div = window.document.createElement("div");
+                div.setAttribute("id", "code-annotation-line-highlight");
+                div.style.position = 'absolute';
+                parent.appendChild(div);
+              }
+              div.style.top = top - 2 + "px";
+              div.style.height = height + 4 + "px";
+              div.style.left = 0;
+              let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
+              if (gutterDiv === null) {
+                gutterDiv = window.document.createElement("div");
+                gutterDiv.setAttribute("id", "code-annotation-line-highlight-gutter");
+                gutterDiv.style.position = 'absolute';
+                const codeCell = window.document.getElementById(targetCell);
+                const gutter = codeCell.querySelector('.code-annotation-gutter');
+                gutter.appendChild(gutterDiv);
+              }
+              gutterDiv.style.top = top - 2 + "px";
+              gutterDiv.style.height = height + 4 + "px";
+            }
+            selectedAnnoteEl = annoteEl;
+          }
+        };
+        const unselectCodeLines = () => {
+          const elementsIds = ["code-annotation-line-highlight", "code-annotation-line-highlight-gutter"];
+          elementsIds.forEach((elId) => {
+            const div = window.document.getElementById(elId);
+            if (div) {
+              div.remove();
+            }
+          });
+          selectedAnnoteEl = undefined;
+        };
+          // Handle positioning of the toggle
+      window.addEventListener(
+        "resize",
+        throttle(() => {
+          elRect = undefined;
+          if (selectedAnnoteEl) {
+            selectCodeLines(selectedAnnoteEl);
+          }
+        }, 10)
+      );
+      function throttle(fn, ms) {
+      let throttle = false;
+      let timer;
+        return (...args) => {
+          if(!throttle) { // first call gets through
+              fn.apply(this, args);
+              throttle = true;
+          } else { // all the others get throttled
+              if(timer) clearTimeout(timer); // cancel #2
+              timer = setTimeout(() => {
+                fn.apply(this, args);
+                timer = throttle = false;
+              }, ms);
+          }
+        };
+      }
+        // Attach click handler to the DT
+        const annoteDls = window.document.querySelectorAll('dt[data-target-cell]');
+        for (const annoteDlNode of annoteDls) {
+          annoteDlNode.addEventListener('click', (event) => {
+            const clickedEl = event.target;
+            if (clickedEl !== selectedAnnoteEl) {
+              unselectCodeLines();
+              const activeEl = window.document.querySelector('dt[data-target-cell].code-annotation-active');
+              if (activeEl) {
+                activeEl.classList.remove('code-annotation-active');
+              }
+              selectCodeLines(clickedEl);
+              clickedEl.classList.add('code-annotation-active');
+            } else {
+              // Unselect the line
+              unselectCodeLines();
+              clickedEl.classList.remove('code-annotation-active');
+            }
+          });
+        }
+    const findCites = (el) => {
+      const parentEl = el.parentElement;
+      if (parentEl) {
+        const cites = parentEl.dataset.cites;
+        if (cites) {
+          return {
+            el,
+            cites: cites.split(' ')
+          };
+        } else {
+          return findCites(el.parentElement)
+        }
+      } else {
+        return undefined;
+      }
+    };
+    var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+    for (var i=0; i<bibliorefs.length; i++) {
+      const ref = bibliorefs[i];
+      const citeInfo = findCites(ref);
+      if (citeInfo) {
+        tippyHover(citeInfo.el, function() {
+          var popup = window.document.createElement('div');
+          citeInfo.cites.forEach(function(cite) {
+            var citeDiv = window.document.createElement('div');
+            citeDiv.classList.add('hanging-indent');
+            citeDiv.classList.add('csl-entry');
+            var biblioDiv = window.document.getElementById('ref-' + cite);
+            if (biblioDiv) {
+              citeDiv.innerHTML = biblioDiv.innerHTML;
+            }
+            popup.appendChild(citeDiv);
+          });
+          return popup.innerHTML;
+        });
+      }
+    }
+  });
+  </script>
+<nav class="page-navigation">
+  <div class="nav-page nav-page-previous">
+      <a href="./06-apis-and-access-patterns.html" class="pagination-link" aria-label="APIs and Access Patterns">
+        <i class="bi bi-arrow-left-short"></i> <span class="nav-page-text"><span class="chapter-number">7</span>&nbsp; <span class="chapter-title">APIs and Access Patterns</span></span>
+      </a>          
+  </div>
+  <div class="nav-page nav-page-next">
+      <a href="./08-platform-architecture-for-ml.html" class="pagination-link" aria-label="Platform Architecture for ML">
+        <span class="nav-page-text"><span class="chapter-number">9</span>&nbsp; <span class="chapter-title">Platform Architecture for ML</span></span> <i class="bi bi-arrow-right-short"></i>
+      </a>
+  </div>
+</nav>
+</div> <!-- /content -->
+
+
+
+
+<footer class="footer"><div class="nav-footer"><div class="nav-footer-center"><div class="toc-actions d-sm-block d-md-none"><ul><li><a href="https://github.com/WaywardHouse/waywardhouse-data-engineering/edit/main/07-data-quality-and-governance.qmd" class="toc-action"><i class="bi bi-github"></i>Edit this page</a></li><li><a href="https://github.com/WaywardHouse/waywardhouse-data-engineering/issues/new" class="toc-action"><i class="bi empty"></i>Report an issue</a></li></ul></div></div></div></footer><script src="site_libs/quarto-html/zenscroll-min.js"></script>
+</body></html>

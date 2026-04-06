@@ -1,0 +1,1936 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
+
+<meta charset="utf-8">
+<meta name="generator" content="quarto-1.9.36">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+
+
+<title>7&nbsp; APIs and Access Patterns – Data Engineering for Spatial Systems</title>
+<style>
+/* Default styles provided by pandoc.
+** See https://pandoc.org/MANUAL.html#variables-for-html for config info.
+*/
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: min(4vw, 1.5em);}
+div.column{flex: auto; overflow-x: auto;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+  width: 0.8em;
+  margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
+  vertical-align: middle;
+}
+/* CSS for syntax highlighting */
+html { -webkit-text-size-adjust: 100%; }
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+  { counter-reset: source-line 0; }
+pre.numberSource code > span
+  { position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+  { content: counter(source-line);
+    position: relative; left: -1em; text-align: right; vertical-align: baseline;
+    border: none; display: inline-block;
+    -webkit-touch-callout: none; -webkit-user-select: none;
+    -khtml-user-select: none; -moz-user-select: none;
+    -ms-user-select: none; user-select: none;
+    padding: 0 4px; width: 4em;
+  }
+pre.numberSource { margin-left: 3em;  padding-left: 4px; }
+div.sourceCode
+  {   }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
+</style>
+
+
+<script src="site_libs/quarto-nav/quarto-nav.js"></script>
+<script src="site_libs/quarto-nav/headroom.min.js"></script>
+<script src="site_libs/clipboard/clipboard.min.js"></script>
+<script src="site_libs/quarto-search/autocomplete.umd.js"></script>
+<script src="site_libs/quarto-search/fuse.min.js"></script>
+<script src="site_libs/quarto-search/quarto-search.js"></script>
+<meta name="quarto:offset" content="./">
+<link href="./07-data-quality-and-governance.html" rel="next">
+<link href="./05-streaming-and-realtime.html" rel="prev">
+<script src="site_libs/quarto-html/quarto.js" type="module"></script>
+<script src="site_libs/quarto-html/tabsets/tabsets.js" type="module"></script>
+<script src="site_libs/quarto-html/popper.min.js"></script>
+<script src="site_libs/quarto-html/tippy.umd.min.js"></script>
+<script src="site_libs/quarto-html/anchor.min.js"></script>
+<link href="site_libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="site_libs/quarto-html/quarto-syntax-highlighting-845c23b38eaddc0f92fda52bfe77a8c8.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<script src="site_libs/bootstrap/bootstrap.min.js"></script>
+<link href="site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="site_libs/bootstrap/bootstrap-56762b18f51ba8401515c38252781a5a.min.css" rel="stylesheet" append-hash="true" id="quarto-bootstrap" data-mode="light">
+<script id="quarto-search-options" type="application/json">{
+  "location": "sidebar",
+  "copy-button": false,
+  "collapse-after": 3,
+  "panel-placement": "start",
+  "type": "textbox",
+  "limit": 50,
+  "keyboard-shortcut": [
+    "f",
+    "/",
+    "s"
+  ],
+  "show-item-context": false,
+  "language": {
+    "search-no-results-text": "No results",
+    "search-matching-documents-text": "matching documents",
+    "search-copy-link-title": "Copy link to search",
+    "search-hide-matches-text": "Hide additional matches",
+    "search-more-match-text": "more match in this document",
+    "search-more-matches-text": "more matches in this document",
+    "search-clear-button-title": "Clear",
+    "search-text-placeholder": "",
+    "search-detached-cancel-button-title": "Cancel",
+    "search-submit-button-title": "Submit",
+    "search-label": "Search"
+  }
+}</script>
+<style>html{ scroll-behavior: smooth; }</style>
+<script>
+  (function () {
+    document.documentElement.dataset.theme = 'light';
+    document.documentElement.dataset.brand = 'wayward-book';
+    try {
+      localStorage.removeItem('theme');
+    } catch (err) {
+      void err;
+    }
+  })();
+</script>
+
+<script>
+  document.addEventListener('DOMContentLoaded', function () {
+    var body = document.body;
+    var sidebar = document.getElementById('quarto-sidebar');
+    if (!sidebar) return;
+
+    body.classList.add('wayward-book-shell');
+
+    if (!document.querySelector('.wayward-book-header')) {
+      var header = document.createElement('header');
+      header.className = 'wayward-book-header';
+      header.innerHTML = [
+        '<div class="wayward-book-header__inner">',
+        '  <a class="wayward-book-brand" href="/" aria-label="Wayward House home">',
+        '    <span class="wayward-book-brand__mark">WaywardHouse</span>',
+        '    <span class="wayward-book-brand__dot" aria-hidden="true">.</span>',
+        '  </a>',
+        '  <nav class="wayward-book-nav" aria-label="Primary">',
+        '    <a href="/articles/" data-nav="/articles/">Articles</a>',
+        '    <a href="/learn/" data-nav="/learn/">Learn</a>',
+        '    <a href="/about.html" data-nav="/about/">About</a>',
+        '  </nav>',
+        '  <button class="wayward-book-menu-toggle" type="button" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle chapter navigation">',
+        '    <span aria-hidden="true">Menu</span>',
+        '  </button>',
+        '</div>'
+      ].join('');
+      body.prepend(header);
+    }
+
+    var pathname = window.location.pathname || '/';
+    if (pathname === '/' || pathname === '/learn/' || pathname.endsWith('/index.html')) {
+      body.classList.add('page-home');
+    }
+    if (pathname.indexOf('/learn/') === 0) {
+      body.classList.add('page-learn');
+    }
+
+    var storageKey = 'wayward-data-engineering-sidebar';
+    var media = window.matchMedia('(min-width: 1200px)');
+    var glass = document.getElementById('quarto-sidebar-glass');
+    var toggles = Array.from(document.querySelectorAll('[data-bs-target=".quarto-sidebar-collapse-item"]'));
+
+    function setDesktopState(open) {
+      body.classList.toggle('book-sidebar-collapsed', !open);
+      body.classList.toggle('book-sidebar-open', open);
+      try {
+        localStorage.setItem(storageKey, open ? 'open' : 'collapsed');
+      } catch (err) {
+        void err;
+      }
+    }
+
+    function applyDesktopDefault() {
+      if (!media.matches) {
+        body.classList.remove('book-sidebar-collapsed', 'book-sidebar-open');
+        return;
+      }
+
+      var stored = null;
+      try {
+        stored = localStorage.getItem(storageKey);
+      } catch (err) {
+        void err;
+      }
+
+      setDesktopState(stored === 'collapsed' ? false : true);
+    }
+
+    toggles.forEach(function (toggle) {
+      toggle.addEventListener('click', function (event) {
+        if (!media.matches) return;
+        event.preventDefault();
+        event.stopPropagation();
+        setDesktopState(body.classList.contains('book-sidebar-collapsed'));
+      });
+    });
+
+    if (glass) {
+      glass.addEventListener('click', function (event) {
+        if (!media.matches) return;
+        event.preventDefault();
+        setDesktopState(false);
+      });
+    }
+
+    if (media.addEventListener) {
+      media.addEventListener('change', applyDesktopDefault);
+    } else if (media.addListener) {
+      media.addListener(applyDesktopDefault);
+    }
+
+    applyDesktopDefault();
+
+    var siteHomeHref = '/';
+    var learnHref = '/learn/';
+    var titleLink = sidebar.querySelector('.sidebar-title a');
+    if (titleLink) titleLink.setAttribute('href', siteHomeHref);
+
+    var toolLinks = Array.from(sidebar.querySelectorAll('.quarto-navigation-tool'));
+    if (toolLinks[0]) toolLinks[0].setAttribute('href', siteHomeHref);
+    if (toolLinks[1]) toolLinks[1].setAttribute('href', learnHref);
+
+    var firstSidebarLink = sidebar.querySelector('.sidebar-item a.sidebar-link');
+    if (firstSidebarLink) firstSidebarLink.setAttribute('href', siteHomeHref);
+
+    var themeToggle = document.querySelector('.wayward-book-theme-toggle');
+    if (themeToggle) themeToggle.remove();
+
+    document.querySelectorAll('.wayward-book-nav a[data-nav]').forEach(function (link) {
+      var target = link.getAttribute('data-nav');
+      if (!target) return;
+      link.classList.remove('is-active');
+      if (pathname === target || pathname.indexOf(target) === 0) {
+        link.classList.add('is-active');
+      }
+    });
+
+    var footer = document.querySelector('footer.footer');
+    if (footer && !footer.classList.contains('wayward-book-footer')) {
+      footer.className = 'wayward-book-footer';
+      footer.innerHTML = [
+        '<div class="wayward-book-footer__inner">',
+        '  <div class="wayward-book-footer__brand">',
+        '    <div class="wayward-book-footer__logo">WaywardHouse<span>.</span></div>',
+        '    <p>Understanding how place, economy, and environment interact through analysis, modelling, and open tools.</p>',
+        '  </div>',
+        '  <nav class="wayward-book-footer__group" aria-labelledby="book-footer-reading">',
+        '    <h2 id="book-footer-reading">Reading</h2>',
+        '    <a href="https://wayward.house/articles/">Articles</a>',
+        '    <a href="https://wayward.house/learn/">Library</a>',
+        '    <a href="https://wayward.house/archive.html">Archive</a>',
+        '  </nav>',
+        '  <nav class="wayward-book-footer__group" aria-labelledby="book-footer-site">',
+        '    <h2 id="book-footer-site">Site</h2>',
+        '    <a href="https://wayward.house/start-here.html">Choose Your Path</a>',
+        '    <a href="https://wayward.house/about.html">About</a>',
+        '    <a href="https://wayward.house/contact.html">Contact</a>',
+        '  </nav>',
+        '  <nav class="wayward-book-footer__group" aria-labelledby="book-footer-resources">',
+        '    <h2 id="book-footer-resources">Resources</h2>',
+        '    <a href="https://wayward.house/topics/">All Topics</a>',
+        '    <a href="https://wayward.house/privacy.html">Privacy Policy</a>',
+        '    <a href="https://wayward.house/terms.html">Terms of Use</a>',
+        '  </nav>',
+        '</div>'
+      ].join('');
+    }
+
+    if (!document.querySelector('.back-to-top')) {
+      var button = document.createElement('button');
+      button.type = 'button';
+      button.className = 'back-to-top';
+      button.setAttribute('aria-label', 'Back to top');
+      button.innerHTML = '<span aria-hidden="true">↑</span><span>Top</span>';
+
+      var prefersReduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+      var ticking = false;
+
+      function updateBackToTop() {
+        var scrolled = window.scrollY || document.documentElement.scrollTop || 0;
+        var longPage = document.documentElement.scrollHeight > window.innerHeight * 1.5;
+        button.classList.toggle('is-visible', longPage && scrolled > Math.max(420, window.innerHeight * 0.7));
+        ticking = false;
+      }
+
+      button.addEventListener('click', function () {
+        window.scrollTo({
+          top: 0,
+          behavior: prefersReduced ? 'auto' : 'smooth'
+        });
+      });
+
+      window.addEventListener('scroll', function () {
+        if (!ticking) {
+          window.requestAnimationFrame(updateBackToTop);
+          ticking = true;
+        }
+      }, { passive: true });
+
+      window.addEventListener('resize', updateBackToTop, { passive: true });
+      body.appendChild(button);
+      updateBackToTop();
+    }
+
+  });
+</script>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:ital,wght@0,300;0,400;0,600;0,700;0,800;0,900;1,700;1,800&amp;family=Barlow:wght@300;400;500;600&amp;family=IBM+Plex+Mono:ital,wght@0,300;0,400;0,500;1,300&amp;family=Literata:ital,opsz,wght@0,7..72,300;0,7..72,400;0,7..72,500;1,7..72,300;1,7..72,400&amp;display=swap" rel="stylesheet">
+
+
+<link rel="stylesheet" href="site_libs/quarto-contrib/quarto-project/wayward-book/wayward-book.css">
+<link rel="stylesheet" href="lightbox.css">
+</head>
+
+<body class="nav-sidebar docked quarto-light">
+
+<div id="quarto-search-results"></div>
+  <header id="quarto-header" class="headroom fixed-top">
+  <nav class="quarto-secondary-nav">
+    <div class="container-fluid d-flex">
+      <button type="button" class="quarto-btn-toggle btn" data-bs-toggle="collapse" role="button" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
+        <i class="bi bi-layout-text-sidebar-reverse"></i>
+      </button>
+        <nav class="quarto-page-breadcrumbs" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="./06-apis-and-access-patterns.html"><span class="chapter-number">7</span>&nbsp; <span class="chapter-title">APIs and Access Patterns</span></a></li></ol></nav>
+        <a class="flex-grow-1" role="navigation" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">      
+        </a>
+      <button type="button" class="btn quarto-search-button" aria-label="Search" onclick="window.quartoOpenSearch();">
+        <i class="bi bi-search"></i>
+      </button>
+    </div>
+  </nav>
+</header>
+<!-- content -->
+<div id="quarto-content" class="quarto-container page-columns page-rows-contents page-layout-article">
+<!-- sidebar -->
+  <nav id="quarto-sidebar" class="sidebar collapse collapse-horizontal quarto-sidebar-collapse-item sidebar-navigation docked overflow-auto">
+    <div class="pt-lg-2 mt-2 text-left sidebar-header">
+    <div class="sidebar-title mb-0 py-0">
+      <a href="./">Data Engineering for Spatial Systems</a> 
+        <div class="sidebar-tools-main tools-wide">
+    <a href="./" title="" class="quarto-navigation-tool px-1" aria-label="Wayward House"><i class="bi bi-house"></i></a>
+    <a href="./learn/" title="" class="quarto-navigation-tool px-1" aria-label="Learn"><i class="bi bi-grid"></i></a>
+    <a href="https://github.com/WaywardHouse/waywardhouse-data-engineering" title="" class="quarto-navigation-tool px-1" aria-label="Repository"><i class="bi bi-github"></i></a>
+    <a href="https://github.com/WaywardHouse/waywardhouse-data-engineering" title="Source Code" class="quarto-navigation-tool px-1" aria-label="Source Code"><i class="bi bi-github"></i></a>
+    <div class="dropdown">
+      <a href="" title="Share" id="quarto-navigation-tool-dropdown-0" class="quarto-navigation-tool dropdown-toggle px-1" data-bs-toggle="dropdown" aria-expanded="false" role="link" aria-label="Share"><i class="bi bi-share"></i></a>
+      <ul class="dropdown-menu" aria-labelledby="quarto-navigation-tool-dropdown-0">
+          <li>
+            <a class="dropdown-item sidebar-tools-main-item" href="https://twitter.com/intent/tweet?url=|url|">
+              <i class="bi bi-twitter pe-1"></i>
+            Twitter
+            </a>
+          </li>
+          <li>
+            <a class="dropdown-item sidebar-tools-main-item" href="https://www.linkedin.com/sharing/share-offsite/?url=|url|">
+              <i class="bi bi-linkedin pe-1"></i>
+            LinkedIn
+            </a>
+          </li>
+      </ul>
+    </div>
+</div>
+    </div>
+      </div>
+        <div class="mt-2 flex-shrink-0 align-items-center">
+        <div class="sidebar-search">
+        <div id="quarto-search" class="" title="Search"></div>
+        </div>
+        </div>
+    <div class="sidebar-menu-container"> 
+    <ul class="list-unstyled mt-1">
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./index.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">1</span>&nbsp; <span class="chapter-title">Data Engineering for Spatial Systems</span></span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./01-data-architecture.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">2</span>&nbsp; <span class="chapter-title">Data Architecture</span></span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./02-spatial-databases.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">3</span>&nbsp; <span class="chapter-title">Spatial Databases</span></span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./03-pipelines-and-etl.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">4</span>&nbsp; <span class="chapter-title">Pipelines and ETL</span></span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./04-cloud-infrastructure.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">5</span>&nbsp; <span class="chapter-title">Cloud Infrastructure</span></span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./05-streaming-and-realtime.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">6</span>&nbsp; <span class="chapter-title">Streaming and Realtime</span></span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./06-apis-and-access-patterns.html" class="sidebar-item-text sidebar-link active">
+ <span class="menu-text"><span class="chapter-number">7</span>&nbsp; <span class="chapter-title">APIs and Access Patterns</span></span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./07-data-quality-and-governance.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">8</span>&nbsp; <span class="chapter-title">Data Quality and Governance</span></span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./08-platform-architecture-for-ml.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">9</span>&nbsp; <span class="chapter-title">Platform Architecture for ML</span></span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./09-exercise-answers.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">10</span>&nbsp; <span class="chapter-title">Exercise Answers</span></span></a>
+  </div>
+</li>
+    </ul>
+    </div>
+</nav>
+<div id="quarto-sidebar-glass" class="quarto-sidebar-collapse-item" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item"></div>
+<!-- margin-sidebar -->
+    <div id="quarto-margin-sidebar" class="sidebar margin-sidebar">
+        <nav id="TOC" role="doc-toc" class="toc-active">
+    <h2 id="toc-title">Table of contents</h2>
+   
+  <ul>
+  <li><a href="#the-puzzle" id="toc-the-puzzle" class="nav-link active" data-scroll-target="#the-puzzle"><span class="header-section-number">7.1</span> The puzzle</a></li>
+  <li><a href="#rest-vs-ogc-the-standards-layer" id="toc-rest-vs-ogc-the-standards-layer" class="nav-link" data-scroll-target="#rest-vs-ogc-the-standards-layer"><span class="header-section-number">7.2</span> REST vs OGC: the standards layer</a>
+  <ul class="collapse">
+  <li><a href="#ogc-api-features" id="toc-ogc-api-features" class="nav-link" data-scroll-target="#ogc-api-features"><span class="header-section-number">7.2.1</span> OGC API Features</a></li>
+  <li><a href="#ogc-api-maps" id="toc-ogc-api-maps" class="nav-link" data-scroll-target="#ogc-api-maps"><span class="header-section-number">7.2.2</span> OGC API Maps</a></li>
+  <li><a href="#why-conformance-matters" id="toc-why-conformance-matters" class="nav-link" data-scroll-target="#why-conformance-matters"><span class="header-section-number">7.2.3</span> Why conformance matters</a></li>
+  </ul></li>
+  <li><a href="#fastapi-for-spatial-services" id="toc-fastapi-for-spatial-services" class="nav-link" data-scroll-target="#fastapi-for-spatial-services"><span class="header-section-number">7.3</span> FastAPI for spatial services</a>
+  <ul class="collapse">
+  <li><a href="#pydantic-schemas-for-spatial-responses" id="toc-pydantic-schemas-for-spatial-responses" class="nav-link" data-scroll-target="#pydantic-schemas-for-spatial-responses"><span class="header-section-number">7.3.1</span> Pydantic schemas for spatial responses</a></li>
+  <li><a href="#dependency-injection-for-database-connections" id="toc-dependency-injection-for-database-connections" class="nav-link" data-scroll-target="#dependency-injection-for-database-connections"><span class="header-section-number">7.3.2</span> Dependency injection for database connections</a></li>
+  </ul></li>
+  <li><a href="#access-patterns-and-query-plans" id="toc-access-patterns-and-query-plans" class="nav-link" data-scroll-target="#access-patterns-and-query-plans"><span class="header-section-number">7.4</span> Access patterns and query plans</a>
+  <ul class="collapse">
+  <li><a href="#bounding-box-queries" id="toc-bounding-box-queries" class="nav-link" data-scroll-target="#bounding-box-queries"><span class="header-section-number">7.4.1</span> Bounding-box queries</a></li>
+  <li><a href="#point-in-polygon" id="toc-point-in-polygon" class="nav-link" data-scroll-target="#point-in-polygon"><span class="header-section-number">7.4.2</span> Point-in-polygon</a></li>
+  <li><a href="#nearest-neighbour" id="toc-nearest-neighbour" class="nav-link" data-scroll-target="#nearest-neighbour"><span class="header-section-number">7.4.3</span> Nearest-neighbour</a></li>
+  </ul></li>
+  <li><a href="#caching" id="toc-caching" class="nav-link" data-scroll-target="#caching"><span class="header-section-number">7.5</span> Caching</a>
+  <ul class="collapse">
+  <li><a href="#materialised-views" id="toc-materialised-views" class="nav-link" data-scroll-target="#materialised-views"><span class="header-section-number">7.5.1</span> Materialised views</a></li>
+  <li><a href="#api-layer-caching-with-redis" id="toc-api-layer-caching-with-redis" class="nav-link" data-scroll-target="#api-layer-caching-with-redis"><span class="header-section-number">7.5.2</span> API-layer caching with Redis</a></li>
+  <li><a href="#http-cache-headers" id="toc-http-cache-headers" class="nav-link" data-scroll-target="#http-cache-headers"><span class="header-section-number">7.5.3</span> HTTP cache headers</a></li>
+  <li><a href="#simulated-response-time-cached-vs-uncached" id="toc-simulated-response-time-cached-vs-uncached" class="nav-link" data-scroll-target="#simulated-response-time-cached-vs-uncached"><span class="header-section-number">7.5.4</span> Simulated response time: cached vs uncached</a></li>
+  </ul></li>
+  <li><a href="#rate-limiting-and-pagination" id="toc-rate-limiting-and-pagination" class="nav-link" data-scroll-target="#rate-limiting-and-pagination"><span class="header-section-number">7.6</span> Rate limiting and pagination</a>
+  <ul class="collapse">
+  <li><a href="#cursor-based-pagination" id="toc-cursor-based-pagination" class="nav-link" data-scroll-target="#cursor-based-pagination"><span class="header-section-number">7.6.1</span> Cursor-based pagination</a></li>
+  <li><a href="#rate-limiting-middleware" id="toc-rate-limiting-middleware" class="nav-link" data-scroll-target="#rate-limiting-middleware"><span class="header-section-number">7.6.2</span> Rate limiting middleware</a></li>
+  </ul></li>
+  <li><a href="#what-to-try" id="toc-what-to-try" class="nav-link" data-scroll-target="#what-to-try"><span class="header-section-number">7.7</span> What to try</a></li>
+  <li><a href="#exercises" id="toc-exercises" class="nav-link" data-scroll-target="#exercises"><span class="header-section-number">7.8</span> Exercises</a></li>
+  <li><a href="#build-this" id="toc-build-this" class="nav-link" data-scroll-target="#build-this"><span class="header-section-number">7.9</span> Build this</a></li>
+  </ul>
+<div class="toc-actions"><ul><li><a href="https://github.com/WaywardHouse/waywardhouse-data-engineering/edit/main/06-apis-and-access-patterns.qmd" class="toc-action"><i class="bi bi-github"></i>Edit this page</a></li><li><a href="https://github.com/WaywardHouse/waywardhouse-data-engineering/issues/new" class="toc-action"><i class="bi empty"></i>Report an issue</a></li></ul></div></nav>
+    </div>
+<!-- main -->
+<main class="content" id="quarto-document-content">
+
+<header id="title-block-header" class="quarto-title-block default">
+<div class="quarto-title">
+<h1 class="title"><span class="chapter-number">7</span>&nbsp; <span class="chapter-title">APIs and Access Patterns</span></h1>
+<p class="subtitle lead">FastAPI, OGC standards, and designing spatial services that don’t fall over</p>
+</div>
+
+
+
+<div class="quarto-title-meta">
+
+    
+  
+    
+  </div>
+  
+
+
+</header>
+
+
+<section id="the-puzzle" class="level2" data-number="7.1">
+<h2 data-number="7.1" class="anchored" data-anchor-id="the-puzzle"><span class="header-section-number">7.1</span> The puzzle</h2>
+<p>A city planning department built a spatial API to serve parcel boundary lookups and zoning queries. During the initial rollout — 100 concurrent users, mostly internal — response times averaged 180 ms. Fast enough. The planning director approved public access.</p>
+<p>Six weeks later, a development application triggered a surge of public interest. Request volume hit 1,000 concurrent users. The API fell over completely: response times climbed past 30 seconds, then the service stopped responding. The infrastructure team provisioned two additional servers. Response times dropped to 25 seconds. They provisioned four more servers. Twenty seconds.</p>
+<p>The problem was not hardware. It was that every request was executing a full spatial join: for each incoming point coordinate, the API ran a PostGIS query that joined the parcel table (2.3 million rows) against the zoning table (47,000 polygons), filtered by spatial containment, and returned the result. At 100 req/s, the database was comfortably handling isolated queries. At 1,000 req/s, the join was executing 1,000 times per second across the same tables. Each join was independent; none could reuse any intermediate result from any other. The work scaled linearly with requests.</p>
+<p>The fix took one afternoon. A materialised view pre-computed the join — each parcel row already contained its zoning attributes, refreshed nightly. A Redis cache sat in front of the database layer, caching parcel lookups by grid cell for 60 seconds. After the materialised view and cache were deployed, average response time at 1,000 req/s was 12 ms. No additional hardware.</p>
+<p>The cost of the original design was not visible at low request rates. It was structural: the API’s design assumed that each request was a one-off computation, rather than one of many requests for the same underlying data pattern. Understanding where the cost actually is — and whether it scales with requests or with data — is the architectural question this chapter addresses.</p>
+<hr>
+</section>
+<section id="rest-vs-ogc-the-standards-layer" class="level2" data-number="7.2">
+<h2 data-number="7.2" class="anchored" data-anchor-id="rest-vs-ogc-the-standards-layer"><span class="header-section-number">7.2</span> REST vs OGC: the standards layer</h2>
+<p>Most spatial services could be built as arbitrary REST APIs: POST a coordinate, receive JSON. Many are. But spatial data services have a long history of standardisation efforts, and those standards matter when your consumers are other organisations, governments, or open-source GIS tools.</p>
+<p>The <strong>Open Geospatial Consortium (OGC)</strong> defines a set of web service standards for serving spatial data. The current generation — OGC API standards — replaces the older WFS/WMS family with REST-based, OpenAPI-described interfaces.</p>
+<section id="ogc-api-features" class="level3" data-number="7.2.1">
+<h3 data-number="7.2.1" class="anchored" data-anchor-id="ogc-api-features"><span class="header-section-number">7.2.1</span> OGC API Features</h3>
+<p>OGC API Features (formerly WFS) defines a standard way to serve vector feature collections over HTTP. The conformance requirements specify the URL patterns, query parameters, and response formats that a conforming server must support.</p>
+<p>Key endpoints in a conforming OGC API Features server:</p>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 50%">
+<col style="width: 50%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>Endpoint</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><code>GET /</code></td>
+<td>Landing page with links to capabilities</td>
+</tr>
+<tr class="even">
+<td><code>GET /conformance</code></td>
+<td>List of OGC conformance classes the server implements</td>
+</tr>
+<tr class="odd">
+<td><code>GET /collections</code></td>
+<td>List of available feature collections</td>
+</tr>
+<tr class="even">
+<td><code>GET /collections/{collectionId}</code></td>
+<td>Metadata for a specific collection</td>
+</tr>
+<tr class="odd">
+<td><code>GET /collections/{collectionId}/items</code></td>
+<td>Features in the collection (supports bbox, datetime, limit, offset)</td>
+</tr>
+<tr class="even">
+<td><code>GET /collections/{collectionId}/items/{featureId}</code></td>
+<td>A single feature by ID</td>
+</tr>
+</tbody>
+</table>
+<p>The <code>bbox</code> parameter is standardised: <code>bbox=minLon,minLat,maxLon,maxLat</code>. Clients that understand OGC API Features can query any conforming server without knowing anything specific about the underlying data.</p>
+</section>
+<section id="ogc-api-maps" class="level3" data-number="7.2.2">
+<h3 data-number="7.2.2" class="anchored" data-anchor-id="ogc-api-maps"><span class="header-section-number">7.2.2</span> OGC API Maps</h3>
+<p>OGC API Maps (successor to WMS) serves rendered map images. The interface is similar in structure but returns raster tiles or images rather than feature data. For applications that need pre-rendered cartographic output rather than raw feature geometry, OGC API Maps is appropriate.</p>
+</section>
+<section id="why-conformance-matters" class="level3" data-number="7.2.3">
+<h3 data-number="7.2.3" class="anchored" data-anchor-id="why-conformance-matters"><span class="header-section-number">7.2.3</span> Why conformance matters</h3>
+<p>If you are building an internal API consumed only by your own frontend, OGC conformance is an engineering overhead you may not need. If your consumers include:</p>
+<ul>
+<li>QGIS or ArcGIS users who expect a standard WFS/OGC endpoint</li>
+<li>Partner organisations whose systems are configured to query OGC-conforming services</li>
+<li>Open data portals that harvest from conforming endpoints</li>
+<li>Any downstream system that will be configured once and must work without changes as your data evolves</li>
+</ul>
+<p>…then conformance buys you interoperability without custom integration work on either side.</p>
+<p>Conformance is a binary claim supported by a test suite. OGC provides the TEAM Engine test harness; a conforming server must pass the relevant core and extension tests. Do not claim conformance without running the tests.</p>
+<hr>
+</section>
+</section>
+<section id="fastapi-for-spatial-services" class="level2" data-number="7.3">
+<h2 data-number="7.3" class="anchored" data-anchor-id="fastapi-for-spatial-services"><span class="header-section-number">7.3</span> FastAPI for spatial services</h2>
+<p>FastAPI is a Python web framework built on Starlette and Pydantic, designed for high-performance APIs with automatic OpenAPI schema generation. It is appropriate for spatial services because Pydantic’s type system handles the validation complexity of geographic data cleanly, and its async support makes it efficient under concurrent load.</p>
+<section id="pydantic-schemas-for-spatial-responses" class="level3" data-number="7.3.1">
+<h3 data-number="7.3.1" class="anchored" data-anchor-id="pydantic-schemas-for-spatial-responses"><span class="header-section-number">7.3.1</span> Pydantic schemas for spatial responses</h3>
+<p>GeoJSON is the standard interchange format for spatial features in APIs. A Pydantic model for a GeoJSON Feature response looks like:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb1"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="co"># schemas.py</span></span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> pydantic <span class="im">import</span> BaseModel, Field</span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> typing <span class="im">import</span> Any, Literal, Optional</span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a><span class="kw">class</span> Point(BaseModel):</span>
+<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a>    <span class="bu">type</span>: Literal[<span class="st">"Point"</span>]</span>
+<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a>    coordinates: <span class="bu">list</span>[<span class="bu">float</span>]   <span class="co"># [longitude, latitude] or [lon, lat, elevation]</span></span>
+<span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-9"><a href="#cb1-9" aria-hidden="true" tabindex="-1"></a><span class="kw">class</span> Polygon(BaseModel):</span>
+<span id="cb1-10"><a href="#cb1-10" aria-hidden="true" tabindex="-1"></a>    <span class="bu">type</span>: Literal[<span class="st">"Polygon"</span>]</span>
+<span id="cb1-11"><a href="#cb1-11" aria-hidden="true" tabindex="-1"></a>    coordinates: <span class="bu">list</span>[<span class="bu">list</span>[<span class="bu">list</span>[<span class="bu">float</span>]]]   <span class="co"># rings of [lon, lat] pairs</span></span>
+<span id="cb1-12"><a href="#cb1-12" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-13"><a href="#cb1-13" aria-hidden="true" tabindex="-1"></a><span class="co"># Union for heterogeneous geometry types</span></span>
+<span id="cb1-14"><a href="#cb1-14" aria-hidden="true" tabindex="-1"></a>Geometry <span class="op">=</span> Point <span class="op">|</span> Polygon</span>
+<span id="cb1-15"><a href="#cb1-15" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-16"><a href="#cb1-16" aria-hidden="true" tabindex="-1"></a><span class="kw">class</span> Feature(BaseModel):</span>
+<span id="cb1-17"><a href="#cb1-17" aria-hidden="true" tabindex="-1"></a>    <span class="bu">type</span>: Literal[<span class="st">"Feature"</span>]</span>
+<span id="cb1-18"><a href="#cb1-18" aria-hidden="true" tabindex="-1"></a>    <span class="bu">id</span>: Optional[<span class="bu">str</span> <span class="op">|</span> <span class="bu">int</span>] <span class="op">=</span> <span class="va">None</span></span>
+<span id="cb1-19"><a href="#cb1-19" aria-hidden="true" tabindex="-1"></a>    geometry: Geometry</span>
+<span id="cb1-20"><a href="#cb1-20" aria-hidden="true" tabindex="-1"></a>    properties: <span class="bu">dict</span>[<span class="bu">str</span>, Any]</span>
+<span id="cb1-21"><a href="#cb1-21" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-22"><a href="#cb1-22" aria-hidden="true" tabindex="-1"></a><span class="kw">class</span> FeatureCollection(BaseModel):</span>
+<span id="cb1-23"><a href="#cb1-23" aria-hidden="true" tabindex="-1"></a>    <span class="bu">type</span>: Literal[<span class="st">"FeatureCollection"</span>]</span>
+<span id="cb1-24"><a href="#cb1-24" aria-hidden="true" tabindex="-1"></a>    features: <span class="bu">list</span>[Feature]</span>
+<span id="cb1-25"><a href="#cb1-25" aria-hidden="true" tabindex="-1"></a>    <span class="co"># OGC API Features extensions</span></span>
+<span id="cb1-26"><a href="#cb1-26" aria-hidden="true" tabindex="-1"></a>    number_matched:  Optional[<span class="bu">int</span>]  <span class="op">=</span> Field(<span class="va">None</span>, alias<span class="op">=</span><span class="st">"numberMatched"</span>)</span>
+<span id="cb1-27"><a href="#cb1-27" aria-hidden="true" tabindex="-1"></a>    number_returned: Optional[<span class="bu">int</span>]  <span class="op">=</span> Field(<span class="va">None</span>, alias<span class="op">=</span><span class="st">"numberReturned"</span>)</span>
+<span id="cb1-28"><a href="#cb1-28" aria-hidden="true" tabindex="-1"></a>    links:           Optional[<span class="bu">list</span>] <span class="op">=</span> <span class="va">None</span></span>
+<span id="cb1-29"><a href="#cb1-29" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-30"><a href="#cb1-30" aria-hidden="true" tabindex="-1"></a>    <span class="kw">class</span> Config:</span>
+<span id="cb1-31"><a href="#cb1-31" aria-hidden="true" tabindex="-1"></a>        populate_by_name <span class="op">=</span> <span class="va">True</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>These models validate inputs, serialise outputs, and appear directly in the auto-generated OpenAPI documentation. Pydantic validates that <code>coordinates</code> contains the right number of floats, that <code>type</code> is the correct literal, and that required fields are present — before your route handler ever runs.</p>
+</section>
+<section id="dependency-injection-for-database-connections" class="level3" data-number="7.3.2">
+<h3 data-number="7.3.2" class="anchored" data-anchor-id="dependency-injection-for-database-connections"><span class="header-section-number">7.3.2</span> Dependency injection for database connections</h3>
+<p>FastAPI’s dependency injection system is the clean way to manage database connection pools across requests. Each request gets a connection from the pool; the dependency handles acquisition and release:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb2"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="co"># database.py</span></span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> contextlib <span class="im">import</span> asynccontextmanager</span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> typing <span class="im">import</span> AsyncGenerator</span>
+<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> asyncpg</span>
+<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a>DATABASE_URL <span class="op">=</span> <span class="st">"postgresql://user:pass@localhost:5432/spatial_db"</span></span>
+<span id="cb2-7"><a href="#cb2-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-8"><a href="#cb2-8" aria-hidden="true" tabindex="-1"></a>pool: asyncpg.Pool <span class="op">|</span> <span class="va">None</span> <span class="op">=</span> <span class="va">None</span></span>
+<span id="cb2-9"><a href="#cb2-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-10"><a href="#cb2-10" aria-hidden="true" tabindex="-1"></a><span class="cf">async</span> <span class="kw">def</span> get_pool() <span class="op">-&gt;</span> asyncpg.Pool:</span>
+<span id="cb2-11"><a href="#cb2-11" aria-hidden="true" tabindex="-1"></a>    <span class="kw">global</span> pool</span>
+<span id="cb2-12"><a href="#cb2-12" aria-hidden="true" tabindex="-1"></a>    <span class="cf">if</span> pool <span class="kw">is</span> <span class="va">None</span>:</span>
+<span id="cb2-13"><a href="#cb2-13" aria-hidden="true" tabindex="-1"></a>        pool <span class="op">=</span> <span class="cf">await</span> asyncpg.create_pool(DATABASE_URL, min_size<span class="op">=</span><span class="dv">5</span>, max_size<span class="op">=</span><span class="dv">20</span>)</span>
+<span id="cb2-14"><a href="#cb2-14" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> pool</span>
+<span id="cb2-15"><a href="#cb2-15" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-16"><a href="#cb2-16" aria-hidden="true" tabindex="-1"></a><span class="cf">async</span> <span class="kw">def</span> get_connection() <span class="op">-&gt;</span> AsyncGenerator[asyncpg.Connection, <span class="va">None</span>]:</span>
+<span id="cb2-17"><a href="#cb2-17" aria-hidden="true" tabindex="-1"></a>    p <span class="op">=</span> <span class="cf">await</span> get_pool()</span>
+<span id="cb2-18"><a href="#cb2-18" aria-hidden="true" tabindex="-1"></a>    <span class="cf">async</span> <span class="cf">with</span> p.acquire() <span class="im">as</span> conn:</span>
+<span id="cb2-19"><a href="#cb2-19" aria-hidden="true" tabindex="-1"></a>        <span class="cf">yield</span> conn</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb3"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="co"># routes.py</span></span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> fastapi <span class="im">import</span> APIRouter, Depends, Query, HTTPException</span>
+<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> typing <span class="im">import</span> Annotated</span>
+<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> asyncpg</span>
+<span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> .database <span class="im">import</span> get_connection</span>
+<span id="cb3-6"><a href="#cb3-6" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> .schemas <span class="im">import</span> FeatureCollection, Feature, Polygon</span>
+<span id="cb3-7"><a href="#cb3-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-8"><a href="#cb3-8" aria-hidden="true" tabindex="-1"></a>router <span class="op">=</span> APIRouter()</span>
+<span id="cb3-9"><a href="#cb3-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-10"><a href="#cb3-10" aria-hidden="true" tabindex="-1"></a>Connection <span class="op">=</span> Annotated[asyncpg.Connection, Depends(get_connection)]</span>
+<span id="cb3-11"><a href="#cb3-11" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-12"><a href="#cb3-12" aria-hidden="true" tabindex="-1"></a><span class="at">@router.get</span>(</span>
+<span id="cb3-13"><a href="#cb3-13" aria-hidden="true" tabindex="-1"></a>    <span class="st">"/collections/parcels/items"</span>,</span>
+<span id="cb3-14"><a href="#cb3-14" aria-hidden="true" tabindex="-1"></a>    response_model<span class="op">=</span>FeatureCollection,</span>
+<span id="cb3-15"><a href="#cb3-15" aria-hidden="true" tabindex="-1"></a>    summary<span class="op">=</span><span class="st">"Return parcels within a bounding box"</span>,</span>
+<span id="cb3-16"><a href="#cb3-16" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb3-17"><a href="#cb3-17" aria-hidden="true" tabindex="-1"></a><span class="cf">async</span> <span class="kw">def</span> get_parcels_in_bbox(</span>
+<span id="cb3-18"><a href="#cb3-18" aria-hidden="true" tabindex="-1"></a>    conn: Connection,</span>
+<span id="cb3-19"><a href="#cb3-19" aria-hidden="true" tabindex="-1"></a>    bbox: <span class="bu">str</span> <span class="op">=</span> Query(</span>
+<span id="cb3-20"><a href="#cb3-20" aria-hidden="true" tabindex="-1"></a>        ...,</span>
+<span id="cb3-21"><a href="#cb3-21" aria-hidden="true" tabindex="-1"></a>        description<span class="op">=</span><span class="st">"Bounding box: minLon,minLat,maxLon,maxLat"</span>,</span>
+<span id="cb3-22"><a href="#cb3-22" aria-hidden="true" tabindex="-1"></a>        example<span class="op">=</span><span class="st">"-122.45,37.75,-122.40,37.78"</span>,</span>
+<span id="cb3-23"><a href="#cb3-23" aria-hidden="true" tabindex="-1"></a>    ),</span>
+<span id="cb3-24"><a href="#cb3-24" aria-hidden="true" tabindex="-1"></a>    limit: <span class="bu">int</span> <span class="op">=</span> Query(<span class="dv">100</span>, ge<span class="op">=</span><span class="dv">1</span>, le<span class="op">=</span><span class="dv">1000</span>),</span>
+<span id="cb3-25"><a href="#cb3-25" aria-hidden="true" tabindex="-1"></a>    offset: <span class="bu">int</span> <span class="op">=</span> Query(<span class="dv">0</span>, ge<span class="op">=</span><span class="dv">0</span>),</span>
+<span id="cb3-26"><a href="#cb3-26" aria-hidden="true" tabindex="-1"></a>):</span>
+<span id="cb3-27"><a href="#cb3-27" aria-hidden="true" tabindex="-1"></a>    <span class="cf">try</span>:</span>
+<span id="cb3-28"><a href="#cb3-28" aria-hidden="true" tabindex="-1"></a>        min_lon, min_lat, max_lon, max_lat <span class="op">=</span> <span class="bu">map</span>(<span class="bu">float</span>, bbox.split(<span class="st">","</span>))</span>
+<span id="cb3-29"><a href="#cb3-29" aria-hidden="true" tabindex="-1"></a>    <span class="cf">except</span> <span class="pp">ValueError</span>:</span>
+<span id="cb3-30"><a href="#cb3-30" aria-hidden="true" tabindex="-1"></a>        <span class="cf">raise</span> HTTPException(status_code<span class="op">=</span><span class="dv">400</span>, detail<span class="op">=</span><span class="st">"Invalid bbox format"</span>)</span>
+<span id="cb3-31"><a href="#cb3-31" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-32"><a href="#cb3-32" aria-hidden="true" tabindex="-1"></a>    rows <span class="op">=</span> <span class="cf">await</span> conn.fetch(</span>
+<span id="cb3-33"><a href="#cb3-33" aria-hidden="true" tabindex="-1"></a>        <span class="st">"""</span></span>
+<span id="cb3-34"><a href="#cb3-34" aria-hidden="true" tabindex="-1"></a><span class="st">        SELECT</span></span>
+<span id="cb3-35"><a href="#cb3-35" aria-hidden="true" tabindex="-1"></a><span class="st">            parcel_id,</span></span>
+<span id="cb3-36"><a href="#cb3-36" aria-hidden="true" tabindex="-1"></a><span class="st">            zoning_code,</span></span>
+<span id="cb3-37"><a href="#cb3-37" aria-hidden="true" tabindex="-1"></a><span class="st">            area_m2,</span></span>
+<span id="cb3-38"><a href="#cb3-38" aria-hidden="true" tabindex="-1"></a><span class="st">            ST_AsGeoJSON(geom)::json AS geometry</span></span>
+<span id="cb3-39"><a href="#cb3-39" aria-hidden="true" tabindex="-1"></a><span class="st">        FROM parcels_with_zoning   -- materialised view</span></span>
+<span id="cb3-40"><a href="#cb3-40" aria-hidden="true" tabindex="-1"></a><span class="st">        WHERE geom &amp;&amp; ST_MakeEnvelope($1, $2, $3, $4, 4326)</span></span>
+<span id="cb3-41"><a href="#cb3-41" aria-hidden="true" tabindex="-1"></a><span class="st">        ORDER BY parcel_id</span></span>
+<span id="cb3-42"><a href="#cb3-42" aria-hidden="true" tabindex="-1"></a><span class="st">        LIMIT $5 OFFSET $6</span></span>
+<span id="cb3-43"><a href="#cb3-43" aria-hidden="true" tabindex="-1"></a><span class="st">        """</span>,</span>
+<span id="cb3-44"><a href="#cb3-44" aria-hidden="true" tabindex="-1"></a>        min_lon, min_lat, max_lon, max_lat, limit, offset,</span>
+<span id="cb3-45"><a href="#cb3-45" aria-hidden="true" tabindex="-1"></a>    )</span>
+<span id="cb3-46"><a href="#cb3-46" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-47"><a href="#cb3-47" aria-hidden="true" tabindex="-1"></a>    features <span class="op">=</span> [</span>
+<span id="cb3-48"><a href="#cb3-48" aria-hidden="true" tabindex="-1"></a>        Feature(</span>
+<span id="cb3-49"><a href="#cb3-49" aria-hidden="true" tabindex="-1"></a>            <span class="bu">type</span><span class="op">=</span><span class="st">"Feature"</span>,</span>
+<span id="cb3-50"><a href="#cb3-50" aria-hidden="true" tabindex="-1"></a>            <span class="bu">id</span><span class="op">=</span><span class="bu">str</span>(row[<span class="st">"parcel_id"</span>]),</span>
+<span id="cb3-51"><a href="#cb3-51" aria-hidden="true" tabindex="-1"></a>            geometry<span class="op">=</span>row[<span class="st">"geometry"</span>],</span>
+<span id="cb3-52"><a href="#cb3-52" aria-hidden="true" tabindex="-1"></a>            properties<span class="op">=</span>{</span>
+<span id="cb3-53"><a href="#cb3-53" aria-hidden="true" tabindex="-1"></a>                <span class="st">"parcel_id"</span>:   row[<span class="st">"parcel_id"</span>],</span>
+<span id="cb3-54"><a href="#cb3-54" aria-hidden="true" tabindex="-1"></a>                <span class="st">"zoning_code"</span>: row[<span class="st">"zoning_code"</span>],</span>
+<span id="cb3-55"><a href="#cb3-55" aria-hidden="true" tabindex="-1"></a>                <span class="st">"area_m2"</span>:     <span class="bu">float</span>(row[<span class="st">"area_m2"</span>]),</span>
+<span id="cb3-56"><a href="#cb3-56" aria-hidden="true" tabindex="-1"></a>            },</span>
+<span id="cb3-57"><a href="#cb3-57" aria-hidden="true" tabindex="-1"></a>        )</span>
+<span id="cb3-58"><a href="#cb3-58" aria-hidden="true" tabindex="-1"></a>        <span class="cf">for</span> row <span class="kw">in</span> rows</span>
+<span id="cb3-59"><a href="#cb3-59" aria-hidden="true" tabindex="-1"></a>    ]</span>
+<span id="cb3-60"><a href="#cb3-60" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-61"><a href="#cb3-61" aria-hidden="true" tabindex="-1"></a>    count_row <span class="op">=</span> <span class="cf">await</span> conn.fetchrow(</span>
+<span id="cb3-62"><a href="#cb3-62" aria-hidden="true" tabindex="-1"></a>        <span class="st">"""</span></span>
+<span id="cb3-63"><a href="#cb3-63" aria-hidden="true" tabindex="-1"></a><span class="st">        SELECT COUNT(*) AS n</span></span>
+<span id="cb3-64"><a href="#cb3-64" aria-hidden="true" tabindex="-1"></a><span class="st">        FROM parcels_with_zoning</span></span>
+<span id="cb3-65"><a href="#cb3-65" aria-hidden="true" tabindex="-1"></a><span class="st">        WHERE geom &amp;&amp; ST_MakeEnvelope($1, $2, $3, $4, 4326)</span></span>
+<span id="cb3-66"><a href="#cb3-66" aria-hidden="true" tabindex="-1"></a><span class="st">        """</span>,</span>
+<span id="cb3-67"><a href="#cb3-67" aria-hidden="true" tabindex="-1"></a>        min_lon, min_lat, max_lon, max_lat,</span>
+<span id="cb3-68"><a href="#cb3-68" aria-hidden="true" tabindex="-1"></a>    )</span>
+<span id="cb3-69"><a href="#cb3-69" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-70"><a href="#cb3-70" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> FeatureCollection(</span>
+<span id="cb3-71"><a href="#cb3-71" aria-hidden="true" tabindex="-1"></a>        <span class="bu">type</span><span class="op">=</span><span class="st">"FeatureCollection"</span>,</span>
+<span id="cb3-72"><a href="#cb3-72" aria-hidden="true" tabindex="-1"></a>        features<span class="op">=</span>features,</span>
+<span id="cb3-73"><a href="#cb3-73" aria-hidden="true" tabindex="-1"></a>        numberMatched<span class="op">=</span>count_row[<span class="st">"n"</span>],</span>
+<span id="cb3-74"><a href="#cb3-74" aria-hidden="true" tabindex="-1"></a>        numberReturned<span class="op">=</span><span class="bu">len</span>(features),</span>
+<span id="cb3-75"><a href="#cb3-75" aria-hidden="true" tabindex="-1"></a>    )</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>The <code>&amp;&amp;</code> operator in the PostGIS query is the bounding box overlap operator — it uses the GIST index and is far faster than a full geometry intersection for the initial filter. This is the first of the access pattern choices that directly affects query performance.</p>
+<hr>
+</section>
+</section>
+<section id="access-patterns-and-query-plans" class="level2" data-number="7.4">
+<h2 data-number="7.4" class="anchored" data-anchor-id="access-patterns-and-query-plans"><span class="header-section-number">7.4</span> Access patterns and query plans</h2>
+<p>The query pattern — point-in-polygon, bounding-box, nearest-neighbour — determines the query plan, and the query plan determines whether the database index is used. Choosing the wrong operator can turn an indexed lookup into a full sequential scan.</p>
+<section id="bounding-box-queries" class="level3" data-number="7.4.1">
+<h3 data-number="7.4.1" class="anchored" data-anchor-id="bounding-box-queries"><span class="header-section-number">7.4.1</span> Bounding-box queries</h3>
+<p>The <code>&amp;&amp;</code> operator tests whether two bounding boxes overlap. PostGIS stores a bounding-box index (GIST) on geometry columns. A <code>&amp;&amp;</code> query uses the index directly and is extremely fast, even on large tables.</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb4"><pre class="sourceCode sql code-with-copy"><code class="sourceCode sql"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="co">-- Fast: uses GIST index on bounding boxes</span></span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a><span class="co">-- Returns features whose bounding boxes overlap the query envelope</span></span>
+<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a><span class="kw">SELECT</span> parcel_id, geom</span>
+<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a><span class="kw">FROM</span> parcels</span>
+<span id="cb4-5"><a href="#cb4-5" aria-hidden="true" tabindex="-1"></a><span class="kw">WHERE</span> geom &amp;&amp; ST_MakeEnvelope(<span class="op">-</span><span class="fl">122.45</span>, <span class="fl">37.75</span>, <span class="op">-</span><span class="fl">122.40</span>, <span class="fl">37.78</span>, <span class="dv">4326</span>);</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>For most use cases — map tiles, bounding-box feature queries — this is sufficient. The bounding box of a polygon is an approximation of its extent; features near the boundary of the query envelope may have overlapping bounding boxes but not overlapping geometries. A second-pass exact geometry test (<code>ST_Intersects</code>) can be applied to the bounding-box candidates if precision is required.</p>
+</section>
+<section id="point-in-polygon" class="level3" data-number="7.4.2">
+<h3 data-number="7.4.2" class="anchored" data-anchor-id="point-in-polygon"><span class="header-section-number">7.4.2</span> Point-in-polygon</h3>
+<p>Testing whether a specific point falls inside a polygon requires an exact geometry test. <code>ST_Contains</code> and <code>ST_Within</code> both perform this test, but without a bounding-box pre-filter they scan all candidate geometries.</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb5"><pre class="sourceCode sql code-with-copy"><code class="sourceCode sql"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="co">-- Slow: full table scan if used alone</span></span>
+<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a><span class="kw">SELECT</span> parcel_id, zoning_code</span>
+<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a><span class="kw">FROM</span> parcels</span>
+<span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a><span class="kw">WHERE</span> ST_Contains(geom, ST_SetSRID(ST_Point(<span class="op">-</span><span class="fl">122.42</span>, <span class="fl">37.76</span>), <span class="dv">4326</span>));</span>
+<span id="cb5-5"><a href="#cb5-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-6"><a href="#cb5-6" aria-hidden="true" tabindex="-1"></a><span class="co">-- Fast: bounding-box pre-filter using the index, then exact test</span></span>
+<span id="cb5-7"><a href="#cb5-7" aria-hidden="true" tabindex="-1"></a><span class="kw">SELECT</span> parcel_id, zoning_code</span>
+<span id="cb5-8"><a href="#cb5-8" aria-hidden="true" tabindex="-1"></a><span class="kw">FROM</span> parcels</span>
+<span id="cb5-9"><a href="#cb5-9" aria-hidden="true" tabindex="-1"></a><span class="kw">WHERE</span> geom &amp;&amp; ST_SetSRID(ST_Point(<span class="op">-</span><span class="fl">122.42</span>, <span class="fl">37.76</span>), <span class="dv">4326</span>)</span>
+<span id="cb5-10"><a href="#cb5-10" aria-hidden="true" tabindex="-1"></a>  <span class="kw">AND</span> ST_Contains(geom, ST_SetSRID(ST_Point(<span class="op">-</span><span class="fl">122.42</span>, <span class="fl">37.76</span>), <span class="dv">4326</span>));</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>PostGIS applies the <code>&amp;&amp;</code> pre-filter automatically in most spatial operator implementations — <code>ST_Contains</code> internally calls the bounding-box test first. But be explicit: understanding why the bounding-box pre-filter matters makes you less likely to accidentally bypass it.</p>
+</section>
+<section id="nearest-neighbour" class="level3" data-number="7.4.3">
+<h3 data-number="7.4.3" class="anchored" data-anchor-id="nearest-neighbour"><span class="header-section-number">7.4.3</span> Nearest-neighbour</h3>
+<p>Finding the K nearest features to a query point. <code>ST_Distance</code> computes exact Euclidean or geodetic distance; using it directly in a <code>WHERE</code> clause or <code>ORDER BY</code> requires computing distance to every row.</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb6"><pre class="sourceCode sql code-with-copy"><code class="sourceCode sql"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="co">-- Slow: computes distance to all rows, sorts, takes top K</span></span>
+<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a><span class="kw">SELECT</span> parcel_id, ST_Distance(geom:<span class="ch">:geography</span>, <span class="fu">ref</span>:<span class="ch">:geography</span>) <span class="kw">AS</span> dist</span>
+<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a><span class="kw">FROM</span> parcels,</span>
+<span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a>     ST_SetSRID(ST_Point(<span class="op">-</span><span class="fl">122.42</span>, <span class="fl">37.76</span>), <span class="dv">4326</span>):<span class="ch">:geography</span> <span class="kw">AS</span> <span class="fu">ref</span></span>
+<span id="cb6-5"><a href="#cb6-5" aria-hidden="true" tabindex="-1"></a><span class="kw">ORDER</span> <span class="kw">BY</span> dist</span>
+<span id="cb6-6"><a href="#cb6-6" aria-hidden="true" tabindex="-1"></a><span class="kw">LIMIT</span> <span class="dv">5</span>;</span>
+<span id="cb6-7"><a href="#cb6-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-8"><a href="#cb6-8" aria-hidden="true" tabindex="-1"></a><span class="co">-- Fast: uses GIST index with &lt;-&gt; operator (KNN index scan)</span></span>
+<span id="cb6-9"><a href="#cb6-9" aria-hidden="true" tabindex="-1"></a><span class="kw">SELECT</span> parcel_id</span>
+<span id="cb6-10"><a href="#cb6-10" aria-hidden="true" tabindex="-1"></a><span class="kw">FROM</span> parcels</span>
+<span id="cb6-11"><a href="#cb6-11" aria-hidden="true" tabindex="-1"></a><span class="kw">ORDER</span> <span class="kw">BY</span> geom <span class="op">&lt;-&gt;</span> ST_SetSRID(ST_Point(<span class="op">-</span><span class="fl">122.42</span>, <span class="fl">37.76</span>), <span class="dv">4326</span>)</span>
+<span id="cb6-12"><a href="#cb6-12" aria-hidden="true" tabindex="-1"></a><span class="kw">LIMIT</span> <span class="dv">5</span>;</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>The <code>&lt;-&gt;</code> operator is the PostGIS KNN (K-nearest-neighbour) operator. It uses the GIST index to perform an approximate nearest-neighbour search, then refines the result. For most point datasets it is orders of magnitude faster than the <code>ST_Distance</code> approach.</p>
+<p><code>ST_DWithin</code> — test whether two geometries are within a specified distance — is the correct operator for radius queries. It uses the spatial index and is consistently faster than <code>ST_Distance(a, b) &lt; threshold</code>:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb7"><pre class="sourceCode sql code-with-copy"><code class="sourceCode sql"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="co">-- Correct: uses spatial index</span></span>
+<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a><span class="kw">SELECT</span> parcel_id</span>
+<span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a><span class="kw">FROM</span> parcels</span>
+<span id="cb7-4"><a href="#cb7-4" aria-hidden="true" tabindex="-1"></a><span class="kw">WHERE</span> ST_DWithin(</span>
+<span id="cb7-5"><a href="#cb7-5" aria-hidden="true" tabindex="-1"></a>    geom:<span class="ch">:geography</span>,</span>
+<span id="cb7-6"><a href="#cb7-6" aria-hidden="true" tabindex="-1"></a>    ST_SetSRID(ST_Point(<span class="op">-</span><span class="fl">122.42</span>, <span class="fl">37.76</span>), <span class="dv">4326</span>):<span class="ch">:geography</span>,</span>
+<span id="cb7-7"><a href="#cb7-7" aria-hidden="true" tabindex="-1"></a>    <span class="dv">500</span>   <span class="co">-- metres (geography SRID required for metric distances)</span></span>
+<span id="cb7-8"><a href="#cb7-8" aria-hidden="true" tabindex="-1"></a>);</span>
+<span id="cb7-9"><a href="#cb7-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-10"><a href="#cb7-10" aria-hidden="true" tabindex="-1"></a><span class="co">-- Incorrect: bypasses index optimisation</span></span>
+<span id="cb7-11"><a href="#cb7-11" aria-hidden="true" tabindex="-1"></a><span class="kw">SELECT</span> parcel_id</span>
+<span id="cb7-12"><a href="#cb7-12" aria-hidden="true" tabindex="-1"></a><span class="kw">FROM</span> parcels</span>
+<span id="cb7-13"><a href="#cb7-13" aria-hidden="true" tabindex="-1"></a><span class="kw">WHERE</span> ST_Distance(</span>
+<span id="cb7-14"><a href="#cb7-14" aria-hidden="true" tabindex="-1"></a>    geom:<span class="ch">:geography</span>,</span>
+<span id="cb7-15"><a href="#cb7-15" aria-hidden="true" tabindex="-1"></a>    ST_SetSRID(ST_Point(<span class="op">-</span><span class="fl">122.42</span>, <span class="fl">37.76</span>), <span class="dv">4326</span>):<span class="ch">:geography</span></span>
+<span id="cb7-16"><a href="#cb7-16" aria-hidden="true" tabindex="-1"></a>) <span class="op">&lt;</span> <span class="dv">500</span>;</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>The practical rule: use <code>&amp;&amp;</code> for bounding-box filters, <code>ST_DWithin</code> for radius queries, <code>&lt;-&gt;</code> for nearest-neighbour ordering. Avoid <code>ST_Distance</code> in WHERE clauses. EXPLAIN ANALYZE each query during development — look for <code>Bitmap Index Scan</code> or <code>Index Scan</code> on the geometry column, not <code>Seq Scan</code>.</p>
+<hr>
+</section>
+</section>
+<section id="caching" class="level2" data-number="7.5">
+<h2 data-number="7.5" class="anchored" data-anchor-id="caching"><span class="header-section-number">7.5</span> Caching</h2>
+<p>Caching reduces the number of queries that reach the database by serving previously computed results. For spatial APIs, two layers matter: the database layer (materialised views) and the API layer (Redis or HTTP caching).</p>
+<section id="materialised-views" class="level3" data-number="7.5.1">
+<h3 data-number="7.5.1" class="anchored" data-anchor-id="materialised-views"><span class="header-section-number">7.5.1</span> Materialised views</h3>
+<p>A materialised view stores the result of a query as a physical table, refreshed on demand or on a schedule. The view from the opening example — <code>parcels_with_zoning</code> — pre-computes the join between parcels and zoning polygons once (or nightly), so every API request reads from a flat table instead of executing a join.</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb8"><pre class="sourceCode sql code-with-copy"><code class="sourceCode sql"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="co">-- Create the materialised view</span></span>
+<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a><span class="kw">CREATE</span> <span class="kw">MATERIALIZED</span> <span class="kw">VIEW</span> parcels_with_zoning <span class="kw">AS</span></span>
+<span id="cb8-3"><a href="#cb8-3" aria-hidden="true" tabindex="-1"></a><span class="kw">SELECT</span></span>
+<span id="cb8-4"><a href="#cb8-4" aria-hidden="true" tabindex="-1"></a>    p.parcel_id,</span>
+<span id="cb8-5"><a href="#cb8-5" aria-hidden="true" tabindex="-1"></a>    p.geom,</span>
+<span id="cb8-6"><a href="#cb8-6" aria-hidden="true" tabindex="-1"></a>    p.area_m2,</span>
+<span id="cb8-7"><a href="#cb8-7" aria-hidden="true" tabindex="-1"></a>    z.zoning_code,</span>
+<span id="cb8-8"><a href="#cb8-8" aria-hidden="true" tabindex="-1"></a>    z.zoning_description</span>
+<span id="cb8-9"><a href="#cb8-9" aria-hidden="true" tabindex="-1"></a><span class="kw">FROM</span> parcels p</span>
+<span id="cb8-10"><a href="#cb8-10" aria-hidden="true" tabindex="-1"></a><span class="kw">JOIN</span> zoning z <span class="kw">ON</span> ST_Within(p.geom, z.geom)</span>
+<span id="cb8-11"><a href="#cb8-11" aria-hidden="true" tabindex="-1"></a><span class="kw">WITH</span> <span class="kw">DATA</span>;</span>
+<span id="cb8-12"><a href="#cb8-12" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-13"><a href="#cb8-13" aria-hidden="true" tabindex="-1"></a><span class="co">-- Create GIST index on the materialised view</span></span>
+<span id="cb8-14"><a href="#cb8-14" aria-hidden="true" tabindex="-1"></a><span class="kw">CREATE</span> <span class="kw">INDEX</span> idx_parcels_zoning_geom <span class="kw">ON</span> parcels_with_zoning <span class="kw">USING</span> GIST (geom);</span>
+<span id="cb8-15"><a href="#cb8-15" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-16"><a href="#cb8-16" aria-hidden="true" tabindex="-1"></a><span class="co">-- Refresh nightly (or as required by data freshness requirements)</span></span>
+<span id="cb8-17"><a href="#cb8-17" aria-hidden="true" tabindex="-1"></a><span class="kw">REFRESH</span> <span class="kw">MATERIALIZED</span> <span class="kw">VIEW</span> CONCURRENTLY parcels_with_zoning;</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p><code>REFRESH MATERIALIZED VIEW CONCURRENTLY</code> replaces the view data without locking reads, making it safe to refresh during business hours. It requires that the view have a unique index.</p>
+<p>The cost of the materialised view is storage and the refresh job. The benefit is that every API request against the view pays for a simple indexed lookup, not a join. For data that is updated infrequently (zoning boundaries change rarely; parcel boundaries change more often but still rarely), this tradeoff is nearly always correct.</p>
+</section>
+<section id="api-layer-caching-with-redis" class="level3" data-number="7.5.2">
+<h3 data-number="7.5.2" class="anchored" data-anchor-id="api-layer-caching-with-redis"><span class="header-section-number">7.5.2</span> API-layer caching with Redis</h3>
+<p>Materialised views eliminate database join cost but do not eliminate database query cost. For an API serving the same bounding boxes repeatedly — map viewers tiled at fixed zoom levels generate predictable, repeating bounding-box queries — an API-layer cache eliminates database round-trips entirely for cache hits.</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb9"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a><span class="co"># cache.py</span></span>
+<span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> redis.asyncio <span class="im">as</span> redis</span>
+<span id="cb9-3"><a href="#cb9-3" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> json</span>
+<span id="cb9-4"><a href="#cb9-4" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> typing <span class="im">import</span> Optional</span>
+<span id="cb9-5"><a href="#cb9-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-6"><a href="#cb9-6" aria-hidden="true" tabindex="-1"></a>REDIS_URL       <span class="op">=</span> <span class="st">"redis://localhost:6379"</span></span>
+<span id="cb9-7"><a href="#cb9-7" aria-hidden="true" tabindex="-1"></a>CACHE_TTL_S     <span class="op">=</span> <span class="dv">60</span>   <span class="co"># cache spatial results for 60 seconds</span></span>
+<span id="cb9-8"><a href="#cb9-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-9"><a href="#cb9-9" aria-hidden="true" tabindex="-1"></a>_redis: redis.Redis <span class="op">|</span> <span class="va">None</span> <span class="op">=</span> <span class="va">None</span></span>
+<span id="cb9-10"><a href="#cb9-10" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-11"><a href="#cb9-11" aria-hidden="true" tabindex="-1"></a><span class="cf">async</span> <span class="kw">def</span> get_redis() <span class="op">-&gt;</span> redis.Redis:</span>
+<span id="cb9-12"><a href="#cb9-12" aria-hidden="true" tabindex="-1"></a>    <span class="kw">global</span> _redis</span>
+<span id="cb9-13"><a href="#cb9-13" aria-hidden="true" tabindex="-1"></a>    <span class="cf">if</span> _redis <span class="kw">is</span> <span class="va">None</span>:</span>
+<span id="cb9-14"><a href="#cb9-14" aria-hidden="true" tabindex="-1"></a>        _redis <span class="op">=</span> redis.from_url(REDIS_URL, decode_responses<span class="op">=</span><span class="va">True</span>)</span>
+<span id="cb9-15"><a href="#cb9-15" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> _redis</span>
+<span id="cb9-16"><a href="#cb9-16" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-17"><a href="#cb9-17" aria-hidden="true" tabindex="-1"></a><span class="cf">async</span> <span class="kw">def</span> cache_get(key: <span class="bu">str</span>) <span class="op">-&gt;</span> Optional[<span class="bu">dict</span>]:</span>
+<span id="cb9-18"><a href="#cb9-18" aria-hidden="true" tabindex="-1"></a>    r <span class="op">=</span> <span class="cf">await</span> get_redis()</span>
+<span id="cb9-19"><a href="#cb9-19" aria-hidden="true" tabindex="-1"></a>    value <span class="op">=</span> <span class="cf">await</span> r.get(key)</span>
+<span id="cb9-20"><a href="#cb9-20" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> json.loads(value) <span class="cf">if</span> value <span class="cf">else</span> <span class="va">None</span></span>
+<span id="cb9-21"><a href="#cb9-21" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-22"><a href="#cb9-22" aria-hidden="true" tabindex="-1"></a><span class="cf">async</span> <span class="kw">def</span> cache_set(key: <span class="bu">str</span>, value: <span class="bu">dict</span>, ttl: <span class="bu">int</span> <span class="op">=</span> CACHE_TTL_S) <span class="op">-&gt;</span> <span class="va">None</span>:</span>
+<span id="cb9-23"><a href="#cb9-23" aria-hidden="true" tabindex="-1"></a>    r <span class="op">=</span> <span class="cf">await</span> get_redis()</span>
+<span id="cb9-24"><a href="#cb9-24" aria-hidden="true" tabindex="-1"></a>    <span class="cf">await</span> r.<span class="bu">set</span>(key, json.dumps(value), ex<span class="op">=</span>ttl)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>The cache key for a bounding-box query is the quantised bbox plus any other query parameters. Quantising coordinates (rounding to 4 decimal places, approximately 11-metre precision) increases cache hit rate by collapsing nearly-identical queries:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb10"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> make_cache_key(bbox: <span class="bu">str</span>, limit: <span class="bu">int</span>) <span class="op">-&gt;</span> <span class="bu">str</span>:</span>
+<span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a>    parts <span class="op">=</span> [<span class="bu">round</span>(<span class="bu">float</span>(x), <span class="dv">4</span>) <span class="cf">for</span> x <span class="kw">in</span> bbox.split(<span class="st">","</span>)]</span>
+<span id="cb10-3"><a href="#cb10-3" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> <span class="ss">f"parcels:bbox:</span><span class="sc">{</span><span class="st">':'</span><span class="sc">.</span>join(<span class="bu">str</span>(p) <span class="cf">for</span> p <span class="kw">in</span> parts)<span class="sc">}</span><span class="ss">:limit:</span><span class="sc">{</span>limit<span class="sc">}</span><span class="ss">"</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</section>
+<section id="http-cache-headers" class="level3" data-number="7.5.3">
+<h3 data-number="7.5.3" class="anchored" data-anchor-id="http-cache-headers"><span class="header-section-number">7.5.3</span> HTTP cache headers</h3>
+<p>For GET endpoints serving public data, HTTP cache headers allow CDN and browser caching with no application code changes:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb11"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> fastapi <span class="im">import</span> Response</span>
+<span id="cb11-2"><a href="#cb11-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-3"><a href="#cb11-3" aria-hidden="true" tabindex="-1"></a><span class="at">@router.get</span>(<span class="st">"/collections/parcels/items"</span>)</span>
+<span id="cb11-4"><a href="#cb11-4" aria-hidden="true" tabindex="-1"></a><span class="cf">async</span> <span class="kw">def</span> get_parcels(response: Response, ...):</span>
+<span id="cb11-5"><a href="#cb11-5" aria-hidden="true" tabindex="-1"></a>    response.headers[<span class="st">"Cache-Control"</span>] <span class="op">=</span> <span class="st">"public, max-age=60"</span></span>
+<span id="cb11-6"><a href="#cb11-6" aria-hidden="true" tabindex="-1"></a>    response.headers[<span class="st">"Vary"</span>] <span class="op">=</span> <span class="st">"Accept"</span></span>
+<span id="cb11-7"><a href="#cb11-7" aria-hidden="true" tabindex="-1"></a>    ...</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</section>
+<section id="simulated-response-time-cached-vs-uncached" class="level3" data-number="7.5.4">
+<h3 data-number="7.5.4" class="anchored" data-anchor-id="simulated-response-time-cached-vs-uncached"><span class="header-section-number">7.5.4</span> Simulated response time: cached vs uncached</h3>
+<div id="cell-fig-cache-response-time" class="cell" data-fig-height="5" data-fig-width="9" data-execution_count="1">
+<details class="code-fold">
+<summary>Code</summary>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb12"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a><span class="co">"""Chapter 6: simulated cache vs no-cache response time under load."""</span></span>
+<span id="cb12-2"><a href="#cb12-2" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> numpy <span class="im">as</span> np</span>
+<span id="cb12-3"><a href="#cb12-3" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> matplotlib.pyplot <span class="im">as</span> plt</span>
+<span id="cb12-4"><a href="#cb12-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-5"><a href="#cb12-5" aria-hidden="true" tabindex="-1"></a><span class="co"># Named constants</span></span>
+<span id="cb12-6"><a href="#cb12-6" aria-hidden="true" tabindex="-1"></a>N_REQUEST_LEVELS     <span class="op">=</span> <span class="dv">40</span></span>
+<span id="cb12-7"><a href="#cb12-7" aria-hidden="true" tabindex="-1"></a>MAX_REQUESTS_S       <span class="op">=</span> <span class="dv">800</span></span>
+<span id="cb12-8"><a href="#cb12-8" aria-hidden="true" tabindex="-1"></a>CACHE_HIT_RATE       <span class="op">=</span> <span class="fl">0.60</span></span>
+<span id="cb12-9"><a href="#cb12-9" aria-hidden="true" tabindex="-1"></a>BASE_LATENCY_MS      <span class="op">=</span> <span class="fl">8.0</span>    <span class="co"># baseline uncached response (ms) at low load</span></span>
+<span id="cb12-10"><a href="#cb12-10" aria-hidden="true" tabindex="-1"></a>CACHE_LATENCY_MS     <span class="op">=</span> <span class="fl">2.0</span>    <span class="co"># Redis cache hit latency (ms)</span></span>
+<span id="cb12-11"><a href="#cb12-11" aria-hidden="true" tabindex="-1"></a>DB_SATURATION_RPS    <span class="op">=</span> <span class="dv">300</span>    <span class="co"># requests/s at which DB starts to saturate</span></span>
+<span id="cb12-12"><a href="#cb12-12" aria-hidden="true" tabindex="-1"></a>DB_SAT_STEEPNESS     <span class="op">=</span> <span class="fl">0.018</span>  <span class="co"># controls how sharply saturation rises</span></span>
+<span id="cb12-13"><a href="#cb12-13" aria-hidden="true" tabindex="-1"></a>SEED                 <span class="op">=</span> <span class="dv">42</span></span>
+<span id="cb12-14"><a href="#cb12-14" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-15"><a href="#cb12-15" aria-hidden="true" tabindex="-1"></a>np.random.seed(SEED)</span>
+<span id="cb12-16"><a href="#cb12-16" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-17"><a href="#cb12-17" aria-hidden="true" tabindex="-1"></a>request_rates <span class="op">=</span> np.linspace(<span class="dv">10</span>, MAX_REQUESTS_S, N_REQUEST_LEVELS)</span>
+<span id="cb12-18"><a href="#cb12-18" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-19"><a href="#cb12-19" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> db_latency(rps: np.ndarray, hit_rate: <span class="bu">float</span>) <span class="op">-&gt;</span> np.ndarray:</span>
+<span id="cb12-20"><a href="#cb12-20" aria-hidden="true" tabindex="-1"></a>    <span class="co">"""Model database latency as a function of effective DB request rate.</span></span>
+<span id="cb12-21"><a href="#cb12-21" aria-hidden="true" tabindex="-1"></a><span class="co">    Below saturation: roughly flat at BASE_LATENCY_MS.</span></span>
+<span id="cb12-22"><a href="#cb12-22" aria-hidden="true" tabindex="-1"></a><span class="co">    Near and above saturation: grows steeply (queueing theory: M/M/1 model).</span></span>
+<span id="cb12-23"><a href="#cb12-23" aria-hidden="true" tabindex="-1"></a><span class="co">    """</span></span>
+<span id="cb12-24"><a href="#cb12-24" aria-hidden="true" tabindex="-1"></a>    db_rps <span class="op">=</span> rps <span class="op">*</span> (<span class="fl">1.0</span> <span class="op">-</span> hit_rate)  <span class="co"># only cache misses reach the DB</span></span>
+<span id="cb12-25"><a href="#cb12-25" aria-hidden="true" tabindex="-1"></a>    <span class="co"># M/M/1 mean response time: T = 1/mu * 1/(1 - rho), rho = lambda/mu</span></span>
+<span id="cb12-26"><a href="#cb12-26" aria-hidden="true" tabindex="-1"></a>    mu   <span class="op">=</span> DB_SATURATION_RPS           <span class="co"># service rate (capacity)</span></span>
+<span id="cb12-27"><a href="#cb12-27" aria-hidden="true" tabindex="-1"></a>    rho  <span class="op">=</span> np.clip(db_rps <span class="op">/</span> mu, <span class="dv">0</span>, <span class="fl">0.98</span>)</span>
+<span id="cb12-28"><a href="#cb12-28" aria-hidden="true" tabindex="-1"></a>    t_db <span class="op">=</span> BASE_LATENCY_MS <span class="op">/</span> (<span class="fl">1.0</span> <span class="op">-</span> rho)</span>
+<span id="cb12-29"><a href="#cb12-29" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> t_db</span>
+<span id="cb12-30"><a href="#cb12-30" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-31"><a href="#cb12-31" aria-hidden="true" tabindex="-1"></a><span class="co"># No cache: every request hits the database</span></span>
+<span id="cb12-32"><a href="#cb12-32" aria-hidden="true" tabindex="-1"></a>uncached <span class="op">=</span> db_latency(request_rates, hit_rate<span class="op">=</span><span class="fl">0.0</span>)</span>
+<span id="cb12-33"><a href="#cb12-33" aria-hidden="true" tabindex="-1"></a><span class="co"># With cache: (1 - hit_rate) fraction of requests hit the database</span></span>
+<span id="cb12-34"><a href="#cb12-34" aria-hidden="true" tabindex="-1"></a>db_part   <span class="op">=</span> db_latency(request_rates, hit_rate<span class="op">=</span>CACHE_HIT_RATE)</span>
+<span id="cb12-35"><a href="#cb12-35" aria-hidden="true" tabindex="-1"></a>cached    <span class="op">=</span> CACHE_HIT_RATE <span class="op">*</span> CACHE_LATENCY_MS <span class="op">+</span> (<span class="dv">1</span> <span class="op">-</span> CACHE_HIT_RATE) <span class="op">*</span> db_part</span>
+<span id="cb12-36"><a href="#cb12-36" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-37"><a href="#cb12-37" aria-hidden="true" tabindex="-1"></a><span class="co"># Add small jitter to simulate measurement noise</span></span>
+<span id="cb12-38"><a href="#cb12-38" aria-hidden="true" tabindex="-1"></a>uncached <span class="op">+=</span> np.random.normal(<span class="dv">0</span>, <span class="fl">2.0</span>, N_REQUEST_LEVELS)</span>
+<span id="cb12-39"><a href="#cb12-39" aria-hidden="true" tabindex="-1"></a>cached   <span class="op">+=</span> np.random.normal(<span class="dv">0</span>, <span class="fl">0.5</span>, N_REQUEST_LEVELS)</span>
+<span id="cb12-40"><a href="#cb12-40" aria-hidden="true" tabindex="-1"></a>uncached  <span class="op">=</span> np.clip(uncached, BASE_LATENCY_MS, <span class="va">None</span>)</span>
+<span id="cb12-41"><a href="#cb12-41" aria-hidden="true" tabindex="-1"></a>cached    <span class="op">=</span> np.clip(cached, CACHE_LATENCY_MS, <span class="va">None</span>)</span>
+<span id="cb12-42"><a href="#cb12-42" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-43"><a href="#cb12-43" aria-hidden="true" tabindex="-1"></a>fig, ax <span class="op">=</span> plt.subplots(figsize<span class="op">=</span>(<span class="dv">9</span>, <span class="dv">5</span>), dpi<span class="op">=</span><span class="dv">150</span>)</span>
+<span id="cb12-44"><a href="#cb12-44" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-45"><a href="#cb12-45" aria-hidden="true" tabindex="-1"></a>ax.plot(request_rates, uncached, color<span class="op">=</span><span class="st">"#d52a2a"</span>, linewidth<span class="op">=</span><span class="fl">2.0</span>, label<span class="op">=</span><span class="st">"No cache"</span>)</span>
+<span id="cb12-46"><a href="#cb12-46" aria-hidden="true" tabindex="-1"></a>ax.plot(request_rates, cached,   color<span class="op">=</span><span class="st">"#111111"</span>, linewidth<span class="op">=</span><span class="fl">2.0</span>,</span>
+<span id="cb12-47"><a href="#cb12-47" aria-hidden="true" tabindex="-1"></a>        label<span class="op">=</span><span class="ss">f"Cache (hit rate = </span><span class="sc">{</span><span class="bu">int</span>(CACHE_HIT_RATE <span class="op">*</span> <span class="dv">100</span>)<span class="sc">}</span><span class="ss">%)"</span>)</span>
+<span id="cb12-48"><a href="#cb12-48" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-49"><a href="#cb12-49" aria-hidden="true" tabindex="-1"></a>ax.axvline(DB_SATURATION_RPS, color<span class="op">=</span><span class="st">"#888888"</span>, linewidth<span class="op">=</span><span class="fl">1.0</span>, linestyle<span class="op">=</span><span class="st">":"</span>,</span>
+<span id="cb12-50"><a href="#cb12-50" aria-hidden="true" tabindex="-1"></a>           label<span class="op">=</span><span class="ss">f"DB saturation ≈ </span><span class="sc">{</span>DB_SATURATION_RPS<span class="sc">}</span><span class="ss"> req/s"</span>)</span>
+<span id="cb12-51"><a href="#cb12-51" aria-hidden="true" tabindex="-1"></a>ax.axvline(DB_SATURATION_RPS <span class="op">/</span> (<span class="dv">1</span> <span class="op">-</span> CACHE_HIT_RATE), color<span class="op">=</span><span class="st">"#888888"</span>,</span>
+<span id="cb12-52"><a href="#cb12-52" aria-hidden="true" tabindex="-1"></a>           linewidth<span class="op">=</span><span class="fl">1.0</span>, linestyle<span class="op">=</span><span class="st">"--"</span>,</span>
+<span id="cb12-53"><a href="#cb12-53" aria-hidden="true" tabindex="-1"></a>           label<span class="op">=</span><span class="ss">f"Effective DB saturation with cache ≈ </span><span class="sc">{</span><span class="bu">int</span>(DB_SATURATION_RPS <span class="op">/</span> (<span class="dv">1</span> <span class="op">-</span> CACHE_HIT_RATE))<span class="sc">}</span><span class="ss"> req/s"</span>)</span>
+<span id="cb12-54"><a href="#cb12-54" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-55"><a href="#cb12-55" aria-hidden="true" tabindex="-1"></a>ax.set_xlabel(<span class="st">"Incoming request rate (req/s)"</span>)</span>
+<span id="cb12-56"><a href="#cb12-56" aria-hidden="true" tabindex="-1"></a>ax.set_ylabel(<span class="st">"Mean response time (ms)"</span>)</span>
+<span id="cb12-57"><a href="#cb12-57" aria-hidden="true" tabindex="-1"></a>ax.set_ylim(<span class="dv">0</span>, <span class="va">None</span>)</span>
+<span id="cb12-58"><a href="#cb12-58" aria-hidden="true" tabindex="-1"></a>ax.legend(fontsize<span class="op">=</span><span class="dv">9</span>)</span>
+<span id="cb12-59"><a href="#cb12-59" aria-hidden="true" tabindex="-1"></a>ax.spines[<span class="st">"top"</span>].set_visible(<span class="va">False</span>)</span>
+<span id="cb12-60"><a href="#cb12-60" aria-hidden="true" tabindex="-1"></a>ax.spines[<span class="st">"right"</span>].set_visible(<span class="va">False</span>)</span>
+<span id="cb12-61"><a href="#cb12-61" aria-hidden="true" tabindex="-1"></a>ax.set_title(<span class="st">"API response time under load: cached vs uncached"</span>)</span>
+<span id="cb12-62"><a href="#cb12-62" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-63"><a href="#cb12-63" aria-hidden="true" tabindex="-1"></a>plt.tight_layout()</span>
+<span id="cb12-64"><a href="#cb12-64" aria-hidden="true" tabindex="-1"></a>plt.savefig(<span class="st">"_assets/ch06-cache-response-time.png"</span>, dpi<span class="op">=</span><span class="dv">150</span>, bbox_inches<span class="op">=</span><span class="st">"tight"</span>)</span>
+<span id="cb12-65"><a href="#cb12-65" aria-hidden="true" tabindex="-1"></a>plt.show()</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</details>
+<div class="cell-output cell-output-display">
+<div id="fig-cache-response-time" class="quarto-float quarto-figure quarto-figure-center anchored">
+<figure class="quarto-float quarto-float-fig figure">
+<div aria-describedby="fig-cache-response-time-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<img src="06-apis-and-access-patterns_files/figure-html/fig-cache-response-time-output-1.png" width="1336" height="737" class="figure-img">
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-cache-response-time-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Figure&nbsp;7.1: Figure 6.1. Simulated API response time under increasing request load with and without a cache. Without caching, response time grows steeply as the database becomes the bottleneck: each request executes a full spatial query, and database contention increases nonlinearly near saturation. With caching (60% hit rate), most requests are served from Redis at low, flat latency; only cache misses reach the database. The database sees roughly 40% of the total request rate, delaying the onset of saturation substantially.
+</figcaption>
+</figure>
+</div>
+</div>
+</div>
+<hr>
+</section>
+</section>
+<section id="rate-limiting-and-pagination" class="level2" data-number="7.6">
+<h2 data-number="7.6" class="anchored" data-anchor-id="rate-limiting-and-pagination"><span class="header-section-number">7.6</span> Rate limiting and pagination</h2>
+<section id="cursor-based-pagination" class="level3" data-number="7.6.1">
+<h3 data-number="7.6.1" class="anchored" data-anchor-id="cursor-based-pagination"><span class="header-section-number">7.6.1</span> Cursor-based pagination</h3>
+<p>Offset-based pagination (<code>LIMIT 100 OFFSET 500</code>) is standard in SQL but breaks down at scale. The database must scan and discard <code>OFFSET</code> rows before returning the page. At <code>OFFSET 50000</code>, the database discards 50,000 rows for every page request. Performance degrades linearly with page depth. For large spatial datasets — a national parcel register with millions of features — deep pagination is slow and expensive.</p>
+<p>Cursor-based pagination replaces the offset with a pointer to the last record seen. The next page query uses that pointer as a WHERE clause condition:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb13"><pre class="sourceCode sql code-with-copy"><code class="sourceCode sql"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true" tabindex="-1"></a><span class="co">-- Page 1: return features ordered by parcel_id, limit 100</span></span>
+<span id="cb13-2"><a href="#cb13-2" aria-hidden="true" tabindex="-1"></a><span class="kw">SELECT</span> parcel_id, geom, zoning_code</span>
+<span id="cb13-3"><a href="#cb13-3" aria-hidden="true" tabindex="-1"></a><span class="kw">FROM</span> parcels_with_zoning</span>
+<span id="cb13-4"><a href="#cb13-4" aria-hidden="true" tabindex="-1"></a><span class="kw">WHERE</span> geom &amp;&amp; ST_MakeEnvelope($<span class="dv">1</span>, $<span class="dv">2</span>, $<span class="dv">3</span>, $<span class="dv">4</span>, <span class="dv">4326</span>)</span>
+<span id="cb13-5"><a href="#cb13-5" aria-hidden="true" tabindex="-1"></a><span class="kw">ORDER</span> <span class="kw">BY</span> parcel_id</span>
+<span id="cb13-6"><a href="#cb13-6" aria-hidden="true" tabindex="-1"></a><span class="kw">LIMIT</span> <span class="dv">100</span>;</span>
+<span id="cb13-7"><a href="#cb13-7" aria-hidden="true" tabindex="-1"></a><span class="co">-- → last parcel_id returned: 48372</span></span>
+<span id="cb13-8"><a href="#cb13-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb13-9"><a href="#cb13-9" aria-hidden="true" tabindex="-1"></a><span class="co">-- Page 2: use last parcel_id as cursor</span></span>
+<span id="cb13-10"><a href="#cb13-10" aria-hidden="true" tabindex="-1"></a><span class="kw">SELECT</span> parcel_id, geom, zoning_code</span>
+<span id="cb13-11"><a href="#cb13-11" aria-hidden="true" tabindex="-1"></a><span class="kw">FROM</span> parcels_with_zoning</span>
+<span id="cb13-12"><a href="#cb13-12" aria-hidden="true" tabindex="-1"></a><span class="kw">WHERE</span> geom &amp;&amp; ST_MakeEnvelope($<span class="dv">1</span>, $<span class="dv">2</span>, $<span class="dv">3</span>, $<span class="dv">4</span>, <span class="dv">4326</span>)</span>
+<span id="cb13-13"><a href="#cb13-13" aria-hidden="true" tabindex="-1"></a>  <span class="kw">AND</span> parcel_id <span class="op">&gt;</span> <span class="dv">48372</span>    <span class="co">-- cursor condition</span></span>
+<span id="cb13-14"><a href="#cb13-14" aria-hidden="true" tabindex="-1"></a><span class="kw">ORDER</span> <span class="kw">BY</span> parcel_id</span>
+<span id="cb13-15"><a href="#cb13-15" aria-hidden="true" tabindex="-1"></a><span class="kw">LIMIT</span> <span class="dv">100</span>;</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>Page 2 requires the database to find the first row with <code>parcel_id &gt; 48372</code> using the index on <code>parcel_id</code>, then scan forward 100 rows. The cost is constant regardless of page depth — no rows are discarded.</p>
+<p>The OGC API Features standard supports cursor-based pagination via <code>next</code> links in the response. Include a <code>next</code> URL in your response that encodes the cursor:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb14"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> urllib.parse <span class="im">import</span> urlencode</span>
+<span id="cb14-2"><a href="#cb14-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb14-3"><a href="#cb14-3" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> make_next_link(base_url: <span class="bu">str</span>, cursor: <span class="bu">str</span>, bbox: <span class="bu">str</span>, limit: <span class="bu">int</span>) <span class="op">-&gt;</span> <span class="bu">str</span>:</span>
+<span id="cb14-4"><a href="#cb14-4" aria-hidden="true" tabindex="-1"></a>    params <span class="op">=</span> urlencode({<span class="st">"bbox"</span>: bbox, <span class="st">"limit"</span>: limit, <span class="st">"cursor"</span>: cursor})</span>
+<span id="cb14-5"><a href="#cb14-5" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> <span class="ss">f"</span><span class="sc">{</span>base_url<span class="sc">}</span><span class="ss">?</span><span class="sc">{</span>params<span class="sc">}</span><span class="ss">"</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>The client follows the <code>next</code> link without needing to know anything about cursor encoding. The server decodes the cursor and executes the appropriate WHERE condition.</p>
+</section>
+<section id="rate-limiting-middleware" class="level3" data-number="7.6.2">
+<h3 data-number="7.6.2" class="anchored" data-anchor-id="rate-limiting-middleware"><span class="header-section-number">7.6.2</span> Rate limiting middleware</h3>
+<p>Rate limiting protects the database from clients that send requests faster than your infrastructure can handle. For a public spatial API, rate limiting is not optional — a single misconfigured client polling at 100 req/s can saturate the database for all other clients.</p>
+<p>FastAPI rate limiting is most cleanly implemented as middleware using a token bucket or sliding window counter in Redis:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb15"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb15-1"><a href="#cb15-1" aria-hidden="true" tabindex="-1"></a><span class="co"># middleware.py</span></span>
+<span id="cb15-2"><a href="#cb15-2" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> time</span>
+<span id="cb15-3"><a href="#cb15-3" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> redis.asyncio <span class="im">as</span> redis</span>
+<span id="cb15-4"><a href="#cb15-4" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> fastapi <span class="im">import</span> Request, Response</span>
+<span id="cb15-5"><a href="#cb15-5" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> starlette.middleware.base <span class="im">import</span> BaseHTTPMiddleware</span>
+<span id="cb15-6"><a href="#cb15-6" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> starlette.responses <span class="im">import</span> JSONResponse</span>
+<span id="cb15-7"><a href="#cb15-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb15-8"><a href="#cb15-8" aria-hidden="true" tabindex="-1"></a><span class="kw">class</span> RateLimitMiddleware(BaseHTTPMiddleware):</span>
+<span id="cb15-9"><a href="#cb15-9" aria-hidden="true" tabindex="-1"></a>    <span class="kw">def</span> <span class="fu">__init__</span>(<span class="va">self</span>, app, requests_per_minute: <span class="bu">int</span> <span class="op">=</span> <span class="dv">60</span>):</span>
+<span id="cb15-10"><a href="#cb15-10" aria-hidden="true" tabindex="-1"></a>        <span class="bu">super</span>().<span class="fu">__init__</span>(app)</span>
+<span id="cb15-11"><a href="#cb15-11" aria-hidden="true" tabindex="-1"></a>        <span class="va">self</span>.rpm     <span class="op">=</span> requests_per_minute</span>
+<span id="cb15-12"><a href="#cb15-12" aria-hidden="true" tabindex="-1"></a>        <span class="va">self</span>.window  <span class="op">=</span> <span class="dv">60</span>   <span class="co"># seconds</span></span>
+<span id="cb15-13"><a href="#cb15-13" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb15-14"><a href="#cb15-14" aria-hidden="true" tabindex="-1"></a>    <span class="cf">async</span> <span class="kw">def</span> dispatch(<span class="va">self</span>, request: Request, call_next):</span>
+<span id="cb15-15"><a href="#cb15-15" aria-hidden="true" tabindex="-1"></a>        client_ip <span class="op">=</span> request.client.host</span>
+<span id="cb15-16"><a href="#cb15-16" aria-hidden="true" tabindex="-1"></a>        r <span class="op">=</span> <span class="cf">await</span> get_redis()</span>
+<span id="cb15-17"><a href="#cb15-17" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb15-18"><a href="#cb15-18" aria-hidden="true" tabindex="-1"></a>        key      <span class="op">=</span> <span class="ss">f"ratelimit:</span><span class="sc">{</span>client_ip<span class="sc">}</span><span class="ss">"</span></span>
+<span id="cb15-19"><a href="#cb15-19" aria-hidden="true" tabindex="-1"></a>        current  <span class="op">=</span> <span class="cf">await</span> r.incr(key)</span>
+<span id="cb15-20"><a href="#cb15-20" aria-hidden="true" tabindex="-1"></a>        <span class="cf">if</span> current <span class="op">==</span> <span class="dv">1</span>:</span>
+<span id="cb15-21"><a href="#cb15-21" aria-hidden="true" tabindex="-1"></a>            <span class="cf">await</span> r.expire(key, <span class="va">self</span>.window)</span>
+<span id="cb15-22"><a href="#cb15-22" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb15-23"><a href="#cb15-23" aria-hidden="true" tabindex="-1"></a>        <span class="cf">if</span> current <span class="op">&gt;</span> <span class="va">self</span>.rpm:</span>
+<span id="cb15-24"><a href="#cb15-24" aria-hidden="true" tabindex="-1"></a>            <span class="cf">return</span> JSONResponse(</span>
+<span id="cb15-25"><a href="#cb15-25" aria-hidden="true" tabindex="-1"></a>                status_code<span class="op">=</span><span class="dv">429</span>,</span>
+<span id="cb15-26"><a href="#cb15-26" aria-hidden="true" tabindex="-1"></a>                content<span class="op">=</span>{<span class="st">"detail"</span>: <span class="st">"Rate limit exceeded. Retry after 60 seconds."</span>},</span>
+<span id="cb15-27"><a href="#cb15-27" aria-hidden="true" tabindex="-1"></a>                headers<span class="op">=</span>{<span class="st">"Retry-After"</span>: <span class="st">"60"</span>},</span>
+<span id="cb15-28"><a href="#cb15-28" aria-hidden="true" tabindex="-1"></a>            )</span>
+<span id="cb15-29"><a href="#cb15-29" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb15-30"><a href="#cb15-30" aria-hidden="true" tabindex="-1"></a>        response <span class="op">=</span> <span class="cf">await</span> call_next(request)</span>
+<span id="cb15-31"><a href="#cb15-31" aria-hidden="true" tabindex="-1"></a>        response.headers[<span class="st">"X-RateLimit-Limit"</span>]     <span class="op">=</span> <span class="bu">str</span>(<span class="va">self</span>.rpm)</span>
+<span id="cb15-32"><a href="#cb15-32" aria-hidden="true" tabindex="-1"></a>        response.headers[<span class="st">"X-RateLimit-Remaining"</span>] <span class="op">=</span> <span class="bu">str</span>(<span class="bu">max</span>(<span class="dv">0</span>, <span class="va">self</span>.rpm <span class="op">-</span> current))</span>
+<span id="cb15-33"><a href="#cb15-33" aria-hidden="true" tabindex="-1"></a>        <span class="cf">return</span> response</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>For authenticated APIs, rate limit by API key rather than IP — IP-based limiting breaks clients behind NAT. Expose the limit and remaining count in response headers so well-behaved clients can self-throttle.</p>
+<hr>
+</section>
+</section>
+<section id="what-to-try" class="level2" data-number="7.7">
+<h2 data-number="7.7" class="anchored" data-anchor-id="what-to-try"><span class="header-section-number">7.7</span> What to try</h2>
+<div class="callout callout-style-simple callout-tip callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+<span class="screen-reader-only">Tip</span>What to try
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<ol type="1">
+<li><p><strong>Change <code>CACHE_HIT_RATE</code> from 0.60 to 0.90.</strong> What happens to the request rate at which the cached API saturates? This is the leverage point: improving cache hit rate (through better key design, larger cache, longer TTL) is often more effective than provisioning hardware.</p></li>
+<li><p><strong>Set <code>N_REQUESTS</code> to 500 and <code>UNCACHED_LATENCY_MS</code> to 200.</strong> This models a more expensive spatial query. At what request rate does the uncached API cross 1,000 ms? What cache hit rate would be needed to keep the cached API under 50 ms at the same load?</p></li>
+<li><p><strong>Set <code>CACHE_LATENCY_MS</code> to 50</strong> (simulating a remote Redis instance with network latency). How does the cached API’s performance change at low request rates? At what hit rate does caching stop being beneficial?</p></li>
+</ol>
+</div>
+</div>
+<div class="pyodide-cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb16"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb16-1"><a href="#cb16-1" aria-hidden="true" tabindex="-1"></a><span class="co"># --- Try changing these parameters ---</span></span>
+<span id="cb16-2"><a href="#cb16-2" aria-hidden="true" tabindex="-1"></a>N_REQUESTS          <span class="op">=</span> <span class="dv">200</span>      <span class="co"># number of simulated requests (try 500)</span></span>
+<span id="cb16-3"><a href="#cb16-3" aria-hidden="true" tabindex="-1"></a>CACHE_HIT_RATE      <span class="op">=</span> <span class="fl">0.60</span>     <span class="co"># fraction served from cache (try 0.90)</span></span>
+<span id="cb16-4"><a href="#cb16-4" aria-hidden="true" tabindex="-1"></a>BASE_LATENCY_MS     <span class="op">=</span> <span class="fl">8.0</span>      <span class="co"># database query latency at low load (ms)</span></span>
+<span id="cb16-5"><a href="#cb16-5" aria-hidden="true" tabindex="-1"></a>CACHE_LATENCY_MS    <span class="op">=</span> <span class="fl">2.0</span>      <span class="co"># Redis hit latency (ms, try 50 for remote cache)</span></span>
+<span id="cb16-6"><a href="#cb16-6" aria-hidden="true" tabindex="-1"></a>UNCACHED_LATENCY_MS <span class="op">=</span> <span class="fl">8.0</span>      <span class="co"># alias for base_latency in uncached scenario</span></span>
+<span id="cb16-7"><a href="#cb16-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb16-8"><a href="#cb16-8" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> numpy <span class="im">as</span> np</span>
+<span id="cb16-9"><a href="#cb16-9" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> matplotlib.pyplot <span class="im">as</span> plt</span>
+<span id="cb16-10"><a href="#cb16-10" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb16-11"><a href="#cb16-11" aria-hidden="true" tabindex="-1"></a>np.random.seed(<span class="dv">42</span>)</span>
+<span id="cb16-12"><a href="#cb16-12" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb16-13"><a href="#cb16-13" aria-hidden="true" tabindex="-1"></a>DB_SATURATION_RPS <span class="op">=</span> <span class="dv">300</span></span>
+<span id="cb16-14"><a href="#cb16-14" aria-hidden="true" tabindex="-1"></a>request_rates <span class="op">=</span> np.linspace(<span class="dv">10</span>, <span class="dv">800</span>, <span class="dv">40</span>)</span>
+<span id="cb16-15"><a href="#cb16-15" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb16-16"><a href="#cb16-16" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> mean_response(rps, hit_rate, base_ms, cache_ms):</span>
+<span id="cb16-17"><a href="#cb16-17" aria-hidden="true" tabindex="-1"></a>    db_rps <span class="op">=</span> rps <span class="op">*</span> (<span class="fl">1.0</span> <span class="op">-</span> hit_rate)</span>
+<span id="cb16-18"><a href="#cb16-18" aria-hidden="true" tabindex="-1"></a>    mu  <span class="op">=</span> DB_SATURATION_RPS</span>
+<span id="cb16-19"><a href="#cb16-19" aria-hidden="true" tabindex="-1"></a>    rho <span class="op">=</span> np.clip(db_rps <span class="op">/</span> mu, <span class="dv">0</span>, <span class="fl">0.98</span>)</span>
+<span id="cb16-20"><a href="#cb16-20" aria-hidden="true" tabindex="-1"></a>    t_db <span class="op">=</span> base_ms <span class="op">/</span> (<span class="fl">1.0</span> <span class="op">-</span> rho)</span>
+<span id="cb16-21"><a href="#cb16-21" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> hit_rate <span class="op">*</span> cache_ms <span class="op">+</span> (<span class="fl">1.0</span> <span class="op">-</span> hit_rate) <span class="op">*</span> t_db</span>
+<span id="cb16-22"><a href="#cb16-22" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb16-23"><a href="#cb16-23" aria-hidden="true" tabindex="-1"></a>uncached <span class="op">=</span> mean_response(request_rates, <span class="fl">0.0</span>, BASE_LATENCY_MS, CACHE_LATENCY_MS)</span>
+<span id="cb16-24"><a href="#cb16-24" aria-hidden="true" tabindex="-1"></a>cached   <span class="op">=</span> mean_response(request_rates, CACHE_HIT_RATE, BASE_LATENCY_MS, CACHE_LATENCY_MS)</span>
+<span id="cb16-25"><a href="#cb16-25" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb16-26"><a href="#cb16-26" aria-hidden="true" tabindex="-1"></a>uncached <span class="op">+=</span> np.random.normal(<span class="dv">0</span>, <span class="fl">1.5</span>, <span class="bu">len</span>(request_rates))</span>
+<span id="cb16-27"><a href="#cb16-27" aria-hidden="true" tabindex="-1"></a>cached   <span class="op">+=</span> np.random.normal(<span class="dv">0</span>, <span class="fl">0.4</span>, <span class="bu">len</span>(request_rates))</span>
+<span id="cb16-28"><a href="#cb16-28" aria-hidden="true" tabindex="-1"></a>uncached  <span class="op">=</span> np.clip(uncached, BASE_LATENCY_MS, <span class="va">None</span>)</span>
+<span id="cb16-29"><a href="#cb16-29" aria-hidden="true" tabindex="-1"></a>cached    <span class="op">=</span> np.clip(cached, CACHE_LATENCY_MS, <span class="va">None</span>)</span>
+<span id="cb16-30"><a href="#cb16-30" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb16-31"><a href="#cb16-31" aria-hidden="true" tabindex="-1"></a>fig, ax <span class="op">=</span> plt.subplots(figsize<span class="op">=</span>(<span class="dv">9</span>, <span class="dv">5</span>))</span>
+<span id="cb16-32"><a href="#cb16-32" aria-hidden="true" tabindex="-1"></a>ax.plot(request_rates, uncached, color<span class="op">=</span><span class="st">"#d52a2a"</span>, linewidth<span class="op">=</span><span class="dv">2</span>, label<span class="op">=</span><span class="st">"No cache"</span>)</span>
+<span id="cb16-33"><a href="#cb16-33" aria-hidden="true" tabindex="-1"></a>ax.plot(request_rates, cached,   color<span class="op">=</span><span class="st">"#111111"</span>, linewidth<span class="op">=</span><span class="dv">2</span>,</span>
+<span id="cb16-34"><a href="#cb16-34" aria-hidden="true" tabindex="-1"></a>        label<span class="op">=</span><span class="ss">f"Cache (hit rate=</span><span class="sc">{</span><span class="bu">int</span>(CACHE_HIT_RATE<span class="op">*</span><span class="dv">100</span>)<span class="sc">}</span><span class="ss">%)"</span>)</span>
+<span id="cb16-35"><a href="#cb16-35" aria-hidden="true" tabindex="-1"></a>ax.axvline(DB_SATURATION_RPS, color<span class="op">=</span><span class="st">"#aaaaaa"</span>, linestyle<span class="op">=</span><span class="st">":"</span>, linewidth<span class="op">=</span><span class="dv">1</span>,</span>
+<span id="cb16-36"><a href="#cb16-36" aria-hidden="true" tabindex="-1"></a>           label<span class="op">=</span><span class="ss">f"DB saturation (</span><span class="sc">{</span>DB_SATURATION_RPS<span class="sc">}</span><span class="ss"> req/s)"</span>)</span>
+<span id="cb16-37"><a href="#cb16-37" aria-hidden="true" tabindex="-1"></a>ax.set_xlabel(<span class="st">"Request rate (req/s)"</span>)</span>
+<span id="cb16-38"><a href="#cb16-38" aria-hidden="true" tabindex="-1"></a>ax.set_ylabel(<span class="st">"Mean response time (ms)"</span>)</span>
+<span id="cb16-39"><a href="#cb16-39" aria-hidden="true" tabindex="-1"></a>ax.set_ylim(<span class="dv">0</span>, <span class="va">None</span>)</span>
+<span id="cb16-40"><a href="#cb16-40" aria-hidden="true" tabindex="-1"></a>ax.legend(fontsize<span class="op">=</span><span class="dv">8</span>)</span>
+<span id="cb16-41"><a href="#cb16-41" aria-hidden="true" tabindex="-1"></a>ax.spines[<span class="st">"top"</span>].set_visible(<span class="va">False</span>)</span>
+<span id="cb16-42"><a href="#cb16-42" aria-hidden="true" tabindex="-1"></a>ax.spines[<span class="st">"right"</span>].set_visible(<span class="va">False</span>)</span>
+<span id="cb16-43"><a href="#cb16-43" aria-hidden="true" tabindex="-1"></a>plt.tight_layout()</span>
+<span id="cb16-44"><a href="#cb16-44" aria-hidden="true" tabindex="-1"></a>plt.show()</span>
+<span id="cb16-45"><a href="#cb16-45" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb16-46"><a href="#cb16-46" aria-hidden="true" tabindex="-1"></a><span class="co"># Find where uncached and cached cross 500ms</span></span>
+<span id="cb16-47"><a href="#cb16-47" aria-hidden="true" tabindex="-1"></a>threshold_ms <span class="op">=</span> <span class="dv">500</span></span>
+<span id="cb16-48"><a href="#cb16-48" aria-hidden="true" tabindex="-1"></a>uncached_sat <span class="op">=</span> request_rates[np.searchsorted(uncached, threshold_ms)]</span>
+<span id="cb16-49"><a href="#cb16-49" aria-hidden="true" tabindex="-1"></a>cached_sat   <span class="op">=</span> request_rates[np.searchsorted(cached, threshold_ms)] <span class="op">\</span></span>
+<span id="cb16-50"><a href="#cb16-50" aria-hidden="true" tabindex="-1"></a>               <span class="cf">if</span> cached.<span class="bu">max</span>() <span class="op">&gt;</span> threshold_ms <span class="cf">else</span> <span class="st">"&gt;800"</span></span>
+<span id="cb16-51"><a href="#cb16-51" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f"Uncached exceeds </span><span class="sc">{</span>threshold_ms<span class="sc">}</span><span class="ss">ms at:   </span><span class="sc">{</span>uncached_sat<span class="sc">:.0f}</span><span class="ss"> req/s"</span>)</span>
+<span id="cb16-52"><a href="#cb16-52" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f"Cached  exceeds </span><span class="sc">{</span>threshold_ms<span class="sc">}</span><span class="ss">ms at:    </span><span class="sc">{</span>cached_sat<span class="sc">}</span><span class="ss"> req/s"</span>)</span>
+<span id="cb16-53"><a href="#cb16-53" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f"Cache hit rate: </span><span class="sc">{</span>CACHE_HIT_RATE<span class="sc">:.0%}</span><span class="ss">  |  "</span></span>
+<span id="cb16-54"><a href="#cb16-54" aria-hidden="true" tabindex="-1"></a>      <span class="ss">f"Cache latency: </span><span class="sc">{</span>CACHE_LATENCY_MS<span class="sc">}</span><span class="ss">ms  |  "</span></span>
+<span id="cb16-55"><a href="#cb16-55" aria-hidden="true" tabindex="-1"></a>      <span class="ss">f"DB base latency: </span><span class="sc">{</span>BASE_LATENCY_MS<span class="sc">}</span><span class="ss">ms"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<hr>
+</section>
+<section id="exercises" class="level2" data-number="7.8">
+<h2 data-number="7.8" class="anchored" data-anchor-id="exercises"><span class="header-section-number">7.8</span> Exercises</h2>
+<p><strong>6.1 — Query plan analysis</strong></p>
+<p>You have a table <code>sensor_readings</code> with 50 million rows, a geometry column <code>location</code> (point geometries, SRID 4326), and a GIST index on <code>location</code>. Write three queries:</p>
+<ol type="a">
+<li>Return all readings within a 1 km radius of a given point using <code>ST_DWithin</code>.</li>
+<li>Return the same results using <code>ST_Distance(...) &lt; 1000</code>.</li>
+<li>Run <code>EXPLAIN ANALYZE</code> on both (or reason through the execution plan if you do not have a live database). Which uses the index? Why does <code>ST_DWithin</code> permit index use while <code>ST_Distance</code> in a WHERE clause typically does not?</li>
+</ol>
+<p><strong>6.2 — Materialised view design</strong></p>
+<p>A spatial API serves a <code>/hotspots</code> endpoint that returns the 10 cells in a hexagonal grid with the highest count of incident reports in the past 30 days. The underlying query joins <code>incidents</code> (2 million rows, updated every 15 minutes) with a <code>hex_grid</code> table (50,000 cells).</p>
+<ol type="a">
+<li>Design a materialised view that pre-computes this result. What columns should it contain?</li>
+<li>At what refresh frequency should the view be refreshed, given that the underlying data updates every 15 minutes?</li>
+<li>A stakeholder requests that the endpoint show data “as of the last 30 minutes.” Can this requirement be satisfied with a materialised view? If not, what is the minimum change to the architecture?</li>
+</ol>
+<p><strong>6.3 — Pagination strategy</strong></p>
+<p>An OGC API Features endpoint serves a national parcel dataset with 8 million features. A client needs to download the complete dataset for an analysis job.</p>
+<ol type="a">
+<li>The client uses offset-based pagination with <code>limit=1000</code>. Estimate the relative query cost of the first page vs the 8,000th page (last page). What is the total database work to download the complete dataset?</li>
+<li>Redesign the endpoint to use cursor-based pagination. Write the SQL for page 1 and for the page following a cursor value of <code>parcel_id = 3850271</code>.</li>
+<li>The client needs to download features sorted by area, not by parcel_id. What challenges does cursor-based pagination present for non-unique or non-indexed sort columns?</li>
+</ol>
+<p><strong>6.4 — Rate limit design</strong></p>
+<p>A public spatial API serves three client types: browser map viewers (burst requests, then idle), analysis scripts (sustained high-rate requests for dataset downloads), and monitoring agents (low, regular polling).</p>
+<ol type="a">
+<li>A flat rate limit of 60 requests per minute is applied to all clients. Which client type is most adversely affected? Why?</li>
+<li>Design a tiered rate limit scheme: unauthenticated users, registered API key users, and bulk-download API key users. Specify limits and burst allowances for each tier.</li>
+<li>A client reports that their map viewer gets rate-limited during normal use. Diagnosis shows they are making 3 simultaneous tile requests per map pan. How would you modify the rate limit to accommodate this access pattern without raising the overall limit?</li>
+</ol>
+<hr>
+</section>
+<section id="build-this" class="level2" data-number="7.9">
+<h2 data-number="7.9" class="anchored" data-anchor-id="build-this"><span class="header-section-number">7.9</span> Build this</h2>
+<p>A complete FastAPI application serving parcel features from PostGIS via an OGC API Features-compatible endpoint. The application includes typed Pydantic schemas, a database connection pool, a Redis cache layer, cursor-based pagination, and OGC-compatible response structure with <code>next</code> links.</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb17"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb17-1"><a href="#cb17-1" aria-hidden="true" tabindex="-1"></a><span class="co"># app.py — complete FastAPI spatial service</span></span>
+<span id="cb17-2"><a href="#cb17-2" aria-hidden="true" tabindex="-1"></a><span class="co"># requires: pip install fastapi uvicorn asyncpg redis pydantic</span></span>
+<span id="cb17-3"><a href="#cb17-3" aria-hidden="true" tabindex="-1"></a><span class="co"># requires: PostGIS database with parcels table, Redis at localhost:6379</span></span>
+<span id="cb17-4"><a href="#cb17-4" aria-hidden="true" tabindex="-1"></a><span class="co"># run with: uvicorn app:app --reload</span></span>
+<span id="cb17-5"><a href="#cb17-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb17-6"><a href="#cb17-6" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> __future__ <span class="im">import</span> annotations</span>
+<span id="cb17-7"><a href="#cb17-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb17-8"><a href="#cb17-8" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> json</span>
+<span id="cb17-9"><a href="#cb17-9" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> contextlib <span class="im">import</span> asynccontextmanager</span>
+<span id="cb17-10"><a href="#cb17-10" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> typing <span class="im">import</span> Annotated, Any, Literal, Optional</span>
+<span id="cb17-11"><a href="#cb17-11" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> urllib.parse <span class="im">import</span> urlencode</span>
+<span id="cb17-12"><a href="#cb17-12" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb17-13"><a href="#cb17-13" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> asyncpg</span>
+<span id="cb17-14"><a href="#cb17-14" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> redis.asyncio <span class="im">as</span> aioredis</span>
+<span id="cb17-15"><a href="#cb17-15" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> fastapi <span class="im">import</span> Depends, FastAPI, HTTPException, Query, Request, Response</span>
+<span id="cb17-16"><a href="#cb17-16" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> fastapi.responses <span class="im">import</span> JSONResponse</span>
+<span id="cb17-17"><a href="#cb17-17" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> pydantic <span class="im">import</span> BaseModel, Field</span>
+<span id="cb17-18"><a href="#cb17-18" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> starlette.middleware.base <span class="im">import</span> BaseHTTPMiddleware</span>
+<span id="cb17-19"><a href="#cb17-19" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb17-20"><a href="#cb17-20" aria-hidden="true" tabindex="-1"></a><span class="co"># ---------------------------------------------------------------------------</span></span>
+<span id="cb17-21"><a href="#cb17-21" aria-hidden="true" tabindex="-1"></a><span class="co"># Configuration</span></span>
+<span id="cb17-22"><a href="#cb17-22" aria-hidden="true" tabindex="-1"></a><span class="co"># ---------------------------------------------------------------------------</span></span>
+<span id="cb17-23"><a href="#cb17-23" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb17-24"><a href="#cb17-24" aria-hidden="true" tabindex="-1"></a>DATABASE_URL       <span class="op">=</span> <span class="st">"postgresql://user:pass@localhost:5432/spatial_db"</span></span>
+<span id="cb17-25"><a href="#cb17-25" aria-hidden="true" tabindex="-1"></a>REDIS_URL          <span class="op">=</span> <span class="st">"redis://localhost:6379"</span></span>
+<span id="cb17-26"><a href="#cb17-26" aria-hidden="true" tabindex="-1"></a>CACHE_TTL_S        <span class="op">=</span> <span class="dv">60</span></span>
+<span id="cb17-27"><a href="#cb17-27" aria-hidden="true" tabindex="-1"></a>REQUESTS_PER_MIN   <span class="op">=</span> <span class="dv">120</span></span>
+<span id="cb17-28"><a href="#cb17-28" aria-hidden="true" tabindex="-1"></a>API_TITLE          <span class="op">=</span> <span class="st">"Spatial Parcel Service"</span></span>
+<span id="cb17-29"><a href="#cb17-29" aria-hidden="true" tabindex="-1"></a>API_VERSION        <span class="op">=</span> <span class="st">"1.0.0"</span></span>
+<span id="cb17-30"><a href="#cb17-30" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb17-31"><a href="#cb17-31" aria-hidden="true" tabindex="-1"></a><span class="co"># ---------------------------------------------------------------------------</span></span>
+<span id="cb17-32"><a href="#cb17-32" aria-hidden="true" tabindex="-1"></a><span class="co"># Database and cache pools</span></span>
+<span id="cb17-33"><a href="#cb17-33" aria-hidden="true" tabindex="-1"></a><span class="co"># ---------------------------------------------------------------------------</span></span>
+<span id="cb17-34"><a href="#cb17-34" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb17-35"><a href="#cb17-35" aria-hidden="true" tabindex="-1"></a>db_pool: asyncpg.Pool <span class="op">|</span> <span class="va">None</span>         <span class="op">=</span> <span class="va">None</span></span>
+<span id="cb17-36"><a href="#cb17-36" aria-hidden="true" tabindex="-1"></a>redis_client: aioredis.Redis <span class="op">|</span> <span class="va">None</span>  <span class="op">=</span> <span class="va">None</span></span>
+<span id="cb17-37"><a href="#cb17-37" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb17-38"><a href="#cb17-38" aria-hidden="true" tabindex="-1"></a><span class="at">@asynccontextmanager</span></span>
+<span id="cb17-39"><a href="#cb17-39" aria-hidden="true" tabindex="-1"></a><span class="cf">async</span> <span class="kw">def</span> lifespan(app: FastAPI):</span>
+<span id="cb17-40"><a href="#cb17-40" aria-hidden="true" tabindex="-1"></a>    <span class="kw">global</span> db_pool, redis_client</span>
+<span id="cb17-41"><a href="#cb17-41" aria-hidden="true" tabindex="-1"></a>    db_pool      <span class="op">=</span> <span class="cf">await</span> asyncpg.create_pool(DATABASE_URL, min_size<span class="op">=</span><span class="dv">5</span>, max_size<span class="op">=</span><span class="dv">20</span>)</span>
+<span id="cb17-42"><a href="#cb17-42" aria-hidden="true" tabindex="-1"></a>    redis_client <span class="op">=</span> aioredis.from_url(REDIS_URL, decode_responses<span class="op">=</span><span class="va">True</span>)</span>
+<span id="cb17-43"><a href="#cb17-43" aria-hidden="true" tabindex="-1"></a>    <span class="cf">yield</span></span>
+<span id="cb17-44"><a href="#cb17-44" aria-hidden="true" tabindex="-1"></a>    <span class="cf">await</span> db_pool.close()</span>
+<span id="cb17-45"><a href="#cb17-45" aria-hidden="true" tabindex="-1"></a>    <span class="cf">await</span> redis_client.aclose()</span>
+<span id="cb17-46"><a href="#cb17-46" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb17-47"><a href="#cb17-47" aria-hidden="true" tabindex="-1"></a>app <span class="op">=</span> FastAPI(title<span class="op">=</span>API_TITLE, version<span class="op">=</span>API_VERSION, lifespan<span class="op">=</span>lifespan)</span>
+<span id="cb17-48"><a href="#cb17-48" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb17-49"><a href="#cb17-49" aria-hidden="true" tabindex="-1"></a><span class="cf">async</span> <span class="kw">def</span> get_conn() <span class="op">-&gt;</span> asyncpg.Connection:</span>
+<span id="cb17-50"><a href="#cb17-50" aria-hidden="true" tabindex="-1"></a>    <span class="cf">async</span> <span class="cf">with</span> db_pool.acquire() <span class="im">as</span> conn:</span>
+<span id="cb17-51"><a href="#cb17-51" aria-hidden="true" tabindex="-1"></a>        <span class="cf">yield</span> conn</span>
+<span id="cb17-52"><a href="#cb17-52" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb17-53"><a href="#cb17-53" aria-hidden="true" tabindex="-1"></a><span class="cf">async</span> <span class="kw">def</span> get_redis() <span class="op">-&gt;</span> aioredis.Redis:</span>
+<span id="cb17-54"><a href="#cb17-54" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> redis_client</span>
+<span id="cb17-55"><a href="#cb17-55" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb17-56"><a href="#cb17-56" aria-hidden="true" tabindex="-1"></a>Connection   <span class="op">=</span> Annotated[asyncpg.Connection, Depends(get_conn)]</span>
+<span id="cb17-57"><a href="#cb17-57" aria-hidden="true" tabindex="-1"></a>RedisClient  <span class="op">=</span> Annotated[aioredis.Redis, Depends(get_redis)]</span>
+<span id="cb17-58"><a href="#cb17-58" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb17-59"><a href="#cb17-59" aria-hidden="true" tabindex="-1"></a><span class="co"># ---------------------------------------------------------------------------</span></span>
+<span id="cb17-60"><a href="#cb17-60" aria-hidden="true" tabindex="-1"></a><span class="co"># Rate limiting middleware</span></span>
+<span id="cb17-61"><a href="#cb17-61" aria-hidden="true" tabindex="-1"></a><span class="co"># ---------------------------------------------------------------------------</span></span>
+<span id="cb17-62"><a href="#cb17-62" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb17-63"><a href="#cb17-63" aria-hidden="true" tabindex="-1"></a><span class="kw">class</span> RateLimitMiddleware(BaseHTTPMiddleware):</span>
+<span id="cb17-64"><a href="#cb17-64" aria-hidden="true" tabindex="-1"></a>    <span class="cf">async</span> <span class="kw">def</span> dispatch(<span class="va">self</span>, request: Request, call_next):</span>
+<span id="cb17-65"><a href="#cb17-65" aria-hidden="true" tabindex="-1"></a>        key     <span class="op">=</span> <span class="ss">f"ratelimit:</span><span class="sc">{</span>request<span class="sc">.</span>client<span class="sc">.</span>host<span class="sc">}</span><span class="ss">"</span></span>
+<span id="cb17-66"><a href="#cb17-66" aria-hidden="true" tabindex="-1"></a>        r       <span class="op">=</span> redis_client</span>
+<span id="cb17-67"><a href="#cb17-67" aria-hidden="true" tabindex="-1"></a>        current <span class="op">=</span> <span class="cf">await</span> r.incr(key)</span>
+<span id="cb17-68"><a href="#cb17-68" aria-hidden="true" tabindex="-1"></a>        <span class="cf">if</span> current <span class="op">==</span> <span class="dv">1</span>:</span>
+<span id="cb17-69"><a href="#cb17-69" aria-hidden="true" tabindex="-1"></a>            <span class="cf">await</span> r.expire(key, <span class="dv">60</span>)</span>
+<span id="cb17-70"><a href="#cb17-70" aria-hidden="true" tabindex="-1"></a>        <span class="cf">if</span> current <span class="op">&gt;</span> REQUESTS_PER_MIN:</span>
+<span id="cb17-71"><a href="#cb17-71" aria-hidden="true" tabindex="-1"></a>            <span class="cf">return</span> JSONResponse(</span>
+<span id="cb17-72"><a href="#cb17-72" aria-hidden="true" tabindex="-1"></a>                status_code<span class="op">=</span><span class="dv">429</span>,</span>
+<span id="cb17-73"><a href="#cb17-73" aria-hidden="true" tabindex="-1"></a>                content<span class="op">=</span>{<span class="st">"detail"</span>: <span class="st">"Rate limit exceeded"</span>},</span>
+<span id="cb17-74"><a href="#cb17-74" aria-hidden="true" tabindex="-1"></a>                headers<span class="op">=</span>{<span class="st">"Retry-After"</span>: <span class="st">"60"</span>},</span>
+<span id="cb17-75"><a href="#cb17-75" aria-hidden="true" tabindex="-1"></a>            )</span>
+<span id="cb17-76"><a href="#cb17-76" aria-hidden="true" tabindex="-1"></a>        resp <span class="op">=</span> <span class="cf">await</span> call_next(request)</span>
+<span id="cb17-77"><a href="#cb17-77" aria-hidden="true" tabindex="-1"></a>        resp.headers[<span class="st">"X-RateLimit-Limit"</span>]     <span class="op">=</span> <span class="bu">str</span>(REQUESTS_PER_MIN)</span>
+<span id="cb17-78"><a href="#cb17-78" aria-hidden="true" tabindex="-1"></a>        resp.headers[<span class="st">"X-RateLimit-Remaining"</span>] <span class="op">=</span> <span class="bu">str</span>(<span class="bu">max</span>(<span class="dv">0</span>, REQUESTS_PER_MIN <span class="op">-</span> current))</span>
+<span id="cb17-79"><a href="#cb17-79" aria-hidden="true" tabindex="-1"></a>        <span class="cf">return</span> resp</span>
+<span id="cb17-80"><a href="#cb17-80" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb17-81"><a href="#cb17-81" aria-hidden="true" tabindex="-1"></a>app.add_middleware(RateLimitMiddleware)</span>
+<span id="cb17-82"><a href="#cb17-82" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb17-83"><a href="#cb17-83" aria-hidden="true" tabindex="-1"></a><span class="co"># ---------------------------------------------------------------------------</span></span>
+<span id="cb17-84"><a href="#cb17-84" aria-hidden="true" tabindex="-1"></a><span class="co"># Pydantic schemas (OGC API Features compatible)</span></span>
+<span id="cb17-85"><a href="#cb17-85" aria-hidden="true" tabindex="-1"></a><span class="co"># ---------------------------------------------------------------------------</span></span>
+<span id="cb17-86"><a href="#cb17-86" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb17-87"><a href="#cb17-87" aria-hidden="true" tabindex="-1"></a><span class="kw">class</span> Geometry(BaseModel):</span>
+<span id="cb17-88"><a href="#cb17-88" aria-hidden="true" tabindex="-1"></a>    <span class="bu">type</span>: <span class="bu">str</span></span>
+<span id="cb17-89"><a href="#cb17-89" aria-hidden="true" tabindex="-1"></a>    coordinates: Any</span>
+<span id="cb17-90"><a href="#cb17-90" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb17-91"><a href="#cb17-91" aria-hidden="true" tabindex="-1"></a><span class="kw">class</span> Link(BaseModel):</span>
+<span id="cb17-92"><a href="#cb17-92" aria-hidden="true" tabindex="-1"></a>    href: <span class="bu">str</span></span>
+<span id="cb17-93"><a href="#cb17-93" aria-hidden="true" tabindex="-1"></a>    rel:  <span class="bu">str</span></span>
+<span id="cb17-94"><a href="#cb17-94" aria-hidden="true" tabindex="-1"></a>    <span class="bu">type</span>: <span class="bu">str</span> <span class="op">=</span> <span class="st">"application/geo+json"</span></span>
+<span id="cb17-95"><a href="#cb17-95" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb17-96"><a href="#cb17-96" aria-hidden="true" tabindex="-1"></a><span class="kw">class</span> Feature(BaseModel):</span>
+<span id="cb17-97"><a href="#cb17-97" aria-hidden="true" tabindex="-1"></a>    <span class="bu">type</span>:       Literal[<span class="st">"Feature"</span>] <span class="op">=</span> <span class="st">"Feature"</span></span>
+<span id="cb17-98"><a href="#cb17-98" aria-hidden="true" tabindex="-1"></a>    <span class="bu">id</span>:         Optional[<span class="bu">str</span>]      <span class="op">=</span> <span class="va">None</span></span>
+<span id="cb17-99"><a href="#cb17-99" aria-hidden="true" tabindex="-1"></a>    geometry:   Geometry</span>
+<span id="cb17-100"><a href="#cb17-100" aria-hidden="true" tabindex="-1"></a>    properties: <span class="bu">dict</span>[<span class="bu">str</span>, Any]</span>
+<span id="cb17-101"><a href="#cb17-101" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb17-102"><a href="#cb17-102" aria-hidden="true" tabindex="-1"></a><span class="kw">class</span> FeatureCollection(BaseModel):</span>
+<span id="cb17-103"><a href="#cb17-103" aria-hidden="true" tabindex="-1"></a>    <span class="bu">type</span>:             Literal[<span class="st">"FeatureCollection"</span>] <span class="op">=</span> <span class="st">"FeatureCollection"</span></span>
+<span id="cb17-104"><a href="#cb17-104" aria-hidden="true" tabindex="-1"></a>    features:         <span class="bu">list</span>[Feature]</span>
+<span id="cb17-105"><a href="#cb17-105" aria-hidden="true" tabindex="-1"></a>    numberMatched:    Optional[<span class="bu">int</span>]                <span class="op">=</span> <span class="va">None</span></span>
+<span id="cb17-106"><a href="#cb17-106" aria-hidden="true" tabindex="-1"></a>    numberReturned:   Optional[<span class="bu">int</span>]                <span class="op">=</span> <span class="va">None</span></span>
+<span id="cb17-107"><a href="#cb17-107" aria-hidden="true" tabindex="-1"></a>    links:            <span class="bu">list</span>[Link]                   <span class="op">=</span> Field(default_factory<span class="op">=</span><span class="bu">list</span>)</span>
+<span id="cb17-108"><a href="#cb17-108" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb17-109"><a href="#cb17-109" aria-hidden="true" tabindex="-1"></a>    <span class="kw">class</span> Config:</span>
+<span id="cb17-110"><a href="#cb17-110" aria-hidden="true" tabindex="-1"></a>        populate_by_name <span class="op">=</span> <span class="va">True</span></span>
+<span id="cb17-111"><a href="#cb17-111" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb17-112"><a href="#cb17-112" aria-hidden="true" tabindex="-1"></a><span class="co"># ---------------------------------------------------------------------------</span></span>
+<span id="cb17-113"><a href="#cb17-113" aria-hidden="true" tabindex="-1"></a><span class="co"># OGC API landing page and conformance</span></span>
+<span id="cb17-114"><a href="#cb17-114" aria-hidden="true" tabindex="-1"></a><span class="co"># ---------------------------------------------------------------------------</span></span>
+<span id="cb17-115"><a href="#cb17-115" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb17-116"><a href="#cb17-116" aria-hidden="true" tabindex="-1"></a><span class="at">@app.get</span>(<span class="st">"/"</span>, summary<span class="op">=</span><span class="st">"Landing page"</span>)</span>
+<span id="cb17-117"><a href="#cb17-117" aria-hidden="true" tabindex="-1"></a><span class="cf">async</span> <span class="kw">def</span> landing_page(request: Request):</span>
+<span id="cb17-118"><a href="#cb17-118" aria-hidden="true" tabindex="-1"></a>    base <span class="op">=</span> <span class="bu">str</span>(request.base_url).rstrip(<span class="st">"/"</span>)</span>
+<span id="cb17-119"><a href="#cb17-119" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> {</span>
+<span id="cb17-120"><a href="#cb17-120" aria-hidden="true" tabindex="-1"></a>        <span class="st">"title"</span>:       API_TITLE,</span>
+<span id="cb17-121"><a href="#cb17-121" aria-hidden="true" tabindex="-1"></a>        <span class="st">"description"</span>: <span class="st">"OGC API Features — parcel and zoning data"</span>,</span>
+<span id="cb17-122"><a href="#cb17-122" aria-hidden="true" tabindex="-1"></a>        <span class="st">"links"</span>: [</span>
+<span id="cb17-123"><a href="#cb17-123" aria-hidden="true" tabindex="-1"></a>            {<span class="st">"href"</span>: <span class="ss">f"</span><span class="sc">{</span>base<span class="sc">}</span><span class="ss">/conformance"</span>,           <span class="st">"rel"</span>: <span class="st">"conformance"</span>},</span>
+<span id="cb17-124"><a href="#cb17-124" aria-hidden="true" tabindex="-1"></a>            {<span class="st">"href"</span>: <span class="ss">f"</span><span class="sc">{</span>base<span class="sc">}</span><span class="ss">/collections"</span>,           <span class="st">"rel"</span>: <span class="st">"data"</span>},</span>
+<span id="cb17-125"><a href="#cb17-125" aria-hidden="true" tabindex="-1"></a>            {<span class="st">"href"</span>: <span class="ss">f"</span><span class="sc">{</span>base<span class="sc">}</span><span class="ss">/openapi.json"</span>,          <span class="st">"rel"</span>: <span class="st">"service-desc"</span>},</span>
+<span id="cb17-126"><a href="#cb17-126" aria-hidden="true" tabindex="-1"></a>        ],</span>
+<span id="cb17-127"><a href="#cb17-127" aria-hidden="true" tabindex="-1"></a>    }</span>
+<span id="cb17-128"><a href="#cb17-128" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb17-129"><a href="#cb17-129" aria-hidden="true" tabindex="-1"></a><span class="at">@app.get</span>(<span class="st">"/conformance"</span>, summary<span class="op">=</span><span class="st">"OGC conformance classes"</span>)</span>
+<span id="cb17-130"><a href="#cb17-130" aria-hidden="true" tabindex="-1"></a><span class="cf">async</span> <span class="kw">def</span> conformance():</span>
+<span id="cb17-131"><a href="#cb17-131" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> {</span>
+<span id="cb17-132"><a href="#cb17-132" aria-hidden="true" tabindex="-1"></a>        <span class="st">"conformsTo"</span>: [</span>
+<span id="cb17-133"><a href="#cb17-133" aria-hidden="true" tabindex="-1"></a>            <span class="st">"http://www.opengis.net/spec/ogcapi-features-1/1.0/conf/core"</span>,</span>
+<span id="cb17-134"><a href="#cb17-134" aria-hidden="true" tabindex="-1"></a>            <span class="st">"http://www.opengis.net/spec/ogcapi-features-1/1.0/conf/geojson"</span>,</span>
+<span id="cb17-135"><a href="#cb17-135" aria-hidden="true" tabindex="-1"></a>        ]</span>
+<span id="cb17-136"><a href="#cb17-136" aria-hidden="true" tabindex="-1"></a>    }</span>
+<span id="cb17-137"><a href="#cb17-137" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb17-138"><a href="#cb17-138" aria-hidden="true" tabindex="-1"></a><span class="at">@app.get</span>(<span class="st">"/collections"</span>, summary<span class="op">=</span><span class="st">"Available feature collections"</span>)</span>
+<span id="cb17-139"><a href="#cb17-139" aria-hidden="true" tabindex="-1"></a><span class="cf">async</span> <span class="kw">def</span> collections(request: Request):</span>
+<span id="cb17-140"><a href="#cb17-140" aria-hidden="true" tabindex="-1"></a>    base <span class="op">=</span> <span class="bu">str</span>(request.base_url).rstrip(<span class="st">"/"</span>)</span>
+<span id="cb17-141"><a href="#cb17-141" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> {</span>
+<span id="cb17-142"><a href="#cb17-142" aria-hidden="true" tabindex="-1"></a>        <span class="st">"collections"</span>: [</span>
+<span id="cb17-143"><a href="#cb17-143" aria-hidden="true" tabindex="-1"></a>            {</span>
+<span id="cb17-144"><a href="#cb17-144" aria-hidden="true" tabindex="-1"></a>                <span class="st">"id"</span>:    <span class="st">"parcels"</span>,</span>
+<span id="cb17-145"><a href="#cb17-145" aria-hidden="true" tabindex="-1"></a>                <span class="st">"title"</span>: <span class="st">"Land parcels with zoning"</span>,</span>
+<span id="cb17-146"><a href="#cb17-146" aria-hidden="true" tabindex="-1"></a>                <span class="st">"links"</span>: [{<span class="st">"href"</span>: <span class="ss">f"</span><span class="sc">{</span>base<span class="sc">}</span><span class="ss">/collections/parcels/items"</span>,</span>
+<span id="cb17-147"><a href="#cb17-147" aria-hidden="true" tabindex="-1"></a>                           <span class="st">"rel"</span>: <span class="st">"items"</span>, <span class="st">"type"</span>: <span class="st">"application/geo+json"</span>}],</span>
+<span id="cb17-148"><a href="#cb17-148" aria-hidden="true" tabindex="-1"></a>            }</span>
+<span id="cb17-149"><a href="#cb17-149" aria-hidden="true" tabindex="-1"></a>        ]</span>
+<span id="cb17-150"><a href="#cb17-150" aria-hidden="true" tabindex="-1"></a>    }</span>
+<span id="cb17-151"><a href="#cb17-151" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb17-152"><a href="#cb17-152" aria-hidden="true" tabindex="-1"></a><span class="co"># ---------------------------------------------------------------------------</span></span>
+<span id="cb17-153"><a href="#cb17-153" aria-hidden="true" tabindex="-1"></a><span class="co"># Core endpoint: /features/within (bounding-box feature query)</span></span>
+<span id="cb17-154"><a href="#cb17-154" aria-hidden="true" tabindex="-1"></a><span class="co"># ---------------------------------------------------------------------------</span></span>
+<span id="cb17-155"><a href="#cb17-155" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb17-156"><a href="#cb17-156" aria-hidden="true" tabindex="-1"></a><span class="at">@app.get</span>(</span>
+<span id="cb17-157"><a href="#cb17-157" aria-hidden="true" tabindex="-1"></a>    <span class="st">"/collections/parcels/items"</span>,</span>
+<span id="cb17-158"><a href="#cb17-158" aria-hidden="true" tabindex="-1"></a>    response_model<span class="op">=</span>FeatureCollection,</span>
+<span id="cb17-159"><a href="#cb17-159" aria-hidden="true" tabindex="-1"></a>    summary<span class="op">=</span><span class="st">"Return parcels within a bounding box (OGC API Features /items)"</span>,</span>
+<span id="cb17-160"><a href="#cb17-160" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb17-161"><a href="#cb17-161" aria-hidden="true" tabindex="-1"></a><span class="cf">async</span> <span class="kw">def</span> get_features_within(</span>
+<span id="cb17-162"><a href="#cb17-162" aria-hidden="true" tabindex="-1"></a>    request:  Request,</span>
+<span id="cb17-163"><a href="#cb17-163" aria-hidden="true" tabindex="-1"></a>    response: Response,</span>
+<span id="cb17-164"><a href="#cb17-164" aria-hidden="true" tabindex="-1"></a>    conn:     Connection,</span>
+<span id="cb17-165"><a href="#cb17-165" aria-hidden="true" tabindex="-1"></a>    r:        RedisClient,</span>
+<span id="cb17-166"><a href="#cb17-166" aria-hidden="true" tabindex="-1"></a>    bbox: <span class="bu">str</span> <span class="op">=</span> Query(</span>
+<span id="cb17-167"><a href="#cb17-167" aria-hidden="true" tabindex="-1"></a>        ...,</span>
+<span id="cb17-168"><a href="#cb17-168" aria-hidden="true" tabindex="-1"></a>        description<span class="op">=</span><span class="st">"minLon,minLat,maxLon,maxLat in EPSG:4326"</span>,</span>
+<span id="cb17-169"><a href="#cb17-169" aria-hidden="true" tabindex="-1"></a>        example<span class="op">=</span><span class="st">"-122.45,37.75,-122.40,37.78"</span>,</span>
+<span id="cb17-170"><a href="#cb17-170" aria-hidden="true" tabindex="-1"></a>    ),</span>
+<span id="cb17-171"><a href="#cb17-171" aria-hidden="true" tabindex="-1"></a>    limit:  <span class="bu">int</span>          <span class="op">=</span> Query(<span class="dv">100</span>, ge<span class="op">=</span><span class="dv">1</span>, le<span class="op">=</span><span class="dv">1000</span>),</span>
+<span id="cb17-172"><a href="#cb17-172" aria-hidden="true" tabindex="-1"></a>    cursor: Optional[<span class="bu">str</span>] <span class="op">=</span> Query(<span class="va">None</span>, description<span class="op">=</span><span class="st">"Pagination cursor (parcel_id)"</span>),</span>
+<span id="cb17-173"><a href="#cb17-173" aria-hidden="true" tabindex="-1"></a>):</span>
+<span id="cb17-174"><a href="#cb17-174" aria-hidden="true" tabindex="-1"></a>    <span class="co"># Parse and validate bbox</span></span>
+<span id="cb17-175"><a href="#cb17-175" aria-hidden="true" tabindex="-1"></a>    <span class="cf">try</span>:</span>
+<span id="cb17-176"><a href="#cb17-176" aria-hidden="true" tabindex="-1"></a>        min_lon, min_lat, max_lon, max_lat <span class="op">=</span> <span class="bu">map</span>(<span class="bu">float</span>, bbox.split(<span class="st">","</span>))</span>
+<span id="cb17-177"><a href="#cb17-177" aria-hidden="true" tabindex="-1"></a>    <span class="cf">except</span> <span class="pp">ValueError</span>:</span>
+<span id="cb17-178"><a href="#cb17-178" aria-hidden="true" tabindex="-1"></a>        <span class="cf">raise</span> HTTPException(status_code<span class="op">=</span><span class="dv">400</span>, detail<span class="op">=</span><span class="st">"Invalid bbox: expected minLon,minLat,maxLon,maxLat"</span>)</span>
+<span id="cb17-179"><a href="#cb17-179" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb17-180"><a href="#cb17-180" aria-hidden="true" tabindex="-1"></a>    <span class="cf">if</span> <span class="kw">not</span> (<span class="op">-</span><span class="dv">180</span> <span class="op">&lt;=</span> min_lon <span class="op">&lt;</span> max_lon <span class="op">&lt;=</span> <span class="dv">180</span> <span class="kw">and</span> <span class="op">-</span><span class="dv">90</span> <span class="op">&lt;=</span> min_lat <span class="op">&lt;</span> max_lat <span class="op">&lt;=</span> <span class="dv">90</span>):</span>
+<span id="cb17-181"><a href="#cb17-181" aria-hidden="true" tabindex="-1"></a>        <span class="cf">raise</span> HTTPException(status_code<span class="op">=</span><span class="dv">400</span>, detail<span class="op">=</span><span class="st">"bbox values out of range"</span>)</span>
+<span id="cb17-182"><a href="#cb17-182" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb17-183"><a href="#cb17-183" aria-hidden="true" tabindex="-1"></a>    <span class="co"># Cache key</span></span>
+<span id="cb17-184"><a href="#cb17-184" aria-hidden="true" tabindex="-1"></a>    cursor_part <span class="op">=</span> <span class="ss">f":cursor:</span><span class="sc">{</span>cursor<span class="sc">}</span><span class="ss">"</span> <span class="cf">if</span> cursor <span class="cf">else</span> <span class="st">""</span></span>
+<span id="cb17-185"><a href="#cb17-185" aria-hidden="true" tabindex="-1"></a>    cache_key   <span class="op">=</span> <span class="ss">f"parcels:</span><span class="sc">{</span><span class="bu">round</span>(min_lon,<span class="dv">4</span>)<span class="sc">}</span><span class="ss">:</span><span class="sc">{</span><span class="bu">round</span>(min_lat,<span class="dv">4</span>)<span class="sc">}</span><span class="ss">:</span><span class="sc">{</span><span class="bu">round</span>(max_lon,<span class="dv">4</span>)<span class="sc">}</span><span class="ss">:</span><span class="sc">{</span><span class="bu">round</span>(max_lat,<span class="dv">4</span>)<span class="sc">}</span><span class="ss">:limit:</span><span class="sc">{</span>limit<span class="sc">}{</span>cursor_part<span class="sc">}</span><span class="ss">"</span></span>
+<span id="cb17-186"><a href="#cb17-186" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb17-187"><a href="#cb17-187" aria-hidden="true" tabindex="-1"></a>    <span class="co"># Cache lookup</span></span>
+<span id="cb17-188"><a href="#cb17-188" aria-hidden="true" tabindex="-1"></a>    cached <span class="op">=</span> <span class="cf">await</span> r.get(cache_key)</span>
+<span id="cb17-189"><a href="#cb17-189" aria-hidden="true" tabindex="-1"></a>    <span class="cf">if</span> cached:</span>
+<span id="cb17-190"><a href="#cb17-190" aria-hidden="true" tabindex="-1"></a>        response.headers[<span class="st">"X-Cache"</span>] <span class="op">=</span> <span class="st">"HIT"</span></span>
+<span id="cb17-191"><a href="#cb17-191" aria-hidden="true" tabindex="-1"></a>        response.headers[<span class="st">"Cache-Control"</span>] <span class="op">=</span> <span class="ss">f"public, max-age=</span><span class="sc">{</span>CACHE_TTL_S<span class="sc">}</span><span class="ss">"</span></span>
+<span id="cb17-192"><a href="#cb17-192" aria-hidden="true" tabindex="-1"></a>        <span class="cf">return</span> FeatureCollection(<span class="op">**</span>json.loads(cached))</span>
+<span id="cb17-193"><a href="#cb17-193" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb17-194"><a href="#cb17-194" aria-hidden="true" tabindex="-1"></a>    response.headers[<span class="st">"X-Cache"</span>] <span class="op">=</span> <span class="st">"MISS"</span></span>
+<span id="cb17-195"><a href="#cb17-195" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb17-196"><a href="#cb17-196" aria-hidden="true" tabindex="-1"></a>    <span class="co"># Database query — cursor-based pagination</span></span>
+<span id="cb17-197"><a href="#cb17-197" aria-hidden="true" tabindex="-1"></a>    <span class="cf">if</span> cursor:</span>
+<span id="cb17-198"><a href="#cb17-198" aria-hidden="true" tabindex="-1"></a>        <span class="cf">try</span>:</span>
+<span id="cb17-199"><a href="#cb17-199" aria-hidden="true" tabindex="-1"></a>            cursor_id <span class="op">=</span> <span class="bu">int</span>(cursor)</span>
+<span id="cb17-200"><a href="#cb17-200" aria-hidden="true" tabindex="-1"></a>        <span class="cf">except</span> <span class="pp">ValueError</span>:</span>
+<span id="cb17-201"><a href="#cb17-201" aria-hidden="true" tabindex="-1"></a>            <span class="cf">raise</span> HTTPException(status_code<span class="op">=</span><span class="dv">400</span>, detail<span class="op">=</span><span class="st">"Invalid cursor"</span>)</span>
+<span id="cb17-202"><a href="#cb17-202" aria-hidden="true" tabindex="-1"></a>        rows <span class="op">=</span> <span class="cf">await</span> conn.fetch(</span>
+<span id="cb17-203"><a href="#cb17-203" aria-hidden="true" tabindex="-1"></a>            <span class="st">"""</span></span>
+<span id="cb17-204"><a href="#cb17-204" aria-hidden="true" tabindex="-1"></a><span class="st">            SELECT parcel_id, zoning_code, area_m2,</span></span>
+<span id="cb17-205"><a href="#cb17-205" aria-hidden="true" tabindex="-1"></a><span class="st">                   ST_AsGeoJSON(geom)::json AS geometry</span></span>
+<span id="cb17-206"><a href="#cb17-206" aria-hidden="true" tabindex="-1"></a><span class="st">            FROM parcels_with_zoning</span></span>
+<span id="cb17-207"><a href="#cb17-207" aria-hidden="true" tabindex="-1"></a><span class="st">            WHERE geom &amp;&amp; ST_MakeEnvelope($1, $2, $3, $4, 4326)</span></span>
+<span id="cb17-208"><a href="#cb17-208" aria-hidden="true" tabindex="-1"></a><span class="st">              AND parcel_id &gt; $5</span></span>
+<span id="cb17-209"><a href="#cb17-209" aria-hidden="true" tabindex="-1"></a><span class="st">            ORDER BY parcel_id</span></span>
+<span id="cb17-210"><a href="#cb17-210" aria-hidden="true" tabindex="-1"></a><span class="st">            LIMIT $6</span></span>
+<span id="cb17-211"><a href="#cb17-211" aria-hidden="true" tabindex="-1"></a><span class="st">            """</span>,</span>
+<span id="cb17-212"><a href="#cb17-212" aria-hidden="true" tabindex="-1"></a>            min_lon, min_lat, max_lon, max_lat, cursor_id, limit,</span>
+<span id="cb17-213"><a href="#cb17-213" aria-hidden="true" tabindex="-1"></a>        )</span>
+<span id="cb17-214"><a href="#cb17-214" aria-hidden="true" tabindex="-1"></a>    <span class="cf">else</span>:</span>
+<span id="cb17-215"><a href="#cb17-215" aria-hidden="true" tabindex="-1"></a>        rows <span class="op">=</span> <span class="cf">await</span> conn.fetch(</span>
+<span id="cb17-216"><a href="#cb17-216" aria-hidden="true" tabindex="-1"></a>            <span class="st">"""</span></span>
+<span id="cb17-217"><a href="#cb17-217" aria-hidden="true" tabindex="-1"></a><span class="st">            SELECT parcel_id, zoning_code, area_m2,</span></span>
+<span id="cb17-218"><a href="#cb17-218" aria-hidden="true" tabindex="-1"></a><span class="st">                   ST_AsGeoJSON(geom)::json AS geometry</span></span>
+<span id="cb17-219"><a href="#cb17-219" aria-hidden="true" tabindex="-1"></a><span class="st">            FROM parcels_with_zoning</span></span>
+<span id="cb17-220"><a href="#cb17-220" aria-hidden="true" tabindex="-1"></a><span class="st">            WHERE geom &amp;&amp; ST_MakeEnvelope($1, $2, $3, $4, 4326)</span></span>
+<span id="cb17-221"><a href="#cb17-221" aria-hidden="true" tabindex="-1"></a><span class="st">            ORDER BY parcel_id</span></span>
+<span id="cb17-222"><a href="#cb17-222" aria-hidden="true" tabindex="-1"></a><span class="st">            LIMIT $2</span></span>
+<span id="cb17-223"><a href="#cb17-223" aria-hidden="true" tabindex="-1"></a><span class="st">            """</span>,</span>
+<span id="cb17-224"><a href="#cb17-224" aria-hidden="true" tabindex="-1"></a>            min_lon, min_lat, max_lon, max_lat, limit,</span>
+<span id="cb17-225"><a href="#cb17-225" aria-hidden="true" tabindex="-1"></a>        )</span>
+<span id="cb17-226"><a href="#cb17-226" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb17-227"><a href="#cb17-227" aria-hidden="true" tabindex="-1"></a>    <span class="co"># Total count (for numberMatched; run concurrently in production)</span></span>
+<span id="cb17-228"><a href="#cb17-228" aria-hidden="true" tabindex="-1"></a>    count_row <span class="op">=</span> <span class="cf">await</span> conn.fetchrow(</span>
+<span id="cb17-229"><a href="#cb17-229" aria-hidden="true" tabindex="-1"></a>        <span class="st">"""</span></span>
+<span id="cb17-230"><a href="#cb17-230" aria-hidden="true" tabindex="-1"></a><span class="st">        SELECT COUNT(*) AS n</span></span>
+<span id="cb17-231"><a href="#cb17-231" aria-hidden="true" tabindex="-1"></a><span class="st">        FROM parcels_with_zoning</span></span>
+<span id="cb17-232"><a href="#cb17-232" aria-hidden="true" tabindex="-1"></a><span class="st">        WHERE geom &amp;&amp; ST_MakeEnvelope($1, $2, $3, $4, 4326)</span></span>
+<span id="cb17-233"><a href="#cb17-233" aria-hidden="true" tabindex="-1"></a><span class="st">        """</span>,</span>
+<span id="cb17-234"><a href="#cb17-234" aria-hidden="true" tabindex="-1"></a>        min_lon, min_lat, max_lon, max_lat,</span>
+<span id="cb17-235"><a href="#cb17-235" aria-hidden="true" tabindex="-1"></a>    )</span>
+<span id="cb17-236"><a href="#cb17-236" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb17-237"><a href="#cb17-237" aria-hidden="true" tabindex="-1"></a>    features <span class="op">=</span> [</span>
+<span id="cb17-238"><a href="#cb17-238" aria-hidden="true" tabindex="-1"></a>        Feature(</span>
+<span id="cb17-239"><a href="#cb17-239" aria-hidden="true" tabindex="-1"></a>            <span class="bu">id</span><span class="op">=</span><span class="bu">str</span>(row[<span class="st">"parcel_id"</span>]),</span>
+<span id="cb17-240"><a href="#cb17-240" aria-hidden="true" tabindex="-1"></a>            geometry<span class="op">=</span>Geometry(<span class="op">**</span>row[<span class="st">"geometry"</span>]),</span>
+<span id="cb17-241"><a href="#cb17-241" aria-hidden="true" tabindex="-1"></a>            properties<span class="op">=</span>{</span>
+<span id="cb17-242"><a href="#cb17-242" aria-hidden="true" tabindex="-1"></a>                <span class="st">"parcel_id"</span>:   row[<span class="st">"parcel_id"</span>],</span>
+<span id="cb17-243"><a href="#cb17-243" aria-hidden="true" tabindex="-1"></a>                <span class="st">"zoning_code"</span>: row[<span class="st">"zoning_code"</span>],</span>
+<span id="cb17-244"><a href="#cb17-244" aria-hidden="true" tabindex="-1"></a>                <span class="st">"area_m2"</span>:     <span class="bu">float</span>(row[<span class="st">"area_m2"</span>]),</span>
+<span id="cb17-245"><a href="#cb17-245" aria-hidden="true" tabindex="-1"></a>            },</span>
+<span id="cb17-246"><a href="#cb17-246" aria-hidden="true" tabindex="-1"></a>        )</span>
+<span id="cb17-247"><a href="#cb17-247" aria-hidden="true" tabindex="-1"></a>        <span class="cf">for</span> row <span class="kw">in</span> rows</span>
+<span id="cb17-248"><a href="#cb17-248" aria-hidden="true" tabindex="-1"></a>    ]</span>
+<span id="cb17-249"><a href="#cb17-249" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb17-250"><a href="#cb17-250" aria-hidden="true" tabindex="-1"></a>    <span class="co"># Build next link if there are more results</span></span>
+<span id="cb17-251"><a href="#cb17-251" aria-hidden="true" tabindex="-1"></a>    links <span class="op">=</span> []</span>
+<span id="cb17-252"><a href="#cb17-252" aria-hidden="true" tabindex="-1"></a>    base  <span class="op">=</span> <span class="bu">str</span>(request.base_url).rstrip(<span class="st">"/"</span>)</span>
+<span id="cb17-253"><a href="#cb17-253" aria-hidden="true" tabindex="-1"></a>    <span class="cf">if</span> <span class="bu">len</span>(rows) <span class="op">==</span> limit:</span>
+<span id="cb17-254"><a href="#cb17-254" aria-hidden="true" tabindex="-1"></a>        next_cursor <span class="op">=</span> <span class="bu">str</span>(rows[<span class="op">-</span><span class="dv">1</span>][<span class="st">"parcel_id"</span>])</span>
+<span id="cb17-255"><a href="#cb17-255" aria-hidden="true" tabindex="-1"></a>        next_params <span class="op">=</span> urlencode({<span class="st">"bbox"</span>: bbox, <span class="st">"limit"</span>: limit, <span class="st">"cursor"</span>: next_cursor})</span>
+<span id="cb17-256"><a href="#cb17-256" aria-hidden="true" tabindex="-1"></a>        links.append(Link(</span>
+<span id="cb17-257"><a href="#cb17-257" aria-hidden="true" tabindex="-1"></a>            href<span class="op">=</span><span class="ss">f"</span><span class="sc">{</span>base<span class="sc">}</span><span class="ss">/collections/parcels/items?</span><span class="sc">{</span>next_params<span class="sc">}</span><span class="ss">"</span>,</span>
+<span id="cb17-258"><a href="#cb17-258" aria-hidden="true" tabindex="-1"></a>            rel<span class="op">=</span><span class="st">"next"</span>,</span>
+<span id="cb17-259"><a href="#cb17-259" aria-hidden="true" tabindex="-1"></a>        ))</span>
+<span id="cb17-260"><a href="#cb17-260" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb17-261"><a href="#cb17-261" aria-hidden="true" tabindex="-1"></a>    result <span class="op">=</span> FeatureCollection(</span>
+<span id="cb17-262"><a href="#cb17-262" aria-hidden="true" tabindex="-1"></a>        features<span class="op">=</span>features,</span>
+<span id="cb17-263"><a href="#cb17-263" aria-hidden="true" tabindex="-1"></a>        numberMatched<span class="op">=</span>count_row[<span class="st">"n"</span>],</span>
+<span id="cb17-264"><a href="#cb17-264" aria-hidden="true" tabindex="-1"></a>        numberReturned<span class="op">=</span><span class="bu">len</span>(features),</span>
+<span id="cb17-265"><a href="#cb17-265" aria-hidden="true" tabindex="-1"></a>        links<span class="op">=</span>links,</span>
+<span id="cb17-266"><a href="#cb17-266" aria-hidden="true" tabindex="-1"></a>    )</span>
+<span id="cb17-267"><a href="#cb17-267" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb17-268"><a href="#cb17-268" aria-hidden="true" tabindex="-1"></a>    <span class="co"># Write to cache</span></span>
+<span id="cb17-269"><a href="#cb17-269" aria-hidden="true" tabindex="-1"></a>    <span class="cf">await</span> r.<span class="bu">set</span>(cache_key, result.model_dump_json(), ex<span class="op">=</span>CACHE_TTL_S)</span>
+<span id="cb17-270"><a href="#cb17-270" aria-hidden="true" tabindex="-1"></a>    response.headers[<span class="st">"Cache-Control"</span>] <span class="op">=</span> <span class="ss">f"public, max-age=</span><span class="sc">{</span>CACHE_TTL_S<span class="sc">}</span><span class="ss">"</span></span>
+<span id="cb17-271"><a href="#cb17-271" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb17-272"><a href="#cb17-272" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> result</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>The database setup this service expects:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb18"><pre class="sourceCode sql code-with-copy"><code class="sourceCode sql"><span id="cb18-1"><a href="#cb18-1" aria-hidden="true" tabindex="-1"></a><span class="co">-- Base tables (simplified)</span></span>
+<span id="cb18-2"><a href="#cb18-2" aria-hidden="true" tabindex="-1"></a><span class="kw">CREATE</span> <span class="kw">TABLE</span> parcels (</span>
+<span id="cb18-3"><a href="#cb18-3" aria-hidden="true" tabindex="-1"></a>    parcel_id  BIGINT <span class="kw">PRIMARY</span> <span class="kw">KEY</span>,</span>
+<span id="cb18-4"><a href="#cb18-4" aria-hidden="true" tabindex="-1"></a>    geom       GEOMETRY(POLYGON, <span class="dv">4326</span>) <span class="kw">NOT</span> <span class="kw">NULL</span>,</span>
+<span id="cb18-5"><a href="#cb18-5" aria-hidden="true" tabindex="-1"></a>    area_m2    <span class="dt">NUMERIC</span>(<span class="dv">12</span>, <span class="dv">2</span>)</span>
+<span id="cb18-6"><a href="#cb18-6" aria-hidden="true" tabindex="-1"></a>);</span>
+<span id="cb18-7"><a href="#cb18-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb18-8"><a href="#cb18-8" aria-hidden="true" tabindex="-1"></a><span class="kw">CREATE</span> <span class="kw">TABLE</span> zoning (</span>
+<span id="cb18-9"><a href="#cb18-9" aria-hidden="true" tabindex="-1"></a>    zone_id              SERIAL <span class="kw">PRIMARY</span> <span class="kw">KEY</span>,</span>
+<span id="cb18-10"><a href="#cb18-10" aria-hidden="true" tabindex="-1"></a>    geom                 GEOMETRY(MULTIPOLYGON, <span class="dv">4326</span>) <span class="kw">NOT</span> <span class="kw">NULL</span>,</span>
+<span id="cb18-11"><a href="#cb18-11" aria-hidden="true" tabindex="-1"></a>    zoning_code          TEXT <span class="kw">NOT</span> <span class="kw">NULL</span>,</span>
+<span id="cb18-12"><a href="#cb18-12" aria-hidden="true" tabindex="-1"></a>    zoning_description   TEXT</span>
+<span id="cb18-13"><a href="#cb18-13" aria-hidden="true" tabindex="-1"></a>);</span>
+<span id="cb18-14"><a href="#cb18-14" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb18-15"><a href="#cb18-15" aria-hidden="true" tabindex="-1"></a><span class="kw">CREATE</span> <span class="kw">INDEX</span> idx_parcels_geom <span class="kw">ON</span> parcels <span class="kw">USING</span> GIST (geom);</span>
+<span id="cb18-16"><a href="#cb18-16" aria-hidden="true" tabindex="-1"></a><span class="kw">CREATE</span> <span class="kw">INDEX</span> idx_zoning_geom  <span class="kw">ON</span> zoning  <span class="kw">USING</span> GIST (geom);</span>
+<span id="cb18-17"><a href="#cb18-17" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb18-18"><a href="#cb18-18" aria-hidden="true" tabindex="-1"></a><span class="co">-- Materialised view: pre-computed join</span></span>
+<span id="cb18-19"><a href="#cb18-19" aria-hidden="true" tabindex="-1"></a><span class="kw">CREATE</span> <span class="kw">MATERIALIZED</span> <span class="kw">VIEW</span> parcels_with_zoning <span class="kw">AS</span></span>
+<span id="cb18-20"><a href="#cb18-20" aria-hidden="true" tabindex="-1"></a><span class="kw">SELECT</span></span>
+<span id="cb18-21"><a href="#cb18-21" aria-hidden="true" tabindex="-1"></a>    p.parcel_id,</span>
+<span id="cb18-22"><a href="#cb18-22" aria-hidden="true" tabindex="-1"></a>    p.geom,</span>
+<span id="cb18-23"><a href="#cb18-23" aria-hidden="true" tabindex="-1"></a>    p.area_m2,</span>
+<span id="cb18-24"><a href="#cb18-24" aria-hidden="true" tabindex="-1"></a>    z.zoning_code,</span>
+<span id="cb18-25"><a href="#cb18-25" aria-hidden="true" tabindex="-1"></a>    z.zoning_description</span>
+<span id="cb18-26"><a href="#cb18-26" aria-hidden="true" tabindex="-1"></a><span class="kw">FROM</span> parcels p</span>
+<span id="cb18-27"><a href="#cb18-27" aria-hidden="true" tabindex="-1"></a><span class="kw">JOIN</span> zoning z <span class="kw">ON</span> ST_Within(p.geom, z.geom)</span>
+<span id="cb18-28"><a href="#cb18-28" aria-hidden="true" tabindex="-1"></a><span class="kw">WITH</span> <span class="kw">DATA</span>;</span>
+<span id="cb18-29"><a href="#cb18-29" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb18-30"><a href="#cb18-30" aria-hidden="true" tabindex="-1"></a><span class="kw">CREATE</span> <span class="kw">UNIQUE</span> <span class="kw">INDEX</span> idx_pwz_parcel_id <span class="kw">ON</span> parcels_with_zoning (parcel_id);</span>
+<span id="cb18-31"><a href="#cb18-31" aria-hidden="true" tabindex="-1"></a><span class="kw">CREATE</span> <span class="kw">INDEX</span>        idx_pwz_geom      <span class="kw">ON</span> parcels_with_zoning <span class="kw">USING</span> GIST (geom);</span>
+<span id="cb18-32"><a href="#cb18-32" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb18-33"><a href="#cb18-33" aria-hidden="true" tabindex="-1"></a><span class="co">-- Refresh nightly at 02:00; use CONCURRENTLY to avoid read locks</span></span>
+<span id="cb18-34"><a href="#cb18-34" aria-hidden="true" tabindex="-1"></a><span class="co">-- REFRESH MATERIALIZED VIEW CONCURRENTLY parcels_with_zoning;</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>Run with <code>uvicorn app:app --host 0.0.0.0 --port 8000</code>. The landing page at <code>GET /</code> returns OGC-compatible links. Parcel features are served at <code>GET /collections/parcels/items?bbox=-122.45,37.75,-122.40,37.78</code>. Follow the <code>next</code> link in the response to paginate.</p>
+
+
+</section>
+
+</main> <!-- /main -->
+<script type="module" src="assets/js/pyodide-cells.js"></script>
+<script>
+(function () {
+  var overlay = document.createElement('div');
+  overlay.id = 'diagram-lightbox';
+
+  var closeBtn = document.createElement('button');
+  closeBtn.id = 'diagram-lightbox-close';
+  closeBtn.innerHTML = '&times;';
+  closeBtn.setAttribute('aria-label', 'Close diagram');
+
+  var content = document.createElement('div');
+  content.id = 'diagram-lightbox-content';
+
+  overlay.appendChild(closeBtn);
+  overlay.appendChild(content);
+  document.body.appendChild(overlay);
+
+  function openLightbox(svgEl) {
+    content.innerHTML = svgEl.outerHTML;
+    var svg = content.querySelector('svg');
+    if (svg) {
+      svg.setAttribute('width', '100%');
+      svg.removeAttribute('height');
+      svg.style.removeProperty('max-width');
+      svg.style.display = 'block';
+    }
+    overlay.classList.add('open');
+    document.body.style.overflow = 'hidden';
+  }
+
+  function closeLightbox() {
+    overlay.classList.remove('open');
+    document.body.style.overflow = '';
+  }
+
+  overlay.addEventListener('click', function (e) {
+    if (e.target === overlay || e.target === closeBtn) closeLightbox();
+  });
+  content.addEventListener('click', function (e) { e.stopPropagation(); });
+  document.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape') closeLightbox();
+  });
+
+  function attachTo(svgEl) {
+    if (svgEl._lbAttached) return;
+    svgEl._lbAttached = true;
+    svgEl.style.cursor = 'zoom-in';
+    svgEl.addEventListener('click', function () { openLightbox(svgEl); });
+  }
+
+  function scanAndAttach() {
+    document.querySelectorAll('svg.mermaid-js').forEach(attachTo);
+  }
+
+  var observer = new MutationObserver(function (mutations) {
+    mutations.forEach(function (m) {
+      m.addedNodes.forEach(function (node) {
+        if (node.nodeType !== 1) return;
+        if (node.tagName.toLowerCase() === 'svg' && node.classList.contains('mermaid-js')) {
+          attachTo(node);
+        } else if (node.querySelectorAll) {
+          node.querySelectorAll('svg.mermaid-js').forEach(attachTo);
+        }
+      });
+    });
+  });
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', function () {
+      observer.observe(document.body, { childList: true, subtree: true });
+      scanAndAttach();
+    });
+  } else {
+    observer.observe(document.body, { childList: true, subtree: true });
+    scanAndAttach();
+  }
+})();
+</script>
+<script id="quarto-html-after-body" type="application/javascript">
+  window.document.addEventListener("DOMContentLoaded", function (event) {
+    const icon = "";
+    const anchorJS = new window.AnchorJS();
+    anchorJS.options = {
+      placement: 'right',
+      icon: icon
+    };
+    anchorJS.add('.anchored');
+    const isCodeAnnotation = (el) => {
+      for (const clz of el.classList) {
+        if (clz.startsWith('code-annotation-')) {                     
+          return true;
+        }
+      }
+      return false;
+    }
+    const onCopySuccess = function(e) {
+      // button target
+      const button = e.trigger;
+      // don't keep focus
+      button.blur();
+      // flash "checked"
+      button.classList.add('code-copy-button-checked');
+      var currentTitle = button.getAttribute("title");
+      button.setAttribute("title", "Copied!");
+      let tooltip;
+      if (window.bootstrap) {
+        button.setAttribute("data-bs-toggle", "tooltip");
+        button.setAttribute("data-bs-placement", "left");
+        button.setAttribute("data-bs-title", "Copied!");
+        tooltip = new bootstrap.Tooltip(button, 
+          { trigger: "manual", 
+            customClass: "code-copy-button-tooltip",
+            offset: [0, -8]});
+        tooltip.show();    
+      }
+      setTimeout(function() {
+        if (tooltip) {
+          tooltip.hide();
+          button.removeAttribute("data-bs-title");
+          button.removeAttribute("data-bs-toggle");
+          button.removeAttribute("data-bs-placement");
+        }
+        button.setAttribute("title", currentTitle);
+        button.classList.remove('code-copy-button-checked');
+      }, 1000);
+      // clear code selection
+      e.clearSelection();
+    }
+    const getTextToCopy = function(trigger) {
+      const outerScaffold = trigger.parentElement.cloneNode(true);
+      const codeEl = outerScaffold.querySelector('code');
+      for (const childEl of codeEl.children) {
+        if (isCodeAnnotation(childEl)) {
+          childEl.remove();
+        }
+      }
+      return codeEl.innerText;
+    }
+    const clipboard = new window.ClipboardJS('.code-copy-button:not([data-in-quarto-modal])', {
+      text: getTextToCopy
+    });
+    clipboard.on('success', onCopySuccess);
+    if (window.document.getElementById('quarto-embedded-source-code-modal')) {
+      const clipboardModal = new window.ClipboardJS('.code-copy-button[data-in-quarto-modal]', {
+        text: getTextToCopy,
+        container: window.document.getElementById('quarto-embedded-source-code-modal')
+      });
+      clipboardModal.on('success', onCopySuccess);
+    }
+      var localhostRegex = new RegExp(/^(?:http|https):\/\/localhost\:?[0-9]*\//);
+      var mailtoRegex = new RegExp(/^mailto:/);
+        var filterRegex = new RegExp('/' + window.location.host + '/');
+      var isInternal = (href) => {
+          return filterRegex.test(href) || localhostRegex.test(href) || mailtoRegex.test(href);
+      }
+      // Inspect non-navigation links and adorn them if external
+     var links = window.document.querySelectorAll('a[href]:not(.nav-link):not(.navbar-brand):not(.toc-action):not(.sidebar-link):not(.sidebar-item-toggle):not(.pagination-link):not(.no-external):not([aria-hidden]):not(.dropdown-item):not(.quarto-navigation-tool):not(.about-link)');
+      for (var i=0; i<links.length; i++) {
+        const link = links[i];
+        if (!isInternal(link.href)) {
+          // undo the damage that might have been done by quarto-nav.js in the case of
+          // links that we want to consider external
+          if (link.dataset.originalHref !== undefined) {
+            link.href = link.dataset.originalHref;
+          }
+        }
+      }
+    function tippyHover(el, contentFn, onTriggerFn, onUntriggerFn) {
+      const config = {
+        allowHTML: true,
+        maxWidth: 500,
+        delay: 100,
+        arrow: false,
+        appendTo: function(el) {
+            return el.parentElement;
+        },
+        interactive: true,
+        interactiveBorder: 10,
+        theme: 'quarto',
+        placement: 'bottom-start',
+      };
+      if (contentFn) {
+        config.content = contentFn;
+      }
+      if (onTriggerFn) {
+        config.onTrigger = onTriggerFn;
+      }
+      if (onUntriggerFn) {
+        config.onUntrigger = onUntriggerFn;
+      }
+      window.tippy(el, config); 
+    }
+    const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+    for (var i=0; i<noterefs.length; i++) {
+      const ref = noterefs[i];
+      tippyHover(ref, function() {
+        // use id or data attribute instead here
+        let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+        try { href = new URL(href).hash; } catch {}
+        const id = href.replace(/^#\/?/, "");
+        const note = window.document.getElementById(id);
+        if (note) {
+          return note.innerHTML;
+        } else {
+          return "";
+        }
+      });
+    }
+    const xrefs = window.document.querySelectorAll('a.quarto-xref');
+    const processXRef = (id, note) => {
+      // Strip column container classes
+      const stripColumnClz = (el) => {
+        el.classList.remove("page-full", "page-columns");
+        if (el.children) {
+          for (const child of el.children) {
+            stripColumnClz(child);
+          }
+        }
+      }
+      stripColumnClz(note)
+      if (id === null || id.startsWith('sec-')) {
+        // Special case sections, only their first couple elements
+        const container = document.createElement("div");
+        if (note.children && note.children.length > 2) {
+          container.appendChild(note.children[0].cloneNode(true));
+          for (let i = 1; i < note.children.length; i++) {
+            const child = note.children[i];
+            if (child.tagName === "P" && child.innerText === "") {
+              continue;
+            } else {
+              container.appendChild(child.cloneNode(true));
+              break;
+            }
+          }
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(container);
+          }
+          return container.innerHTML
+        } else {
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(note);
+          }
+          return note.innerHTML;
+        }
+      } else {
+        // Remove any anchor links if they are present
+        const anchorLink = note.querySelector('a.anchorjs-link');
+        if (anchorLink) {
+          anchorLink.remove();
+        }
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(note);
+        }
+        if (note.classList.contains("callout")) {
+          return note.outerHTML;
+        } else {
+          return note.innerHTML;
+        }
+      }
+    }
+    for (var i=0; i<xrefs.length; i++) {
+      const xref = xrefs[i];
+      tippyHover(xref, undefined, function(instance) {
+        instance.disable();
+        let url = xref.getAttribute('href');
+        let hash = undefined; 
+        if (url.startsWith('#')) {
+          hash = url;
+        } else {
+          try { hash = new URL(url).hash; } catch {}
+        }
+        if (hash) {
+          const id = hash.replace(/^#\/?/, "");
+          const note = window.document.getElementById(id);
+          if (note !== null) {
+            try {
+              const html = processXRef(id, note.cloneNode(true));
+              instance.setContent(html);
+            } finally {
+              instance.enable();
+              instance.show();
+            }
+          } else {
+            // See if we can fetch this
+            fetch(url.split('#')[0])
+            .then(res => res.text())
+            .then(html => {
+              const parser = new DOMParser();
+              const htmlDoc = parser.parseFromString(html, "text/html");
+              const note = htmlDoc.getElementById(id);
+              if (note !== null) {
+                const html = processXRef(id, note);
+                instance.setContent(html);
+              } 
+            }).finally(() => {
+              instance.enable();
+              instance.show();
+            });
+          }
+        } else {
+          // See if we can fetch a full url (with no hash to target)
+          // This is a special case and we should probably do some content thinning / targeting
+          fetch(url)
+          .then(res => res.text())
+          .then(html => {
+            const parser = new DOMParser();
+            const htmlDoc = parser.parseFromString(html, "text/html");
+            const note = htmlDoc.querySelector('main.content');
+            if (note !== null) {
+              // This should only happen for chapter cross references
+              // (since there is no id in the URL)
+              // remove the first header
+              if (note.children.length > 0 && note.children[0].tagName === "HEADER") {
+                note.children[0].remove();
+              }
+              const html = processXRef(null, note);
+              instance.setContent(html);
+            } 
+          }).finally(() => {
+            instance.enable();
+            instance.show();
+          });
+        }
+      }, function(instance) {
+      });
+    }
+        let selectedAnnoteEl;
+        const selectorForAnnotation = ( cell, annotation) => {
+          let cellAttr = 'data-code-cell="' + cell + '"';
+          let lineAttr = 'data-code-annotation="' +  annotation + '"';
+          const selector = 'span[' + cellAttr + '][' + lineAttr + ']';
+          return selector;
+        }
+        const selectCodeLines = (annoteEl) => {
+          const doc = window.document;
+          const targetCell = annoteEl.getAttribute("data-target-cell");
+          const targetAnnotation = annoteEl.getAttribute("data-target-annotation");
+          const annoteSpan = window.document.querySelector(selectorForAnnotation(targetCell, targetAnnotation));
+          const lines = annoteSpan.getAttribute("data-code-lines").split(",");
+          const lineIds = lines.map((line) => {
+            return targetCell + "-" + line;
+          })
+          let top = null;
+          let height = null;
+          let parent = null;
+          if (lineIds.length > 0) {
+              //compute the position of the single el (top and bottom and make a div)
+              const el = window.document.getElementById(lineIds[0]);
+              top = el.offsetTop;
+              height = el.offsetHeight;
+              parent = el.parentElement.parentElement;
+            if (lineIds.length > 1) {
+              const lastEl = window.document.getElementById(lineIds[lineIds.length - 1]);
+              const bottom = lastEl.offsetTop + lastEl.offsetHeight;
+              height = bottom - top;
+            }
+            if (top !== null && height !== null && parent !== null) {
+              // cook up a div (if necessary) and position it 
+              let div = window.document.getElementById("code-annotation-line-highlight");
+              if (div === null) {
+                div = window.document.createElement("div");
+                div.setAttribute("id", "code-annotation-line-highlight");
+                div.style.position = 'absolute';
+                parent.appendChild(div);
+              }
+              div.style.top = top - 2 + "px";
+              div.style.height = height + 4 + "px";
+              div.style.left = 0;
+              let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
+              if (gutterDiv === null) {
+                gutterDiv = window.document.createElement("div");
+                gutterDiv.setAttribute("id", "code-annotation-line-highlight-gutter");
+                gutterDiv.style.position = 'absolute';
+                const codeCell = window.document.getElementById(targetCell);
+                const gutter = codeCell.querySelector('.code-annotation-gutter');
+                gutter.appendChild(gutterDiv);
+              }
+              gutterDiv.style.top = top - 2 + "px";
+              gutterDiv.style.height = height + 4 + "px";
+            }
+            selectedAnnoteEl = annoteEl;
+          }
+        };
+        const unselectCodeLines = () => {
+          const elementsIds = ["code-annotation-line-highlight", "code-annotation-line-highlight-gutter"];
+          elementsIds.forEach((elId) => {
+            const div = window.document.getElementById(elId);
+            if (div) {
+              div.remove();
+            }
+          });
+          selectedAnnoteEl = undefined;
+        };
+          // Handle positioning of the toggle
+      window.addEventListener(
+        "resize",
+        throttle(() => {
+          elRect = undefined;
+          if (selectedAnnoteEl) {
+            selectCodeLines(selectedAnnoteEl);
+          }
+        }, 10)
+      );
+      function throttle(fn, ms) {
+      let throttle = false;
+      let timer;
+        return (...args) => {
+          if(!throttle) { // first call gets through
+              fn.apply(this, args);
+              throttle = true;
+          } else { // all the others get throttled
+              if(timer) clearTimeout(timer); // cancel #2
+              timer = setTimeout(() => {
+                fn.apply(this, args);
+                timer = throttle = false;
+              }, ms);
+          }
+        };
+      }
+        // Attach click handler to the DT
+        const annoteDls = window.document.querySelectorAll('dt[data-target-cell]');
+        for (const annoteDlNode of annoteDls) {
+          annoteDlNode.addEventListener('click', (event) => {
+            const clickedEl = event.target;
+            if (clickedEl !== selectedAnnoteEl) {
+              unselectCodeLines();
+              const activeEl = window.document.querySelector('dt[data-target-cell].code-annotation-active');
+              if (activeEl) {
+                activeEl.classList.remove('code-annotation-active');
+              }
+              selectCodeLines(clickedEl);
+              clickedEl.classList.add('code-annotation-active');
+            } else {
+              // Unselect the line
+              unselectCodeLines();
+              clickedEl.classList.remove('code-annotation-active');
+            }
+          });
+        }
+    const findCites = (el) => {
+      const parentEl = el.parentElement;
+      if (parentEl) {
+        const cites = parentEl.dataset.cites;
+        if (cites) {
+          return {
+            el,
+            cites: cites.split(' ')
+          };
+        } else {
+          return findCites(el.parentElement)
+        }
+      } else {
+        return undefined;
+      }
+    };
+    var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+    for (var i=0; i<bibliorefs.length; i++) {
+      const ref = bibliorefs[i];
+      const citeInfo = findCites(ref);
+      if (citeInfo) {
+        tippyHover(citeInfo.el, function() {
+          var popup = window.document.createElement('div');
+          citeInfo.cites.forEach(function(cite) {
+            var citeDiv = window.document.createElement('div');
+            citeDiv.classList.add('hanging-indent');
+            citeDiv.classList.add('csl-entry');
+            var biblioDiv = window.document.getElementById('ref-' + cite);
+            if (biblioDiv) {
+              citeDiv.innerHTML = biblioDiv.innerHTML;
+            }
+            popup.appendChild(citeDiv);
+          });
+          return popup.innerHTML;
+        });
+      }
+    }
+  });
+  </script>
+<nav class="page-navigation">
+  <div class="nav-page nav-page-previous">
+      <a href="./05-streaming-and-realtime.html" class="pagination-link" aria-label="Streaming and Realtime">
+        <i class="bi bi-arrow-left-short"></i> <span class="nav-page-text"><span class="chapter-number">6</span>&nbsp; <span class="chapter-title">Streaming and Realtime</span></span>
+      </a>          
+  </div>
+  <div class="nav-page nav-page-next">
+      <a href="./07-data-quality-and-governance.html" class="pagination-link" aria-label="Data Quality and Governance">
+        <span class="nav-page-text"><span class="chapter-number">8</span>&nbsp; <span class="chapter-title">Data Quality and Governance</span></span> <i class="bi bi-arrow-right-short"></i>
+      </a>
+  </div>
+</nav>
+</div> <!-- /content -->
+
+
+
+
+<footer class="footer"><div class="nav-footer"><div class="nav-footer-center"><div class="toc-actions d-sm-block d-md-none"><ul><li><a href="https://github.com/WaywardHouse/waywardhouse-data-engineering/edit/main/06-apis-and-access-patterns.qmd" class="toc-action"><i class="bi bi-github"></i>Edit this page</a></li><li><a href="https://github.com/WaywardHouse/waywardhouse-data-engineering/issues/new" class="toc-action"><i class="bi empty"></i>Report an issue</a></li></ul></div></div></div></footer><script src="site_libs/quarto-html/zenscroll-min.js"></script>
+</body></html>

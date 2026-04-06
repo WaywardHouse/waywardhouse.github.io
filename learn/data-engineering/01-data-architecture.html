@@ -1,0 +1,1729 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
+
+<meta charset="utf-8">
+<meta name="generator" content="quarto-1.9.36">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+
+
+<title>2&nbsp; Data Architecture – Data Engineering for Spatial Systems</title>
+<style>
+/* Default styles provided by pandoc.
+** See https://pandoc.org/MANUAL.html#variables-for-html for config info.
+*/
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: min(4vw, 1.5em);}
+div.column{flex: auto; overflow-x: auto;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+  width: 0.8em;
+  margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
+  vertical-align: middle;
+}
+/* CSS for syntax highlighting */
+html { -webkit-text-size-adjust: 100%; }
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+  { counter-reset: source-line 0; }
+pre.numberSource code > span
+  { position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+  { content: counter(source-line);
+    position: relative; left: -1em; text-align: right; vertical-align: baseline;
+    border: none; display: inline-block;
+    -webkit-touch-callout: none; -webkit-user-select: none;
+    -khtml-user-select: none; -moz-user-select: none;
+    -ms-user-select: none; user-select: none;
+    padding: 0 4px; width: 4em;
+  }
+pre.numberSource { margin-left: 3em;  padding-left: 4px; }
+div.sourceCode
+  {   }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
+</style>
+
+
+<script src="site_libs/quarto-nav/quarto-nav.js"></script>
+<script src="site_libs/quarto-nav/headroom.min.js"></script>
+<script src="site_libs/clipboard/clipboard.min.js"></script>
+<script src="site_libs/quarto-search/autocomplete.umd.js"></script>
+<script src="site_libs/quarto-search/fuse.min.js"></script>
+<script src="site_libs/quarto-search/quarto-search.js"></script>
+<meta name="quarto:offset" content="./">
+<link href="./02-spatial-databases.html" rel="next">
+<link href="./index.html" rel="prev">
+<script src="site_libs/quarto-html/quarto.js" type="module"></script>
+<script src="site_libs/quarto-html/tabsets/tabsets.js" type="module"></script>
+<script src="site_libs/quarto-html/popper.min.js"></script>
+<script src="site_libs/quarto-html/tippy.umd.min.js"></script>
+<script src="site_libs/quarto-html/anchor.min.js"></script>
+<link href="site_libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="site_libs/quarto-html/quarto-syntax-highlighting-845c23b38eaddc0f92fda52bfe77a8c8.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<script src="site_libs/bootstrap/bootstrap.min.js"></script>
+<link href="site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="site_libs/bootstrap/bootstrap-56762b18f51ba8401515c38252781a5a.min.css" rel="stylesheet" append-hash="true" id="quarto-bootstrap" data-mode="light">
+<script id="quarto-search-options" type="application/json">{
+  "location": "sidebar",
+  "copy-button": false,
+  "collapse-after": 3,
+  "panel-placement": "start",
+  "type": "textbox",
+  "limit": 50,
+  "keyboard-shortcut": [
+    "f",
+    "/",
+    "s"
+  ],
+  "show-item-context": false,
+  "language": {
+    "search-no-results-text": "No results",
+    "search-matching-documents-text": "matching documents",
+    "search-copy-link-title": "Copy link to search",
+    "search-hide-matches-text": "Hide additional matches",
+    "search-more-match-text": "more match in this document",
+    "search-more-matches-text": "more matches in this document",
+    "search-clear-button-title": "Clear",
+    "search-text-placeholder": "",
+    "search-detached-cancel-button-title": "Cancel",
+    "search-submit-button-title": "Submit",
+    "search-label": "Search"
+  }
+}</script>
+<style>html{ scroll-behavior: smooth; }</style>
+<script>
+  (function () {
+    document.documentElement.dataset.theme = 'light';
+    document.documentElement.dataset.brand = 'wayward-book';
+    try {
+      localStorage.removeItem('theme');
+    } catch (err) {
+      void err;
+    }
+  })();
+</script>
+
+<script>
+  document.addEventListener('DOMContentLoaded', function () {
+    var body = document.body;
+    var sidebar = document.getElementById('quarto-sidebar');
+    if (!sidebar) return;
+
+    body.classList.add('wayward-book-shell');
+
+    if (!document.querySelector('.wayward-book-header')) {
+      var header = document.createElement('header');
+      header.className = 'wayward-book-header';
+      header.innerHTML = [
+        '<div class="wayward-book-header__inner">',
+        '  <a class="wayward-book-brand" href="/" aria-label="Wayward House home">',
+        '    <span class="wayward-book-brand__mark">WaywardHouse</span>',
+        '    <span class="wayward-book-brand__dot" aria-hidden="true">.</span>',
+        '  </a>',
+        '  <nav class="wayward-book-nav" aria-label="Primary">',
+        '    <a href="/articles/" data-nav="/articles/">Articles</a>',
+        '    <a href="/learn/" data-nav="/learn/">Learn</a>',
+        '    <a href="/about.html" data-nav="/about/">About</a>',
+        '  </nav>',
+        '  <button class="wayward-book-menu-toggle" type="button" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle chapter navigation">',
+        '    <span aria-hidden="true">Menu</span>',
+        '  </button>',
+        '</div>'
+      ].join('');
+      body.prepend(header);
+    }
+
+    var pathname = window.location.pathname || '/';
+    if (pathname === '/' || pathname === '/learn/' || pathname.endsWith('/index.html')) {
+      body.classList.add('page-home');
+    }
+    if (pathname.indexOf('/learn/') === 0) {
+      body.classList.add('page-learn');
+    }
+
+    var storageKey = 'wayward-data-engineering-sidebar';
+    var media = window.matchMedia('(min-width: 1200px)');
+    var glass = document.getElementById('quarto-sidebar-glass');
+    var toggles = Array.from(document.querySelectorAll('[data-bs-target=".quarto-sidebar-collapse-item"]'));
+
+    function setDesktopState(open) {
+      body.classList.toggle('book-sidebar-collapsed', !open);
+      body.classList.toggle('book-sidebar-open', open);
+      try {
+        localStorage.setItem(storageKey, open ? 'open' : 'collapsed');
+      } catch (err) {
+        void err;
+      }
+    }
+
+    function applyDesktopDefault() {
+      if (!media.matches) {
+        body.classList.remove('book-sidebar-collapsed', 'book-sidebar-open');
+        return;
+      }
+
+      var stored = null;
+      try {
+        stored = localStorage.getItem(storageKey);
+      } catch (err) {
+        void err;
+      }
+
+      setDesktopState(stored === 'collapsed' ? false : true);
+    }
+
+    toggles.forEach(function (toggle) {
+      toggle.addEventListener('click', function (event) {
+        if (!media.matches) return;
+        event.preventDefault();
+        event.stopPropagation();
+        setDesktopState(body.classList.contains('book-sidebar-collapsed'));
+      });
+    });
+
+    if (glass) {
+      glass.addEventListener('click', function (event) {
+        if (!media.matches) return;
+        event.preventDefault();
+        setDesktopState(false);
+      });
+    }
+
+    if (media.addEventListener) {
+      media.addEventListener('change', applyDesktopDefault);
+    } else if (media.addListener) {
+      media.addListener(applyDesktopDefault);
+    }
+
+    applyDesktopDefault();
+
+    var siteHomeHref = '/';
+    var learnHref = '/learn/';
+    var titleLink = sidebar.querySelector('.sidebar-title a');
+    if (titleLink) titleLink.setAttribute('href', siteHomeHref);
+
+    var toolLinks = Array.from(sidebar.querySelectorAll('.quarto-navigation-tool'));
+    if (toolLinks[0]) toolLinks[0].setAttribute('href', siteHomeHref);
+    if (toolLinks[1]) toolLinks[1].setAttribute('href', learnHref);
+
+    var firstSidebarLink = sidebar.querySelector('.sidebar-item a.sidebar-link');
+    if (firstSidebarLink) firstSidebarLink.setAttribute('href', siteHomeHref);
+
+    var themeToggle = document.querySelector('.wayward-book-theme-toggle');
+    if (themeToggle) themeToggle.remove();
+
+    document.querySelectorAll('.wayward-book-nav a[data-nav]').forEach(function (link) {
+      var target = link.getAttribute('data-nav');
+      if (!target) return;
+      link.classList.remove('is-active');
+      if (pathname === target || pathname.indexOf(target) === 0) {
+        link.classList.add('is-active');
+      }
+    });
+
+    var footer = document.querySelector('footer.footer');
+    if (footer && !footer.classList.contains('wayward-book-footer')) {
+      footer.className = 'wayward-book-footer';
+      footer.innerHTML = [
+        '<div class="wayward-book-footer__inner">',
+        '  <div class="wayward-book-footer__brand">',
+        '    <div class="wayward-book-footer__logo">WaywardHouse<span>.</span></div>',
+        '    <p>Understanding how place, economy, and environment interact through analysis, modelling, and open tools.</p>',
+        '  </div>',
+        '  <nav class="wayward-book-footer__group" aria-labelledby="book-footer-reading">',
+        '    <h2 id="book-footer-reading">Reading</h2>',
+        '    <a href="https://wayward.house/articles/">Articles</a>',
+        '    <a href="https://wayward.house/learn/">Library</a>',
+        '    <a href="https://wayward.house/archive.html">Archive</a>',
+        '  </nav>',
+        '  <nav class="wayward-book-footer__group" aria-labelledby="book-footer-site">',
+        '    <h2 id="book-footer-site">Site</h2>',
+        '    <a href="https://wayward.house/start-here.html">Choose Your Path</a>',
+        '    <a href="https://wayward.house/about.html">About</a>',
+        '    <a href="https://wayward.house/contact.html">Contact</a>',
+        '  </nav>',
+        '  <nav class="wayward-book-footer__group" aria-labelledby="book-footer-resources">',
+        '    <h2 id="book-footer-resources">Resources</h2>',
+        '    <a href="https://wayward.house/topics/">All Topics</a>',
+        '    <a href="https://wayward.house/privacy.html">Privacy Policy</a>',
+        '    <a href="https://wayward.house/terms.html">Terms of Use</a>',
+        '  </nav>',
+        '</div>'
+      ].join('');
+    }
+
+    if (!document.querySelector('.back-to-top')) {
+      var button = document.createElement('button');
+      button.type = 'button';
+      button.className = 'back-to-top';
+      button.setAttribute('aria-label', 'Back to top');
+      button.innerHTML = '<span aria-hidden="true">↑</span><span>Top</span>';
+
+      var prefersReduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+      var ticking = false;
+
+      function updateBackToTop() {
+        var scrolled = window.scrollY || document.documentElement.scrollTop || 0;
+        var longPage = document.documentElement.scrollHeight > window.innerHeight * 1.5;
+        button.classList.toggle('is-visible', longPage && scrolled > Math.max(420, window.innerHeight * 0.7));
+        ticking = false;
+      }
+
+      button.addEventListener('click', function () {
+        window.scrollTo({
+          top: 0,
+          behavior: prefersReduced ? 'auto' : 'smooth'
+        });
+      });
+
+      window.addEventListener('scroll', function () {
+        if (!ticking) {
+          window.requestAnimationFrame(updateBackToTop);
+          ticking = true;
+        }
+      }, { passive: true });
+
+      window.addEventListener('resize', updateBackToTop, { passive: true });
+      body.appendChild(button);
+      updateBackToTop();
+    }
+
+  });
+</script>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:ital,wght@0,300;0,400;0,600;0,700;0,800;0,900;1,700;1,800&amp;family=Barlow:wght@300;400;500;600&amp;family=IBM+Plex+Mono:ital,wght@0,300;0,400;0,500;1,300&amp;family=Literata:ital,opsz,wght@0,7..72,300;0,7..72,400;0,7..72,500;1,7..72,300;1,7..72,400&amp;display=swap" rel="stylesheet">
+
+
+<link rel="stylesheet" href="site_libs/quarto-contrib/quarto-project/wayward-book/wayward-book.css">
+<link rel="stylesheet" href="lightbox.css">
+</head>
+
+<body class="nav-sidebar docked quarto-light">
+
+<div id="quarto-search-results"></div>
+  <header id="quarto-header" class="headroom fixed-top">
+  <nav class="quarto-secondary-nav">
+    <div class="container-fluid d-flex">
+      <button type="button" class="quarto-btn-toggle btn" data-bs-toggle="collapse" role="button" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
+        <i class="bi bi-layout-text-sidebar-reverse"></i>
+      </button>
+        <nav class="quarto-page-breadcrumbs" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="./01-data-architecture.html"><span class="chapter-number">2</span>&nbsp; <span class="chapter-title">Data Architecture</span></a></li></ol></nav>
+        <a class="flex-grow-1" role="navigation" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">      
+        </a>
+      <button type="button" class="btn quarto-search-button" aria-label="Search" onclick="window.quartoOpenSearch();">
+        <i class="bi bi-search"></i>
+      </button>
+    </div>
+  </nav>
+</header>
+<!-- content -->
+<div id="quarto-content" class="quarto-container page-columns page-rows-contents page-layout-article">
+<!-- sidebar -->
+  <nav id="quarto-sidebar" class="sidebar collapse collapse-horizontal quarto-sidebar-collapse-item sidebar-navigation docked overflow-auto">
+    <div class="pt-lg-2 mt-2 text-left sidebar-header">
+    <div class="sidebar-title mb-0 py-0">
+      <a href="./">Data Engineering for Spatial Systems</a> 
+        <div class="sidebar-tools-main tools-wide">
+    <a href="./" title="" class="quarto-navigation-tool px-1" aria-label="Wayward House"><i class="bi bi-house"></i></a>
+    <a href="./learn/" title="" class="quarto-navigation-tool px-1" aria-label="Learn"><i class="bi bi-grid"></i></a>
+    <a href="https://github.com/WaywardHouse/waywardhouse-data-engineering" title="" class="quarto-navigation-tool px-1" aria-label="Repository"><i class="bi bi-github"></i></a>
+    <a href="https://github.com/WaywardHouse/waywardhouse-data-engineering" title="Source Code" class="quarto-navigation-tool px-1" aria-label="Source Code"><i class="bi bi-github"></i></a>
+    <div class="dropdown">
+      <a href="" title="Share" id="quarto-navigation-tool-dropdown-0" class="quarto-navigation-tool dropdown-toggle px-1" data-bs-toggle="dropdown" aria-expanded="false" role="link" aria-label="Share"><i class="bi bi-share"></i></a>
+      <ul class="dropdown-menu" aria-labelledby="quarto-navigation-tool-dropdown-0">
+          <li>
+            <a class="dropdown-item sidebar-tools-main-item" href="https://twitter.com/intent/tweet?url=|url|">
+              <i class="bi bi-twitter pe-1"></i>
+            Twitter
+            </a>
+          </li>
+          <li>
+            <a class="dropdown-item sidebar-tools-main-item" href="https://www.linkedin.com/sharing/share-offsite/?url=|url|">
+              <i class="bi bi-linkedin pe-1"></i>
+            LinkedIn
+            </a>
+          </li>
+      </ul>
+    </div>
+</div>
+    </div>
+      </div>
+        <div class="mt-2 flex-shrink-0 align-items-center">
+        <div class="sidebar-search">
+        <div id="quarto-search" class="" title="Search"></div>
+        </div>
+        </div>
+    <div class="sidebar-menu-container"> 
+    <ul class="list-unstyled mt-1">
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./index.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">1</span>&nbsp; <span class="chapter-title">Data Engineering for Spatial Systems</span></span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./01-data-architecture.html" class="sidebar-item-text sidebar-link active">
+ <span class="menu-text"><span class="chapter-number">2</span>&nbsp; <span class="chapter-title">Data Architecture</span></span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./02-spatial-databases.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">3</span>&nbsp; <span class="chapter-title">Spatial Databases</span></span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./03-pipelines-and-etl.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">4</span>&nbsp; <span class="chapter-title">Pipelines and ETL</span></span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./04-cloud-infrastructure.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">5</span>&nbsp; <span class="chapter-title">Cloud Infrastructure</span></span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./05-streaming-and-realtime.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">6</span>&nbsp; <span class="chapter-title">Streaming and Realtime</span></span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./06-apis-and-access-patterns.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">7</span>&nbsp; <span class="chapter-title">APIs and Access Patterns</span></span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./07-data-quality-and-governance.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">8</span>&nbsp; <span class="chapter-title">Data Quality and Governance</span></span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./08-platform-architecture-for-ml.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">9</span>&nbsp; <span class="chapter-title">Platform Architecture for ML</span></span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./09-exercise-answers.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">10</span>&nbsp; <span class="chapter-title">Exercise Answers</span></span></a>
+  </div>
+</li>
+    </ul>
+    </div>
+</nav>
+<div id="quarto-sidebar-glass" class="quarto-sidebar-collapse-item" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item"></div>
+<!-- margin-sidebar -->
+    <div id="quarto-margin-sidebar" class="sidebar margin-sidebar">
+        <nav id="TOC" role="doc-toc" class="toc-active">
+    <h2 id="toc-title">Table of contents</h2>
+   
+  <ul>
+  <li><a href="#the-puzzle" id="toc-the-puzzle" class="nav-link active" data-scroll-target="#the-puzzle"><span class="header-section-number">2.1</span> The puzzle</a></li>
+  <li><a href="#the-three-decisions-that-matter" id="toc-the-three-decisions-that-matter" class="nav-link" data-scroll-target="#the-three-decisions-that-matter"><span class="header-section-number">2.2</span> The three decisions that matter</a></li>
+  <li><a href="#storage-formats-for-spatial-data" id="toc-storage-formats-for-spatial-data" class="nav-link" data-scroll-target="#storage-formats-for-spatial-data"><span class="header-section-number">2.3</span> Storage formats for spatial data</a>
+  <ul class="collapse">
+  <li><a href="#geojson" id="toc-geojson" class="nav-link" data-scroll-target="#geojson"><span class="header-section-number">2.3.1</span> GeoJSON</a></li>
+  <li><a href="#shapefile" id="toc-shapefile" class="nav-link" data-scroll-target="#shapefile"><span class="header-section-number">2.3.2</span> Shapefile</a></li>
+  <li><a href="#geoparquet" id="toc-geoparquet" class="nav-link" data-scroll-target="#geoparquet"><span class="header-section-number">2.3.3</span> GeoParquet</a></li>
+  <li><a href="#seeing-the-difference" id="toc-seeing-the-difference" class="nav-link" data-scroll-target="#seeing-the-difference"><span class="header-section-number">2.3.4</span> Seeing the difference</a></li>
+  </ul></li>
+  <li><a href="#schema-design" id="toc-schema-design" class="nav-link" data-scroll-target="#schema-design"><span class="header-section-number">2.4</span> Schema design</a>
+  <ul class="collapse">
+  <li><a href="#wide-tables-versus-normalised-schemas" id="toc-wide-tables-versus-normalised-schemas" class="nav-link" data-scroll-target="#wide-tables-versus-normalised-schemas"><span class="header-section-number">2.4.1</span> Wide tables versus normalised schemas</a></li>
+  <li><a href="#star-schema-for-spatial-analytics" id="toc-star-schema-for-spatial-analytics" class="nav-link" data-scroll-target="#star-schema-for-spatial-analytics"><span class="header-section-number">2.4.2</span> Star schema for spatial analytics</a></li>
+  </ul></li>
+  <li><a href="#partitioning-strategy" id="toc-partitioning-strategy" class="nav-link" data-scroll-target="#partitioning-strategy"><span class="header-section-number">2.5</span> Partitioning strategy</a>
+  <ul class="collapse">
+  <li><a href="#time-partitioning" id="toc-time-partitioning" class="nav-link" data-scroll-target="#time-partitioning"><span class="header-section-number">2.5.1</span> Time partitioning</a></li>
+  <li><a href="#spatial-partitioning" id="toc-spatial-partitioning" class="nav-link" data-scroll-target="#spatial-partitioning"><span class="header-section-number">2.5.2</span> Spatial partitioning</a></li>
+  <li><a href="#compound-partitioning" id="toc-compound-partitioning" class="nav-link" data-scroll-target="#compound-partitioning"><span class="header-section-number">2.5.3</span> Compound partitioning</a></li>
+  </ul></li>
+  <li><a href="#data-catalogues" id="toc-data-catalogues" class="nav-link" data-scroll-target="#data-catalogues"><span class="header-section-number">2.6</span> Data catalogues</a>
+  <ul class="collapse">
+  <li><a href="#what-a-catalogue-entry-contains" id="toc-what-a-catalogue-entry-contains" class="nav-link" data-scroll-target="#what-a-catalogue-entry-contains"><span class="header-section-number">2.6.1</span> What a catalogue entry contains</a></li>
+  <li><a href="#a-minimal-json-catalogue" id="toc-a-minimal-json-catalogue" class="nav-link" data-scroll-target="#a-minimal-json-catalogue"><span class="header-section-number">2.6.2</span> A minimal JSON catalogue</a></li>
+  <li><a href="#a-python-catalogue-reader" id="toc-a-python-catalogue-reader" class="nav-link" data-scroll-target="#a-python-catalogue-reader"><span class="header-section-number">2.6.3</span> A Python catalogue reader</a></li>
+  </ul></li>
+  <li><a href="#what-to-try" id="toc-what-to-try" class="nav-link" data-scroll-target="#what-to-try"><span class="header-section-number">2.7</span> What to try</a></li>
+  <li><a href="#exercises" id="toc-exercises" class="nav-link" data-scroll-target="#exercises"><span class="header-section-number">2.8</span> Exercises</a></li>
+  <li><a href="#build-this" id="toc-build-this" class="nav-link" data-scroll-target="#build-this"><span class="header-section-number">2.9</span> Build this</a></li>
+  </ul>
+<div class="toc-actions"><ul><li><a href="https://github.com/WaywardHouse/waywardhouse-data-engineering/edit/main/01-data-architecture.qmd" class="toc-action"><i class="bi bi-github"></i>Edit this page</a></li><li><a href="https://github.com/WaywardHouse/waywardhouse-data-engineering/issues/new" class="toc-action"><i class="bi empty"></i>Report an issue</a></li></ul></div></nav>
+    </div>
+<!-- main -->
+<main class="content" id="quarto-document-content">
+
+<header id="title-block-header" class="quarto-title-block default">
+<div class="quarto-title">
+<h1 class="title"><span class="chapter-number">2</span>&nbsp; <span class="chapter-title">Data Architecture</span></h1>
+<p class="subtitle lead">Schemas, catalogues, and the decisions that outlast the sprint</p>
+</div>
+
+
+
+<div class="quarto-title-meta">
+
+    
+  
+    
+  </div>
+  
+
+
+</header>
+
+
+<section id="the-puzzle" class="level2" data-number="2.1">
+<h2 data-number="2.1" class="anchored" data-anchor-id="the-puzzle"><span class="header-section-number">2.1</span> The puzzle</h2>
+<p>In 2021 a team at a mid-sized environmental consultancy built a pipeline to ingest satellite-derived land-cover classifications for a single country. The work took three weeks. The data was stored as GeoJSON files, one file per acquisition date, in a flat directory on a shared network drive. Queries ran in seconds. The team was happy.</p>
+<p>Two years later the same pipeline was running for 47 countries, covering five years of acquisitions. The directory held 11,000 files. Storage was 1.4 TB. The queries that used to take seconds now took — depending on the question — somewhere between four minutes and “it just timed out.” The team had added two engineers in the interim, neither of whom could tell you which schema version a given file was on, because the schema had evolved four times and the changes were not documented anywhere.</p>
+<p>The data was all there. The system was not queryable.</p>
+<p>This was not a compute problem. The team had moved the files to a cloud VM with 64 cores and 256 GB of RAM, and the queries were still slow. The issue was not what the machine was doing — it was what it was being asked to do. Every query that asked “show me all grassland pixels in country X between these two dates” had to open all 11,000 files, read each one fully into memory, check whether the date and country matched, and then discard it if it did not. The ratio of data read to data used was approximately 200:1.</p>
+<p>Three decisions made this outcome nearly inevitable from the start: the choice of storage format, the absence of a partitioning strategy, and the lack of any schema governance. None of those decisions felt like decisions at the time. That is the point of this chapter.</p>
+<hr>
+</section>
+<section id="the-three-decisions-that-matter" class="level2" data-number="2.2">
+<h2 data-number="2.2" class="anchored" data-anchor-id="the-three-decisions-that-matter"><span class="header-section-number">2.2</span> The three decisions that matter</h2>
+<p>Every data architecture for spatial analytics comes down to three choices. Most teams spend their time on the wrong things — the orchestration framework, the cloud provider, the BI tool — while leaving these three implicit.</p>
+<p><strong>Storage format</strong> determines how data is physically written to disk and how a reader must traverse it to answer a query. A format that requires reading the whole file to find one row is a fundamentally different object than a format that can skip to the right row group. This choice sets a ceiling on query performance that no amount of compute can lift.</p>
+<p><strong>Schema design</strong> determines what questions the data can answer and how many joins it takes to answer them. A schema designed for data entry (fully normalised, no redundancy) is usually wrong for analytics (wide denormalised tables, redundant but query-efficient). Spatial data has an extra dimension: geometry columns add size, indexing requirements, and type system pressure that a naive relational design ignores.</p>
+<p><strong>Partitioning strategy</strong> determines how data is physically organised so that queries can avoid reading the parts they do not need. A query that asks for data from January 2024 should not have to open a file from January 2020. Whether it does depends entirely on how you partitioned.</p>
+<p>Everything else — transformation logic, query engines, API design — follows from these three. Get them right and the rest is implementation detail. Get them wrong and you will spend the next two years trying to compensate with compute.</p>
+<hr>
+</section>
+<section id="storage-formats-for-spatial-data" class="level2" data-number="2.3">
+<h2 data-number="2.3" class="anchored" data-anchor-id="storage-formats-for-spatial-data"><span class="header-section-number">2.3</span> Storage formats for spatial data</h2>
+<p>Three formats dominate spatial data engineering: GeoJSON, Shapefile, and GeoParquet. Each represents a different era of thinking about what “storing data” means.</p>
+<section id="geojson" class="level3" data-number="2.3.1">
+<h3 data-number="2.3.1" class="anchored" data-anchor-id="geojson"><span class="header-section-number">2.3.1</span> GeoJSON</h3>
+<p>GeoJSON is a text-based format: coordinates and properties encoded as JSON, readable by any text editor, supported by every GIS tool written in the last fifteen years. This is its appeal and its problem.</p>
+<p>Text encoding means every number is stored as a string. A float64 coordinate like <code>-123.456789</code> takes 11 bytes as text and 8 bytes as a binary double. For a file with 10 million coordinate pairs, that difference is 30 MB — not catastrophic, but not free. More importantly, GeoJSON is a row-oriented format: each feature is a self-contained JSON object. To read one property from all features, you read the entire file and discard most of it.</p>
+<p>GeoJSON also has no native support for partitioning. You can split your data across multiple files by naming convention, but there is no metadata that tells a query engine “file A covers dates 2020–2021, file B covers 2022–2023.” The query engine has to open everything and check.</p>
+<p>For small datasets and data exchange, GeoJSON is fine. For anything that needs to be queried repeatedly at scale, it is the wrong choice.</p>
+</section>
+<section id="shapefile" class="level3" data-number="2.3.2">
+<h3 data-number="2.3.2" class="anchored" data-anchor-id="shapefile"><span class="header-section-number">2.3.2</span> Shapefile</h3>
+<p>The Shapefile format was designed by Esri in the early 1990s. It is still the most widely exchanged format in the GIS industry, which tells you more about inertia than about quality.</p>
+<p>A Shapefile is actually a bundle of at least three files (<code>.shp</code> for geometry, <code>.dbf</code> for attributes, <code>.prj</code> for projection), which makes it unreliable to move and easy to corrupt. The <code>.dbf</code> format imposes a 10-character limit on field names, which means a column called <code>measurement_date</code> becomes <code>msrmnt_dt</code> and requires a lookup table to interpret. Null values are represented as empty strings in numeric fields, which some readers interpret as zero. Character encoding is not standardised.</p>
+<p>None of these are obscure edge cases. They are normal consequences of using the format.</p>
+<p>Shapefiles are row-oriented, like GeoJSON. They offer no predicate pushdown — no ability to skip to relevant data without reading irrelevant data. For a 2GB Shapefile, every query reads 2GB.</p>
+<p>Use Shapefiles only when you are receiving data from a third party that will not produce anything else, or when you need to hand off data to a GIS analyst whose tools require it.</p>
+</section>
+<section id="geoparquet" class="level3" data-number="2.3.3">
+<h3 data-number="2.3.3" class="anchored" data-anchor-id="geoparquet"><span class="header-section-number">2.3.3</span> GeoParquet</h3>
+<p>GeoParquet is the current answer. It is an extension of Apache Parquet — a columnar binary format designed for analytical workloads — with a standardised metadata convention for encoding geometry columns.</p>
+<p>Columnar storage means each column is stored contiguously on disk. A query that reads one column from a table with fifty columns reads approximately 1/50th of the file. For spatial analytics, where you frequently query a small number of attributes across many rows, the difference is dramatic.</p>
+<p>Parquet files also contain row group statistics: for each row group, the file stores the minimum and maximum value of each column. A query engine that knows it needs records where <code>acquisition_date &gt;= '2024-01-01'</code> can check each row group’s min/max statistics and skip any row group whose maximum date is before that threshold. This is called <strong>predicate pushdown</strong> — the predicate is pushed into the I/O layer, so irrelevant data is never read from disk.</p>
+<p>GeoParquet stores geometry as Well-Known Binary (WKB) within the column structure, and records the spatial extent (bounding box) of each row group in the file metadata. A spatial query engine can use these bounding boxes to skip row groups that cannot intersect the query extent.</p>
+<p>The practical consequence: a GeoParquet file that would take 45 seconds to scan fully might answer a selective query in under a second.</p>
+</section>
+<section id="seeing-the-difference" class="level3" data-number="2.3.4">
+<h3 data-number="2.3.4" class="anchored" data-anchor-id="seeing-the-difference"><span class="header-section-number">2.3.4</span> Seeing the difference</h3>
+<p>The chart below simulates scan time as a function of file size for row-oriented versus columnar storage, under two selectivity levels: a query that needs 1% of rows (selective) and one that needs 100% (full scan).</p>
+<div id="cell-fig-format-comparison" class="cell" data-fig-height="4.5" data-fig-width="9" data-execution_count="1">
+<details class="code-fold">
+<summary>Code</summary>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb1"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> numpy <span class="im">as</span> np</span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> matplotlib.pyplot <span class="im">as</span> plt</span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a>rng <span class="op">=</span> np.random.default_rng(<span class="dv">42</span>)</span>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a><span class="co"># Simulated file sizes in GB</span></span>
+<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a>file_sizes_gb <span class="op">=</span> np.array([<span class="fl">0.1</span>, <span class="fl">0.5</span>, <span class="dv">1</span>, <span class="dv">2</span>, <span class="dv">5</span>, <span class="dv">10</span>, <span class="dv">20</span>, <span class="dv">50</span>, <span class="dv">100</span>, <span class="dv">200</span>, <span class="dv">500</span>])</span>
+<span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-9"><a href="#cb1-9" aria-hidden="true" tabindex="-1"></a><span class="co"># Row-oriented: always reads the full file regardless of selectivity</span></span>
+<span id="cb1-10"><a href="#cb1-10" aria-hidden="true" tabindex="-1"></a><span class="co"># Scan rate: ~200 MB/s (network-attached storage, realistic for cloud)</span></span>
+<span id="cb1-11"><a href="#cb1-11" aria-hidden="true" tabindex="-1"></a>scan_rate_mb_s <span class="op">=</span> <span class="dv">200</span></span>
+<span id="cb1-12"><a href="#cb1-12" aria-hidden="true" tabindex="-1"></a>row_oriented_full <span class="op">=</span> (file_sizes_gb <span class="op">*</span> <span class="dv">1024</span>) <span class="op">/</span> scan_rate_mb_s  <span class="co"># seconds</span></span>
+<span id="cb1-13"><a href="#cb1-13" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-14"><a href="#cb1-14" aria-hidden="true" tabindex="-1"></a><span class="co"># Columnar, 1% selectivity: reads ~1% of data + overhead for statistics</span></span>
+<span id="cb1-15"><a href="#cb1-15" aria-hidden="true" tabindex="-1"></a><span class="co"># At small file sizes, the overhead dominates; at large sizes, savings dominate</span></span>
+<span id="cb1-16"><a href="#cb1-16" aria-hidden="true" tabindex="-1"></a>columnar_selective <span class="op">=</span> (file_sizes_gb <span class="op">*</span> <span class="dv">1024</span> <span class="op">*</span> <span class="fl">0.01</span> <span class="op">+</span> <span class="fl">0.5</span>) <span class="op">/</span> scan_rate_mb_s <span class="op">+</span> <span class="fl">0.05</span></span>
+<span id="cb1-17"><a href="#cb1-17" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-18"><a href="#cb1-18" aria-hidden="true" tabindex="-1"></a><span class="co"># Columnar, 100% selectivity: must read everything (no predicate pushdown benefit)</span></span>
+<span id="cb1-19"><a href="#cb1-19" aria-hidden="true" tabindex="-1"></a>columnar_full <span class="op">=</span> (file_sizes_gb <span class="op">*</span> <span class="dv">1024</span>) <span class="op">/</span> scan_rate_mb_s <span class="op">*</span> <span class="fl">1.05</span>  <span class="co"># slight overhead vs row</span></span>
+<span id="cb1-20"><a href="#cb1-20" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-21"><a href="#cb1-21" aria-hidden="true" tabindex="-1"></a><span class="co"># Add a little noise so lines don't look perfectly modelled</span></span>
+<span id="cb1-22"><a href="#cb1-22" aria-hidden="true" tabindex="-1"></a>noise <span class="op">=</span> rng.normal(<span class="dv">0</span>, <span class="fl">0.02</span>, <span class="bu">len</span>(file_sizes_gb))</span>
+<span id="cb1-23"><a href="#cb1-23" aria-hidden="true" tabindex="-1"></a>columnar_selective <span class="op">=</span> np.maximum(columnar_selective <span class="op">+</span> noise <span class="op">*</span> columnar_selective, <span class="fl">0.01</span>)</span>
+<span id="cb1-24"><a href="#cb1-24" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-25"><a href="#cb1-25" aria-hidden="true" tabindex="-1"></a>fig, axes <span class="op">=</span> plt.subplots(<span class="dv">1</span>, <span class="dv">2</span>, figsize<span class="op">=</span>(<span class="dv">9</span>, <span class="fl">4.5</span>), dpi<span class="op">=</span><span class="dv">150</span>)</span>
+<span id="cb1-26"><a href="#cb1-26" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-27"><a href="#cb1-27" aria-hidden="true" tabindex="-1"></a><span class="co"># Left: absolute time</span></span>
+<span id="cb1-28"><a href="#cb1-28" aria-hidden="true" tabindex="-1"></a>ax <span class="op">=</span> axes[<span class="dv">0</span>]</span>
+<span id="cb1-29"><a href="#cb1-29" aria-hidden="true" tabindex="-1"></a>ax.plot(file_sizes_gb, row_oriented_full,  color<span class="op">=</span><span class="st">"#111111"</span>, linewidth<span class="op">=</span><span class="dv">2</span>,</span>
+<span id="cb1-30"><a href="#cb1-30" aria-hidden="true" tabindex="-1"></a>        label<span class="op">=</span><span class="st">"Row-oriented (any selectivity)"</span>, marker<span class="op">=</span><span class="st">"o"</span>, markersize<span class="op">=</span><span class="dv">4</span>)</span>
+<span id="cb1-31"><a href="#cb1-31" aria-hidden="true" tabindex="-1"></a>ax.plot(file_sizes_gb, columnar_full,       color<span class="op">=</span><span class="st">"#888888"</span>, linewidth<span class="op">=</span><span class="fl">1.5</span>,</span>
+<span id="cb1-32"><a href="#cb1-32" aria-hidden="true" tabindex="-1"></a>        linestyle<span class="op">=</span><span class="st">"--"</span>, label<span class="op">=</span><span class="st">"Columnar, 100</span><span class="sc">% s</span><span class="st">electivity"</span>, marker<span class="op">=</span><span class="st">"s"</span>, markersize<span class="op">=</span><span class="dv">4</span>)</span>
+<span id="cb1-33"><a href="#cb1-33" aria-hidden="true" tabindex="-1"></a>ax.plot(file_sizes_gb, columnar_selective,  color<span class="op">=</span><span class="st">"#d52a2a"</span>, linewidth<span class="op">=</span><span class="dv">2</span>,</span>
+<span id="cb1-34"><a href="#cb1-34" aria-hidden="true" tabindex="-1"></a>        label<span class="op">=</span><span class="st">"Columnar, 1</span><span class="sc">% s</span><span class="st">electivity"</span>, marker<span class="op">=</span><span class="st">"^"</span>, markersize<span class="op">=</span><span class="dv">4</span>)</span>
+<span id="cb1-35"><a href="#cb1-35" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-36"><a href="#cb1-36" aria-hidden="true" tabindex="-1"></a>ax.set_xscale(<span class="st">"log"</span>)</span>
+<span id="cb1-37"><a href="#cb1-37" aria-hidden="true" tabindex="-1"></a>ax.set_yscale(<span class="st">"log"</span>)</span>
+<span id="cb1-38"><a href="#cb1-38" aria-hidden="true" tabindex="-1"></a>ax.set_xlabel(<span class="st">"File size (GB, log scale)"</span>)</span>
+<span id="cb1-39"><a href="#cb1-39" aria-hidden="true" tabindex="-1"></a>ax.set_ylabel(<span class="st">"Scan time (seconds, log scale)"</span>)</span>
+<span id="cb1-40"><a href="#cb1-40" aria-hidden="true" tabindex="-1"></a>ax.set_title(<span class="st">"Scan time vs file size"</span>)</span>
+<span id="cb1-41"><a href="#cb1-41" aria-hidden="true" tabindex="-1"></a>ax.legend(fontsize<span class="op">=</span><span class="dv">8</span>)</span>
+<span id="cb1-42"><a href="#cb1-42" aria-hidden="true" tabindex="-1"></a>ax.spines[<span class="st">"top"</span>].set_visible(<span class="va">False</span>)</span>
+<span id="cb1-43"><a href="#cb1-43" aria-hidden="true" tabindex="-1"></a>ax.spines[<span class="st">"right"</span>].set_visible(<span class="va">False</span>)</span>
+<span id="cb1-44"><a href="#cb1-44" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-45"><a href="#cb1-45" aria-hidden="true" tabindex="-1"></a><span class="co"># Right: speedup ratio columnar vs row at 1% selectivity</span></span>
+<span id="cb1-46"><a href="#cb1-46" aria-hidden="true" tabindex="-1"></a>speedup <span class="op">=</span> row_oriented_full <span class="op">/</span> columnar_selective</span>
+<span id="cb1-47"><a href="#cb1-47" aria-hidden="true" tabindex="-1"></a>ax2 <span class="op">=</span> axes[<span class="dv">1</span>]</span>
+<span id="cb1-48"><a href="#cb1-48" aria-hidden="true" tabindex="-1"></a>ax2.plot(file_sizes_gb, speedup, color<span class="op">=</span><span class="st">"#d52a2a"</span>, linewidth<span class="op">=</span><span class="dv">2</span>, marker<span class="op">=</span><span class="st">"o"</span>, markersize<span class="op">=</span><span class="dv">4</span>)</span>
+<span id="cb1-49"><a href="#cb1-49" aria-hidden="true" tabindex="-1"></a>ax2.axhline(y<span class="op">=</span><span class="dv">1</span>, color<span class="op">=</span><span class="st">"#888888"</span>, linestyle<span class="op">=</span><span class="st">"--"</span>, linewidth<span class="op">=</span><span class="fl">0.8</span>, label<span class="op">=</span><span class="st">"No speedup"</span>)</span>
+<span id="cb1-50"><a href="#cb1-50" aria-hidden="true" tabindex="-1"></a>ax2.set_xscale(<span class="st">"log"</span>)</span>
+<span id="cb1-51"><a href="#cb1-51" aria-hidden="true" tabindex="-1"></a>ax2.set_xlabel(<span class="st">"File size (GB, log scale)"</span>)</span>
+<span id="cb1-52"><a href="#cb1-52" aria-hidden="true" tabindex="-1"></a>ax2.set_ylabel(<span class="st">"Speedup ratio (row time / columnar time)"</span>)</span>
+<span id="cb1-53"><a href="#cb1-53" aria-hidden="true" tabindex="-1"></a>ax2.set_title(<span class="st">"Columnar speedup at 1</span><span class="sc">% s</span><span class="st">electivity"</span>)</span>
+<span id="cb1-54"><a href="#cb1-54" aria-hidden="true" tabindex="-1"></a>ax2.spines[<span class="st">"top"</span>].set_visible(<span class="va">False</span>)</span>
+<span id="cb1-55"><a href="#cb1-55" aria-hidden="true" tabindex="-1"></a>ax2.spines[<span class="st">"right"</span>].set_visible(<span class="va">False</span>)</span>
+<span id="cb1-56"><a href="#cb1-56" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-57"><a href="#cb1-57" aria-hidden="true" tabindex="-1"></a>plt.tight_layout(pad<span class="op">=</span><span class="fl">2.0</span>)</span>
+<span id="cb1-58"><a href="#cb1-58" aria-hidden="true" tabindex="-1"></a>plt.savefig(<span class="st">"_assets/ch01-format-comparison.png"</span>, dpi<span class="op">=</span><span class="dv">150</span>, bbox_inches<span class="op">=</span><span class="st">"tight"</span>)</span>
+<span id="cb1-59"><a href="#cb1-59" aria-hidden="true" tabindex="-1"></a>plt.show()</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</details>
+<div class="cell-output cell-output-display">
+<div id="fig-format-comparison" class="quarto-float quarto-figure quarto-figure-center anchored">
+<figure class="quarto-float quarto-float-fig figure">
+<div aria-describedby="fig-format-comparison-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<img src="01-data-architecture_files/figure-html/fig-format-comparison-output-1.png" width="1296" height="618" class="figure-img">
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-format-comparison-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Figure&nbsp;2.1: Simulated scan time vs file size for row-oriented and columnar storage. At low selectivity (1% of rows needed), columnar storage with predicate pushdown reads a fraction of the data. At full selectivity (100% of rows needed), the formats converge — columnar storage provides no advantage if you need everything.
+</figcaption>
+</figure>
+</div>
+</div>
+</div>
+<p>The speedup at 1% selectivity grows with file size because the fixed overhead of reading file statistics becomes a smaller fraction of the total cost as files get larger. A 10 GB GeoParquet file with 1% selectivity reads roughly 100 MB; the equivalent GeoJSON reads 10 GB. The 100× speedup in the chart is not an accident of parameter tuning — it reflects the physics of what happens when you store data in columns and track per-column statistics.</p>
+<hr>
+</section>
+</section>
+<section id="schema-design" class="level2" data-number="2.4">
+<h2 data-number="2.4" class="anchored" data-anchor-id="schema-design"><span class="header-section-number">2.4</span> Schema design</h2>
+<p>Schema design for spatial analytics is not the same problem as schema design for a transactional application. A CRUD application lives or dies on write integrity: normalised tables, foreign keys, constraints that prevent bad data. A spatial analytics schema lives or dies on read performance: how many tables does a query have to join, how wide is the table, how many rows does it have to touch to answer a common question.</p>
+<section id="wide-tables-versus-normalised-schemas" class="level3" data-number="2.4.1">
+<h3 data-number="2.4.1" class="anchored" data-anchor-id="wide-tables-versus-normalised-schemas"><span class="header-section-number">2.4.1</span> Wide tables versus normalised schemas</h3>
+<p>Consider a land-cover observations table. The normalised version spreads data across three tables:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb2"><pre class="sourceCode sql code-with-copy"><code class="sourceCode sql"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="kw">CREATE</span> <span class="kw">TABLE</span> acquisitions (</span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a>    acquisition_id   BIGINT <span class="kw">PRIMARY</span> <span class="kw">KEY</span>,</span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a>    acquired_at      TIMESTAMPTZ <span class="kw">NOT</span> <span class="kw">NULL</span>,</span>
+<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a>    satellite_id     <span class="dt">INTEGER</span> <span class="kw">REFERENCES</span> satellites(satellite_id),</span>
+<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a>    tile_id          <span class="dt">VARCHAR</span>(<span class="dv">20</span>) <span class="kw">REFERENCES</span> tiles(tile_id)</span>
+<span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a>);</span>
+<span id="cb2-7"><a href="#cb2-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-8"><a href="#cb2-8" aria-hidden="true" tabindex="-1"></a><span class="kw">CREATE</span> <span class="kw">TABLE</span> land_cover_classes (</span>
+<span id="cb2-9"><a href="#cb2-9" aria-hidden="true" tabindex="-1"></a>    class_id    <span class="dt">SMALLINT</span> <span class="kw">PRIMARY</span> <span class="kw">KEY</span>,</span>
+<span id="cb2-10"><a href="#cb2-10" aria-hidden="true" tabindex="-1"></a>    class_name  <span class="dt">VARCHAR</span>(<span class="dv">50</span>) <span class="kw">NOT</span> <span class="kw">NULL</span>,</span>
+<span id="cb2-11"><a href="#cb2-11" aria-hidden="true" tabindex="-1"></a>    class_code  <span class="dt">CHAR</span>(<span class="dv">4</span>) <span class="kw">NOT</span> <span class="kw">NULL</span></span>
+<span id="cb2-12"><a href="#cb2-12" aria-hidden="true" tabindex="-1"></a>);</span>
+<span id="cb2-13"><a href="#cb2-13" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-14"><a href="#cb2-14" aria-hidden="true" tabindex="-1"></a><span class="kw">CREATE</span> <span class="kw">TABLE</span> observations (</span>
+<span id="cb2-15"><a href="#cb2-15" aria-hidden="true" tabindex="-1"></a>    observation_id  BIGINT <span class="kw">PRIMARY</span> <span class="kw">KEY</span>,</span>
+<span id="cb2-16"><a href="#cb2-16" aria-hidden="true" tabindex="-1"></a>    acquisition_id  BIGINT <span class="kw">REFERENCES</span> acquisitions(acquisition_id),</span>
+<span id="cb2-17"><a href="#cb2-17" aria-hidden="true" tabindex="-1"></a>    class_id        <span class="dt">SMALLINT</span> <span class="kw">REFERENCES</span> land_cover_classes(class_id),</span>
+<span id="cb2-18"><a href="#cb2-18" aria-hidden="true" tabindex="-1"></a>    confidence      FLOAT4,</span>
+<span id="cb2-19"><a href="#cb2-19" aria-hidden="true" tabindex="-1"></a>    geom            GEOMETRY(POLYGON, <span class="dv">4326</span>)</span>
+<span id="cb2-20"><a href="#cb2-20" aria-hidden="true" tabindex="-1"></a>);</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>A query asking “how many grassland pixels were acquired in Australia in 2023?” requires joining all three tables plus a spatial filter. The join itself is not expensive at 1000 rows. At 200 million rows, the join is planner-dependent and frequently produces bad estimates.</p>
+<p>The analytical version denormalises into a single wide table:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb3"><pre class="sourceCode sql code-with-copy"><code class="sourceCode sql"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="kw">CREATE</span> <span class="kw">TABLE</span> spatial_observations (</span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a>    observation_id    BIGINT <span class="kw">GENERATED</span> ALWAYS <span class="kw">AS</span> IDENTITY <span class="kw">PRIMARY</span> <span class="kw">KEY</span>,</span>
+<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a>    acquired_at       TIMESTAMPTZ <span class="kw">NOT</span> <span class="kw">NULL</span>,</span>
+<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a>    satellite_name    <span class="dt">VARCHAR</span>(<span class="dv">50</span>) <span class="kw">NOT</span> <span class="kw">NULL</span>,</span>
+<span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a>    tile_id           <span class="dt">VARCHAR</span>(<span class="dv">20</span>) <span class="kw">NOT</span> <span class="kw">NULL</span>,</span>
+<span id="cb3-6"><a href="#cb3-6" aria-hidden="true" tabindex="-1"></a>    tile_h3_index     BIGINT,                        <span class="co">-- H3 level-8 cell index</span></span>
+<span id="cb3-7"><a href="#cb3-7" aria-hidden="true" tabindex="-1"></a>    land_cover_class  <span class="dt">VARCHAR</span>(<span class="dv">50</span>) <span class="kw">NOT</span> <span class="kw">NULL</span>,</span>
+<span id="cb3-8"><a href="#cb3-8" aria-hidden="true" tabindex="-1"></a>    land_cover_code   <span class="dt">CHAR</span>(<span class="dv">4</span>) <span class="kw">NOT</span> <span class="kw">NULL</span>,</span>
+<span id="cb3-9"><a href="#cb3-9" aria-hidden="true" tabindex="-1"></a>    confidence        FLOAT4,</span>
+<span id="cb3-10"><a href="#cb3-10" aria-hidden="true" tabindex="-1"></a>    bbox_minx         FLOAT8,</span>
+<span id="cb3-11"><a href="#cb3-11" aria-hidden="true" tabindex="-1"></a>    bbox_miny         FLOAT8,</span>
+<span id="cb3-12"><a href="#cb3-12" aria-hidden="true" tabindex="-1"></a>    bbox_maxx         FLOAT8,</span>
+<span id="cb3-13"><a href="#cb3-13" aria-hidden="true" tabindex="-1"></a>    bbox_maxy         FLOAT8,</span>
+<span id="cb3-14"><a href="#cb3-14" aria-hidden="true" tabindex="-1"></a>    geom              GEOMETRY(POLYGON, <span class="dv">4326</span>) <span class="kw">NOT</span> <span class="kw">NULL</span></span>
+<span id="cb3-15"><a href="#cb3-15" aria-hidden="true" tabindex="-1"></a>);</span>
+<span id="cb3-16"><a href="#cb3-16" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-17"><a href="#cb3-17" aria-hidden="true" tabindex="-1"></a><span class="co">-- Partition by year (see partitioning section)</span></span>
+<span id="cb3-18"><a href="#cb3-18" aria-hidden="true" tabindex="-1"></a><span class="co">-- GIST index on geometry (see Chapter 2)</span></span>
+<span id="cb3-19"><a href="#cb3-19" aria-hidden="true" tabindex="-1"></a><span class="co">-- B-tree index on acquired_at for time-range queries</span></span>
+<span id="cb3-20"><a href="#cb3-20" aria-hidden="true" tabindex="-1"></a><span class="kw">CREATE</span> <span class="kw">INDEX</span> idx_obs_acquired_at <span class="kw">ON</span> spatial_observations (acquired_at);</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>The redundancy (storing <code>satellite_name</code> as a string instead of a foreign key to a <code>satellites</code> table) is deliberate. A query that asks about satellite A never needs to know satellite B exists. The string is stored once per row; the join is eliminated entirely.</p>
+<p>The tradeoff: if satellite names change (they do, through rebranding or renaming), you update many rows instead of one. For a read-heavy analytics workload where names are stable, this is a good trade. The choice depends on the read-to-write ratio and whether updates happen. Know your workload before you normalise.</p>
+</section>
+<section id="star-schema-for-spatial-analytics" class="level3" data-number="2.4.2">
+<h3 data-number="2.4.2" class="anchored" data-anchor-id="star-schema-for-spatial-analytics"><span class="header-section-number">2.4.2</span> Star schema for spatial analytics</h3>
+<p>The pattern above — a central fact table surrounded by dimension tables that are usually joined in queries — is called a <strong>star schema</strong>. The “facts” are measurements (observations, events, readings). The “dimensions” are the contexts that give facts meaning (time, location, instrument, source).</p>
+<p>For spatial systems the location dimension is different from every other dimension. It is not just a foreign key to a <code>locations</code> table — it carries geometric data that enables spatial joins, proximity queries, and containment tests. The geometry column belongs in the fact table, not in a separate dimension table, because every spatial query needs it.</p>
+<p>The time dimension usually belongs as a timestamp column in the fact table for the same reason: time-range queries are the most common filter, and a join to a <code>dates</code> table for every such query is not free.</p>
+<p>What you do separate into dimension tables: slowly changing reference data that truly benefits from normalisation. Sensor calibration parameters. Land-cover classification hierarchies (class A belongs to super-class B, which belongs to super-class C). These change infrequently and would bloat the fact table with repeated multi-column structures.</p>
+<hr>
+</section>
+</section>
+<section id="partitioning-strategy" class="level2" data-number="2.5">
+<h2 data-number="2.5" class="anchored" data-anchor-id="partitioning-strategy"><span class="header-section-number">2.5</span> Partitioning strategy</h2>
+<p>Partitioning is the practice of dividing a table or file collection into named segments so that queries can identify and skip irrelevant segments without reading them. The segments do not change the data — they change how the data is organised on disk.</p>
+<p>Three partitioning strategies matter for spatial data.</p>
+<section id="time-partitioning" class="level3" data-number="2.5.1">
+<h3 data-number="2.5.1" class="anchored" data-anchor-id="time-partitioning"><span class="header-section-number">2.5.1</span> Time partitioning</h3>
+<p>Time is the most common dimension for analytical queries. “Show me observations from January 2024” should not read January 2020 data. If the data is partitioned by year and month, the query planner can identify which partitions contain the requested time range and open only those.</p>
+<p>In PostgreSQL, declarative partitioning by range is straightforward:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb4"><pre class="sourceCode sql code-with-copy"><code class="sourceCode sql"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="kw">CREATE</span> <span class="kw">TABLE</span> spatial_observations (</span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a>    observation_id  BIGINT <span class="kw">NOT</span> <span class="kw">NULL</span>,</span>
+<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a>    acquired_at     TIMESTAMPTZ <span class="kw">NOT</span> <span class="kw">NULL</span>,</span>
+<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a>    tile_id         <span class="dt">VARCHAR</span>(<span class="dv">20</span>) <span class="kw">NOT</span> <span class="kw">NULL</span>,</span>
+<span id="cb4-5"><a href="#cb4-5" aria-hidden="true" tabindex="-1"></a>    land_cover_code <span class="dt">CHAR</span>(<span class="dv">4</span>) <span class="kw">NOT</span> <span class="kw">NULL</span>,</span>
+<span id="cb4-6"><a href="#cb4-6" aria-hidden="true" tabindex="-1"></a>    confidence      FLOAT4,</span>
+<span id="cb4-7"><a href="#cb4-7" aria-hidden="true" tabindex="-1"></a>    geom            GEOMETRY(POLYGON, <span class="dv">4326</span>)</span>
+<span id="cb4-8"><a href="#cb4-8" aria-hidden="true" tabindex="-1"></a>) <span class="kw">PARTITION</span> <span class="kw">BY</span> <span class="kw">RANGE</span> (acquired_at);</span>
+<span id="cb4-9"><a href="#cb4-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-10"><a href="#cb4-10" aria-hidden="true" tabindex="-1"></a><span class="kw">CREATE</span> <span class="kw">TABLE</span> spatial_observations_2023</span>
+<span id="cb4-11"><a href="#cb4-11" aria-hidden="true" tabindex="-1"></a>    <span class="kw">PARTITION</span> <span class="kw">OF</span> spatial_observations</span>
+<span id="cb4-12"><a href="#cb4-12" aria-hidden="true" tabindex="-1"></a>    <span class="cf">FOR</span> <span class="kw">VALUES</span> <span class="kw">FROM</span> (<span class="st">'2023-01-01'</span>) <span class="kw">TO</span> (<span class="st">'2024-01-01'</span>);</span>
+<span id="cb4-13"><a href="#cb4-13" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-14"><a href="#cb4-14" aria-hidden="true" tabindex="-1"></a><span class="kw">CREATE</span> <span class="kw">TABLE</span> spatial_observations_2024</span>
+<span id="cb4-15"><a href="#cb4-15" aria-hidden="true" tabindex="-1"></a>    <span class="kw">PARTITION</span> <span class="kw">OF</span> spatial_observations</span>
+<span id="cb4-16"><a href="#cb4-16" aria-hidden="true" tabindex="-1"></a>    <span class="cf">FOR</span> <span class="kw">VALUES</span> <span class="kw">FROM</span> (<span class="st">'2024-01-01'</span>) <span class="kw">TO</span> (<span class="st">'2025-01-01'</span>);</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>A query with <code>WHERE acquired_at &gt;= '2024-01-01' AND acquired_at &lt; '2024-04-01'</code> will touch only the 2024 partition. The 2023 partition is not opened.</p>
+</section>
+<section id="spatial-partitioning" class="level3" data-number="2.5.2">
+<h3 data-number="2.5.2" class="anchored" data-anchor-id="spatial-partitioning"><span class="header-section-number">2.5.2</span> Spatial partitioning</h3>
+<p>Time partitioning works when queries are time-selective. For spatially-selective queries — “show me all observations within 50km of this point” — a spatial partition is what prunes irrelevant data.</p>
+<p>The two practical schemes are <strong>H3 cells</strong> and <strong>quadkeys</strong>. H3 is Uber’s hierarchical hexagonal grid; at resolution 5, each cell covers approximately 252 km². A spatial observation can be assigned to an H3 cell at index time:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb5"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> h3</span>
+<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> assign_h3_index(lon: <span class="bu">float</span>, lat: <span class="bu">float</span>, resolution: <span class="bu">int</span> <span class="op">=</span> <span class="dv">5</span>) <span class="op">-&gt;</span> <span class="bu">int</span>:</span>
+<span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a>    <span class="co">"""Return the H3 index as an integer for a point at (lon, lat)."""</span></span>
+<span id="cb5-5"><a href="#cb5-5" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> <span class="bu">int</span>(h3.latlng_to_cell(lat, lon, resolution), <span class="dv">16</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>Storing the H3 index as a <code>BIGINT</code> column allows B-tree indexing and equality queries. A query for a specific region finds all H3 cells that intersect the region, then filters by <code>tile_h3_index IN (...)</code>. This is fast because it uses the B-tree index rather than the GIST index — the spatial index is used only to confirm exact geometry, not to find candidates.</p>
+<p>Quadkeys work on the same principle using a different grid: each level of the quadkey divides the world into four quadrants, doubling resolution. Quadkeys are strings, which makes them slightly less efficient for B-tree indexing than H3 integers, but they have broader tool support.</p>
+</section>
+<section id="compound-partitioning" class="level3" data-number="2.5.3">
+<h3 data-number="2.5.3" class="anchored" data-anchor-id="compound-partitioning"><span class="header-section-number">2.5.3</span> Compound partitioning</h3>
+<p>For large datasets, combine time and spatial partitioning. Partition by year at the top level, then by H3 cell range within each year. A query that asks for data from 2024 in a specific region touches one year partition, then uses the H3 index to limit rows within that partition.</p>
+<p>This is where the initial architecture decision has compounding effects. The consultancy team that stored data as GeoJSON in a flat directory had no partitioning at all. Their 1.4 TB of data was effectively one partition. Every query read everything.</p>
+<hr>
+</section>
+</section>
+<section id="data-catalogues" class="level2" data-number="2.6">
+<h2 data-number="2.6" class="anchored" data-anchor-id="data-catalogues"><span class="header-section-number">2.6</span> Data catalogues</h2>
+<p>A data catalogue is a registry: a record of what datasets exist, where they are stored, what schema they have, who maintains them, and when they were last updated. It is not a query engine and not a data warehouse. It is the index.</p>
+<p>The reason catalogues matter is that schema drift kills data products silently. When a data source adds a column, renames a field, or changes a unit of measurement, a pipeline that consumed the old schema does not immediately fail — it silently produces wrong results. The consultancy team’s pipeline had four undocumented schema versions because the team added fields without updating any central record. Two years later, no one could say which files used which schema.</p>
+<p>A catalogue prevents this not by enforcing schema (that is a data quality problem, Chapter 7) but by making schema an explicit, versioned, queryable artifact. When a consumer reads from a dataset, it reads the catalogue entry first and validates that the schema it expects matches the schema the catalogue records. Mismatches become visible instead of silent.</p>
+<section id="what-a-catalogue-entry-contains" class="level3" data-number="2.6.1">
+<h3 data-number="2.6.1" class="anchored" data-anchor-id="what-a-catalogue-entry-contains"><span class="header-section-number">2.6.1</span> What a catalogue entry contains</h3>
+<p>A minimal catalogue entry needs:</p>
+<ul>
+<li>Dataset identifier (unique, stable)</li>
+<li>Human-readable description</li>
+<li>Storage location (path, bucket, or connection string)</li>
+<li>Format (GeoParquet, GeoJSON, PostGIS table, etc.)</li>
+<li>Schema version (a number or hash)</li>
+<li>Column definitions: name, type, nullable, description</li>
+<li>Spatial extent (bounding box, CRS)</li>
+<li>Temporal extent (earliest and latest record dates)</li>
+<li>Owner and contact</li>
+<li>Last validated timestamp</li>
+</ul>
+<p>JSON is a perfectly adequate format for a small catalogue. The important thing is that it is machine-readable, version-controlled, and checked before any pipeline reads from or writes to the dataset.</p>
+</section>
+<section id="a-minimal-json-catalogue" class="level3" data-number="2.6.2">
+<h3 data-number="2.6.2" class="anchored" data-anchor-id="a-minimal-json-catalogue"><span class="header-section-number">2.6.2</span> A minimal JSON catalogue</h3>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb6"><pre class="sourceCode json code-with-copy"><code class="sourceCode json"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="fu">{</span></span>
+<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a>  <span class="dt">"datasets"</span><span class="fu">:</span> <span class="ot">[</span></span>
+<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a>    <span class="fu">{</span></span>
+<span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a>      <span class="dt">"id"</span><span class="fu">:</span> <span class="st">"land_cover_aus_2024"</span><span class="fu">,</span></span>
+<span id="cb6-5"><a href="#cb6-5" aria-hidden="true" tabindex="-1"></a>      <span class="dt">"description"</span><span class="fu">:</span> <span class="st">"Satellite-derived land cover classifications, Australia, 2024"</span><span class="fu">,</span></span>
+<span id="cb6-6"><a href="#cb6-6" aria-hidden="true" tabindex="-1"></a>      <span class="dt">"location"</span><span class="fu">:</span> <span class="st">"s3://spatial-data/land-cover/aus/2024/"</span><span class="fu">,</span></span>
+<span id="cb6-7"><a href="#cb6-7" aria-hidden="true" tabindex="-1"></a>      <span class="dt">"format"</span><span class="fu">:</span> <span class="st">"GeoParquet"</span><span class="fu">,</span></span>
+<span id="cb6-8"><a href="#cb6-8" aria-hidden="true" tabindex="-1"></a>      <span class="dt">"schema_version"</span><span class="fu">:</span> <span class="dv">3</span><span class="fu">,</span></span>
+<span id="cb6-9"><a href="#cb6-9" aria-hidden="true" tabindex="-1"></a>      <span class="dt">"crs"</span><span class="fu">:</span> <span class="st">"EPSG:4326"</span><span class="fu">,</span></span>
+<span id="cb6-10"><a href="#cb6-10" aria-hidden="true" tabindex="-1"></a>      <span class="dt">"spatial_extent"</span><span class="fu">:</span> <span class="fu">{</span></span>
+<span id="cb6-11"><a href="#cb6-11" aria-hidden="true" tabindex="-1"></a>        <span class="dt">"minx"</span><span class="fu">:</span> <span class="fl">112.9</span><span class="fu">,</span></span>
+<span id="cb6-12"><a href="#cb6-12" aria-hidden="true" tabindex="-1"></a>        <span class="dt">"miny"</span><span class="fu">:</span> <span class="fl">-43.7</span><span class="fu">,</span></span>
+<span id="cb6-13"><a href="#cb6-13" aria-hidden="true" tabindex="-1"></a>        <span class="dt">"maxx"</span><span class="fu">:</span> <span class="fl">153.6</span><span class="fu">,</span></span>
+<span id="cb6-14"><a href="#cb6-14" aria-hidden="true" tabindex="-1"></a>        <span class="dt">"maxy"</span><span class="fu">:</span> <span class="fl">-10.7</span></span>
+<span id="cb6-15"><a href="#cb6-15" aria-hidden="true" tabindex="-1"></a>      <span class="fu">},</span></span>
+<span id="cb6-16"><a href="#cb6-16" aria-hidden="true" tabindex="-1"></a>      <span class="dt">"temporal_extent"</span><span class="fu">:</span> <span class="fu">{</span></span>
+<span id="cb6-17"><a href="#cb6-17" aria-hidden="true" tabindex="-1"></a>        <span class="dt">"start"</span><span class="fu">:</span> <span class="st">"2024-01-01"</span><span class="fu">,</span></span>
+<span id="cb6-18"><a href="#cb6-18" aria-hidden="true" tabindex="-1"></a>        <span class="dt">"end"</span><span class="fu">:</span> <span class="st">"2024-12-31"</span></span>
+<span id="cb6-19"><a href="#cb6-19" aria-hidden="true" tabindex="-1"></a>      <span class="fu">},</span></span>
+<span id="cb6-20"><a href="#cb6-20" aria-hidden="true" tabindex="-1"></a>      <span class="dt">"columns"</span><span class="fu">:</span> <span class="ot">[</span></span>
+<span id="cb6-21"><a href="#cb6-21" aria-hidden="true" tabindex="-1"></a>        <span class="fu">{</span><span class="dt">"name"</span><span class="fu">:</span> <span class="st">"observation_id"</span><span class="fu">,</span> <span class="dt">"type"</span><span class="fu">:</span> <span class="st">"int64"</span><span class="fu">,</span>   <span class="dt">"nullable"</span><span class="fu">:</span> <span class="kw">false</span><span class="fu">,</span> <span class="dt">"description"</span><span class="fu">:</span> <span class="st">"Unique observation identifier"</span><span class="fu">}</span><span class="ot">,</span></span>
+<span id="cb6-22"><a href="#cb6-22" aria-hidden="true" tabindex="-1"></a>        <span class="fu">{</span><span class="dt">"name"</span><span class="fu">:</span> <span class="st">"acquired_at"</span><span class="fu">,</span>    <span class="dt">"type"</span><span class="fu">:</span> <span class="st">"timestamp"</span><span class="fu">,</span><span class="dt">"nullable"</span><span class="fu">:</span> <span class="kw">false</span><span class="fu">,</span> <span class="dt">"description"</span><span class="fu">:</span> <span class="st">"UTC acquisition timestamp"</span><span class="fu">}</span><span class="ot">,</span></span>
+<span id="cb6-23"><a href="#cb6-23" aria-hidden="true" tabindex="-1"></a>        <span class="fu">{</span><span class="dt">"name"</span><span class="fu">:</span> <span class="st">"tile_id"</span><span class="fu">,</span>        <span class="dt">"type"</span><span class="fu">:</span> <span class="st">"string"</span><span class="fu">,</span>  <span class="dt">"nullable"</span><span class="fu">:</span> <span class="kw">false</span><span class="fu">,</span> <span class="dt">"description"</span><span class="fu">:</span> <span class="st">"Satellite tile identifier"</span><span class="fu">}</span><span class="ot">,</span></span>
+<span id="cb6-24"><a href="#cb6-24" aria-hidden="true" tabindex="-1"></a>        <span class="fu">{</span><span class="dt">"name"</span><span class="fu">:</span> <span class="st">"land_cover_code"</span><span class="fu">,</span><span class="dt">"type"</span><span class="fu">:</span> <span class="st">"string"</span><span class="fu">,</span>  <span class="dt">"nullable"</span><span class="fu">:</span> <span class="kw">false</span><span class="fu">,</span> <span class="dt">"description"</span><span class="fu">:</span> <span class="st">"Land cover class code, LCCS standard"</span><span class="fu">}</span><span class="ot">,</span></span>
+<span id="cb6-25"><a href="#cb6-25" aria-hidden="true" tabindex="-1"></a>        <span class="fu">{</span><span class="dt">"name"</span><span class="fu">:</span> <span class="st">"confidence"</span><span class="fu">,</span>     <span class="dt">"type"</span><span class="fu">:</span> <span class="st">"float32"</span><span class="fu">,</span> <span class="dt">"nullable"</span><span class="fu">:</span> <span class="kw">true</span><span class="fu">,</span>  <span class="dt">"description"</span><span class="fu">:</span> <span class="st">"Classifier confidence, 0–1"</span><span class="fu">}</span><span class="ot">,</span></span>
+<span id="cb6-26"><a href="#cb6-26" aria-hidden="true" tabindex="-1"></a>        <span class="fu">{</span><span class="dt">"name"</span><span class="fu">:</span> <span class="st">"geometry"</span><span class="fu">,</span>       <span class="dt">"type"</span><span class="fu">:</span> <span class="st">"geometry"</span><span class="fu">,</span><span class="dt">"nullable"</span><span class="fu">:</span> <span class="kw">false</span><span class="fu">,</span>  <span class="dt">"description"</span><span class="fu">:</span> <span class="st">"Polygon in WGS84"</span><span class="fu">}</span></span>
+<span id="cb6-27"><a href="#cb6-27" aria-hidden="true" tabindex="-1"></a>      <span class="ot">]</span><span class="fu">,</span></span>
+<span id="cb6-28"><a href="#cb6-28" aria-hidden="true" tabindex="-1"></a>      <span class="dt">"owner"</span><span class="fu">:</span> <span class="st">"platform-team"</span><span class="fu">,</span></span>
+<span id="cb6-29"><a href="#cb6-29" aria-hidden="true" tabindex="-1"></a>      <span class="dt">"last_validated"</span><span class="fu">:</span> <span class="st">"2025-03-15T09:00:00Z"</span></span>
+<span id="cb6-30"><a href="#cb6-30" aria-hidden="true" tabindex="-1"></a>    <span class="fu">}</span></span>
+<span id="cb6-31"><a href="#cb6-31" aria-hidden="true" tabindex="-1"></a>  <span class="ot">]</span></span>
+<span id="cb6-32"><a href="#cb6-32" aria-hidden="true" tabindex="-1"></a><span class="fu">}</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</section>
+<section id="a-python-catalogue-reader" class="level3" data-number="2.6.3">
+<h3 data-number="2.6.3" class="anchored" data-anchor-id="a-python-catalogue-reader"><span class="header-section-number">2.6.3</span> A Python catalogue reader</h3>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb7"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> json</span>
+<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> pathlib <span class="im">import</span> Path</span>
+<span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> datetime <span class="im">import</span> datetime</span>
+<span id="cb7-4"><a href="#cb7-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-5"><a href="#cb7-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-6"><a href="#cb7-6" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> load_catalogue(path: <span class="bu">str</span> <span class="op">|</span> Path) <span class="op">-&gt;</span> <span class="bu">dict</span>:</span>
+<span id="cb7-7"><a href="#cb7-7" aria-hidden="true" tabindex="-1"></a>    <span class="co">"""Load a JSON catalogue and return as a dict keyed by dataset ID."""</span></span>
+<span id="cb7-8"><a href="#cb7-8" aria-hidden="true" tabindex="-1"></a>    <span class="cf">with</span> <span class="bu">open</span>(path) <span class="im">as</span> f:</span>
+<span id="cb7-9"><a href="#cb7-9" aria-hidden="true" tabindex="-1"></a>        raw <span class="op">=</span> json.load(f)</span>
+<span id="cb7-10"><a href="#cb7-10" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> {d[<span class="st">"id"</span>]: d <span class="cf">for</span> d <span class="kw">in</span> raw[<span class="st">"datasets"</span>]}</span>
+<span id="cb7-11"><a href="#cb7-11" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-12"><a href="#cb7-12" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-13"><a href="#cb7-13" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> get_dataset(catalogue: <span class="bu">dict</span>, dataset_id: <span class="bu">str</span>) <span class="op">-&gt;</span> <span class="bu">dict</span>:</span>
+<span id="cb7-14"><a href="#cb7-14" aria-hidden="true" tabindex="-1"></a>    <span class="co">"""Retrieve a dataset entry or raise KeyError if not found."""</span></span>
+<span id="cb7-15"><a href="#cb7-15" aria-hidden="true" tabindex="-1"></a>    <span class="cf">if</span> dataset_id <span class="kw">not</span> <span class="kw">in</span> catalogue:</span>
+<span id="cb7-16"><a href="#cb7-16" aria-hidden="true" tabindex="-1"></a>        <span class="cf">raise</span> <span class="pp">KeyError</span>(</span>
+<span id="cb7-17"><a href="#cb7-17" aria-hidden="true" tabindex="-1"></a>            <span class="ss">f"Dataset '</span><span class="sc">{</span>dataset_id<span class="sc">}</span><span class="ss">' not in catalogue. "</span></span>
+<span id="cb7-18"><a href="#cb7-18" aria-hidden="true" tabindex="-1"></a>            <span class="ss">f"Available: </span><span class="sc">{</span><span class="bu">list</span>(catalogue.keys())<span class="sc">}</span><span class="ss">"</span></span>
+<span id="cb7-19"><a href="#cb7-19" aria-hidden="true" tabindex="-1"></a>        )</span>
+<span id="cb7-20"><a href="#cb7-20" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> catalogue[dataset_id]</span>
+<span id="cb7-21"><a href="#cb7-21" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-22"><a href="#cb7-22" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-23"><a href="#cb7-23" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> expected_columns(catalogue: <span class="bu">dict</span>, dataset_id: <span class="bu">str</span>) <span class="op">-&gt;</span> <span class="bu">dict</span>[<span class="bu">str</span>, <span class="bu">str</span>]:</span>
+<span id="cb7-24"><a href="#cb7-24" aria-hidden="true" tabindex="-1"></a>    <span class="co">"""Return {column_name: type} for a dataset."""</span></span>
+<span id="cb7-25"><a href="#cb7-25" aria-hidden="true" tabindex="-1"></a>    entry <span class="op">=</span> get_dataset(catalogue, dataset_id)</span>
+<span id="cb7-26"><a href="#cb7-26" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> {col[<span class="st">"name"</span>]: col[<span class="st">"type"</span>] <span class="cf">for</span> col <span class="kw">in</span> entry[<span class="st">"columns"</span>]}</span>
+<span id="cb7-27"><a href="#cb7-27" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-28"><a href="#cb7-28" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-29"><a href="#cb7-29" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> check_schema_version(catalogue: <span class="bu">dict</span>, dataset_id: <span class="bu">str</span>, expected_version: <span class="bu">int</span>) <span class="op">-&gt;</span> <span class="va">None</span>:</span>
+<span id="cb7-30"><a href="#cb7-30" aria-hidden="true" tabindex="-1"></a>    <span class="co">"""Raise if the catalogue schema version does not match what the consumer expects."""</span></span>
+<span id="cb7-31"><a href="#cb7-31" aria-hidden="true" tabindex="-1"></a>    entry <span class="op">=</span> get_dataset(catalogue, dataset_id)</span>
+<span id="cb7-32"><a href="#cb7-32" aria-hidden="true" tabindex="-1"></a>    actual <span class="op">=</span> entry.get(<span class="st">"schema_version"</span>, <span class="dv">0</span>)</span>
+<span id="cb7-33"><a href="#cb7-33" aria-hidden="true" tabindex="-1"></a>    <span class="cf">if</span> actual <span class="op">!=</span> expected_version:</span>
+<span id="cb7-34"><a href="#cb7-34" aria-hidden="true" tabindex="-1"></a>        <span class="cf">raise</span> <span class="pp">ValueError</span>(</span>
+<span id="cb7-35"><a href="#cb7-35" aria-hidden="true" tabindex="-1"></a>            <span class="ss">f"Schema version mismatch for '</span><span class="sc">{</span>dataset_id<span class="sc">}</span><span class="ss">': "</span></span>
+<span id="cb7-36"><a href="#cb7-36" aria-hidden="true" tabindex="-1"></a>            <span class="ss">f"consumer expects v</span><span class="sc">{</span>expected_version<span class="sc">}</span><span class="ss">, catalogue records v</span><span class="sc">{</span>actual<span class="sc">}</span><span class="ss">. "</span></span>
+<span id="cb7-37"><a href="#cb7-37" aria-hidden="true" tabindex="-1"></a>            <span class="st">"Update your consumer or flag for schema review."</span></span>
+<span id="cb7-38"><a href="#cb7-38" aria-hidden="true" tabindex="-1"></a>        )</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>The pattern is simple: before any pipeline reads a dataset, it calls <code>check_schema_version</code>. If the schema has been updated and the consumer has not been, the mismatch surfaces immediately as a raised exception rather than silently corrupted output.</p>
+<hr>
+</section>
+</section>
+<section id="what-to-try" class="level2" data-number="2.7">
+<h2 data-number="2.7" class="anchored" data-anchor-id="what-to-try"><span class="header-section-number">2.7</span> What to try</h2>
+<div class="callout callout-style-simple callout-tip callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+<span class="screen-reader-only">Tip</span>What to try
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<ol type="1">
+<li><p><strong>Vary the selectivity.</strong> In the interactive cell below, <code>selectivity</code> is the fraction of rows a query needs (0.01 = 1%). Drag it from 0.01 to 0.5 to 1.0. Notice that at high selectivity, the columnar advantage disappears — predicate pushdown only helps if most data can be skipped.</p></li>
+<li><p><strong>Change <code>columns_wide</code> and <code>columns_columnar</code>.</strong> The columnar format reads only the columns a query needs. Set <code>columns_columnar = 3</code> (you need three columns) versus <code>columns_wide = 50</code> (the table is 50 columns wide). The fraction of data read drops by 50/3 ≈ 16×. Change <code>columns_columnar</code> to 50 and watch the advantage vanish.</p></li>
+<li><p><strong>Simulate a large dataset.</strong> Set <code>n_rows</code> to 500_000_000 (500 million rows). At 1% selectivity, the row-oriented scan reads 5 million rows worth of data — but it has to open every row to find them. What happens to absolute scan time at this scale?</p></li>
+</ol>
+</div>
+</div>
+<div class="pyodide-cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb8"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="co"># --- Try changing these parameters ---</span></span>
+<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a>n_rows           <span class="op">=</span> <span class="dv">10_000_000</span>   <span class="co"># total rows in the dataset</span></span>
+<span id="cb8-3"><a href="#cb8-3" aria-hidden="true" tabindex="-1"></a>selectivity      <span class="op">=</span> <span class="fl">0.01</span>         <span class="co"># fraction of rows the query needs (0.01 = 1%)</span></span>
+<span id="cb8-4"><a href="#cb8-4" aria-hidden="true" tabindex="-1"></a>columns_wide     <span class="op">=</span> <span class="dv">50</span>           <span class="co"># total columns in the table</span></span>
+<span id="cb8-5"><a href="#cb8-5" aria-hidden="true" tabindex="-1"></a>columns_columnar <span class="op">=</span> <span class="dv">5</span>            <span class="co"># columns the query actually reads</span></span>
+<span id="cb8-6"><a href="#cb8-6" aria-hidden="true" tabindex="-1"></a>bytes_per_value  <span class="op">=</span> <span class="dv">8</span>            <span class="co"># bytes per column value (float64 or int64)</span></span>
+<span id="cb8-7"><a href="#cb8-7" aria-hidden="true" tabindex="-1"></a>scan_rate_mb_s   <span class="op">=</span> <span class="dv">200</span>          <span class="co"># simulated I/O throughput in MB/s</span></span>
+<span id="cb8-8"><a href="#cb8-8" aria-hidden="true" tabindex="-1"></a><span class="co"># --- End of parameters ---</span></span>
+<span id="cb8-9"><a href="#cb8-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-10"><a href="#cb8-10" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> numpy <span class="im">as</span> np</span>
+<span id="cb8-11"><a href="#cb8-11" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> matplotlib.pyplot <span class="im">as</span> plt</span>
+<span id="cb8-12"><a href="#cb8-12" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-13"><a href="#cb8-13" aria-hidden="true" tabindex="-1"></a>selectivities <span class="op">=</span> np.linspace(<span class="fl">0.01</span>, <span class="fl">1.0</span>, <span class="dv">50</span>)</span>
+<span id="cb8-14"><a href="#cb8-14" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-15"><a href="#cb8-15" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> scan_time_row(sel, n, cols_wide, bpv, rate_mb_s):</span>
+<span id="cb8-16"><a href="#cb8-16" aria-hidden="true" tabindex="-1"></a>    <span class="co">"""Row-oriented: must read every row to find matching ones."""</span></span>
+<span id="cb8-17"><a href="#cb8-17" aria-hidden="true" tabindex="-1"></a>    total_bytes <span class="op">=</span> n <span class="op">*</span> cols_wide <span class="op">*</span> bpv</span>
+<span id="cb8-18"><a href="#cb8-18" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> (total_bytes <span class="op">/</span> <span class="fl">1e6</span>) <span class="op">/</span> rate_mb_s  <span class="co"># seconds (constant — always full scan)</span></span>
+<span id="cb8-19"><a href="#cb8-19" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-20"><a href="#cb8-20" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> scan_time_columnar(sel, n, cols_wide, cols_needed, bpv, rate_mb_s):</span>
+<span id="cb8-21"><a href="#cb8-21" aria-hidden="true" tabindex="-1"></a>    <span class="co">"""Columnar: reads only needed columns, skips non-matching row groups."""</span></span>
+<span id="cb8-22"><a href="#cb8-22" aria-hidden="true" tabindex="-1"></a>    <span class="co"># Fraction of data that must be read: columns needed / total columns</span></span>
+<span id="cb8-23"><a href="#cb8-23" aria-hidden="true" tabindex="-1"></a>    col_fraction <span class="op">=</span> cols_needed <span class="op">/</span> cols_wide</span>
+<span id="cb8-24"><a href="#cb8-24" aria-hidden="true" tabindex="-1"></a>    <span class="co"># Predicate pushdown skips (1 - sel) fraction of row groups (approximately)</span></span>
+<span id="cb8-25"><a href="#cb8-25" aria-hidden="true" tabindex="-1"></a>    <span class="co"># Small fixed overhead for reading statistics</span></span>
+<span id="cb8-26"><a href="#cb8-26" aria-hidden="true" tabindex="-1"></a>    effective_fraction <span class="op">=</span> col_fraction <span class="op">*</span> (sel <span class="op">+</span> <span class="fl">0.05</span>)  <span class="co"># 0.05 = overhead for stats</span></span>
+<span id="cb8-27"><a href="#cb8-27" aria-hidden="true" tabindex="-1"></a>    total_bytes <span class="op">=</span> n <span class="op">*</span> cols_wide <span class="op">*</span> bpv</span>
+<span id="cb8-28"><a href="#cb8-28" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> (total_bytes <span class="op">*</span> effective_fraction <span class="op">/</span> <span class="fl">1e6</span>) <span class="op">/</span> rate_mb_s</span>
+<span id="cb8-29"><a href="#cb8-29" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-30"><a href="#cb8-30" aria-hidden="true" tabindex="-1"></a>row_times <span class="op">=</span> np.array([scan_time_row(s, n_rows, columns_wide, bytes_per_value, scan_rate_mb_s)</span>
+<span id="cb8-31"><a href="#cb8-31" aria-hidden="true" tabindex="-1"></a>                      <span class="cf">for</span> s <span class="kw">in</span> selectivities])</span>
+<span id="cb8-32"><a href="#cb8-32" aria-hidden="true" tabindex="-1"></a>col_times <span class="op">=</span> np.array([scan_time_columnar(s, n_rows, columns_wide, columns_columnar,</span>
+<span id="cb8-33"><a href="#cb8-33" aria-hidden="true" tabindex="-1"></a>                                          bytes_per_value, scan_rate_mb_s)</span>
+<span id="cb8-34"><a href="#cb8-34" aria-hidden="true" tabindex="-1"></a>                      <span class="cf">for</span> s <span class="kw">in</span> selectivities])</span>
+<span id="cb8-35"><a href="#cb8-35" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-36"><a href="#cb8-36" aria-hidden="true" tabindex="-1"></a>speedup <span class="op">=</span> row_times <span class="op">/</span> np.maximum(col_times, <span class="fl">1e-6</span>)</span>
+<span id="cb8-37"><a href="#cb8-37" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-38"><a href="#cb8-38" aria-hidden="true" tabindex="-1"></a>fig, (ax1, ax2) <span class="op">=</span> plt.subplots(<span class="dv">1</span>, <span class="dv">2</span>, figsize<span class="op">=</span>(<span class="dv">9</span>, <span class="dv">4</span>))</span>
+<span id="cb8-39"><a href="#cb8-39" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-40"><a href="#cb8-40" aria-hidden="true" tabindex="-1"></a>ax1.plot(selectivities <span class="op">*</span> <span class="dv">100</span>, row_times, color<span class="op">=</span><span class="st">"#111111"</span>, linewidth<span class="op">=</span><span class="dv">2</span>,</span>
+<span id="cb8-41"><a href="#cb8-41" aria-hidden="true" tabindex="-1"></a>         label<span class="op">=</span><span class="ss">f"Row-oriented (</span><span class="sc">{</span>columns_wide<span class="sc">}</span><span class="ss"> cols)"</span>)</span>
+<span id="cb8-42"><a href="#cb8-42" aria-hidden="true" tabindex="-1"></a>ax1.plot(selectivities <span class="op">*</span> <span class="dv">100</span>, col_times, color<span class="op">=</span><span class="st">"#d52a2a"</span>, linewidth<span class="op">=</span><span class="dv">2</span>,</span>
+<span id="cb8-43"><a href="#cb8-43" aria-hidden="true" tabindex="-1"></a>         label<span class="op">=</span><span class="ss">f"Columnar (</span><span class="sc">{</span>columns_columnar<span class="sc">}</span><span class="ss"> of </span><span class="sc">{</span>columns_wide<span class="sc">}</span><span class="ss"> cols)"</span>)</span>
+<span id="cb8-44"><a href="#cb8-44" aria-hidden="true" tabindex="-1"></a>ax1.set_xlabel(<span class="st">"Selectivity (</span><span class="sc">% o</span><span class="st">f rows returned)"</span>)</span>
+<span id="cb8-45"><a href="#cb8-45" aria-hidden="true" tabindex="-1"></a>ax1.set_ylabel(<span class="st">"Estimated scan time (seconds)"</span>)</span>
+<span id="cb8-46"><a href="#cb8-46" aria-hidden="true" tabindex="-1"></a>ax1.set_title(<span class="ss">f"Scan time  •  </span><span class="sc">{</span>n_rows<span class="sc">:,}</span><span class="ss"> rows"</span>)</span>
+<span id="cb8-47"><a href="#cb8-47" aria-hidden="true" tabindex="-1"></a>ax1.legend(fontsize<span class="op">=</span><span class="dv">8</span>)</span>
+<span id="cb8-48"><a href="#cb8-48" aria-hidden="true" tabindex="-1"></a>ax1.spines[<span class="st">"top"</span>].set_visible(<span class="va">False</span>)</span>
+<span id="cb8-49"><a href="#cb8-49" aria-hidden="true" tabindex="-1"></a>ax1.spines[<span class="st">"right"</span>].set_visible(<span class="va">False</span>)</span>
+<span id="cb8-50"><a href="#cb8-50" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-51"><a href="#cb8-51" aria-hidden="true" tabindex="-1"></a>ax2.plot(selectivities <span class="op">*</span> <span class="dv">100</span>, speedup, color<span class="op">=</span><span class="st">"#d52a2a"</span>, linewidth<span class="op">=</span><span class="dv">2</span>)</span>
+<span id="cb8-52"><a href="#cb8-52" aria-hidden="true" tabindex="-1"></a>ax2.axhline(y<span class="op">=</span><span class="dv">1</span>, color<span class="op">=</span><span class="st">"#888888"</span>, linestyle<span class="op">=</span><span class="st">"--"</span>, linewidth<span class="op">=</span><span class="fl">0.8</span>)</span>
+<span id="cb8-53"><a href="#cb8-53" aria-hidden="true" tabindex="-1"></a>ax2.set_xlabel(<span class="st">"Selectivity (</span><span class="sc">% o</span><span class="st">f rows returned)"</span>)</span>
+<span id="cb8-54"><a href="#cb8-54" aria-hidden="true" tabindex="-1"></a>ax2.set_ylabel(<span class="st">"Speedup (row time / columnar time)"</span>)</span>
+<span id="cb8-55"><a href="#cb8-55" aria-hidden="true" tabindex="-1"></a>ax2.set_title(<span class="st">"Columnar speedup ratio"</span>)</span>
+<span id="cb8-56"><a href="#cb8-56" aria-hidden="true" tabindex="-1"></a>ax2.spines[<span class="st">"top"</span>].set_visible(<span class="va">False</span>)</span>
+<span id="cb8-57"><a href="#cb8-57" aria-hidden="true" tabindex="-1"></a>ax2.spines[<span class="st">"right"</span>].set_visible(<span class="va">False</span>)</span>
+<span id="cb8-58"><a href="#cb8-58" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-59"><a href="#cb8-59" aria-hidden="true" tabindex="-1"></a>plt.tight_layout()</span>
+<span id="cb8-60"><a href="#cb8-60" aria-hidden="true" tabindex="-1"></a>plt.show()</span>
+<span id="cb8-61"><a href="#cb8-61" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-62"><a href="#cb8-62" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f"At </span><span class="sc">{</span>selectivity<span class="op">*</span><span class="dv">100</span><span class="sc">:.0f}</span><span class="ss">% selectivity:"</span>)</span>
+<span id="cb8-63"><a href="#cb8-63" aria-hidden="true" tabindex="-1"></a>t_row <span class="op">=</span> scan_time_row(selectivity, n_rows, columns_wide, bytes_per_value, scan_rate_mb_s)</span>
+<span id="cb8-64"><a href="#cb8-64" aria-hidden="true" tabindex="-1"></a>t_col <span class="op">=</span> scan_time_columnar(selectivity, n_rows, columns_wide, columns_columnar,</span>
+<span id="cb8-65"><a href="#cb8-65" aria-hidden="true" tabindex="-1"></a>                            bytes_per_value, scan_rate_mb_s)</span>
+<span id="cb8-66"><a href="#cb8-66" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f"  Row-oriented:  </span><span class="sc">{</span>t_row<span class="sc">:.2f}</span><span class="ss"> s"</span>)</span>
+<span id="cb8-67"><a href="#cb8-67" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f"  Columnar:      </span><span class="sc">{</span>t_col<span class="sc">:.2f}</span><span class="ss"> s"</span>)</span>
+<span id="cb8-68"><a href="#cb8-68" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f"  Speedup:       </span><span class="sc">{</span>t_row<span class="op">/</span><span class="bu">max</span>(t_col, <span class="fl">1e-6</span>)<span class="sc">:.1f}</span><span class="ss">×"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<hr>
+</section>
+<section id="exercises" class="level2" data-number="2.8">
+<h2 data-number="2.8" class="anchored" data-anchor-id="exercises"><span class="header-section-number">2.8</span> Exercises</h2>
+<p><strong>1.1 — Format selection</strong></p>
+<p>You are designing a pipeline for a road traffic sensor network. Sensors report a GPS point, a vehicle count, and a speed estimate every 30 seconds. The data is consumed by two systems: a real-time dashboard that reads the last 60 seconds, and an analytical system that runs daily aggregations over 12 months of history.</p>
+<ol type="a">
+<li>What storage format would you choose for the analytical store? Justify your answer in terms of query access pattern and selectivity.</li>
+<li>The analytical system needs to answer: “What was the average speed on highway segments in the northeast region during morning peak hours in Q3?” Which partitioning strategy (time, spatial, compound) minimises data read? Explain why.</li>
+<li>The current team stores data as daily GeoJSON files, one file per sensor. Estimate the fraction of data read by a query for one sensor over one week if there are 500 sensors and two years of data. How does this compare to a time-partitioned GeoParquet layout?</li>
+</ol>
+<p><strong>1.2 — Schema design</strong></p>
+<p>A team is designing a spatial observations table for satellite-derived sea surface temperature (SST). Each observation has: a geometry (point), an acquisition timestamp, a satellite identifier, an instrument identifier, a temperature value, a quality flag, and a confidence score.</p>
+<ol type="a">
+<li>Write the SQL DDL for a wide-table (denormalised) design appropriate for analytical queries. Include appropriate column types. Which columns would you index, and why?</li>
+<li>The team estimates 200 million observations per year. If each observation is approximately 100 bytes in a denormalised row, how large is one year of data? How does this change your partitioning choice?</li>
+<li>A new data source adds a <code>cloud_fraction</code> field. Describe the steps required to update the schema in a way that is backward-compatible for existing consumers.</li>
+</ol>
+<p><strong>1.3 — Catalogue design</strong></p>
+<p>An organisation has three spatial datasets: a roads network (GeoParquet, stable schema, updated monthly), a buildings footprint dataset (GeoParquet, schema changed three times in two years), and a real-time sensor feed (PostGIS table, updated every 30 seconds).</p>
+<ol type="a">
+<li>For each dataset, identify the most important fields in a catalogue entry. Are they the same for all three? Explain what differs.</li>
+<li>How would you represent schema version history in the JSON catalogue format shown in this chapter? Sketch a JSON structure that records the current schema and the previous two versions.</li>
+<li>A pipeline fails because it expects schema version 2 of the buildings dataset but the catalogue records version 3. What information would the error message need to include for the pipeline maintainer to diagnose and fix the problem quickly?</li>
+</ol>
+<p><strong>1.4 — Partitioning trade-offs</strong></p>
+<p>A GeoParquet file stores 50 million polygon observations globally, partitioned by H3 level-5 cell (approximately 252 km² per cell, roughly 2 million cells worldwide). The dataset covers five years of data.</p>
+<ol type="a">
+<li>A query asks for all observations in a specific H3 cell for a specific year. How many partitions does the query need to open if the partitioning is (i) by H3 cell only, (ii) by year only, (iii) by year then H3 cell? Assume data is roughly uniform across cells and years.</li>
+<li>The query engine opens a partition and uses the GIST spatial index to narrow results further. Explain the two-pass filter (index filter then geometry refinement) and why it is more efficient than a direct geometry comparison across all rows.</li>
+<li>What is the risk of over-partitioning (creating too many small partitions)? What is a practical lower bound on partition size for a cloud object store?</li>
+</ol>
+<hr>
+</section>
+<section id="build-this" class="level2" data-number="2.9">
+<h2 data-number="2.9" class="anchored" data-anchor-id="build-this"><span class="header-section-number">2.9</span> Build this</h2>
+<p>Write a JSON data catalogue schema and a Python function that validates a GeoParquet file against the schema. The validator should check: (1) all required columns are present, (2) column types match the catalogue, (3) the spatial extent of the file falls within the catalogued extent. Return a structured validation report.</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb9"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> json</span>
+<span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> pathlib <span class="im">import</span> Path</span>
+<span id="cb9-3"><a href="#cb9-3" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> typing <span class="im">import</span> Any</span>
+<span id="cb9-4"><a href="#cb9-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-5"><a href="#cb9-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-6"><a href="#cb9-6" aria-hidden="true" tabindex="-1"></a><span class="co"># ── Catalogue schema ──────────────────────────────────────────────────────────</span></span>
+<span id="cb9-7"><a href="#cb9-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-8"><a href="#cb9-8" aria-hidden="true" tabindex="-1"></a>CATALOGUE_SCHEMA <span class="op">=</span> {</span>
+<span id="cb9-9"><a href="#cb9-9" aria-hidden="true" tabindex="-1"></a>    <span class="st">"$schema"</span>: <span class="st">"https://json-schema.org/draft/2020-12"</span>,</span>
+<span id="cb9-10"><a href="#cb9-10" aria-hidden="true" tabindex="-1"></a>    <span class="st">"type"</span>: <span class="st">"object"</span>,</span>
+<span id="cb9-11"><a href="#cb9-11" aria-hidden="true" tabindex="-1"></a>    <span class="st">"required"</span>: [<span class="st">"datasets"</span>],</span>
+<span id="cb9-12"><a href="#cb9-12" aria-hidden="true" tabindex="-1"></a>    <span class="st">"properties"</span>: {</span>
+<span id="cb9-13"><a href="#cb9-13" aria-hidden="true" tabindex="-1"></a>        <span class="st">"datasets"</span>: {</span>
+<span id="cb9-14"><a href="#cb9-14" aria-hidden="true" tabindex="-1"></a>            <span class="st">"type"</span>: <span class="st">"array"</span>,</span>
+<span id="cb9-15"><a href="#cb9-15" aria-hidden="true" tabindex="-1"></a>            <span class="st">"items"</span>: {</span>
+<span id="cb9-16"><a href="#cb9-16" aria-hidden="true" tabindex="-1"></a>                <span class="st">"type"</span>: <span class="st">"object"</span>,</span>
+<span id="cb9-17"><a href="#cb9-17" aria-hidden="true" tabindex="-1"></a>                <span class="st">"required"</span>: [<span class="st">"id"</span>, <span class="st">"description"</span>, <span class="st">"location"</span>, <span class="st">"format"</span>,</span>
+<span id="cb9-18"><a href="#cb9-18" aria-hidden="true" tabindex="-1"></a>                             <span class="st">"schema_version"</span>, <span class="st">"crs"</span>, <span class="st">"spatial_extent"</span>,</span>
+<span id="cb9-19"><a href="#cb9-19" aria-hidden="true" tabindex="-1"></a>                             <span class="st">"temporal_extent"</span>, <span class="st">"columns"</span>, <span class="st">"owner"</span>],</span>
+<span id="cb9-20"><a href="#cb9-20" aria-hidden="true" tabindex="-1"></a>                <span class="st">"properties"</span>: {</span>
+<span id="cb9-21"><a href="#cb9-21" aria-hidden="true" tabindex="-1"></a>                    <span class="st">"id"</span>:             {<span class="st">"type"</span>: <span class="st">"string"</span>},</span>
+<span id="cb9-22"><a href="#cb9-22" aria-hidden="true" tabindex="-1"></a>                    <span class="st">"description"</span>:    {<span class="st">"type"</span>: <span class="st">"string"</span>},</span>
+<span id="cb9-23"><a href="#cb9-23" aria-hidden="true" tabindex="-1"></a>                    <span class="st">"location"</span>:       {<span class="st">"type"</span>: <span class="st">"string"</span>},</span>
+<span id="cb9-24"><a href="#cb9-24" aria-hidden="true" tabindex="-1"></a>                    <span class="st">"format"</span>:         {<span class="st">"type"</span>: <span class="st">"string"</span>,</span>
+<span id="cb9-25"><a href="#cb9-25" aria-hidden="true" tabindex="-1"></a>                                       <span class="st">"enum"</span>: [<span class="st">"GeoParquet"</span>, <span class="st">"GeoJSON"</span>,</span>
+<span id="cb9-26"><a href="#cb9-26" aria-hidden="true" tabindex="-1"></a>                                                <span class="st">"Shapefile"</span>, <span class="st">"PostGIS"</span>]},</span>
+<span id="cb9-27"><a href="#cb9-27" aria-hidden="true" tabindex="-1"></a>                    <span class="st">"schema_version"</span>: {<span class="st">"type"</span>: <span class="st">"integer"</span>, <span class="st">"minimum"</span>: <span class="dv">1</span>},</span>
+<span id="cb9-28"><a href="#cb9-28" aria-hidden="true" tabindex="-1"></a>                    <span class="st">"crs"</span>:            {<span class="st">"type"</span>: <span class="st">"string"</span>},</span>
+<span id="cb9-29"><a href="#cb9-29" aria-hidden="true" tabindex="-1"></a>                    <span class="st">"spatial_extent"</span>: {</span>
+<span id="cb9-30"><a href="#cb9-30" aria-hidden="true" tabindex="-1"></a>                        <span class="st">"type"</span>: <span class="st">"object"</span>,</span>
+<span id="cb9-31"><a href="#cb9-31" aria-hidden="true" tabindex="-1"></a>                        <span class="st">"required"</span>: [<span class="st">"minx"</span>, <span class="st">"miny"</span>, <span class="st">"maxx"</span>, <span class="st">"maxy"</span>],</span>
+<span id="cb9-32"><a href="#cb9-32" aria-hidden="true" tabindex="-1"></a>                        <span class="st">"properties"</span>: {</span>
+<span id="cb9-33"><a href="#cb9-33" aria-hidden="true" tabindex="-1"></a>                            <span class="st">"minx"</span>: {<span class="st">"type"</span>: <span class="st">"number"</span>},</span>
+<span id="cb9-34"><a href="#cb9-34" aria-hidden="true" tabindex="-1"></a>                            <span class="st">"miny"</span>: {<span class="st">"type"</span>: <span class="st">"number"</span>},</span>
+<span id="cb9-35"><a href="#cb9-35" aria-hidden="true" tabindex="-1"></a>                            <span class="st">"maxx"</span>: {<span class="st">"type"</span>: <span class="st">"number"</span>},</span>
+<span id="cb9-36"><a href="#cb9-36" aria-hidden="true" tabindex="-1"></a>                            <span class="st">"maxy"</span>: {<span class="st">"type"</span>: <span class="st">"number"</span>}</span>
+<span id="cb9-37"><a href="#cb9-37" aria-hidden="true" tabindex="-1"></a>                        }</span>
+<span id="cb9-38"><a href="#cb9-38" aria-hidden="true" tabindex="-1"></a>                    },</span>
+<span id="cb9-39"><a href="#cb9-39" aria-hidden="true" tabindex="-1"></a>                    <span class="st">"temporal_extent"</span>: {</span>
+<span id="cb9-40"><a href="#cb9-40" aria-hidden="true" tabindex="-1"></a>                        <span class="st">"type"</span>: <span class="st">"object"</span>,</span>
+<span id="cb9-41"><a href="#cb9-41" aria-hidden="true" tabindex="-1"></a>                        <span class="st">"required"</span>: [<span class="st">"start"</span>, <span class="st">"end"</span>],</span>
+<span id="cb9-42"><a href="#cb9-42" aria-hidden="true" tabindex="-1"></a>                        <span class="st">"properties"</span>: {</span>
+<span id="cb9-43"><a href="#cb9-43" aria-hidden="true" tabindex="-1"></a>                            <span class="st">"start"</span>: {<span class="st">"type"</span>: <span class="st">"string"</span>, <span class="st">"format"</span>: <span class="st">"date"</span>},</span>
+<span id="cb9-44"><a href="#cb9-44" aria-hidden="true" tabindex="-1"></a>                            <span class="st">"end"</span>:   {<span class="st">"type"</span>: <span class="st">"string"</span>, <span class="st">"format"</span>: <span class="st">"date"</span>}</span>
+<span id="cb9-45"><a href="#cb9-45" aria-hidden="true" tabindex="-1"></a>                        }</span>
+<span id="cb9-46"><a href="#cb9-46" aria-hidden="true" tabindex="-1"></a>                    },</span>
+<span id="cb9-47"><a href="#cb9-47" aria-hidden="true" tabindex="-1"></a>                    <span class="st">"columns"</span>: {</span>
+<span id="cb9-48"><a href="#cb9-48" aria-hidden="true" tabindex="-1"></a>                        <span class="st">"type"</span>: <span class="st">"array"</span>,</span>
+<span id="cb9-49"><a href="#cb9-49" aria-hidden="true" tabindex="-1"></a>                        <span class="st">"items"</span>: {</span>
+<span id="cb9-50"><a href="#cb9-50" aria-hidden="true" tabindex="-1"></a>                            <span class="st">"type"</span>: <span class="st">"object"</span>,</span>
+<span id="cb9-51"><a href="#cb9-51" aria-hidden="true" tabindex="-1"></a>                            <span class="st">"required"</span>: [<span class="st">"name"</span>, <span class="st">"type"</span>, <span class="st">"nullable"</span>],</span>
+<span id="cb9-52"><a href="#cb9-52" aria-hidden="true" tabindex="-1"></a>                            <span class="st">"properties"</span>: {</span>
+<span id="cb9-53"><a href="#cb9-53" aria-hidden="true" tabindex="-1"></a>                                <span class="st">"name"</span>:        {<span class="st">"type"</span>: <span class="st">"string"</span>},</span>
+<span id="cb9-54"><a href="#cb9-54" aria-hidden="true" tabindex="-1"></a>                                <span class="st">"type"</span>:        {<span class="st">"type"</span>: <span class="st">"string"</span>},</span>
+<span id="cb9-55"><a href="#cb9-55" aria-hidden="true" tabindex="-1"></a>                                <span class="st">"nullable"</span>:    {<span class="st">"type"</span>: <span class="st">"boolean"</span>},</span>
+<span id="cb9-56"><a href="#cb9-56" aria-hidden="true" tabindex="-1"></a>                                <span class="st">"description"</span>: {<span class="st">"type"</span>: <span class="st">"string"</span>}</span>
+<span id="cb9-57"><a href="#cb9-57" aria-hidden="true" tabindex="-1"></a>                            }</span>
+<span id="cb9-58"><a href="#cb9-58" aria-hidden="true" tabindex="-1"></a>                        }</span>
+<span id="cb9-59"><a href="#cb9-59" aria-hidden="true" tabindex="-1"></a>                    },</span>
+<span id="cb9-60"><a href="#cb9-60" aria-hidden="true" tabindex="-1"></a>                    <span class="st">"owner"</span>:          {<span class="st">"type"</span>: <span class="st">"string"</span>},</span>
+<span id="cb9-61"><a href="#cb9-61" aria-hidden="true" tabindex="-1"></a>                    <span class="st">"last_validated"</span>: {<span class="st">"type"</span>: <span class="st">"string"</span>}</span>
+<span id="cb9-62"><a href="#cb9-62" aria-hidden="true" tabindex="-1"></a>                }</span>
+<span id="cb9-63"><a href="#cb9-63" aria-hidden="true" tabindex="-1"></a>            }</span>
+<span id="cb9-64"><a href="#cb9-64" aria-hidden="true" tabindex="-1"></a>        }</span>
+<span id="cb9-65"><a href="#cb9-65" aria-hidden="true" tabindex="-1"></a>    }</span>
+<span id="cb9-66"><a href="#cb9-66" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb9-67"><a href="#cb9-67" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-68"><a href="#cb9-68" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-69"><a href="#cb9-69" aria-hidden="true" tabindex="-1"></a><span class="co"># ── Parquet type mapping ───────────────────────────────────────────────────────</span></span>
+<span id="cb9-70"><a href="#cb9-70" aria-hidden="true" tabindex="-1"></a><span class="co"># Maps catalogue type strings to sets of acceptable pyarrow/pandas dtype strings.</span></span>
+<span id="cb9-71"><a href="#cb9-71" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-72"><a href="#cb9-72" aria-hidden="true" tabindex="-1"></a>CATALOGUE_TO_ARROW_TYPES: <span class="bu">dict</span>[<span class="bu">str</span>, <span class="bu">set</span>[<span class="bu">str</span>]] <span class="op">=</span> {</span>
+<span id="cb9-73"><a href="#cb9-73" aria-hidden="true" tabindex="-1"></a>    <span class="st">"int32"</span>:     {<span class="st">"int32"</span>, <span class="st">"int32[pyarrow]"</span>},</span>
+<span id="cb9-74"><a href="#cb9-74" aria-hidden="true" tabindex="-1"></a>    <span class="st">"int64"</span>:     {<span class="st">"int64"</span>, <span class="st">"int64[pyarrow]"</span>},</span>
+<span id="cb9-75"><a href="#cb9-75" aria-hidden="true" tabindex="-1"></a>    <span class="st">"float32"</span>:   {<span class="st">"float32"</span>, <span class="st">"float[pyarrow]"</span>},</span>
+<span id="cb9-76"><a href="#cb9-76" aria-hidden="true" tabindex="-1"></a>    <span class="st">"float64"</span>:   {<span class="st">"float64"</span>, <span class="st">"double[pyarrow]"</span>},</span>
+<span id="cb9-77"><a href="#cb9-77" aria-hidden="true" tabindex="-1"></a>    <span class="st">"string"</span>:    {<span class="st">"object"</span>, <span class="st">"string"</span>, <span class="st">"large_string"</span>, <span class="st">"string[pyarrow]"</span>},</span>
+<span id="cb9-78"><a href="#cb9-78" aria-hidden="true" tabindex="-1"></a>    <span class="st">"timestamp"</span>: {<span class="st">"datetime64[ns]"</span>, <span class="st">"datetime64[us]"</span>, <span class="st">"timestamp[us][pyarrow]"</span>,</span>
+<span id="cb9-79"><a href="#cb9-79" aria-hidden="true" tabindex="-1"></a>                  <span class="st">"timestamp[ns][pyarrow]"</span>},</span>
+<span id="cb9-80"><a href="#cb9-80" aria-hidden="true" tabindex="-1"></a>    <span class="st">"boolean"</span>:   {<span class="st">"bool"</span>, <span class="st">"bool[pyarrow]"</span>},</span>
+<span id="cb9-81"><a href="#cb9-81" aria-hidden="true" tabindex="-1"></a>    <span class="st">"geometry"</span>:  {<span class="st">"object"</span>, <span class="st">"binary"</span>, <span class="st">"large_binary"</span>},   <span class="co"># WKB stored as binary</span></span>
+<span id="cb9-82"><a href="#cb9-82" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb9-83"><a href="#cb9-83" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-84"><a href="#cb9-84" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-85"><a href="#cb9-85" aria-hidden="true" tabindex="-1"></a><span class="co"># ── Validation ─────────────────────────────────────────────────────────────────</span></span>
+<span id="cb9-86"><a href="#cb9-86" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-87"><a href="#cb9-87" aria-hidden="true" tabindex="-1"></a><span class="kw">class</span> ValidationError:</span>
+<span id="cb9-88"><a href="#cb9-88" aria-hidden="true" tabindex="-1"></a>    <span class="co">"""A single validation finding."""</span></span>
+<span id="cb9-89"><a href="#cb9-89" aria-hidden="true" tabindex="-1"></a>    <span class="kw">def</span> <span class="fu">__init__</span>(<span class="va">self</span>, level: <span class="bu">str</span>, field: <span class="bu">str</span>, message: <span class="bu">str</span>):</span>
+<span id="cb9-90"><a href="#cb9-90" aria-hidden="true" tabindex="-1"></a>        <span class="va">self</span>.level   <span class="op">=</span> level    <span class="co"># "error" | "warning"</span></span>
+<span id="cb9-91"><a href="#cb9-91" aria-hidden="true" tabindex="-1"></a>        <span class="va">self</span>.field   <span class="op">=</span> field</span>
+<span id="cb9-92"><a href="#cb9-92" aria-hidden="true" tabindex="-1"></a>        <span class="va">self</span>.message <span class="op">=</span> message</span>
+<span id="cb9-93"><a href="#cb9-93" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-94"><a href="#cb9-94" aria-hidden="true" tabindex="-1"></a>    <span class="kw">def</span> <span class="fu">__repr__</span>(<span class="va">self</span>) <span class="op">-&gt;</span> <span class="bu">str</span>:</span>
+<span id="cb9-95"><a href="#cb9-95" aria-hidden="true" tabindex="-1"></a>        <span class="cf">return</span> <span class="ss">f"[</span><span class="sc">{</span><span class="va">self</span><span class="sc">.</span>level<span class="sc">.</span>upper()<span class="sc">}</span><span class="ss">] </span><span class="sc">{</span><span class="va">self</span><span class="sc">.</span>field<span class="sc">}</span><span class="ss">: </span><span class="sc">{</span><span class="va">self</span><span class="sc">.</span>message<span class="sc">}</span><span class="ss">"</span></span>
+<span id="cb9-96"><a href="#cb9-96" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-97"><a href="#cb9-97" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-98"><a href="#cb9-98" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> validate_geoparquet(</span>
+<span id="cb9-99"><a href="#cb9-99" aria-hidden="true" tabindex="-1"></a>    parquet_path: <span class="bu">str</span> <span class="op">|</span> Path,</span>
+<span id="cb9-100"><a href="#cb9-100" aria-hidden="true" tabindex="-1"></a>    catalogue_path: <span class="bu">str</span> <span class="op">|</span> Path,</span>
+<span id="cb9-101"><a href="#cb9-101" aria-hidden="true" tabindex="-1"></a>    dataset_id: <span class="bu">str</span>,</span>
+<span id="cb9-102"><a href="#cb9-102" aria-hidden="true" tabindex="-1"></a>) <span class="op">-&gt;</span> <span class="bu">dict</span>[<span class="bu">str</span>, Any]:</span>
+<span id="cb9-103"><a href="#cb9-103" aria-hidden="true" tabindex="-1"></a>    <span class="co">"""</span></span>
+<span id="cb9-104"><a href="#cb9-104" aria-hidden="true" tabindex="-1"></a><span class="co">    Validate a GeoParquet file against a catalogue entry.</span></span>
+<span id="cb9-105"><a href="#cb9-105" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-106"><a href="#cb9-106" aria-hidden="true" tabindex="-1"></a><span class="co">    Parameters</span></span>
+<span id="cb9-107"><a href="#cb9-107" aria-hidden="true" tabindex="-1"></a><span class="co">    ----------</span></span>
+<span id="cb9-108"><a href="#cb9-108" aria-hidden="true" tabindex="-1"></a><span class="co">    parquet_path:    Path to the .parquet file to validate.</span></span>
+<span id="cb9-109"><a href="#cb9-109" aria-hidden="true" tabindex="-1"></a><span class="co">    catalogue_path:  Path to the JSON catalogue file.</span></span>
+<span id="cb9-110"><a href="#cb9-110" aria-hidden="true" tabindex="-1"></a><span class="co">    dataset_id:      The catalogue dataset ID to validate against.</span></span>
+<span id="cb9-111"><a href="#cb9-111" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-112"><a href="#cb9-112" aria-hidden="true" tabindex="-1"></a><span class="co">    Returns</span></span>
+<span id="cb9-113"><a href="#cb9-113" aria-hidden="true" tabindex="-1"></a><span class="co">    -------</span></span>
+<span id="cb9-114"><a href="#cb9-114" aria-hidden="true" tabindex="-1"></a><span class="co">    A dict with keys:</span></span>
+<span id="cb9-115"><a href="#cb9-115" aria-hidden="true" tabindex="-1"></a><span class="co">        "dataset_id"  : str</span></span>
+<span id="cb9-116"><a href="#cb9-116" aria-hidden="true" tabindex="-1"></a><span class="co">        "parquet_path": str</span></span>
+<span id="cb9-117"><a href="#cb9-117" aria-hidden="true" tabindex="-1"></a><span class="co">        "valid"       : bool   (True only if no errors)</span></span>
+<span id="cb9-118"><a href="#cb9-118" aria-hidden="true" tabindex="-1"></a><span class="co">        "findings"    : list of ValidationError objects</span></span>
+<span id="cb9-119"><a href="#cb9-119" aria-hidden="true" tabindex="-1"></a><span class="co">        "summary"     : str</span></span>
+<span id="cb9-120"><a href="#cb9-120" aria-hidden="true" tabindex="-1"></a><span class="co">    """</span></span>
+<span id="cb9-121"><a href="#cb9-121" aria-hidden="true" tabindex="-1"></a>    <span class="cf">try</span>:</span>
+<span id="cb9-122"><a href="#cb9-122" aria-hidden="true" tabindex="-1"></a>        <span class="im">import</span> pyarrow.parquet <span class="im">as</span> pq</span>
+<span id="cb9-123"><a href="#cb9-123" aria-hidden="true" tabindex="-1"></a>    <span class="cf">except</span> <span class="pp">ImportError</span>:</span>
+<span id="cb9-124"><a href="#cb9-124" aria-hidden="true" tabindex="-1"></a>        <span class="cf">raise</span> <span class="pp">ImportError</span>(</span>
+<span id="cb9-125"><a href="#cb9-125" aria-hidden="true" tabindex="-1"></a>            <span class="st">"pyarrow is required for GeoParquet validation. "</span></span>
+<span id="cb9-126"><a href="#cb9-126" aria-hidden="true" tabindex="-1"></a>            <span class="st">"Install it with: pip install pyarrow"</span></span>
+<span id="cb9-127"><a href="#cb9-127" aria-hidden="true" tabindex="-1"></a>        )</span>
+<span id="cb9-128"><a href="#cb9-128" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-129"><a href="#cb9-129" aria-hidden="true" tabindex="-1"></a>    findings: <span class="bu">list</span>[ValidationError] <span class="op">=</span> []</span>
+<span id="cb9-130"><a href="#cb9-130" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-131"><a href="#cb9-131" aria-hidden="true" tabindex="-1"></a>    <span class="co"># ── Load catalogue ──────────────────────────────────────────────────────</span></span>
+<span id="cb9-132"><a href="#cb9-132" aria-hidden="true" tabindex="-1"></a>    <span class="cf">with</span> <span class="bu">open</span>(catalogue_path) <span class="im">as</span> f:</span>
+<span id="cb9-133"><a href="#cb9-133" aria-hidden="true" tabindex="-1"></a>        raw <span class="op">=</span> json.load(f)</span>
+<span id="cb9-134"><a href="#cb9-134" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-135"><a href="#cb9-135" aria-hidden="true" tabindex="-1"></a>    datasets_by_id <span class="op">=</span> {d[<span class="st">"id"</span>]: d <span class="cf">for</span> d <span class="kw">in</span> raw.get(<span class="st">"datasets"</span>, [])}</span>
+<span id="cb9-136"><a href="#cb9-136" aria-hidden="true" tabindex="-1"></a>    <span class="cf">if</span> dataset_id <span class="kw">not</span> <span class="kw">in</span> datasets_by_id:</span>
+<span id="cb9-137"><a href="#cb9-137" aria-hidden="true" tabindex="-1"></a>        findings.append(ValidationError(</span>
+<span id="cb9-138"><a href="#cb9-138" aria-hidden="true" tabindex="-1"></a>            <span class="st">"error"</span>, <span class="st">"catalogue"</span>,</span>
+<span id="cb9-139"><a href="#cb9-139" aria-hidden="true" tabindex="-1"></a>            <span class="ss">f"Dataset '</span><span class="sc">{</span>dataset_id<span class="sc">}</span><span class="ss">' not found in catalogue at </span><span class="sc">{</span>catalogue_path<span class="sc">}</span><span class="ss">. "</span></span>
+<span id="cb9-140"><a href="#cb9-140" aria-hidden="true" tabindex="-1"></a>            <span class="ss">f"Available IDs: </span><span class="sc">{</span><span class="bu">list</span>(datasets_by_id.keys())<span class="sc">}</span><span class="ss">"</span></span>
+<span id="cb9-141"><a href="#cb9-141" aria-hidden="true" tabindex="-1"></a>        ))</span>
+<span id="cb9-142"><a href="#cb9-142" aria-hidden="true" tabindex="-1"></a>        <span class="cf">return</span> _report(dataset_id, <span class="bu">str</span>(parquet_path), findings)</span>
+<span id="cb9-143"><a href="#cb9-143" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-144"><a href="#cb9-144" aria-hidden="true" tabindex="-1"></a>    entry <span class="op">=</span> datasets_by_id[dataset_id]</span>
+<span id="cb9-145"><a href="#cb9-145" aria-hidden="true" tabindex="-1"></a>    expected_columns <span class="op">=</span> {col[<span class="st">"name"</span>]: col <span class="cf">for</span> col <span class="kw">in</span> entry[<span class="st">"columns"</span>]}</span>
+<span id="cb9-146"><a href="#cb9-146" aria-hidden="true" tabindex="-1"></a>    expected_extent  <span class="op">=</span> entry[<span class="st">"spatial_extent"</span>]</span>
+<span id="cb9-147"><a href="#cb9-147" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-148"><a href="#cb9-148" aria-hidden="true" tabindex="-1"></a>    <span class="co"># ── Read Parquet schema ─────────────────────────────────────────────────</span></span>
+<span id="cb9-149"><a href="#cb9-149" aria-hidden="true" tabindex="-1"></a>    <span class="cf">try</span>:</span>
+<span id="cb9-150"><a href="#cb9-150" aria-hidden="true" tabindex="-1"></a>        pf <span class="op">=</span> pq.read_metadata(parquet_path)</span>
+<span id="cb9-151"><a href="#cb9-151" aria-hidden="true" tabindex="-1"></a>        schema <span class="op">=</span> pq.read_schema(parquet_path)</span>
+<span id="cb9-152"><a href="#cb9-152" aria-hidden="true" tabindex="-1"></a>    <span class="cf">except</span> <span class="pp">Exception</span> <span class="im">as</span> exc:</span>
+<span id="cb9-153"><a href="#cb9-153" aria-hidden="true" tabindex="-1"></a>        findings.append(ValidationError(</span>
+<span id="cb9-154"><a href="#cb9-154" aria-hidden="true" tabindex="-1"></a>            <span class="st">"error"</span>, <span class="st">"parquet_file"</span>,</span>
+<span id="cb9-155"><a href="#cb9-155" aria-hidden="true" tabindex="-1"></a>            <span class="ss">f"Could not read Parquet file: </span><span class="sc">{</span>exc<span class="sc">}</span><span class="ss">"</span></span>
+<span id="cb9-156"><a href="#cb9-156" aria-hidden="true" tabindex="-1"></a>        ))</span>
+<span id="cb9-157"><a href="#cb9-157" aria-hidden="true" tabindex="-1"></a>        <span class="cf">return</span> _report(dataset_id, <span class="bu">str</span>(parquet_path), findings)</span>
+<span id="cb9-158"><a href="#cb9-158" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-159"><a href="#cb9-159" aria-hidden="true" tabindex="-1"></a>    actual_columns <span class="op">=</span> {field.name: <span class="bu">str</span>(field.<span class="bu">type</span>) <span class="cf">for</span> field <span class="kw">in</span> schema}</span>
+<span id="cb9-160"><a href="#cb9-160" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-161"><a href="#cb9-161" aria-hidden="true" tabindex="-1"></a>    <span class="co"># ── Check 1: required columns present ──────────────────────────────────</span></span>
+<span id="cb9-162"><a href="#cb9-162" aria-hidden="true" tabindex="-1"></a>    <span class="cf">for</span> col_name, col_def <span class="kw">in</span> expected_columns.items():</span>
+<span id="cb9-163"><a href="#cb9-163" aria-hidden="true" tabindex="-1"></a>        <span class="cf">if</span> col_name <span class="kw">not</span> <span class="kw">in</span> actual_columns:</span>
+<span id="cb9-164"><a href="#cb9-164" aria-hidden="true" tabindex="-1"></a>            findings.append(ValidationError(</span>
+<span id="cb9-165"><a href="#cb9-165" aria-hidden="true" tabindex="-1"></a>                <span class="st">"error"</span>, <span class="ss">f"column:</span><span class="sc">{</span>col_name<span class="sc">}</span><span class="ss">"</span>,</span>
+<span id="cb9-166"><a href="#cb9-166" aria-hidden="true" tabindex="-1"></a>                <span class="ss">f"Required column '</span><span class="sc">{</span>col_name<span class="sc">}</span><span class="ss">' (type: </span><span class="sc">{</span>col_def[<span class="st">'type'</span>]<span class="sc">}</span><span class="ss">) "</span></span>
+<span id="cb9-167"><a href="#cb9-167" aria-hidden="true" tabindex="-1"></a>                <span class="st">"is missing from the Parquet file."</span></span>
+<span id="cb9-168"><a href="#cb9-168" aria-hidden="true" tabindex="-1"></a>            ))</span>
+<span id="cb9-169"><a href="#cb9-169" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-170"><a href="#cb9-170" aria-hidden="true" tabindex="-1"></a>    <span class="co"># ── Check 2: column types match ─────────────────────────────────────────</span></span>
+<span id="cb9-171"><a href="#cb9-171" aria-hidden="true" tabindex="-1"></a>    <span class="cf">for</span> col_name, col_def <span class="kw">in</span> expected_columns.items():</span>
+<span id="cb9-172"><a href="#cb9-172" aria-hidden="true" tabindex="-1"></a>        <span class="cf">if</span> col_name <span class="kw">not</span> <span class="kw">in</span> actual_columns:</span>
+<span id="cb9-173"><a href="#cb9-173" aria-hidden="true" tabindex="-1"></a>            <span class="cf">continue</span>  <span class="co"># already flagged above</span></span>
+<span id="cb9-174"><a href="#cb9-174" aria-hidden="true" tabindex="-1"></a>        catalogue_type <span class="op">=</span> col_def[<span class="st">"type"</span>]</span>
+<span id="cb9-175"><a href="#cb9-175" aria-hidden="true" tabindex="-1"></a>        actual_type    <span class="op">=</span> actual_columns[col_name]</span>
+<span id="cb9-176"><a href="#cb9-176" aria-hidden="true" tabindex="-1"></a>        acceptable     <span class="op">=</span> CATALOGUE_TO_ARROW_TYPES.get(catalogue_type, <span class="bu">set</span>())</span>
+<span id="cb9-177"><a href="#cb9-177" aria-hidden="true" tabindex="-1"></a>        <span class="co"># Normalise: strip whitespace and lower-case for comparison</span></span>
+<span id="cb9-178"><a href="#cb9-178" aria-hidden="true" tabindex="-1"></a>        actual_norm <span class="op">=</span> actual_type.strip().lower()</span>
+<span id="cb9-179"><a href="#cb9-179" aria-hidden="true" tabindex="-1"></a>        acceptable_norm <span class="op">=</span> {t.lower() <span class="cf">for</span> t <span class="kw">in</span> acceptable}</span>
+<span id="cb9-180"><a href="#cb9-180" aria-hidden="true" tabindex="-1"></a>        <span class="cf">if</span> acceptable_norm <span class="kw">and</span> actual_norm <span class="kw">not</span> <span class="kw">in</span> acceptable_norm:</span>
+<span id="cb9-181"><a href="#cb9-181" aria-hidden="true" tabindex="-1"></a>            findings.append(ValidationError(</span>
+<span id="cb9-182"><a href="#cb9-182" aria-hidden="true" tabindex="-1"></a>                <span class="st">"error"</span>, <span class="ss">f"column:</span><span class="sc">{</span>col_name<span class="sc">}</span><span class="ss">"</span>,</span>
+<span id="cb9-183"><a href="#cb9-183" aria-hidden="true" tabindex="-1"></a>                <span class="ss">f"Type mismatch: catalogue records '</span><span class="sc">{</span>catalogue_type<span class="sc">}</span><span class="ss">', "</span></span>
+<span id="cb9-184"><a href="#cb9-184" aria-hidden="true" tabindex="-1"></a>                <span class="ss">f"Parquet file has '</span><span class="sc">{</span>actual_type<span class="sc">}</span><span class="ss">'. "</span></span>
+<span id="cb9-185"><a href="#cb9-185" aria-hidden="true" tabindex="-1"></a>                <span class="ss">f"Acceptable Arrow types: </span><span class="sc">{</span><span class="bu">sorted</span>(acceptable)<span class="sc">}</span><span class="ss">"</span></span>
+<span id="cb9-186"><a href="#cb9-186" aria-hidden="true" tabindex="-1"></a>            ))</span>
+<span id="cb9-187"><a href="#cb9-187" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-188"><a href="#cb9-188" aria-hidden="true" tabindex="-1"></a>    <span class="co"># ── Check 3: spatial extent ─────────────────────────────────────────────</span></span>
+<span id="cb9-189"><a href="#cb9-189" aria-hidden="true" tabindex="-1"></a>    <span class="co"># GeoParquet stores bbox in file-level metadata under "geo" key</span></span>
+<span id="cb9-190"><a href="#cb9-190" aria-hidden="true" tabindex="-1"></a>    file_meta <span class="op">=</span> pf.metadata.get(<span class="st">"geo"</span>) <span class="cf">if</span> pf.metadata <span class="cf">else</span> <span class="va">None</span></span>
+<span id="cb9-191"><a href="#cb9-191" aria-hidden="true" tabindex="-1"></a>    <span class="cf">if</span> file_meta <span class="kw">is</span> <span class="va">None</span>:</span>
+<span id="cb9-192"><a href="#cb9-192" aria-hidden="true" tabindex="-1"></a>        findings.append(ValidationError(</span>
+<span id="cb9-193"><a href="#cb9-193" aria-hidden="true" tabindex="-1"></a>            <span class="st">"warning"</span>, <span class="st">"spatial_extent"</span>,</span>
+<span id="cb9-194"><a href="#cb9-194" aria-hidden="true" tabindex="-1"></a>            <span class="st">"No 'geo' metadata key found in Parquet file. "</span></span>
+<span id="cb9-195"><a href="#cb9-195" aria-hidden="true" tabindex="-1"></a>            <span class="st">"Cannot validate spatial extent. "</span></span>
+<span id="cb9-196"><a href="#cb9-196" aria-hidden="true" tabindex="-1"></a>            <span class="st">"File may not be a valid GeoParquet file."</span></span>
+<span id="cb9-197"><a href="#cb9-197" aria-hidden="true" tabindex="-1"></a>        ))</span>
+<span id="cb9-198"><a href="#cb9-198" aria-hidden="true" tabindex="-1"></a>    <span class="cf">else</span>:</span>
+<span id="cb9-199"><a href="#cb9-199" aria-hidden="true" tabindex="-1"></a>        <span class="cf">try</span>:</span>
+<span id="cb9-200"><a href="#cb9-200" aria-hidden="true" tabindex="-1"></a>            geo <span class="op">=</span> json.loads(file_meta)</span>
+<span id="cb9-201"><a href="#cb9-201" aria-hidden="true" tabindex="-1"></a>            <span class="co"># GeoParquet spec: geo.columns.&lt;primary&gt;.bbox = [minx, miny, maxx, maxy]</span></span>
+<span id="cb9-202"><a href="#cb9-202" aria-hidden="true" tabindex="-1"></a>            primary_col <span class="op">=</span> geo.get(<span class="st">"primary_column"</span>, <span class="st">"geometry"</span>)</span>
+<span id="cb9-203"><a href="#cb9-203" aria-hidden="true" tabindex="-1"></a>            col_meta    <span class="op">=</span> geo.get(<span class="st">"columns"</span>, {}).get(primary_col, {})</span>
+<span id="cb9-204"><a href="#cb9-204" aria-hidden="true" tabindex="-1"></a>            file_bbox   <span class="op">=</span> col_meta.get(<span class="st">"bbox"</span>)</span>
+<span id="cb9-205"><a href="#cb9-205" aria-hidden="true" tabindex="-1"></a>            <span class="cf">if</span> file_bbox <span class="kw">is</span> <span class="va">None</span>:</span>
+<span id="cb9-206"><a href="#cb9-206" aria-hidden="true" tabindex="-1"></a>                findings.append(ValidationError(</span>
+<span id="cb9-207"><a href="#cb9-207" aria-hidden="true" tabindex="-1"></a>                    <span class="st">"warning"</span>, <span class="st">"spatial_extent"</span>,</span>
+<span id="cb9-208"><a href="#cb9-208" aria-hidden="true" tabindex="-1"></a>                    <span class="ss">f"No bbox found for primary geometry column '</span><span class="sc">{</span>primary_col<span class="sc">}</span><span class="ss">' "</span></span>
+<span id="cb9-209"><a href="#cb9-209" aria-hidden="true" tabindex="-1"></a>                    <span class="st">"in GeoParquet metadata."</span></span>
+<span id="cb9-210"><a href="#cb9-210" aria-hidden="true" tabindex="-1"></a>                ))</span>
+<span id="cb9-211"><a href="#cb9-211" aria-hidden="true" tabindex="-1"></a>            <span class="cf">else</span>:</span>
+<span id="cb9-212"><a href="#cb9-212" aria-hidden="true" tabindex="-1"></a>                fminx, fminy, fmaxx, fmaxy <span class="op">=</span> file_bbox</span>
+<span id="cb9-213"><a href="#cb9-213" aria-hidden="true" tabindex="-1"></a>                cminx <span class="op">=</span> expected_extent[<span class="st">"minx"</span>]</span>
+<span id="cb9-214"><a href="#cb9-214" aria-hidden="true" tabindex="-1"></a>                cminy <span class="op">=</span> expected_extent[<span class="st">"miny"</span>]</span>
+<span id="cb9-215"><a href="#cb9-215" aria-hidden="true" tabindex="-1"></a>                cmaxx <span class="op">=</span> expected_extent[<span class="st">"maxx"</span>]</span>
+<span id="cb9-216"><a href="#cb9-216" aria-hidden="true" tabindex="-1"></a>                cmaxy <span class="op">=</span> expected_extent[<span class="st">"maxy"</span>]</span>
+<span id="cb9-217"><a href="#cb9-217" aria-hidden="true" tabindex="-1"></a>                tolerance <span class="op">=</span> <span class="fl">0.001</span>  <span class="co"># degrees — for floating point comparison</span></span>
+<span id="cb9-218"><a href="#cb9-218" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-219"><a href="#cb9-219" aria-hidden="true" tabindex="-1"></a>                <span class="cf">if</span> (fminx <span class="op">&lt;</span> cminx <span class="op">-</span> tolerance <span class="kw">or</span> fminy <span class="op">&lt;</span> cminy <span class="op">-</span> tolerance <span class="kw">or</span></span>
+<span id="cb9-220"><a href="#cb9-220" aria-hidden="true" tabindex="-1"></a>                        fmaxx <span class="op">&gt;</span> cmaxx <span class="op">+</span> tolerance <span class="kw">or</span> fmaxy <span class="op">&gt;</span> cmaxy <span class="op">+</span> tolerance):</span>
+<span id="cb9-221"><a href="#cb9-221" aria-hidden="true" tabindex="-1"></a>                    findings.append(ValidationError(</span>
+<span id="cb9-222"><a href="#cb9-222" aria-hidden="true" tabindex="-1"></a>                        <span class="st">"error"</span>, <span class="st">"spatial_extent"</span>,</span>
+<span id="cb9-223"><a href="#cb9-223" aria-hidden="true" tabindex="-1"></a>                        <span class="ss">f"File spatial extent [</span><span class="sc">{</span>fminx<span class="sc">:.4f}</span><span class="ss">, </span><span class="sc">{</span>fminy<span class="sc">:.4f}</span><span class="ss">, "</span></span>
+<span id="cb9-224"><a href="#cb9-224" aria-hidden="true" tabindex="-1"></a>                        <span class="ss">f"</span><span class="sc">{</span>fmaxx<span class="sc">:.4f}</span><span class="ss">, </span><span class="sc">{</span>fmaxy<span class="sc">:.4f}</span><span class="ss">] "</span></span>
+<span id="cb9-225"><a href="#cb9-225" aria-hidden="true" tabindex="-1"></a>                        <span class="ss">f"exceeds catalogued extent [</span><span class="sc">{</span>cminx<span class="sc">}</span><span class="ss">, </span><span class="sc">{</span>cminy<span class="sc">}</span><span class="ss">, </span><span class="sc">{</span>cmaxx<span class="sc">}</span><span class="ss">, </span><span class="sc">{</span>cmaxy<span class="sc">}</span><span class="ss">]. "</span></span>
+<span id="cb9-226"><a href="#cb9-226" aria-hidden="true" tabindex="-1"></a>                        <span class="st">"Data may be outside the expected geographic region."</span></span>
+<span id="cb9-227"><a href="#cb9-227" aria-hidden="true" tabindex="-1"></a>                    ))</span>
+<span id="cb9-228"><a href="#cb9-228" aria-hidden="true" tabindex="-1"></a>        <span class="cf">except</span> (json.JSONDecodeError, <span class="pp">KeyError</span>, <span class="pp">TypeError</span>) <span class="im">as</span> exc:</span>
+<span id="cb9-229"><a href="#cb9-229" aria-hidden="true" tabindex="-1"></a>            findings.append(ValidationError(</span>
+<span id="cb9-230"><a href="#cb9-230" aria-hidden="true" tabindex="-1"></a>                <span class="st">"warning"</span>, <span class="st">"spatial_extent"</span>,</span>
+<span id="cb9-231"><a href="#cb9-231" aria-hidden="true" tabindex="-1"></a>                <span class="ss">f"Could not parse GeoParquet 'geo' metadata: </span><span class="sc">{</span>exc<span class="sc">}</span><span class="ss">"</span></span>
+<span id="cb9-232"><a href="#cb9-232" aria-hidden="true" tabindex="-1"></a>            ))</span>
+<span id="cb9-233"><a href="#cb9-233" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-234"><a href="#cb9-234" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> _report(dataset_id, <span class="bu">str</span>(parquet_path), findings)</span>
+<span id="cb9-235"><a href="#cb9-235" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-236"><a href="#cb9-236" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-237"><a href="#cb9-237" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> _report(dataset_id: <span class="bu">str</span>, parquet_path: <span class="bu">str</span>,</span>
+<span id="cb9-238"><a href="#cb9-238" aria-hidden="true" tabindex="-1"></a>            findings: <span class="bu">list</span>[ValidationError]) <span class="op">-&gt;</span> <span class="bu">dict</span>[<span class="bu">str</span>, Any]:</span>
+<span id="cb9-239"><a href="#cb9-239" aria-hidden="true" tabindex="-1"></a>    errors   <span class="op">=</span> [f <span class="cf">for</span> f <span class="kw">in</span> findings <span class="cf">if</span> f.level <span class="op">==</span> <span class="st">"error"</span>]</span>
+<span id="cb9-240"><a href="#cb9-240" aria-hidden="true" tabindex="-1"></a>    warnings <span class="op">=</span> [f <span class="cf">for</span> f <span class="kw">in</span> findings <span class="cf">if</span> f.level <span class="op">==</span> <span class="st">"warning"</span>]</span>
+<span id="cb9-241"><a href="#cb9-241" aria-hidden="true" tabindex="-1"></a>    valid    <span class="op">=</span> <span class="bu">len</span>(errors) <span class="op">==</span> <span class="dv">0</span></span>
+<span id="cb9-242"><a href="#cb9-242" aria-hidden="true" tabindex="-1"></a>    summary  <span class="op">=</span> (</span>
+<span id="cb9-243"><a href="#cb9-243" aria-hidden="true" tabindex="-1"></a>        <span class="ss">f"</span><span class="sc">{</span><span class="st">'VALID'</span> <span class="cf">if</span> valid <span class="cf">else</span> <span class="st">'INVALID'</span><span class="sc">}</span><span class="ss">: "</span></span>
+<span id="cb9-244"><a href="#cb9-244" aria-hidden="true" tabindex="-1"></a>        <span class="ss">f"</span><span class="sc">{</span><span class="bu">len</span>(errors)<span class="sc">}</span><span class="ss"> error(s), </span><span class="sc">{</span><span class="bu">len</span>(warnings)<span class="sc">}</span><span class="ss"> warning(s)"</span></span>
+<span id="cb9-245"><a href="#cb9-245" aria-hidden="true" tabindex="-1"></a>    )</span>
+<span id="cb9-246"><a href="#cb9-246" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> {</span>
+<span id="cb9-247"><a href="#cb9-247" aria-hidden="true" tabindex="-1"></a>        <span class="st">"dataset_id"</span>:   dataset_id,</span>
+<span id="cb9-248"><a href="#cb9-248" aria-hidden="true" tabindex="-1"></a>        <span class="st">"parquet_path"</span>: parquet_path,</span>
+<span id="cb9-249"><a href="#cb9-249" aria-hidden="true" tabindex="-1"></a>        <span class="st">"valid"</span>:        valid,</span>
+<span id="cb9-250"><a href="#cb9-250" aria-hidden="true" tabindex="-1"></a>        <span class="st">"findings"</span>:     findings,</span>
+<span id="cb9-251"><a href="#cb9-251" aria-hidden="true" tabindex="-1"></a>        <span class="st">"summary"</span>:      summary,</span>
+<span id="cb9-252"><a href="#cb9-252" aria-hidden="true" tabindex="-1"></a>    }</span>
+<span id="cb9-253"><a href="#cb9-253" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-254"><a href="#cb9-254" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-255"><a href="#cb9-255" aria-hidden="true" tabindex="-1"></a><span class="co"># ── Usage example ──────────────────────────────────────────────────────────────</span></span>
+<span id="cb9-256"><a href="#cb9-256" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-257"><a href="#cb9-257" aria-hidden="true" tabindex="-1"></a><span class="cf">if</span> <span class="va">__name__</span> <span class="op">==</span> <span class="st">"__main__"</span>:</span>
+<span id="cb9-258"><a href="#cb9-258" aria-hidden="true" tabindex="-1"></a>    result <span class="op">=</span> validate_geoparquet(</span>
+<span id="cb9-259"><a href="#cb9-259" aria-hidden="true" tabindex="-1"></a>        parquet_path   <span class="op">=</span> <span class="st">"data/land_cover_aus_2024.parquet"</span>,</span>
+<span id="cb9-260"><a href="#cb9-260" aria-hidden="true" tabindex="-1"></a>        catalogue_path <span class="op">=</span> <span class="st">"catalogue.json"</span>,</span>
+<span id="cb9-261"><a href="#cb9-261" aria-hidden="true" tabindex="-1"></a>        dataset_id     <span class="op">=</span> <span class="st">"land_cover_aus_2024"</span>,</span>
+<span id="cb9-262"><a href="#cb9-262" aria-hidden="true" tabindex="-1"></a>    )</span>
+<span id="cb9-263"><a href="#cb9-263" aria-hidden="true" tabindex="-1"></a>    <span class="bu">print</span>(result[<span class="st">"summary"</span>])</span>
+<span id="cb9-264"><a href="#cb9-264" aria-hidden="true" tabindex="-1"></a>    <span class="cf">for</span> finding <span class="kw">in</span> result[<span class="st">"findings"</span>]:</span>
+<span id="cb9-265"><a href="#cb9-265" aria-hidden="true" tabindex="-1"></a>        <span class="bu">print</span>(<span class="ss">f"  </span><span class="sc">{</span>finding<span class="sc">}</span><span class="ss">"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>The validator is intentionally narrow. It checks three things and reports them precisely. Production catalogues add: row count validation, null frequency checks, and temporal extent verification. Those are Chapter 7 (data quality). The structural checks here — column presence, type compatibility, spatial extent — are what a pipeline should check before it starts reading data, not after it has already loaded 50 GB into memory and produced wrong output.</p>
+
+
+</section>
+
+</main> <!-- /main -->
+<script type="module" src="assets/js/pyodide-cells.js"></script>
+<script>
+(function () {
+  var overlay = document.createElement('div');
+  overlay.id = 'diagram-lightbox';
+
+  var closeBtn = document.createElement('button');
+  closeBtn.id = 'diagram-lightbox-close';
+  closeBtn.innerHTML = '&times;';
+  closeBtn.setAttribute('aria-label', 'Close diagram');
+
+  var content = document.createElement('div');
+  content.id = 'diagram-lightbox-content';
+
+  overlay.appendChild(closeBtn);
+  overlay.appendChild(content);
+  document.body.appendChild(overlay);
+
+  function openLightbox(svgEl) {
+    content.innerHTML = svgEl.outerHTML;
+    var svg = content.querySelector('svg');
+    if (svg) {
+      svg.setAttribute('width', '100%');
+      svg.removeAttribute('height');
+      svg.style.removeProperty('max-width');
+      svg.style.display = 'block';
+    }
+    overlay.classList.add('open');
+    document.body.style.overflow = 'hidden';
+  }
+
+  function closeLightbox() {
+    overlay.classList.remove('open');
+    document.body.style.overflow = '';
+  }
+
+  overlay.addEventListener('click', function (e) {
+    if (e.target === overlay || e.target === closeBtn) closeLightbox();
+  });
+  content.addEventListener('click', function (e) { e.stopPropagation(); });
+  document.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape') closeLightbox();
+  });
+
+  function attachTo(svgEl) {
+    if (svgEl._lbAttached) return;
+    svgEl._lbAttached = true;
+    svgEl.style.cursor = 'zoom-in';
+    svgEl.addEventListener('click', function () { openLightbox(svgEl); });
+  }
+
+  function scanAndAttach() {
+    document.querySelectorAll('svg.mermaid-js').forEach(attachTo);
+  }
+
+  var observer = new MutationObserver(function (mutations) {
+    mutations.forEach(function (m) {
+      m.addedNodes.forEach(function (node) {
+        if (node.nodeType !== 1) return;
+        if (node.tagName.toLowerCase() === 'svg' && node.classList.contains('mermaid-js')) {
+          attachTo(node);
+        } else if (node.querySelectorAll) {
+          node.querySelectorAll('svg.mermaid-js').forEach(attachTo);
+        }
+      });
+    });
+  });
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', function () {
+      observer.observe(document.body, { childList: true, subtree: true });
+      scanAndAttach();
+    });
+  } else {
+    observer.observe(document.body, { childList: true, subtree: true });
+    scanAndAttach();
+  }
+})();
+</script>
+<script id="quarto-html-after-body" type="application/javascript">
+  window.document.addEventListener("DOMContentLoaded", function (event) {
+    const icon = "";
+    const anchorJS = new window.AnchorJS();
+    anchorJS.options = {
+      placement: 'right',
+      icon: icon
+    };
+    anchorJS.add('.anchored');
+    const isCodeAnnotation = (el) => {
+      for (const clz of el.classList) {
+        if (clz.startsWith('code-annotation-')) {                     
+          return true;
+        }
+      }
+      return false;
+    }
+    const onCopySuccess = function(e) {
+      // button target
+      const button = e.trigger;
+      // don't keep focus
+      button.blur();
+      // flash "checked"
+      button.classList.add('code-copy-button-checked');
+      var currentTitle = button.getAttribute("title");
+      button.setAttribute("title", "Copied!");
+      let tooltip;
+      if (window.bootstrap) {
+        button.setAttribute("data-bs-toggle", "tooltip");
+        button.setAttribute("data-bs-placement", "left");
+        button.setAttribute("data-bs-title", "Copied!");
+        tooltip = new bootstrap.Tooltip(button, 
+          { trigger: "manual", 
+            customClass: "code-copy-button-tooltip",
+            offset: [0, -8]});
+        tooltip.show();    
+      }
+      setTimeout(function() {
+        if (tooltip) {
+          tooltip.hide();
+          button.removeAttribute("data-bs-title");
+          button.removeAttribute("data-bs-toggle");
+          button.removeAttribute("data-bs-placement");
+        }
+        button.setAttribute("title", currentTitle);
+        button.classList.remove('code-copy-button-checked');
+      }, 1000);
+      // clear code selection
+      e.clearSelection();
+    }
+    const getTextToCopy = function(trigger) {
+      const outerScaffold = trigger.parentElement.cloneNode(true);
+      const codeEl = outerScaffold.querySelector('code');
+      for (const childEl of codeEl.children) {
+        if (isCodeAnnotation(childEl)) {
+          childEl.remove();
+        }
+      }
+      return codeEl.innerText;
+    }
+    const clipboard = new window.ClipboardJS('.code-copy-button:not([data-in-quarto-modal])', {
+      text: getTextToCopy
+    });
+    clipboard.on('success', onCopySuccess);
+    if (window.document.getElementById('quarto-embedded-source-code-modal')) {
+      const clipboardModal = new window.ClipboardJS('.code-copy-button[data-in-quarto-modal]', {
+        text: getTextToCopy,
+        container: window.document.getElementById('quarto-embedded-source-code-modal')
+      });
+      clipboardModal.on('success', onCopySuccess);
+    }
+      var localhostRegex = new RegExp(/^(?:http|https):\/\/localhost\:?[0-9]*\//);
+      var mailtoRegex = new RegExp(/^mailto:/);
+        var filterRegex = new RegExp('/' + window.location.host + '/');
+      var isInternal = (href) => {
+          return filterRegex.test(href) || localhostRegex.test(href) || mailtoRegex.test(href);
+      }
+      // Inspect non-navigation links and adorn them if external
+     var links = window.document.querySelectorAll('a[href]:not(.nav-link):not(.navbar-brand):not(.toc-action):not(.sidebar-link):not(.sidebar-item-toggle):not(.pagination-link):not(.no-external):not([aria-hidden]):not(.dropdown-item):not(.quarto-navigation-tool):not(.about-link)');
+      for (var i=0; i<links.length; i++) {
+        const link = links[i];
+        if (!isInternal(link.href)) {
+          // undo the damage that might have been done by quarto-nav.js in the case of
+          // links that we want to consider external
+          if (link.dataset.originalHref !== undefined) {
+            link.href = link.dataset.originalHref;
+          }
+        }
+      }
+    function tippyHover(el, contentFn, onTriggerFn, onUntriggerFn) {
+      const config = {
+        allowHTML: true,
+        maxWidth: 500,
+        delay: 100,
+        arrow: false,
+        appendTo: function(el) {
+            return el.parentElement;
+        },
+        interactive: true,
+        interactiveBorder: 10,
+        theme: 'quarto',
+        placement: 'bottom-start',
+      };
+      if (contentFn) {
+        config.content = contentFn;
+      }
+      if (onTriggerFn) {
+        config.onTrigger = onTriggerFn;
+      }
+      if (onUntriggerFn) {
+        config.onUntrigger = onUntriggerFn;
+      }
+      window.tippy(el, config); 
+    }
+    const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+    for (var i=0; i<noterefs.length; i++) {
+      const ref = noterefs[i];
+      tippyHover(ref, function() {
+        // use id or data attribute instead here
+        let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+        try { href = new URL(href).hash; } catch {}
+        const id = href.replace(/^#\/?/, "");
+        const note = window.document.getElementById(id);
+        if (note) {
+          return note.innerHTML;
+        } else {
+          return "";
+        }
+      });
+    }
+    const xrefs = window.document.querySelectorAll('a.quarto-xref');
+    const processXRef = (id, note) => {
+      // Strip column container classes
+      const stripColumnClz = (el) => {
+        el.classList.remove("page-full", "page-columns");
+        if (el.children) {
+          for (const child of el.children) {
+            stripColumnClz(child);
+          }
+        }
+      }
+      stripColumnClz(note)
+      if (id === null || id.startsWith('sec-')) {
+        // Special case sections, only their first couple elements
+        const container = document.createElement("div");
+        if (note.children && note.children.length > 2) {
+          container.appendChild(note.children[0].cloneNode(true));
+          for (let i = 1; i < note.children.length; i++) {
+            const child = note.children[i];
+            if (child.tagName === "P" && child.innerText === "") {
+              continue;
+            } else {
+              container.appendChild(child.cloneNode(true));
+              break;
+            }
+          }
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(container);
+          }
+          return container.innerHTML
+        } else {
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(note);
+          }
+          return note.innerHTML;
+        }
+      } else {
+        // Remove any anchor links if they are present
+        const anchorLink = note.querySelector('a.anchorjs-link');
+        if (anchorLink) {
+          anchorLink.remove();
+        }
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(note);
+        }
+        if (note.classList.contains("callout")) {
+          return note.outerHTML;
+        } else {
+          return note.innerHTML;
+        }
+      }
+    }
+    for (var i=0; i<xrefs.length; i++) {
+      const xref = xrefs[i];
+      tippyHover(xref, undefined, function(instance) {
+        instance.disable();
+        let url = xref.getAttribute('href');
+        let hash = undefined; 
+        if (url.startsWith('#')) {
+          hash = url;
+        } else {
+          try { hash = new URL(url).hash; } catch {}
+        }
+        if (hash) {
+          const id = hash.replace(/^#\/?/, "");
+          const note = window.document.getElementById(id);
+          if (note !== null) {
+            try {
+              const html = processXRef(id, note.cloneNode(true));
+              instance.setContent(html);
+            } finally {
+              instance.enable();
+              instance.show();
+            }
+          } else {
+            // See if we can fetch this
+            fetch(url.split('#')[0])
+            .then(res => res.text())
+            .then(html => {
+              const parser = new DOMParser();
+              const htmlDoc = parser.parseFromString(html, "text/html");
+              const note = htmlDoc.getElementById(id);
+              if (note !== null) {
+                const html = processXRef(id, note);
+                instance.setContent(html);
+              } 
+            }).finally(() => {
+              instance.enable();
+              instance.show();
+            });
+          }
+        } else {
+          // See if we can fetch a full url (with no hash to target)
+          // This is a special case and we should probably do some content thinning / targeting
+          fetch(url)
+          .then(res => res.text())
+          .then(html => {
+            const parser = new DOMParser();
+            const htmlDoc = parser.parseFromString(html, "text/html");
+            const note = htmlDoc.querySelector('main.content');
+            if (note !== null) {
+              // This should only happen for chapter cross references
+              // (since there is no id in the URL)
+              // remove the first header
+              if (note.children.length > 0 && note.children[0].tagName === "HEADER") {
+                note.children[0].remove();
+              }
+              const html = processXRef(null, note);
+              instance.setContent(html);
+            } 
+          }).finally(() => {
+            instance.enable();
+            instance.show();
+          });
+        }
+      }, function(instance) {
+      });
+    }
+        let selectedAnnoteEl;
+        const selectorForAnnotation = ( cell, annotation) => {
+          let cellAttr = 'data-code-cell="' + cell + '"';
+          let lineAttr = 'data-code-annotation="' +  annotation + '"';
+          const selector = 'span[' + cellAttr + '][' + lineAttr + ']';
+          return selector;
+        }
+        const selectCodeLines = (annoteEl) => {
+          const doc = window.document;
+          const targetCell = annoteEl.getAttribute("data-target-cell");
+          const targetAnnotation = annoteEl.getAttribute("data-target-annotation");
+          const annoteSpan = window.document.querySelector(selectorForAnnotation(targetCell, targetAnnotation));
+          const lines = annoteSpan.getAttribute("data-code-lines").split(",");
+          const lineIds = lines.map((line) => {
+            return targetCell + "-" + line;
+          })
+          let top = null;
+          let height = null;
+          let parent = null;
+          if (lineIds.length > 0) {
+              //compute the position of the single el (top and bottom and make a div)
+              const el = window.document.getElementById(lineIds[0]);
+              top = el.offsetTop;
+              height = el.offsetHeight;
+              parent = el.parentElement.parentElement;
+            if (lineIds.length > 1) {
+              const lastEl = window.document.getElementById(lineIds[lineIds.length - 1]);
+              const bottom = lastEl.offsetTop + lastEl.offsetHeight;
+              height = bottom - top;
+            }
+            if (top !== null && height !== null && parent !== null) {
+              // cook up a div (if necessary) and position it 
+              let div = window.document.getElementById("code-annotation-line-highlight");
+              if (div === null) {
+                div = window.document.createElement("div");
+                div.setAttribute("id", "code-annotation-line-highlight");
+                div.style.position = 'absolute';
+                parent.appendChild(div);
+              }
+              div.style.top = top - 2 + "px";
+              div.style.height = height + 4 + "px";
+              div.style.left = 0;
+              let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
+              if (gutterDiv === null) {
+                gutterDiv = window.document.createElement("div");
+                gutterDiv.setAttribute("id", "code-annotation-line-highlight-gutter");
+                gutterDiv.style.position = 'absolute';
+                const codeCell = window.document.getElementById(targetCell);
+                const gutter = codeCell.querySelector('.code-annotation-gutter');
+                gutter.appendChild(gutterDiv);
+              }
+              gutterDiv.style.top = top - 2 + "px";
+              gutterDiv.style.height = height + 4 + "px";
+            }
+            selectedAnnoteEl = annoteEl;
+          }
+        };
+        const unselectCodeLines = () => {
+          const elementsIds = ["code-annotation-line-highlight", "code-annotation-line-highlight-gutter"];
+          elementsIds.forEach((elId) => {
+            const div = window.document.getElementById(elId);
+            if (div) {
+              div.remove();
+            }
+          });
+          selectedAnnoteEl = undefined;
+        };
+          // Handle positioning of the toggle
+      window.addEventListener(
+        "resize",
+        throttle(() => {
+          elRect = undefined;
+          if (selectedAnnoteEl) {
+            selectCodeLines(selectedAnnoteEl);
+          }
+        }, 10)
+      );
+      function throttle(fn, ms) {
+      let throttle = false;
+      let timer;
+        return (...args) => {
+          if(!throttle) { // first call gets through
+              fn.apply(this, args);
+              throttle = true;
+          } else { // all the others get throttled
+              if(timer) clearTimeout(timer); // cancel #2
+              timer = setTimeout(() => {
+                fn.apply(this, args);
+                timer = throttle = false;
+              }, ms);
+          }
+        };
+      }
+        // Attach click handler to the DT
+        const annoteDls = window.document.querySelectorAll('dt[data-target-cell]');
+        for (const annoteDlNode of annoteDls) {
+          annoteDlNode.addEventListener('click', (event) => {
+            const clickedEl = event.target;
+            if (clickedEl !== selectedAnnoteEl) {
+              unselectCodeLines();
+              const activeEl = window.document.querySelector('dt[data-target-cell].code-annotation-active');
+              if (activeEl) {
+                activeEl.classList.remove('code-annotation-active');
+              }
+              selectCodeLines(clickedEl);
+              clickedEl.classList.add('code-annotation-active');
+            } else {
+              // Unselect the line
+              unselectCodeLines();
+              clickedEl.classList.remove('code-annotation-active');
+            }
+          });
+        }
+    const findCites = (el) => {
+      const parentEl = el.parentElement;
+      if (parentEl) {
+        const cites = parentEl.dataset.cites;
+        if (cites) {
+          return {
+            el,
+            cites: cites.split(' ')
+          };
+        } else {
+          return findCites(el.parentElement)
+        }
+      } else {
+        return undefined;
+      }
+    };
+    var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+    for (var i=0; i<bibliorefs.length; i++) {
+      const ref = bibliorefs[i];
+      const citeInfo = findCites(ref);
+      if (citeInfo) {
+        tippyHover(citeInfo.el, function() {
+          var popup = window.document.createElement('div');
+          citeInfo.cites.forEach(function(cite) {
+            var citeDiv = window.document.createElement('div');
+            citeDiv.classList.add('hanging-indent');
+            citeDiv.classList.add('csl-entry');
+            var biblioDiv = window.document.getElementById('ref-' + cite);
+            if (biblioDiv) {
+              citeDiv.innerHTML = biblioDiv.innerHTML;
+            }
+            popup.appendChild(citeDiv);
+          });
+          return popup.innerHTML;
+        });
+      }
+    }
+  });
+  </script>
+<nav class="page-navigation">
+  <div class="nav-page nav-page-previous">
+      <a href="./index.html" class="pagination-link" aria-label="Data Engineering for Spatial Systems">
+        <i class="bi bi-arrow-left-short"></i> <span class="nav-page-text"><span class="chapter-number">1</span>&nbsp; <span class="chapter-title">Data Engineering for Spatial Systems</span></span>
+      </a>          
+  </div>
+  <div class="nav-page nav-page-next">
+      <a href="./02-spatial-databases.html" class="pagination-link" aria-label="Spatial Databases">
+        <span class="nav-page-text"><span class="chapter-number">3</span>&nbsp; <span class="chapter-title">Spatial Databases</span></span> <i class="bi bi-arrow-right-short"></i>
+      </a>
+  </div>
+</nav>
+</div> <!-- /content -->
+
+
+
+
+<footer class="footer"><div class="nav-footer"><div class="nav-footer-center"><div class="toc-actions d-sm-block d-md-none"><ul><li><a href="https://github.com/WaywardHouse/waywardhouse-data-engineering/edit/main/01-data-architecture.qmd" class="toc-action"><i class="bi bi-github"></i>Edit this page</a></li><li><a href="https://github.com/WaywardHouse/waywardhouse-data-engineering/issues/new" class="toc-action"><i class="bi empty"></i>Report an issue</a></li></ul></div></div></div></footer><script src="site_libs/quarto-html/zenscroll-min.js"></script>
+</body></html>

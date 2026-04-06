@@ -1,0 +1,1768 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
+
+<meta charset="utf-8">
+<meta name="generator" content="quarto-1.9.36">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+
+
+<title>9&nbsp; Platform Architecture for ML – Data Engineering for Spatial Systems</title>
+<style>
+/* Default styles provided by pandoc.
+** See https://pandoc.org/MANUAL.html#variables-for-html for config info.
+*/
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: min(4vw, 1.5em);}
+div.column{flex: auto; overflow-x: auto;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+  width: 0.8em;
+  margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
+  vertical-align: middle;
+}
+/* CSS for syntax highlighting */
+html { -webkit-text-size-adjust: 100%; }
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+  { counter-reset: source-line 0; }
+pre.numberSource code > span
+  { position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+  { content: counter(source-line);
+    position: relative; left: -1em; text-align: right; vertical-align: baseline;
+    border: none; display: inline-block;
+    -webkit-touch-callout: none; -webkit-user-select: none;
+    -khtml-user-select: none; -moz-user-select: none;
+    -ms-user-select: none; user-select: none;
+    padding: 0 4px; width: 4em;
+  }
+pre.numberSource { margin-left: 3em;  padding-left: 4px; }
+div.sourceCode
+  {   }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
+</style>
+
+
+<script src="site_libs/quarto-nav/quarto-nav.js"></script>
+<script src="site_libs/quarto-nav/headroom.min.js"></script>
+<script src="site_libs/clipboard/clipboard.min.js"></script>
+<script src="site_libs/quarto-search/autocomplete.umd.js"></script>
+<script src="site_libs/quarto-search/fuse.min.js"></script>
+<script src="site_libs/quarto-search/quarto-search.js"></script>
+<meta name="quarto:offset" content="./">
+<link href="./09-exercise-answers.html" rel="next">
+<link href="./07-data-quality-and-governance.html" rel="prev">
+<script src="site_libs/quarto-html/quarto.js" type="module"></script>
+<script src="site_libs/quarto-html/tabsets/tabsets.js" type="module"></script>
+<script src="site_libs/quarto-html/popper.min.js"></script>
+<script src="site_libs/quarto-html/tippy.umd.min.js"></script>
+<script src="site_libs/quarto-html/anchor.min.js"></script>
+<link href="site_libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="site_libs/quarto-html/quarto-syntax-highlighting-845c23b38eaddc0f92fda52bfe77a8c8.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<script src="site_libs/bootstrap/bootstrap.min.js"></script>
+<link href="site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="site_libs/bootstrap/bootstrap-56762b18f51ba8401515c38252781a5a.min.css" rel="stylesheet" append-hash="true" id="quarto-bootstrap" data-mode="light">
+<script id="quarto-search-options" type="application/json">{
+  "location": "sidebar",
+  "copy-button": false,
+  "collapse-after": 3,
+  "panel-placement": "start",
+  "type": "textbox",
+  "limit": 50,
+  "keyboard-shortcut": [
+    "f",
+    "/",
+    "s"
+  ],
+  "show-item-context": false,
+  "language": {
+    "search-no-results-text": "No results",
+    "search-matching-documents-text": "matching documents",
+    "search-copy-link-title": "Copy link to search",
+    "search-hide-matches-text": "Hide additional matches",
+    "search-more-match-text": "more match in this document",
+    "search-more-matches-text": "more matches in this document",
+    "search-clear-button-title": "Clear",
+    "search-text-placeholder": "",
+    "search-detached-cancel-button-title": "Cancel",
+    "search-submit-button-title": "Submit",
+    "search-label": "Search"
+  }
+}</script>
+<style>html{ scroll-behavior: smooth; }</style>
+<script>
+  (function () {
+    document.documentElement.dataset.theme = 'light';
+    document.documentElement.dataset.brand = 'wayward-book';
+    try {
+      localStorage.removeItem('theme');
+    } catch (err) {
+      void err;
+    }
+  })();
+</script>
+
+<script>
+  document.addEventListener('DOMContentLoaded', function () {
+    var body = document.body;
+    var sidebar = document.getElementById('quarto-sidebar');
+    if (!sidebar) return;
+
+    body.classList.add('wayward-book-shell');
+
+    if (!document.querySelector('.wayward-book-header')) {
+      var header = document.createElement('header');
+      header.className = 'wayward-book-header';
+      header.innerHTML = [
+        '<div class="wayward-book-header__inner">',
+        '  <a class="wayward-book-brand" href="/" aria-label="Wayward House home">',
+        '    <span class="wayward-book-brand__mark">WaywardHouse</span>',
+        '    <span class="wayward-book-brand__dot" aria-hidden="true">.</span>',
+        '  </a>',
+        '  <nav class="wayward-book-nav" aria-label="Primary">',
+        '    <a href="/articles/" data-nav="/articles/">Articles</a>',
+        '    <a href="/learn/" data-nav="/learn/">Learn</a>',
+        '    <a href="/about.html" data-nav="/about/">About</a>',
+        '  </nav>',
+        '  <button class="wayward-book-menu-toggle" type="button" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle chapter navigation">',
+        '    <span aria-hidden="true">Menu</span>',
+        '  </button>',
+        '</div>'
+      ].join('');
+      body.prepend(header);
+    }
+
+    var pathname = window.location.pathname || '/';
+    if (pathname === '/' || pathname === '/learn/' || pathname.endsWith('/index.html')) {
+      body.classList.add('page-home');
+    }
+    if (pathname.indexOf('/learn/') === 0) {
+      body.classList.add('page-learn');
+    }
+
+    var storageKey = 'wayward-data-engineering-sidebar';
+    var media = window.matchMedia('(min-width: 1200px)');
+    var glass = document.getElementById('quarto-sidebar-glass');
+    var toggles = Array.from(document.querySelectorAll('[data-bs-target=".quarto-sidebar-collapse-item"]'));
+
+    function setDesktopState(open) {
+      body.classList.toggle('book-sidebar-collapsed', !open);
+      body.classList.toggle('book-sidebar-open', open);
+      try {
+        localStorage.setItem(storageKey, open ? 'open' : 'collapsed');
+      } catch (err) {
+        void err;
+      }
+    }
+
+    function applyDesktopDefault() {
+      if (!media.matches) {
+        body.classList.remove('book-sidebar-collapsed', 'book-sidebar-open');
+        return;
+      }
+
+      var stored = null;
+      try {
+        stored = localStorage.getItem(storageKey);
+      } catch (err) {
+        void err;
+      }
+
+      setDesktopState(stored === 'collapsed' ? false : true);
+    }
+
+    toggles.forEach(function (toggle) {
+      toggle.addEventListener('click', function (event) {
+        if (!media.matches) return;
+        event.preventDefault();
+        event.stopPropagation();
+        setDesktopState(body.classList.contains('book-sidebar-collapsed'));
+      });
+    });
+
+    if (glass) {
+      glass.addEventListener('click', function (event) {
+        if (!media.matches) return;
+        event.preventDefault();
+        setDesktopState(false);
+      });
+    }
+
+    if (media.addEventListener) {
+      media.addEventListener('change', applyDesktopDefault);
+    } else if (media.addListener) {
+      media.addListener(applyDesktopDefault);
+    }
+
+    applyDesktopDefault();
+
+    var siteHomeHref = '/';
+    var learnHref = '/learn/';
+    var titleLink = sidebar.querySelector('.sidebar-title a');
+    if (titleLink) titleLink.setAttribute('href', siteHomeHref);
+
+    var toolLinks = Array.from(sidebar.querySelectorAll('.quarto-navigation-tool'));
+    if (toolLinks[0]) toolLinks[0].setAttribute('href', siteHomeHref);
+    if (toolLinks[1]) toolLinks[1].setAttribute('href', learnHref);
+
+    var firstSidebarLink = sidebar.querySelector('.sidebar-item a.sidebar-link');
+    if (firstSidebarLink) firstSidebarLink.setAttribute('href', siteHomeHref);
+
+    var themeToggle = document.querySelector('.wayward-book-theme-toggle');
+    if (themeToggle) themeToggle.remove();
+
+    document.querySelectorAll('.wayward-book-nav a[data-nav]').forEach(function (link) {
+      var target = link.getAttribute('data-nav');
+      if (!target) return;
+      link.classList.remove('is-active');
+      if (pathname === target || pathname.indexOf(target) === 0) {
+        link.classList.add('is-active');
+      }
+    });
+
+    var footer = document.querySelector('footer.footer');
+    if (footer && !footer.classList.contains('wayward-book-footer')) {
+      footer.className = 'wayward-book-footer';
+      footer.innerHTML = [
+        '<div class="wayward-book-footer__inner">',
+        '  <div class="wayward-book-footer__brand">',
+        '    <div class="wayward-book-footer__logo">WaywardHouse<span>.</span></div>',
+        '    <p>Understanding how place, economy, and environment interact through analysis, modelling, and open tools.</p>',
+        '  </div>',
+        '  <nav class="wayward-book-footer__group" aria-labelledby="book-footer-reading">',
+        '    <h2 id="book-footer-reading">Reading</h2>',
+        '    <a href="https://wayward.house/articles/">Articles</a>',
+        '    <a href="https://wayward.house/learn/">Library</a>',
+        '    <a href="https://wayward.house/archive.html">Archive</a>',
+        '  </nav>',
+        '  <nav class="wayward-book-footer__group" aria-labelledby="book-footer-site">',
+        '    <h2 id="book-footer-site">Site</h2>',
+        '    <a href="https://wayward.house/start-here.html">Choose Your Path</a>',
+        '    <a href="https://wayward.house/about.html">About</a>',
+        '    <a href="https://wayward.house/contact.html">Contact</a>',
+        '  </nav>',
+        '  <nav class="wayward-book-footer__group" aria-labelledby="book-footer-resources">',
+        '    <h2 id="book-footer-resources">Resources</h2>',
+        '    <a href="https://wayward.house/topics/">All Topics</a>',
+        '    <a href="https://wayward.house/privacy.html">Privacy Policy</a>',
+        '    <a href="https://wayward.house/terms.html">Terms of Use</a>',
+        '  </nav>',
+        '</div>'
+      ].join('');
+    }
+
+    if (!document.querySelector('.back-to-top')) {
+      var button = document.createElement('button');
+      button.type = 'button';
+      button.className = 'back-to-top';
+      button.setAttribute('aria-label', 'Back to top');
+      button.innerHTML = '<span aria-hidden="true">↑</span><span>Top</span>';
+
+      var prefersReduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+      var ticking = false;
+
+      function updateBackToTop() {
+        var scrolled = window.scrollY || document.documentElement.scrollTop || 0;
+        var longPage = document.documentElement.scrollHeight > window.innerHeight * 1.5;
+        button.classList.toggle('is-visible', longPage && scrolled > Math.max(420, window.innerHeight * 0.7));
+        ticking = false;
+      }
+
+      button.addEventListener('click', function () {
+        window.scrollTo({
+          top: 0,
+          behavior: prefersReduced ? 'auto' : 'smooth'
+        });
+      });
+
+      window.addEventListener('scroll', function () {
+        if (!ticking) {
+          window.requestAnimationFrame(updateBackToTop);
+          ticking = true;
+        }
+      }, { passive: true });
+
+      window.addEventListener('resize', updateBackToTop, { passive: true });
+      body.appendChild(button);
+      updateBackToTop();
+    }
+
+  });
+</script>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:ital,wght@0,300;0,400;0,600;0,700;0,800;0,900;1,700;1,800&amp;family=Barlow:wght@300;400;500;600&amp;family=IBM+Plex+Mono:ital,wght@0,300;0,400;0,500;1,300&amp;family=Literata:ital,opsz,wght@0,7..72,300;0,7..72,400;0,7..72,500;1,7..72,300;1,7..72,400&amp;display=swap" rel="stylesheet">
+
+
+<link rel="stylesheet" href="site_libs/quarto-contrib/quarto-project/wayward-book/wayward-book.css">
+<link rel="stylesheet" href="lightbox.css">
+</head>
+
+<body class="nav-sidebar docked quarto-light">
+
+<div id="quarto-search-results"></div>
+  <header id="quarto-header" class="headroom fixed-top">
+  <nav class="quarto-secondary-nav">
+    <div class="container-fluid d-flex">
+      <button type="button" class="quarto-btn-toggle btn" data-bs-toggle="collapse" role="button" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
+        <i class="bi bi-layout-text-sidebar-reverse"></i>
+      </button>
+        <nav class="quarto-page-breadcrumbs" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="./08-platform-architecture-for-ml.html"><span class="chapter-number">9</span>&nbsp; <span class="chapter-title">Platform Architecture for ML</span></a></li></ol></nav>
+        <a class="flex-grow-1" role="navigation" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">      
+        </a>
+      <button type="button" class="btn quarto-search-button" aria-label="Search" onclick="window.quartoOpenSearch();">
+        <i class="bi bi-search"></i>
+      </button>
+    </div>
+  </nav>
+</header>
+<!-- content -->
+<div id="quarto-content" class="quarto-container page-columns page-rows-contents page-layout-article">
+<!-- sidebar -->
+  <nav id="quarto-sidebar" class="sidebar collapse collapse-horizontal quarto-sidebar-collapse-item sidebar-navigation docked overflow-auto">
+    <div class="pt-lg-2 mt-2 text-left sidebar-header">
+    <div class="sidebar-title mb-0 py-0">
+      <a href="./">Data Engineering for Spatial Systems</a> 
+        <div class="sidebar-tools-main tools-wide">
+    <a href="./" title="" class="quarto-navigation-tool px-1" aria-label="Wayward House"><i class="bi bi-house"></i></a>
+    <a href="./learn/" title="" class="quarto-navigation-tool px-1" aria-label="Learn"><i class="bi bi-grid"></i></a>
+    <a href="https://github.com/WaywardHouse/waywardhouse-data-engineering" title="" class="quarto-navigation-tool px-1" aria-label="Repository"><i class="bi bi-github"></i></a>
+    <a href="https://github.com/WaywardHouse/waywardhouse-data-engineering" title="Source Code" class="quarto-navigation-tool px-1" aria-label="Source Code"><i class="bi bi-github"></i></a>
+    <div class="dropdown">
+      <a href="" title="Share" id="quarto-navigation-tool-dropdown-0" class="quarto-navigation-tool dropdown-toggle px-1" data-bs-toggle="dropdown" aria-expanded="false" role="link" aria-label="Share"><i class="bi bi-share"></i></a>
+      <ul class="dropdown-menu" aria-labelledby="quarto-navigation-tool-dropdown-0">
+          <li>
+            <a class="dropdown-item sidebar-tools-main-item" href="https://twitter.com/intent/tweet?url=|url|">
+              <i class="bi bi-twitter pe-1"></i>
+            Twitter
+            </a>
+          </li>
+          <li>
+            <a class="dropdown-item sidebar-tools-main-item" href="https://www.linkedin.com/sharing/share-offsite/?url=|url|">
+              <i class="bi bi-linkedin pe-1"></i>
+            LinkedIn
+            </a>
+          </li>
+      </ul>
+    </div>
+</div>
+    </div>
+      </div>
+        <div class="mt-2 flex-shrink-0 align-items-center">
+        <div class="sidebar-search">
+        <div id="quarto-search" class="" title="Search"></div>
+        </div>
+        </div>
+    <div class="sidebar-menu-container"> 
+    <ul class="list-unstyled mt-1">
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./index.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">1</span>&nbsp; <span class="chapter-title">Data Engineering for Spatial Systems</span></span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./01-data-architecture.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">2</span>&nbsp; <span class="chapter-title">Data Architecture</span></span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./02-spatial-databases.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">3</span>&nbsp; <span class="chapter-title">Spatial Databases</span></span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./03-pipelines-and-etl.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">4</span>&nbsp; <span class="chapter-title">Pipelines and ETL</span></span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./04-cloud-infrastructure.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">5</span>&nbsp; <span class="chapter-title">Cloud Infrastructure</span></span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./05-streaming-and-realtime.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">6</span>&nbsp; <span class="chapter-title">Streaming and Realtime</span></span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./06-apis-and-access-patterns.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">7</span>&nbsp; <span class="chapter-title">APIs and Access Patterns</span></span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./07-data-quality-and-governance.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">8</span>&nbsp; <span class="chapter-title">Data Quality and Governance</span></span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./08-platform-architecture-for-ml.html" class="sidebar-item-text sidebar-link active">
+ <span class="menu-text"><span class="chapter-number">9</span>&nbsp; <span class="chapter-title">Platform Architecture for ML</span></span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./09-exercise-answers.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">10</span>&nbsp; <span class="chapter-title">Exercise Answers</span></span></a>
+  </div>
+</li>
+    </ul>
+    </div>
+</nav>
+<div id="quarto-sidebar-glass" class="quarto-sidebar-collapse-item" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item"></div>
+<!-- margin-sidebar -->
+    <div id="quarto-margin-sidebar" class="sidebar margin-sidebar">
+        <nav id="TOC" role="doc-toc" class="toc-active">
+    <h2 id="toc-title">Table of contents</h2>
+   
+  <ul>
+  <li><a href="#the-puzzle" id="toc-the-puzzle" class="nav-link active" data-scroll-target="#the-puzzle"><span class="header-section-number">9.1</span> The puzzle</a></li>
+  <li><a href="#the-four-components-of-an-ml-platform" id="toc-the-four-components-of-an-ml-platform" class="nav-link" data-scroll-target="#the-four-components-of-an-ml-platform"><span class="header-section-number">9.2</span> The four components of an ML platform</a></li>
+  <li><a href="#feature-stores-for-spatial-ml" id="toc-feature-stores-for-spatial-ml" class="nav-link" data-scroll-target="#feature-stores-for-spatial-ml"><span class="header-section-number">9.3</span> Feature stores for spatial ML</a></li>
+  <li><a href="#mlflow-experiment-tracking" id="toc-mlflow-experiment-tracking" class="nav-link" data-scroll-target="#mlflow-experiment-tracking"><span class="header-section-number">9.4</span> MLflow experiment tracking</a></li>
+  <li><a href="#trainingserving-skew" id="toc-trainingserving-skew" class="nav-link" data-scroll-target="#trainingserving-skew"><span class="header-section-number">9.5</span> Training/serving skew</a></li>
+  <li><a href="#online-vs-batch-inference" id="toc-online-vs-batch-inference" class="nav-link" data-scroll-target="#online-vs-batch-inference"><span class="header-section-number">9.6</span> Online vs batch inference</a></li>
+  <li><a href="#simulating-accuracy-degradation-under-feature-staleness" id="toc-simulating-accuracy-degradation-under-feature-staleness" class="nav-link" data-scroll-target="#simulating-accuracy-degradation-under-feature-staleness"><span class="header-section-number">9.7</span> Simulating accuracy degradation under feature staleness</a></li>
+  <li><a href="#exercises" id="toc-exercises" class="nav-link" data-scroll-target="#exercises"><span class="header-section-number">9.8</span> Exercises</a></li>
+  <li><a href="#build-this" id="toc-build-this" class="nav-link" data-scroll-target="#build-this"><span class="header-section-number">9.9</span> Build this</a></li>
+  </ul>
+<div class="toc-actions"><ul><li><a href="https://github.com/WaywardHouse/waywardhouse-data-engineering/edit/main/08-platform-architecture-for-ml.qmd" class="toc-action"><i class="bi bi-github"></i>Edit this page</a></li><li><a href="https://github.com/WaywardHouse/waywardhouse-data-engineering/issues/new" class="toc-action"><i class="bi empty"></i>Report an issue</a></li></ul></div></nav>
+    </div>
+<!-- main -->
+<main class="content" id="quarto-document-content">
+
+<header id="title-block-header" class="quarto-title-block default">
+<div class="quarto-title">
+<h1 class="title"><span class="chapter-number">9</span>&nbsp; <span class="chapter-title">Platform Architecture for ML</span></h1>
+<p class="subtitle lead">Feature stores, experiment tracking, and serving spatial models in production</p>
+</div>
+
+
+
+<div class="quarto-title-meta">
+
+    
+  
+    
+  </div>
+  
+
+
+</header>
+
+
+<section id="the-puzzle" class="level2" data-number="9.1">
+<h2 data-number="9.1" class="anchored" data-anchor-id="the-puzzle"><span class="header-section-number">9.1</span> The puzzle</h2>
+<p>A risk assessment team trained a parcel-level wildfire risk classifier for a regional fire authority. The model scored parcels on a 0–1 risk scale based on vegetation density, slope, proximity to previous fire perimeters, and distance to emergency access routes. In development, the model achieved a validation AUC of 0.91 against a held-out test set of historical fire events. This was good enough to proceed to production.</p>
+<p>Six months into production, a retrospective analysis found that the model’s top-decile predictions had a precision of 0.64 against actual fire incidents — substantially below the 0.91 AUC implied. The model was not obviously broken. Its predictions were internally consistent. The probability scores looked reasonable. But the rank ordering that had worked in development was not working in production.</p>
+<p>The investigation took three weeks. The eventual finding: the training pipeline computed vegetation density features using a spatial join to a 10-metre vegetation raster at the centroid of each parcel. The serving pipeline — the one that scored new parcels for the operational dashboard — computed the same feature using the centroid of the parcel’s bounding box, which is a different point for any non-rectangular parcel. For irregular parcels on steep terrain, the difference was 40–80 metres. Across a mountainous study area where vegetation density changes rapidly over short distances, those 80 metres were enough to produce systematically different feature values in training and serving.</p>
+<p>The data looked identical. Both pipelines ingested from the same raster. Both computed vegetation density. The column names were the same. The value ranges were the same. But the computation was not the same, and the model had been trained on features it was not receiving in production.</p>
+<p>This is training/serving skew. It is the most common failure mode in production ML systems, and it is particularly prevalent in spatial ML because spatial feature computation — spatial joins, raster extractions, network distance calculations — is both expensive and easy to implement inconsistently across two different codebases.</p>
+<hr>
+</section>
+<section id="the-four-components-of-an-ml-platform" class="level2" data-number="9.2">
+<h2 data-number="9.2" class="anchored" data-anchor-id="the-four-components-of-an-ml-platform"><span class="header-section-number">9.2</span> The four components of an ML platform</h2>
+<p>A production ML system is not a model. It is a system with at least four distinct components, each of which can fail independently and each of which has a different engineering responsibility.</p>
+<p><strong>The feature store</strong> is responsible for defining features, materialising them, and serving them to both the training pipeline and the serving pipeline. Its purpose is to ensure that a feature computed at training time and the same feature requested at serving time are produced by identical code. This is the structural solution to training/serving skew: eliminate the two codebases by having one.</p>
+<p>In systems thinking terms, the feature store is the information structure intervention — Meadows’ LP 6. The skew problem was not caused by bad models or bad data; it was caused by two separate information pipelines that diverged. The feature store changes the structure: there is now one pipeline that produces features for all consumers.</p>
+<p><strong>The experiment tracking system</strong> is responsible for recording the inputs and outputs of every training run: the hyperparameters, the dataset version, the training metrics, and the model artefacts. Its purpose is reproducibility and comparison. Without experiment tracking, “the model we deployed six months ago” is a reference to a file somewhere with no guaranteed link to the configuration that produced it. With experiment tracking, it is a run ID with a complete record of everything that went into it.</p>
+<p>In systems thinking terms, experiment tracking is the monitoring system that maintains the balancing loop of model improvement. The loop requires a signal (which configuration performs better?) and a record (what did we try before?). Without the record, the loop operates without memory — each experiment is disconnected from every other, and the organisation cannot learn systematically from its own trials.</p>
+<p><strong>The model registry</strong> is responsible for versioning trained models, tracking their promotion through a deployment lifecycle (staging, production, archived), and providing a single source of truth for which model is currently serving predictions. Its purpose is deployment hygiene: without a registry, “which model is in production?” is answered by looking at a server configuration file, if it can be answered at all.</p>
+<p>The model registry is the stock maintenance component. The stock is “production model quality.” The flows are: training runs add new model versions to the registry, promotion decisions move models from staging to production, deprecation removes old versions. The registry makes the stock visible — it is the measurement system for a stock that would otherwise be unobservable.</p>
+<p><strong>The serving layer</strong> is responsible for taking a trained model from the registry and applying it to new inputs, either in real time (online inference) or in batch (offline inference). It is the place where training/serving skew is most likely to manifest: the serving layer must produce the same features the model was trained on, using the same code.</p>
+<p>The serving layer is also where the feedback loop from production back to training begins. User interactions, system outcomes, and ground truth labels that accumulate in production are the inputs to the next training run. If the serving layer does not capture this feedback, the retraining loop is severed — the same feedback starvation described in Chapter 6. The serving layer is not just an inference endpoint; it is a data collection system.</p>
+<hr>
+</section>
+<section id="feature-stores-for-spatial-ml" class="level2" data-number="9.3">
+<h2 data-number="9.3" class="anchored" data-anchor-id="feature-stores-for-spatial-ml"><span class="header-section-number">9.3</span> Feature stores for spatial ML</h2>
+<p>Spatial features are different from tabular features in one important way: computing them requires a spatial operation at feature computation time. Tabular features — age, income band, transaction count — can be extracted from a row of a table with simple column references. Spatial features — distance to nearest fire station, percentage of land within 1 km classified as high fuel load, mean slope within a parcel — require a spatial join, a raster extraction, or a network analysis. These operations are expensive, and they are easy to implement differently in two codebases that both purport to compute “the same” feature.</p>
+<p>Feast is the standard open-source feature store. Its data model has three components. A <code>FeatureView</code> defines a set of features, the data source they come from, and the entity they are keyed on (in spatial ML, the entity is typically a spatial unit identifier — a parcel ID, a cell ID, a property UPRN). An <code>Entity</code> defines the primary key type. A <code>DataSource</code> defines where the feature data lives (an offline store for training, an online store for serving). Feast materialises features from the offline store to the online store on a schedule, so that the serving layer can retrieve pre-computed feature values with low latency.</p>
+<p>The critical property: the feature computation logic is defined once in the <code>FeatureView</code>. The training pipeline calls <code>get_historical_features()</code>. The serving pipeline calls <code>get_online_features()</code>. Both use the same feature definition. Training/serving skew requires violating this architecture — computing the feature differently outside the feature store.</p>
+<div id="fig-feast-featureview" class="cell quarto-float quarto-figure quarto-figure-center anchored" data-execution_count="1">
+<figure class="quarto-float quarto-float-fig figure">
+<div aria-describedby="fig-feast-featureview-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<details class="code-fold">
+<summary>Code</summary>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb1"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="co">"""Feast feature store definition for spatial wildfire risk features.</span></span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="co">Illustrates FeatureView definitions for spatial ML.</span></span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a><span class="co">Run in a Feast project directory: feast apply, feast materialize."""</span></span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> datetime <span class="im">import</span> timedelta</span>
+<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> feast <span class="im">import</span> (</span>
+<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a>    Entity,</span>
+<span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a>    FeatureView,</span>
+<span id="cb1-9"><a href="#cb1-9" aria-hidden="true" tabindex="-1"></a>    Field,</span>
+<span id="cb1-10"><a href="#cb1-10" aria-hidden="true" tabindex="-1"></a>    FileSource,</span>
+<span id="cb1-11"><a href="#cb1-11" aria-hidden="true" tabindex="-1"></a>    ValueType,</span>
+<span id="cb1-12"><a href="#cb1-12" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb1-13"><a href="#cb1-13" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> feast.types <span class="im">import</span> Float32, Int64, String</span>
+<span id="cb1-14"><a href="#cb1-14" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-15"><a href="#cb1-15" aria-hidden="true" tabindex="-1"></a><span class="co"># -- Entity: the spatial unit the features are keyed on -----------------------</span></span>
+<span id="cb1-16"><a href="#cb1-16" aria-hidden="true" tabindex="-1"></a>parcel <span class="op">=</span> Entity(</span>
+<span id="cb1-17"><a href="#cb1-17" aria-hidden="true" tabindex="-1"></a>    name<span class="op">=</span><span class="st">"parcel_id"</span>,</span>
+<span id="cb1-18"><a href="#cb1-18" aria-hidden="true" tabindex="-1"></a>    value_type<span class="op">=</span>ValueType.STRING,</span>
+<span id="cb1-19"><a href="#cb1-19" aria-hidden="true" tabindex="-1"></a>    description<span class="op">=</span><span class="st">"Land parcel identifier (VLSID from state land registry)"</span>,</span>
+<span id="cb1-20"><a href="#cb1-20" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb1-21"><a href="#cb1-21" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-22"><a href="#cb1-22" aria-hidden="true" tabindex="-1"></a><span class="co"># -- Offline data source: GeoParquet on local filesystem (or S3 in production) -</span></span>
+<span id="cb1-23"><a href="#cb1-23" aria-hidden="true" tabindex="-1"></a>parcel_features_source <span class="op">=</span> FileSource(</span>
+<span id="cb1-24"><a href="#cb1-24" aria-hidden="true" tabindex="-1"></a>    path<span class="op">=</span><span class="st">"data/features/parcel_spatial_features.parquet"</span>,</span>
+<span id="cb1-25"><a href="#cb1-25" aria-hidden="true" tabindex="-1"></a>    timestamp_field<span class="op">=</span><span class="st">"feature_timestamp"</span>,</span>
+<span id="cb1-26"><a href="#cb1-26" aria-hidden="true" tabindex="-1"></a>    <span class="co"># timestamp_field is required for point-in-time correct training data retrieval</span></span>
+<span id="cb1-27"><a href="#cb1-27" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb1-28"><a href="#cb1-28" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-29"><a href="#cb1-29" aria-hidden="true" tabindex="-1"></a><span class="co"># -- FeatureView: vegetation and terrain features -----------------------------</span></span>
+<span id="cb1-30"><a href="#cb1-30" aria-hidden="true" tabindex="-1"></a><span class="co"># These features are computed by the spatial preprocessing pipeline (Python + GDAL)</span></span>
+<span id="cb1-31"><a href="#cb1-31" aria-hidden="true" tabindex="-1"></a><span class="co"># and written to the parquet file. The feature computation code lives in</span></span>
+<span id="cb1-32"><a href="#cb1-32" aria-hidden="true" tabindex="-1"></a><span class="co"># feature_pipelines/compute_parcel_features.py — one place, used by both</span></span>
+<span id="cb1-33"><a href="#cb1-33" aria-hidden="true" tabindex="-1"></a><span class="co"># offline training data retrieval and online serving materialisation.</span></span>
+<span id="cb1-34"><a href="#cb1-34" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-35"><a href="#cb1-35" aria-hidden="true" tabindex="-1"></a>vegetation_terrain_features <span class="op">=</span> FeatureView(</span>
+<span id="cb1-36"><a href="#cb1-36" aria-hidden="true" tabindex="-1"></a>    name<span class="op">=</span><span class="st">"parcel_vegetation_terrain"</span>,</span>
+<span id="cb1-37"><a href="#cb1-37" aria-hidden="true" tabindex="-1"></a>    entities<span class="op">=</span>[parcel],</span>
+<span id="cb1-38"><a href="#cb1-38" aria-hidden="true" tabindex="-1"></a>    ttl<span class="op">=</span>timedelta(days<span class="op">=</span><span class="dv">180</span>),  <span class="co"># features older than 180 days trigger a freshness alert</span></span>
+<span id="cb1-39"><a href="#cb1-39" aria-hidden="true" tabindex="-1"></a>    schema<span class="op">=</span>[</span>
+<span id="cb1-40"><a href="#cb1-40" aria-hidden="true" tabindex="-1"></a>        Field(name<span class="op">=</span><span class="st">"veg_density_centroid"</span>,   dtype<span class="op">=</span>Float32,</span>
+<span id="cb1-41"><a href="#cb1-41" aria-hidden="true" tabindex="-1"></a>              description<span class="op">=</span><span class="st">"Vegetation density (NDVI) at parcel centroid from 10m raster"</span>),</span>
+<span id="cb1-42"><a href="#cb1-42" aria-hidden="true" tabindex="-1"></a>        Field(name<span class="op">=</span><span class="st">"mean_slope_pct"</span>,         dtype<span class="op">=</span>Float32,</span>
+<span id="cb1-43"><a href="#cb1-43" aria-hidden="true" tabindex="-1"></a>              description<span class="op">=</span><span class="st">"Mean slope in percent across parcel area"</span>),</span>
+<span id="cb1-44"><a href="#cb1-44" aria-hidden="true" tabindex="-1"></a>        Field(name<span class="op">=</span><span class="st">"fuel_load_class"</span>,        dtype<span class="op">=</span>Int64,</span>
+<span id="cb1-45"><a href="#cb1-45" aria-hidden="true" tabindex="-1"></a>              description<span class="op">=</span><span class="st">"Dominant fuel load classification (1=low, 2=med, 3=high, 4=extreme)"</span>),</span>
+<span id="cb1-46"><a href="#cb1-46" aria-hidden="true" tabindex="-1"></a>        Field(name<span class="op">=</span><span class="st">"dist_prev_fire_m"</span>,       dtype<span class="op">=</span>Float32,</span>
+<span id="cb1-47"><a href="#cb1-47" aria-hidden="true" tabindex="-1"></a>              description<span class="op">=</span><span class="st">"Distance in metres to nearest historical fire perimeter"</span>),</span>
+<span id="cb1-48"><a href="#cb1-48" aria-hidden="true" tabindex="-1"></a>        Field(name<span class="op">=</span><span class="st">"aspect_degrees"</span>,         dtype<span class="op">=</span>Float32,</span>
+<span id="cb1-49"><a href="#cb1-49" aria-hidden="true" tabindex="-1"></a>              description<span class="op">=</span><span class="st">"Mean aspect in degrees (0=N, 90=E, 180=S, 270=W)"</span>),</span>
+<span id="cb1-50"><a href="#cb1-50" aria-hidden="true" tabindex="-1"></a>    ],</span>
+<span id="cb1-51"><a href="#cb1-51" aria-hidden="true" tabindex="-1"></a>    source<span class="op">=</span>parcel_features_source,</span>
+<span id="cb1-52"><a href="#cb1-52" aria-hidden="true" tabindex="-1"></a>    tags<span class="op">=</span>{<span class="st">"domain"</span>: <span class="st">"wildfire"</span>, <span class="st">"crs"</span>: <span class="st">"GDA2020_MGA55"</span>, <span class="st">"resolution"</span>: <span class="st">"10m"</span>},</span>
+<span id="cb1-53"><a href="#cb1-53" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb1-54"><a href="#cb1-54" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-55"><a href="#cb1-55" aria-hidden="true" tabindex="-1"></a><span class="co"># -- FeatureView: access and infrastructure features --------------------------</span></span>
+<span id="cb1-56"><a href="#cb1-56" aria-hidden="true" tabindex="-1"></a>access_features_source <span class="op">=</span> FileSource(</span>
+<span id="cb1-57"><a href="#cb1-57" aria-hidden="true" tabindex="-1"></a>    path<span class="op">=</span><span class="st">"data/features/parcel_access_features.parquet"</span>,</span>
+<span id="cb1-58"><a href="#cb1-58" aria-hidden="true" tabindex="-1"></a>    timestamp_field<span class="op">=</span><span class="st">"feature_timestamp"</span>,</span>
+<span id="cb1-59"><a href="#cb1-59" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb1-60"><a href="#cb1-60" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-61"><a href="#cb1-61" aria-hidden="true" tabindex="-1"></a>access_infrastructure_features <span class="op">=</span> FeatureView(</span>
+<span id="cb1-62"><a href="#cb1-62" aria-hidden="true" tabindex="-1"></a>    name<span class="op">=</span><span class="st">"parcel_access_infrastructure"</span>,</span>
+<span id="cb1-63"><a href="#cb1-63" aria-hidden="true" tabindex="-1"></a>    entities<span class="op">=</span>[parcel],</span>
+<span id="cb1-64"><a href="#cb1-64" aria-hidden="true" tabindex="-1"></a>    ttl<span class="op">=</span>timedelta(days<span class="op">=</span><span class="dv">365</span>),  <span class="co"># access routes change less frequently than vegetation</span></span>
+<span id="cb1-65"><a href="#cb1-65" aria-hidden="true" tabindex="-1"></a>    schema<span class="op">=</span>[</span>
+<span id="cb1-66"><a href="#cb1-66" aria-hidden="true" tabindex="-1"></a>        Field(name<span class="op">=</span><span class="st">"dist_fire_station_road_m"</span>, dtype<span class="op">=</span>Float32,</span>
+<span id="cb1-67"><a href="#cb1-67" aria-hidden="true" tabindex="-1"></a>              description<span class="op">=</span><span class="st">"Road network distance in metres to nearest fire station"</span>),</span>
+<span id="cb1-68"><a href="#cb1-68" aria-hidden="true" tabindex="-1"></a>        Field(name<span class="op">=</span><span class="st">"dist_fire_access_track_m"</span>, dtype<span class="op">=</span>Float32,</span>
+<span id="cb1-69"><a href="#cb1-69" aria-hidden="true" tabindex="-1"></a>              description<span class="op">=</span><span class="st">"Distance in metres to nearest fire authority access track"</span>),</span>
+<span id="cb1-70"><a href="#cb1-70" aria-hidden="true" tabindex="-1"></a>        Field(name<span class="op">=</span><span class="st">"parcel_area_ha"</span>,           dtype<span class="op">=</span>Float32,</span>
+<span id="cb1-71"><a href="#cb1-71" aria-hidden="true" tabindex="-1"></a>              description<span class="op">=</span><span class="st">"Parcel area in hectares (computed from registered geometry)"</span>),</span>
+<span id="cb1-72"><a href="#cb1-72" aria-hidden="true" tabindex="-1"></a>        Field(name<span class="op">=</span><span class="st">"perimeter_m"</span>,              dtype<span class="op">=</span>Float32,</span>
+<span id="cb1-73"><a href="#cb1-73" aria-hidden="true" tabindex="-1"></a>              description<span class="op">=</span><span class="st">"Parcel perimeter in metres"</span>),</span>
+<span id="cb1-74"><a href="#cb1-74" aria-hidden="true" tabindex="-1"></a>        Field(name<span class="op">=</span><span class="st">"elevation_m"</span>,              dtype<span class="op">=</span>Float32,</span>
+<span id="cb1-75"><a href="#cb1-75" aria-hidden="true" tabindex="-1"></a>              description<span class="op">=</span><span class="st">"Mean elevation in metres above sea level (AHD71)"</span>),</span>
+<span id="cb1-76"><a href="#cb1-76" aria-hidden="true" tabindex="-1"></a>    ],</span>
+<span id="cb1-77"><a href="#cb1-77" aria-hidden="true" tabindex="-1"></a>    source<span class="op">=</span>access_features_source,</span>
+<span id="cb1-78"><a href="#cb1-78" aria-hidden="true" tabindex="-1"></a>    tags<span class="op">=</span>{<span class="st">"domain"</span>: <span class="st">"wildfire"</span>, <span class="st">"crs"</span>: <span class="st">"GDA2020_MGA55"</span>},</span>
+<span id="cb1-79"><a href="#cb1-79" aria-hidden="true" tabindex="-1"></a>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</details>
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig quarto-uncaptioned" id="fig-feast-featureview-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Figure&nbsp;9.1
+</figcaption>
+</figure>
+</div>
+<p>Retrieving features for training — with point-in-time correctness so that the training data reflects the feature values at the time each label was generated, not the current values:</p>
+<div id="feat-retrieval-training" class="cell" data-execution_count="2">
+<details class="code-fold">
+<summary>Code</summary>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb2"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="co">"""Point-in-time correct feature retrieval for training.</span></span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a><span class="co">Each parcel gets the feature values that were current at event_timestamp —</span></span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a><span class="co">not the current values, which may have changed since the fire occurred."""</span></span>
+<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> pandas <span class="im">as</span> pd</span>
+<span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> feast <span class="im">import</span> FeatureStore</span>
+<span id="cb2-7"><a href="#cb2-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-8"><a href="#cb2-8" aria-hidden="true" tabindex="-1"></a>store <span class="op">=</span> FeatureStore(repo_path<span class="op">=</span><span class="st">"feature_repo/"</span>)</span>
+<span id="cb2-9"><a href="#cb2-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-10"><a href="#cb2-10" aria-hidden="true" tabindex="-1"></a><span class="co"># Training entity DataFrame: one row per training example</span></span>
+<span id="cb2-11"><a href="#cb2-11" aria-hidden="true" tabindex="-1"></a><span class="co"># event_timestamp is the date of the fire incident (or non-fire observation)</span></span>
+<span id="cb2-12"><a href="#cb2-12" aria-hidden="true" tabindex="-1"></a>entity_df <span class="op">=</span> pd.DataFrame({</span>
+<span id="cb2-13"><a href="#cb2-13" aria-hidden="true" tabindex="-1"></a>    <span class="st">"parcel_id"</span>:       [<span class="st">"P001"</span>, <span class="st">"P002"</span>, <span class="st">"P003"</span>, <span class="st">"P004"</span>],</span>
+<span id="cb2-14"><a href="#cb2-14" aria-hidden="true" tabindex="-1"></a>    <span class="st">"event_timestamp"</span>: pd.to_datetime([</span>
+<span id="cb2-15"><a href="#cb2-15" aria-hidden="true" tabindex="-1"></a>        <span class="st">"2022-01-15"</span>, <span class="st">"2022-03-08"</span>, <span class="st">"2022-07-22"</span>, <span class="st">"2023-02-11"</span></span>
+<span id="cb2-16"><a href="#cb2-16" aria-hidden="true" tabindex="-1"></a>    ]),</span>
+<span id="cb2-17"><a href="#cb2-17" aria-hidden="true" tabindex="-1"></a>})</span>
+<span id="cb2-18"><a href="#cb2-18" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-19"><a href="#cb2-19" aria-hidden="true" tabindex="-1"></a><span class="co"># Retrieve historical features aligned to each event_timestamp</span></span>
+<span id="cb2-20"><a href="#cb2-20" aria-hidden="true" tabindex="-1"></a><span class="co"># Feast joins features to each row using the timestamp that was current</span></span>
+<span id="cb2-21"><a href="#cb2-21" aria-hidden="true" tabindex="-1"></a><span class="co"># at event_timestamp — not the latest available values</span></span>
+<span id="cb2-22"><a href="#cb2-22" aria-hidden="true" tabindex="-1"></a>training_df <span class="op">=</span> store.get_historical_features(</span>
+<span id="cb2-23"><a href="#cb2-23" aria-hidden="true" tabindex="-1"></a>    entity_df<span class="op">=</span>entity_df,</span>
+<span id="cb2-24"><a href="#cb2-24" aria-hidden="true" tabindex="-1"></a>    features<span class="op">=</span>[</span>
+<span id="cb2-25"><a href="#cb2-25" aria-hidden="true" tabindex="-1"></a>        <span class="st">"parcel_vegetation_terrain:veg_density_centroid"</span>,</span>
+<span id="cb2-26"><a href="#cb2-26" aria-hidden="true" tabindex="-1"></a>        <span class="st">"parcel_vegetation_terrain:mean_slope_pct"</span>,</span>
+<span id="cb2-27"><a href="#cb2-27" aria-hidden="true" tabindex="-1"></a>        <span class="st">"parcel_vegetation_terrain:fuel_load_class"</span>,</span>
+<span id="cb2-28"><a href="#cb2-28" aria-hidden="true" tabindex="-1"></a>        <span class="st">"parcel_vegetation_terrain:dist_prev_fire_m"</span>,</span>
+<span id="cb2-29"><a href="#cb2-29" aria-hidden="true" tabindex="-1"></a>        <span class="st">"parcel_access_infrastructure:dist_fire_station_road_m"</span>,</span>
+<span id="cb2-30"><a href="#cb2-30" aria-hidden="true" tabindex="-1"></a>        <span class="st">"parcel_access_infrastructure:elevation_m"</span>,</span>
+<span id="cb2-31"><a href="#cb2-31" aria-hidden="true" tabindex="-1"></a>    ],</span>
+<span id="cb2-32"><a href="#cb2-32" aria-hidden="true" tabindex="-1"></a>).to_df()</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</details>
+</div>
+<p>Retrieving features for serving — using the same feature definitions, but from the online store:</p>
+<div id="feat-retrieval-serving" class="cell" data-execution_count="3">
+<details class="code-fold">
+<summary>Code</summary>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb3"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="co">"""Online feature retrieval for real-time serving.</span></span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a><span class="co">Uses the same FeatureView definitions as training — no separate computation."""</span></span>
+<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> feast <span class="im">import</span> FeatureStore</span>
+<span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-6"><a href="#cb3-6" aria-hidden="true" tabindex="-1"></a>store <span class="op">=</span> FeatureStore(repo_path<span class="op">=</span><span class="st">"feature_repo/"</span>)</span>
+<span id="cb3-7"><a href="#cb3-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-8"><a href="#cb3-8" aria-hidden="true" tabindex="-1"></a><span class="co"># New parcels to score</span></span>
+<span id="cb3-9"><a href="#cb3-9" aria-hidden="true" tabindex="-1"></a>parcel_ids <span class="op">=</span> [<span class="st">"P7823"</span>, <span class="st">"P7824"</span>, <span class="st">"P7825"</span>]</span>
+<span id="cb3-10"><a href="#cb3-10" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-11"><a href="#cb3-11" aria-hidden="true" tabindex="-1"></a>online_features <span class="op">=</span> store.get_online_features(</span>
+<span id="cb3-12"><a href="#cb3-12" aria-hidden="true" tabindex="-1"></a>    features<span class="op">=</span>[</span>
+<span id="cb3-13"><a href="#cb3-13" aria-hidden="true" tabindex="-1"></a>        <span class="st">"parcel_vegetation_terrain:veg_density_centroid"</span>,</span>
+<span id="cb3-14"><a href="#cb3-14" aria-hidden="true" tabindex="-1"></a>        <span class="st">"parcel_vegetation_terrain:mean_slope_pct"</span>,</span>
+<span id="cb3-15"><a href="#cb3-15" aria-hidden="true" tabindex="-1"></a>        <span class="st">"parcel_vegetation_terrain:fuel_load_class"</span>,</span>
+<span id="cb3-16"><a href="#cb3-16" aria-hidden="true" tabindex="-1"></a>        <span class="st">"parcel_vegetation_terrain:dist_prev_fire_m"</span>,</span>
+<span id="cb3-17"><a href="#cb3-17" aria-hidden="true" tabindex="-1"></a>        <span class="st">"parcel_access_infrastructure:dist_fire_station_road_m"</span>,</span>
+<span id="cb3-18"><a href="#cb3-18" aria-hidden="true" tabindex="-1"></a>        <span class="st">"parcel_access_infrastructure:elevation_m"</span>,</span>
+<span id="cb3-19"><a href="#cb3-19" aria-hidden="true" tabindex="-1"></a>    ],</span>
+<span id="cb3-20"><a href="#cb3-20" aria-hidden="true" tabindex="-1"></a>    entity_rows<span class="op">=</span>[{<span class="st">"parcel_id"</span>: pid} <span class="cf">for</span> pid <span class="kw">in</span> parcel_ids],</span>
+<span id="cb3-21"><a href="#cb3-21" aria-hidden="true" tabindex="-1"></a>).to_dict()</span>
+<span id="cb3-22"><a href="#cb3-22" aria-hidden="true" tabindex="-1"></a><span class="co"># online_features now contains the same column names as training_df</span></span>
+<span id="cb3-23"><a href="#cb3-23" aria-hidden="true" tabindex="-1"></a><span class="co"># The model receives features computed by the same code that produced training data</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</details>
+</div>
+<p>The point-in-time correctness property of <code>get_historical_features()</code> deserves emphasis. Spatial features are not static. Vegetation changes seasonally and after disturbance. Road networks change as tracks are added or closed. If the training data is assembled using current feature values rather than values at the time of each training example, the model learns a feature-label relationship that is distorted by temporal misalignment. A parcel where a fire occurred in January 2022 should have its features retrieved as of January 2022 — not as of the date the training run was executed, which may be 18 months later. This is a second category of training/serving skew: temporal skew, where features are computed at the wrong point in time.</p>
+<hr>
+</section>
+<section id="mlflow-experiment-tracking" class="level2" data-number="9.4">
+<h2 data-number="9.4" class="anchored" data-anchor-id="mlflow-experiment-tracking"><span class="header-section-number">9.4</span> MLflow experiment tracking</h2>
+<p>MLflow records everything about a training run: the parameters, the metrics, the model artefacts, and the environment. A training run that is not tracked in MLflow is a run whose results cannot be reproduced, whose performance cannot be compared to other runs, and whose model cannot be reliably deployed by someone other than the engineer who ran it.</p>
+<p>The model registry component of MLflow adds a deployment lifecycle on top of the experiment tracking. A trained model is logged to the tracking server as an artefact. It can then be registered in the model registry with a version number. The registry tracks which version is in <code>Staging</code> (being evaluated), which is in <code>Production</code> (serving live predictions), and which is <code>Archived</code> (superseded). Promotion between stages requires an explicit action — a manual approval or an automated test gate — which is the governance checkpoint that separates “a model someone trained” from “the model the system is using.”</p>
+<div id="cell-fig-mlflow-training" class="cell" data-fig-height="5" data-fig-width="11" data-execution_count="4">
+<details class="code-fold">
+<summary>Code</summary>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb4"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="co">"""Feature importance simulation for a spatial wildfire risk classifier — Chapter 8.</span></span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a><span class="co">Uses numpy only (no sklearn, no mlflow) to illustrate the same conceptual output:</span></span>
+<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a><span class="co">feature importances, training metric progression, and the run parameter record.</span></span>
+<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a><span class="co">The logged spatial_join_method parameter is the key audit trail for skew diagnosis."""</span></span>
+<span id="cb4-5"><a href="#cb4-5" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> numpy <span class="im">as</span> np</span>
+<span id="cb4-6"><a href="#cb4-6" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> matplotlib.pyplot <span class="im">as</span> plt</span>
+<span id="cb4-7"><a href="#cb4-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-8"><a href="#cb4-8" aria-hidden="true" tabindex="-1"></a>rng <span class="op">=</span> np.random.default_rng(<span class="dv">42</span>)</span>
+<span id="cb4-9"><a href="#cb4-9" aria-hidden="true" tabindex="-1"></a>n_samples <span class="op">=</span> <span class="dv">2000</span></span>
+<span id="cb4-10"><a href="#cb4-10" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-11"><a href="#cb4-11" aria-hidden="true" tabindex="-1"></a>FEATURE_NAMES <span class="op">=</span> [</span>
+<span id="cb4-12"><a href="#cb4-12" aria-hidden="true" tabindex="-1"></a>    <span class="st">"veg_density_centroid"</span>,</span>
+<span id="cb4-13"><a href="#cb4-13" aria-hidden="true" tabindex="-1"></a>    <span class="st">"mean_slope_pct"</span>,</span>
+<span id="cb4-14"><a href="#cb4-14" aria-hidden="true" tabindex="-1"></a>    <span class="st">"fuel_load_class"</span>,</span>
+<span id="cb4-15"><a href="#cb4-15" aria-hidden="true" tabindex="-1"></a>    <span class="st">"dist_prev_fire_m"</span>,</span>
+<span id="cb4-16"><a href="#cb4-16" aria-hidden="true" tabindex="-1"></a>    <span class="st">"dist_fire_station_road_m"</span>,</span>
+<span id="cb4-17"><a href="#cb4-17" aria-hidden="true" tabindex="-1"></a>    <span class="st">"elevation_m"</span>,</span>
+<span id="cb4-18"><a href="#cb4-18" aria-hidden="true" tabindex="-1"></a>]</span>
+<span id="cb4-19"><a href="#cb4-19" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-20"><a href="#cb4-20" aria-hidden="true" tabindex="-1"></a><span class="co"># Simulate feature matrix with known signal strengths</span></span>
+<span id="cb4-21"><a href="#cb4-21" aria-hidden="true" tabindex="-1"></a><span class="co"># fuel_load_class (idx 2) and mean_slope_pct (idx 1) are the dominant predictors</span></span>
+<span id="cb4-22"><a href="#cb4-22" aria-hidden="true" tabindex="-1"></a>X <span class="op">=</span> rng.standard_normal((n_samples, <span class="bu">len</span>(FEATURE_NAMES)))</span>
+<span id="cb4-23"><a href="#cb4-23" aria-hidden="true" tabindex="-1"></a>true_log_odds <span class="op">=</span> <span class="fl">0.80</span> <span class="op">*</span> X[:, <span class="dv">2</span>] <span class="op">+</span> <span class="fl">0.50</span> <span class="op">*</span> X[:, <span class="dv">1</span>] <span class="op">-</span> <span class="fl">0.30</span> <span class="op">*</span> X[:, <span class="dv">4</span>] <span class="op">+</span> <span class="fl">0.15</span> <span class="op">*</span> X[:, <span class="dv">0</span>]</span>
+<span id="cb4-24"><a href="#cb4-24" aria-hidden="true" tabindex="-1"></a>y <span class="op">=</span> (rng.random(n_samples) <span class="op">&lt;</span> <span class="fl">1.0</span> <span class="op">/</span> (<span class="fl">1.0</span> <span class="op">+</span> np.exp(<span class="op">-</span>true_log_odds))).astype(<span class="bu">int</span>)</span>
+<span id="cb4-25"><a href="#cb4-25" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-26"><a href="#cb4-26" aria-hidden="true" tabindex="-1"></a><span class="co"># Point-biserial correlation magnitude as a proxy for feature importance</span></span>
+<span id="cb4-27"><a href="#cb4-27" aria-hidden="true" tabindex="-1"></a>importances <span class="op">=</span> np.array([</span>
+<span id="cb4-28"><a href="#cb4-28" aria-hidden="true" tabindex="-1"></a>    <span class="bu">abs</span>(np.corrcoef(X[:, j], y)[<span class="dv">0</span>, <span class="dv">1</span>]) <span class="cf">for</span> j <span class="kw">in</span> <span class="bu">range</span>(<span class="bu">len</span>(FEATURE_NAMES))</span>
+<span id="cb4-29"><a href="#cb4-29" aria-hidden="true" tabindex="-1"></a>])</span>
+<span id="cb4-30"><a href="#cb4-30" aria-hidden="true" tabindex="-1"></a>importances <span class="op">/=</span> importances.<span class="bu">sum</span>()   <span class="co"># normalise to sum to 1</span></span>
+<span id="cb4-31"><a href="#cb4-31" aria-hidden="true" tabindex="-1"></a>sorted_idx <span class="op">=</span> np.argsort(importances)</span>
+<span id="cb4-32"><a href="#cb4-32" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-33"><a href="#cb4-33" aria-hidden="true" tabindex="-1"></a><span class="co"># Simulate training metric curve (AUC increases, then plateaus)</span></span>
+<span id="cb4-34"><a href="#cb4-34" aria-hidden="true" tabindex="-1"></a>n_rounds <span class="op">=</span> <span class="dv">200</span></span>
+<span id="cb4-35"><a href="#cb4-35" aria-hidden="true" tabindex="-1"></a>rounds <span class="op">=</span> np.arange(<span class="dv">1</span>, n_rounds <span class="op">+</span> <span class="dv">1</span>)</span>
+<span id="cb4-36"><a href="#cb4-36" aria-hidden="true" tabindex="-1"></a>auc_curve   <span class="op">=</span> <span class="fl">0.91</span> <span class="op">-</span> <span class="fl">0.18</span> <span class="op">*</span> np.exp(<span class="op">-</span>rounds <span class="op">/</span> <span class="fl">40.0</span>) <span class="op">+</span> rng.normal(<span class="dv">0</span>, <span class="fl">0.003</span>, n_rounds)</span>
+<span id="cb4-37"><a href="#cb4-37" aria-hidden="true" tabindex="-1"></a>prec_curve  <span class="op">=</span> <span class="fl">0.87</span> <span class="op">-</span> <span class="fl">0.22</span> <span class="op">*</span> np.exp(<span class="op">-</span>rounds <span class="op">/</span> <span class="fl">50.0</span>) <span class="op">+</span> rng.normal(<span class="dv">0</span>, <span class="fl">0.004</span>, n_rounds)</span>
+<span id="cb4-38"><a href="#cb4-38" aria-hidden="true" tabindex="-1"></a>auc_curve   <span class="op">=</span> np.clip(auc_curve,  <span class="fl">0.70</span>, <span class="fl">0.93</span>)</span>
+<span id="cb4-39"><a href="#cb4-39" aria-hidden="true" tabindex="-1"></a>prec_curve  <span class="op">=</span> np.clip(prec_curve, <span class="fl">0.60</span>, <span class="fl">0.89</span>)</span>
+<span id="cb4-40"><a href="#cb4-40" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-41"><a href="#cb4-41" aria-hidden="true" tabindex="-1"></a><span class="co"># MLflow run metadata (displayed in title — simulated run_id)</span></span>
+<span id="cb4-42"><a href="#cb4-42" aria-hidden="true" tabindex="-1"></a>run_id <span class="op">=</span> <span class="st">"a3f7c21b"</span></span>
+<span id="cb4-43"><a href="#cb4-43" aria-hidden="true" tabindex="-1"></a>auc_final  <span class="op">=</span> <span class="bu">float</span>(auc_curve[<span class="op">-</span><span class="dv">1</span>])</span>
+<span id="cb4-44"><a href="#cb4-44" aria-hidden="true" tabindex="-1"></a>prec_final <span class="op">=</span> <span class="bu">float</span>(prec_curve[<span class="op">-</span><span class="dv">1</span>])</span>
+<span id="cb4-45"><a href="#cb4-45" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-46"><a href="#cb4-46" aria-hidden="true" tabindex="-1"></a>fig, (ax_imp, ax_met) <span class="op">=</span> plt.subplots(<span class="dv">1</span>, <span class="dv">2</span>, figsize<span class="op">=</span>(<span class="dv">11</span>, <span class="dv">5</span>), dpi<span class="op">=</span><span class="dv">150</span>)</span>
+<span id="cb4-47"><a href="#cb4-47" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-48"><a href="#cb4-48" aria-hidden="true" tabindex="-1"></a><span class="co"># Left: feature importances</span></span>
+<span id="cb4-49"><a href="#cb4-49" aria-hidden="true" tabindex="-1"></a>ax_imp.barh(</span>
+<span id="cb4-50"><a href="#cb4-50" aria-hidden="true" tabindex="-1"></a>    [FEATURE_NAMES[i] <span class="cf">for</span> i <span class="kw">in</span> sorted_idx],</span>
+<span id="cb4-51"><a href="#cb4-51" aria-hidden="true" tabindex="-1"></a>    importances[sorted_idx],</span>
+<span id="cb4-52"><a href="#cb4-52" aria-hidden="true" tabindex="-1"></a>    color<span class="op">=</span><span class="st">"#111111"</span>,</span>
+<span id="cb4-53"><a href="#cb4-53" aria-hidden="true" tabindex="-1"></a>    height<span class="op">=</span><span class="fl">0.6</span>,</span>
+<span id="cb4-54"><a href="#cb4-54" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb4-55"><a href="#cb4-55" aria-hidden="true" tabindex="-1"></a>ax_imp.set_xlabel(<span class="st">"Relative importance (|correlation| with label)"</span>)</span>
+<span id="cb4-56"><a href="#cb4-56" aria-hidden="true" tabindex="-1"></a>ax_imp.set_title(</span>
+<span id="cb4-57"><a href="#cb4-57" aria-hidden="true" tabindex="-1"></a>    <span class="ss">f"Run </span><span class="sc">{</span>run_id<span class="sc">}</span><span class="ss">  ·  spatial_join_method: parcel_centroid</span><span class="ch">\n</span><span class="ss">"</span></span>
+<span id="cb4-58"><a href="#cb4-58" aria-hidden="true" tabindex="-1"></a>    <span class="ss">f"AUC: </span><span class="sc">{</span>auc_final<span class="sc">:.3f}</span><span class="ss">  |  Top-decile precision: </span><span class="sc">{</span>prec_final<span class="sc">:.3f}</span><span class="ss">"</span>,</span>
+<span id="cb4-59"><a href="#cb4-59" aria-hidden="true" tabindex="-1"></a>    fontsize<span class="op">=</span><span class="dv">9</span>,</span>
+<span id="cb4-60"><a href="#cb4-60" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb4-61"><a href="#cb4-61" aria-hidden="true" tabindex="-1"></a>ax_imp.spines[<span class="st">"top"</span>].set_visible(<span class="va">False</span>)</span>
+<span id="cb4-62"><a href="#cb4-62" aria-hidden="true" tabindex="-1"></a>ax_imp.spines[<span class="st">"right"</span>].set_visible(<span class="va">False</span>)</span>
+<span id="cb4-63"><a href="#cb4-63" aria-hidden="true" tabindex="-1"></a>ax_imp.grid(<span class="va">False</span>)</span>
+<span id="cb4-64"><a href="#cb4-64" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-65"><a href="#cb4-65" aria-hidden="true" tabindex="-1"></a><span class="co"># Right: training metric curves</span></span>
+<span id="cb4-66"><a href="#cb4-66" aria-hidden="true" tabindex="-1"></a>ax_met.plot(rounds, auc_curve,  color<span class="op">=</span><span class="st">"#d52a2a"</span>, linewidth<span class="op">=</span><span class="fl">1.6</span>, label<span class="op">=</span><span class="st">"AUC (validation)"</span>)</span>
+<span id="cb4-67"><a href="#cb4-67" aria-hidden="true" tabindex="-1"></a>ax_met.plot(rounds, prec_curve, color<span class="op">=</span><span class="st">"#111111"</span>, linewidth<span class="op">=</span><span class="fl">1.6</span>, label<span class="op">=</span><span class="st">"Top-decile precision"</span>)</span>
+<span id="cb4-68"><a href="#cb4-68" aria-hidden="true" tabindex="-1"></a>ax_met.set_xlabel(<span class="st">"Boosting round"</span>)</span>
+<span id="cb4-69"><a href="#cb4-69" aria-hidden="true" tabindex="-1"></a>ax_met.set_ylabel(<span class="st">"Metric value"</span>)</span>
+<span id="cb4-70"><a href="#cb4-70" aria-hidden="true" tabindex="-1"></a>ax_met.set_xlim(<span class="dv">1</span>, n_rounds)</span>
+<span id="cb4-71"><a href="#cb4-71" aria-hidden="true" tabindex="-1"></a>ax_met.set_ylim(<span class="fl">0.60</span>, <span class="fl">0.96</span>)</span>
+<span id="cb4-72"><a href="#cb4-72" aria-hidden="true" tabindex="-1"></a>ax_met.legend(frameon<span class="op">=</span><span class="va">False</span>, fontsize<span class="op">=</span><span class="dv">9</span>)</span>
+<span id="cb4-73"><a href="#cb4-73" aria-hidden="true" tabindex="-1"></a>ax_met.spines[<span class="st">"top"</span>].set_visible(<span class="va">False</span>)</span>
+<span id="cb4-74"><a href="#cb4-74" aria-hidden="true" tabindex="-1"></a>ax_met.spines[<span class="st">"right"</span>].set_visible(<span class="va">False</span>)</span>
+<span id="cb4-75"><a href="#cb4-75" aria-hidden="true" tabindex="-1"></a>ax_met.grid(<span class="va">False</span>)</span>
+<span id="cb4-76"><a href="#cb4-76" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-77"><a href="#cb4-77" aria-hidden="true" tabindex="-1"></a>plt.tight_layout(pad<span class="op">=</span><span class="fl">1.5</span>)</span>
+<span id="cb4-78"><a href="#cb4-78" aria-hidden="true" tabindex="-1"></a>plt.savefig(<span class="st">"_assets/ch08-feature-importances.png"</span>, dpi<span class="op">=</span><span class="dv">150</span>, bbox_inches<span class="op">=</span><span class="st">"tight"</span>)</span>
+<span id="cb4-79"><a href="#cb4-79" aria-hidden="true" tabindex="-1"></a>plt.show()</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</details>
+<div class="cell-output cell-output-display">
+<div id="fig-mlflow-training" class="quarto-float quarto-figure quarto-figure-center anchored">
+<figure class="quarto-float quarto-float-fig figure">
+<div aria-describedby="fig-mlflow-training-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<img src="08-platform-architecture-for-ml_files/figure-html/fig-mlflow-training-output-1.png" width="1616" height="715" class="figure-img">
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-mlflow-training-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Figure&nbsp;9.2: Figure 8.1. Simulated MLflow run summary for a wildfire risk classifier. Left: feature importances derived from the absolute point-biserial correlation between each feature and the fire label (a proxy for the impurity-based importances a gradient boosted model would learn from the same data). Right: training metric history showing AUC and top-decile precision across 200 boosting rounds. The <code>spatial_join_method</code> parameter is logged explicitly because it is the audit trail for training/serving skew investigations — if the serving pipeline uses a different join method, this record makes the discrepancy visible.
+</figcaption>
+</figure>
+</div>
+</div>
+</div>
+<p>Logging <code>spatial_join_method</code> as a parameter is deliberate. The original production failure was caused by a difference in spatial join method between training and serving that was invisible in the model artefacts and metrics. Making the spatial computation method a logged parameter means that when a production performance investigation begins, the audit trail includes the exact computation that produced the training features. If the serving pipeline uses a different method, the discrepancy is visible immediately.</p>
+<hr>
+</section>
+<section id="trainingserving-skew" class="level2" data-number="9.5">
+<h2 data-number="9.5" class="anchored" data-anchor-id="trainingserving-skew"><span class="header-section-number">9.5</span> Training/serving skew</h2>
+<p>Training/serving skew deserves its own section because it is not a bug — it is an architecture failure. A bug can be fixed by correcting the offending line of code. Training/serving skew cannot be fixed by correcting a line of code; it requires changing the architecture so that training and serving use the same code.</p>
+<p>The failure pattern is consistent across many production ML systems. A team builds a training pipeline in a notebook or a batch job. The team builds a serving pipeline in a separate codebase — a Flask app, a Lambda function, a Spark streaming job. Both pipelines implement the same feature logic, but in different code. They look identical at the column name level. They are not identical at the computation level. The model is trained on features from one implementation and served with features from the other. The accuracy gap between development and production is a function of the magnitude of the difference in feature computation.</p>
+<p>The spatial case is particularly severe because spatial computations involve so many opportunities for inconsistency:</p>
+<ul>
+<li>The training pipeline uses the parcel centroid; the serving pipeline uses the bounding box centre.</li>
+<li>The training pipeline uses a 30-metre raster; the serving pipeline uses a 10-metre raster of the same dataset.</li>
+<li>The training pipeline reprojects from GDA94 to GDA2020 before extraction; the serving pipeline does not.</li>
+<li>The training pipeline computes road network distance using a road network current as of 2021; the serving pipeline uses a road network updated in 2023 that includes new fire access tracks.</li>
+</ul>
+<p>Any one of these differences produces a feature distribution shift between training and serving. The model was not trained on the data it receives in production. Its decision boundaries are calibrated to a feature distribution that does not exist in the serving environment. The accuracy gap is not model failure; it is data failure at the feature layer.</p>
+<p>The architectural fix is the feature store: define feature computation logic once, materialise it for both training and serving. The training pipeline calls <code>get_historical_features()</code>. The serving pipeline calls <code>get_online_features()</code>. The computation is the same because it is executed by the same code. Training/serving skew is eliminated structurally, not by auditing two codebases for consistency.</p>
+<p>The secondary fix is test coverage at the feature layer. Before deploying a model, run a feature distribution comparison between the training set features and a sample of features from the serving pipeline. If the distributions are meaningfully different, there is skew and it must be investigated before deployment. This is the operational equivalent of the <code>within_national_grid</code> test from Chapter 7: a test that makes the invisible failure mode visible before it reaches production.</p>
+<hr>
+</section>
+<section id="online-vs-batch-inference" class="level2" data-number="9.6">
+<h2 data-number="9.6" class="anchored" data-anchor-id="online-vs-batch-inference"><span class="header-section-number">9.6</span> Online vs batch inference</h2>
+<p>Spatial models are used in two fundamentally different serving contexts, and the platform architecture for each is different.</p>
+<p><strong>Batch inference</strong> is appropriate when the model scores a fixed population of spatial units on a schedule. A parcel-level wildfire risk map updated weekly is batch inference: at the end of each week, the serving pipeline scores all 200,000 parcels in the study area using features materialised from the feature store, writes the scores to a database table, and the risk map reads from that table. The latency between a feature value changing and the risk score reflecting that change is up to one week — acceptable for a weekly planning tool.</p>
+<p>Batch inference pipelines are straightforward to build with dbt and a feature store. The feature materialisation step runs on a schedule. The inference step reads from the online store, applies the model, and writes scores to the output table. The monitoring step compares the current score distribution to the previous week’s and raises an alert if the shift exceeds a threshold. The entire pipeline runs without a server that must be kept alive between scoring runs.</p>
+<p><strong>Online inference</strong> is appropriate when the model must score an input in real time, with sub-second latency. A routing system that assesses wildfire risk on proposed evacuation routes needs online inference: when an incident commander requests a route, the risk model scores candidate routes in real time. The latency requirement (under 500 milliseconds) rules out the batch approach — there is no time to wait for a scheduled materialisation.</p>
+<p>Online inference requires a different architecture: a served model endpoint (a FastAPI service, a cloud ML endpoint, or a model deployed to an edge device), an online feature store with low-latency reads (Redis, DynamoDB, or Feast’s online store), and a serving API that assembles features, calls the model, and returns a prediction in real time.</p>
+<p>The trade-off between online and batch is a trade-off between freshness and infrastructure complexity. Batch inference is cheaper, easier to test, and easier to monitor. Online inference is fresher but requires keeping a server running, managing endpoint scaling, and handling the failure modes of a live service. For most spatial analytics tasks — risk maps, habitat assessments, land use classification — batch inference at daily or weekly frequency is sufficient. The additional complexity of online inference is only justified when the latency requirement is strict.</p>
+<hr>
+</section>
+<section id="simulating-accuracy-degradation-under-feature-staleness" class="level2" data-number="9.7">
+<h2 data-number="9.7" class="anchored" data-anchor-id="simulating-accuracy-degradation-under-feature-staleness"><span class="header-section-number">9.7</span> Simulating accuracy degradation under feature staleness</h2>
+<p>The simulation below models model accuracy as a stock that degrades under three feature freshness scenarios: fresh features (materialised on a short cycle), stale features (materialised infrequently), and mixed features (some feature groups fresh, others stale). The dynamics are the same as the concept drift simulation in Chapter 6 — accuracy decays when the feature distribution diverges from the training distribution, and recovers when features are re-materialised. The additional element is training/serving skew: even with fresh features, a residual accuracy gap is present if the feature computation is inconsistent between training and serving.</p>
+<div id="cell-fig-accuracy-degradation" class="cell" data-fig-height="6" data-fig-width="10" data-execution_count="5">
+<details class="code-fold">
+<summary>Code</summary>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb5"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="co">"""Model accuracy degradation under feature staleness — Chapter 8.</span></span>
+<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a><span class="co">Stock-flow simulation analogous to concept drift model in Ch 6.</span></span>
+<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a><span class="co">Three scenarios: fresh features, stale features, mixed (some fresh, some stale).</span></span>
+<span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a><span class="co">Additional parameter: training/serving skew magnitude (residual accuracy gap)."""</span></span>
+<span id="cb5-5"><a href="#cb5-5" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> numpy <span class="im">as</span> np</span>
+<span id="cb5-6"><a href="#cb5-6" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> matplotlib.pyplot <span class="im">as</span> plt</span>
+<span id="cb5-7"><a href="#cb5-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-8"><a href="#cb5-8" aria-hidden="true" tabindex="-1"></a><span class="co"># -- Named constants -----------------------------------------------------------</span></span>
+<span id="cb5-9"><a href="#cb5-9" aria-hidden="true" tabindex="-1"></a>ACCURACY_TRAIN      <span class="op">=</span> <span class="fl">0.91</span>   <span class="co"># AUC at training time</span></span>
+<span id="cb5-10"><a href="#cb5-10" aria-hidden="true" tabindex="-1"></a>SKEW_MAGNITUDE      <span class="op">=</span> <span class="fl">0.06</span>   <span class="co"># accuracy penalty from training/serving skew</span></span>
+<span id="cb5-11"><a href="#cb5-11" aria-hidden="true" tabindex="-1"></a>                              <span class="co"># even with perfectly fresh features, serving accuracy</span></span>
+<span id="cb5-12"><a href="#cb5-12" aria-hidden="true" tabindex="-1"></a>                              <span class="co"># is at most ACCURACY_TRAIN - SKEW_MAGNITUDE</span></span>
+<span id="cb5-13"><a href="#cb5-13" aria-hidden="true" tabindex="-1"></a>ACCURACY_CEILING    <span class="op">=</span> ACCURACY_TRAIN <span class="op">-</span> SKEW_MAGNITUDE   <span class="co"># = 0.85</span></span>
+<span id="cb5-14"><a href="#cb5-14" aria-hidden="true" tabindex="-1"></a>ACCURACY_FLOOR      <span class="op">=</span> <span class="fl">0.55</span>   <span class="co"># random chance baseline for this task</span></span>
+<span id="cb5-15"><a href="#cb5-15" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-16"><a href="#cb5-16" aria-hidden="true" tabindex="-1"></a>DRIFT_RATE_STALE    <span class="op">=</span> <span class="fl">0.12</span>   <span class="co"># accuracy decay per month when features are stale</span></span>
+<span id="cb5-17"><a href="#cb5-17" aria-hidden="true" tabindex="-1"></a>DRIFT_RATE_FRESH    <span class="op">=</span> <span class="fl">0.01</span>   <span class="co"># residual decay when features are fresh</span></span>
+<span id="cb5-18"><a href="#cb5-18" aria-hidden="true" tabindex="-1"></a>DRIFT_RATE_MIXED    <span class="op">=</span> <span class="fl">0.06</span>   <span class="co"># intermediate decay for mixed scenario</span></span>
+<span id="cb5-19"><a href="#cb5-19" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-20"><a href="#cb5-20" aria-hidden="true" tabindex="-1"></a>FRESH_INTERVAL      <span class="op">=</span> <span class="fl">0.5</span>    <span class="co"># feature materialisation interval in months (fresh scenario)</span></span>
+<span id="cb5-21"><a href="#cb5-21" aria-hidden="true" tabindex="-1"></a>STALE_INTERVAL      <span class="op">=</span> <span class="fl">6.0</span>    <span class="co"># feature materialisation interval in months (stale scenario)</span></span>
+<span id="cb5-22"><a href="#cb5-22" aria-hidden="true" tabindex="-1"></a>MIXED_INTERVAL      <span class="op">=</span> <span class="fl">1.5</span>    <span class="co"># feature materialisation interval in months (mixed scenario)</span></span>
+<span id="cb5-23"><a href="#cb5-23" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-24"><a href="#cb5-24" aria-hidden="true" tabindex="-1"></a>DT      <span class="op">=</span> <span class="fl">0.02</span>    <span class="co"># Euler time step (months)</span></span>
+<span id="cb5-25"><a href="#cb5-25" aria-hidden="true" tabindex="-1"></a>T_START <span class="op">=</span> <span class="fl">0.0</span></span>
+<span id="cb5-26"><a href="#cb5-26" aria-hidden="true" tabindex="-1"></a>T_END   <span class="op">=</span> <span class="fl">12.0</span>    <span class="co"># 12-month simulation</span></span>
+<span id="cb5-27"><a href="#cb5-27" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-28"><a href="#cb5-28" aria-hidden="true" tabindex="-1"></a>COL_FRESH <span class="op">=</span> <span class="st">"#d52a2a"</span>    <span class="co"># fresh: red</span></span>
+<span id="cb5-29"><a href="#cb5-29" aria-hidden="true" tabindex="-1"></a>COL_STALE <span class="op">=</span> <span class="st">"#888888"</span>    <span class="co"># stale: grey</span></span>
+<span id="cb5-30"><a href="#cb5-30" aria-hidden="true" tabindex="-1"></a>COL_MIXED <span class="op">=</span> <span class="st">"#111111"</span>    <span class="co"># mixed: black</span></span>
+<span id="cb5-31"><a href="#cb5-31" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-32"><a href="#cb5-32" aria-hidden="true" tabindex="-1"></a>STEPS <span class="op">=</span> <span class="bu">int</span>((T_END <span class="op">-</span> T_START) <span class="op">/</span> DT) <span class="op">+</span> <span class="dv">1</span></span>
+<span id="cb5-33"><a href="#cb5-33" aria-hidden="true" tabindex="-1"></a>t     <span class="op">=</span> np.linspace(T_START, T_END, STEPS)</span>
+<span id="cb5-34"><a href="#cb5-34" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-35"><a href="#cb5-35" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-36"><a href="#cb5-36" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> run_accuracy_simulation(drift_rate, materialisation_interval):</span>
+<span id="cb5-37"><a href="#cb5-37" aria-hidden="true" tabindex="-1"></a>    <span class="co">"""</span></span>
+<span id="cb5-38"><a href="#cb5-38" aria-hidden="true" tabindex="-1"></a><span class="co">    Simulate model accuracy under one feature freshness scenario.</span></span>
+<span id="cb5-39"><a href="#cb5-39" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-40"><a href="#cb5-40" aria-hidden="true" tabindex="-1"></a><span class="co">    accuracy decays toward ACCURACY_FLOOR at drift_rate per month.</span></span>
+<span id="cb5-41"><a href="#cb5-41" aria-hidden="true" tabindex="-1"></a><span class="co">    Every materialisation_interval months, features are refreshed:</span></span>
+<span id="cb5-42"><a href="#cb5-42" aria-hidden="true" tabindex="-1"></a><span class="co">    accuracy recovers toward ACCURACY_CEILING.</span></span>
+<span id="cb5-43"><a href="#cb5-43" aria-hidden="true" tabindex="-1"></a><span class="co">    """</span></span>
+<span id="cb5-44"><a href="#cb5-44" aria-hidden="true" tabindex="-1"></a>    accuracy   <span class="op">=</span> np.empty(STEPS)</span>
+<span id="cb5-45"><a href="#cb5-45" aria-hidden="true" tabindex="-1"></a>    accuracy[<span class="dv">0</span>] <span class="op">=</span> ACCURACY_CEILING</span>
+<span id="cb5-46"><a href="#cb5-46" aria-hidden="true" tabindex="-1"></a>    retrain_times <span class="op">=</span> []</span>
+<span id="cb5-47"><a href="#cb5-47" aria-hidden="true" tabindex="-1"></a>    last_materialise <span class="op">=</span> <span class="fl">0.0</span></span>
+<span id="cb5-48"><a href="#cb5-48" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-49"><a href="#cb5-49" aria-hidden="true" tabindex="-1"></a>    <span class="cf">for</span> i <span class="kw">in</span> <span class="bu">range</span>(<span class="dv">1</span>, STEPS):</span>
+<span id="cb5-50"><a href="#cb5-50" aria-hidden="true" tabindex="-1"></a>        t_now <span class="op">=</span> t[i]</span>
+<span id="cb5-51"><a href="#cb5-51" aria-hidden="true" tabindex="-1"></a>        a_prev <span class="op">=</span> accuracy[i <span class="op">-</span> <span class="dv">1</span>]</span>
+<span id="cb5-52"><a href="#cb5-52" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-53"><a href="#cb5-53" aria-hidden="true" tabindex="-1"></a>        <span class="co"># Accuracy decays toward floor</span></span>
+<span id="cb5-54"><a href="#cb5-54" aria-hidden="true" tabindex="-1"></a>        d_acc   <span class="op">=</span> <span class="op">-</span>drift_rate <span class="op">*</span> (a_prev <span class="op">-</span> ACCURACY_FLOOR)</span>
+<span id="cb5-55"><a href="#cb5-55" aria-hidden="true" tabindex="-1"></a>        a_new   <span class="op">=</span> a_prev <span class="op">+</span> d_acc <span class="op">*</span> DT</span>
+<span id="cb5-56"><a href="#cb5-56" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-57"><a href="#cb5-57" aria-hidden="true" tabindex="-1"></a>        <span class="co"># Check for feature materialisation</span></span>
+<span id="cb5-58"><a href="#cb5-58" aria-hidden="true" tabindex="-1"></a>        <span class="cf">if</span> (t_now <span class="op">-</span> last_materialise) <span class="op">&gt;=</span> materialisation_interval:</span>
+<span id="cb5-59"><a href="#cb5-59" aria-hidden="true" tabindex="-1"></a>            <span class="co"># Features refreshed: accuracy jumps back toward ceiling</span></span>
+<span id="cb5-60"><a href="#cb5-60" aria-hidden="true" tabindex="-1"></a>            a_new <span class="op">=</span> ACCURACY_CEILING</span>
+<span id="cb5-61"><a href="#cb5-61" aria-hidden="true" tabindex="-1"></a>            last_materialise <span class="op">=</span> t_now</span>
+<span id="cb5-62"><a href="#cb5-62" aria-hidden="true" tabindex="-1"></a>            retrain_times.append(t_now)</span>
+<span id="cb5-63"><a href="#cb5-63" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-64"><a href="#cb5-64" aria-hidden="true" tabindex="-1"></a>        accuracy[i] <span class="op">=</span> a_new</span>
+<span id="cb5-65"><a href="#cb5-65" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-66"><a href="#cb5-66" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> accuracy, retrain_times</span>
+<span id="cb5-67"><a href="#cb5-67" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-68"><a href="#cb5-68" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-69"><a href="#cb5-69" aria-hidden="true" tabindex="-1"></a><span class="co"># -- Run all three scenarios ---------------------------------------------------</span></span>
+<span id="cb5-70"><a href="#cb5-70" aria-hidden="true" tabindex="-1"></a>acc_fresh, rt_fresh <span class="op">=</span> run_accuracy_simulation(DRIFT_RATE_FRESH, FRESH_INTERVAL)</span>
+<span id="cb5-71"><a href="#cb5-71" aria-hidden="true" tabindex="-1"></a>acc_stale, rt_stale <span class="op">=</span> run_accuracy_simulation(DRIFT_RATE_STALE, STALE_INTERVAL)</span>
+<span id="cb5-72"><a href="#cb5-72" aria-hidden="true" tabindex="-1"></a>acc_mixed, rt_mixed <span class="op">=</span> run_accuracy_simulation(DRIFT_RATE_MIXED, MIXED_INTERVAL)</span>
+<span id="cb5-73"><a href="#cb5-73" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-74"><a href="#cb5-74" aria-hidden="true" tabindex="-1"></a><span class="co"># -- Figure -------------------------------------------------------------------</span></span>
+<span id="cb5-75"><a href="#cb5-75" aria-hidden="true" tabindex="-1"></a>fig, ax <span class="op">=</span> plt.subplots(figsize<span class="op">=</span>(<span class="dv">10</span>, <span class="dv">6</span>), dpi<span class="op">=</span><span class="dv">150</span>)</span>
+<span id="cb5-76"><a href="#cb5-76" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-77"><a href="#cb5-77" aria-hidden="true" tabindex="-1"></a>ax.plot(t, acc_stale, color<span class="op">=</span>COL_STALE, linestyle<span class="op">=</span><span class="st">"--"</span>, linewidth<span class="op">=</span><span class="fl">1.4</span>)</span>
+<span id="cb5-78"><a href="#cb5-78" aria-hidden="true" tabindex="-1"></a>ax.plot(t, acc_mixed, color<span class="op">=</span>COL_MIXED, linestyle<span class="op">=</span><span class="st">"-"</span>,  linewidth<span class="op">=</span><span class="fl">1.8</span>)</span>
+<span id="cb5-79"><a href="#cb5-79" aria-hidden="true" tabindex="-1"></a>ax.plot(t, acc_fresh, color<span class="op">=</span>COL_FRESH, linestyle<span class="op">=</span><span class="st">"-"</span>,  linewidth<span class="op">=</span><span class="fl">1.8</span>)</span>
+<span id="cb5-80"><a href="#cb5-80" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-81"><a href="#cb5-81" aria-hidden="true" tabindex="-1"></a><span class="co"># Mark feature materialisation events</span></span>
+<span id="cb5-82"><a href="#cb5-82" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> rt <span class="kw">in</span> rt_stale:</span>
+<span id="cb5-83"><a href="#cb5-83" aria-hidden="true" tabindex="-1"></a>    ax.axvline(rt, color<span class="op">=</span>COL_STALE, alpha<span class="op">=</span><span class="fl">0.3</span>, linewidth<span class="op">=</span><span class="fl">1.0</span>)</span>
+<span id="cb5-84"><a href="#cb5-84" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> rt <span class="kw">in</span> rt_mixed:</span>
+<span id="cb5-85"><a href="#cb5-85" aria-hidden="true" tabindex="-1"></a>    ax.axvline(rt, color<span class="op">=</span>COL_MIXED, alpha<span class="op">=</span><span class="fl">0.25</span>, linewidth<span class="op">=</span><span class="fl">0.8</span>)</span>
+<span id="cb5-86"><a href="#cb5-86" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> rt <span class="kw">in</span> rt_fresh:</span>
+<span id="cb5-87"><a href="#cb5-87" aria-hidden="true" tabindex="-1"></a>    ax.axvline(rt, color<span class="op">=</span>COL_FRESH, alpha<span class="op">=</span><span class="fl">0.2</span>, linewidth<span class="op">=</span><span class="fl">0.6</span>)</span>
+<span id="cb5-88"><a href="#cb5-88" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-89"><a href="#cb5-89" aria-hidden="true" tabindex="-1"></a><span class="co"># Training/serving skew floor</span></span>
+<span id="cb5-90"><a href="#cb5-90" aria-hidden="true" tabindex="-1"></a>ax.axhline(ACCURACY_CEILING, color<span class="op">=</span><span class="st">"#888888"</span>, linestyle<span class="op">=</span><span class="st">":"</span>,</span>
+<span id="cb5-91"><a href="#cb5-91" aria-hidden="true" tabindex="-1"></a>           linewidth<span class="op">=</span><span class="fl">0.8</span>, zorder<span class="op">=</span><span class="dv">0</span>)</span>
+<span id="cb5-92"><a href="#cb5-92" aria-hidden="true" tabindex="-1"></a>ax.annotate(<span class="ss">f"Skew ceiling (</span><span class="sc">{</span>ACCURACY_CEILING<span class="sc">:.2f}</span><span class="ss">) — max achievable with current skew"</span>,</span>
+<span id="cb5-93"><a href="#cb5-93" aria-hidden="true" tabindex="-1"></a>            xy<span class="op">=</span>(<span class="fl">0.3</span>, ACCURACY_CEILING), xytext<span class="op">=</span>(<span class="fl">0.3</span>, ACCURACY_CEILING <span class="op">+</span> <span class="fl">0.012</span>),</span>
+<span id="cb5-94"><a href="#cb5-94" aria-hidden="true" tabindex="-1"></a>            fontsize<span class="op">=</span><span class="dv">8</span>, color<span class="op">=</span><span class="st">"#888888"</span>, va<span class="op">=</span><span class="st">"bottom"</span>)</span>
+<span id="cb5-95"><a href="#cb5-95" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-96"><a href="#cb5-96" aria-hidden="true" tabindex="-1"></a><span class="co"># Scenario labels</span></span>
+<span id="cb5-97"><a href="#cb5-97" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> label, t_, acc_, col, offset <span class="kw">in</span> [</span>
+<span id="cb5-98"><a href="#cb5-98" aria-hidden="true" tabindex="-1"></a>    (<span class="st">"Stale features (6 mo interval)"</span>, t, acc_stale, COL_STALE,  <span class="fl">0.01</span>),</span>
+<span id="cb5-99"><a href="#cb5-99" aria-hidden="true" tabindex="-1"></a>    (<span class="st">"Mixed features (1.5 mo interval)"</span>, t, acc_mixed, COL_MIXED, <span class="op">-</span><span class="fl">0.03</span>),</span>
+<span id="cb5-100"><a href="#cb5-100" aria-hidden="true" tabindex="-1"></a>    (<span class="st">"Fresh features (0.5 mo interval)"</span>, t, acc_fresh, COL_FRESH,  <span class="fl">0.01</span>),</span>
+<span id="cb5-101"><a href="#cb5-101" aria-hidden="true" tabindex="-1"></a>]:</span>
+<span id="cb5-102"><a href="#cb5-102" aria-hidden="true" tabindex="-1"></a>    ax.annotate(label,</span>
+<span id="cb5-103"><a href="#cb5-103" aria-hidden="true" tabindex="-1"></a>                xy<span class="op">=</span>(t_[<span class="op">-</span><span class="dv">1</span>], acc_[<span class="op">-</span><span class="dv">1</span>]),</span>
+<span id="cb5-104"><a href="#cb5-104" aria-hidden="true" tabindex="-1"></a>                xytext<span class="op">=</span>(t_[<span class="op">-</span><span class="dv">1</span>] <span class="op">-</span> <span class="fl">0.3</span>, acc_[<span class="op">-</span><span class="dv">1</span>] <span class="op">+</span> offset),</span>
+<span id="cb5-105"><a href="#cb5-105" aria-hidden="true" tabindex="-1"></a>                fontsize<span class="op">=</span><span class="fl">8.5</span>, color<span class="op">=</span>col, ha<span class="op">=</span><span class="st">"right"</span>, va<span class="op">=</span><span class="st">"center"</span>)</span>
+<span id="cb5-106"><a href="#cb5-106" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-107"><a href="#cb5-107" aria-hidden="true" tabindex="-1"></a>ax.set_xlim(T_START, T_END)</span>
+<span id="cb5-108"><a href="#cb5-108" aria-hidden="true" tabindex="-1"></a>ax.set_ylim(<span class="fl">0.50</span>, <span class="fl">0.98</span>)</span>
+<span id="cb5-109"><a href="#cb5-109" aria-hidden="true" tabindex="-1"></a>ax.set_xlabel(<span class="st">"Month"</span>)</span>
+<span id="cb5-110"><a href="#cb5-110" aria-hidden="true" tabindex="-1"></a>ax.set_ylabel(<span class="st">"Model AUC (production)"</span>)</span>
+<span id="cb5-111"><a href="#cb5-111" aria-hidden="true" tabindex="-1"></a>ax.spines[<span class="st">"top"</span>].set_visible(<span class="va">False</span>)</span>
+<span id="cb5-112"><a href="#cb5-112" aria-hidden="true" tabindex="-1"></a>ax.spines[<span class="st">"right"</span>].set_visible(<span class="va">False</span>)</span>
+<span id="cb5-113"><a href="#cb5-113" aria-hidden="true" tabindex="-1"></a>ax.grid(<span class="va">False</span>)</span>
+<span id="cb5-114"><a href="#cb5-114" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-115"><a href="#cb5-115" aria-hidden="true" tabindex="-1"></a>plt.tight_layout(pad<span class="op">=</span><span class="fl">1.5</span>)</span>
+<span id="cb5-116"><a href="#cb5-116" aria-hidden="true" tabindex="-1"></a>plt.savefig(<span class="st">"_assets/ch08-accuracy-degradation.png"</span>, dpi<span class="op">=</span><span class="dv">150</span>, bbox_inches<span class="op">=</span><span class="st">"tight"</span>)</span>
+<span id="cb5-117"><a href="#cb5-117" aria-hidden="true" tabindex="-1"></a>plt.show()</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</details>
+<div class="cell-output cell-output-display">
+<div id="fig-accuracy-degradation" class="quarto-float quarto-figure quarto-figure-center anchored">
+<figure class="quarto-float quarto-float-fig figure">
+<div aria-describedby="fig-accuracy-degradation-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<img src="08-platform-architecture-for-ml_files/figure-html/fig-accuracy-degradation-output-1.png" width="1468" height="869" class="figure-img">
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-accuracy-degradation-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Figure&nbsp;9.3: Figure 8.2. Model accuracy under three feature freshness scenarios over 12 months. Fresh features (red) maintain accuracy near the training benchmark because the serving feature distribution matches the training distribution. Stale features (grey dashed) show continuous decay as the feature distribution diverges. Mixed features (black) show intermediate behaviour: accuracy is maintained for the features that are fresh but decays along the dimensions corresponding to the stale features. The training/serving skew floor (horizontal dotted line) represents the accuracy level achievable with perfectly fresh features when a residual computation mismatch exists — the model can never exceed this ceiling in production without fixing the skew.
+</figcaption>
+</figure>
+</div>
+</div>
+</div>
+<p>The ceiling created by <code>SKEW_MAGNITUDE</code> is the simulation’s structural argument: training/serving skew sets a ceiling on production accuracy that feature freshness cannot exceed. Perfectly fresh features with residual skew produce accuracy at <code>ACCURACY_TRAIN - SKEW_MAGNITUDE</code>. Eliminating the skew — by fixing the feature store architecture — shifts the ceiling to <code>ACCURACY_TRAIN</code>. Increasing the feature materialisation frequency — without fixing the skew — does not move the ceiling. This is the hierarchy of interventions: architectural fixes (LP 6) before operational tuning (LP 12).</p>
+<hr>
+<div class="callout callout-style-simple callout-tip callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+<span class="screen-reader-only">Tip</span>What to try
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<ol type="1">
+<li><p><strong>Increase <code>SKEW_MAGNITUDE</code> to 0.15.</strong> This represents a large training/serving skew — for example, a major difference in raster resolution between training and serving. How does this change the gap between the fresh and stale scenarios? At what skew magnitude does feature freshness no longer meaningfully differentiate performance, and what does that imply about where the engineering effort should go?</p></li>
+<li><p><strong>Set <code>FRESH_INTERVAL = 3.0</code> and <code>STALE_INTERVAL = 3.0</code>.</strong> With both scenarios materialising at the same frequency, the only difference is their drift rate. What is the minimum ratio of <code>DRIFT_RATE_FRESH</code> to <code>DRIFT_RATE_STALE</code> that produces a visible performance gap at month 12? What real-world factors determine the drift rate for a spatial feature — what makes vegetation density features drift faster than road network distance features?</p></li>
+<li><p><strong>Add a retraining event at month 6.</strong> At month 6, the team retrains the model using current feature values and deploys the new version. Implement this as: at t = 6, set <code>ACCURACY_CEILING</code> to the current accuracy value for each scenario (the features are now the training distribution) and continue the simulation. How much does retraining recover the stale scenario? Does retraining with stale features produce a higher or lower ceiling than retraining with fresh features, and why?</p></li>
+</ol>
+</div>
+</div>
+<div class="pyodide-cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb6"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> numpy <span class="im">as</span> np</span>
+<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> matplotlib.pyplot <span class="im">as</span> plt</span>
+<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a><span class="co"># --- Try changing these parameters ---</span></span>
+<span id="cb6-5"><a href="#cb6-5" aria-hidden="true" tabindex="-1"></a>ACCURACY_TRAIN      <span class="op">=</span> <span class="fl">0.91</span>   <span class="co"># baseline model AUC from development</span></span>
+<span id="cb6-6"><a href="#cb6-6" aria-hidden="true" tabindex="-1"></a>SKEW_MAGNITUDE      <span class="op">=</span> <span class="fl">0.06</span>   <span class="co"># accuracy penalty from training/serving skew (try 0.15)</span></span>
+<span id="cb6-7"><a href="#cb6-7" aria-hidden="true" tabindex="-1"></a>DRIFT_RATE_STALE    <span class="op">=</span> <span class="fl">0.12</span>   <span class="co"># decay rate when features are stale (try 0.05)</span></span>
+<span id="cb6-8"><a href="#cb6-8" aria-hidden="true" tabindex="-1"></a>DRIFT_RATE_FRESH    <span class="op">=</span> <span class="fl">0.01</span>   <span class="co"># decay rate when features are fresh</span></span>
+<span id="cb6-9"><a href="#cb6-9" aria-hidden="true" tabindex="-1"></a>FRESH_INTERVAL      <span class="op">=</span> <span class="fl">0.5</span>    <span class="co"># months between feature materialisation (fresh)</span></span>
+<span id="cb6-10"><a href="#cb6-10" aria-hidden="true" tabindex="-1"></a>STALE_INTERVAL      <span class="op">=</span> <span class="fl">6.0</span>    <span class="co"># months between feature materialisation (stale)</span></span>
+<span id="cb6-11"><a href="#cb6-11" aria-hidden="true" tabindex="-1"></a>T_END               <span class="op">=</span> <span class="fl">12.0</span>   <span class="co"># simulation length in months</span></span>
+<span id="cb6-12"><a href="#cb6-12" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-13"><a href="#cb6-13" aria-hidden="true" tabindex="-1"></a>ACCURACY_CEILING <span class="op">=</span> ACCURACY_TRAIN <span class="op">-</span> SKEW_MAGNITUDE</span>
+<span id="cb6-14"><a href="#cb6-14" aria-hidden="true" tabindex="-1"></a>ACCURACY_FLOOR   <span class="op">=</span> <span class="fl">0.55</span></span>
+<span id="cb6-15"><a href="#cb6-15" aria-hidden="true" tabindex="-1"></a>DT <span class="op">=</span> <span class="fl">0.02</span></span>
+<span id="cb6-16"><a href="#cb6-16" aria-hidden="true" tabindex="-1"></a>STEPS <span class="op">=</span> <span class="bu">int</span>(T_END <span class="op">/</span> DT) <span class="op">+</span> <span class="dv">1</span></span>
+<span id="cb6-17"><a href="#cb6-17" aria-hidden="true" tabindex="-1"></a>t <span class="op">=</span> np.linspace(<span class="fl">0.0</span>, T_END, STEPS)</span>
+<span id="cb6-18"><a href="#cb6-18" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-19"><a href="#cb6-19" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> run_sim(drift_rate, mat_interval):</span>
+<span id="cb6-20"><a href="#cb6-20" aria-hidden="true" tabindex="-1"></a>    acc <span class="op">=</span> np.empty(STEPS)</span>
+<span id="cb6-21"><a href="#cb6-21" aria-hidden="true" tabindex="-1"></a>    acc[<span class="dv">0</span>] <span class="op">=</span> ACCURACY_CEILING</span>
+<span id="cb6-22"><a href="#cb6-22" aria-hidden="true" tabindex="-1"></a>    last_mat <span class="op">=</span> <span class="fl">0.0</span></span>
+<span id="cb6-23"><a href="#cb6-23" aria-hidden="true" tabindex="-1"></a>    <span class="cf">for</span> i <span class="kw">in</span> <span class="bu">range</span>(<span class="dv">1</span>, STEPS):</span>
+<span id="cb6-24"><a href="#cb6-24" aria-hidden="true" tabindex="-1"></a>        t_now <span class="op">=</span> t[i]</span>
+<span id="cb6-25"><a href="#cb6-25" aria-hidden="true" tabindex="-1"></a>        dq <span class="op">=</span> <span class="op">-</span>drift_rate <span class="op">*</span> (acc[i<span class="op">-</span><span class="dv">1</span>] <span class="op">-</span> ACCURACY_FLOOR)</span>
+<span id="cb6-26"><a href="#cb6-26" aria-hidden="true" tabindex="-1"></a>        acc[i] <span class="op">=</span> acc[i<span class="op">-</span><span class="dv">1</span>] <span class="op">+</span> dq <span class="op">*</span> DT</span>
+<span id="cb6-27"><a href="#cb6-27" aria-hidden="true" tabindex="-1"></a>        <span class="cf">if</span> (t_now <span class="op">-</span> last_mat) <span class="op">&gt;=</span> mat_interval:</span>
+<span id="cb6-28"><a href="#cb6-28" aria-hidden="true" tabindex="-1"></a>            acc[i] <span class="op">=</span> ACCURACY_CEILING</span>
+<span id="cb6-29"><a href="#cb6-29" aria-hidden="true" tabindex="-1"></a>            last_mat <span class="op">=</span> t_now</span>
+<span id="cb6-30"><a href="#cb6-30" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> acc</span>
+<span id="cb6-31"><a href="#cb6-31" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-32"><a href="#cb6-32" aria-hidden="true" tabindex="-1"></a>acc_fresh <span class="op">=</span> run_sim(DRIFT_RATE_FRESH, FRESH_INTERVAL)</span>
+<span id="cb6-33"><a href="#cb6-33" aria-hidden="true" tabindex="-1"></a>acc_stale <span class="op">=</span> run_sim(DRIFT_RATE_STALE, STALE_INTERVAL)</span>
+<span id="cb6-34"><a href="#cb6-34" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-35"><a href="#cb6-35" aria-hidden="true" tabindex="-1"></a>fig, ax <span class="op">=</span> plt.subplots(figsize<span class="op">=</span>(<span class="dv">9</span>, <span class="dv">5</span>))</span>
+<span id="cb6-36"><a href="#cb6-36" aria-hidden="true" tabindex="-1"></a>ax.plot(t, acc_stale, color<span class="op">=</span><span class="st">"#888"</span>,    linestyle<span class="op">=</span><span class="st">"--"</span>, linewidth<span class="op">=</span><span class="fl">1.4</span>, label<span class="op">=</span><span class="ss">f"Stale (</span><span class="sc">{</span>STALE_INTERVAL<span class="sc">}</span><span class="ss"> mo interval)"</span>)</span>
+<span id="cb6-37"><a href="#cb6-37" aria-hidden="true" tabindex="-1"></a>ax.plot(t, acc_fresh, color<span class="op">=</span><span class="st">"#d52a2a"</span>, linewidth<span class="op">=</span><span class="fl">1.8</span>,  label<span class="op">=</span><span class="ss">f"Fresh (</span><span class="sc">{</span>FRESH_INTERVAL<span class="sc">}</span><span class="ss"> mo interval)"</span>)</span>
+<span id="cb6-38"><a href="#cb6-38" aria-hidden="true" tabindex="-1"></a>ax.axhline(ACCURACY_CEILING, color<span class="op">=</span><span class="st">"#aaa"</span>, linestyle<span class="op">=</span><span class="st">":"</span>, linewidth<span class="op">=</span><span class="fl">0.8</span>)</span>
+<span id="cb6-39"><a href="#cb6-39" aria-hidden="true" tabindex="-1"></a>ax.annotate(<span class="ss">f"Skew ceiling (</span><span class="sc">{</span>ACCURACY_CEILING<span class="sc">:.2f}</span><span class="ss">)"</span>,</span>
+<span id="cb6-40"><a href="#cb6-40" aria-hidden="true" tabindex="-1"></a>            xy<span class="op">=</span>(<span class="fl">0.3</span>, ACCURACY_CEILING <span class="op">+</span> <span class="fl">0.008</span>), fontsize<span class="op">=</span><span class="dv">8</span>, color<span class="op">=</span><span class="st">"#888"</span>)</span>
+<span id="cb6-41"><a href="#cb6-41" aria-hidden="true" tabindex="-1"></a>ax.axhline(ACCURACY_TRAIN, color<span class="op">=</span><span class="st">"#aaa"</span>, linestyle<span class="op">=</span><span class="st">"--"</span>, linewidth<span class="op">=</span><span class="fl">0.6</span>)</span>
+<span id="cb6-42"><a href="#cb6-42" aria-hidden="true" tabindex="-1"></a>ax.annotate(<span class="ss">f"Training AUC (</span><span class="sc">{</span>ACCURACY_TRAIN<span class="sc">:.2f}</span><span class="ss">)"</span>,</span>
+<span id="cb6-43"><a href="#cb6-43" aria-hidden="true" tabindex="-1"></a>            xy<span class="op">=</span>(<span class="fl">0.3</span>, ACCURACY_TRAIN <span class="op">+</span> <span class="fl">0.008</span>), fontsize<span class="op">=</span><span class="dv">8</span>, color<span class="op">=</span><span class="st">"#888"</span>)</span>
+<span id="cb6-44"><a href="#cb6-44" aria-hidden="true" tabindex="-1"></a>ax.set_xlabel(<span class="st">"Month"</span>)</span>
+<span id="cb6-45"><a href="#cb6-45" aria-hidden="true" tabindex="-1"></a>ax.set_ylabel(<span class="st">"Model AUC (production)"</span>)</span>
+<span id="cb6-46"><a href="#cb6-46" aria-hidden="true" tabindex="-1"></a>ax.set_xlim(<span class="dv">0</span>, T_END)</span>
+<span id="cb6-47"><a href="#cb6-47" aria-hidden="true" tabindex="-1"></a>ax.set_ylim(<span class="fl">0.50</span>, <span class="fl">0.98</span>)</span>
+<span id="cb6-48"><a href="#cb6-48" aria-hidden="true" tabindex="-1"></a>ax.legend(frameon<span class="op">=</span><span class="va">False</span>, fontsize<span class="op">=</span><span class="dv">9</span>)</span>
+<span id="cb6-49"><a href="#cb6-49" aria-hidden="true" tabindex="-1"></a>ax.spines[<span class="st">"top"</span>].set_visible(<span class="va">False</span>)</span>
+<span id="cb6-50"><a href="#cb6-50" aria-hidden="true" tabindex="-1"></a>ax.spines[<span class="st">"right"</span>].set_visible(<span class="va">False</span>)</span>
+<span id="cb6-51"><a href="#cb6-51" aria-hidden="true" tabindex="-1"></a>plt.tight_layout()</span>
+<span id="cb6-52"><a href="#cb6-52" aria-hidden="true" tabindex="-1"></a>plt.show()</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<hr>
+</section>
+<section id="exercises" class="level2" data-number="9.8">
+<h2 data-number="9.8" class="anchored" data-anchor-id="exercises"><span class="header-section-number">9.8</span> Exercises</h2>
+<p><strong>8.1 — Training/serving skew diagnosis</strong></p>
+<p>A species distribution model is trained to predict bird habitat suitability from elevation, canopy cover, and distance to water features. The training pipeline extracts features from rasters at the centroid of each 1 km² grid cell. The serving pipeline extracts features using the mean value across the entire grid cell (a zonal statistics operation). Validation AUC is 0.87. Production AUC (measured three months after deployment against survey data) is 0.71.</p>
+<ol type="a">
+<li>Explain the mechanism by which the difference in spatial extraction method (centroid vs.&nbsp;zonal mean) produces a feature distribution shift. Under what terrain and vegetation conditions would the shift be largest? Under what conditions would it be negligible?</li>
+<li>Propose a test that could have detected this skew before deployment. Describe the test inputs, the comparison metric, and the threshold above which the test should fail.</li>
+<li>The team considers two fixes: (i) update the serving pipeline to use centroid extraction, matching the training pipeline; (ii) update both pipelines to use zonal mean, retrain the model, and redeploy. Evaluate the engineering cost and data quality trade-offs of each approach. Which is preferable and why?</li>
+</ol>
+<p><strong>8.2 — Feature store design</strong></p>
+<p>You are building a Feast feature store for a pipeline that scores census output areas (COAs) for air quality risk based on: mean annual NO₂ concentration from DEFRA monitoring stations, proximity to industrial sites, residential density, and percentage of elderly residents (who face higher health risk from air quality).</p>
+<ol type="a">
+<li>Define the entity, data sources, and <code>FeatureView</code>(s) for this pipeline. For each feature, specify: the source dataset, the spatial operation required to compute it at the COA level, and a reasonable TTL (time-to-live).</li>
+<li>The NO₂ concentration data is updated annually. The industrial site locations are updated quarterly. The residential density and elderly resident percentage come from the census, which is updated every 10 years. How do these different update frequencies affect the TTL you assign to each <code>FeatureView</code>? What happens to the risk score when a COA’s features are older than their TTL?</li>
+<li>A researcher wants to study the historical relationship between air quality features and respiratory hospital admissions from 2015 to 2023. Explain why point-in-time correct feature retrieval is necessary for this analysis, and describe what incorrect result would be produced if historical features were retrieved using current feature values instead.</li>
+</ol>
+<p><strong>8.3 — MLflow model registry</strong></p>
+<p>A team maintains a wildfire risk model in production. The model is retrained quarterly. The MLflow model registry has three registered model versions: version 3 (currently Production), version 4 (currently Staging), and version 5 (just trained, currently None/candidate).</p>
+<ol type="a">
+<li>Describe the promotion workflow for version 5: what tests or evaluations should it pass before being promoted to Staging? What additional checks are appropriate before it is promoted from Staging to Production? Specify at least one spatial-specific metric that should be included in the evaluation.</li>
+<li>Version 4 has been in Staging for two weeks and its evaluation results are borderline: AUC of 0.88 (up from version 3’s 0.86), but top-decile precision has declined from 0.79 to 0.74. The precision metric matters more for operational use (fire crews respond to top-decile alerts). What decision do you make, and how should the registry record it?</li>
+<li>The team discovers that version 3 — currently Production — was trained with a spatial join method that differs from version 4 and version 5. How does MLflow’s parameter logging help or hinder this investigation? What parameter should have been logged in every training run to make this discoverable immediately?</li>
+</ol>
+<p><strong>8.4 — Batch vs online inference</strong></p>
+<p>A water utility uses a spatial model to predict pipe burst probability across its distribution network of 45,000 pipe segments. The model uses features including pipe age, material, soil type, proximity to road works, and historical burst records.</p>
+<ol type="a">
+<li>The utility currently runs batch inference weekly and publishes a risk map for maintenance scheduling. Identify two limitations of weekly batch inference for this application, and describe a scenario where those limitations would cause real operational harm.</li>
+<li>The utility considers moving to daily batch inference. Describe the changes required to the feature store (materialisation schedule), the inference pipeline (scheduling), and the monitoring system (alert thresholds). What is the primary engineering cost of this change?</li>
+<li>A separate use case emerges: when road works are planned near a pipe segment, the system should generate an updated burst probability for that segment in real time, to inform whether enhanced monitoring is required. Evaluate whether this use case requires online inference or whether it can be served with more frequent batch inference. Specify the latency requirement, the feature freshness requirement, and the infrastructure implication of each approach.</li>
+</ol>
+<hr>
+</section>
+<section id="build-this" class="level2" data-number="9.9">
+<h2 data-number="9.9" class="anchored" data-anchor-id="build-this"><span class="header-section-number">9.9</span> Build this</h2>
+<p>A minimal end-to-end ML platform for a spatial classifier: Feast feature store, MLflow training loop, and FastAPI serving endpoint.</p>
+<p><strong>Project structure:</strong></p>
+<pre><code>spatial_ml_platform/
+├── feature_repo/
+│   ├── feature_store.yaml
+│   └── features.py          # FeatureView definitions
+├── training/
+│   └── train.py             # MLflow training loop
+├── serving/
+│   └── app.py               # FastAPI inference endpoint
+└── requirements.txt</code></pre>
+<p><strong><code>feature_repo/feature_store.yaml</code>:</strong></p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb8"><pre class="sourceCode yaml code-with-copy"><code class="sourceCode yaml"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="fu">project</span><span class="kw">:</span><span class="at"> wildfire_risk</span></span>
+<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a><span class="fu">registry</span><span class="kw">:</span><span class="at"> data/registry.db</span></span>
+<span id="cb8-3"><a href="#cb8-3" aria-hidden="true" tabindex="-1"></a><span class="fu">provider</span><span class="kw">:</span><span class="at"> local</span></span>
+<span id="cb8-4"><a href="#cb8-4" aria-hidden="true" tabindex="-1"></a><span class="fu">online_store</span><span class="kw">:</span></span>
+<span id="cb8-5"><a href="#cb8-5" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">type</span><span class="kw">:</span><span class="at"> sqlite</span></span>
+<span id="cb8-6"><a href="#cb8-6" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">path</span><span class="kw">:</span><span class="at"> data/online_store.db</span></span>
+<span id="cb8-7"><a href="#cb8-7" aria-hidden="true" tabindex="-1"></a><span class="fu">offline_store</span><span class="kw">:</span></span>
+<span id="cb8-8"><a href="#cb8-8" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">type</span><span class="kw">:</span><span class="at"> file</span></span>
+<span id="cb8-9"><a href="#cb8-9" aria-hidden="true" tabindex="-1"></a><span class="fu">entity_key_serialization_version</span><span class="kw">:</span><span class="at"> </span><span class="dv">2</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p><strong><code>feature_repo/features.py</code></strong> — complete FeatureView definitions:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb9"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> datetime <span class="im">import</span> timedelta</span>
+<span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> feast <span class="im">import</span> Entity, FeatureView, Field, FileSource, ValueType</span>
+<span id="cb9-3"><a href="#cb9-3" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> feast.types <span class="im">import</span> Float32, Int64</span>
+<span id="cb9-4"><a href="#cb9-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-5"><a href="#cb9-5" aria-hidden="true" tabindex="-1"></a>parcel <span class="op">=</span> Entity(</span>
+<span id="cb9-6"><a href="#cb9-6" aria-hidden="true" tabindex="-1"></a>    name<span class="op">=</span><span class="st">"parcel_id"</span>,</span>
+<span id="cb9-7"><a href="#cb9-7" aria-hidden="true" tabindex="-1"></a>    value_type<span class="op">=</span>ValueType.STRING,</span>
+<span id="cb9-8"><a href="#cb9-8" aria-hidden="true" tabindex="-1"></a>    description<span class="op">=</span><span class="st">"Land parcel identifier"</span>,</span>
+<span id="cb9-9"><a href="#cb9-9" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb9-10"><a href="#cb9-10" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-11"><a href="#cb9-11" aria-hidden="true" tabindex="-1"></a>parcel_features_source <span class="op">=</span> FileSource(</span>
+<span id="cb9-12"><a href="#cb9-12" aria-hidden="true" tabindex="-1"></a>    path<span class="op">=</span><span class="st">"data/features/parcel_features.parquet"</span>,</span>
+<span id="cb9-13"><a href="#cb9-13" aria-hidden="true" tabindex="-1"></a>    timestamp_field<span class="op">=</span><span class="st">"feature_timestamp"</span>,</span>
+<span id="cb9-14"><a href="#cb9-14" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb9-15"><a href="#cb9-15" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-16"><a href="#cb9-16" aria-hidden="true" tabindex="-1"></a>parcel_risk_features <span class="op">=</span> FeatureView(</span>
+<span id="cb9-17"><a href="#cb9-17" aria-hidden="true" tabindex="-1"></a>    name<span class="op">=</span><span class="st">"parcel_risk_features"</span>,</span>
+<span id="cb9-18"><a href="#cb9-18" aria-hidden="true" tabindex="-1"></a>    entities<span class="op">=</span>[parcel],</span>
+<span id="cb9-19"><a href="#cb9-19" aria-hidden="true" tabindex="-1"></a>    ttl<span class="op">=</span>timedelta(days<span class="op">=</span><span class="dv">180</span>),</span>
+<span id="cb9-20"><a href="#cb9-20" aria-hidden="true" tabindex="-1"></a>    schema<span class="op">=</span>[</span>
+<span id="cb9-21"><a href="#cb9-21" aria-hidden="true" tabindex="-1"></a>        Field(name<span class="op">=</span><span class="st">"veg_density"</span>,          dtype<span class="op">=</span>Float32),</span>
+<span id="cb9-22"><a href="#cb9-22" aria-hidden="true" tabindex="-1"></a>        Field(name<span class="op">=</span><span class="st">"mean_slope_pct"</span>,       dtype<span class="op">=</span>Float32),</span>
+<span id="cb9-23"><a href="#cb9-23" aria-hidden="true" tabindex="-1"></a>        Field(name<span class="op">=</span><span class="st">"fuel_load_class"</span>,      dtype<span class="op">=</span>Int64),</span>
+<span id="cb9-24"><a href="#cb9-24" aria-hidden="true" tabindex="-1"></a>        Field(name<span class="op">=</span><span class="st">"dist_prev_fire_m"</span>,     dtype<span class="op">=</span>Float32),</span>
+<span id="cb9-25"><a href="#cb9-25" aria-hidden="true" tabindex="-1"></a>        Field(name<span class="op">=</span><span class="st">"dist_fire_station_m"</span>,  dtype<span class="op">=</span>Float32),</span>
+<span id="cb9-26"><a href="#cb9-26" aria-hidden="true" tabindex="-1"></a>        Field(name<span class="op">=</span><span class="st">"elevation_m"</span>,          dtype<span class="op">=</span>Float32),</span>
+<span id="cb9-27"><a href="#cb9-27" aria-hidden="true" tabindex="-1"></a>    ],</span>
+<span id="cb9-28"><a href="#cb9-28" aria-hidden="true" tabindex="-1"></a>    source<span class="op">=</span>parcel_features_source,</span>
+<span id="cb9-29"><a href="#cb9-29" aria-hidden="true" tabindex="-1"></a>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p><strong><code>training/train.py</code></strong> — complete training loop with MLflow:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb10"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a><span class="co">"""train.py — Wildfire risk classifier training with MLflow tracking.</span></span>
+<span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-3"><a href="#cb10-3" aria-hidden="true" tabindex="-1"></a><span class="co">Usage:</span></span>
+<span id="cb10-4"><a href="#cb10-4" aria-hidden="true" tabindex="-1"></a><span class="co">    python training/train.py</span></span>
+<span id="cb10-5"><a href="#cb10-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-6"><a href="#cb10-6" aria-hidden="true" tabindex="-1"></a><span class="co">Requires:</span></span>
+<span id="cb10-7"><a href="#cb10-7" aria-hidden="true" tabindex="-1"></a><span class="co">    - Feast feature store materialised (feast materialize-incremental &lt;end_date&gt;)</span></span>
+<span id="cb10-8"><a href="#cb10-8" aria-hidden="true" tabindex="-1"></a><span class="co">    - MLflow tracking server running (mlflow server --host 0.0.0.0 --port 5000)</span></span>
+<span id="cb10-9"><a href="#cb10-9" aria-hidden="true" tabindex="-1"></a><span class="co">      or MLFLOW_TRACKING_URI set to a remote URI</span></span>
+<span id="cb10-10"><a href="#cb10-10" aria-hidden="true" tabindex="-1"></a><span class="co">"""</span></span>
+<span id="cb10-11"><a href="#cb10-11" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> pandas <span class="im">as</span> pd</span>
+<span id="cb10-12"><a href="#cb10-12" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> mlflow</span>
+<span id="cb10-13"><a href="#cb10-13" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> mlflow.sklearn</span>
+<span id="cb10-14"><a href="#cb10-14" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> feast <span class="im">import</span> FeatureStore</span>
+<span id="cb10-15"><a href="#cb10-15" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> sklearn.ensemble <span class="im">import</span> GradientBoostingClassifier</span>
+<span id="cb10-16"><a href="#cb10-16" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> sklearn.model_selection <span class="im">import</span> train_test_split</span>
+<span id="cb10-17"><a href="#cb10-17" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> sklearn.metrics <span class="im">import</span> roc_auc_score</span>
+<span id="cb10-18"><a href="#cb10-18" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-19"><a href="#cb10-19" aria-hidden="true" tabindex="-1"></a>FEATURE_COLS <span class="op">=</span> [</span>
+<span id="cb10-20"><a href="#cb10-20" aria-hidden="true" tabindex="-1"></a>    <span class="st">"veg_density"</span>, <span class="st">"mean_slope_pct"</span>, <span class="st">"fuel_load_class"</span>,</span>
+<span id="cb10-21"><a href="#cb10-21" aria-hidden="true" tabindex="-1"></a>    <span class="st">"dist_prev_fire_m"</span>, <span class="st">"dist_fire_station_m"</span>, <span class="st">"elevation_m"</span>,</span>
+<span id="cb10-22"><a href="#cb10-22" aria-hidden="true" tabindex="-1"></a>]</span>
+<span id="cb10-23"><a href="#cb10-23" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-24"><a href="#cb10-24" aria-hidden="true" tabindex="-1"></a>PARAMS <span class="op">=</span> {</span>
+<span id="cb10-25"><a href="#cb10-25" aria-hidden="true" tabindex="-1"></a>    <span class="st">"n_estimators"</span>:          <span class="dv">200</span>,</span>
+<span id="cb10-26"><a href="#cb10-26" aria-hidden="true" tabindex="-1"></a>    <span class="st">"max_depth"</span>:             <span class="dv">4</span>,</span>
+<span id="cb10-27"><a href="#cb10-27" aria-hidden="true" tabindex="-1"></a>    <span class="st">"learning_rate"</span>:         <span class="fl">0.05</span>,</span>
+<span id="cb10-28"><a href="#cb10-28" aria-hidden="true" tabindex="-1"></a>    <span class="st">"spatial_join_method"</span>:   <span class="st">"parcel_centroid"</span>,   <span class="co"># log this for skew audit</span></span>
+<span id="cb10-29"><a href="#cb10-29" aria-hidden="true" tabindex="-1"></a>    <span class="st">"feature_store_version"</span>: <span class="st">"feast_repo@main"</span>,</span>
+<span id="cb10-30"><a href="#cb10-30" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb10-31"><a href="#cb10-31" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-32"><a href="#cb10-32" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> main():</span>
+<span id="cb10-33"><a href="#cb10-33" aria-hidden="true" tabindex="-1"></a>    store <span class="op">=</span> FeatureStore(repo_path<span class="op">=</span><span class="st">"feature_repo/"</span>)</span>
+<span id="cb10-34"><a href="#cb10-34" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-35"><a href="#cb10-35" aria-hidden="true" tabindex="-1"></a>    <span class="co"># Load labelled training events (parcel_id + event_timestamp + fire_occurred)</span></span>
+<span id="cb10-36"><a href="#cb10-36" aria-hidden="true" tabindex="-1"></a>    entity_df <span class="op">=</span> pd.read_parquet(<span class="st">"data/training_events.parquet"</span>)</span>
+<span id="cb10-37"><a href="#cb10-37" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-38"><a href="#cb10-38" aria-hidden="true" tabindex="-1"></a>    training_df <span class="op">=</span> store.get_historical_features(</span>
+<span id="cb10-39"><a href="#cb10-39" aria-hidden="true" tabindex="-1"></a>        entity_df<span class="op">=</span>entity_df,</span>
+<span id="cb10-40"><a href="#cb10-40" aria-hidden="true" tabindex="-1"></a>        features<span class="op">=</span>[<span class="ss">f"parcel_risk_features:</span><span class="sc">{</span>col<span class="sc">}</span><span class="ss">"</span> <span class="cf">for</span> col <span class="kw">in</span> FEATURE_COLS],</span>
+<span id="cb10-41"><a href="#cb10-41" aria-hidden="true" tabindex="-1"></a>    ).to_df()</span>
+<span id="cb10-42"><a href="#cb10-42" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-43"><a href="#cb10-43" aria-hidden="true" tabindex="-1"></a>    X <span class="op">=</span> training_df[FEATURE_COLS].values</span>
+<span id="cb10-44"><a href="#cb10-44" aria-hidden="true" tabindex="-1"></a>    y <span class="op">=</span> training_df[<span class="st">"fire_occurred"</span>].values</span>
+<span id="cb10-45"><a href="#cb10-45" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-46"><a href="#cb10-46" aria-hidden="true" tabindex="-1"></a>    X_train, X_test, y_train, y_test <span class="op">=</span> train_test_split(</span>
+<span id="cb10-47"><a href="#cb10-47" aria-hidden="true" tabindex="-1"></a>        X, y, test_size<span class="op">=</span><span class="fl">0.2</span>, random_state<span class="op">=</span><span class="dv">42</span>, stratify<span class="op">=</span>y</span>
+<span id="cb10-48"><a href="#cb10-48" aria-hidden="true" tabindex="-1"></a>    )</span>
+<span id="cb10-49"><a href="#cb10-49" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-50"><a href="#cb10-50" aria-hidden="true" tabindex="-1"></a>    mlflow.set_experiment(<span class="st">"wildfire_risk_production"</span>)</span>
+<span id="cb10-51"><a href="#cb10-51" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-52"><a href="#cb10-52" aria-hidden="true" tabindex="-1"></a>    <span class="cf">with</span> mlflow.start_run():</span>
+<span id="cb10-53"><a href="#cb10-53" aria-hidden="true" tabindex="-1"></a>        mlflow.log_params(PARAMS)</span>
+<span id="cb10-54"><a href="#cb10-54" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-55"><a href="#cb10-55" aria-hidden="true" tabindex="-1"></a>        model <span class="op">=</span> GradientBoostingClassifier(</span>
+<span id="cb10-56"><a href="#cb10-56" aria-hidden="true" tabindex="-1"></a>            n_estimators<span class="op">=</span>PARAMS[<span class="st">"n_estimators"</span>],</span>
+<span id="cb10-57"><a href="#cb10-57" aria-hidden="true" tabindex="-1"></a>            max_depth<span class="op">=</span>PARAMS[<span class="st">"max_depth"</span>],</span>
+<span id="cb10-58"><a href="#cb10-58" aria-hidden="true" tabindex="-1"></a>            learning_rate<span class="op">=</span>PARAMS[<span class="st">"learning_rate"</span>],</span>
+<span id="cb10-59"><a href="#cb10-59" aria-hidden="true" tabindex="-1"></a>            random_state<span class="op">=</span><span class="dv">42</span>,</span>
+<span id="cb10-60"><a href="#cb10-60" aria-hidden="true" tabindex="-1"></a>        )</span>
+<span id="cb10-61"><a href="#cb10-61" aria-hidden="true" tabindex="-1"></a>        model.fit(X_train, y_train)</span>
+<span id="cb10-62"><a href="#cb10-62" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-63"><a href="#cb10-63" aria-hidden="true" tabindex="-1"></a>        auc <span class="op">=</span> roc_auc_score(y_test, model.predict_proba(X_test)[:, <span class="dv">1</span>])</span>
+<span id="cb10-64"><a href="#cb10-64" aria-hidden="true" tabindex="-1"></a>        mlflow.log_metric(<span class="st">"auc"</span>, auc)</span>
+<span id="cb10-65"><a href="#cb10-65" aria-hidden="true" tabindex="-1"></a>        mlflow.log_metric(<span class="st">"n_train"</span>, <span class="bu">len</span>(X_train))</span>
+<span id="cb10-66"><a href="#cb10-66" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-67"><a href="#cb10-67" aria-hidden="true" tabindex="-1"></a>        mlflow.sklearn.log_model(</span>
+<span id="cb10-68"><a href="#cb10-68" aria-hidden="true" tabindex="-1"></a>            sk_model<span class="op">=</span>model,</span>
+<span id="cb10-69"><a href="#cb10-69" aria-hidden="true" tabindex="-1"></a>            artifact_path<span class="op">=</span><span class="st">"model"</span>,</span>
+<span id="cb10-70"><a href="#cb10-70" aria-hidden="true" tabindex="-1"></a>            registered_model_name<span class="op">=</span><span class="st">"wildfire_risk_classifier"</span>,</span>
+<span id="cb10-71"><a href="#cb10-71" aria-hidden="true" tabindex="-1"></a>        )</span>
+<span id="cb10-72"><a href="#cb10-72" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-73"><a href="#cb10-73" aria-hidden="true" tabindex="-1"></a>        <span class="bu">print</span>(<span class="ss">f"Run complete — AUC: </span><span class="sc">{</span>auc<span class="sc">:.4f}</span><span class="ss">"</span>)</span>
+<span id="cb10-74"><a href="#cb10-74" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-75"><a href="#cb10-75" aria-hidden="true" tabindex="-1"></a><span class="cf">if</span> <span class="va">__name__</span> <span class="op">==</span> <span class="st">"__main__"</span>:</span>
+<span id="cb10-76"><a href="#cb10-76" aria-hidden="true" tabindex="-1"></a>    main()</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p><strong><code>serving/app.py</code></strong> — FastAPI inference endpoint:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb11"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a><span class="co">"""app.py — FastAPI serving endpoint for wildfire risk classifier.</span></span>
+<span id="cb11-2"><a href="#cb11-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-3"><a href="#cb11-3" aria-hidden="true" tabindex="-1"></a><span class="co">Retrieves features from the Feast online store (pre-materialised),</span></span>
+<span id="cb11-4"><a href="#cb11-4" aria-hidden="true" tabindex="-1"></a><span class="co">loads the Production model from the MLflow registry,</span></span>
+<span id="cb11-5"><a href="#cb11-5" aria-hidden="true" tabindex="-1"></a><span class="co">and returns a risk score for a given parcel ID.</span></span>
+<span id="cb11-6"><a href="#cb11-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-7"><a href="#cb11-7" aria-hidden="true" tabindex="-1"></a><span class="co">Usage:</span></span>
+<span id="cb11-8"><a href="#cb11-8" aria-hidden="true" tabindex="-1"></a><span class="co">    uvicorn serving.app:app --host 0.0.0.0 --port 8000</span></span>
+<span id="cb11-9"><a href="#cb11-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-10"><a href="#cb11-10" aria-hidden="true" tabindex="-1"></a><span class="co">Endpoint:</span></span>
+<span id="cb11-11"><a href="#cb11-11" aria-hidden="true" tabindex="-1"></a><span class="co">    GET /predict/{parcel_id}  → {"parcel_id": ..., "risk_score": ..., "risk_band": ...}</span></span>
+<span id="cb11-12"><a href="#cb11-12" aria-hidden="true" tabindex="-1"></a><span class="co">"""</span></span>
+<span id="cb11-13"><a href="#cb11-13" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> os</span>
+<span id="cb11-14"><a href="#cb11-14" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> fastapi <span class="im">import</span> FastAPI, HTTPException</span>
+<span id="cb11-15"><a href="#cb11-15" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> pydantic <span class="im">import</span> BaseModel</span>
+<span id="cb11-16"><a href="#cb11-16" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> mlflow.sklearn</span>
+<span id="cb11-17"><a href="#cb11-17" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> feast <span class="im">import</span> FeatureStore</span>
+<span id="cb11-18"><a href="#cb11-18" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-19"><a href="#cb11-19" aria-hidden="true" tabindex="-1"></a>app <span class="op">=</span> FastAPI(title<span class="op">=</span><span class="st">"Wildfire Risk Classifier"</span>, version<span class="op">=</span><span class="st">"1.0"</span>)</span>
+<span id="cb11-20"><a href="#cb11-20" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-21"><a href="#cb11-21" aria-hidden="true" tabindex="-1"></a>FEATURE_COLS <span class="op">=</span> [</span>
+<span id="cb11-22"><a href="#cb11-22" aria-hidden="true" tabindex="-1"></a>    <span class="st">"veg_density"</span>, <span class="st">"mean_slope_pct"</span>, <span class="st">"fuel_load_class"</span>,</span>
+<span id="cb11-23"><a href="#cb11-23" aria-hidden="true" tabindex="-1"></a>    <span class="st">"dist_prev_fire_m"</span>, <span class="st">"dist_fire_station_m"</span>, <span class="st">"elevation_m"</span>,</span>
+<span id="cb11-24"><a href="#cb11-24" aria-hidden="true" tabindex="-1"></a>]</span>
+<span id="cb11-25"><a href="#cb11-25" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-26"><a href="#cb11-26" aria-hidden="true" tabindex="-1"></a><span class="co"># Load model and feature store at startup — not on every request</span></span>
+<span id="cb11-27"><a href="#cb11-27" aria-hidden="true" tabindex="-1"></a>store  <span class="op">=</span> FeatureStore(repo_path<span class="op">=</span><span class="st">"feature_repo/"</span>)</span>
+<span id="cb11-28"><a href="#cb11-28" aria-hidden="true" tabindex="-1"></a>model  <span class="op">=</span> mlflow.sklearn.load_model(<span class="st">"models:/wildfire_risk_classifier/Production"</span>)</span>
+<span id="cb11-29"><a href="#cb11-29" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-30"><a href="#cb11-30" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-31"><a href="#cb11-31" aria-hidden="true" tabindex="-1"></a><span class="kw">class</span> PredictionResponse(BaseModel):</span>
+<span id="cb11-32"><a href="#cb11-32" aria-hidden="true" tabindex="-1"></a>    parcel_id:  <span class="bu">str</span></span>
+<span id="cb11-33"><a href="#cb11-33" aria-hidden="true" tabindex="-1"></a>    risk_score: <span class="bu">float</span></span>
+<span id="cb11-34"><a href="#cb11-34" aria-hidden="true" tabindex="-1"></a>    risk_band:  <span class="bu">str</span>   <span class="co"># Low / Medium / High / Extreme</span></span>
+<span id="cb11-35"><a href="#cb11-35" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-36"><a href="#cb11-36" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-37"><a href="#cb11-37" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> score_to_band(score: <span class="bu">float</span>) <span class="op">-&gt;</span> <span class="bu">str</span>:</span>
+<span id="cb11-38"><a href="#cb11-38" aria-hidden="true" tabindex="-1"></a>    <span class="cf">if</span> score <span class="op">&lt;</span> <span class="fl">0.25</span>:   <span class="cf">return</span> <span class="st">"Low"</span></span>
+<span id="cb11-39"><a href="#cb11-39" aria-hidden="true" tabindex="-1"></a>    <span class="cf">if</span> score <span class="op">&lt;</span> <span class="fl">0.50</span>:   <span class="cf">return</span> <span class="st">"Medium"</span></span>
+<span id="cb11-40"><a href="#cb11-40" aria-hidden="true" tabindex="-1"></a>    <span class="cf">if</span> score <span class="op">&lt;</span> <span class="fl">0.75</span>:   <span class="cf">return</span> <span class="st">"High"</span></span>
+<span id="cb11-41"><a href="#cb11-41" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> <span class="st">"Extreme"</span></span>
+<span id="cb11-42"><a href="#cb11-42" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-43"><a href="#cb11-43" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-44"><a href="#cb11-44" aria-hidden="true" tabindex="-1"></a><span class="at">@app.get</span>(<span class="st">"/predict/</span><span class="sc">{parcel_id}</span><span class="st">"</span>, response_model<span class="op">=</span>PredictionResponse)</span>
+<span id="cb11-45"><a href="#cb11-45" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> predict(parcel_id: <span class="bu">str</span>):</span>
+<span id="cb11-46"><a href="#cb11-46" aria-hidden="true" tabindex="-1"></a>    <span class="co"># Retrieve features from online store — same FeatureView as training</span></span>
+<span id="cb11-47"><a href="#cb11-47" aria-hidden="true" tabindex="-1"></a>    feature_vector <span class="op">=</span> store.get_online_features(</span>
+<span id="cb11-48"><a href="#cb11-48" aria-hidden="true" tabindex="-1"></a>        features<span class="op">=</span>[<span class="ss">f"parcel_risk_features:</span><span class="sc">{</span>col<span class="sc">}</span><span class="ss">"</span> <span class="cf">for</span> col <span class="kw">in</span> FEATURE_COLS],</span>
+<span id="cb11-49"><a href="#cb11-49" aria-hidden="true" tabindex="-1"></a>        entity_rows<span class="op">=</span>[{<span class="st">"parcel_id"</span>: parcel_id}],</span>
+<span id="cb11-50"><a href="#cb11-50" aria-hidden="true" tabindex="-1"></a>    ).to_dict()</span>
+<span id="cb11-51"><a href="#cb11-51" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-52"><a href="#cb11-52" aria-hidden="true" tabindex="-1"></a>    <span class="co"># Check for missing features (parcel not in feature store)</span></span>
+<span id="cb11-53"><a href="#cb11-53" aria-hidden="true" tabindex="-1"></a>    <span class="cf">if</span> <span class="bu">any</span>(feature_vector[col][<span class="dv">0</span>] <span class="kw">is</span> <span class="va">None</span> <span class="cf">for</span> col <span class="kw">in</span> FEATURE_COLS):</span>
+<span id="cb11-54"><a href="#cb11-54" aria-hidden="true" tabindex="-1"></a>        <span class="cf">raise</span> HTTPException(</span>
+<span id="cb11-55"><a href="#cb11-55" aria-hidden="true" tabindex="-1"></a>            status_code<span class="op">=</span><span class="dv">404</span>,</span>
+<span id="cb11-56"><a href="#cb11-56" aria-hidden="true" tabindex="-1"></a>            detail<span class="op">=</span><span class="ss">f"No features found for parcel_id=</span><span class="sc">{</span>parcel_id<span class="sc">}</span><span class="ss">. "</span></span>
+<span id="cb11-57"><a href="#cb11-57" aria-hidden="true" tabindex="-1"></a>                   <span class="st">"Ensure features have been materialised for this parcel."</span>,</span>
+<span id="cb11-58"><a href="#cb11-58" aria-hidden="true" tabindex="-1"></a>        )</span>
+<span id="cb11-59"><a href="#cb11-59" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-60"><a href="#cb11-60" aria-hidden="true" tabindex="-1"></a>    X <span class="op">=</span> [[feature_vector[col][<span class="dv">0</span>] <span class="cf">for</span> col <span class="kw">in</span> FEATURE_COLS]]</span>
+<span id="cb11-61"><a href="#cb11-61" aria-hidden="true" tabindex="-1"></a>    score <span class="op">=</span> <span class="bu">float</span>(model.predict_proba(X)[<span class="dv">0</span>][<span class="dv">1</span>])</span>
+<span id="cb11-62"><a href="#cb11-62" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-63"><a href="#cb11-63" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> PredictionResponse(</span>
+<span id="cb11-64"><a href="#cb11-64" aria-hidden="true" tabindex="-1"></a>        parcel_id<span class="op">=</span>parcel_id,</span>
+<span id="cb11-65"><a href="#cb11-65" aria-hidden="true" tabindex="-1"></a>        risk_score<span class="op">=</span><span class="bu">round</span>(score, <span class="dv">4</span>),</span>
+<span id="cb11-66"><a href="#cb11-66" aria-hidden="true" tabindex="-1"></a>        risk_band<span class="op">=</span>score_to_band(score),</span>
+<span id="cb11-67"><a href="#cb11-67" aria-hidden="true" tabindex="-1"></a>    )</span>
+<span id="cb11-68"><a href="#cb11-68" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-69"><a href="#cb11-69" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-70"><a href="#cb11-70" aria-hidden="true" tabindex="-1"></a><span class="at">@app.get</span>(<span class="st">"/health"</span>)</span>
+<span id="cb11-71"><a href="#cb11-71" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> health():</span>
+<span id="cb11-72"><a href="#cb11-72" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> {<span class="st">"status"</span>: <span class="st">"ok"</span>, <span class="st">"model"</span>: <span class="st">"wildfire_risk_classifier/Production"</span>}</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>Run the full platform:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb12"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a><span class="co"># 1. Apply the feature store definition</span></span>
+<span id="cb12-2"><a href="#cb12-2" aria-hidden="true" tabindex="-1"></a><span class="bu">cd</span> feature_repo <span class="kw">&amp;&amp;</span> <span class="ex">feast</span> apply</span>
+<span id="cb12-3"><a href="#cb12-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-4"><a href="#cb12-4" aria-hidden="true" tabindex="-1"></a><span class="co"># 2. Materialise features to the online store</span></span>
+<span id="cb12-5"><a href="#cb12-5" aria-hidden="true" tabindex="-1"></a><span class="ex">feast</span> materialize-incremental <span class="va">$(</span><span class="fu">date</span> <span class="at">-u</span> +<span class="st">"%Y-%m-%dT%H:%M:%S"</span><span class="va">)</span></span>
+<span id="cb12-6"><a href="#cb12-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-7"><a href="#cb12-7" aria-hidden="true" tabindex="-1"></a><span class="co"># 3. Train and register the model</span></span>
+<span id="cb12-8"><a href="#cb12-8" aria-hidden="true" tabindex="-1"></a><span class="ex">python</span> training/train.py</span>
+<span id="cb12-9"><a href="#cb12-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-10"><a href="#cb12-10" aria-hidden="true" tabindex="-1"></a><span class="co"># 4. Promote the model to Production in the registry</span></span>
+<span id="cb12-11"><a href="#cb12-11" aria-hidden="true" tabindex="-1"></a><span class="co">#    (or use mlflow.tracking.MlflowClient().transition_model_version_stage())</span></span>
+<span id="cb12-12"><a href="#cb12-12" aria-hidden="true" tabindex="-1"></a><span class="ex">mlflow</span> models <span class="at">--help</span>   <span class="co"># use the CLI or UI to promote staging → production</span></span>
+<span id="cb12-13"><a href="#cb12-13" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-14"><a href="#cb12-14" aria-hidden="true" tabindex="-1"></a><span class="co"># 5. Start the serving endpoint</span></span>
+<span id="cb12-15"><a href="#cb12-15" aria-hidden="true" tabindex="-1"></a><span class="ex">uvicorn</span> serving.app:app <span class="at">--host</span> 0.0.0.0 <span class="at">--port</span> 8000</span>
+<span id="cb12-16"><a href="#cb12-16" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-17"><a href="#cb12-17" aria-hidden="true" tabindex="-1"></a><span class="co"># 6. Test the endpoint</span></span>
+<span id="cb12-18"><a href="#cb12-18" aria-hidden="true" tabindex="-1"></a><span class="ex">curl</span> http://localhost:8000/predict/P001</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>The architecture guarantees that features retrieved by the serving endpoint (<code>app.py</code>) were computed by the same pipeline that computed the training features (<code>feature_repo/features.py</code>). The <code>spatial_join_method</code> parameter is logged in every training run. The model version in production is tracked in the registry. When production accuracy declines, the investigation starts with the lineage: which feature store version did the current production model use, and is the serving endpoint materialising features with the same pipeline?</p>
+
+
+</section>
+
+</main> <!-- /main -->
+<script type="module" src="assets/js/pyodide-cells.js"></script>
+<script>
+(function () {
+  var overlay = document.createElement('div');
+  overlay.id = 'diagram-lightbox';
+
+  var closeBtn = document.createElement('button');
+  closeBtn.id = 'diagram-lightbox-close';
+  closeBtn.innerHTML = '&times;';
+  closeBtn.setAttribute('aria-label', 'Close diagram');
+
+  var content = document.createElement('div');
+  content.id = 'diagram-lightbox-content';
+
+  overlay.appendChild(closeBtn);
+  overlay.appendChild(content);
+  document.body.appendChild(overlay);
+
+  function openLightbox(svgEl) {
+    content.innerHTML = svgEl.outerHTML;
+    var svg = content.querySelector('svg');
+    if (svg) {
+      svg.setAttribute('width', '100%');
+      svg.removeAttribute('height');
+      svg.style.removeProperty('max-width');
+      svg.style.display = 'block';
+    }
+    overlay.classList.add('open');
+    document.body.style.overflow = 'hidden';
+  }
+
+  function closeLightbox() {
+    overlay.classList.remove('open');
+    document.body.style.overflow = '';
+  }
+
+  overlay.addEventListener('click', function (e) {
+    if (e.target === overlay || e.target === closeBtn) closeLightbox();
+  });
+  content.addEventListener('click', function (e) { e.stopPropagation(); });
+  document.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape') closeLightbox();
+  });
+
+  function attachTo(svgEl) {
+    if (svgEl._lbAttached) return;
+    svgEl._lbAttached = true;
+    svgEl.style.cursor = 'zoom-in';
+    svgEl.addEventListener('click', function () { openLightbox(svgEl); });
+  }
+
+  function scanAndAttach() {
+    document.querySelectorAll('svg.mermaid-js').forEach(attachTo);
+  }
+
+  var observer = new MutationObserver(function (mutations) {
+    mutations.forEach(function (m) {
+      m.addedNodes.forEach(function (node) {
+        if (node.nodeType !== 1) return;
+        if (node.tagName.toLowerCase() === 'svg' && node.classList.contains('mermaid-js')) {
+          attachTo(node);
+        } else if (node.querySelectorAll) {
+          node.querySelectorAll('svg.mermaid-js').forEach(attachTo);
+        }
+      });
+    });
+  });
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', function () {
+      observer.observe(document.body, { childList: true, subtree: true });
+      scanAndAttach();
+    });
+  } else {
+    observer.observe(document.body, { childList: true, subtree: true });
+    scanAndAttach();
+  }
+})();
+</script>
+<script id="quarto-html-after-body" type="application/javascript">
+  window.document.addEventListener("DOMContentLoaded", function (event) {
+    const icon = "";
+    const anchorJS = new window.AnchorJS();
+    anchorJS.options = {
+      placement: 'right',
+      icon: icon
+    };
+    anchorJS.add('.anchored');
+    const isCodeAnnotation = (el) => {
+      for (const clz of el.classList) {
+        if (clz.startsWith('code-annotation-')) {                     
+          return true;
+        }
+      }
+      return false;
+    }
+    const onCopySuccess = function(e) {
+      // button target
+      const button = e.trigger;
+      // don't keep focus
+      button.blur();
+      // flash "checked"
+      button.classList.add('code-copy-button-checked');
+      var currentTitle = button.getAttribute("title");
+      button.setAttribute("title", "Copied!");
+      let tooltip;
+      if (window.bootstrap) {
+        button.setAttribute("data-bs-toggle", "tooltip");
+        button.setAttribute("data-bs-placement", "left");
+        button.setAttribute("data-bs-title", "Copied!");
+        tooltip = new bootstrap.Tooltip(button, 
+          { trigger: "manual", 
+            customClass: "code-copy-button-tooltip",
+            offset: [0, -8]});
+        tooltip.show();    
+      }
+      setTimeout(function() {
+        if (tooltip) {
+          tooltip.hide();
+          button.removeAttribute("data-bs-title");
+          button.removeAttribute("data-bs-toggle");
+          button.removeAttribute("data-bs-placement");
+        }
+        button.setAttribute("title", currentTitle);
+        button.classList.remove('code-copy-button-checked');
+      }, 1000);
+      // clear code selection
+      e.clearSelection();
+    }
+    const getTextToCopy = function(trigger) {
+      const outerScaffold = trigger.parentElement.cloneNode(true);
+      const codeEl = outerScaffold.querySelector('code');
+      for (const childEl of codeEl.children) {
+        if (isCodeAnnotation(childEl)) {
+          childEl.remove();
+        }
+      }
+      return codeEl.innerText;
+    }
+    const clipboard = new window.ClipboardJS('.code-copy-button:not([data-in-quarto-modal])', {
+      text: getTextToCopy
+    });
+    clipboard.on('success', onCopySuccess);
+    if (window.document.getElementById('quarto-embedded-source-code-modal')) {
+      const clipboardModal = new window.ClipboardJS('.code-copy-button[data-in-quarto-modal]', {
+        text: getTextToCopy,
+        container: window.document.getElementById('quarto-embedded-source-code-modal')
+      });
+      clipboardModal.on('success', onCopySuccess);
+    }
+      var localhostRegex = new RegExp(/^(?:http|https):\/\/localhost\:?[0-9]*\//);
+      var mailtoRegex = new RegExp(/^mailto:/);
+        var filterRegex = new RegExp('/' + window.location.host + '/');
+      var isInternal = (href) => {
+          return filterRegex.test(href) || localhostRegex.test(href) || mailtoRegex.test(href);
+      }
+      // Inspect non-navigation links and adorn them if external
+     var links = window.document.querySelectorAll('a[href]:not(.nav-link):not(.navbar-brand):not(.toc-action):not(.sidebar-link):not(.sidebar-item-toggle):not(.pagination-link):not(.no-external):not([aria-hidden]):not(.dropdown-item):not(.quarto-navigation-tool):not(.about-link)');
+      for (var i=0; i<links.length; i++) {
+        const link = links[i];
+        if (!isInternal(link.href)) {
+          // undo the damage that might have been done by quarto-nav.js in the case of
+          // links that we want to consider external
+          if (link.dataset.originalHref !== undefined) {
+            link.href = link.dataset.originalHref;
+          }
+        }
+      }
+    function tippyHover(el, contentFn, onTriggerFn, onUntriggerFn) {
+      const config = {
+        allowHTML: true,
+        maxWidth: 500,
+        delay: 100,
+        arrow: false,
+        appendTo: function(el) {
+            return el.parentElement;
+        },
+        interactive: true,
+        interactiveBorder: 10,
+        theme: 'quarto',
+        placement: 'bottom-start',
+      };
+      if (contentFn) {
+        config.content = contentFn;
+      }
+      if (onTriggerFn) {
+        config.onTrigger = onTriggerFn;
+      }
+      if (onUntriggerFn) {
+        config.onUntrigger = onUntriggerFn;
+      }
+      window.tippy(el, config); 
+    }
+    const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+    for (var i=0; i<noterefs.length; i++) {
+      const ref = noterefs[i];
+      tippyHover(ref, function() {
+        // use id or data attribute instead here
+        let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+        try { href = new URL(href).hash; } catch {}
+        const id = href.replace(/^#\/?/, "");
+        const note = window.document.getElementById(id);
+        if (note) {
+          return note.innerHTML;
+        } else {
+          return "";
+        }
+      });
+    }
+    const xrefs = window.document.querySelectorAll('a.quarto-xref');
+    const processXRef = (id, note) => {
+      // Strip column container classes
+      const stripColumnClz = (el) => {
+        el.classList.remove("page-full", "page-columns");
+        if (el.children) {
+          for (const child of el.children) {
+            stripColumnClz(child);
+          }
+        }
+      }
+      stripColumnClz(note)
+      if (id === null || id.startsWith('sec-')) {
+        // Special case sections, only their first couple elements
+        const container = document.createElement("div");
+        if (note.children && note.children.length > 2) {
+          container.appendChild(note.children[0].cloneNode(true));
+          for (let i = 1; i < note.children.length; i++) {
+            const child = note.children[i];
+            if (child.tagName === "P" && child.innerText === "") {
+              continue;
+            } else {
+              container.appendChild(child.cloneNode(true));
+              break;
+            }
+          }
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(container);
+          }
+          return container.innerHTML
+        } else {
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(note);
+          }
+          return note.innerHTML;
+        }
+      } else {
+        // Remove any anchor links if they are present
+        const anchorLink = note.querySelector('a.anchorjs-link');
+        if (anchorLink) {
+          anchorLink.remove();
+        }
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(note);
+        }
+        if (note.classList.contains("callout")) {
+          return note.outerHTML;
+        } else {
+          return note.innerHTML;
+        }
+      }
+    }
+    for (var i=0; i<xrefs.length; i++) {
+      const xref = xrefs[i];
+      tippyHover(xref, undefined, function(instance) {
+        instance.disable();
+        let url = xref.getAttribute('href');
+        let hash = undefined; 
+        if (url.startsWith('#')) {
+          hash = url;
+        } else {
+          try { hash = new URL(url).hash; } catch {}
+        }
+        if (hash) {
+          const id = hash.replace(/^#\/?/, "");
+          const note = window.document.getElementById(id);
+          if (note !== null) {
+            try {
+              const html = processXRef(id, note.cloneNode(true));
+              instance.setContent(html);
+            } finally {
+              instance.enable();
+              instance.show();
+            }
+          } else {
+            // See if we can fetch this
+            fetch(url.split('#')[0])
+            .then(res => res.text())
+            .then(html => {
+              const parser = new DOMParser();
+              const htmlDoc = parser.parseFromString(html, "text/html");
+              const note = htmlDoc.getElementById(id);
+              if (note !== null) {
+                const html = processXRef(id, note);
+                instance.setContent(html);
+              } 
+            }).finally(() => {
+              instance.enable();
+              instance.show();
+            });
+          }
+        } else {
+          // See if we can fetch a full url (with no hash to target)
+          // This is a special case and we should probably do some content thinning / targeting
+          fetch(url)
+          .then(res => res.text())
+          .then(html => {
+            const parser = new DOMParser();
+            const htmlDoc = parser.parseFromString(html, "text/html");
+            const note = htmlDoc.querySelector('main.content');
+            if (note !== null) {
+              // This should only happen for chapter cross references
+              // (since there is no id in the URL)
+              // remove the first header
+              if (note.children.length > 0 && note.children[0].tagName === "HEADER") {
+                note.children[0].remove();
+              }
+              const html = processXRef(null, note);
+              instance.setContent(html);
+            } 
+          }).finally(() => {
+            instance.enable();
+            instance.show();
+          });
+        }
+      }, function(instance) {
+      });
+    }
+        let selectedAnnoteEl;
+        const selectorForAnnotation = ( cell, annotation) => {
+          let cellAttr = 'data-code-cell="' + cell + '"';
+          let lineAttr = 'data-code-annotation="' +  annotation + '"';
+          const selector = 'span[' + cellAttr + '][' + lineAttr + ']';
+          return selector;
+        }
+        const selectCodeLines = (annoteEl) => {
+          const doc = window.document;
+          const targetCell = annoteEl.getAttribute("data-target-cell");
+          const targetAnnotation = annoteEl.getAttribute("data-target-annotation");
+          const annoteSpan = window.document.querySelector(selectorForAnnotation(targetCell, targetAnnotation));
+          const lines = annoteSpan.getAttribute("data-code-lines").split(",");
+          const lineIds = lines.map((line) => {
+            return targetCell + "-" + line;
+          })
+          let top = null;
+          let height = null;
+          let parent = null;
+          if (lineIds.length > 0) {
+              //compute the position of the single el (top and bottom and make a div)
+              const el = window.document.getElementById(lineIds[0]);
+              top = el.offsetTop;
+              height = el.offsetHeight;
+              parent = el.parentElement.parentElement;
+            if (lineIds.length > 1) {
+              const lastEl = window.document.getElementById(lineIds[lineIds.length - 1]);
+              const bottom = lastEl.offsetTop + lastEl.offsetHeight;
+              height = bottom - top;
+            }
+            if (top !== null && height !== null && parent !== null) {
+              // cook up a div (if necessary) and position it 
+              let div = window.document.getElementById("code-annotation-line-highlight");
+              if (div === null) {
+                div = window.document.createElement("div");
+                div.setAttribute("id", "code-annotation-line-highlight");
+                div.style.position = 'absolute';
+                parent.appendChild(div);
+              }
+              div.style.top = top - 2 + "px";
+              div.style.height = height + 4 + "px";
+              div.style.left = 0;
+              let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
+              if (gutterDiv === null) {
+                gutterDiv = window.document.createElement("div");
+                gutterDiv.setAttribute("id", "code-annotation-line-highlight-gutter");
+                gutterDiv.style.position = 'absolute';
+                const codeCell = window.document.getElementById(targetCell);
+                const gutter = codeCell.querySelector('.code-annotation-gutter');
+                gutter.appendChild(gutterDiv);
+              }
+              gutterDiv.style.top = top - 2 + "px";
+              gutterDiv.style.height = height + 4 + "px";
+            }
+            selectedAnnoteEl = annoteEl;
+          }
+        };
+        const unselectCodeLines = () => {
+          const elementsIds = ["code-annotation-line-highlight", "code-annotation-line-highlight-gutter"];
+          elementsIds.forEach((elId) => {
+            const div = window.document.getElementById(elId);
+            if (div) {
+              div.remove();
+            }
+          });
+          selectedAnnoteEl = undefined;
+        };
+          // Handle positioning of the toggle
+      window.addEventListener(
+        "resize",
+        throttle(() => {
+          elRect = undefined;
+          if (selectedAnnoteEl) {
+            selectCodeLines(selectedAnnoteEl);
+          }
+        }, 10)
+      );
+      function throttle(fn, ms) {
+      let throttle = false;
+      let timer;
+        return (...args) => {
+          if(!throttle) { // first call gets through
+              fn.apply(this, args);
+              throttle = true;
+          } else { // all the others get throttled
+              if(timer) clearTimeout(timer); // cancel #2
+              timer = setTimeout(() => {
+                fn.apply(this, args);
+                timer = throttle = false;
+              }, ms);
+          }
+        };
+      }
+        // Attach click handler to the DT
+        const annoteDls = window.document.querySelectorAll('dt[data-target-cell]');
+        for (const annoteDlNode of annoteDls) {
+          annoteDlNode.addEventListener('click', (event) => {
+            const clickedEl = event.target;
+            if (clickedEl !== selectedAnnoteEl) {
+              unselectCodeLines();
+              const activeEl = window.document.querySelector('dt[data-target-cell].code-annotation-active');
+              if (activeEl) {
+                activeEl.classList.remove('code-annotation-active');
+              }
+              selectCodeLines(clickedEl);
+              clickedEl.classList.add('code-annotation-active');
+            } else {
+              // Unselect the line
+              unselectCodeLines();
+              clickedEl.classList.remove('code-annotation-active');
+            }
+          });
+        }
+    const findCites = (el) => {
+      const parentEl = el.parentElement;
+      if (parentEl) {
+        const cites = parentEl.dataset.cites;
+        if (cites) {
+          return {
+            el,
+            cites: cites.split(' ')
+          };
+        } else {
+          return findCites(el.parentElement)
+        }
+      } else {
+        return undefined;
+      }
+    };
+    var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+    for (var i=0; i<bibliorefs.length; i++) {
+      const ref = bibliorefs[i];
+      const citeInfo = findCites(ref);
+      if (citeInfo) {
+        tippyHover(citeInfo.el, function() {
+          var popup = window.document.createElement('div');
+          citeInfo.cites.forEach(function(cite) {
+            var citeDiv = window.document.createElement('div');
+            citeDiv.classList.add('hanging-indent');
+            citeDiv.classList.add('csl-entry');
+            var biblioDiv = window.document.getElementById('ref-' + cite);
+            if (biblioDiv) {
+              citeDiv.innerHTML = biblioDiv.innerHTML;
+            }
+            popup.appendChild(citeDiv);
+          });
+          return popup.innerHTML;
+        });
+      }
+    }
+  });
+  </script>
+<nav class="page-navigation">
+  <div class="nav-page nav-page-previous">
+      <a href="./07-data-quality-and-governance.html" class="pagination-link" aria-label="Data Quality and Governance">
+        <i class="bi bi-arrow-left-short"></i> <span class="nav-page-text"><span class="chapter-number">8</span>&nbsp; <span class="chapter-title">Data Quality and Governance</span></span>
+      </a>          
+  </div>
+  <div class="nav-page nav-page-next">
+      <a href="./09-exercise-answers.html" class="pagination-link" aria-label="Exercise Answers">
+        <span class="nav-page-text"><span class="chapter-number">10</span>&nbsp; <span class="chapter-title">Exercise Answers</span></span> <i class="bi bi-arrow-right-short"></i>
+      </a>
+  </div>
+</nav>
+</div> <!-- /content -->
+
+
+
+
+<footer class="footer"><div class="nav-footer"><div class="nav-footer-center"><div class="toc-actions d-sm-block d-md-none"><ul><li><a href="https://github.com/WaywardHouse/waywardhouse-data-engineering/edit/main/08-platform-architecture-for-ml.qmd" class="toc-action"><i class="bi bi-github"></i>Edit this page</a></li><li><a href="https://github.com/WaywardHouse/waywardhouse-data-engineering/issues/new" class="toc-action"><i class="bi empty"></i>Report an issue</a></li></ul></div></div></div></footer><script src="site_libs/quarto-html/zenscroll-min.js"></script>
+</body></html>
