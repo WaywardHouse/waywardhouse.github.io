@@ -1,0 +1,33 @@
+name: Rebuild Pagefind Index
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  pagefind:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out site
+        uses: actions/checkout@v4
+        with:
+          # Full history not needed; depth 1 is fine
+          fetch-depth: 1
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Run Pagefind
+        run: npx pagefind@latest --site . --output-path pagefind
+
+      - name: Commit and push index
+        run: |
+          git config user.email "github-actions@github.com"
+          git config user.name "GitHub Actions"
+          git add pagefind/
+          git diff --staged --quiet && echo "Index unchanged" || \
+            git commit -m "Rebuild Pagefind index [$(date -u +%Y-%m-%dT%H:%M:%SZ)]" && \
+            git push
