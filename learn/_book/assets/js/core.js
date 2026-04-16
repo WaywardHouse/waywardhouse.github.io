@@ -239,128 +239,66 @@ function headerIcon(kind) {
 }
 
 const siteSearchState = {
-  dialog: null,
-  documents: [],
-  input: null,
-  results: null,
-  status: null,
-  promise: null,
+  dialog:   null,
+  pagefind: null,   // Pagefind module once loaded
+  input:    null,
+  results:  null,
+  status:   null,
+  debounce: null,
+  ready:    false,
+  failed:   false,
 };
 
-function stripHtml(text = '') {
-  const temp = document.createElement('div');
-  temp.innerHTML = text;
-  return temp.textContent?.trim() || '';
+// Resolve the root-relative /pagefind/pagefind.js regardless of which
+// subdirectory core.js is served from (articles, learn/book/page, etc.).
+function getPagefindUrl() {
+  const { origin } = window.location;
+  return `${origin}/pagefind/pagefind.js`;
 }
 
-function getSiteSearchIndexUrl() {
-  return new URL('../../search.json', import.meta.url);
+async function loadPagefind() {
+  if (siteSearchState.pagefind) return siteSearchState.pagefind;
+  const pf = await import(/* @vite-ignore */ getPagefindUrl());
+  await pf.init();
+  siteSearchState.pagefind = pf;
+  return pf;
 }
 
-function buildSiteSearchDocuments(records = []) {
-  const grouped = new Map();
-  const baseUrl = getSiteSearchIndexUrl();
-
-  records.forEach((record) => {
-    const rawHref = record.href || record.objectID || '';
-    const pageHref = rawHref.split('#')[0];
-    if (!pageHref) return;
-
-    const key = pageHref;
-    const section = stripHtml(record.section || '');
-    const bodyText = stripHtml(record.text || '');
-
-    if (!grouped.has(key)) {
-      grouped.set(key, {
-        href: new URL(pageHref, baseUrl).toString(),
-        title: stripHtml(record.title || ''),
-        section,
-        body: bodyText,
-      });
-      return;
-    }
-
-    const existing = grouped.get(key);
-    existing.body = `${existing.body} ${bodyText}`.trim();
-    if (!existing.section && section) existing.section = section;
-  });
-
-  return Array.from(grouped.values());
-}
-
-async function loadSiteSearchIndex() {
-  if (!siteSearchState.promise) {
-    siteSearchState.promise = fetch(getSiteSearchIndexUrl())
-      .then((response) => {
-        if (!response.ok) {
-          throw new Error(`Search index unavailable (${response.status})`);
-        }
-        return response.json();
-      })
-      .then((records) => buildSiteSearchDocuments(records));
-  }
-
-  return siteSearchState.promise;
-}
-
-function rankSiteSearchResults(query, documents) {
-  const trimmed = query.trim().toLowerCase();
-  if (!trimmed) return [];
-
-  const terms = trimmed.split(/\s+/).filter(Boolean);
-
-  return documents
-    .map((doc) => {
-      const title = doc.title.toLowerCase();
-      const section = doc.section.toLowerCase();
-      const body = doc.body.toLowerCase();
-      let score = 0;
-
-      for (const term of terms) {
-        const inTitle = title.includes(term);
-        const inSection = section.includes(term);
-        const inBody = body.includes(term);
-
-        if (!inTitle && !inSection && !inBody) {
-          return null;
-        }
-
-        if (inTitle) score += 12;
-        if (inSection) score += 7;
-        if (inBody) score += 1;
-      }
-
-      return { doc, score };
-    })
-    .filter(Boolean)
-    .sort((left, right) => right.score - left.score)
-    .slice(0, 10);
-}
-
-function renderSiteSearchResults(query, documents = []) {
+async function runPagefindSearch(query) {
   if (!siteSearchState.results || !siteSearchState.status) return;
 
   const trimmed = query.trim();
   if (!trimmed) {
     siteSearchState.results.innerHTML = '';
-    siteSearchState.status.textContent = 'Type to search the site and articles.';
+    siteSearchState.status.textContent = 'Type to search articles, books, and pages.';
     return;
   }
 
-  const matches = rankSiteSearchResults(trimmed, documents);
-  if (matches.length === 0) {
+  const pf = siteSearchState.pagefind;
+  if (!pf) return;
+
+  const search = await pf.search(trimmed);
+  const top    = search.results.slice(0, 10);
+
+  if (top.length === 0) {
     siteSearchState.results.innerHTML = '';
-    siteSearchState.status.textContent = 'No matching pages found.';
+    siteSearchState.status.textContent = 'No results found.';
     return;
   }
 
-  siteSearchState.status.textContent = `${matches.length} result${matches.length === 1 ? '' : 's'}`;
-  siteSearchState.results.innerHTML = matches.map(({ doc }) => `
-    <a class="wayward-search-result" href="${doc.href}">
-      <span class="wayward-search-result__title">${doc.title || 'Untitled'}</span>
-      ${doc.section ? `<span class="wayward-search-result__section">${doc.section}</span>` : ''}
-    </a>
-  `).join('');
+  siteSearchState.status.textContent = `${top.length}${search.results.length > 10 ? '+' : ''} result${top.length === 1 ? '' : 's'}`;
+
+  const dataArr = await Promise.all(top.map((r) => r.data()));
+  siteSearchState.results.innerHTML = dataArr.map((data) => {
+    const title   = data.meta?.title || data.url || 'Untitled';
+    const excerpt = data.excerpt || '';
+    return `
+      <a class="wayward-search-result" href="${data.url}">
+        <span class="wayward-search-result__title">${escapeHtml(title)}</span>
+        ${excerpt ? `<span class="wayward-search-result__excerpt">${excerpt}</span>` : ''}
+      </a>
+    `;
+  }).join('');
 }
 
 function closeSiteSearchDialog() {
@@ -401,7 +339,10 @@ function ensureSiteSearchDialog() {
   siteSearchState.status = dialog.querySelector('.wayward-search-dialog__status');
 
   siteSearchState.input?.addEventListener('input', () => {
-    renderSiteSearchResults(siteSearchState.input?.value || '', siteSearchState.documents);
+    clearTimeout(siteSearchState.debounce);
+    siteSearchState.debounce = setTimeout(() => {
+      runPagefindSearch(siteSearchState.input?.value || '');
+    }, 180);
   });
 
   dialog.querySelectorAll('[data-search-close]').forEach((node) => {
@@ -421,16 +362,30 @@ async function openSiteSearchDialog() {
   document.body.classList.add('wayward-search-open');
   siteSearchState.input?.focus();
 
-  siteSearchState.status.textContent = 'Loading search index…';
-  siteSearchState.results.innerHTML = '';
+  if (siteSearchState.failed) {
+    siteSearchState.status.textContent = 'Search index is not available yet.';
+    return;
+  }
 
-  try {
-    const documents = await loadSiteSearchIndex();
-    siteSearchState.documents = documents;
-    siteSearchState.status.textContent = 'Type to search the site and articles.';
-    renderSiteSearchResults(siteSearchState.input?.value || '', documents);
-  } catch {
-    siteSearchState.status.textContent = 'Search is not available on this build yet.';
+  if (!siteSearchState.pagefind) {
+    siteSearchState.status.textContent = 'Loading search index…';
+    siteSearchState.results.innerHTML = '';
+    try {
+      await loadPagefind();
+      siteSearchState.status.textContent = 'Type to search articles, books, and pages.';
+    } catch {
+      siteSearchState.failed = true;
+      siteSearchState.status.textContent = 'Search index is not available yet.';
+      return;
+    }
+  }
+
+  // If there's already a query typed, run it immediately
+  const current = siteSearchState.input?.value || '';
+  if (current.trim()) {
+    await runPagefindSearch(current);
+  } else {
+    siteSearchState.status.textContent = 'Type to search articles, books, and pages.';
   }
 }
 
