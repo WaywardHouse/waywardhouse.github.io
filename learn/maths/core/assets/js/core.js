@@ -539,6 +539,10 @@ function enhanceReadingTitleBlock(main, title, toc) {
 function injectWaywardChrome() {
   const path = currentPath();
   const body = document.body;
+  // Skip when WH book theme extension is active — it provides its own
+  // header/footer/search and we must not inject a second set.
+  if (document.querySelector('.wh-bk-hdr')) return;
+  // Skip on Quarto book/website pages that already have a sidebar.
   if (body.classList.contains('nav-sidebar') || document.getElementById('quarto-sidebar')) {
     if (isHomeLikePath(path)) body.classList.add('page-home');
     if (path.startsWith('/learn/')) body.classList.add('page-learn');
