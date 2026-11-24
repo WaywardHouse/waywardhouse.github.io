@@ -18,6 +18,19 @@ Books get their path from GitHub itself: this repo is the org site and owns the 
 
 Day to day: push to `main`, and the site updates in about 3 minutes. An essay or signal edit appears on the hub's next build: right away if `HUB_DISPATCH_TOKEN` is set in that repo, otherwise on the next hub push or the daily 09:17 UTC build. The Actions tab → *Publish site* → *Run workflow* rebuilds on demand.
 
+## Cloudflare settings that matter (zone `wayward.house`)
+
+- **DNS:** apex A/AAAA → GitHub Pages IPs, **proxied**; `www` CNAME → `waywardhouse.github.io`. Email records (Migadu MX/SPF, Resend DKIM, DMARC) and the GitHub Pages verification TXT record are left as they were.
+- **SSL/TLS:** Full (not strict).
+- **Worker route:** `wayward.house/api/*` → `wayward-house-api`. Nothing else runs a Worker.
+- **Security → Bots:** *Block AI bots* on. In Oct–Nov 2026 the old proxy logged about 4M requests a day, which looked like crawler traffic. *Bot Fight Mode* is off on purpose, because it can challenge RSS readers and link-preview fetchers. Turn it on if traffic reaching GitHub stays high.
+- **Cache rule:** pages are eligible for edge cache and keep GitHub's 10-minute `max-age`, so updates show within 10 minutes and repeat bot hits never reach GitHub. `/api/*` is excluded.
+- **Plan:** Workers **Free**.
+
+## Third-party keys in the code
+
+- **CARTO basemaps** (`?key=cb1_…` on every `basemaps.cartocdn.com` tile URL, in each repo's `assets/js/viz/leaflet.js` and in some essays). It's a public browser key restricted to `wayward.house` and `waywardhouse.github.io`, with a free limit of 5M tiles/month. Tiles show as blank on `localhost` unless that domain is added in CARTO. CARTO serves only `.png` (`.webp` returns 404).
+
 ---
 
 ## One-time migration (Nov 2026)
