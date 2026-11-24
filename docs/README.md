@@ -1,6 +1,6 @@
 # Wayward House — hub site
 
-Astro static build deployed to **GitHub Pages** as the WaywardHouse org site. Hub for essays, the System Signals newsletter, and a Library of long-form books that live as separate Quarto deploys under `wayward.house/<slug>/`.
+Astro static build deployed to **GitHub Pages** as the WaywardHouse org site. See [HOSTING.md](HOSTING.md) for how publishing works and the one-time migration steps. Hub for essays, the System Signals newsletter, and a Library of long-form books that live as separate Quarto deploys under `wayward.house/<slug>/`.
 
 ## Stack
 
