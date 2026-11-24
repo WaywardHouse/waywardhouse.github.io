@@ -1,7 +1,7 @@
 /**
  * POST /api/ask  — Pepper, the blind Labrador RAG assistant
  *
- * Bindings required (wrangler.toml + CF Pages dashboard):
+ * Bindings required (worker/wrangler.toml):
  *   AI         — Workers AI binding
  *   VECTORIZE  — Vectorize index wh-content
  *   SITE_URL   — env var
@@ -72,8 +72,7 @@ function corsHeaders(env) {
   };
 }
 
-export async function onRequestPost(context) {
-  const { request, env } = context;
+export async function handleAsk(request, env) {
   const cors = corsHeaders(env);
 
   // Check bindings are present
@@ -170,8 +169,4 @@ export async function onRequestPost(context) {
     console.error('ask error:', err);
     return Response.json({ error: 'Something went wrong. Try again.' }, { status: 500, headers: cors });
   }
-}
-
-export async function onRequestOptions(context) {
-  return new Response(null, { status: 204, headers: corsHeaders(context.env) });
 }

@@ -1,0 +1,42 @@
+# WaywardHouse API Worker — handles wayward.house/api/* only.
+#
+# The site itself is static on GitHub Pages. This Worker is the only thing
+# that runs on Cloudflare, and only for /api/* requests, so traffic to pages,
+# assets and books never counts against Workers limits.
+#
+# Keep the Cloudflare account on the Workers FREE plan: if a daily limit is
+# ever reached, /api/* returns errors until the next UTC day instead of
+# running up a bill.
+#
+# Deploy:   npx wrangler deploy            (or push changes under worker/ — see .github/workflows/api.yml)
+# Secret:   npx wrangler secret put RESEND_API_KEY   (once)
+
+name               = "wayward-house-api"
+main               = "src/index.js"
+compatibility_date = "2025-04-01"
+workers_dev        = false
+
+# Requires wayward.house DNS records to be proxied (orange cloud).
+routes = [
+  { pattern = "wayward.house/api/*", zone_name = "wayward.house" },
+]
+
+[vars]
+SITE_URL           = "https://wayward.house"
+FROM_EMAIL         = "WaywardHouse <newsletter@wayward.house>"
+RESEND_AUDIENCE_ID = "20be979e-41b9-4d71-a327-b7f4a9fef027"
+
+# ── D1 database — subscriber list ─────────────────────────────────────────────
+[[d1_databases]]
+binding       = "DB"
+database_name = "wayward-house-subscribers"
+database_id   = "b83ec748-a8e5-4905-afbd-38cf8dacc47d"
+
+# ── Workers AI — Pepper ───────────────────────────────────────────────────────
+[ai]
+binding = "AI"
+
+# ── Vectorize — site content index (filled by scripts/ingest-vectors.js) ──────
+[[vectorize]]
+binding    = "VECTORIZE"
+index_name = "wh-content"

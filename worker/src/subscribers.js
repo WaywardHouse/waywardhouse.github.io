@@ -1,9 +1,8 @@
 /**
- * Shared business logic for the WaywardHouse subscribe API.
- * Imported by subscribe.js / confirm.js / unsubscribe.js.
- * Underscore prefix = CF Pages will not expose this as a route.
+ * Subscribe / confirm / unsubscribe handlers for the WaywardHouse API Worker.
+ * Routed from index.js.
  *
- * Env bindings required (set in CF Pages project settings):
+ * Env bindings required (worker/wrangler.toml; RESEND_API_KEY via `wrangler secret put`):
  *   DB                 — D1 database  (wayward-house-subscribers)
  *   RESEND_API_KEY     — secret
  *   RESEND_AUDIENCE_ID — "20be979e-41b9-4d71-a327-b7f4a9fef027"

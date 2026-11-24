@@ -373,13 +373,14 @@ Add an entry to **`wayward-house/src/content/books/_books.json`**.
 - **`/library/` page** — lists all books from `_books.json` sorted by `n`
 - **Homepage books strip** — shows the entry with `featured: true`; update `featured` when a book is ready to promote
 
-### 3.5 Cloudflare deployment
+### 3.5 Deployment (GitHub Pages)
 
-Each book repo deploys to Cloudflare Pages. After creating the GitHub repo:
+Each book is its own **public** repo in the WaywardHouse org, and **the repo name is the URL**: repo `mathematics` is served at `wayward.house/mathematics/`. GitHub does this automatically because the org site (`waywardhouse.github.io`, this repo) owns the `wayward.house` domain. No proxy, no routing rules.
 
-1. Connect it to Cloudflare Pages (build command: `quarto render`, output: `_site`)
-2. Add a routing rule in the Cloudflare dashboard to proxy `wayward.house/<slug>/*` to the Pages deployment
-3. Update `deployUrl` in `_books.json` once the route is live
+1. Name the repo after the slug (e.g. `systems-thinking`) and make it public
+2. Copy `.github/workflows/pages.yml` from an existing book repo (set `path:` to `_site` or `_book`)
+3. Repo Settings → Pages → Source: **GitHub Actions**
+4. Push to `main`. Update `deployUrl` in `_books.json` once it's live
 
 ---
 
@@ -388,7 +389,7 @@ Each book repo deploys to Cloudflare Pages. After creating the GitHub repo:
 To update the chapter list, status label, or description without rebuilding anything:
 
 1. Edit **`wayward-house/src/content/books/_books.json`** directly
-2. Redeploy `wayward-house` (push to main — Cloudflare Pages builds automatically)
+2. Push this repo to main — GitHub Actions rebuilds and redeploys the site
 
 No template changes needed.
 
@@ -535,8 +536,8 @@ This writes `scripts/content-bundle.js`. Run this before deploying the ingest wo
 [ ] Pick heroImage from §6 image table
 [ ] Set featured: true if promoting to homepage hero
        (and set previous featured essay back to false)
-[ ] Commit and push wh-essays — Cloudflare Pages redeploys wh-essays.pages.dev
-[ ] Commit and push wayward-house — Cloudflare Pages redeploys hub
+[ ] Commit and push wh-essays first
+[ ] Commit and push this repo — the build renders the latest wh-essays into /essays/
 [ ] Run: cd wayward-house && node scripts/ingest-vectors.js
 ```
 
@@ -553,12 +554,11 @@ This writes `scripts/content-bundle.js`. Run this before deploying the ingest wo
 ### New book
 
 ```
-[ ] Create repo wh-<slug> with _quarto.yml, _extensions/, assets/, index.qmd
+[ ] Create repo <slug> with _quarto.yml, _extensions/, assets/, index.qmd
 [ ] Install theme: quarto add WaywardHouse/waywardhouse-site
     (or copy _extensions/ from an existing book repo)
 [ ] Add entry to wayward-house/src/content/books/_books.json
-[ ] Create GitHub repo, connect to Cloudflare Pages
-[ ] Add Cloudflare routing rule: wayward.house/<slug>/* → Pages deployment
+[ ] Name the public GitHub repo <slug>, add .github/workflows/pages.yml, Settings → Pages → Source: GitHub Actions
 [ ] Set status: "scaffolded" until chapters are live; update statusLabel as chapters ship
 [ ] Push wayward-house
 ```

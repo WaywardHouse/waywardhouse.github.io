@@ -12,7 +12,7 @@ export async function GET(context) {
       title: `№ ${String(s.data.issue).padStart(3, '0')} — ${s.data.title}`,
       pubDate: s.data.pubDate,
       description: s.data.summary,
-      link: `/signals/${s.id}/`,
+      link: `/signals/${s.id}`,
     })),
   });
 }

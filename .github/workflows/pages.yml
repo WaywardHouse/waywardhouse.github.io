@@ -1,0 +1,80 @@
+# Build and publish wayward.house to GitHub Pages.
+#
+# This repo is the WaywardHouse org site, so it owns the wayward.house domain.
+# Books are separate repos served automatically at wayward.house/<repo-name>/.
+#
+# One-time setup: Settings → Pages → Source: GitHub Actions; custom domain wayward.house.
+# No secrets needed.
+
+name: Publish site
+
+on:
+  push:
+    branches: [main]
+    paths-ignore:
+      - 'worker/**'
+      - '.github/workflows/api.yml'
+      - 'docs/**'
+  workflow_dispatch:
+  repository_dispatch:
+    types: [subsite-updated]   # sent by wh-essays / wh-signals on push
+  schedule:
+    - cron: '17 9 * * *'       # daily safety net for sub-site edits
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Check out essays and signals
+        run: |
+          git clone --depth 1 https://github.com/WaywardHouse/wh-essays.git  _subsites/wh-essays
+          git clone --depth 1 https://github.com/WaywardHouse/wh-signals.git _subsites/wh-signals
+
+      - uses: quarto-dev/quarto-actions/setup@v2
+
+      - name: Render essays and signals (Quarto, frozen)
+        run: |
+          quarto render _subsites/wh-essays
+          quarto render _subsites/wh-signals
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+
+      - run: npm ci
+
+      - name: Build (Astro → OG → assemble → Pagefind)
+        run: npm run build
+        env:
+          PUBLIC_SITE_URL: https://wayward.house
+          PUBLIC_CF_ANALYTICS_TOKEN: 62c47d78bf9d4c80972d4e6242d79ff8
+          ESSAYS_SITE: _subsites/wh-essays/_site
+          SIGNALS_SITE: _subsites/wh-signals/_site
+
+      - uses: actions/configure-pages@v5
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: dist
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4
