@@ -1,0 +1,156 @@
+---
+// "When was each site last built from GitHub?"
+// Source of truth: the latest successful run of each repo's Pages workflow (.github/workflows/pages.yml).
+// 1. Build time: a snapshot is fetched here so the table works without JavaScript.
+// 2. Browser: a small script re-fetches the same public API so the page shows the current state
+//    (cached in sessionStorage for 10 minutes to stay far below GitHub's unauthenticated rate limit).
+import books from '../content/books/_books.json';
+
+const WORKFLOW = 'pages.yml';
+const HUB_REPO = 'WaywardHouse/waywardhouse.github.io';
+
+interface Row { id: string; title: string; href: string; repo: string; note?: string }
+const rows: Row[] = [
+  { id: 'site', title: 'Main site', href: '/', repo: HUB_REPO, note: 'essays and signals are built with it' },
+  ...books.map((b: any) => ({ id: b.id, title: b.title, href: b.deployUrl ?? `/${b.slug}/`, repo: b.repo })),
+];
+
+interface Latest { at: string; sha: string; url: string }
+
+async function latest(repo: string): Promise<Latest | null> {
+  const headers: Record<string, string> = { Accept: 'application/vnd.github+json' };
+  // Optional: a token (the Actions-provided GITHUB_TOKEN is enough) avoids shared-runner rate limits.
+  if (process.env.GITHUB_TOKEN) headers.Authorization = `Bearer ${process.env.GITHUB_TOKEN}`;
+  try {
+    const res = await fetch(
+      `https://api.github.com/repos/${repo}/actions/workflows/${WORKFLOW}/runs?status=success&branch=main&per_page=1`,
+      { headers, signal: AbortSignal.timeout(8000) },
+    );
+    if (!res.ok) return null;
+    const run = (await res.json()).workflow_runs?.[0];
+    return run ? { at: run.updated_at, sha: run.head_sha, url: run.html_url } : null;
+  } catch {
+    return null;
+  }
+}
+
+const snapshot = await Promise.all(rows.map((r) => latest(r.repo)));
+// The main site's own run has not finished while it is being built, so use this build's time.
+const hubIdx = rows.findIndex((r) => r.id === 'site');
+snapshot[hubIdx] = {
+  at: new Date().toISOString(),
+  sha: process.env.GITHUB_SHA ?? snapshot[hubIdx]?.sha ?? '',
+  url: snapshot[hubIdx]?.url ?? `https://github.com/${HUB_REPO}/actions`,
+};
+---
+<section class="wh-builds" aria-labelledby="wh-builds-h" data-workflow={WORKFLOW}>
+  <span class="wh-kicker">Build status</span>
+  <h2 id="wh-builds-h">When each site was last built</h2>
+  <p class="wh-builds__dek">
+    Every book is its own repository, built and published by GitHub Actions. This is the time of the most recent
+    successful build of each one, straight from GitHub. Times are shown in your local timezone.
+  </p>
+  <table class="wh-builds__table">
+    <thead>
+      <tr><th scope="col">Site</th><th scope="col">Last built</th><th scope="col">Commit</th></tr>
+    </thead>
+    <tbody>
+      {rows.map((r, i) => {
+        const s = snapshot[i];
+        return (
+          <tr data-repo={r.repo} data-id={r.id}>
+            <th scope="row">
+              <a href={r.href}>{r.title}</a>
+              {r.note && <span class="wh-builds__note">{r.note}</span>}
+            </th>
+            <td class="wh-builds__when">
+              {s
+                ? <a href={s.url} data-run><time datetime={s.at}>{s.at.slice(0, 10)}</time></a>
+                : <span class="wh-builds__none">Not published yet</span>}
+            </td>
+            <td class="wh-builds__sha">
+              {s?.sha
+                ? <a href={`https://github.com/${r.repo}/commit/${s.sha}`} data-commit>{s.sha.slice(0, 7)}</a>
+                : <span class="wh-builds__none">–</span>}
+            </td>
+          </tr>
+        );
+      })}
+    </tbody>
+  </table>
+  <p class="wh-builds__foot" data-status>Snapshot taken when this page was built; refreshing from GitHub…</p>
+</section>
+
+<script>
+  const root = document.querySelector<HTMLElement>('.wh-builds');
+  if (root) {
+    const wf = root.dataset.workflow!;
+    const TTL = 10 * 60 * 1000;
+    const status = root.querySelector<HTMLElement>('[data-status]')!;
+    const fmt = new Intl.DateTimeFormat(undefined, { dateStyle: 'medium', timeStyle: 'short' });
+    const rtf = new Intl.RelativeTimeFormat(undefined, { numeric: 'auto' });
+
+    const ago = (iso: string) => {
+      const s = (new Date(iso).getTime() - Date.now()) / 1000;
+      const units: [Intl.RelativeTimeFormatUnit, number][] = [['day', 86400], ['hour', 3600], ['minute', 60]];
+      for (const [u, n] of units) if (Math.abs(s) >= n) return rtf.format(Math.round(s / n), u);
+      return rtf.format(0, 'second');
+    };
+
+    const paint = (tr: HTMLElement, d: { at: string; sha: string; url: string }) => {
+      const a = tr.querySelector<HTMLAnchorElement>('[data-run]');
+      const cell = tr.querySelector('.wh-builds__when')!;
+      const t = document.createElement('time');
+      t.dateTime = d.at;
+      t.textContent = `${ago(d.at)} · ${fmt.format(new Date(d.at))}`;
+      if (a) { a.replaceChildren(t); a.href = d.url; }
+      else {
+        const link = document.createElement('a');
+        link.href = d.url; link.setAttribute('data-run', ''); link.append(t);
+        cell.replaceChildren(link);
+      }
+      const sc = tr.querySelector('.wh-builds__sha')!;
+      if (d.sha) {
+        const c = document.createElement('a');
+        c.href = `https://github.com/${tr.dataset.repo}/commit/${d.sha}`;
+        c.textContent = d.sha.slice(0, 7);
+        sc.replaceChildren(c);
+      }
+    };
+
+    // Show the build-time snapshot in friendly form straight away.
+    root.querySelectorAll<HTMLElement>('tbody tr').forEach((tr) => {
+      const t = tr.querySelector<HTMLTimeElement>('time');
+      if (t?.dateTime) t.textContent = `${ago(t.dateTime)} · ${fmt.format(new Date(t.dateTime))}`;
+    });
+
+    const get = async (repo: string) => {
+      const key = `wh-build:${repo}`;
+      try {
+        const hit = JSON.parse(sessionStorage.getItem(key) || 'null');
+        if (hit && Date.now() - hit.t < TTL) return hit.d;
+      } catch {}
+      const res = await fetch(
+        `https://api.github.com/repos/${repo}/actions/workflows/${wf}/runs?status=success&branch=main&per_page=1`,
+        { headers: { Accept: 'application/vnd.github+json' } },
+      );
+      if (res.status === 404) return null; // private or not yet published
+      if (!res.ok) throw new Error(String(res.status));
+      const run = (await res.json()).workflow_runs?.[0];
+      const d = run ? { at: run.updated_at, sha: run.head_sha, url: run.html_url } : null;
+      try { sessionStorage.setItem(key, JSON.stringify({ t: Date.now(), d })); } catch {}
+      return d;
+    };
+
+    const rows = [...root.querySelectorAll<HTMLElement>('tbody tr')];
+    Promise.allSettled(rows.map(async (tr) => {
+      const d = await get(tr.dataset.repo!);
+      if (d) paint(tr, d);
+    })).then((res) => {
+      const failed = res.some((r) => r.status === 'rejected');
+      status.textContent = failed
+        ? 'Live refresh unavailable right now; showing the snapshot from when this page was last built.'
+        : `Live from GitHub, checked ${fmt.format(new Date())}.`;
+    });
+  }
+</script>
