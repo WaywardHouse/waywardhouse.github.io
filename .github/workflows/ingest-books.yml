@@ -1,0 +1,51 @@
+# Keep Pepper's books index (Vectorize `wh-books`) current.
+#
+# Reads each published book's search.json from wayward.house and re-embeds only the pages that changed.
+# Runs daily (just after the Workers AI allowance resets at 00:00 UTC, so re-indexing never competes with
+# readers' questions), on demand, and whenever a book repo pings this repo with event type `book-published`.
+#
+# Secret needed (once): INGEST_TOKEN — the same value as `wrangler secret put INGEST_TOKEN` on the Worker.
+# See docs/PEPPER.md.
+
+name: Ingest books for Pepper
+
+on:
+  schedule:
+    - cron: '23 0 * * *'
+  workflow_dispatch:
+    inputs:
+      book:
+        description: 'Only this book id (blank = all)'
+        required: false
+      force:
+        description: 'Re-embed everything, ignoring hashes'
+        type: boolean
+        default: false
+  repository_dispatch:
+    types: [book-published]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ingest-books
+  cancel-in-progress: false
+
+jobs:
+  ingest:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Ingest
+        env:
+          INGEST_TOKEN: ${{ secrets.INGEST_TOKEN }}
+          BOOK: ${{ inputs.book }}
+          FORCE: ${{ inputs.force }}
+        run: |
+          ARGS=""
+          [ -n "$BOOK" ] && ARGS="$ARGS --book=$BOOK"
+          [ "$FORCE" = "true" ] && ARGS="$ARGS --force"
+          node scripts/ingest-books.mjs $ARGS

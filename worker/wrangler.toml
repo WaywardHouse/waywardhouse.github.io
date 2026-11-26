@@ -24,6 +24,9 @@ routes = [
 [vars]
 SITE_URL           = "https://wayward.house"
 FROM_EMAIL         = "WaywardHouse <newsletter@wayward.house>"
+# Questions Pepper answers per UTC day before she "falls asleep" (Workers AI free tier is 10k neurons/day;
+# ~70 answers on the 70B model). Lower it if she runs dry early; set PEPPER_MODEL to a smaller model to stretch it.
+PEPPER_DAILY_CAP   = "60"
 RESEND_AUDIENCE_ID = "20be979e-41b9-4d71-a327-b7f4a9fef027"
 
 # ── D1 database — subscriber list ─────────────────────────────────────────────
@@ -40,3 +43,13 @@ binding = "AI"
 [[vectorize]]
 binding    = "VECTORIZE"
 index_name = "wh-content"
+
+# ── Vectorize — books index, one vector per ~1,200-char chunk of each published book ─────────────
+# Create once, BEFORE the first ingest (metadata indexes only apply to vectors added after they exist):
+#   npx wrangler vectorize create wh-books --dimensions=384 --metric=cosine
+#   npx wrangler vectorize create-metadata-index wh-books --property-name=book --type=string
+#   npx wrangler vectorize create-metadata-index wh-books --property-name=page --type=string
+# Secret for /api/ingest:   npx wrangler secret put INGEST_TOKEN
+[[vectorize]]
+binding    = "VECTORIZE_BOOKS"
+index_name = "wh-books"

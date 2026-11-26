@@ -5,17 +5,20 @@
  * only for API calls. Every page, asset and book is static on GitHub Pages
  * and never touches this Worker.
  *
- *   POST /api/ask          Pepper (Workers AI + Vectorize)
+ *   POST /api/ask          Pepper (Workers AI + Vectorize); with `book` set, Pepper inside a book
+ *   POST /api/ingest       keeps the books index current (INGEST_TOKEN, called from CI)
  *   POST /api/subscribe    double opt-in signup (D1 + Resend)
  *   GET  /api/confirm      confirm link from the signup email
  *   GET  /api/unsubscribe  unsubscribe link from email footers
  */
 
 import { handleAsk } from './ask.js';
+import { handleIngest } from './ingest.js';
 import { handleSubscribe, handleConfirm, handleUnsubscribe, corsHeaders, jsonResponse } from './subscribers.js';
 
 const ROUTES = {
   'POST /api/ask':         handleAsk,
+  'POST /api/ingest':      handleIngest,
   'POST /api/subscribe':   handleSubscribe,
   'GET /api/confirm':      handleConfirm,
   'GET /api/unsubscribe':  handleUnsubscribe,

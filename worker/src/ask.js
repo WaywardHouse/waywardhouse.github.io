@@ -7,6 +7,9 @@
  *   SITE_URL   — env var
  */
 
+import { handleBookAsk } from './book-ask.js';
+import { takeTicket, asleepResponse, isQuotaError, markAsleep, streamWithSources } from './pepper-common.js';
+
 const EMBED_MODEL = '@cf/baai/bge-small-en-v1.5';
 const LLM_MODEL   = '@cf/meta/llama-3.3-70b-instruct-fp8-fast';
 const TOP_K       = 5;
@@ -77,18 +80,21 @@ export async function handleAsk(request, env) {
 
   // Check bindings are present
   if (!env.AI)        return Response.json({ error: 'AI binding not configured.'        }, { status: 503, headers: cors });
-  if (!env.VECTORIZE) return Response.json({ error: 'Vectorize binding not configured.' }, { status: 503, headers: cors });
 
-  let question;
+  let question, book, page;
   try {
     const body = await request.json();
     question   = (body.question || '').trim();
+    book       = typeof body.book === 'string' ? body.book : undefined;
+    page       = typeof body.page === 'string' ? body.page : undefined;
   } catch {
     return Response.json({ error: 'Invalid JSON.' }, { status: 400, headers: cors });
   }
 
   if (!question || question.length < 3)  return Response.json({ error: 'Question too short.'            }, { status: 400, headers: cors });
   if (question.length > 500)             return Response.json({ error: 'Question too long (max 500).'   }, { status: 400, headers: cors });
+
+  if (!env.VECTORIZE && !book) return Response.json({ error: 'Vectorize binding not configured.' }, { status: 503, headers: cors });
 
   // ── Easter eggs — answered before RAG ─────────────────────────────────────
   const q = question.toLowerCase();
@@ -109,6 +115,13 @@ export async function handleAsk(request, env) {
       headers: { 'Content-Type': 'text/event-stream', 'Cache-Control': 'no-cache', ...cors },
     });
   }
+
+  // ── In-book Pepper: scoped to one book (and, optionally, the reader's chapter) ──
+  if (book) return handleBookAsk({ question, book, page }, env);
+
+  // ── Daily allowance: when it's spent, Pepper sleeps until the free tier resets ──
+  const ticket = await takeTicket(env);
+  if (!ticket.ok) return asleepResponse(cors);
 
   try {
     // 1. Embed the question
@@ -143,29 +156,10 @@ export async function handleAsk(request, env) {
 
     const aiStream = await env.AI.run(LLM_MODEL, { messages, stream: true, max_tokens: 1024 });
 
-    const { readable, writable } = new TransformStream();
-    const writer  = writable.getWriter();
-    const encoder = new TextEncoder();
-
-    (async () => {
-      const reader = aiStream.getReader();
-      try {
-        while (true) {
-          const { done, value } = await reader.read();
-          if (done) break;
-          await writer.write(value);
-        }
-        await writer.write(encoder.encode(`\ndata: ${JSON.stringify({ sources })}\n\n`));
-      } finally {
-        await writer.close();
-      }
-    })();
-
-    return new Response(readable, {
-      headers: { 'Content-Type': 'text/event-stream', 'Cache-Control': 'no-cache', ...cors },
-    });
+    return streamWithSources(aiStream, sources, cors);
 
   } catch (err) {
+    if (isQuotaError(err)) { markAsleep(); return asleepResponse(cors); }
     console.error('ask error:', err);
     return Response.json({ error: 'Something went wrong. Try again.' }, { status: 500, headers: cors });
   }
